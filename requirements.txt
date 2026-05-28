@@ -1,0 +1,7 @@
+# Skipperbot Platform — Python dependencies
+#
+# This file will be populated during Phase 1 / Chunk 2 with the actual
+# pinned versions migrated from the private working repo. For now it's
+# a placeholder reserving the file path.
+#
+# Target: Python 3.12 only.

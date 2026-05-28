@@ -1,0 +1,35 @@
+[Unit]
+Description=Skipperbot Agent (FastAPI / agent.py)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Replace with the user that owns the skipperbot-platform checkout.
+User=CHANGE_ME
+Group=CHANGE_ME
+# Replace with the full path to your skipperbot-platform checkout.
+WorkingDirectory=/CHANGE_ME/skipperbot-platform
+ExecStart=/CHANGE_ME/skipperbot-platform/start_agent.sh
+
+# Restart policy:
+#   Exit 0  = clean shutdown, do not restart (SuccessExitStatus)
+#   Exit 42 = graceful restart requested via /api/admin/restart
+#   Other   = crash
+# on-failure restarts on 42 and any non-zero except those listed as success.
+Restart=on-failure
+RestartSec=5
+SuccessExitStatus=0
+
+# Logging — let journalctl capture stdout/stderr
+StandardOutput=journal
+StandardError=journal
+
+# Give npm/vite enough time to build the UI before timing out the start
+TimeoutStartSec=180
+
+# Allow agent.py up to 30s to drain on stop (matches _drain_and_exit timeout)
+TimeoutStopSec=45
+
+[Install]
+WantedBy=multi-user.target

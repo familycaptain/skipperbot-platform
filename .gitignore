@@ -1,0 +1,120 @@
+# =============================================================================
+# Skipperbot Platform — .gitignore
+# =============================================================================
+
+# ----- secrets and credentials (NEVER commit) -----
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.p12
+*.pfx
+keys/
+firebase-service-account.json
+**/service-account*.json
+**/credentials*.json
+
+# ----- runtime state (per-user, not source) -----
+data/discord_users.json
+data/pm_state.json
+data/*.json
+!data/*.example.json
+
+# ----- generated content -----
+backups/
+uploads/
+logs/
+tmp/
+*.dump
+*.sql.gz
+
+# ----- Python -----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.hypothesis/
+
+# ----- Node / web build -----
+node_modules/
+# web/dist/ is a build artifact, persisted on the host so the container's
+# entrypoint can do rebuild-on-app-change without a full image rebuild.
+web/dist/
+web/.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tsbuildinfo
+
+# ----- IDE / editors -----
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ----- OS junk -----
+*.bak
+*.orig
+*.rej
+
+# ----- security audit outputs (gitignored; not source) -----
+.security/
+
+# ----- app installs in apps/ -----
+# Required apps are tracked by the platform repo. Optional apps are cloned
+# per-install (each is its own skipperbot-app-<name> repo with its own
+# .git/). Ignore everything in apps/ EXCEPT the 17 required apps + the
+# README. Anything else (recipes, meals, etc.) belongs to a separate repo.
+apps/*
+!apps/README.md
+!apps/notifications/
+!apps/timeline/
+!apps/goals/
+!apps/reminders/
+!apps/schedules/
+!apps/documents/
+!apps/lists/
+!apps/todo/
+!apps/folders/
+!apps/behaviors/
+!apps/prioritize/
+!apps/backups/
+!apps/finder/
+!apps/jobs/
+!apps/system/
+!apps/tools/
+!apps/settings/

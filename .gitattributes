@@ -1,0 +1,18 @@
+# Line endings — enforce LF on code; allow native CRLF on Windows scripts.
+* text=auto eol=lf
+*.bat   text eol=crlf
+*.ps1   text eol=crlf
+*.cmd   text eol=crlf
+
+# Binaries
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.zip   binary
+*.gz    binary
+*.tar   binary
+*.onnx  binary
+*.ppn   binary

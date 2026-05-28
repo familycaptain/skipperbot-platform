@@ -1,0 +1,26 @@
+# Caddy reverse-proxy fronting the Skipperbot agent on :8000.
+#
+# Use this template for Tier 3 (external) deployments. See
+# docs/03-extended-functionality.md "Going External" for full setup.
+#
+# Install path: /etc/caddy/Caddyfile (this file is the template — copy
+# to /etc/caddy/Caddyfile and edit the email + hostname).
+# Re-deploy with:
+#   sudo install -m 644 /etc/caddy/Caddyfile /etc/caddy/Caddyfile && \
+#       sudo systemctl reload caddy
+#
+# Caddy provisions Let's Encrypt certs automatically on first start
+# (HTTP-01 challenge on :80). DNS must already point to this host.
+
+{
+	# Replace with the email you want Let's Encrypt notices sent to.
+	email admin@yourdomain.example
+}
+
+# Replace with your Skipperbot public hostname.
+skipperbot.yourdomain.example {
+	encode zstd gzip
+	# reverse_proxy handles WebSocket upgrades transparently
+	# (the agent exposes /ws/voice/* and /ws/{user_id}).
+	reverse_proxy localhost:8000
+}

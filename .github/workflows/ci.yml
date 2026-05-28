@@ -1,0 +1,65 @@
+# =============================================================================
+# Skipperbot Platform — CI
+# =============================================================================
+# Placeholder workflow. Full CI lands in Chunk 2+ with:
+#  - matrix testing on ubuntu-latest, macos-latest, windows-latest
+#  - pytest, ruff, ESLint
+#  - gitleaks, bandit, semgrep, pip-audit, npm audit
+#  - docker compose smoke test
+#  - APP_PACKAGES.md hash check (verify per-app-repo copies match canonical)
+#
+# For now, only the family-name + timezone scrub guard runs.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  scrub-guard:
+    name: No family names / hardcoded timezones
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run family-name + timezone CI guard
+        run: python scripts/check_no_family_names.py
+
+  # ----- placeholders for future jobs; uncomment when implemented -----
+  #
+  # tests:
+  #   strategy:
+  #     matrix:
+  #       os: [ubuntu-latest, macos-latest, windows-latest]
+  #   runs-on: ${{ matrix.os }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: "3.12"
+  #     - run: pip install -r requirements.txt
+  #     - run: pytest
+  #
+  # lint:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - run: pip install ruff && ruff check .
+  #
+  # security-scan:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: gitleaks/gitleaks-action@v2
+  #     - run: pip install bandit pip-audit && bandit -r . && pip-audit
+  #
+  # docker-smoke:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - run: docker compose up -d && curl --retry 30 --retry-delay 2 http://localhost:8000/api/health

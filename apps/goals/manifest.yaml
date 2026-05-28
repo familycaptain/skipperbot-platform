@@ -1,0 +1,141 @@
+id: goals
+name: Goals
+version: 1.0.0
+description: >
+  Goals, projects, and tasks — the platform's project-management core.
+  Every other Skipperbot app links to goals/projects/tasks for context.
+  Includes the PM (Project Manager) thinking domain that nudges, flags
+  at-risk items, and surfaces tasks needing attention.
+
+# Required core app — platform refuses to start without it.
+core: true
+
+platform_min_version: "1.0.0"
+
+# This app owns the goals/projects/tasks schema.
+entity_types:
+  - prefix: g
+    name: Goal
+    id_format: "g-{hex8}"
+    table: goals
+  - prefix: p
+    name: Project
+    id_format: "p-{hex8}"
+    table: projects
+  - prefix: t
+    name: Task
+    id_format: "t-{hex8}"
+    table: tasks
+
+# Platform services this app consumes.
+platform_deps:
+  - db                  # owns app_goals.* schema
+  - memory              # digest_record on every CRUD
+  - links               # cross-entity linking
+  - notifications      # PM domain notifies users when items are at risk
+  - events              # emits goal.created/updated/deleted etc.
+  - documents           # goals/projects/tasks may attach docs
+  - time                # platform.time.now() for due-date logic
+  - config              # per-user PM cadence + quiet-mode settings
+
+# Events emitted by this app — other apps may subscribe via their handlers.py.
+emits:
+  - goal.created
+  - goal.updated
+  - goal.deleted
+  - project.created
+  - project.updated
+  - project.deleted
+  - task.created
+  - task.updated
+  - task.completed
+  - task.deleted
+
+# This app does not subscribe to other apps' events (it's foundational).
+subscribes: []
+
+# Tool category for the keyword router.
+tool_category:
+  description: >
+    Create + manage hierarchical goals → projects → tasks. Track ownership,
+    due dates, dependencies, blocking, completion. Surface what to work on
+    next. PM thinking domain proactively nudges on at-risk and slipping items.
+  keywords:
+    - goal
+    - goals
+    - project
+    - projects
+    - task
+    - tasks
+    - todo
+    - milestone
+    - blocked
+    - assigned
+    - due
+    - priority
+    - sprint
+    - backlog
+    - roadmap
+    - what should I work on
+    - what's due
+    - what's next
+    - assign
+    - reassign
+    - complete a task
+    - mark done
+    - rank
+    - reorder
+    - depends on
+    - dependency
+    - sub-task
+    - subtask
+    - parent task
+
+# Per-app settings — rendered into the cog wheel via the platform's
+# auto-generated settings form (or apps/goals/ui/SettingsPanel.jsx if
+# the app ships a custom one).
+config:
+  - key: pm_cadence_hours
+    type: integer
+    default: 24
+    label: "PM check interval (hours)"
+    description: "How often the PM thinking domain reviews open items."
+  - key: pm_quiet_mode
+    type: boolean
+    default: false
+    label: "Quiet mode (log only — no DMs)"
+    description: "When ON, PM logs its findings but does not send any notifications."
+  - key: default_priority
+    type: enum
+    options: [low, medium, high]
+    default: medium
+    label: "Default priority for new projects + tasks"
+  - key: trello_sync_enabled
+    type: boolean
+    default: false
+    label: "Sync tasks to Trello"
+    description: "Requires Trello integration configured in .env. See docs/03-extended-functionality.md."
+
+# The PM thinking domain — autonomous review of goals/projects/tasks.
+# Disabled by default; user enables in Settings or via onboarding.
+thinking:
+  - domain: pm
+    description: "Project Manager — review at-risk items, nudge owners, surface what to work on."
+    schedule: "0 9 * * *"        # 9 AM daily by default; user-overridable
+    prompt_file: prompts/pm_think.md
+    model: smart
+    enabled_by_default: false
+    tools:
+      - list_open_goals
+      - list_at_risk_projects
+      - list_slipping_tasks
+      - send_notification
+  - domain: goals
+    description: "Goal-level reasoning — long-horizon planning, gap detection."
+    schedule: "0 6 * * 0"        # weekly Sunday morning
+    prompt_file: prompts/goals_think.md
+    model: smart
+    enabled_by_default: false
+
+# Job handlers — none currently; future use for async PM checks if needed.
+job_types: []

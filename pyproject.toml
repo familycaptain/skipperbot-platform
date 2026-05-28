@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skipperbot-platform"
+version = "0.1.0-dev"
+description = "An agentic personal-assistant platform with a modular app architecture."
+readme = "README.md"
+requires-python = "==3.12.*"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Skipperbot Contributors" }
+]
+keywords = ["agent", "ai", "assistant", "self-hosted", "mcp"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "License :: Other/Proprietary License",
+]
+
+[project.urls]
+Homepage = "https://github.com/CHANGE_ME/skipperbot-platform"
+Documentation = "https://github.com/CHANGE_ME/skipperbot-platform/tree/main/docs"
+Repository = "https://github.com/CHANGE_ME/skipperbot-platform"
+Issues = "https://github.com/CHANGE_ME/skipperbot-platform/issues"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]  # line length governed by line-length
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+asyncio_mode = "auto"

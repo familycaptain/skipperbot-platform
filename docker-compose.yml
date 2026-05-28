@@ -1,0 +1,79 @@
+# =============================================================================
+# Skipperbot Platform — docker-compose.yml
+# =============================================================================
+# Recommended install path for first-time users. Brings up Postgres 18 +
+# pgvector and the agent in two services with proper volumes so user data,
+# installed apps, and built artifacts survive container restarts and image
+# rebuilds.
+#
+# Usage:
+#   1. cp .env.example .env
+#   2. Edit .env — set OPENAI_API_KEY and POSTGRES_PASSWORD.
+#      SKIPPERBOT_DB_DSN should reference the 'db' host (see .env.example).
+#   3. docker compose up
+#   4. Open http://localhost:8000 to begin onboarding
+
+services:
+  db:
+    image: pgvector/pgvector:pg18
+    environment:
+      POSTGRES_USER: skipperbot_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: skipperbot
+    volumes:
+      - skipper-db:/var/lib/postgresql/data
+      # Runs once on first DB initialization to install the pgvector extension.
+      # The user never needs to manually CREATE EXTENSION.
+      - ./deploy/docker-initdb:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U skipperbot_user -d skipperbot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: always
+
+  agent:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # ---- bind mounts (host filesystem, user-visible) ----------------------
+      #
+      # .env — agent writes here during onboarding to persist user settings.
+      - ./.env:/app/.env
+      #
+      # apps/ — host directory holding all installed apps. Required apps are
+      # tracked inside the platform repo and present after `git clone`.
+      # Optional apps are added by the user with:
+      #     cd apps && git clone https://github.com/<org>/skipperbot-app-<name>.git <name>
+      # The container sees the new app immediately; the entrypoint detects
+      # the change and rebuilds the web bundle on next restart.
+      - ./apps:/app/apps
+      #
+      # web/dist — built web bundle. Bind-mounted so the build artifact is
+      # visible on the host and the entrypoint's rebuild-on-app-change logic
+      # works across container recreates.
+      - ./web/dist:/app/web/dist
+      #
+      # ---- named volumes (agent-managed, user shouldn't need to touch) -----
+      #
+      # User-uploaded files (recipe images, document attachments, etc.)
+      - skipper-uploads:/app/uploads
+      #
+      # Local DB backups
+      - skipper-backups:/app/backups
+      #
+      # Logs
+      - skipper-logs:/app/logs
+    restart: always
+
+volumes:
+  skipper-db:
+  skipper-uploads:
+  skipper-backups:
+  skipper-logs:

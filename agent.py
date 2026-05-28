@@ -1,0 +1,4185 @@
+"""
+SkipperBot Agent API
+Thin FastAPI routing layer. All logic lives in dedicated modules.
+"""
+
+import sys
+import os
+if sys.platform == "win32":
+    os.environ.setdefault("PYTHONUTF8", "1")
+    for _stream in (sys.stdout, sys.stderr, sys.stdin):
+        if _stream and hasattr(_stream, "reconfigure"):
+            _stream.reconfigure(encoding="utf-8", errors="replace")
+
+import asyncio
+import time
+from contextlib import asynccontextmanager
+from pathlib import Path
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+
+from config import logger, DISCORD_ENABLED
+from connections import manager
+import mcp_client
+import tool_dispatch
+from chat import process_chat
+import discord_bot
+from reminder_scheduler import start_reminder_scheduler
+from job_dispatcher import start_dispatcher
+from job_runner import start_job_runner
+from thinking_scheduler import start_thinking_scheduler
+from job_handlers import register_all_handlers
+from trello_sync import start_trello_sync
+from memory_store import backfill_embeddings
+from knowledge_store import migrate_chunk_embeddings
+from data_layer.db import close_pool
+from app_platform.loader import load_all_apps, get_app_tool_routes
+from data_layer.users import authenticate, get_user, update_password, get_all_users, has_role
+from apps.goals import data as dl_goals
+import doc_store
+import link_registry
+
+# Unique ID generated at agent startup — used to detect restarts on the client
+BUILD_ID = str(int(time.time()))
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize MCP connection and (optionally) Discord bot on startup."""
+    # One-time migrations: backfill memory embeddings + migrate knowledge to binary
+    await asyncio.to_thread(backfill_embeddings)
+    await asyncio.to_thread(migrate_chunk_embeddings)
+    await mcp_client.connect_to_mcp()
+
+    # Build direct-call tool registry (bypasses MCP subprocess for execution)
+    await asyncio.to_thread(tool_dispatch.init)
+    tool_dispatch.verify_against_mcp([t.name for t in mcp_client.mcp_tools])
+
+    # Load app packages from apps/ directory
+    # NOTE: called synchronously (not via asyncio.to_thread) because
+    # include_router must run on the main thread for Starlette to pick
+    # up the new routes before the server starts accepting requests.
+    from pathlib import Path
+    apps_dir = Path(__file__).parent / "apps"
+    load_all_apps(apps_dir, app, None)
+
+    # Move the SPA catch-all route (/{filename:path}) to the very end
+    # so that app-package API routes added by include_router above
+    # are matched before the catch-all serves index.html.
+    for i, route in enumerate(app.routes):
+        if hasattr(route, "path") and route.path == "/{filename:path}":
+            app.routes.append(app.routes.pop(i))
+            break
+
+    discord_task = None
+    if DISCORD_ENABLED:
+        discord_task = asyncio.create_task(discord_bot.start_discord_bot())
+        await discord_bot.wait_until_ready()
+        logger.info("STARTUP: Discord ready — starting background tasks")
+    else:
+        logger.info("STARTUP: Discord disabled (DISCORD_ENABLED=false) — starting background tasks")
+
+    reminder_task = asyncio.create_task(start_reminder_scheduler())
+    register_all_handlers()
+    job_task = asyncio.create_task(start_dispatcher())
+    job_runner_task = asyncio.create_task(start_job_runner())
+    trello_task = asyncio.create_task(start_trello_sync())
+    thinking_task = asyncio.create_task(start_thinking_scheduler())
+    yield
+    # Shutdown
+    if DISCORD_ENABLED:
+        await discord_bot.stop_discord_bot()
+        if discord_task:
+            discord_task.cancel()
+    reminder_task.cancel()
+    job_task.cancel()
+    job_runner_task.cancel()
+    trello_task.cancel()
+    thinking_task.cancel()
+    # Cancel any in-flight timers so none fire after shutdown begins.
+    try:
+        from timer_scheduler import shutdown_all_timers
+        await shutdown_all_timers()
+    except Exception as e:
+        logger.error("STARTUP: Timer shutdown failed: %s", e)
+    close_pool()
+
+
+app = FastAPI(title="SkipperBot Agent", version="0.1.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+class ChatRequest(BaseModel):
+    message: str
+    user_id: str
+
+
+class ChatResponse(BaseModel):
+    response: str
+    user_id: str
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str = ""
+
+
+class SetPasswordRequest(BaseModel):
+    username: str
+    password: str
+
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok", "agent": "SkipperBot", "version": "0.1.0"}
+
+
+@app.get("/")
+async def root():
+    index = Path(__file__).resolve().parent / "web" / "dist" / "index.html"
+    if index.is_file():
+        return FileResponse(index)
+    return {"status": "ok", "agent": "SkipperBot", "version": "0.1.0"}
+
+
+@app.post("/auth/login")
+async def login(request: LoginRequest):
+    """Authenticate a web user. Returns canonical user_id on success."""
+    name = request.username.lower().strip()
+    user = await asyncio.to_thread(get_user, name)
+    if not user:
+        return {"ok": False, "error": "Unknown user."}
+    if has_role(user, "bot"):
+        return {"ok": False, "error": "Unknown user."}
+    if not user.get("password_hash"):
+        # User exists but has no password yet — prompt to set one
+        return {"ok": False, "error": "no_password", "name": user["name"], "display_name": user["display_name"]}
+    if not request.password:
+        # User exists and has a password — tell frontend to show password field
+        return {"ok": False, "error": "password_required", "name": user["name"], "display_name": user["display_name"]}
+    authed = await asyncio.to_thread(authenticate, name, request.password)
+    if not authed:
+        return {"ok": False, "error": "Wrong password."}
+    return {"ok": True, "user": {"name": authed["name"], "display_name": authed["display_name"], "role": authed["role"]}}
+
+
+@app.post("/auth/set-password")
+async def set_password(request: SetPasswordRequest):
+    """Set or reset a user's web password. Only works if they have no password yet."""
+    name = request.username.lower().strip()
+    user = await asyncio.to_thread(get_user, name)
+    if not user:
+        return {"ok": False, "error": "Unknown user."}
+    if user.get("password_hash"):
+        return {"ok": False, "error": "Password already set. Use the chat to request a reset."}
+    if len(request.password) < 4:
+        return {"ok": False, "error": "Password must be at least 4 characters."}
+    await asyncio.to_thread(update_password, name, request.password)
+    return {"ok": True, "user": {"name": user["name"], "display_name": user["display_name"], "role": user["role"]}}
+
+
+class MobileRegisterRequest(BaseModel):
+    user_id: str
+    fcm_token: str
+    device_id: str
+    device_name: str = ""
+    app_version: str = ""
+
+
+class MobileUnregisterRequest(BaseModel):
+    user_id: str
+    device_id: str
+
+
+@app.post("/api/mobile/register")
+async def mobile_register(request: MobileRegisterRequest):
+    """Register or update a mobile device's FCM token for push notifications."""
+    from data_layer.mobile_devices import register_device
+    device = await asyncio.to_thread(
+        register_device,
+        user_id=request.user_id,
+        device_id=request.device_id,
+        fcm_token=request.fcm_token,
+        device_name=request.device_name,
+        app_version=request.app_version,
+    )
+    if device:
+        logger.info("MOBILE: Registered device %s for %s", request.device_id[:12], request.user_id)
+        return {"success": True, "device_id": device["device_id"]}
+    return {"success": False, "error": "Registration failed"}
+
+
+@app.delete("/api/mobile/register")
+async def mobile_unregister(request: MobileUnregisterRequest):
+    """Unregister a mobile device (logout or uninstall cleanup)."""
+    from data_layer.mobile_devices import unregister_device
+    removed = await asyncio.to_thread(unregister_device, request.user_id, request.device_id)
+    logger.info("MOBILE: Unregistered device %s for %s (found=%s)", request.device_id[:12], request.user_id, removed)
+    return {"success": True}
+
+
+@app.get("/tools")
+async def list_tools():
+    """List available MCP tools."""
+    return {"tools": [{"name": t.name, "description": t.description} for t in mcp_client.mcp_tools]}
+
+
+# ── Voice Session Endpoints ────────────────────────────────────────────────
+
+class VoiceSessionRequest(BaseModel):
+    user_id: str
+    device_info: dict = {}
+
+
+class VoiceSwitchAppRequest(BaseModel):
+    session_id: str
+    app: str
+
+
+class VoiceEndRequest(BaseModel):
+    session_id: str
+
+
+@app.get("/api/config/picovoice")
+async def get_picovoice_config():
+    """Return Picovoice API key for wake word detection."""
+    key = os.getenv("PICOVOICE_API_KEY", "")
+    return {"access_key": key}
+
+
+@app.post("/api/voice/session")
+async def voice_create_session(request: VoiceSessionRequest):
+    """Mint an ephemeral OpenAI Realtime token for a voice session."""
+    from app_platform.voice.session import mint_ephemeral_token
+    result = await asyncio.to_thread(mint_ephemeral_token, request.user_id, request.device_info)
+    if result:
+        return result
+    return {"error": "Failed to create voice session"}
+
+
+@app.post("/api/voice/switch-app")
+async def voice_switch_app(request: VoiceSwitchAppRequest):
+    """Build a session.update payload for switching to an app."""
+    from app_platform.voice.session import build_switch_app_payload, build_exit_app_payload
+    from app_platform.voice.prompting import is_exit_app_name
+    app_name = request.app.lower().strip()
+    if is_exit_app_name(app_name):
+        result = build_exit_app_payload(request.session_id)
+    else:
+        result = build_switch_app_payload(request.session_id, app_name)
+    if result:
+        return result
+    return {"error": "Session not found"}
+
+
+@app.post("/api/voice/end")
+async def voice_end_session(request: VoiceEndRequest):
+    """End a voice session."""
+    from app_platform.voice.session import end_session
+    end_session(request.session_id)
+    return {"success": True}
+
+
+@app.websocket("/ws/voice/{session_id}")
+async def voice_tool_relay(websocket: WebSocket, session_id: str):
+    """Sideband WebSocket for relaying tool calls from Android to backend.
+
+    Protocol:
+    - Android sends: {type: "tool_call", call_id, name, arguments}
+    - Backend executes the tool and returns: {type: "tool_result", call_id, output}
+    - Backend may also return: {type: "confirmation_required", call_id, action, prompt}
+    """
+    from app_platform.voice.session import get_session
+    session = get_session(session_id)
+    if not session:
+        await websocket.close(code=4001, reason="Unknown session")
+        return
+
+    await websocket.accept()
+    user_id = session["user_id"]
+    logger.info("VOICE: Sideband WS connected for session %s (user=%s)", session_id, user_id)
+
+    try:
+        while True:
+            data = await websocket.receive_json()
+            msg_type = data.get("type", "")
+
+            if msg_type == "tool_call":
+                call_id = data.get("call_id", "")
+                tool_name = data.get("name", "")
+                arguments = data.get("arguments", {})
+
+                logger.info("VOICE: Tool call %s: %s(%s)", call_id[:8], tool_name, list(arguments.keys()))
+
+                from app_platform.voice.tool_runtime import handle_voice_tool_call
+
+                events = await handle_voice_tool_call(
+                    session_id=session_id,
+                    call_id=call_id,
+                    tool_name=tool_name,
+                    arguments=arguments,
+                )
+                for event in events:
+                    await websocket.send_json(event)
+                    if event.get("type") == "tool_result":
+                        logger.info(
+                            "VOICE: Tool result for %s: %s",
+                            tool_name,
+                            event.get("output", "")[:100],
+                        )
+
+            elif msg_type == "transcript":
+                text = data.get("text", "")
+                role = data.get("role", "user")
+                logger.debug("VOICE: Transcript [%s] %s: %s", session_id[:8], role, text[:100])
+                from app_platform.voice.chatlog import record_voice_transcript
+
+                turn_id = await record_voice_transcript(
+                    session_id,
+                    role,
+                    text,
+                    user_id=user_id,
+                )
+                if turn_id:
+                    logger.info("VOICE: Queued chat turn %s from session %s", turn_id, session_id[:8])
+
+    except WebSocketDisconnect:
+        logger.info("VOICE: Sideband WS disconnected for session %s", session_id)
+
+
+@app.post("/tools/refresh")
+async def refresh_tools():
+    """Refresh the tools list from MCP server (call after creating new tools)."""
+    await mcp_client.connect_to_mcp()
+    # Rebuild direct-call registry to pick up new tools
+    tool_dispatch._initialized = False
+    await asyncio.to_thread(tool_dispatch.init)
+    tool_dispatch.verify_against_mcp([t.name for t in mcp_client.mcp_tools])
+    return {"status": "refreshed", "tool_count": len(mcp_client.mcp_tools)}
+
+
+# Active app context per user — updated by WebSocket app_context messages
+_user_app_context: dict[str, dict] = {}
+
+
+def get_user_app_context(user_id: str) -> dict | None:
+    """Get the current app context for a user (used by chat engine)."""
+    return _user_app_context.get(user_id)
+
+
+@app.websocket("/ws/{user_id}")
+async def websocket_chat(websocket: WebSocket, user_id: str):
+    """WebSocket endpoint for real-time chat per user."""
+    await manager.connect(user_id, websocket)
+    # Send build ID so client can detect agent restarts
+    await websocket.send_json({"type": "build_id", "build_id": BUILD_ID})
+    try:
+        while True:
+            data = await websocket.receive_json()
+
+            # Handle keepalive pings (no-op)
+            if data.get("type") == "ping":
+                continue
+
+            # Handle app context updates (non-chat messages)
+            if data.get("type") == "app_context":
+                _user_app_context[user_id] = data.get("context", {})
+                continue
+
+            message = data.get("message", "")
+            if not message:
+                continue
+
+            await websocket.send_json({"type": "typing", "status": True})
+
+            async def _ws_progress(text: str):
+                await websocket.send_json({
+                    "type": "progress",
+                    "message": text,
+                    "user_id": user_id
+                })
+
+            async def _ws_event(event: dict):
+                await websocket.send_json(event)
+
+            try:
+                response_text = await process_chat(
+                    user_id, message,
+                    send_progress=_ws_progress,
+                    channel="web",
+                    app_context=_user_app_context.get(user_id),
+                    send_event=_ws_event,
+                )
+                await websocket.send_json({
+                    "type": "chat_response",
+                    "response": response_text,
+                    "user_id": user_id
+                })
+            except Exception as e:
+                import traceback
+                logger.error("Chat error [%s]: %s\n%s", user_id, str(e), traceback.format_exc())
+                await websocket.send_json({
+                    "type": "chat_response",
+                    "response": f"Error: {str(e)}",
+                    "user_id": user_id
+                })
+    except WebSocketDisconnect:
+        manager.disconnect(user_id)
+        _user_app_context.pop(user_id, None)
+
+
+@app.post("/chat", response_model=ChatResponse)
+async def chat(request: ChatRequest):
+    """HTTP chat endpoint - fallback for non-WebSocket clients."""
+    try:
+        response_text = await process_chat(request.user_id, request.message)
+        return ChatResponse(response=response_text, user_id=request.user_id)
+    except Exception as e:
+        return ChatResponse(response=f"Error: {str(e)}", user_id=request.user_id)
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Goals
+# ---------------------------------------------------------------------------
+
+@app.get("/api/apps/goals/summary")
+async def goals_summary():
+    """Get all goals with progress for the Goals app."""
+    def _fetch():
+        all_goals = dl_goals.list_entities("g-")
+        result = []
+        for g in all_goals:
+            projects = dl_goals.get_projects_for_goal(g["id"])
+            total_tasks = 0
+            done_tasks = 0
+            for p in projects:
+                tasks = dl_goals.get_tasks_for_project(p["id"])
+                total_tasks += len(tasks)
+                done_tasks += sum(1 for t in tasks if t.get("status") == "done")
+                total_tasks -= sum(1 for t in tasks if t.get("status") in ("deferred", "cancelled"))
+            progress = done_tasks / total_tasks if total_tasks > 0 else 0.0
+            result.append({
+                "id": g["id"],
+                "name": g["name"],
+                "owners": g.get("owners", []),
+                "collaborators": g.get("collaborators", []),
+                "status": g.get("status", "not_started"),
+                "target_date": g.get("target_date", ""),
+                "progress": progress,
+                "project_count": len(projects),
+                "task_count": total_tasks,
+            })
+        return result
+    goals = await asyncio.to_thread(_fetch)
+    return {"goals": goals}
+
+
+@app.get("/api/apps/goals/tasks/{task_id}")
+async def task_detail(task_id: str):
+    """Get a task with its subtasks, notes, and parent context."""
+    def _fetch():
+        task = dl_goals.load_entity(task_id)
+        if not task:
+            return None
+        subtasks = dl_goals.get_subtasks(task_id)
+        notes = dl_goals.load_notes(task_id)
+        # Get parent project + goal names for breadcrumb
+        project_name = ""
+        goal_id = ""
+        goal_name = ""
+        if task.get("project_id"):
+            project = dl_goals.load_entity(task["project_id"])
+            if project:
+                project_name = project["name"]
+                goal_id = project.get("goal_id", "")
+                if goal_id:
+                    goal = dl_goals.load_entity(goal_id)
+                    if goal:
+                        goal_name = goal["name"]
+        def _assignee(t):
+            a = t.get("assigned_to", [])
+            return a[0] if a else ""
+        subtask_list = [{
+            "id": s["id"],
+            "name": s["name"],
+            "status": s.get("status", "not_started"),
+            "priority": s.get("priority", "medium"),
+            "assigned_to": _assignee(s),
+            "due_date": s.get("due_date", ""),
+        } for s in subtasks]
+        result = {
+            "id": task["id"],
+            "name": task["name"],
+            "project_id": task.get("project_id", ""),
+            "project_name": project_name,
+            "goal_id": goal_id,
+            "goal_name": goal_name,
+            "status": task.get("status", "not_started"),
+            "priority": task.get("priority", "medium"),
+            "assigned_to": _assignee(task),
+            "due_date": task.get("due_date", ""),
+            "depends_on": task.get("depends_on", []),
+            "notes": notes,
+            "definition_of_done": task.get("definition_of_done", ""),
+            "subtasks": subtask_list,
+            "history": task.get("history", [])[-10:],  # last 10 history entries
+            "created_by": task.get("created_by", ""),
+            "created_at": task.get("created_at", ""),
+        }
+        # Trello card info for linked tasks
+        trello_card_id = task.get("trello_card_id", "")
+        if trello_card_id and task.get("trello_linked"):
+            result["trello_card_id"] = trello_card_id
+            result["trello_board"] = ""
+            result["trello_labels"] = []
+            try:
+                if task.get("project_id"):
+                    proj = dl_goals.load_entity(task["project_id"])
+                    if proj:
+                        from trello_task_sync import get_project_trello_config
+                        config = get_project_trello_config(proj)
+                        if config:
+                            board_name = config["board"]
+                            result["trello_board"] = board_name
+                            from trello_client import get_board_config, _request
+                            account = get_board_config(board_name)["account"]
+                            card_data = _request("GET", f"/cards/{trello_card_id}", account, {"fields": "labels"})
+                            result["trello_labels"] = [
+                                {"id": lb["id"], "name": lb.get("name", ""), "color": lb.get("color", "")}
+                                for lb in card_data.get("labels", [])
+                            ]
+            except Exception:
+                pass  # non-fatal: show task even if Trello API fails
+        return result
+    result = await asyncio.to_thread(_fetch)
+    if not result:
+        return {"error": "Task not found"}, 404
+    return result
+
+
+@app.get("/api/apps/goals/trello/board-labels/{board_name}")
+async def trello_board_labels_api(board_name: str):
+    """Get all labels for a Trello board."""
+    def _fetch():
+        from trello_client import get_labels
+        return get_labels(board_name.strip().lower())
+    labels = await asyncio.to_thread(_fetch)
+    return {"labels": labels}
+
+
+class CardLabelRequest(BaseModel):
+    board_name: str
+    label_id: str = ""
+    label_name: str = ""
+    label_color: str = "sky"
+
+
+@app.post("/api/apps/goals/trello/card-labels/{card_id}/add")
+async def trello_card_add_label_api(card_id: str, req: CardLabelRequest):
+    """Add a label to a Trello card."""
+    def _do():
+        from trello_client import get_board_config, _request, ensure_label
+        account = get_board_config(req.board_name)["account"]
+        if req.label_id:
+            _request("POST", f"/cards/{card_id}/idLabels", account, {"value": req.label_id})
+            return {"ok": True}
+        elif req.label_name:
+            label = ensure_label(req.board_name, req.label_name.strip(), req.label_color.strip())
+            _request("POST", f"/cards/{card_id}/idLabels", account, {"value": label["id"]})
+            return {"ok": True, "label": label}
+        return {"error": "label_id or label_name required"}
+    return await asyncio.to_thread(_do)
+
+
+@app.post("/api/apps/goals/trello/card-labels/{card_id}/remove")
+async def trello_card_remove_label_api(card_id: str, req: CardLabelRequest):
+    """Remove a label from a Trello card."""
+    def _do():
+        from trello_client import get_board_config, _request
+        account = get_board_config(req.board_name)["account"]
+        if req.label_id:
+            _request("DELETE", f"/cards/{card_id}/idLabels/{req.label_id}", account)
+            return {"ok": True}
+        return {"error": "label_id required"}
+    return await asyncio.to_thread(_do)
+
+
+@app.get("/api/apps/goals/projects/{project_id}")
+async def project_detail(project_id: str):
+    """Get a project with all its tasks for the Goals app."""
+    def _fetch():
+        project = dl_goals.load_entity(project_id)
+        if not project:
+            return None
+        tasks = dl_goals.get_tasks_for_project(project_id)
+        notes = dl_goals.load_notes(project_id)
+        # Get parent goal name for breadcrumb
+        goal_name = ""
+        if project.get("goal_id"):
+            goal = dl_goals.load_entity(project["goal_id"])
+            if goal:
+                goal_name = goal["name"]
+        def _assignee_str(t):
+            a = t.get("assigned_to", [])
+            return a[0] if a else ""
+        task_list = [{
+            "id": t["id"],
+            "name": t["name"],
+            "status": t.get("status", "not_started"),
+            "priority": t.get("priority", "medium"),
+            "assigned_to": _assignee_str(t),
+            "due_date": t.get("due_date", ""),
+            "parent_task_id": t.get("parent_task_id"),
+            "stack_rank": t.get("stack_rank", 0),
+            "trello_linked": bool(t.get("trello_linked")),
+        } for t in tasks]
+        return {
+            "id": project["id"],
+            "name": project["name"],
+            "goal_id": project.get("goal_id", ""),
+            "goal_name": goal_name,
+            "owners": project.get("owners", []),
+            "status": project.get("status", "not_started"),
+            "priority": project.get("priority", "medium"),
+            "due_date": project.get("due_date", ""),
+            "notes": notes,
+            "definition_of_done": project.get("definition_of_done", ""),
+            "history": project.get("history", [])[-10:],
+            "created_by": project.get("created_by", ""),
+            "created_at": project.get("created_at", ""),
+            "pm_cadence_minutes": project.get("pm_cadence_minutes"),
+            "trello_board": (project.get("trello") or {}).get("board", ""),
+            "tasks": task_list,
+        }
+    result = await asyncio.to_thread(_fetch)
+    if not result:
+        return {"error": "Project not found"}, 404
+    return result
+
+
+@app.get("/api/apps/goals/search")
+async def search_goals_api(q: str = ""):
+    """Search across goals, projects, and tasks by keyword."""
+    def _fetch():
+        if not q.strip():
+            return []
+        query = q.strip().lower()
+        results = []
+        for prefix, etype in [("g-", "goal"), ("p-", "project"), ("t-", "task")]:
+            entities = dl_goals.list_entities(prefix)
+            for e in entities:
+                name = e.get("name", "").lower()
+                if query in name:
+                    results.append({
+                        "id": e["id"],
+                        "name": e["name"],
+                        "type": etype,
+                        "status": e.get("status", "not_started"),
+                    })
+        # Also search notes
+        for prefix, etype in [("g-", "goal"), ("p-", "project"), ("t-", "task")]:
+            entities = dl_goals.list_entities(prefix)
+            for e in entities:
+                notes = dl_goals.load_notes(e["id"])
+                if notes and query in notes.lower():
+                    if not any(r["id"] == e["id"] for r in results):
+                        results.append({
+                            "id": e["id"],
+                            "name": e["name"],
+                            "type": etype,
+                            "status": e.get("status", "not_started"),
+                            "match": "notes",
+                        })
+        return results[:30]  # cap results
+    results = await asyncio.to_thread(_fetch)
+    return {"results": results, "count": len(results)}
+
+
+@app.get("/api/apps/goals/{goal_id}")
+async def goal_detail(goal_id: str):
+    """Get a goal with its projects for the Goals app."""
+    def _fetch():
+        goal = dl_goals.load_entity(goal_id)
+        if not goal:
+            return None
+        projects = dl_goals.get_projects_for_goal(goal_id)
+        proj_list = []
+        for p in projects:
+            tasks = dl_goals.get_tasks_for_project(p["id"])
+            active_tasks = [t for t in tasks if t.get("status") not in ("deferred", "cancelled")]
+            done = sum(1 for t in active_tasks if t.get("status") == "done")
+            trello_cfg = p.get("trello") or {}
+            proj_list.append({
+                "id": p["id"],
+                "name": p["name"],
+                "owners": p.get("owners", []),
+                "status": p.get("status", "not_started"),
+                "priority": p.get("priority", "medium"),
+                "due_date": p.get("due_date", ""),
+                "task_summary": f"{done}/{len(active_tasks)} tasks done" if active_tasks else "No tasks",
+                "trello_board": trello_cfg.get("board", ""),
+            })
+        notes = dl_goals.load_notes(goal_id)
+        return {
+            "id": goal["id"],
+            "name": goal["name"],
+            "owners": goal.get("owners", []),
+            "collaborators": goal.get("collaborators", []),
+            "status": goal.get("status", "not_started"),
+            "target_date": goal.get("target_date", ""),
+            "notes": notes,
+            "definition_of_done": goal.get("definition_of_done", ""),
+            "history": goal.get("history", [])[-10:],
+            "created_by": goal.get("created_by", ""),
+            "created_at": goal.get("created_at", ""),
+            "projects": proj_list,
+        }
+    result = await asyncio.to_thread(_fetch)
+    if not result:
+        return {"error": "Goal not found"}, 404
+    return result
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Goals inline actions
+# ---------------------------------------------------------------------------
+
+class InlineUpdateRequest(BaseModel):
+    updated_by: str
+    status: str = ""
+    priority: str = ""
+    name: str = ""
+    assigned_to: str = ""  # comma-separated
+    owners: str = ""  # comma-separated
+    collaborators: str = ""  # comma-separated
+    due_date: str = ""
+    target_date: str = ""
+    definition_of_done: str | None = None
+    pm_cadence_minutes: int | None = None
+    note: str = ""
+
+
+@app.patch("/api/apps/goals/entities/{entity_id}")
+async def patch_entity(entity_id: str, req: InlineUpdateRequest):
+    """Inline field update for any goal/project/task from the Goals app UI."""
+    from apps.goals.store import update_item as _update_item
+    fields = {}
+    if req.priority:
+        fields["priority"] = req.priority
+    if req.name:
+        fields["name"] = req.name
+    if req.assigned_to:
+        fields["assigned_to"] = req.assigned_to
+    if req.owners:
+        fields["owners"] = req.owners
+    if req.collaborators:
+        fields["collaborators"] = req.collaborators
+    if req.due_date:
+        fields["due_date"] = req.due_date
+    if req.target_date:
+        fields["target_date"] = req.target_date
+    if req.definition_of_done is not None:
+        fields["definition_of_done"] = req.definition_of_done
+    if req.pm_cadence_minutes is not None:
+        fields["pm_cadence_minutes"] = req.pm_cadence_minutes if req.pm_cadence_minutes > 0 else None
+    logger.info("PATCH_ENTITY: id=%s fields=%s status=%r", entity_id, fields, req.status)
+    def _do():
+        return _update_item(
+            item_id=entity_id,
+            updated_by=req.updated_by,
+            status=req.status,
+            history_note=req.note,
+            fields=fields if fields else None,
+        )
+    result = await asyncio.to_thread(_do)
+    logger.info("PATCH_ENTITY result: %s", result)
+    if result.startswith("Error"):
+        return {"error": result}
+    # Auto-manage thinking domain when ownership or status changes on any entity
+    if req.owners or req.assigned_to or req.status:
+        try:
+            from apps.goals.lifecycle import sync_entity_domain
+            lifecycle = await asyncio.to_thread(sync_entity_domain, entity_id)
+            if lifecycle:
+                logger.info("PATCH_ENTITY: goal domain lifecycle → %s", lifecycle)
+        except Exception as e:
+            logger.error("PATCH_ENTITY: goal domain lifecycle error: %s", e)
+    return {"ok": True, "message": result}
+
+
+class CreateGoalRequest(BaseModel):
+    name: str
+    created_by: str
+    owners: str = ""
+    target_date: str = ""
+    initial_notes: str = ""
+
+
+@app.post("/api/apps/goals")
+async def create_goal_api(req: CreateGoalRequest):
+    """Create a new goal from the Goals app UI."""
+    from apps.goals.store import create_goal as _create_goal
+    owner_list = (
+        [o.strip().lower() for o in req.owners.split(",") if o.strip()]
+        if req.owners else None
+    )
+    def _do():
+        return _create_goal(
+            name=req.name.strip(),
+            created_by=req.created_by.strip().lower(),
+            description=req.initial_notes.strip() if req.initial_notes else "",
+            owners=owner_list,
+            target_date=req.target_date.strip() if req.target_date else "",
+        )
+    result = await asyncio.to_thread(_do)
+    if isinstance(result, str):
+        return {"error": result}
+    # Auto-create thinking domain for every new active goal
+    try:
+        from apps.goals.lifecycle import sync_goal_domain
+        lifecycle = await asyncio.to_thread(sync_goal_domain, result["id"])
+        if lifecycle:
+            logger.info("CREATE_GOAL: goal domain lifecycle → %s", lifecycle)
+    except Exception as e:
+        logger.error("CREATE_GOAL: goal domain lifecycle error: %s", e)
+    return {"ok": True, "id": result["id"], "name": result["name"]}
+
+
+class CreateProjectRequest(BaseModel):
+    goal_id: str
+    name: str
+    created_by: str
+    owners: str = ""
+    priority: str = "medium"
+    due_date: str = ""
+
+
+@app.post("/api/apps/goals/projects")
+async def create_project_api(req: CreateProjectRequest):
+    """Create a new project from the Goals app UI."""
+    from apps.goals.store import create_project as _create_project
+    owner_list = (
+        [o.strip().lower() for o in req.owners.split(",") if o.strip()]
+        if req.owners else None
+    )
+    def _do():
+        return _create_project(
+            goal_id=req.goal_id.strip(),
+            name=req.name.strip(),
+            created_by=req.created_by.strip().lower(),
+            owners=owner_list,
+            due_date=req.due_date.strip() if req.due_date else "",
+            priority=req.priority.strip().lower() if req.priority else "medium",
+        )
+    result = await asyncio.to_thread(_do)
+    if isinstance(result, str):
+        return {"error": result}
+    return {"ok": True, "id": result["id"], "name": result["name"]}
+
+
+class CreateTaskRequest(BaseModel):
+    project_id: str
+    name: str
+    created_by: str
+    assigned_to: str = ""
+    priority: str = "medium"
+    due_date: str = ""
+    parent_task_id: str = ""
+
+
+@app.post("/api/apps/goals/tasks")
+async def create_task_api(req: CreateTaskRequest):
+    """Create a new task from the Goals app UI."""
+    from apps.goals.store import create_task as _create_task
+    assignee_list = (
+        [a.strip().lower() for a in req.assigned_to.split(",") if a.strip()]
+        if req.assigned_to else None
+    )
+    def _do():
+        return _create_task(
+            project_id=req.project_id.strip() if req.project_id else "",
+            name=req.name.strip(),
+            created_by=req.created_by.strip().lower(),
+            assigned_to=assignee_list,
+            due_date=req.due_date.strip() if req.due_date else "",
+            priority=req.priority.strip().lower() if req.priority else "medium",
+            parent_task_id=req.parent_task_id.strip() if req.parent_task_id else None,
+        )
+    result = await asyncio.to_thread(_do)
+    if isinstance(result, str):
+        return {"error": result}
+    return {"ok": True, "id": result["id"], "name": result["name"]}
+
+
+class ReorderTaskRequest(BaseModel):
+    task_id: str
+    direction: str  # "up" or "down"
+    updated_by: str = "web"
+
+
+@app.post("/api/apps/goals/tasks/reorder")
+async def reorder_task_api(req: ReorderTaskRequest):
+    """Move a task up or down within its status group in the project."""
+    def _do():
+        task = dl_goals.load_entity(req.task_id)
+        if not task:
+            return {"error": "Task not found"}
+        project_id = task.get("project_id")
+        if not project_id:
+            return {"error": "Task has no project"}
+        all_tasks = dl_goals.get_tasks_for_project(project_id)
+        # Group by status, preserving stack_rank order
+        same_status = [t for t in all_tasks if t.get("status") == task.get("status")]
+        idx = next((i for i, t in enumerate(same_status) if t["id"] == req.task_id), -1)
+        if idx < 0:
+            return {"error": "Task not found in status group"}
+        if req.direction == "up" and idx == 0:
+            return {"ok": True, "message": "Already at top"}
+        if req.direction == "down" and idx >= len(same_status) - 1:
+            return {"ok": True, "message": "Already at bottom"}
+        # Swap stack_ranks with neighbor
+        swap_idx = idx - 1 if req.direction == "up" else idx + 1
+        a, b = same_status[idx], same_status[swap_idx]
+        a_rank, b_rank = a.get("stack_rank", 0), b.get("stack_rank", 0)
+        # If they happen to have the same rank, force a difference
+        if a_rank == b_rank:
+            b_rank = a_rank + (1 if req.direction == "up" else -1)
+        a["stack_rank"] = b_rank
+        b["stack_rank"] = a_rank
+        dl_goals.save_entity(a)
+        dl_goals.save_entity(b)
+        return {"ok": True}
+    return await asyncio.to_thread(_do)
+
+
+class SaveNotesRequest(BaseModel):
+    content: str
+    updated_by: str = ""
+
+
+@app.put("/api/apps/goals/entities/{entity_id}/notes")
+async def save_entity_notes_inline(entity_id: str, req: SaveNotesRequest):
+    """Save notes for any entity from the Goals app inline editor."""
+    from apps.goals.store import update_notes as _update_notes
+    def _do():
+        return _update_notes(
+            item_id=entity_id,
+            content=req.content,
+            updated_by=req.updated_by,
+        )
+    result = await asyncio.to_thread(_do)
+    if result.startswith("Error"):
+        return {"error": result}
+    return {"ok": True}
+
+
+@app.get("/api/users")
+async def list_users(include_bots: bool = False):
+    """Get users for dropdowns. Excludes bots by default."""
+    def _fetch():
+        from data_layer.users import get_human_users
+        users = get_all_users() if include_bots else get_human_users()
+        return [{"name": u["name"], "display_name": u.get("display_name", u["name"]), "role": u.get("role", "member"), "sort_order": u.get("sort_order", 99)} for u in users]
+    return await asyncio.to_thread(_fetch)
+
+
+@app.delete("/api/apps/goals/entities/{entity_id}")
+async def delete_entity_api(entity_id: str, updated_by: str = ""):
+    """Delete a goal, project, or task from the Goals app UI."""
+    from apps.goals.store import delete_item as _delete_item
+    def _do():
+        return _delete_item(entity_id, updated_by or "web")
+    result = await asyncio.to_thread(_do)
+    if isinstance(result, str) and result.startswith("Error"):
+        return {"error": result}
+    return {"ok": True, "message": result}
+
+
+@app.get("/api/apps/goals/my-tasks/{user_id}")
+async def my_tasks_api(user_id: str, status_filter: str = ""):
+    """Get all tasks assigned to a user across all projects."""
+    def _fetch():
+        all_tasks = dl_goals.list_entities("t-")
+        user_lower = user_id.lower().strip()
+        matched = []
+        for t in all_tasks:
+            assignees = [a.lower() for a in t.get("assigned_to", [])]
+            if user_lower in assignees:
+                if status_filter and status_filter != "all" and t.get("status") != status_filter:
+                    continue
+                if not status_filter and t.get("status") in ("done", "cancelled"):
+                    continue
+                # Get parent names
+                project = dl_goals.load_entity(t.get("project_id", ""))
+                project_name = project["name"] if project else ""
+                goal_id = project.get("goal_id", "") if project else ""
+                goal = dl_goals.load_entity(goal_id) if goal_id else None
+                goal_name = goal["name"] if goal else ""
+                # Skip tasks whose parent project or goal is inactive
+                _inactive = ("done", "blocked", "deferred", "cancelled")
+                if project and project.get("status") in _inactive:
+                    continue
+                if goal and goal.get("status") in _inactive:
+                    continue
+                matched.append({
+                    "id": t["id"],
+                    "name": t["name"],
+                    "status": t.get("status", "not_started"),
+                    "priority": t.get("priority", "medium"),
+                    "due_date": t.get("due_date", ""),
+                    "assigned_to": (t.get("assigned_to", []) or [""])[0],
+                    "project_id": t.get("project_id", ""),
+                    "project_name": project_name,
+                    "goal_name": goal_name,
+                    "trello_linked": bool(t.get("trello_linked")),
+                })
+        # Sort: blocked first, then in_progress, then not_started, then deferred
+        order = {"blocked": 0, "in_progress": 1, "not_started": 2, "deferred": 3, "done": 4, "cancelled": 5}
+        matched.sort(key=lambda x: (order.get(x["status"], 5), x.get("priority") != "high"))
+        return matched
+    tasks = await asyncio.to_thread(_fetch)
+    return {"tasks": tasks, "count": len(tasks)}
+
+
+# NOTE: search_goals_api moved above /api/apps/goals/{goal_id} to avoid route conflict
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Document Editor
+# ---------------------------------------------------------------------------
+
+@app.get("/api/apps/documents/entity-notes/{entity_id}")
+async def get_entity_notes(entity_id: str):
+    """Get the notes content for a goal/project/task."""
+    def _fetch():
+        entity = dl_goals.load_entity(entity_id)
+        if not entity:
+            return None
+        notes = dl_goals.load_notes(entity_id)
+        return {"content": notes, "title": entity.get("name", entity_id)}
+    result = await asyncio.to_thread(_fetch)
+    if not result:
+        return {"error": "Entity not found"}, 404
+    return result
+
+
+class UpdateNotesRequest(BaseModel):
+    content: str
+    updated_by: str = ""
+
+
+@app.put("/api/apps/documents/entity-notes/{entity_id}")
+async def put_entity_notes(entity_id: str, request: UpdateNotesRequest):
+    """Save notes content for a goal/project/task."""
+    def _save():
+        entity = dl_goals.load_entity(entity_id)
+        if not entity:
+            return False
+        dl_goals.save_notes(entity_id, request.content)
+        return True
+    ok = await asyncio.to_thread(_save)
+    if not ok:
+        return {"error": "Entity not found"}, 404
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Documents (standalone d-* docs)
+# ---------------------------------------------------------------------------
+
+@app.get("/api/apps/documents")
+async def api_list_documents(tag: str = "", created_by: str = "", related_entity_id: str = ""):
+    """List all documents (metadata only, no content)."""
+    def _fetch():
+        return doc_store.list_docs(
+            tag=tag.strip() if tag else "",
+            created_by=created_by.strip() if created_by else "",
+            related_entity_id=related_entity_id.strip() if related_entity_id else "",
+        )
+    docs = await asyncio.to_thread(_fetch)
+    return {"documents": docs, "count": len(docs)}
+
+
+@app.get("/api/apps/documents/search")
+async def api_search_documents(q: str = ""):
+    """Search documents by keyword."""
+    if not q.strip():
+        return {"results": [], "count": 0}
+    def _fetch():
+        return doc_store.search_docs(q.strip())
+    results = await asyncio.to_thread(_fetch)
+    return {"results": results, "count": len(results)}
+
+
+@app.get("/api/apps/documents/{doc_id}")
+async def api_get_document(doc_id: str):
+    """Get a single document with full content."""
+    def _fetch():
+        return doc_store.get_doc(doc_id)
+    doc = await asyncio.to_thread(_fetch)
+    if not doc:
+        return {"error": "Document not found"}, 404
+    # Also fetch linked entities
+    def _links():
+        return link_registry.get_linked_ids(doc_id)
+    linked = await asyncio.to_thread(_links)
+    doc["linked_entities"] = linked
+    return doc
+
+
+class CreateDocRequest(BaseModel):
+    title: str
+    created_by: str
+    content: str = ""
+    tags: str = ""
+    related_entity_id: str = ""
+
+
+@app.post("/api/apps/documents")
+async def api_create_document(request: CreateDocRequest):
+    """Create a new standalone document."""
+    def _create():
+        tag_list = [t.strip() for t in request.tags.split(",") if t.strip()] if request.tags else []
+        return doc_store.create_doc(
+            title=request.title.strip(),
+            created_by=request.created_by.strip(),
+            content=request.content.strip() if request.content else "",
+            tags=tag_list,
+            related_entity_id=request.related_entity_id.strip() if request.related_entity_id else "",
+        )
+    doc = await asyncio.to_thread(_create)
+    return doc
+
+
+class UpdateDocRequest(BaseModel):
+    content: str
+    updated_by: str
+    title: str = ""
+    tags: str | None = None
+
+
+@app.put("/api/apps/documents/{doc_id}")
+async def api_update_document(doc_id: str, request: UpdateDocRequest):
+    """Update a document's content (and optionally title/tags)."""
+    def _update():
+        tag_list = [t.strip() for t in request.tags.split(",") if t.strip()] if request.tags is not None else None
+        return doc_store.update_doc(
+            doc_id=doc_id,
+            content=request.content,
+            updated_by=request.updated_by.strip(),
+            title=request.title.strip() if request.title else "",
+            tags=tag_list,
+        )
+    result = await asyncio.to_thread(_update)
+    if isinstance(result, str):
+        return {"error": result}, 400
+    return result
+
+
+class PatchDocMetaRequest(BaseModel):
+    updated_by: str
+    title: str = ""
+    tags: str | None = None
+    related_entity_id: str | None = None
+
+
+@app.patch("/api/apps/documents/{doc_id}")
+async def api_patch_document_meta(doc_id: str, request: PatchDocMetaRequest):
+    """Update document metadata (title, tags, linked entity) without changing content."""
+    def _patch():
+        tag_list = [t.strip() for t in request.tags.split(",") if t.strip()] if request.tags is not None else None
+        entity_ref = None
+        if request.related_entity_id is not None:
+            entity_ref = "" if request.related_entity_id.strip().lower() == "none" else request.related_entity_id.strip()
+        return doc_store.update_doc_meta(
+            doc_id=doc_id,
+            updated_by=request.updated_by.strip(),
+            title=request.title.strip() if request.title else "",
+            tags=tag_list,
+            related_entity_id=entity_ref,
+        )
+    result = await asyncio.to_thread(_patch)
+    if isinstance(result, str):
+        return {"error": result}, 400
+    return result
+
+
+@app.delete("/api/apps/documents/{doc_id}")
+async def api_delete_document(doc_id: str):
+    """Delete a document permanently."""
+    def _delete():
+        ok = doc_store.delete_doc(doc_id)
+        if ok:
+            link_registry.delete_links_for_entity(doc_id)
+        return ok
+    ok = await asyncio.to_thread(_delete)
+    if not ok:
+        return {"error": "Document not found"}, 404
+    return {"ok": True}
+
+
+@app.get("/api/artifacts/for-entity/{entity_id}")
+async def api_artifacts_for_entity(entity_id: str):
+    """Get artifacts linked to a goal/project/task (metadata only, no content)."""
+    def _fetch():
+        from artifact_store import list_artifacts
+        arts = list_artifacts(related_entity_id=entity_id)
+        # Strip content from response to keep it lightweight
+        for a in arts:
+            a.pop("content", None)
+        return arts
+    arts = await asyncio.to_thread(_fetch)
+    return {"artifacts": arts, "count": len(arts)}
+
+
+@app.get("/api/artifacts/{artifact_id}")
+async def api_get_artifact(artifact_id: str):
+    """Get a single artifact with content."""
+    def _fetch():
+        from artifact_store import get_artifact_meta, get_artifact_content
+        meta = get_artifact_meta(artifact_id)
+        if not meta:
+            return None
+        content = get_artifact_content(artifact_id)
+        if content:
+            meta["content"] = content
+        return meta
+    art = await asyncio.to_thread(_fetch)
+    if not art:
+        raise HTTPException(status_code=404, detail="Artifact not found")
+    return art
+
+
+@app.get("/api/apps/documents/for-entity/{entity_id}")
+async def api_docs_for_entity(entity_id: str):
+    """Get all documents linked to a goal/project/task."""
+    def _fetch():
+        linked_ids = link_registry.get_linked_ids(entity_id)
+        doc_ids = [lid for lid in linked_ids if lid.startswith("d-")]
+        docs = []
+        for did in doc_ids:
+            meta = doc_store.get_doc_meta(did)
+            if meta:
+                docs.append(meta)
+        docs.sort(key=lambda d: d.get("updated_at", ""), reverse=True)
+        return docs
+    docs = await asyncio.to_thread(_fetch)
+    return {"documents": docs, "count": len(docs)}
+
+
+class LinkDocRequest(BaseModel):
+    entity_id: str
+    created_by: str = ""
+
+
+@app.post("/api/apps/documents/{doc_id}/link")
+async def api_link_doc_to_entity(doc_id: str, request: LinkDocRequest):
+    """Link a document to a goal/project/task."""
+    def _link():
+        return link_registry.create_link(
+            source_id=request.entity_id.strip(),
+            target_id=doc_id,
+            relation="has_doc",
+            created_by=request.created_by.strip() if request.created_by else "",
+        )
+    result = await asyncio.to_thread(_link)
+    if isinstance(result, str):
+        return {"error": result}, 400
+    return result
+
+
+class UnlinkDocRequest(BaseModel):
+    entity_id: str
+
+
+@app.post("/api/apps/documents/{doc_id}/unlink")
+async def api_unlink_doc_from_entity(doc_id: str, request: UnlinkDocRequest):
+    """Remove the link between a document and an entity."""
+    def _unlink():
+        links = link_registry.get_links(doc_id)
+        for link in links:
+            pair = {link["source_id"], link["target_id"]}
+            if pair == {doc_id, request.entity_id.strip()}:
+                link_registry.delete_link(link["id"])
+                return True
+        return False
+    ok = await asyncio.to_thread(_unlink)
+    if not ok:
+        return {"error": "Link not found"}, 404
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Recipes
+# Recipes routes are now provided by apps/recipes/routes.py (loaded by app_platform)
+# ---------------------------------------------------------------------------
+
+from data_layer import images as _dl_images
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Item Locator
+# Locator routes are now provided by apps/home/routes.py (loaded by app_platform)
+# ---------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Auto Maintenance
+# Auto routes are now provided by apps/auto/routes.py (loaded by app_platform)
+# ---------------------------------------------------------------------------
+
+
+# Homeopathy routes are now provided by apps/homeopathy/routes.py (loaded by app_platform)
+
+
+# Timeline routes are now provided by apps/timeline/routes.py (loaded by app_platform)
+
+
+# Image upload + management
+import uuid as _uuid
+
+UPLOAD_DIR = Path("uploads/images")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@app.get("/api/apps/images")
+async def api_list_images():
+    """List all image records ordered by newest first."""
+    return await asyncio.to_thread(_dl_images.get_all_images)
+
+
+@app.post("/api/apps/images/upload")
+async def api_upload_image(request: Request):
+    """Upload an image file. Accepts multipart form data.
+
+    Optional linking params:
+      recipe_id   — link to a recipe (legacy form field)
+      entity_type — any entity_type registered via image_link_registry
+                    (e.g. 'home_issue', 'auto_issue', 'meal', 'recipe').
+                    Apps register their own handlers from handlers.py on load.
+      entity_id   — the entity ID to link to
+    """
+    from fastapi.responses import JSONResponse
+    from image_link_registry import link_image_to_entity, get_registered_entity_types
+
+    form = await request.form()
+    file = form.get("file")
+    uploaded_by = form.get("uploaded_by", "")
+    title = form.get("title", "")
+    recipe_id = form.get("recipe_id", "")
+    entity_type = form.get("entity_type", "")
+    entity_id = form.get("entity_id", "")
+
+    if not file:
+        return JSONResponse({"error": "No file uploaded"}, status_code=400)
+
+    # Legacy recipe_id form field maps to entity_type="recipe"
+    if recipe_id and not entity_type:
+        entity_type = "recipe"
+        entity_id = recipe_id
+
+    if entity_type and entity_id and entity_type not in get_registered_entity_types():
+        return JSONResponse(
+            {"error": f"No image link handler registered for entity_type '{entity_type}'. "
+                      f"Registered: {get_registered_entity_types()}"},
+            status_code=400,
+        )
+
+    contents = await file.read()
+    image_id = f"i-{_uuid.uuid4().hex[:8]}"
+    ext = Path(file.filename).suffix or ".jpg"
+    storage_name = f"{image_id}{ext}"
+    storage_path = UPLOAD_DIR / storage_name
+
+    with open(storage_path, "wb") as f:
+        f.write(contents)
+
+    image = {
+        "id": image_id,
+        "title": title or "",
+        "filename": file.filename or "",
+        "mime_type": file.content_type or "image/jpeg",
+        "size_bytes": len(contents),
+        "storage_path": f"uploads/images/{storage_name}",
+        "uploaded_by": uploaded_by or "",
+    }
+    await asyncio.to_thread(_dl_images.save_image, image)
+
+    if entity_type and entity_id:
+        await link_image_to_entity(entity_type, entity_id, image_id)
+
+    return _dl_images.get_image(image_id)
+
+
+@app.get("/api/apps/images/{image_id}")
+async def api_get_image_meta(image_id: str):
+    img = await asyncio.to_thread(_dl_images.get_image, image_id)
+    if not img:
+        return {"error": "Image not found"}, 404
+    return img
+
+
+@app.get("/api/apps/images/{image_id}/file")
+async def api_serve_image_by_id(image_id: str):
+    """Serve an uploaded image by its image ID."""
+    img = await asyncio.to_thread(_dl_images.get_image, image_id)
+    if not img or not img.get("storage_path"):
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"error": "Image not found"}, status_code=404)
+    path = Path(img["storage_path"])
+    if not path.exists():
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"error": "File not found"}, status_code=404)
+    return FileResponse(path)
+
+
+@app.get("/uploads/images/{filename}")
+async def api_serve_image(filename: str):
+    """Serve uploaded image files."""
+    path = UPLOAD_DIR / filename
+    if not path.exists():
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"error": "File not found"}, status_code=404)
+    return FileResponse(path)
+
+
+class UpdateImageTitleRequest(BaseModel):
+    title: str
+
+
+@app.put("/api/apps/images/{image_id}")
+async def api_update_image_title(image_id: str, request: UpdateImageTitleRequest):
+    ok = await asyncio.to_thread(_dl_images.update_image_title, image_id, request.title.strip())
+    if not ok:
+        return {"error": "Image not found"}, 404
+    return {"ok": True}
+
+
+@app.delete("/api/apps/images/{image_id}")
+async def api_delete_image(image_id: str):
+    # Get storage path to delete file
+    img = await asyncio.to_thread(_dl_images.get_image, image_id)
+    if img and img.get("storage_path"):
+        file_path = Path(img["storage_path"])
+        if file_path.exists():
+            file_path.unlink()
+    ok = await asyncio.to_thread(_dl_images.delete_image, image_id)
+    if not ok:
+        return {"error": "Image not found"}, 404
+    return {"ok": True}
+
+
+# Recipe image link/unlink routes moved to apps/recipes/routes.py
+
+
+# ---------------------------------------------------------------------------
+# Investment Analyst routes moved to apps/investment/routes.py
+# (auto-mounted by app platform loader at /api/apps/investment/)
+# ---------------------------------------------------------------------------
+
+
+# ── Job Queue API ──
+
+@app.get("/api/jobs")
+async def api_list_jobs(status: str = "", job_type: str = "", limit: int = 50,
+                        user_id: str = ""):
+    """List jobs with optional filters."""
+    from data_layer.job_queue import list_jobs, list_running
+    if status == "running":
+        return await asyncio.to_thread(list_running)
+    return await asyncio.to_thread(list_jobs, status, job_type, limit)
+
+
+@app.get("/api/jobs/{job_id}")
+async def api_get_job(job_id: str, user_id: str = ""):
+    """Get a specific job by ID."""
+    from data_layer.job_queue import get_job
+    job = await asyncio.to_thread(get_job, job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
+@app.post("/api/jobs/{job_id}/cancel")
+async def api_cancel_job(job_id: str, user_id: str = ""):
+    """Cancel a queued or running job."""
+    from data_layer.job_queue import cancel_job
+    result = await asyncio.to_thread(cancel_job, job_id, user_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Job not found or already finished")
+    return result
+
+
+@app.get("/api/jobs/{job_id}/logs")
+async def api_get_job_logs(job_id: str, after: int = 0, limit: int = 500,
+                           user_id: str = ""):
+    """Get log lines for a specific job. Supports polling via after=<last_id>."""
+    from data_layer.job_queue import get_logs
+    return await asyncio.to_thread(get_logs, job_id, limit, after)
+
+
+@app.post("/api/jobs/{job_id}/rerun")
+async def api_rerun_job(job_id: str, user_id: str = ""):
+    """Re-run a completed/failed job by creating a new child job."""
+    from data_layer.job_queue import get_job
+    from job_dispatcher import submit_job
+    original = await asyncio.to_thread(get_job, job_id)
+    if not original:
+        raise HTTPException(status_code=404, detail="Job not found")
+    new_job = submit_job(
+        job_type=original["job_type"],
+        name=original["name"],
+        config=original.get("config"),
+        created_by=user_id or original.get("created_by", ""),
+        notify_user=original.get("notify_user", ""),
+        description=original.get("description", ""),
+    )
+    return new_job
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Tools Browser
+# ---------------------------------------------------------------------------
+
+@app.get("/api/apps/tools/categories")
+async def api_tool_categories():
+    """List all tool categories with their tools, descriptions, and guide info."""
+    import json as _json
+    routes_path = Path(__file__).resolve().parent / "tool_routes.json"
+    def _load():
+        with open(routes_path, "r", encoding="utf-8") as f:
+            data = _json.load(f)
+        categories = []
+        for key, cat in data.items():
+            categories.append({
+                "id": key,
+                "description": cat.get("description", ""),
+                "tools": cat.get("tools", []),
+                "guide": cat.get("guide", None),
+                "keywords": cat.get("keywords", []),
+            })
+        return categories
+    cats = await asyncio.to_thread(_load)
+    return {"categories": cats, "count": len(cats)}
+
+
+@app.get("/api/apps/tools/guide/{guide_name}")
+async def api_tool_guide(guide_name: str):
+    """Read a tool guide markdown file by name."""
+    guides_dir = Path(__file__).resolve().parent / "prompts" / "guides"
+    # Sanitize: only allow simple filenames
+    if "/" in guide_name or "\\" in guide_name or ".." in guide_name:
+        raise HTTPException(status_code=400, detail="Invalid guide name")
+    guide_path = guides_dir / guide_name
+    if not guide_path.is_file():
+        raise HTTPException(status_code=404, detail=f"Guide '{guide_name}' not found")
+    def _read():
+        return guide_path.read_text(encoding="utf-8")
+    content = await asyncio.to_thread(_read)
+    return {"name": guide_name, "content": content}
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Reminders
+# ---------------------------------------------------------------------------
+
+@app.get("/api/apps/reminders")
+async def api_list_reminders(user_id: str = "", include_inactive: str = "false"):
+    """List reminders for a user, or all reminders if user_id is empty."""
+    def _fetch():
+        from reminder_store import list_reminders as _list, _load_reminders
+        inc = include_inactive.strip().lower() == "true"
+        if user_id and user_id.strip():
+            return _list(user_id.strip(), include_inactive=inc)
+        else:
+            all_r = _load_reminders()
+            if not inc:
+                all_r = [r for r in all_r if r.get("active", True)]
+            return all_r
+    reminders = await asyncio.to_thread(_fetch)
+    return {"reminders": reminders, "count": len(reminders)}
+
+
+@app.post("/api/apps/reminders/{reminder_id}/cancel")
+async def api_cancel_reminder(reminder_id: str):
+    """Cancel (deactivate) a reminder."""
+    from reminder_store import cancel_reminder as _cancel
+    result = await asyncio.to_thread(_cancel, reminder_id)
+    return {"ok": "not found" not in result.lower(), "message": result}
+
+
+@app.patch("/api/apps/reminders/{reminder_id}")
+async def api_modify_reminder(reminder_id: str, request: Request):
+    """Modify a reminder (message, remind_at, recurrence, time_slot)."""
+    from reminder_store import modify_reminder as _modify
+    body = await request.json()
+    def _do():
+        return _modify(
+            reminder_id=reminder_id,
+            message=body.get("message"),
+            remind_at=body.get("remind_at"),
+            recurrence=body.get("recurrence"),
+            clear_recurrence=body.get("clear_recurrence", False),
+            time_slot=body.get("time_slot"),
+            clear_time_slot=body.get("clear_time_slot", False),
+        )
+    result = await asyncio.to_thread(_do)
+    return {"ok": "not found" not in result.lower(), "message": result}
+
+
+@app.post("/api/apps/reminders/{reminder_id}/reorder")
+async def api_reorder_reminder(reminder_id: str, request: Request):
+    """Move a reminder up or down in sort order."""
+    import data_layer.reminders as _dl_rem
+    body = await request.json()
+    direction = body.get("direction", "down")
+    user_id = body.get("user_id", "")
+    active_only = body.get("active_only", True)
+    ok = await asyncio.to_thread(
+        _dl_rem.reorder_reminder, reminder_id, direction,
+        user_id=user_id, active_only=active_only,
+    )
+    return {"ok": ok}
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Prioritize
+# ---------------------------------------------------------------------------
+
+import data_layer.prioritize as _dl_prioritize
+
+
+@app.get("/api/apps/prioritize/focus")
+async def api_get_focus(user_id: str = ""):
+    """Get focus slots for a user. Also runs stale cleanup."""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+    await asyncio.to_thread(_dl_prioritize.cleanup_stale_focus, user_id)
+    slots = await asyncio.to_thread(_dl_prioritize.get_focus_slots, user_id)
+    # Enrich each slot with the source item details
+    for slot in slots:
+        item = await asyncio.to_thread(_resolve_source_item, slot["source_type"], slot["source_id"])
+        slot["item"] = item
+    nag_enabled = await asyncio.to_thread(_dl_prioritize.get_focus_nag_enabled, user_id)
+    return {"slots": slots, "focus_nag_enabled": nag_enabled}
+
+
+@app.get("/api/apps/prioritize/family")
+async def api_get_family_focus():
+    """Get focus slots for all users."""
+    import data_layer.users as _dl_users
+    users = await asyncio.to_thread(_dl_users.get_all_users)
+    result = []
+    for u in users:
+        uid = u["name"]
+        await asyncio.to_thread(_dl_prioritize.cleanup_stale_focus, uid)
+        slots = await asyncio.to_thread(_dl_prioritize.get_focus_slots, uid)
+        for slot in slots:
+            item = await asyncio.to_thread(_resolve_source_item, slot["source_type"], slot["source_id"])
+            slot["item"] = item
+        nag_on = await asyncio.to_thread(_dl_prioritize.get_focus_nag_enabled, uid)
+        result.append({
+            "user_id": uid,
+            "display_name": u.get("display_name") or uid,
+            "slots": slots,
+            "focus_nag_enabled": nag_on,
+        })
+    return {"family": result}
+
+
+@app.get("/api/apps/prioritize/backlog")
+async def api_get_backlog(user_id: str = ""):
+    """Get all actionable items for a user, grouped by source app."""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+    backlog = await asyncio.to_thread(_dl_prioritize.get_backlog, user_id)
+    # Mark items that are already in focus
+    focused_ids = {s["source_id"] for s in await asyncio.to_thread(_dl_prioritize.get_focus_slots, user_id)}
+    # Mark flat groups
+    for key in ("reminders", "nags", "auto_issues", "schedules", "todo"):
+        for item in backlog.get(key, []):
+            item["in_focus"] = item["source_id"] in focused_ids
+    # Mark nested goals tree
+    for goal in backlog.get("goals_tree", []):
+        goal["in_focus"] = goal["source_id"] in focused_ids
+        for proj in goal.get("projects", []):
+            proj["in_focus"] = proj["source_id"] in focused_ids
+            for task in proj.get("tasks", []):
+                task["in_focus"] = task["source_id"] in focused_ids
+    return backlog
+
+
+class PromoteFocusRequest(BaseModel):
+    user_id: str
+    source_type: str
+    source_id: str
+    slot_number: int | None = None
+
+
+@app.post("/api/apps/prioritize/focus")
+async def api_promote_focus(request: PromoteFocusRequest):
+    """Promote an item to a focus slot."""
+    if request.slot_number:
+        result = await asyncio.to_thread(
+            _dl_prioritize.set_focus,
+            request.user_id, request.slot_number, request.source_type, request.source_id,
+        )
+    else:
+        result = await asyncio.to_thread(
+            _dl_prioritize.promote_to_focus,
+            request.user_id, request.source_type, request.source_id,
+        )
+    if not result:
+        raise HTTPException(status_code=409, detail="All focus slots are full")
+    return result
+
+
+@app.delete("/api/apps/prioritize/focus/{slot_number}")
+async def api_clear_focus(slot_number: int, user_id: str = ""):
+    """Remove an item from a focus slot."""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+    ok = await asyncio.to_thread(_dl_prioritize.clear_focus, user_id, slot_number)
+    return {"ok": ok}
+
+
+class ReorderFocusRequest(BaseModel):
+    user_id: str
+    ordered_source_ids: list[str]
+
+
+@app.post("/api/apps/prioritize/focus/reorder")
+async def api_reorder_focus(request: ReorderFocusRequest):
+    """Reorder focus slots."""
+    ok = await asyncio.to_thread(
+        _dl_prioritize.reorder_focus, request.user_id, request.ordered_source_ids,
+    )
+    return {"ok": ok}
+
+
+@app.post("/api/apps/prioritize/nag-toggle")
+async def api_toggle_focus_nag(request: Request):
+    """Toggle focus nag for a user."""
+    body = await request.json()
+    user_id = body.get("user_id", "")
+    enabled = body.get("enabled", True)
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+    ok = await asyncio.to_thread(_dl_prioritize.set_focus_nag_enabled, user_id, enabled)
+    return {"ok": ok, "focus_nag_enabled": enabled}
+
+
+def _resolve_source_item(source_type: str, source_id: str) -> dict:
+    """Load a source item's display details for focus slot enrichment."""
+    if source_type == "goal":
+        from apps.goals.data import load_entity
+        e = load_entity(source_id)
+        return {"title": e["name"], "status": e["status"], "detail": e.get("target_date", "")} if e else {}
+    elif source_type == "project":
+        from apps.goals.data import load_entity
+        e = load_entity(source_id)
+        return {"title": e["name"], "status": e["status"], "priority": e.get("priority", ""),
+                "detail": ""} if e else {}
+    elif source_type == "task":
+        from apps.goals.data import load_entity
+        e = load_entity(source_id)
+        if not e:
+            return {}
+        # Get project name
+        proj_name = ""
+        if e.get("project_id"):
+            p = load_entity(e["project_id"])
+            proj_name = p["name"] if p else ""
+        return {"title": e["name"], "status": e["status"], "priority": e.get("priority", ""),
+                "detail": proj_name, "due_date": e.get("due_date", "")}
+    elif source_type in ("reminder", "nag"):
+        from data_layer.reminders import get_reminder
+        r = get_reminder(source_id)
+        if not r:
+            return {}
+        return {"title": r["message"], "detail": r.get("remind_at", ""),
+                "recurrence": r.get("recurrence") or "", "time_slot": r.get("time_slot", "")}
+    elif source_type == "auto_issue":
+        from data_layer.auto import get_issue
+        issue = get_issue(source_id)
+        if not issue:
+            return {}
+        return {"title": issue["title"], "severity": issue["severity"],
+                "status": issue["status"], "detail": issue.get("vehicle_name", "")}
+    elif source_type == "todo":
+        from data_layer.lists import get_item
+        item = get_item(source_id)
+        if not item:
+            return {}
+        return {"title": item["text"], "detail": "To-Do list item"}
+    return {}
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Lists
+# ---------------------------------------------------------------------------
+
+from list_store import (
+    get_all_lists as _get_all_lists,
+    get_list as _get_list_by_id,
+    find_list_by_name as _find_list_by_name,
+    create_list as _create_list_store,
+    delete_list as _delete_list_store,
+    add_item as _add_list_item,
+    remove_item as _remove_list_item,
+    move_item as _move_list_item,
+    update_item_text as _update_item_text,
+    update_aliases as _update_list_aliases,
+    sync_from_trello as _sync_list_from_trello,
+    reorder_item as _reorder_list_item,
+)
+
+
+@app.get("/api/apps/lists")
+async def api_list_lists(source: str = "", q: str = ""):
+    """Get all lists, optionally filtered by source (board name) or search query."""
+    def _fetch():
+        # Exclude boards linked to projects (those are task columns, not general lists)
+        try:
+            from trello_task_sync import get_boards_linked_to_projects
+            project_boards = get_boards_linked_to_projects()
+        except Exception:
+            project_boards = set()
+
+        all_lists = _get_all_lists()
+        results = []
+        for lst in all_lists:
+            board = (lst.get("trello") or {}).get("board", "") if lst.get("trello") else ""
+            if board and board.lower() in project_boards:
+                continue
+            # Source filter
+            if source:
+                if source.lower() == "standalone" and lst.get("trello"):
+                    continue
+                if source.lower() != "standalone" and (not lst.get("trello") or board.lower() != source.lower()):
+                    continue
+            items = lst.get("items", [])
+            active = [i for i in items if not i.get("archived")]
+            archived = [i for i in items if i.get("archived")]
+            # Search filter
+            if q:
+                query = q.strip().lower()
+                name_match = query in lst["name"].lower()
+                alias_match = any(query in a for a in lst.get("aliases", []))
+                item_match = any(query in i["text"].lower() for i in active)
+                if not (name_match or alias_match or item_match):
+                    continue
+            results.append({
+                "id": lst["id"],
+                "name": lst["name"],
+                "aliases": lst.get("aliases", []),
+                "trello": lst.get("trello"),
+                "created_by": lst.get("created_by", ""),
+                "created_at": lst.get("created_at", ""),
+                "item_count": len(active),
+                "archived_count": len(archived),
+                "items": [{
+                    "id": i["id"],
+                    "text": i["text"],
+                    "position": idx,
+                    "trello_card_id": i.get("trello_card_id", ""),
+                    "added_by": i.get("added_by", ""),
+                    "added_at": i.get("added_at", ""),
+                } for idx, i in enumerate(active)],
+            })
+        return results
+    lists = await asyncio.to_thread(_fetch)
+    # Collect unique boards for filter bubbles
+    boards = sorted(set(
+        (l.get("trello") or {}).get("board", "")
+        for l in lists if l.get("trello")
+    ))
+    return {"lists": lists, "count": len(lists), "boards": boards}
+
+
+@app.get("/api/apps/lists/{list_id}")
+async def api_get_list(list_id: str):
+    """Get a single list with all items."""
+    def _fetch():
+        lst = _get_list_by_id(list_id)
+        if not lst:
+            return None
+        items = lst.get("items", [])
+        active = [i for i in items if not i.get("archived")]
+        archived = [i for i in items if i.get("archived")]
+        return {
+            "id": lst["id"],
+            "name": lst["name"],
+            "aliases": lst.get("aliases", []),
+            "trello": lst.get("trello"),
+            "created_by": lst.get("created_by", ""),
+            "created_at": lst.get("created_at", ""),
+            "item_count": len(active),
+            "archived_count": len(archived),
+            "items": [{
+                "id": i["id"],
+                "text": i["text"],
+                "position": idx,
+                "archived": False,
+                "trello_card_id": i.get("trello_card_id", ""),
+                "added_by": i.get("added_by", ""),
+                "added_at": i.get("added_at", ""),
+            } for idx, i in enumerate(active)],
+            "archived_items": [{
+                "id": i["id"],
+                "text": i["text"],
+                "archived": True,
+            } for i in archived],
+        }
+    result = await asyncio.to_thread(_fetch)
+    if not result:
+        raise HTTPException(status_code=404, detail="List not found")
+    return result
+
+
+class CreateListRequest(BaseModel):
+    name: str
+    created_by: str
+    trello_board: str = ""
+    trello_list_name: str = ""
+
+
+@app.post("/api/apps/lists")
+async def api_create_list(req: CreateListRequest):
+    """Create a new list."""
+    def _do():
+        return _create_list_store(
+            name=req.name.strip(),
+            created_by=req.created_by.strip(),
+            trello_board=req.trello_board.strip() if req.trello_board else "",
+            trello_list_name=req.trello_list_name.strip() if req.trello_list_name else "",
+        )
+    result = await asyncio.to_thread(_do)
+    return {"ok": True, "id": result["id"], "name": result["name"]}
+
+
+@app.delete("/api/apps/lists/{list_id}")
+async def api_delete_list(list_id: str):
+    """Delete a list."""
+    result = await asyncio.to_thread(_delete_list_store, list_id)
+    if "not found" in result.lower():
+        raise HTTPException(status_code=404, detail=result)
+    return {"ok": True, "message": result}
+
+
+class AddListItemRequest(BaseModel):
+    text: str
+    added_by: str
+
+
+@app.post("/api/apps/lists/{list_id}/items")
+async def api_add_list_item(list_id: str, req: AddListItemRequest):
+    """Add an item to a list."""
+    def _do():
+        return _add_list_item(list_id, req.text.strip(), req.added_by.strip())
+    result = await asyncio.to_thread(_do)
+    if isinstance(result, str):
+        raise HTTPException(status_code=400, detail=result)
+    return {"ok": True, "item": result}
+
+
+class UpdateListItemRequest(BaseModel):
+    text: str
+
+
+@app.patch("/api/apps/lists/{list_id}/items/{item_id}")
+async def api_update_list_item(list_id: str, item_id: str, req: UpdateListItemRequest):
+    """Update the text of a list item."""
+    result = await asyncio.to_thread(_update_item_text, list_id, item_id, req.text.strip())
+    if "not found" in result.lower():
+        raise HTTPException(status_code=404, detail=result)
+    return {"ok": True, "message": result}
+
+
+@app.delete("/api/apps/lists/{list_id}/items/{item_id}")
+async def api_remove_list_item(list_id: str, item_id: str):
+    """Archive an item from a list."""
+    result = await asyncio.to_thread(_remove_list_item, list_id, item_id)
+    if "not found" in result.lower():
+        raise HTTPException(status_code=404, detail=result)
+    return {"ok": True, "message": result}
+
+
+class UpdateAliasesRequest(BaseModel):
+    aliases: list[str]
+
+
+@app.patch("/api/apps/lists/{list_id}/aliases")
+async def api_update_list_aliases(list_id: str, req: UpdateAliasesRequest):
+    """Update aliases on a list."""
+    result = await asyncio.to_thread(_update_list_aliases, list_id, req.aliases)
+    if "not found" in result.lower():
+        raise HTTPException(status_code=404, detail=result)
+    return {"ok": True, "message": result}
+
+
+class ReorderItemRequest(BaseModel):
+    new_position: int
+
+
+@app.patch("/api/apps/lists/{list_id}/items/{item_id}/position")
+async def api_reorder_list_item(list_id: str, item_id: str, req: ReorderItemRequest):
+    """Move an item to a new position within the list."""
+    result = await asyncio.to_thread(_reorder_list_item, list_id, item_id, req.new_position)
+    if "not found" in result.lower():
+        raise HTTPException(status_code=404, detail=result)
+    return {"ok": True, "message": result}
+
+
+@app.post("/api/apps/lists/{list_id}/sync")
+async def api_sync_list(list_id: str):
+    """Force Trello sync on a list."""
+    result = await asyncio.to_thread(_sync_list_from_trello, list_id)
+    if "error" in result.lower():
+        raise HTTPException(status_code=400, detail=result)
+    return {"ok": True, "message": result}
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — To-Do
+# ---------------------------------------------------------------------------
+
+import data_layer.todo as dl_todo
+
+
+@app.get("/api/apps/todo/config")
+async def api_get_todo_config(user_id: str = ""):
+    """Get to-do config for a user.  Auto-creates default list if needed."""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+    def _fetch():
+        return dl_todo.ensure_default_list(user_id)
+    cfg = await asyncio.to_thread(_fetch)
+    # Also fetch the list name
+    def _list_names():
+        from data_layer.lists import get_list
+        todo_name = ""
+        backlog_name = ""
+        if cfg.get("default_list_id"):
+            lst = get_list(cfg["default_list_id"])
+            todo_name = lst["name"] if lst else ""
+        if cfg.get("backlog_list_id"):
+            lst = get_list(cfg["backlog_list_id"])
+            backlog_name = lst["name"] if lst else ""
+        return todo_name, backlog_name
+    todo_name, backlog_name = await asyncio.to_thread(_list_names)
+    return {**cfg, "list_name": todo_name, "backlog_list_name": backlog_name}
+
+
+class UpdateTodoConfigRequest(BaseModel):
+    user_id: str
+    default_list_id: str | None = None
+    backlog_list_id: str | None = None
+    nudge_enabled: bool | None = None
+    nudge_day: str | None = None
+    nudge_time: str | None = None
+    show_on_calendar: bool | None = None
+
+
+@app.put("/api/apps/todo/config")
+async def api_update_todo_config(req: UpdateTodoConfigRequest):
+    """Update to-do config for a user."""
+    if not req.user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+    def _update():
+        return dl_todo.upsert_config(
+            req.user_id,
+            default_list_id=req.default_list_id,
+            backlog_list_id=req.backlog_list_id,
+            nudge_enabled=req.nudge_enabled,
+            nudge_day=req.nudge_day,
+            nudge_time=req.nudge_time,
+            show_on_calendar=req.show_on_calendar,
+        )
+    cfg = await asyncio.to_thread(_update)
+    return cfg
+
+
+@app.get("/api/apps/todo/items")
+async def api_get_todo_items(user_id: str = "", include_archived: bool = False):
+    """Get the user's default to-do list items."""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+    def _fetch():
+        # Ensure config exists first
+        dl_todo.ensure_default_list(user_id)
+        return dl_todo.get_todo_items(user_id, include_archived=include_archived)
+    result = await asyncio.to_thread(_fetch)
+    if not result:
+        return {"items": [], "list_id": "", "list_name": "", "count": 0}
+    return result
+
+
+@app.get("/api/apps/todo/backlog")
+async def api_get_backlog_items(user_id: str = "", include_archived: bool = False):
+    """Get the user's backlog list items."""
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+    def _fetch():
+        return dl_todo.get_backlog_items(user_id, include_archived=include_archived)
+    result = await asyncio.to_thread(_fetch)
+    if not result:
+        return {"items": [], "list_id": "", "list_name": "", "count": 0}
+    return result
+
+
+class AddTodoItemBacklogRequest(BaseModel):
+    user_id: str
+    text: str
+    list_type: str = "todo"  # "todo" or "backlog"
+
+
+@app.post("/api/apps/todo/items")
+async def api_add_todo_item(req: AddTodoItemBacklogRequest):
+    """Add an item to the user's to-do or backlog list (at the top)."""
+    if not req.user_id or not req.text.strip():
+        raise HTTPException(status_code=400, detail="user_id and text required")
+    def _do():
+        cfg = dl_todo.ensure_default_list(req.user_id)
+        if req.list_type == "backlog":
+            list_id = cfg.get("backlog_list_id")
+            if not list_id:
+                return None
+        else:
+            list_id = cfg["default_list_id"]
+        # Use list_store.add_item for Trello write-through
+        result = _add_list_item(list_id, req.text.strip(), req.user_id, position=0)
+        if isinstance(result, str):
+            return None  # error string
+        return result
+    item = await asyncio.to_thread(_do)
+    if item is None:
+        raise HTTPException(status_code=400, detail="No backlog list configured")
+    return {"ok": True, "item": item}
+
+
+class BatchReorderTodoRequest(BaseModel):
+    user_id: str
+    item_ids: list[str]
+    list_type: str = "todo"  # "todo" or "backlog"
+
+
+class MoveTodoItemRequest(BaseModel):
+    user_id: str
+    item_id: str
+    direction: str  # "to_backlog" or "to_todo"
+
+
+@app.post("/api/apps/todo/move-item")
+async def api_move_todo_item(req: MoveTodoItemRequest):
+    """Move an item between to-do and backlog lists."""
+    if not req.user_id or not req.item_id:
+        raise HTTPException(status_code=400, detail="user_id and item_id required")
+    if req.direction not in ("to_backlog", "to_todo"):
+        raise HTTPException(status_code=400, detail="direction must be 'to_backlog' or 'to_todo'")
+    cfg = await asyncio.to_thread(dl_todo.get_config, req.user_id)
+    if not cfg:
+        raise HTTPException(status_code=404, detail="No to-do config found")
+    todo_id = cfg.get("default_list_id")
+    backlog_id = cfg.get("backlog_list_id")
+    if not todo_id or not backlog_id:
+        raise HTTPException(status_code=400, detail="Both to-do and backlog lists must be configured")
+    if req.direction == "to_backlog":
+        from_id, to_id = todo_id, backlog_id
+    else:
+        from_id, to_id = backlog_id, todo_id
+    result = await asyncio.to_thread(_move_list_item, from_id, req.item_id, to_id)
+    if isinstance(result, str) and result.startswith("Error"):
+        raise HTTPException(status_code=404, detail=result)
+    return {"ok": True}
+
+
+@app.post("/api/apps/todo/reorder")
+async def api_batch_reorder_todo(req: BatchReorderTodoRequest):
+    """Batch reorder to-do items by providing the full ordered list of item IDs."""
+    if not req.user_id or not req.item_ids:
+        raise HTTPException(status_code=400, detail="user_id and item_ids required")
+    cfg = await asyncio.to_thread(dl_todo.get_config, req.user_id)
+    if not cfg:
+        raise HTTPException(status_code=404, detail="No to-do config found")
+    if req.list_type == "backlog":
+        list_id = cfg.get("backlog_list_id")
+        if not list_id:
+            raise HTTPException(status_code=400, detail="No backlog list configured")
+    else:
+        list_id = cfg.get("default_list_id")
+        if not list_id:
+            raise HTTPException(status_code=404, detail="No default to-do list configured")
+    from data_layer.lists import batch_reorder
+    await asyncio.to_thread(batch_reorder, list_id, req.item_ids)
+    # Trello write-through: sync card positions if list is Trello-backed
+    def _trello_sync():
+        from list_store import _load_list
+        lst = _load_list(list_id)
+        if not lst or not lst.get("trello"):
+            return
+        items = lst.get("items", [])
+        # Build id→item lookup for Trello card IDs
+        id_to_item = {it["id"]: it for it in items}
+        ordered = [id_to_item[iid] for iid in req.item_ids if iid in id_to_item]
+        trello_items = [it for it in ordered if it.get("trello_card_id")]
+        if not trello_items:
+            return
+        try:
+            from trello_client import _board_request, get_cards
+            board = lst["trello"]["board"]
+            trello_list = lst["trello"]["list_name"]
+            # Assign evenly-spaced positions to all Trello-backed items in new order
+            for i, it in enumerate(trello_items):
+                target_pos = (i + 1) * 16384.0
+                _board_request(
+                    "PUT", f"/cards/{it['trello_card_id']}", board,
+                    {"pos": str(target_pos)}
+                )
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error("TODO reorder Trello sync failed: %s", e)
+    await asyncio.to_thread(_trello_sync)
+    return {"ok": True}
+
+
+@app.get("/api/apps/todo/lists")
+async def api_get_all_lists_for_todo(user_id: str = ""):
+    """Get lists owned by user (for config picker — choose default list)."""
+    def _fetch():
+        from data_layer.lists import get_all_lists
+        all_lists = get_all_lists()
+        uid = user_id.lower().strip()
+        result = []
+        for l in all_lists:
+            if uid and (l.get("created_by") or "").lower().strip() != uid:
+                continue
+            entry = {
+                "id": l["id"],
+                "name": l["name"],
+                "item_count": len(l.get("items", [])),
+            }
+            if l.get("trello"):
+                entry["trello_board"] = l["trello"].get("board", "")
+            result.append(entry)
+        result.sort(key=lambda x: ((x.get("trello_board") or "zzz").lower(), x["name"].lower()))
+        return result
+    lists = await asyncio.to_thread(_fetch)
+    return {"lists": lists}
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Brainstorming
+# ---------------------------------------------------------------------------
+
+import data_layer.brainstorming as dl_brainstorm
+
+
+class CreateIdeaRequest(BaseModel):
+    title: str
+    summary: str = ""
+    tags: list[str] = []
+    priority: str = "medium"
+    created_by: str = ""
+
+
+class UpdateIdeaRequest(BaseModel):
+    title: str | None = None
+    summary: str | None = None
+    status: str | None = None
+    priority: str | None = None
+    tags: list[str] | None = None
+    project_id: str | None = None
+
+
+class AddPartRequest(BaseModel):
+    type: str = "document"
+    title: str = ""
+    content: str = ""
+    meta: dict | None = None
+
+
+class UpdatePartRequest(BaseModel):
+    title: str | None = None
+    content: str | None = None
+    meta: dict | None = None
+    sort_order: int | None = None
+
+
+@app.get("/api/apps/brainstorming")
+async def api_list_ideas(status: str = "", tag: str = "", q: str = "", user: str = ""):
+    """List ideas with optional filters."""
+    return await asyncio.to_thread(dl_brainstorm.list_ideas, status, tag, q, user)
+
+
+@app.post("/api/apps/brainstorming")
+async def api_create_idea(req: CreateIdeaRequest):
+    """Create a new idea with a main document part."""
+    result = await asyncio.to_thread(
+        dl_brainstorm.create_idea, req.title, req.summary, req.tags, req.priority, req.created_by
+    )
+    return result
+
+
+@app.get("/api/apps/brainstorming/{idea_id}")
+async def api_get_idea(idea_id: str):
+    """Get an idea with all its parts."""
+    result = await asyncio.to_thread(dl_brainstorm.get_idea, idea_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    return result
+
+
+@app.put("/api/apps/brainstorming/{idea_id}")
+async def api_update_idea(idea_id: str, req: UpdateIdeaRequest):
+    """Update idea metadata."""
+    fields = {k: v for k, v in req.model_dump().items() if v is not None}
+    result = await asyncio.to_thread(dl_brainstorm.update_idea, idea_id, **fields)
+    if not result:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    return result
+
+
+@app.delete("/api/apps/brainstorming/{idea_id}")
+async def api_delete_idea(idea_id: str):
+    """Delete an idea and all its parts."""
+    deleted = await asyncio.to_thread(dl_brainstorm.delete_idea, idea_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    return {"ok": True}
+
+
+@app.post("/api/apps/brainstorming/{idea_id}/graduate")
+async def api_graduate_idea(idea_id: str):
+    """Graduate an idea to a project (placeholder — updates status)."""
+    result = await asyncio.to_thread(dl_brainstorm.update_idea, idea_id, status="graduated")
+    if not result:
+        raise HTTPException(status_code=404, detail="Idea not found")
+    return result
+
+
+@app.post("/api/apps/brainstorming/{idea_id}/parts")
+async def api_add_part(idea_id: str, req: AddPartRequest):
+    """Add a new part to an idea."""
+    result = await asyncio.to_thread(
+        dl_brainstorm.add_part, idea_id, req.type, req.title, req.content, req.meta
+    )
+    if not result:
+        raise HTTPException(status_code=404, detail="Idea not found or part creation failed")
+    return result
+
+
+@app.put("/api/apps/brainstorming/{idea_id}/parts/{part_id}")
+async def api_update_part(idea_id: str, part_id: str, req: UpdatePartRequest):
+    """Update a part's content or metadata."""
+    fields = {k: v for k, v in req.model_dump().items() if v is not None}
+    result = await asyncio.to_thread(dl_brainstorm.update_part, part_id, **fields)
+    if not result:
+        raise HTTPException(status_code=404, detail="Part not found")
+    return result
+
+
+@app.delete("/api/apps/brainstorming/{idea_id}/parts/{part_id}")
+async def api_delete_part(idea_id: str, part_id: str):
+    """Delete a part (cannot delete main doc)."""
+    result = await asyncio.to_thread(dl_brainstorm.delete_part, part_id)
+    if "error" in result.lower():
+        raise HTTPException(status_code=400, detail=result)
+    return {"ok": True, "message": result}
+
+
+class AcceptEditRequest(BaseModel):
+    content: str
+
+
+@app.post("/api/apps/brainstorming/{idea_id}/parts/{part_id}/accept-edit")
+async def api_accept_edit(idea_id: str, part_id: str, req: AcceptEditRequest):
+    """Accept a proposed revision — saves the revised content to the part."""
+    result = await asyncio.to_thread(dl_brainstorm.update_part, part_id, content=req.content)
+    if not result:
+        raise HTTPException(status_code=404, detail="Part not found")
+    return result
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Evolution Feed
+# ---------------------------------------------------------------------------
+
+import data_layer.evolution as dl_evolution
+
+
+class CreateEvolutionItemRequest(BaseModel):
+    type: str  # finding | proposal | question | goal | work_item | status_update
+    title: str
+    body: str
+    impact: str | None = None
+    effort: str | None = None
+    category: str | None = None
+    parent_id: str | None = None
+    created_by: str = "skipper"
+
+
+class UpdateEvolutionItemRequest(BaseModel):
+    status: str | None = None
+    title: str | None = None
+    body: str | None = None
+    impact: str | None = None
+    effort: str | None = None
+    category: str | None = None
+    parent_id: str | None = None
+    deferred_until: str | None = None
+    meta: dict | None = None
+    priority_pin: str | None = None
+
+
+class AddThreadMessageRequest(BaseModel):
+    author: str
+    body: str
+
+
+class TriggerEvolveRequest(BaseModel):
+    cycle_type: str = "deep"  # deep | feedback | assessment | planning | vision
+
+
+@app.get("/api/apps/evolve/items")
+async def api_list_evolution_items(
+    status: str = "",
+    type: str = "",
+    category: str = "",
+    parent_id: str = "",
+    include_completed: bool = False,
+    limit: int = 100,
+):
+    """List evolution items with optional filters."""
+    return {
+        "items": await asyncio.to_thread(
+            dl_evolution.list_items,
+            status=status or None,
+            item_type=type or None,
+            category=category or None,
+            parent_id=parent_id or None,
+            include_completed=include_completed,
+            limit=limit,
+        )
+    }
+
+
+@app.post("/api/apps/evolve/items")
+async def api_create_evolution_item(req: CreateEvolutionItemRequest):
+    """Create a new evolution item."""
+    item = await asyncio.to_thread(
+        dl_evolution.create_item,
+        item_type=req.type,
+        title=req.title,
+        body=req.body,
+        impact=req.impact,
+        effort=req.effort,
+        category=req.category,
+        parent_id=req.parent_id,
+        created_by=req.created_by,
+    )
+    return item
+
+
+@app.get("/api/apps/evolve/items/{item_id}")
+async def api_get_evolution_item(item_id: str):
+    """Get an evolution item with its thread and children."""
+    item = await asyncio.to_thread(dl_evolution.get_item_with_thread, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Evolution item not found")
+    return item
+
+
+@app.put("/api/apps/evolve/items/{item_id}")
+async def api_update_evolution_item(item_id: str, req: UpdateEvolutionItemRequest):
+    """Update an evolution item's fields."""
+    fields = {k: v for k, v in req.model_dump().items() if v is not None}
+    item = await asyncio.to_thread(dl_evolution.update_item, item_id, **fields)
+    if not item:
+        raise HTTPException(status_code=404, detail="Evolution item not found")
+    return item
+
+
+@app.post("/api/apps/evolve/items/{item_id}/status/{status}")
+async def api_set_evolution_status(item_id: str, status: str):
+    """Set an evolution item's status (approve, redirect, defer, reject, etc.)."""
+    valid = {"new", "reviewed", "approved", "redirected", "deferred",
+             "rejected", "dismissed", "in_progress", "completed"}
+    if status not in valid:
+        raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
+    item = await asyncio.to_thread(dl_evolution.set_status, item_id, status)
+    if not item:
+        raise HTTPException(status_code=404, detail="Evolution item not found")
+    return item
+
+
+@app.delete("/api/apps/evolve/items/{item_id}")
+async def api_delete_evolution_item(item_id: str):
+    """Delete an evolution item and its threads."""
+    deleted = await asyncio.to_thread(dl_evolution.delete_item, item_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Evolution item not found")
+    return {"ok": True}
+
+
+@app.get("/api/apps/evolve/items/{item_id}/thread")
+async def api_get_evolution_thread(item_id: str):
+    """Get all messages in an evolution item's conversation thread."""
+    messages = await asyncio.to_thread(dl_evolution.get_thread, item_id)
+    return {"messages": messages}
+
+
+@app.post("/api/apps/evolve/items/{item_id}/thread")
+async def api_add_thread_message(item_id: str, req: AddThreadMessageRequest):
+    """Add a message to an evolution item's conversation thread."""
+    item = await asyncio.to_thread(dl_evolution.get_item, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Evolution item not found")
+    msg = await asyncio.to_thread(
+        dl_evolution.add_thread_message, item_id, req.author, req.body
+    )
+    return msg
+
+
+@app.get("/api/apps/evolve/stats")
+async def api_evolution_stats():
+    """Get Evolution Feed dashboard statistics."""
+    return await asyncio.to_thread(dl_evolution.get_stats)
+
+
+@app.get("/api/apps/evolve/items/{item_id}/children")
+async def api_get_evolution_children(item_id: str):
+    """Get all child items of an evolution item (hierarchy)."""
+    children = await asyncio.to_thread(dl_evolution.get_children, item_id)
+    return {"children": children}
+
+
+class PriorityDirectiveRequest(BaseModel):
+    text: str  # Free-text strategic guidance, e.g. "Focus on reliability before new features"
+
+
+@app.get("/api/apps/evolve/priority-directives")
+async def api_get_priority_directives():
+    """Get the current strategic priority directives."""
+    from domain_evolve import _load_working_memory
+    wm = _load_working_memory()
+    directives = wm.get("priority_directives")
+    if isinstance(directives, dict):
+        return directives
+    elif directives:
+        return {"text": str(directives)}
+    return {"text": ""}
+
+
+@app.put("/api/apps/evolve/priority-directives")
+async def api_set_priority_directives(req: PriorityDirectiveRequest):
+    """Set strategic priority directives (free-text guidance for ranking)."""
+    from domain_evolve import _save_working_memory
+    await _save_working_memory("priority_directives", {"text": req.text})
+    return {"ok": True, "text": req.text}
+
+
+@app.put("/api/apps/evolve/items/{item_id}/pin/{pin}")
+async def api_set_priority_pin(item_id: str, pin: str):
+    """Set a priority pin on an evolution item. Valid pins: top, high, low, bottom, lock, clear."""
+    valid_pins = {"top", "high", "low", "bottom", "lock"}
+    if pin == "clear":
+        item = await asyncio.to_thread(dl_evolution.update_item, item_id, priority_pin=None)
+    elif pin in valid_pins:
+        item = await asyncio.to_thread(dl_evolution.update_item, item_id, priority_pin=pin)
+    else:
+        raise HTTPException(status_code=400, detail=f"Invalid pin: {pin}. Use: top, high, low, bottom, lock, clear")
+    if not item:
+        raise HTTPException(status_code=404, detail="Evolution item not found")
+    return item
+
+
+class DiscussRequest(BaseModel):
+    message: str
+    author: str = "alice"
+
+
+@app.post("/api/apps/evolve/items/{item_id}/discuss")
+async def api_discuss_evolution_item(item_id: str, req: DiscussRequest):
+    """Live discussion with Skipper about an evolution item.
+
+    Saves the user message, calls the LLM with full item + thread context,
+    saves Skipper's response, and returns it.
+    """
+    import agent_loop
+    from config import SMART_MODEL
+
+    # Load item
+    item = await asyncio.to_thread(dl_evolution.get_item, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Evolution item not found")
+
+    # Load thread history
+    thread = await asyncio.to_thread(dl_evolution.get_thread, item_id)
+
+    # Save user message first
+    await asyncio.to_thread(
+        dl_evolution.add_thread_message, item_id, req.author, req.message
+    )
+
+    # Build system prompt
+    import os
+    prompt_path = os.path.join(os.path.dirname(__file__), "prompts", "evolve", "discuss.md")
+    try:
+        with open(prompt_path, "r", encoding="utf-8") as f:
+            system_prompt = f.read()
+    except FileNotFoundError:
+        system_prompt = "You are Skipper, a helpful AI assistant. Discuss this evolution item with Alice."
+
+    # Load parent goal if this is a proposal under a goal
+    parent_context = ""
+    if item.get("parent_id"):
+        try:
+            parent = await asyncio.to_thread(dl_evolution.get_item, item["parent_id"])
+            if parent:
+                parent_context = (
+                    f"## Parent Goal: {parent['title']}\n"
+                    f"- **Status:** {parent.get('status', '?')}\n"
+                    f"- **Impact:** {parent.get('impact', '?')}\n"
+                    f"- **Priority rank:** {parent.get('priority', 'unranked')}\n"
+                    f"- **Category:** {parent.get('category', '?')}\n\n"
+                    f"### Goal Description\n{parent.get('body', '(no description)')}\n\n"
+                    f"---\n\n"
+                )
+        except Exception:
+            pass
+
+    # Build item context
+    type_info = TYPE_LABELS_BACKEND.get(item.get("type", ""), item.get("type", "unknown"))
+    item_context = parent_context + (
+        f"## Item: {item['title']}\n"
+        f"- **Type:** {type_info}\n"
+        f"- **Status:** {item.get('status', '?')}\n"
+        f"- **Impact:** {item.get('impact', '?')} | **Effort:** {item.get('effort', '?')}\n"
+        f"- **Category:** {item.get('category', '?')}\n"
+        f"- **Priority rank:** {item.get('priority', 'unranked')}\n\n"
+        f"### Description\n{item.get('body', '(no description)')}\n"
+    )
+
+    # Build conversation history as messages
+    messages = [{"role": "system", "content": system_prompt}]
+    messages.append({"role": "user", "content": item_context})
+    messages.append({"role": "assistant", "content": "I've reviewed the item. Let's discuss."})
+
+    for msg in (thread or []):
+        role = "assistant" if msg["author"] == "skipper" else "user"
+        messages.append({"role": role, "content": msg["body"]})
+
+    # Add the new user message
+    messages.append({"role": "user", "content": req.message})
+
+    # Call LLM
+    result = await agent_loop.run(
+        messages=messages,
+        tools=[],
+        model=SMART_MODEL,
+        max_turns=1,
+        tool_dispatch=None,
+    )
+
+    response_text = result.response_text or "I wasn't able to formulate a response."
+
+    # Save Skipper's response to thread
+    await asyncio.to_thread(
+        dl_evolution.add_thread_message, item_id, "skipper", response_text
+    )
+
+    return {
+        "response": response_text,
+        "tokens": result.prompt_tokens + result.completion_tokens,
+    }
+
+
+TYPE_LABELS_BACKEND = {
+    "goal": "Goal",
+    "proposal": "Proposal",
+    "finding": "Finding",
+    "work_item": "Work Item",
+    "question": "Question",
+    "status_update": "Status Update",
+}
+
+
+class PromoteRequest(BaseModel):
+    target_goal_id: str | None = None  # For proposals: which goal to create project under
+
+
+@app.post("/api/apps/evolve/items/{item_id}/promote")
+async def api_promote_evolution_item(item_id: str, req: PromoteRequest = PromoteRequest()):
+    """Promote an evolution item to the Goals system.
+
+    - Goal items → create a new goal in the goals system
+    - Proposals → create a new project under a specified goal
+    """
+    import uuid
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    from config import TIMEZONE
+    from apps.goals.data import save_entity
+
+    item = await asyncio.to_thread(dl_evolution.get_item, item_id)
+    if not item:
+        raise HTTPException(status_code=404, detail="Evolution item not found")
+
+    item_type = item.get("type", "")
+    now = datetime.now(ZoneInfo(TIMEZONE)).isoformat()
+
+    if item_type == "goal":
+        goal_id = f"g-{uuid.uuid4().hex[:8]}"
+        goal = {
+            "id": goal_id,
+            "name": item["title"],
+            "owners": ["alice"],
+            "collaborators": [],
+            "target_date": "",
+            "status": "not_started",
+            "stack_rank": 0,
+            "notes": item.get("body", ""),
+            "definition_of_done": "",
+            "history": [{"event": "promoted_from_evolve", "item_id": item_id, "at": now}],
+            "artifacts": [],
+            "created_by": "skipper",
+            "created_at": now,
+        }
+        await asyncio.to_thread(save_entity, goal)
+
+        # Update evolve item meta to link back
+        meta = item.get("meta") or {}
+        meta["promoted_to"] = goal_id
+        await asyncio.to_thread(dl_evolution.update_item, item_id, meta=meta, status="approved")
+
+        return {"ok": True, "promoted_to": goal_id, "type": "goal", "name": item["title"]}
+
+    elif item_type in ("proposal", "work_item", "finding"):
+        if not req.target_goal_id:
+            # Return available goals so UI can ask user to pick one
+            from apps.goals.data import list_entities
+            all_goals = await asyncio.to_thread(list_entities, "g-")
+            goals = [{"id": g["id"], "name": g["name"], "status": g.get("status", "")}
+                     for g in all_goals]
+            return {"needs_goal": True, "goals": goals}
+
+        project_id = f"p-{uuid.uuid4().hex[:8]}"
+        project = {
+            "id": project_id,
+            "name": item["title"],
+            "goal_id": req.target_goal_id,
+            "owners": ["alice"],
+            "due_date": "",
+            "priority": item.get("impact", "medium"),
+            "status": "not_started",
+            "stack_rank": 0,
+            "notes": item.get("body", ""),
+            "definition_of_done": "",
+            "history": [{"event": "promoted_from_evolve", "item_id": item_id, "at": now}],
+            "artifacts": [],
+            "auto_nag": None,
+            "trello": None,
+            "pm_cadence_minutes": None,
+            "created_by": "skipper",
+            "created_at": now,
+        }
+        await asyncio.to_thread(save_entity, project)
+
+        meta = item.get("meta") or {}
+        meta["promoted_to"] = project_id
+        await asyncio.to_thread(dl_evolution.update_item, item_id, meta=meta, status="approved")
+
+        return {"ok": True, "promoted_to": project_id, "type": "project", "name": item["title"],
+                "goal_id": req.target_goal_id}
+
+    else:
+        raise HTTPException(status_code=400, detail=f"Cannot promote item of type '{item_type}'")
+
+
+@app.get("/api/apps/evolve/cycles")
+async def api_evolve_cycles(limit: int = 5):
+    """Get recent evolve cycles with full phase/unit progress tree."""
+    from data_layer.db import fetch_all
+
+    def _build_cycles():
+        # Get recent cycles
+        cycles = fetch_all(
+            "SELECT * FROM jobs WHERE job_type = 'evolve_cycle' "
+            "ORDER BY created_at DESC LIMIT %s", (limit,)
+        )
+        result = []
+        for cycle in cycles:
+            cycle_id = cycle["id"]
+            config = cycle.get("config") or {}
+            cycle_type = config.get("cycle_type", "unknown")
+
+            # Get phases for this cycle
+            phases = fetch_all(
+                "SELECT * FROM jobs WHERE parent_job_id = %s "
+                "AND job_type = 'evolve_phase' ORDER BY config->>'phase_index'",
+                (cycle_id,)
+            )
+
+            phase_list = []
+            for phase in phases:
+                phase_id = phase["id"]
+                phase_config = phase.get("config") or {}
+
+                # Get unit counts by status for this phase
+                unit_rows = fetch_all(
+                    "SELECT status, COUNT(*) as cnt FROM jobs "
+                    "WHERE parent_job_id = %s AND job_type = 'evolve_unit' "
+                    "GROUP BY status", (phase_id,)
+                )
+                unit_counts = {r["status"]: r["cnt"] for r in unit_rows}
+                total_units = sum(unit_counts.values())
+
+                # Get synthesis findings (compact titles) for completed phases
+                synthesis_findings = []
+                if phase["status"] in ("completed", "failed"):
+                    synth = fetch_all(
+                        "SELECT output FROM jobs WHERE parent_job_id = %s "
+                        "AND job_type = 'evolve_unit' "
+                        "AND (config->>'is_synthesis')::boolean = true "
+                        "AND status = 'completed' LIMIT 1",
+                        (phase_id,)
+                    )
+                    if synth:
+                        s_output = synth[0].get("output") or {}
+                        if isinstance(s_output, str):
+                            import json as _json
+                            try: s_output = _json.loads(s_output)
+                            except Exception: s_output = {}
+                        for f in (s_output.get("findings") or [])[:20]:
+                            synthesis_findings.append({
+                                "title": f.get("title", f.get("summary", "Untitled")),
+                                "impact": f.get("impact", ""),
+                                "category": f.get("category", ""),
+                                "type": f.get("type", ""),
+                            })
+
+                phase_list.append({
+                    "id": phase_id,
+                    "name": phase.get("name", ""),
+                    "phase_key": phase_config.get("phase_key", ""),
+                    "phase_index": phase_config.get("phase_index", 0),
+                    "status": phase["status"],
+                    "progress_pct": phase.get("progress_pct", 0),
+                    "progress": phase.get("progress") or "",
+                    "started_at": phase["started_at"].isoformat() if phase.get("started_at") else "",
+                    "completed_at": phase["completed_at"].isoformat() if phase.get("completed_at") else "",
+                    "total_units": total_units,
+                    "units_completed": unit_counts.get("completed", 0),
+                    "units_running": unit_counts.get("running", 0),
+                    "units_queued": unit_counts.get("queued", 0),
+                    "units_failed": unit_counts.get("failed", 0),
+                    "synthesis_findings": synthesis_findings,
+                })
+
+            total_phases = len(phase_list)
+            phases_done = sum(1 for p in phase_list if p["status"] in ("completed", "failed"))
+            active_phase = next((p for p in phase_list if p["status"] == "running"), None)
+
+            result.append({
+                "id": cycle_id,
+                "name": cycle.get("name", ""),
+                "cycle_type": cycle_type,
+                "status": cycle["status"],
+                "created_at": cycle["created_at"].isoformat() if cycle.get("created_at") else "",
+                "started_at": cycle["started_at"].isoformat() if cycle.get("started_at") else "",
+                "completed_at": cycle["completed_at"].isoformat() if cycle.get("completed_at") else "",
+                "total_phases": total_phases,
+                "phases_done": phases_done,
+                "active_phase": active_phase["name"] if active_phase else None,
+                "phases": phase_list,
+            })
+
+        return result
+
+    cycles = await asyncio.to_thread(_build_cycles)
+    return {"cycles": cycles}
+
+
+@app.get("/api/apps/evolve/phases/{phase_id}/units")
+async def api_evolve_phase_units(phase_id: str):
+    """Get all units for a phase with their findings — for drill-down."""
+    from data_layer.db import fetch_all
+
+    def _build():
+        units = fetch_all(
+            "SELECT id, name, status, config, output, error, "
+            "started_at, completed_at FROM jobs "
+            "WHERE parent_job_id = %s AND job_type = 'evolve_unit' "
+            "ORDER BY created_at", (phase_id,)
+        )
+        result = []
+        for u in units:
+            config = u.get("config") or {}
+            output = u.get("output") or {}
+            if isinstance(output, str):
+                import json as _json
+                try: output = _json.loads(output)
+                except Exception: output = {}
+
+            findings = output.get("findings") or []
+            # Compact each finding to title + summary + impact
+            compact_findings = []
+            for f in findings[:30]:
+                # Build from structured fields (e.g. vision outputs)
+                if f.get("relevance"):
+                    title = f"Relevance: {f['relevance']}"
+                    if f.get("priority_change") and f["priority_change"] != "unchanged":
+                        title += f" (priority {f['priority_change']})"
+                elif f.get("progress_summary"):
+                    title = f.get("progress_summary", "")[:120]
+                elif f.get("summary"):
+                    title = f.get("summary", "")[:120]
+                else:
+                    # Last resort: first string value in the dict
+                    for v in f.values():
+                        if isinstance(v, str) and len(v) > 5:
+                            title = v[:120]
+                            break
+                    else:
+                        title = "Untitled"
+                # Extract best summary
+                summary = (
+                    f.get("summary")
+                    or f.get("body")
+                    or f.get("progress_summary")
+                    or f.get("description")
+                    or f.get("family_impact")
+                    or f.get("feasibility_notes")
+                    or f.get("project_status")
+                    or f.get("reason")
+                    or ""
+                )[:300]
+                compact_findings.append({
+                    "title": title,
+                    "summary": summary,
+                    "impact": f.get("impact", f.get("relevance", "")),
+                    "category": f.get("category", ""),
+                    "type": f.get("type", ""),
+                    "action": f.get("action", f.get("priority_change", "")),
+                })
+
+            result.append({
+                "id": u["id"],
+                "name": u.get("name", ""),
+                "status": u["status"],
+                "is_synthesis": config.get("is_synthesis", False),
+                "prompt_template": config.get("prompt_template", ""),
+                "error": u.get("error") or "",
+                "tokens_used": output.get("tokens_used", 0),
+                "started_at": u["started_at"].isoformat() if u.get("started_at") else "",
+                "completed_at": u["completed_at"].isoformat() if u.get("completed_at") else "",
+                "findings": compact_findings,
+                "response_preview": (output.get("response") or "")[:500],
+            })
+        return result
+
+    units = await asyncio.to_thread(_build)
+    return {"units": units}
+
+
+@app.get("/api/apps/evolve/cycle-types")
+async def api_evolve_cycle_types():
+    """Get available cycle types with their phase definitions."""
+    from domain_evolve import CYCLE_PHASES
+    result = []
+    descriptions = {
+        "deep": "Full strategic analysis — audits everything, finds gaps, plans, and proposes items",
+        "feedback": "Daily maintenance — processes your replies and reconciles active items",
+        "assessment": "Audit-only — self-assessment + gap analysis without planning or proposing",
+        "planning": "Planning cycle — takes existing findings and creates plans + proposals",
+        "vision": "Vision-only — re-evaluates goals and explores opportunities",
+        "solo_vision": "Solo — re-evaluate goals and ambitions, evolve vision items",
+        "solo_assessment": "Solo — audit tools, apps, and domains against current state",
+        "solo_gap": "Solo — compare specs to implementation, find deficiencies",
+        "solo_planning": "Solo — create plans from existing findings and gap items",
+        "solo_propose": "Solo — produce concrete work items from existing plans",
+        "solo_reconcile": "Solo — check active items against reality, update statuses",
+    }
+    for ct, phases in CYCLE_PHASES.items():
+        result.append({
+            "type": ct,
+            "description": descriptions.get(ct, ""),
+            "phase_count": len(phases),
+            "phases": [{"key": k, "name": n} for k, n in phases],
+        })
+    return {"cycle_types": result}
+
+
+@app.post("/api/apps/evolve/trigger")
+async def api_trigger_evolve_cycle(req: TriggerEvolveRequest):
+    """Manually trigger an Evolve cycle."""
+    from domain_evolve import CYCLE_PHASES
+    if req.cycle_type not in CYCLE_PHASES:
+        raise HTTPException(status_code=400, detail=f"Invalid cycle type: {req.cycle_type}. Valid: {list(CYCLE_PHASES.keys())}")
+    try:
+        from domain_evolve import _find_active_cycle
+        active = await _find_active_cycle()
+        if active:
+            return {"ok": False, "error": "A cycle is already in progress", "cycle_id": active["id"]}
+
+        from thinking_scheduler import get_budget_status
+        budget = await get_budget_status()
+
+        from domain_evolve import _start_cycle
+        result = await _start_cycle(req.cycle_type, budget)
+        return {"ok": True, "result": result}
+    except Exception as e:
+        logger.error("EVOLVE: Trigger failed: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Backups
+# ---------------------------------------------------------------------------
+
+import data_layer.backups as dl_backups
+
+
+@app.get("/api/apps/backups")
+async def api_list_backups():
+    """List all backup records, most recent first."""
+    def _fetch():
+        backups = dl_backups.list_backups(limit=50)
+        retention = int(os.getenv("BACKUP_RETENTION", "5"))
+        network_path = os.getenv("BACKUP_NETWORK_PATH", "")
+        return {"backups": backups, "count": len(backups),
+                "retention": retention, "network_path": network_path}
+    return await asyncio.to_thread(_fetch)
+
+
+@app.get("/api/apps/backups/config")
+async def api_backup_config():
+    """Get current backup configuration."""
+    return {
+        "enabled": os.getenv("BACKUP_ENABLED", "true").strip().lower() == "true",
+        "cron": os.getenv("BACKUP_CRON", "0 2 * * *"),
+        "network_path": os.getenv("BACKUP_NETWORK_PATH", ""),
+        "retention": int(os.getenv("BACKUP_RETENTION", "5")),
+    }
+
+
+class BackupEnabledRequest(BaseModel):
+    enabled: bool
+
+
+@app.patch("/api/apps/backups/enabled")
+async def api_toggle_backup_enabled(req: BackupEnabledRequest):
+    """Toggle BACKUP_ENABLED — updates runtime env and .env file on disk."""
+    new_val = "true" if req.enabled else "false"
+    # Update runtime
+    os.environ["BACKUP_ENABLED"] = new_val
+    # Update .env on disk
+    def _update_env():
+        env_path = os.path.join(os.path.dirname(__file__), ".env")
+        if not os.path.isfile(env_path):
+            return
+        with open(env_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+        found = False
+        for i, line in enumerate(lines):
+            if line.strip().startswith("BACKUP_ENABLED"):
+                lines[i] = f"BACKUP_ENABLED={new_val}\n"
+                found = True
+                break
+        if not found:
+            lines.append(f"\nBACKUP_ENABLED={new_val}\n")
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.writelines(lines)
+    await asyncio.to_thread(_update_env)
+    return {"ok": True, "enabled": req.enabled}
+
+
+@app.get("/api/apps/backups/{backup_id}")
+async def api_get_backup(backup_id: str):
+    """Get a single backup record."""
+    result = await asyncio.to_thread(dl_backups.get_backup, backup_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Backup not found")
+    return result
+
+
+@app.post("/api/apps/backups/run")
+async def api_run_backup():
+    """Trigger an on-demand backup (ignores BACKUP_ENABLED)."""
+    from job_dispatcher import submit_job
+    job = submit_job(
+        "backup",
+        config={"on_demand": True},
+        created_by="web",
+        notify_user="alice",
+        description="On-demand backup",
+    )
+    return {"ok": True, "job_id": job["id"]}
+
+
+@app.delete("/api/apps/backups/{backup_id}")
+async def api_delete_backup(backup_id: str):
+    """Delete a backup record and its network files."""
+    def _do():
+        backup = dl_backups.get_backup(backup_id)
+        if not backup:
+            return None
+        # Try to delete network files
+        network_path = backup.get("network_path", "")
+        if network_path and os.path.isdir(network_path):
+            import shutil
+            try:
+                shutil.rmtree(network_path)
+            except Exception as e:
+                logger.warning("Failed to delete backup files at %s: %s", network_path, e)
+        dl_backups.delete_backup(backup_id)
+        return backup
+    result = await asyncio.to_thread(_do)
+    if not result:
+        raise HTTPException(status_code=404, detail="Backup not found")
+    return {"ok": True, "message": f"Backup {backup_id} deleted"}
+
+
+# ── System Metrics ──
+
+@app.get("/api/apps/system/metrics")
+async def api_system_metrics():
+    """Return record counts and system health info."""
+    def _fetch():
+        from data_layer.db import fetch_one, fetch_all
+        import platform, os
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        from config import TIMEZONE
+
+        _tz = ZoneInfo(TIMEZONE)
+
+        # Table counts — single query for efficiency
+        counts_query = """
+            SELECT
+                (SELECT count(*) FROM goals)             AS goals,
+                (SELECT count(*) FROM projects)          AS projects,
+                (SELECT count(*) FROM tasks)             AS tasks,
+                (SELECT count(*) FROM memories)          AS memories,
+                (SELECT count(*) FROM documents)         AS documents,
+                (SELECT count(*) FROM reminders)         AS reminders,
+                (SELECT count(*) FROM reminders WHERE active = TRUE) AS reminders_active,
+                (SELECT count(*) FROM chat_turns)        AS chat_turns,
+                (SELECT count(*) FROM notifications)     AS notifications,
+                (SELECT count(*) FROM lists)             AS lists,
+                (SELECT count(*) FROM list_items)        AS list_items,
+                (SELECT count(*) FROM knowledge_sources) AS knowledge_sources,
+                (SELECT count(*) FROM knowledge_chunks)  AS knowledge_chunks,
+                (SELECT count(*) FROM app_recipes.recipes) AS recipes,
+                (SELECT count(*) FROM images)            AS images,
+                (SELECT count(*) FROM app_home.located_items)     AS located_items,
+                (SELECT count(*) FROM app_home.item_locations)    AS item_locations,
+                (SELECT count(*) FROM app_auto.vehicles)          AS vehicles,
+                (SELECT count(*) FROM app_auto.service_records)   AS service_records,
+                (SELECT count(*) FROM jobs)              AS jobs,
+                (SELECT count(*) FROM jobs WHERE status = 'running') AS jobs_running,
+                (SELECT count(*) FROM jobs WHERE status = 'queued')  AS jobs_queued,
+                (SELECT count(*) FROM backups)           AS backups,
+                (SELECT count(*) FROM links)             AS links,
+                (SELECT count(*) FROM artifacts)         AS artifacts,
+                (SELECT count(*) FROM memory_ingestion_queue WHERE status = 'pending') AS memory_queue_pending
+        """
+        counts = fetch_one(counts_query)
+
+        # DB size
+        db_size = fetch_one(
+            "SELECT pg_size_pretty(pg_database_size(current_database())) AS size, "
+            "pg_database_size(current_database()) AS size_bytes"
+        )
+
+        # Latest job run
+        latest_job = fetch_one(
+            "SELECT id, name, job_type, status, last_run_at FROM jobs "
+            "ORDER BY last_run_at DESC NULLS LAST LIMIT 1"
+        )
+
+        # Latest backup
+        latest_backup = fetch_one(
+            "SELECT id, status, started_at, duration_secs FROM backups "
+            "ORDER BY started_at DESC LIMIT 1"
+        )
+
+        # Investment metrics — fetched from remote trading service (EC2)
+        latest_investment = None
+        try:
+            import urllib.request as _urllib
+            import json as _json_ts
+            _ts_url = os.getenv("VITE_TRADING_URL", "https://skippertrader.yourdomain.example")
+            _ts_key = os.getenv("VITE_TRADING_KEY", "")
+            _req = _urllib.Request(
+                f"{_ts_url}/api/metrics",
+                headers={"X-API-Key": _ts_key},
+            )
+            with _urllib.urlopen(_req, timeout=5) as _resp:
+                _inv = _json_ts.loads(_resp.read())
+            if counts is not None and _inv.get("snapshot_count") is not None:
+                counts["investment_snapshots"] = _inv["snapshot_count"]
+            latest_investment = _inv.get("latest_snapshot")
+        except Exception:
+            pass
+
+        # Document curation stats
+        doc_curation = {"total_memories": 0, "cursor_position": 0, "remaining": 0,
+                        "last_cycle": None, "cursor_id": None}
+        try:
+            total_mems = fetch_one("SELECT count(*) AS cnt FROM memories")
+            doc_curation["total_memories"] = total_mems["cnt"] if total_mems else 0
+
+            cursor_row = fetch_one(
+                "SELECT content, updated_at FROM skipper_state "
+                "WHERE domain = 'document' AND subject_id = 'last_processed_batch' "
+                "ORDER BY updated_at DESC LIMIT 1"
+            )
+            if cursor_row:
+                import json as _json
+                cursor_data = _json.loads(cursor_row["content"])
+                cursor_id = cursor_data.get("latest_id", "")
+                doc_curation["cursor_id"] = cursor_id
+                doc_curation["last_cycle"] = {
+                    "processed_at": cursor_data.get("processed_at"),
+                    "processed_count": cursor_data.get("processed_count"),
+                    "offered_count": cursor_data.get("offered_count"),
+                    "all_processed": cursor_data.get("all_processed"),
+                    "auto_advanced": cursor_data.get("auto_advanced", False),
+                }
+                if cursor_id:
+                    pos_row = fetch_one(
+                        "SELECT count(*) AS pos FROM memories "
+                        "WHERE created_at <= (SELECT created_at FROM memories WHERE id = %s)",
+                        (cursor_id,),
+                    )
+                    doc_curation["cursor_position"] = pos_row["pos"] if pos_row else 0
+                    doc_curation["remaining"] = doc_curation["total_memories"] - doc_curation["cursor_position"]
+            else:
+                doc_curation["remaining"] = doc_curation["total_memories"]
+        except Exception:
+            pass
+
+        # System info
+        uptime_secs = None
+        memory_mb = None
+        try:
+            import psutil
+            proc = psutil.Process(os.getpid())
+            memory_mb = round(proc.memory_info().rss / 1048576, 1)
+            uptime_secs = round((datetime.now(_tz) - datetime.fromtimestamp(proc.create_time(), _tz)).total_seconds())
+        except ImportError:
+            # Fallback: estimate uptime from _server_start_time if available
+            pass
+
+        return {
+            "counts": dict(counts) if counts else {},
+            "database": {
+                "size": db_size["size"] if db_size else "?",
+                "size_bytes": db_size["size_bytes"] if db_size else 0,
+            },
+            "latest_job": dict(latest_job) if latest_job else None,
+            "latest_backup": dict(latest_backup) if latest_backup else None,
+            "latest_investment": dict(latest_investment) if latest_investment else None,
+            "doc_curation": doc_curation,
+            "system": {
+                "platform": platform.platform(),
+                "python": platform.python_version(),
+                "pid": os.getpid(),
+                "memory_mb": memory_mb,
+                "uptime_seconds": uptime_secs,
+            },
+        }
+    return await asyncio.to_thread(_fetch)
+
+
+# Issues routes provided by apps/issues/routes.py
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Schedules
+# ---------------------------------------------------------------------------
+
+import data_layer.schedules as _dl_schedules
+
+
+class CreateScheduleRequest(BaseModel):
+    title: str
+    created_by: str = ""
+    category: str = "general"
+    assigned_to: str = ""
+    description: str = ""
+    recurrence_type: str = "weekly"
+    recurrence_rule: dict | None = None
+    time_of_day: str | None = None
+    duration_mins: int | None = None
+    usage_metric: str | None = None
+    usage_interval: int | None = None
+    linked_entity_id: str | None = None
+    linked_entity_type: str | None = None
+    reminder_mins: int = 60
+    notify_channel: str = "both"
+
+
+class UpdateScheduleRequest(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    category: str | None = None
+    assigned_to: str | None = None
+    recurrence_type: str | None = None
+    recurrence_rule: dict | None = None
+    time_of_day: str | None = None
+    duration_mins: int | None = None
+    usage_metric: str | None = None
+    usage_interval: int | None = None
+    linked_entity_id: str | None = None
+    linked_entity_type: str | None = None
+    reminder_mins: int | None = None
+    notify_channel: str | None = None
+    active: bool | None = None
+    next_due: str | None = None
+
+
+class CompleteScheduleRequest(BaseModel):
+    completed_by: str = ""
+    notes: str = ""
+    usage_value: int | None = None
+
+
+@app.get("/api/apps/schedules")
+async def api_list_schedules(category: str = "", assigned_to: str = "", active_only: bool = True):
+    def _fetch():
+        return _dl_schedules.list_schedules(
+            category=category or None,
+            assigned_to=assigned_to or None,
+            active_only=active_only,
+        )
+    schedules = await asyncio.to_thread(_fetch)
+    return {"schedules": schedules, "count": len(schedules)}
+
+
+@app.post("/api/apps/schedules")
+async def api_create_schedule(req: CreateScheduleRequest):
+    def _create():
+        return _dl_schedules.create_schedule(
+            title=req.title,
+            created_by=req.created_by,
+            category=req.category,
+            assigned_to=req.assigned_to,
+            description=req.description,
+            recurrence_type=req.recurrence_type,
+            recurrence_rule=req.recurrence_rule,
+            time_of_day=req.time_of_day,
+            duration_mins=req.duration_mins,
+            usage_metric=req.usage_metric,
+            usage_interval=req.usage_interval,
+            linked_entity_id=req.linked_entity_id,
+            linked_entity_type=req.linked_entity_type,
+            reminder_mins=req.reminder_mins,
+            notify_channel=req.notify_channel,
+        )
+    schedule = await asyncio.to_thread(_create)
+    return {"ok": True, "schedule": schedule}
+
+
+@app.get("/api/apps/calendar/events")
+async def api_calendar_events(from_date: str = "", to_date: str = "", assigned_to: str = ""):
+    """Aggregated calendar events from all sources: schedules, reminders, tasks, auto service, nags."""
+    if not from_date or not to_date:
+        from datetime import date as _date, timedelta as _td
+        today = _date.today()
+        first = today.replace(day=1)
+        if today.month == 12:
+            last = today.replace(year=today.year + 1, month=1, day=1) - _td(days=1)
+        else:
+            last = today.replace(month=today.month + 1, day=1) - _td(days=1)
+        from_date = from_date or first.isoformat()
+        to_date = to_date or last.isoformat()
+
+    import data_layer.calendar as _dl_cal
+
+    def _fetch():
+        return _dl_cal.get_aggregated_events(
+            from_date=from_date,
+            to_date=to_date,
+            assigned_to=assigned_to or None,
+        )
+    events = await asyncio.to_thread(_fetch)
+    return {"events": events, "count": len(events), "from": from_date, "to": to_date}
+
+
+@app.get("/api/apps/schedules/events")
+async def api_schedule_events(from_date: str = "", to_date: str = "", assigned_to: str = "", category: str = ""):
+    """Expand schedules into per-day calendar events for a date range."""
+    if not from_date or not to_date:
+        from datetime import date, timedelta
+        today = date.today()
+        first = today.replace(day=1)
+        # Default to current month
+        if today.month == 12:
+            last = today.replace(year=today.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            last = today.replace(month=today.month + 1, day=1) - timedelta(days=1)
+        from_date = from_date or first.isoformat()
+        to_date = to_date or last.isoformat()
+
+    def _fetch():
+        return _dl_schedules.get_calendar_events(
+            from_date=from_date,
+            to_date=to_date,
+            assigned_to=assigned_to or None,
+            category=category or None,
+        )
+    events = await asyncio.to_thread(_fetch)
+    return {"events": events, "count": len(events), "from": from_date, "to": to_date}
+
+
+@app.get("/api/apps/schedules/due")
+async def api_due_schedules(assigned_to: str = "", days_ahead: int = 7):
+    def _fetch():
+        return _dl_schedules.get_due_schedules(
+            assigned_to=assigned_to or None,
+            days_ahead=days_ahead,
+        )
+    schedules = await asyncio.to_thread(_fetch)
+    return {"schedules": schedules, "count": len(schedules)}
+
+
+@app.get("/api/apps/schedules/{schedule_id}")
+async def api_get_schedule(schedule_id: str):
+    def _fetch():
+        sch = _dl_schedules.get_schedule(schedule_id)
+        if not sch:
+            return {"error": f"Schedule {schedule_id} not found"}
+        sch["completions"] = _dl_schedules.get_completions(schedule_id, limit=10)
+        sch["recurrence_summary"] = _dl_schedules.describe_recurrence(
+            sch["recurrence_type"], sch["recurrence_rule"]
+        )
+        return sch
+    return await asyncio.to_thread(_fetch)
+
+
+@app.patch("/api/apps/schedules/{schedule_id}")
+async def api_update_schedule(schedule_id: str, req: UpdateScheduleRequest):
+    def _update():
+        kwargs = {k: v for k, v in req.model_dump().items() if v is not None}
+        # Parse next_due string into a timezone-aware datetime
+        if "next_due" in kwargs and isinstance(kwargs["next_due"], str):
+            from dateutil.parser import parse as _dtparse
+            from data_layer.schedules import CENTRAL_TZ
+            dt = _dtparse(kwargs["next_due"])
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=CENTRAL_TZ)
+            kwargs["next_due"] = dt
+        return _dl_schedules.update_schedule(schedule_id, **kwargs)
+    result = await asyncio.to_thread(_update)
+    if not result:
+        return {"error": f"Schedule {schedule_id} not found"}
+    return {"ok": True, "schedule": result}
+
+
+@app.delete("/api/apps/schedules/{schedule_id}")
+async def api_delete_schedule(schedule_id: str):
+    await asyncio.to_thread(_dl_schedules.delete_schedule, schedule_id)
+    return {"ok": True}
+
+
+@app.post("/api/apps/schedules/{schedule_id}/complete")
+async def api_complete_schedule(schedule_id: str, req: CompleteScheduleRequest):
+    def _complete():
+        return _dl_schedules.complete_schedule(
+            schedule_id=schedule_id,
+            completed_by=req.completed_by,
+            notes=req.notes,
+            usage_value=req.usage_value,
+        )
+    result = await asyncio.to_thread(_complete)
+    if not result:
+        return {"error": f"Schedule {schedule_id} not found"}
+    return {"ok": True, "schedule": result}
+
+
+# ---------------------------------------------------------------------------
+# App API endpoints — Scrum
+# ---------------------------------------------------------------------------
+
+import data_layer.scrum as _dl_scrum
+
+
+@app.get("/api/apps/scrum")
+async def api_get_scrum_items(
+    person: str | None = None,
+    date: str | None = None,
+    days: int = 7,
+    item_type: str | None = None,
+):
+    from datetime import date as _date_type
+    report_date = None
+    if date:
+        try:
+            report_date = _date_type.fromisoformat(date)
+        except ValueError:
+            return {"error": "Invalid date format, use YYYY-MM-DD"}
+    items = await asyncio.to_thread(
+        _dl_scrum.get_scrum_items,
+        person=person, report_date=report_date,
+        days=min(days, 90), item_type=item_type,
+    )
+    return {"items": items, "count": len(items)}
+
+
+class ScrumCreateRequest(BaseModel):
+    item_type: str          # done | focus | blocked
+    title: str
+    person: str
+    response: str = ""      # optional — if provided, marks as already answered
+
+
+@app.post("/api/apps/scrum")
+async def api_create_scrum_item(req: ScrumCreateRequest):
+    """Create a freeform scrum item (user adds something not in the predefined list)."""
+    from datetime import date as _date_type
+    if req.item_type not in ("done", "focus", "blocked", "finding", "schedule"):
+        return {"error": "item_type must be one of: done, focus, blocked, finding, schedule"}
+    if not req.title.strip():
+        return {"error": "title is required"}
+    item = await asyncio.to_thread(
+        _dl_scrum.save_scrum_item,
+        report_date=_date_type.today(),
+        person=req.person.strip().lower() or "alice",
+        item_type=req.item_type,
+        title=req.title.strip(),
+    )
+    # If a response was provided, mark it as answered immediately
+    if req.response.strip():
+        item = await asyncio.to_thread(
+            _dl_scrum.respond_to_item, item["id"], req.response.strip()
+        )
+    return {"ok": True, "item": item}
+
+
+class ScrumRespondRequest(BaseModel):
+    response_text: str
+    user_id: str = ""
+
+
+@app.post("/api/apps/scrum/{item_id}/respond")
+async def api_respond_to_scrum_item(item_id: str, req: ScrumRespondRequest):
+    """Save a response to a scrum item AND send it through the chat pipeline."""
+    if not req.response_text.strip():
+        return {"error": "response_text is required"}
+
+    # 1. Save response to DB
+    result = await asyncio.to_thread(
+        _dl_scrum.respond_to_item, item_id, req.response_text.strip()
+    )
+    if not result:
+        return {"error": f"Scrum item '{item_id}' not found"}
+
+    # 2. Send through chat pipeline so the LLM can take actions
+    user_id = req.user_id.strip().lower() or "alice"
+    source_entity_id = result.get("source_entity_id", "")
+    source_entity_type = result.get("source_entity_type", "")
+    item_type = result.get("item_type", "?")
+    item_title = result.get("title", "?")
+    user_text = req.response_text.strip()
+
+    # Load Definition of Done for the source entity (if it's a task/project)
+    dod_text = ""
+    if source_entity_id:
+        try:
+            _entity = await asyncio.to_thread(dl_goals.load_entity, source_entity_id)
+            if _entity:
+                dod_text = _entity.get("definition_of_done", "") or ""
+        except Exception:
+            pass
+
+    dod_section = ""
+    if dod_text.strip():
+        dod_section = (
+            f"\nDefinition of Done for this task: \"{dod_text.strip()}\"\n"
+            f"TASK CLOSURE RULE (DoD present): Compare the user's response to the Definition of Done above. "
+            f"If their response indicates they have completed what the DoD describes — even without "
+            f"explicitly saying 'done' — mark the task as done. Use intent matching: if the DoD says "
+            f"'sprite is drawn' and the user says 'the sprite has been drawn', that meets the DoD.\n"
+        )
+    else:
+        dod_section = (
+            f"\nThis task has NO Definition of Done.\n"
+            f"TASK CLOSURE RULE (no DoD): Do NOT mark the task as done unless the user EXPLICITLY "
+            f"says the task is done, finished, complete, or closed. A progress update alone (e.g. "
+            f"'I worked on X') is NOT enough to close a task when there is no DoD. Only close it "
+            f"when the user clearly states it is done.\n"
+        )
+
+    item_context = (
+        f"[SCRUM ACTION REQUIRED — The user replied to a daily scrum {item_type} item.\n"
+        f"Item: {item_title}\n"
+        f"Source entity: {source_entity_type} {source_entity_id}\n"
+        f"{dod_section}"
+        f"The response has ALREADY been saved to the scrum item — do NOT call respond_to_scrum_item.\n"
+        f"Instead, ACT on what the user said. Examples:\n"
+        f"- If they say a task is done/complete (or meets the DoD) → call update_task to set status='done'\n"
+        f"- If they give a due date → call update_task to set the due_date\n"
+        f"- If they say it's blocked → call update_task to set status='blocked'\n"
+        f"- If they say to defer it → call update_task to set status='deferred'\n"
+        f"- If they provide a status update → record it as a note on the entity\n"
+        f"Do NOT just acknowledge — take the appropriate goal/task action.]\n"
+        f"User's reply: {user_text}"
+    )
+    try:
+        # Fire-and-forget: send to chat as if the user typed it
+        async def _process():
+            try:
+                async def _send_progress(text: str):
+                    await manager.send_to_user(user_id, {
+                        "type": "chat_progress",
+                        "content": text,
+                    })
+
+                async def _send_event(event: dict):
+                    await manager.send_to_user(user_id, event)
+
+                reply = await process_chat(
+                    user_id=user_id,
+                    user_message=item_context,
+                    channel="web",
+                    send_progress=_send_progress,
+                    send_event=_send_event,
+                )
+                # Send the LLM's response back to the user
+                if reply:
+                    await manager.send_to_user(user_id, {
+                        "type": "chat_response",
+                        "response": reply,
+                        "user_id": user_id,
+                    })
+            except Exception as e:
+                logger.error("Scrum chat processing failed: %s", e, exc_info=True)
+        asyncio.create_task(_process())
+    except Exception as e:
+        logger.error("Failed to dispatch scrum chat: %s", e)
+
+    return {"ok": True, "item": result}
+
+
+# ── Folders App ──
+import folder_store as _folder_store
+
+
+class FolderCreateRequest(BaseModel):
+    name: str
+    owner: str = ""
+    parent_folder_id: str = ""
+    related_entity_id: str = ""
+    description: str = ""
+    icon: str = "folder"
+    color: str = ""
+    tags: list[str] = []
+
+
+class FolderUpdateRequest(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    owner: str | None = None
+    parent_folder_id: str | None = None
+    icon: str | None = None
+    color: str | None = None
+    tags: list[str] | None = None
+
+
+class FolderAddItemRequest(BaseModel):
+    entity_id: str
+
+
+class FolderNewDocRequest(BaseModel):
+    title: str
+    content: str = ""
+    tags: list[str] = []
+
+
+class FolderReorderRequest(BaseModel):
+    entity_ids: list[str]
+
+
+@app.get("/api/apps/folders")
+async def api_list_folders(owner: str = "", root_only: bool = True):
+    folders = await asyncio.to_thread(_folder_store.list_folders, owner=owner, root_only=root_only)
+    return {"folders": folders}
+
+
+@app.get("/api/apps/folders/tree")
+async def api_folder_tree(owner: str = ""):
+    tree = await asyncio.to_thread(_folder_store.get_full_tree, owner=owner)
+    return {"tree": tree}
+
+
+@app.get("/api/apps/folders/search")
+async def api_search_folders(q: str = ""):
+    if not q.strip():
+        return {"folders": []}
+    folders = await asyncio.to_thread(_folder_store.search_folders, q.strip())
+    return {"folders": folders}
+
+
+@app.post("/api/apps/folders")
+async def api_create_folder(req: FolderCreateRequest):
+    try:
+        folder = await asyncio.to_thread(
+            _folder_store.create_folder,
+            name=req.name,
+            created_by="web",
+            owner=req.owner,
+            parent_folder_id=req.parent_folder_id,
+            related_entity_id=req.related_entity_id,
+            description=req.description,
+            icon=req.icon,
+            color=req.color,
+            tags=req.tags,
+        )
+    except ValueError as e:
+        from fastapi.responses import JSONResponse
+        return JSONResponse(status_code=409, content={"error": str(e)})
+    return folder
+
+
+@app.get("/api/apps/folders/{folder_id}")
+async def api_get_folder(folder_id: str):
+    detail = await asyncio.to_thread(_folder_store.get_folder_detail, folder_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    return detail
+
+
+@app.patch("/api/apps/folders/{folder_id}")
+async def api_update_folder(folder_id: str, req: FolderUpdateRequest):
+    kwargs = {k: v for k, v in req.dict().items() if v is not None}
+    if not kwargs:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    folder = await asyncio.to_thread(
+        _folder_store.update_folder, folder_id, updated_by="web", **kwargs
+    )
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    return folder
+
+
+@app.delete("/api/apps/folders/{folder_id}")
+async def api_delete_folder(folder_id: str):
+    ok = await asyncio.to_thread(_folder_store.delete_folder, folder_id, deleted_by="web")
+    if not ok:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    return {"ok": True}
+
+
+@app.post("/api/apps/folders/{folder_id}/items")
+async def api_add_folder_item(folder_id: str, req: FolderAddItemRequest):
+    result = await asyncio.to_thread(
+        _folder_store.add_item, folder_id, req.entity_id, added_by="web"
+    )
+    if isinstance(result, str):
+        raise HTTPException(status_code=400, detail=result)
+    return result
+
+
+@app.delete("/api/apps/folders/{folder_id}/items/{entity_id}")
+async def api_remove_folder_item(folder_id: str, entity_id: str):
+    ok = await asyncio.to_thread(
+        _folder_store.remove_item, folder_id, entity_id, removed_by="web"
+    )
+    if not ok:
+        raise HTTPException(status_code=404, detail="Item not found in folder")
+    return {"ok": True}
+
+
+@app.put("/api/apps/folders/{folder_id}/reorder")
+async def api_reorder_folder_items(folder_id: str, req: FolderReorderRequest):
+    await asyncio.to_thread(_folder_store.reorder_items, folder_id, req.entity_ids)
+    return {"ok": True}
+
+
+@app.post("/api/apps/folders/{folder_id}/new-doc")
+async def api_create_doc_in_folder(folder_id: str, req: FolderNewDocRequest):
+    result = await asyncio.to_thread(
+        _folder_store.create_doc_in_folder,
+        folder_id=folder_id,
+        title=req.title,
+        created_by="web",
+        content=req.content,
+        tags=req.tags,
+    )
+    if isinstance(result, str):
+        raise HTTPException(status_code=400, detail=result)
+    return result
+
+
+@app.get("/api/apps/folders/containing/{entity_id}")
+async def api_folders_containing(entity_id: str):
+    folders = await asyncio.to_thread(_folder_store.get_folders_containing, entity_id)
+    return {"folders": folders}
+
+
+# ── Thinking App ──
+import data_layer.skipper_state as _dl_state
+import data_layer.thinking_domains as _dl_domains
+import data_layer.thinking_log as _dl_tlog
+
+
+@app.get("/api/apps/thinking/state")
+async def api_thinking_state(
+    domain: str | None = None,
+    state_type: str | None = None,
+    status: str | None = "active",
+    subject_id: str | None = None,
+    limit: int = 50,
+    offset: int = 0,
+):
+    states = await asyncio.to_thread(
+        _dl_state.list_states,
+        domain=domain, state_type=state_type,
+        status=status, subject_id=subject_id,
+        limit=min(limit, 200), offset=offset,
+    )
+    return {"states": states, "count": len(states)}
+
+
+@app.get("/api/apps/thinking/state/{state_id}")
+async def api_thinking_state_detail(state_id: str):
+    state = await asyncio.to_thread(_dl_state.get_state, state_id)
+    if not state:
+        return {"error": "State entry not found"}
+    return state
+
+
+@app.get("/api/apps/thinking/log")
+async def api_thinking_log(
+    domain: str | None = None,
+    trigger: str | None = None,
+    date: str | None = None,
+    days: int = 1,
+    limit: int = 50,
+    offset: int = 0,
+):
+    entries = await asyncio.to_thread(
+        _dl_tlog.list_log_entries,
+        domain=domain, trigger=trigger,
+        date=date, days=min(days, 30),
+        limit=min(limit, 200), offset=offset,
+    )
+    return {"entries": entries, "count": len(entries)}
+
+
+@app.get("/api/apps/thinking/log/{log_id}")
+async def api_thinking_log_detail(log_id: str):
+    entry = await asyncio.to_thread(_dl_tlog.get_log_entry, log_id)
+    if not entry:
+        return {"error": "Log entry not found"}
+    return entry
+
+
+@app.get("/api/apps/thinking/budget")
+async def api_thinking_budget(domain: str | None = None):
+    usage = await asyncio.to_thread(_dl_tlog.get_today_token_usage, domain=domain)
+    from thinking_scheduler import DAILY_TOKEN_BUDGET
+    usage["budget"] = DAILY_TOKEN_BUDGET
+    usage["usage_pct"] = round(usage.get("total_tokens", 0) / DAILY_TOKEN_BUDGET * 100, 1) if DAILY_TOKEN_BUDGET else 0
+    # Per-domain breakdown
+    by_domain = await asyncio.to_thread(_dl_tlog.get_today_usage_by_domain)
+    usage["by_domain"] = by_domain
+    # OpenAI actual cost (best-effort, non-blocking)
+    usage["daily_cost_usd"] = await _fetch_openai_daily_cost()
+    return usage
+
+
+async def _fetch_openai_daily_cost() -> float | None:
+    """Query OpenAI Organization Costs API for today's spend. Returns USD or None on failure."""
+    import os, requests
+    from datetime import datetime, timezone
+    admin_key = os.getenv("OPENAI_ADMIN_KEY")
+    if not admin_key:
+        return None
+    try:
+        now = datetime.now(timezone.utc)
+        start = int(datetime(now.year, now.month, now.day, tzinfo=timezone.utc).timestamp())
+        resp = await asyncio.to_thread(
+            lambda: requests.get(
+                "https://api.openai.com/v1/organization/costs",
+                headers={"Authorization": f"Bearer {admin_key}"},
+                params={"start_time": start, "bucket_width": "1d"},
+                timeout=10,
+            )
+        )
+        if resp.status_code != 200:
+            logger.warning("OpenAI costs API returned %d: %s", resp.status_code, resp.text[:200])
+            return None
+        data = resp.json()
+        total = 0.0
+        for bucket in data.get("data", []):
+            for result in bucket.get("results", []):
+                amt = result.get("amount", {})
+                total += float(amt.get("value", 0))
+        return round(total, 4)
+    except Exception as e:
+        logger.debug("OpenAI costs fetch failed: %s", e)
+        return None
+
+
+@app.get("/api/apps/thinking/domains")
+async def api_thinking_domains(enabled_only: bool = True):
+    domains = await asyncio.to_thread(_dl_domains.list_domains, enabled_only=enabled_only)
+    return {"domains": domains}
+
+
+class DomainUpdateRequest(BaseModel):
+    enabled: bool | None = None
+    budget_priority: str | None = None
+
+
+@app.patch("/api/apps/thinking/domains/{name}")
+async def api_thinking_domain_update(name: str, body: DomainUpdateRequest):
+    # Chat is a priority-0 domain — cannot be disabled
+    if name == "chat" and body.enabled is False:
+        raise HTTPException(status_code=400, detail="Chat domain cannot be disabled")
+    kwargs = {k: v for k, v in body.dict().items() if v is not None}
+    if not kwargs:
+        return {"error": "No fields to update"}, 400
+    updated = await asyncio.to_thread(_dl_domains.update_domain, name, **kwargs)
+    if not updated:
+        raise HTTPException(status_code=404, detail=f"Domain '{name}' not found")
+    return updated
+
+
+@app.get("/api/apps/thinking/dispatch")
+async def api_thinking_dispatch():
+    """Current dispatch status — what's running, chat preemption, domain tasks."""
+    from thinking_scheduler import get_dispatch_status
+    return get_dispatch_status()
+
+
+# Email routes are now provided by apps/email/routes.py (loaded by app_platform)
+
+
+# ── Behaviors API ──
+import data_layer.behaviors as _dl_behaviors
+
+
+class BehaviorCreateRequest(BaseModel):
+    trigger_description: str
+    action_description: str
+    created_by: str
+    scope: str = "user"
+    notes: str = ""
+
+
+class BehaviorUpdateRequest(BaseModel):
+    trigger_description: str | None = None
+    action_description: str | None = None
+    scope: str | None = None
+    notes: str | None = None
+
+
+@app.get("/api/behaviors")
+async def api_list_behaviors(user_id: str = "", scope: str = ""):
+    behaviors = await asyncio.to_thread(
+        _dl_behaviors.list_behaviors,
+        user_id=user_id or None,
+        scope=scope or None,
+    )
+    return {"behaviors": behaviors}
+
+
+@app.post("/api/behaviors")
+async def api_create_behavior(req: BehaviorCreateRequest):
+    behavior = await asyncio.to_thread(
+        _dl_behaviors.create_behavior,
+        trigger_description=req.trigger_description,
+        action_description=req.action_description,
+        created_by=req.created_by,
+        scope=req.scope,
+        notes=req.notes,
+    )
+    return behavior
+
+
+@app.patch("/api/behaviors/{behavior_id}")
+async def api_update_behavior(behavior_id: str, req: BehaviorUpdateRequest):
+    updated = await asyncio.to_thread(
+        _dl_behaviors.update_behavior,
+        behavior_id=behavior_id,
+        trigger_description=req.trigger_description,
+        action_description=req.action_description,
+        scope=req.scope,
+        notes=req.notes,
+    )
+    if not updated:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Behavior not found")
+    return updated
+
+
+@app.post("/api/behaviors/{behavior_id}/toggle")
+async def api_toggle_behavior(behavior_id: str):
+    result = await asyncio.to_thread(_dl_behaviors.toggle_behavior, behavior_id)
+    if not result:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Behavior not found")
+    return result
+
+
+@app.delete("/api/behaviors/{behavior_id}")
+async def api_delete_behavior(behavior_id: str):
+    deleted = await asyncio.to_thread(_dl_behaviors.delete_behavior, behavior_id)
+    if not deleted:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Behavior not found")
+    return {"ok": True}
+
+
+# ── Admin endpoints ──
+
+@app.get("/api/admin/status")
+async def api_admin_status():
+    """Return agent status including shutdown state and uptime."""
+    from thinking_scheduler import is_shutting_down, get_dispatch_status
+    from job_dispatcher import get_active_job_ids
+    dispatch = get_dispatch_status()
+    return {
+        "build_id": BUILD_ID,
+        "uptime_seconds": int(time.time()) - int(BUILD_ID),
+        "shutting_down": is_shutting_down(),
+        "active_dispatches": len(dispatch.get("active_dispatches", [])),
+        "active_jobs": len(get_active_job_ids()),
+        "env": os.getenv("SKIPPER_ENV", "prod"),
+    }
+
+
+async def _drain_and_exit(max_wait: int = 30):
+    """Background task: wait for in-flight work to finish, then force-exit.
+
+    Runs detached from the HTTP request so the client gets a response
+    immediately and Ctrl+C is not blocked by the drain loop.
+    """
+    import threading
+    from thinking_scheduler import get_dispatch_status
+    from job_dispatcher import get_active_job_ids
+
+    start = time.time()
+    while time.time() - start < max_wait:
+        dispatch = get_dispatch_status()
+        active = [d for d in dispatch.get("active_dispatches", []) if d["domain"] != "chat"]
+        active_jobs = get_active_job_ids()
+
+        if not active and not active_jobs:
+            logger.info("ADMIN: All in-flight work drained \u2014 shutting down")
+            break
+
+        dispatch_names = [d.get("domain", "?") for d in active]
+        all_pending = dispatch_names + list(active_jobs)
+        logger.info("ADMIN: Waiting for %d in-flight items (%.0fs elapsed): %s",
+                     len(all_pending), time.time() - start, ", ".join(all_pending))
+        await asyncio.sleep(3)
+    else:
+        logger.warning("ADMIN: Drain timeout after %ds \u2014 forcing shutdown", max_wait)
+
+    def _do_exit():
+        logger.info("ADMIN: Exiting with code 42 (restart signal)")
+        os._exit(42)
+
+    threading.Timer(1.0, _do_exit).start()
+
+
+@app.post("/api/admin/restart")
+async def api_admin_restart(request: Request):
+    """Graceful restart: signal shutdown, drain in background, then exit with code 42.
+
+    Returns immediately — drain runs as a background task so the HTTP response
+    is not held open and Ctrl+C remains responsive.
+    A wrapper script (run-agent.ps1) sees exit code 42 and restarts the process.
+    """
+    from thinking_scheduler import request_shutdown as thinking_shutdown, is_shutting_down
+    from job_dispatcher import request_shutdown as jobs_shutdown
+    from reminder_scheduler import request_shutdown as reminders_shutdown
+
+    if is_shutting_down():
+        return {"status": "already_shutting_down"}
+
+    thinking_shutdown()
+    jobs_shutdown()
+    reminders_shutdown()
+    logger.info("ADMIN: Graceful restart requested \u2014 draining in-flight work (max 30s)")
+
+    # Notify connected clients
+    await manager.broadcast({"type": "server_restarting"})
+
+    # Drain + exit runs in the background — response returns immediately
+    asyncio.create_task(_drain_and_exit(max_wait=30))
+
+    return {"status": "restarting", "message": "Agent will restart shortly (draining in background)"}
+
+
+# ── Mobile capture page (served before SPA catch-all) ──
+_CAPTURE_HTML = Path(__file__).resolve().parent / "web" / "capture.html"
+
+@app.get("/capture")
+async def serve_capture_page():
+    """Mobile-optimized standalone issue capture page."""
+    if _CAPTURE_HTML.is_file():
+        return FileResponse(_CAPTURE_HTML, media_type="text/html")
+    return {"error": "Capture page not found"}, 404
+
+
+# ── Meal menu export page ──
+_MEAL_MENU_HTML = Path(__file__).resolve().parent / "web" / "meal-menu.html"
+
+@app.get("/meal-menu")
+@app.get("/meal-menu.html")
+async def serve_meal_menu_page():
+    """Standalone restaurant-style meal menu export / print page."""
+    if _MEAL_MENU_HTML.is_file():
+        return FileResponse(_MEAL_MENU_HTML, media_type="text/html")
+    return {"error": "Meal menu page not found"}, 404
+
+
+# ── Anime player pop-out page ──
+_ANIME_PLAYER_HTML = Path(__file__).resolve().parent / "web" / "anime-player.html"
+
+@app.get("/anime-player")
+@app.get("/anime-player.html")
+async def serve_anime_player_page():
+    """Standalone HLS video player (pop-out from the Anime app)."""
+    if _ANIME_PLAYER_HTML.is_file():
+        return FileResponse(_ANIME_PLAYER_HTML, media_type="text/html")
+    return {"error": "Anime player page not found"}, 404
+
+
+# ── Serve built frontend (SPA) ──
+_DIST = Path(__file__).resolve().parent / "web" / "dist"
+if _DIST.is_dir():
+    # Mount static assets (JS, CSS, images)
+    app.mount("/assets", StaticFiles(directory=_DIST / "assets"), name="static-assets")
+
+    # Serve root-level static files (manifest, SW, icons)
+    @app.get("/{filename:path}")
+    async def spa_fallback(request: Request, filename: str):
+        # If the file exists in dist, serve it directly
+        file_path = _DIST / filename
+        if filename and file_path.is_file():
+            return FileResponse(file_path)
+        # Otherwise serve index.html (SPA client-side routing)
+        return FileResponse(_DIST / "index.html")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
