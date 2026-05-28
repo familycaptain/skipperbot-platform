@@ -454,7 +454,8 @@ def _events_from_nags(from_date: str, to_date: str, assigned_to: str | None) -> 
 def _events_from_todo(from_date: str, to_date: str, assigned_to: str | None) -> list[dict]:
     """Show an all-day 'To-Do List (N items)' event on each user's nudge day within the range."""
     try:
-        from data_layer.todo import get_all_configs, get_todo_items
+        from apps.todo.data import get_all_configs
+        from apps.todo.store import get_todo_items
 
         start_d = date.fromisoformat(from_date)
         end_d = date.fromisoformat(to_date)

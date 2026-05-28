@@ -368,7 +368,7 @@ def _backlog_schedules(user_id: str) -> list[dict]:
 def _backlog_todo(user_id: str) -> list[dict]:
     """Top items from the user's default to-do list."""
     try:
-        from data_layer.todo import get_todo_items
+        from apps.todo.store import get_todo_items
         result = get_todo_items(user_id)
         if not result or not result.get("items"):
             return []

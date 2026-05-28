@@ -2054,7 +2054,20 @@ async def api_sync_list(list_id: str):
 # App API endpoints — To-Do
 # ---------------------------------------------------------------------------
 
-import data_layer.todo as dl_todo
+# Todo helpers — config CRUD lives in apps.todo.data, list+items joining
+# helpers in apps.todo.store. Bundle into a SimpleNamespace so the
+# existing `dl_todo.X` callsites in this file don't need to change.
+from types import SimpleNamespace as _SimpleNamespace
+from apps.todo import data as _dl_todo_data
+from apps.todo import store as _dl_todo_store
+dl_todo = _SimpleNamespace(
+    get_config          = _dl_todo_data.get_config,
+    upsert_config       = _dl_todo_data.upsert_config,
+    get_all_configs     = _dl_todo_data.get_all_configs,
+    ensure_default_list = _dl_todo_store.ensure_default_list,
+    get_todo_items      = _dl_todo_store.get_todo_items,
+    get_backlog_items   = _dl_todo_store.get_backlog_items,
+)
 
 
 @app.get("/api/apps/todo/config")

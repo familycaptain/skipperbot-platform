@@ -48,7 +48,8 @@ async def check_todo_nudges():
       - no nudge was already sent today (dedup)
     """
     try:
-        from data_layer.todo import get_all_configs, get_todo_items
+        from apps.todo.data import get_all_configs
+        from apps.todo.store import get_todo_items
     except Exception as e:
         logger.error("TODO_NUDGE: Failed to import todo data layer: %s", e)
         return

@@ -1,0 +1,97 @@
+id: todo
+name: To-Do
+version: 1.0.0
+description: >
+  Per-user "to-do" lens. Each user gets one default list (from the
+  Lists app) and an optional backlog list, plus a weekly nudge that
+  encourages a quick triage. Todo owns the user-scoped config; the
+  underlying list items live in app_lists.
+
+# Required core app — platform refuses to start without it.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Todo has NO entity types of its own.
+# A "to-do item" is just an `li-*` row in app_lists.list_items, owned
+# by the Lists app. The config table is keyed by `user_id`, not by an
+# entity-id prefix, so nothing to declare here.
+entity_types: []
+
+# Platform services this app consumes.
+platform_deps:
+  - db
+  - time      # for nudge_time + last_nudged calcs
+  - config    # per-app preferences
+
+# Other apps this app depends on. Todo is built on top of Lists — the
+# whole point of the app is to be a thin lens over a single list. This
+# direction is allowed (apps may depend on other installed apps); the
+# loader will refuse to start if `lists` isn't present.
+app_deps:
+  - lists
+
+emits:
+  - todo.config.updated
+  - todo.default_list_changed
+  - todo.backlog_list_changed
+  - todo.nudge_sent
+
+subscribes: []
+
+# Tool category for keyword routing.
+tool_category:
+  description: >
+    Show / add / mark-done items on a single "to-do" list per user.
+    A thin lens over the Lists app. For full list management
+    (create, alias, Trello sync) use the lists tools instead.
+  keywords:
+    - todo
+    - to-do
+    - to do
+    - my todo
+    - my to-do
+    - my to do
+    - to-do list
+    - todo list
+    - my list
+    - check off
+    - mark done
+    - finished
+    - completed it
+    - add to my todo
+    - put on my todo
+    - i need to do
+    - what's on my todo
+    - what is on my todo
+
+# Per-app config (rendered as cog-wheel form by the Settings app).
+config:
+  - key: weekly_nudge_enabled
+    type: boolean
+    default: true
+    label: "Weekly nudge"
+    description: "Send a Saturday morning prompt to review the to-do list."
+  - key: weekly_nudge_day
+    type: enum
+    options: [monday, tuesday, wednesday, thursday, friday, saturday, sunday]
+    default: saturday
+    label: "Nudge day"
+    description: "Which day of the week the weekly nudge fires."
+  - key: weekly_nudge_time
+    type: string
+    default: "07:00"
+    label: "Nudge time"
+    description: "Local time of day (HH:MM) the weekly nudge fires."
+  - key: show_on_calendar
+    type: boolean
+    default: true
+    label: "Show on calendar"
+    description: "Include the to-do list on the day-view calendar app."
+
+# No thinking domain. Todo is passive; the nudge is delivered via the
+# notifications app on a schedule.
+thinking: []
+
+# No background jobs.
+job_types: []

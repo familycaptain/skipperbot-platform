@@ -219,13 +219,9 @@ const APP_MANIFESTS = {
     singleton: true,
     page: 3,
   },
-  todo: {
-    id: "todo",
-    name: "To-Do",
-    icon: ListTodo,
-    component: lazy(() => import("./TodoApp")),
-    singleton: true,
-  },
+  // `todo` is now discovered from apps/todo/ui/index.js (the todo app
+  // owns its own UI). Removed from the hardcoded registry as part of
+  // the todo app packaging.
   // `lists` is now discovered from apps/lists/ui/index.js (the lists app
   // owns its own UI). Removed from the hardcoded registry as part of the
   // lists app packaging.
