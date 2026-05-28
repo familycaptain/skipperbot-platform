@@ -162,8 +162,8 @@
       "get_knowledge_crawl"
     ],
     "ack": {
-      "learn_from_url": "Reading {url} \u2014 one moment...",
-      "learn_from_url:follow_links": "Got it \u2014 reading {url} and following links. This may take a few minutes. I'll report back when it's done.",
+      "learn_from_url": "Reading {url} — one moment...",
+      "learn_from_url:follow_links": "Got it — reading {url} and following links. This may take a few minutes. I'll report back when it's done.",
       "remove_knowledge_source": "Removing knowledge source {source_id}...",
       "query_knowledge": "Searching knowledge base...",
       "list_knowledge_sources": "Listing knowledge sources...",
@@ -308,78 +308,6 @@
       "gmail",
       "reply email",
       "compose email"
-    ]
-  },
-  "reminders": {
-    "guide": "reminders.md",
-    "description": "Set, list, cancel, and modify reminders and nags for users",
-    "tools": [
-      "set_reminder",
-      "get_reminders",
-      "cancel_reminder_by_id",
-      "modify_reminder_by_id",
-      "set_nag",
-      "snooze_reminder"
-    ],
-    "ack": {
-      "set_reminder": "Setting reminder...",
-      "get_reminders": "Fetching reminders...",
-      "cancel_reminder_by_id": "Cancelling reminder {reminder_id}...",
-      "modify_reminder_by_id": "Updating reminder {reminder_id}...",
-      "set_nag": "Setting up a nag for {user_id}...",
-      "snooze_reminder": "Snoozing reminder..."
-    },
-    "keywords": [
-      "remind",
-      "reminder",
-      "reminders",
-      "remind me",
-      "set reminder",
-      "cancel reminder",
-      "my reminders",
-      "don't forget",
-      "appointment",
-      "alarm",
-      "at",
-      "tomorrow",
-      "next week",
-      "every day",
-      "every week",
-      "recurring",
-      "schedule",
-      "when",
-      "nag",
-      "nag me",
-      "keep reminding",
-      "bug me",
-      "don't let me forget",
-      "don't let",
-      "forget",
-      "nag him",
-      "nag her",
-      "keep nagging",
-      "bug him",
-      "bug her",
-      "every morning",
-      "every night",
-      "every evening",
-      "every afternoon",
-      "in the morning",
-      "in the evening",
-      "in the afternoon",
-      "at night",
-      "snooze",
-      "come back",
-      "follow up",
-      "remind me again",
-      "try again in",
-      "come back in",
-      "busy right now",
-      "later",
-      "in a bit",
-      "in an hour",
-      "bounce it back",
-      "put it off"
     ]
   },
   "timers": {
@@ -546,7 +474,7 @@
   },
   "docs": {
     "guide": "docs.md",
-    "description": "Create, edit, search, and manage living markdown documents (d-* entities) \u2014 research pages, curated notes, reference material",
+    "description": "Create, edit, search, and manage living markdown documents (d-* entities) — research pages, curated notes, reference material",
     "tools": [
       "create_doc",
       "get_doc",
@@ -694,7 +622,7 @@
   },
   "brainstorming": {
     "guide": "brainstorming.md",
-    "description": "Create, explore, and develop ideas \u2014 the pre-project creative workspace with markdown documents",
+    "description": "Create, explore, and develop ideas — the pre-project creative workspace with markdown documents",
     "tools": [
       "create_idea",
       "list_ideas",
@@ -759,7 +687,7 @@
     ]
   },
   "scrum": {
-    "description": "Daily scrum check-in \u2014 record responses to PM daily update items",
+    "description": "Daily scrum check-in — record responses to PM daily update items",
     "tools": [
       "respond_to_scrum_item",
       "get_pending_scrum_items"
@@ -788,7 +716,7 @@
   },
   "evolve": {
     "guide": "evolve.md",
-    "description": "Skipper's self-improvement feed \u2014 findings, proposals, questions, and plans with conversation threads",
+    "description": "Skipper's self-improvement feed — findings, proposals, questions, and plans with conversation threads",
     "tools": [
       "create_evolution_item",
       "list_evolution_items",
@@ -873,7 +801,7 @@
   },
   "behaviors": {
     "guide": "behaviors.md",
-    "description": "Create and manage user-customizable behavior rules \u2014 always-active if/then instructions injected into every chat turn",
+    "description": "Create and manage user-customizable behavior rules — always-active if/then instructions injected into every chat turn",
     "tools": [
       "add_behavior",
       "list_behaviors",

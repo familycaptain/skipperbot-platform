@@ -27,7 +27,7 @@ import mcp_client
 import tool_dispatch
 from chat import process_chat
 import discord_bot
-from reminder_scheduler import start_reminder_scheduler
+from apps.reminders.scheduler import start_reminder_scheduler
 from job_dispatcher import start_dispatcher
 from job_runner import start_job_runner
 from thinking_scheduler import start_thinking_scheduler
@@ -1597,7 +1597,7 @@ async def api_tool_guide(guide_name: str):
 async def api_list_reminders(user_id: str = "", include_inactive: str = "false"):
     """List reminders for a user, or all reminders if user_id is empty."""
     def _fetch():
-        from reminder_store import list_reminders as _list, _load_reminders
+        from app_platform.reminders import list_reminders as _list, _load_reminders
         inc = include_inactive.strip().lower() == "true"
         if user_id and user_id.strip():
             return _list(user_id.strip(), include_inactive=inc)
@@ -1613,7 +1613,7 @@ async def api_list_reminders(user_id: str = "", include_inactive: str = "false")
 @app.post("/api/apps/reminders/{reminder_id}/cancel")
 async def api_cancel_reminder(reminder_id: str):
     """Cancel (deactivate) a reminder."""
-    from reminder_store import cancel_reminder as _cancel
+    from app_platform.reminders import cancel_reminder as _cancel
     result = await asyncio.to_thread(_cancel, reminder_id)
     return {"ok": "not found" not in result.lower(), "message": result}
 
@@ -1621,7 +1621,7 @@ async def api_cancel_reminder(reminder_id: str):
 @app.patch("/api/apps/reminders/{reminder_id}")
 async def api_modify_reminder(reminder_id: str, request: Request):
     """Modify a reminder (message, remind_at, recurrence, time_slot)."""
-    from reminder_store import modify_reminder as _modify
+    from app_platform.reminders import modify_reminder as _modify
     body = await request.json()
     def _do():
         return _modify(
@@ -1803,7 +1803,7 @@ def _resolve_source_item(source_type: str, source_id: str) -> dict:
         return {"title": e["name"], "status": e["status"], "priority": e.get("priority", ""),
                 "detail": proj_name, "due_date": e.get("due_date", "")}
     elif source_type in ("reminder", "nag"):
-        from data_layer.reminders import get_reminder
+        from app_platform.reminders import get_reminder
         r = get_reminder(source_id)
         if not r:
             return {}
@@ -4122,7 +4122,7 @@ async def api_admin_restart(request: Request):
     """
     from thinking_scheduler import request_shutdown as thinking_shutdown, is_shutting_down
     from job_dispatcher import request_shutdown as jobs_shutdown
-    from reminder_scheduler import request_shutdown as reminders_shutdown
+    from apps.reminders.scheduler import request_shutdown as reminders_shutdown
 
     if is_shutting_down():
         return {"status": "already_shutting_down"}

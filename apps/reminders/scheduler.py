@@ -1,13 +1,28 @@
+"""Reminders — scheduler loop.
+
+Polls ``app_reminders.reminders`` for due rows every ``CHECK_INTERVAL``
+seconds (default 30s). For each due reminder, records a notification
+through the ``app_platform.notifications`` shim, advances the reminder's
+next occurrence (or deactivates one-shots), and on the same tick:
+
+- Runs the schedules notifier (still platform-side; schedules app is
+  pending packaging).
+- Runs the to-do nudge notifier.
+- Runs registered nag providers.
+- Flushes the notifications delivery queue so the user sees messages
+  without a tick of delay.
+
+Ported from ``reminder_scheduler.py`` for sub-chunk 7e. Only changes:
+the store helpers now live at ``apps.reminders.store`` and the
+notifications-create call goes through ``app_platform.notifications``
+(the shim introduced in Chunk 6).
 """
-SkipperBot Reminder Scheduler
-Background async loop that checks for due reminders every ~30 seconds.
-Creates notification records for due reminders; actual delivery is handled
-by the centralized notification_delivery module.
-"""
+
+from __future__ import annotations
 
 import asyncio
 from config import logger
-from reminder_store import get_due_reminders, mark_delivered, assign_nag_times
+from apps.reminders.store import get_due_reminders, mark_delivered, assign_nag_times
 from app_platform.notifications import create_notification
 
 
@@ -16,6 +31,7 @@ CHECK_INTERVAL = 30
 
 # Graceful shutdown flag
 _shutting_down = False
+
 
 def request_shutdown():
     """Signal the reminder scheduler to stop processing."""
@@ -27,8 +43,9 @@ def request_shutdown():
 def process_due_reminder(reminder: dict):
     """Process a due reminder: create a notification record and advance recurrence.
 
-    Actual delivery (Discord, Pushover, WebSocket, chat log) is handled by
-    the centralized notification_delivery module later in the same cycle.
+    Actual delivery (Discord, Pushover, WebSocket, chat log) is handled
+    by the centralized notifications delivery loop later in the same
+    cycle.
     """
     user_id = reminder["user_id"]
     message = reminder["message"]
@@ -44,7 +61,8 @@ def process_due_reminder(reminder: dict):
     except Exception:
         channel = "discord"
 
-    # Create notification record (delivered=False) — picked up by notification_delivery
+    # Create notification record (delivered=False) — picked up by the
+    # notifications delivery loop.
     try:
         create_notification(
             recipient=user_id,
@@ -69,20 +87,21 @@ async def check_and_deliver():
         # Assign random waking-hour times for any nags that need today's schedule
         assign_nag_times()
         due = get_due_reminders()
-        if not due:
-            pass
-        else:
+        if due:
             logger.info("REMINDER: Found %d due reminder(s)", len(due))
             for reminder in due:
                 try:
                     process_due_reminder(reminder)
                 except Exception as e:
-                    logger.error("REMINDER: Failed to process reminder %s: %s",
-                                 reminder.get("id", "?"), str(e))
+                    logger.error(
+                        "REMINDER: Failed to process reminder %s: %s",
+                        reminder.get("id", "?"), str(e),
+                    )
     except Exception as e:
         logger.error("REMINDER: Error checking due reminders: %s", str(e))
 
-    # Check schedule notifications (upcoming + overdue) — creates notification records
+    # Check schedule notifications (upcoming + overdue) — creates
+    # notification records. Still platform-side until schedules is packaged.
     try:
         from schedule_notifier import check_schedule_notifications
         await check_schedule_notifications()
@@ -109,7 +128,6 @@ async def check_and_deliver():
         await deliver_pending_notifications()
     except Exception as e:
         logger.error("NOTIF_DELIVERY: Error delivering pending notifications: %s", str(e))
-
 
 
 async def start_reminder_scheduler():

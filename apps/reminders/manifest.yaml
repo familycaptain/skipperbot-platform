@@ -1,0 +1,116 @@
+id: reminders
+name: Reminders
+version: 1.0.0
+description: >
+  Per-user "tell me X at time Y" records. Supports one-shot and
+  recurring (RRULE) reminders, optional nag mode (re-fire daily until
+  acknowledged), snooze, and a desktop UI for editing the list.
+
+# Required core app — platform refuses to start without it.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns one entity prefix.
+entity_types:
+  - prefix: r
+    name: reminder
+    id_format: "r-{hex8}"
+    table: reminders
+
+# Platform services this app consumes.
+platform_deps:
+  - db
+  - memory         # digest_record on every reminder CRUD
+  - links          # cross-entity linking (a reminder may be linked to a task/goal)
+  - events         # emits reminder.created/updated/deleted/fired
+  - time           # platform.time.now() for due-date math, timezone for display
+  - config         # per-app preferences
+  - notifications  # delivery: a fired reminder creates a notification row
+
+# Reminders is widely consumed but doesn't depend on a specific
+# other app at install time. Goals + chat + Trello can optionally
+# create reminders, but reminders works without them. The Schedules
+# app is referenced by `schedule_id` (plain TEXT, no FK) when a
+# reminder is backed by a recurring schedule, but Schedules isn't
+# required for one-shot reminders.
+app_deps: []
+
+emits:
+  - reminder.created
+  - reminder.updated
+  - reminder.deleted
+  - reminder.fired
+  - reminder.snoozed
+  - reminder.cancelled
+
+subscribes: []
+
+# Tool category for keyword routing.
+tool_category:
+  description: >
+    Create / list / cancel / modify / snooze user reminders. Supports
+    one-shot ("remind me tomorrow at 9am") and recurring ("every Monday
+    at 7") reminders, plus daily-nag-until-acknowledged.
+  keywords:
+    - remind
+    - reminder
+    - reminders
+    - remind me
+    - tell me later
+    - tell me at
+    - nag
+    - nag me
+    - daily
+    - every day
+    - every monday
+    - every tuesday
+    - every wednesday
+    - every thursday
+    - every friday
+    - every saturday
+    - every sunday
+    - weekly
+    - monthly
+    - yearly
+    - annual
+    - tomorrow
+    - next week
+    - in an hour
+    - in 30 minutes
+    - snooze
+    - postpone
+    - delay reminder
+    - cancel reminder
+    - dismiss reminder
+
+config:
+  - key: default_morning_slot
+    type: string
+    default: "08:00"
+    label: "Default morning slot"
+    description: "Local time of day used when the user picks 'morning' as the time slot for a nag."
+  - key: default_afternoon_slot
+    type: string
+    default: "13:00"
+    label: "Default afternoon slot"
+    description: "Local time of day used when the user picks 'afternoon' as the time slot for a nag."
+  - key: default_evening_slot
+    type: string
+    default: "19:00"
+    label: "Default evening slot"
+    description: "Local time of day used when the user picks 'evening' as the time slot for a nag."
+  - key: scheduler_tick_seconds
+    type: integer
+    default: 30
+    label: "Scheduler tick (seconds)"
+    description: "How often the scheduler loop checks for due reminders. Lower = lower latency, higher = less DB load."
+
+# No thinking domain — reminders is passive infrastructure (the
+# scheduler is event-driven, not a thinking domain).
+thinking: []
+
+# No background jobs declared via the job system; the scheduler loop
+# is launched directly at platform startup, like the notifications
+# delivery loop.
+job_types: []

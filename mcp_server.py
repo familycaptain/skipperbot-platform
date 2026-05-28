@@ -44,7 +44,8 @@ from tools.tail_tool import tail_file
 from tools.json_validate_tool import json_validate_file
 from tools.yaml_validate_tool import yaml_validate_file
 from tools.pushover_tool import send_pushover_notification
-from tools.reminder_tool import set_reminder, get_reminders, cancel_reminder_by_id, modify_reminder_by_id, set_nag, snooze_reminder
+# reminders tools moved to apps/reminders/tools.py (app package).
+# The platform loader auto-discovers them at startup.
 from tools.timer_tool import start_timer, list_timers, cancel_timer
 from tools.link_tool import link_entities, get_entity_links, unlink_entities
 # notifications tools moved to apps/notifications/tools.py (app package).
@@ -109,12 +110,9 @@ mcp.tool()(tail_file)
 mcp.tool()(json_validate_file)
 mcp.tool()(yaml_validate_file)
 mcp.tool()(send_pushover_notification)
-mcp.tool()(set_reminder)
-mcp.tool()(get_reminders)
-mcp.tool()(cancel_reminder_by_id)
-mcp.tool()(modify_reminder_by_id)
-mcp.tool()(set_nag)
-mcp.tool()(snooze_reminder)
+# reminders tools (set_reminder, get_reminders, cancel_reminder_by_id,
+# modify_reminder_by_id, set_nag, snooze_reminder) are now registered by
+# the platform loader from apps/reminders/tools.py.
 mcp.tool()(start_timer)
 mcp.tool()(list_timers)
 mcp.tool()(cancel_timer)

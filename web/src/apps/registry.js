@@ -126,13 +126,9 @@ const APP_MANIFESTS = {
     component: lazy(() => import("./PlaceholderApp")),
     singleton: true,
   },
-  reminders: {
-    id: "reminders",
-    name: "Reminders",
-    icon: Bell,
-    component: lazy(() => import("./RemindersApp")),
-    singleton: true,
-  },
+  // `reminders` is now discovered from apps/reminders/ui/index.js (the
+  // reminders app owns its own UI). Removed from the hardcoded registry
+  // as part of the reminders app packaging.
   behaviors: {
     id: "behaviors",
     name: "Behaviors",

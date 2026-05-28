@@ -1,21 +1,32 @@
+"""Reminders — MCP tools.
+
+Six tools used by the chat agent:
+
+- ``set_reminder(user_id, message, remind_at, rrule="")``
+- ``get_reminders(user_id, include_inactive="false")``
+- ``cancel_reminder_by_id(reminder_id)``
+- ``modify_reminder_by_id(...)``
+- ``set_nag(user_id, message, time_slot="")``
+- ``snooze_reminder(reminder_id, duration)``
+
+Ported from ``tools/reminder_tool.py`` for sub-chunk 7e. Only change
+is the import path: the store helpers now live at
+``apps.reminders.store``.
 """
-Reminder Tool - Set, list, cancel, and modify reminders.
-All times should be in the configured TIMEZONE as ISO datetime strings.
-"""
+
+from __future__ import annotations
 
 import os
 import sys
-from dotenv import load_dotenv
-load_dotenv()
+import re
 
-# Ensure project root is importable
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Make sure the platform root is on sys.path so this module is importable
+# both as ``apps.reminders.tools`` and (rarely) directly.
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-import re
-
-from reminder_store import (
+from apps.reminders.store import (
     create_reminder,
     create_nag as _create_nag,
     list_reminders as _list_reminders,

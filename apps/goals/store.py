@@ -433,7 +433,7 @@ def _refresh_project_nag(project_id: str, reason: str = ""):
         logger.info("AUTONAG: No change needed for project %s", project_id)
         return
 
-    from reminder_store import _load_reminders, _save_reminders
+    from app_platform.reminders import _load_reminders, _save_reminders
 
     reminders = _load_reminders()
     nag = None
@@ -2226,7 +2226,7 @@ def set_due_date_reminder(
     try:
         from datetime import timedelta
         from dateutil.parser import parse as parse_date
-        from reminder_store import create_reminder
+        from app_platform.reminders import create_reminder
         from link_registry import create_link
 
         due = parse_date(date_str)

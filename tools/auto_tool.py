@@ -325,7 +325,7 @@ def log_service(
             try:
                 vehicle = _dl.get_vehicle(vehicle_id.strip())
                 veh_name = vehicle["name"] if vehicle else vehicle_id
-                from data_layer.reminders import save_reminder
+                from app_platform.reminders import save_reminder
                 reminder_id = f"r-{uuid.uuid4().hex[:8]}"
                 reminder = {
                     "id": reminder_id,

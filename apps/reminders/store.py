@@ -1,9 +1,27 @@
+"""Reminders — business logic.
+
+The main public entry points:
+
+- ``create_reminder(...)`` — used by chat tools and other apps
+  (via the ``app_platform.reminders`` shim).
+- ``create_nag(...)`` — daily-nag-until-acknowledged variant.
+- ``list_reminders(user_id, include_inactive=False)`` — desktop UI feed.
+- ``cancel_reminder(reminder_id)`` / ``modify_reminder(...)`` — edits.
+- ``snooze_reminder(reminder_id, minutes)`` — push to a later time.
+- ``get_due_reminders()`` / ``mark_delivered(reminder_id)`` — used by
+  the scheduler loop.
+
+Plus several internal helpers for RRULE → schedule parameter mapping,
+nag-time selection, and recurrence iteration.
+
+Ported from ``reminder_store.py`` for sub-chunk 7c-part-2. Functionally
+identical; only difference is routing all persistence through
+``apps.reminders.data`` instead of ``data_layer.reminders``. Schedule
+integration (``data_layer.schedules``) is left untouched here — the
+``schedules`` app is still pending packaging in a later chunk.
 """
-SkipperBot Reminder Store
-CRUD for reminders backed by Postgres via data_layer.reminders.
-Supports one-shot and recurring schedules per user.
-All times use the configured TIMEZONE.
-"""
+
+from __future__ import annotations
 
 import hashlib
 import uuid
@@ -11,17 +29,22 @@ from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
 
 from dateutil.rrule import rrulestr
+
 from auto_memory import log_entity_change
 from app_platform.memory import digest_record
 from config import NAG_WAKE_HOUR, NAG_SLEEP_HOUR, NAG_SLOTS, TIMEZONE
-import data_layer.reminders as _dl_rem
-import data_layer.schedules as _dl_sched
+from apps.reminders import data as _dl_rem
+import data_layer.schedules as _dl_sched  # platform-side; schedules app not yet packaged
+
 
 _REMINDER_HINT = (
     "Focus on: who the reminder is for, the reminder message, when it fires (remind_at), "
     "whether it repeats (recurrence rule), and whether it is a daily nag reminder."
 )
 
+# Module-local timezone for ISO timestamps. Mirrors the pattern used by
+# the other store modules (goals, lists, notifications). The name is
+# historical; the value reflects whatever the TIMEZONE env var points to.
 CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 # RRULE day abbreviation → schedule day name
@@ -37,7 +60,7 @@ _FREQ_MAP = {
 
 
 # ---------------------------------------------------------------------------
-# Persistence — Postgres via data_layer
+# Persistence
 # ---------------------------------------------------------------------------
 
 def _load_reminders() -> list[dict]:
@@ -542,7 +565,7 @@ def _fix_until_tz(rrule_string: str, dtstart: datetime) -> str:
 
     dateutil requires UNTIL to be UTC (ending with Z) when dtstart is
     timezone-aware. This converts naive UNTIL values to UTC assuming
-    they were specified in Central time.
+    they were specified in the platform's local timezone.
     """
     import re
     match = re.search(r'UNTIL=(\d{8}T\d{6})(?!Z)', rrule_string)
@@ -552,9 +575,9 @@ def _fix_until_tz(rrule_string: str, dtstart: datetime) -> str:
     naive_str = match.group(1)
     try:
         naive_dt = datetime.strptime(naive_str, "%Y%m%dT%H%M%S")
-        # Treat as Central, convert to UTC
-        central_dt = naive_dt.replace(tzinfo=CENTRAL_TZ)
-        utc_dt = central_dt.astimezone(ZoneInfo("UTC"))
+        # Treat as platform-local, convert to UTC
+        local_dt = naive_dt.replace(tzinfo=CENTRAL_TZ)
+        utc_dt = local_dt.astimezone(ZoneInfo("UTC"))
         utc_str = utc_dt.strftime("%Y%m%dT%H%M%S") + "Z"
         return rrule_string.replace(f"UNTIL={naive_str}", f"UNTIL={utc_str}")
     except ValueError:
@@ -708,7 +731,7 @@ def compute_next_occurrence(current_dt: datetime, recurrence) -> datetime | None
                     or legacy dict format (auto-converted).
 
     Returns:
-        Next timezone-aware datetime in Central time, or None if ended.
+        Next timezone-aware datetime in the platform's local timezone, or None if ended.
     """
     if current_dt.tzinfo is None:
         current_dt = current_dt.replace(tzinfo=CENTRAL_TZ)
@@ -720,7 +743,7 @@ def compute_next_occurrence(current_dt: datetime, recurrence) -> datetime | None
         rrule_string = str(recurrence).strip()
 
     # dateutil requires UNTIL to be UTC (with Z) when dtstart is tz-aware.
-    # Auto-fix naive UNTIL values by converting Central time to UTC.
+    # Auto-fix naive UNTIL values by converting local time to UTC.
     rrule_string = _fix_until_tz(rrule_string, current_dt)
 
     try:
@@ -728,7 +751,7 @@ def compute_next_occurrence(current_dt: datetime, recurrence) -> datetime | None
         next_dt = rule.after(current_dt, inc=False)
         if next_dt is None:
             return None
-        # Ensure Central timezone
+        # Ensure local timezone
         if next_dt.tzinfo is None:
             next_dt = next_dt.replace(tzinfo=CENTRAL_TZ)
         return next_dt

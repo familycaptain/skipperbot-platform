@@ -800,7 +800,7 @@ def enable_project_nag(
             return f"No actionable tasks in project '{project['name']}'. Add tasks first."
 
         # Create the nag
-        from reminder_store import create_nag
+        from app_platform.reminders import create_nag
         nag_message = f"[{project['name']}] Next up: {next_task['name']} ({next_task['id']})"
         nag = create_nag(
             user_id=user_id.strip().lower(),
@@ -865,7 +865,7 @@ def disable_project_nag(
         # Cancel the nag reminder
         nag_id = nag_config.get("nag_id")
         if nag_id:
-            from reminder_store import cancel_reminder
+            from app_platform.reminders import cancel_reminder
             cancel_reminder(nag_id)
 
         project["auto_nag"] = None
