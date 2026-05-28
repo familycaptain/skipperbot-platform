@@ -28,8 +28,8 @@ import tool_dispatch
 from chat import process_chat
 import discord_bot
 from apps.reminders.scheduler import start_reminder_scheduler
-from job_dispatcher import start_dispatcher
-from job_runner import start_job_runner
+from app_platform.jobs import start_dispatcher
+from apps.jobs.runner import start_job_runner
 from thinking_scheduler import start_thinking_scheduler
 from job_handlers import register_all_handlers
 from trello_sync import start_trello_sync
@@ -1494,7 +1494,7 @@ async def api_delete_image(image_id: str):
 async def api_list_jobs(status: str = "", job_type: str = "", limit: int = 50,
                         user_id: str = ""):
     """List jobs with optional filters."""
-    from data_layer.job_queue import list_jobs, list_running
+    from app_platform.jobs import list_jobs, list_running
     if status == "running":
         return await asyncio.to_thread(list_running)
     return await asyncio.to_thread(list_jobs, status, job_type, limit)
@@ -1503,7 +1503,7 @@ async def api_list_jobs(status: str = "", job_type: str = "", limit: int = 50,
 @app.get("/api/jobs/{job_id}")
 async def api_get_job(job_id: str, user_id: str = ""):
     """Get a specific job by ID."""
-    from data_layer.job_queue import get_job
+    from app_platform.jobs import get_job
     job = await asyncio.to_thread(get_job, job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -1513,7 +1513,7 @@ async def api_get_job(job_id: str, user_id: str = ""):
 @app.post("/api/jobs/{job_id}/cancel")
 async def api_cancel_job(job_id: str, user_id: str = ""):
     """Cancel a queued or running job."""
-    from data_layer.job_queue import cancel_job
+    from app_platform.jobs import cancel_job
     result = await asyncio.to_thread(cancel_job, job_id, user_id)
     if not result:
         raise HTTPException(status_code=404, detail="Job not found or already finished")
@@ -1524,15 +1524,15 @@ async def api_cancel_job(job_id: str, user_id: str = ""):
 async def api_get_job_logs(job_id: str, after: int = 0, limit: int = 500,
                            user_id: str = ""):
     """Get log lines for a specific job. Supports polling via after=<last_id>."""
-    from data_layer.job_queue import get_logs
+    from app_platform.jobs import get_logs
     return await asyncio.to_thread(get_logs, job_id, limit, after)
 
 
 @app.post("/api/jobs/{job_id}/rerun")
 async def api_rerun_job(job_id: str, user_id: str = ""):
     """Re-run a completed/failed job by creating a new child job."""
-    from data_layer.job_queue import get_job
-    from job_dispatcher import submit_job
+    from app_platform.jobs import get_job
+    from app_platform.jobs import submit_job
     original = await asyncio.to_thread(get_job, job_id)
     if not original:
         raise HTTPException(status_code=404, detail="Job not found")
@@ -3130,7 +3130,7 @@ async def api_get_backup(backup_id: str):
 @app.post("/api/apps/backups/run")
 async def api_run_backup():
     """Trigger an on-demand backup (ignores BACKUP_ENABLED)."""
-    from job_dispatcher import submit_job
+    from app_platform.jobs import submit_job
     job = submit_job(
         "backup",
         config={"on_demand": True},
@@ -4065,7 +4065,7 @@ async def api_delete_behavior(behavior_id: str):
 async def api_admin_status():
     """Return agent status including shutdown state and uptime."""
     from thinking_scheduler import is_shutting_down, get_dispatch_status
-    from job_dispatcher import get_active_job_ids
+    from app_platform.jobs import get_active_job_ids
     dispatch = get_dispatch_status()
     return {
         "build_id": BUILD_ID,
@@ -4085,7 +4085,7 @@ async def _drain_and_exit(max_wait: int = 30):
     """
     import threading
     from thinking_scheduler import get_dispatch_status
-    from job_dispatcher import get_active_job_ids
+    from app_platform.jobs import get_active_job_ids
 
     start = time.time()
     while time.time() - start < max_wait:
@@ -4121,7 +4121,7 @@ async def api_admin_restart(request: Request):
     A wrapper script (run-agent.ps1) sees exit code 42 and restarts the process.
     """
     from thinking_scheduler import request_shutdown as thinking_shutdown, is_shutting_down
-    from job_dispatcher import request_shutdown as jobs_shutdown
+    from app_platform.jobs import request_shutdown as jobs_shutdown
     from apps.reminders.scheduler import request_shutdown as reminders_shutdown
 
     if is_shutting_down():

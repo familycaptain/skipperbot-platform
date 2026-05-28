@@ -449,7 +449,7 @@ def _run_print_pipeline(job: dict) -> dict:
 
     Returns dict with: success, method, error.
     """
-    from job_store import update_job_progress, get_job
+    from app_platform.jobs import update_job_progress, get_job
 
     job_id = job["id"]
     config = job.get("config", {})
@@ -612,7 +612,7 @@ _running_print_jobs: set[str] = set()
 
 async def check_and_run_print_jobs():
     """Called from the scheduler loop. Picks up pending print jobs."""
-    from job_store import get_pending_print_jobs, record_run
+    from app_platform.jobs import get_pending_print_jobs, record_run
 
     pending = get_pending_print_jobs()
     if not pending:
@@ -632,7 +632,7 @@ async def check_and_run_print_jobs():
 
 async def _run_and_notify_print(job: dict):
     """Run print pipeline in a thread and deliver notification."""
-    from job_store import record_run
+    from app_platform.jobs import record_run
     job_id = job["id"]
 
     try:
@@ -647,7 +647,7 @@ async def _run_and_notify_print(job: dict):
     except Exception as e:
         logger.error("PRINT [%s]: Unhandled error: %s", job_id, e, exc_info=True)
         try:
-            from job_store import update_job_progress
+            from app_platform.jobs import update_job_progress
             update_job_progress(job_id, f"Failed: {str(e)[:200]}", status="failed")
         except Exception:
             pass

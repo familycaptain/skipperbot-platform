@@ -1,15 +1,17 @@
-"""Job Runner
-==========
-Dedicated background async loop that manages all scheduled and queued jobs:
-  - Research jobs
-  - Print jobs
-  - Refine jobs
-  - Project Manager daily cycle
-  - (future job types)
+"""Jobs — runner loop.
 
-Runs every 30 seconds, checks for pending work across all job types.
-Separated from the reminder scheduler so each has a clear responsibility.
+Polls per-runner handlers (research, print, refine, schedule-driven)
+every ~30 seconds. This is separate from the dispatcher loop (which
+handles registered job_types via ``register_handler``) — the runner
+exists for legacy job types whose modules still expose a
+``check_and_run_*`` async function.
+
+Ported from ``job_runner.py`` for sub-chunk 9e. Only change is the
+schedules-side import path (``schedule_job_trigger`` already moved
+to ``apps.schedules.job_trigger`` in Chunk 8).
 """
+
+from __future__ import annotations
 
 import asyncio
 from config import logger
@@ -49,7 +51,6 @@ async def check_and_run_jobs():
         await check_schedule_jobs()
     except Exception as e:
         logger.error("JOB_RUNNER: Error checking schedule jobs: %s", str(e))
-
 
 
 async def start_job_runner():

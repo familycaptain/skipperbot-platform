@@ -349,37 +349,6 @@
       "running timers"
     ]
   },
-  "jobs": {
-    "guide": "jobs.md",
-    "description": "Create and manage scheduled or on-demand jobs (shell commands, scripts)",
-    "tools": [
-      "create_job",
-      "get_jobs",
-      "update_job",
-      "run_job"
-    ],
-    "ack": {
-      "create_job": "Creating job \"{name}\"...",
-      "update_job": "Updating job {job_id}...",
-      "run_job": "Running job {job_id}...",
-      "get_jobs": "Listing jobs..."
-    },
-    "keywords": [
-      "job",
-      "jobs",
-      "schedule",
-      "scheduled",
-      "cron",
-      "run",
-      "execute",
-      "script",
-      "command",
-      "process",
-      "automation",
-      "automate",
-      "backup"
-    ]
-  },
   "artifacts": {
     "guide": "artifacts.md",
     "description": "Attach files and documents to any entity, read artifact content",

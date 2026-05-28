@@ -39,14 +39,9 @@ const APP_MANIFESTS = {
   // hardcoded registry as part of the goals app packaging.
   // `investment` removed for the public release (the investment app is
   // proprietary; not part of skipperbot-platform).
-  jobs: {
-    id: "jobs",
-    name: "Jobs",
-    icon: Briefcase,
-    component: lazy(() => import("./JobsApp")),
-    singleton: true,
-    page: 3,
-  },
+  // `jobs` is now discovered from apps/jobs/ui/index.js (the jobs app
+  // owns its own UI). Removed from the hardcoded registry as part of
+  // the jobs app packaging.
   home: {
     id: "home",
     name: "Home",

@@ -184,7 +184,7 @@ def _determine_cycle_type(domain: dict) -> str | None:
 
 def _get_last_cycle_date(cycle_type: str) -> date | None:
     """Get the date of the last completed or running cycle of this type."""
-    from data_layer.job_queue import fetch_one
+    from data_layer.db import fetch_one
     row = fetch_one("""
         SELECT created_at FROM jobs
         WHERE job_type = 'evolve_cycle'
@@ -205,7 +205,7 @@ def _get_last_cycle_date(cycle_type: str) -> date | None:
 
 async def _start_cycle(cycle_type: str, budget_status: dict) -> dict:
     """Create the full job tree for a new Evolve cycle."""
-    from job_dispatcher import submit_job
+    from app_platform.jobs import submit_job
 
     cycle_job = submit_job(
         job_type="evolve_cycle",
@@ -308,7 +308,7 @@ async def _resume_cycle(cycle_job: dict, budget_status: dict) -> dict:
     done = len(completed) + len(failed)
 
     # Update phase progress
-    from data_layer.job_queue import update_progress
+    from app_platform.jobs import update_progress
     pct = int(done / total * 100) if total > 0 else 0
     update_progress(phase_id, pct, f"{done}/{total} units complete")
 
@@ -325,7 +325,7 @@ async def _resume_cycle(cycle_job: dict, budget_status: dict) -> dict:
             return _skip(f"Phase complete: {active_phase['name']}", next_check=10)
         elif synthesis_units and any(s["status"] == "failed" for s in synthesis_units):
             # Synthesis failed — mark phase as failed but continue cycle
-            from data_layer.job_queue import fail_job
+            from app_platform.jobs import fail_job
             fail_job(phase_id, "Synthesis unit failed")
             logger.error("EVOLVE: Phase %s synthesis failed — advancing cycle",
                          active_phase["name"])
@@ -348,8 +348,8 @@ async def _resume_cycle(cycle_job: dict, budget_status: dict) -> dict:
 
 async def _activate_next_phase(cycle_id: str):
     """Find the next queued phase, enumerate units, submit them as jobs."""
-    from job_dispatcher import submit_job
-    from data_layer.job_queue import update_progress
+    from app_platform.jobs import submit_job
+    from app_platform.jobs import update_progress
 
     phase_job = _get_next_queued_phase(cycle_id)
     if not phase_job:
@@ -1235,12 +1235,12 @@ def _set_job_running(job_id: str):
 
 
 def _complete_phase(phase_id: str):
-    from data_layer.job_queue import complete_job
+    from app_platform.jobs import complete_job
     complete_job(phase_id, "Phase complete")
 
 
 async def _complete_cycle(cycle_id: str):
-    from data_layer.job_queue import complete_job
+    from app_platform.jobs import complete_job
     await asyncio.to_thread(complete_job, cycle_id, "Cycle complete")
     logger.info("EVOLVE: Cycle %s completed", cycle_id)
 

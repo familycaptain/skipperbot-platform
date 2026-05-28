@@ -1,25 +1,50 @@
-"""
-Job Tools - Create and manage scheduled/on-demand jobs.
+"""Jobs — MCP tools.
+
+Four tools used by the chat agent:
+
+- ``create_job(name, command, created_by, ...)`` — create a shell-style job
+- ``get_jobs(status_filter="", created_by="")`` — list jobs
+- ``update_job(job_id, ...)`` — modify a job (status / name / notify_user;
+  ``schedule`` arg is deprecated — see note in update_job docstring)
+- ``run_job(job_id, run_by="")`` — execute a job synchronously and
+  record the result
+
+Ported from ``tools/job_tool.py`` for sub-chunk 9e. Three changes:
+
+1. Imports remapped to ``apps.jobs.store``.
+2. The legacy ``schedule=`` parameter on ``create_job`` and
+   ``update_job`` is now a deprecated no-op — the ``schedule`` column
+   was dropped in legacy migration 063 (all recurring jobs run via
+   the Schedules app instead). The tool keeps the parameter for
+   backward compatibility but logs a deprecation warning when it's
+   supplied.
+3. ``run_job``'s cwd computation is updated for the new file location
+   (apps/jobs/tools.py → up 3 directories to reach platform root).
 """
 
+from __future__ import annotations
+
+import logging
 import os
 import sys
-from dotenv import load_dotenv
-load_dotenv()
 
-APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# Make sure the platform root is on sys.path so this module is importable
+# both as ``apps.jobs.tools`` and (rarely) directly.
+APP_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if APP_ROOT not in sys.path:
     sys.path.insert(0, APP_ROOT)
 
-from job_store import (
+from apps.jobs.store import (
     create_job as _create_job,
     get_job as _get_job,
     list_jobs as _list_jobs,
     update_job as _update_job,
     record_run as _record_run,
-    delete_job as _delete_job,
     format_jobs as _format_jobs,
 )
+
+
+_logger = logging.getLogger(__name__)
 
 
 def create_job(
@@ -36,7 +61,11 @@ def create_job(
         name: Human-readable job name (e.g. "Backup database").
         command: Shell command or script path to execute.
         created_by: Who is creating this job (person name).
-        schedule: Optional schedule (cron or RRULE). Empty = manual only.
+        schedule: **Deprecated.** All recurring jobs are now driven by
+                  the Schedules app (legacy migration 063 dropped the
+                  schedule column). This parameter is accepted but
+                  ignored to preserve backward compatibility — use a
+                  Schedules entry linked to this job instead.
         notify_user: Who to notify on completion. Defaults to created_by.
         description: Optional description.
 
@@ -51,11 +80,16 @@ def create_job(
         if not created_by or not created_by.strip():
             return "Error: created_by is required."
 
+        if schedule and schedule.strip():
+            _logger.warning(
+                "create_job: 'schedule' parameter is deprecated — link this "
+                "job to a Schedules entry instead."
+            )
+
         result = _create_job(
             name=name.strip(),
             command=command.strip(),
             created_by=created_by.strip().lower(),
-            schedule=schedule.strip() if schedule else "",
             notify_user=notify_user.strip().lower() if notify_user else "",
             description=description.strip() if description else "",
         )
@@ -63,7 +97,7 @@ def create_job(
         out = f"Job created (ID: {result['id']}).\n"
         out += f"  Name: {result['name']}\n"
         out += f"  Command: {result['command']}\n"
-        out += f"  Schedule: {result.get('schedule') or 'manual'}\n"
+        out += "  Schedule: manual (use the Schedules app for recurrence)\n"
         out += f"  Notify: {result.get('notify_user')}\n"
         return out
     except Exception as e:
@@ -109,8 +143,10 @@ def update_job(
         updated_by: Who is making the update.
         status: New status: "active", "paused", "completed", "failed".
         name: New name.
-        command: New command.
-        schedule: New schedule (empty string to clear).
+        command: New command (note: the store layer's update_job does NOT
+                 currently apply this — it only updates status / name /
+                 notify_user. Kept here for forward compatibility.).
+        schedule: **Deprecated.** No-op — see create_job docstring.
         notify_user: New notification recipient.
 
     Returns:
@@ -119,13 +155,17 @@ def update_job(
     try:
         if not job_id or not job_id.strip():
             return "Error: job_id is required."
+        if schedule and schedule.strip():
+            _logger.warning(
+                "update_job: 'schedule' parameter is deprecated — link this "
+                "job to a Schedules entry instead."
+            )
         return _update_job(
             job_id=job_id.strip(),
             updated_by=updated_by.strip().lower() if updated_by else "",
             status=status.strip() if status else "",
             name=name.strip() if name else "",
             command=command.strip() if command else "",
-            schedule=schedule,
             notify_user=notify_user.strip() if notify_user else "",
         )
     except Exception as e:
@@ -158,7 +198,7 @@ def run_job(job_id: str, run_by: str = "") -> str:
                 capture_output=True,
                 text=True,
                 timeout=300,
-                cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                cwd=APP_ROOT,  # platform root, computed above
             )
             output = proc.stdout.strip() or proc.stderr.strip() or "(no output)"
             success = proc.returncode == 0

@@ -12,7 +12,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-from job_store import (
+from app_platform.jobs import (
     create_research_job as _create_research_job,
     create_refine_job as _create_refine_job,
     get_job as _get_job,

@@ -418,7 +418,7 @@ async def handle_local_tool(tool_name: str, tool_args: dict, from_user: str) -> 
 
     elif tool_name == "restart_agent":
         from thinking_scheduler import request_shutdown as thinking_shutdown, is_shutting_down
-        from job_dispatcher import request_shutdown as jobs_shutdown
+        from app_platform.jobs import request_shutdown as jobs_shutdown
         from apps.reminders.scheduler import request_shutdown as reminders_shutdown
         import asyncio as _asyncio
 

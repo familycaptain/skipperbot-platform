@@ -1,25 +1,26 @@
-"""Job Dispatcher — Unified background job execution engine.
+"""Jobs — dispatcher engine.
 
-Features:
-  - Handler registry: register_handler(job_type, fn, max_concurrent)
-  - Concurrent async workers with per-type concurrency limits
-  - Cooperative cancellation (handlers check is_cancelled())
-  - Progress callbacks (handlers call update_progress())
-  - Schedule evaluation (cron expressions + custom rules)
-  - Automatic retry on failure (configurable per job)
+The queue dispatcher: claims newly queued jobs, invokes the registered
+handler for each ``job_type``, records progress + logs + output as the
+handler runs, and finishes the job (complete / fail / cancelled).
 
-Usage:
-    from job_dispatcher import register_handler, start_dispatcher, submit_job
+Public surface (re-exported via the ``app_platform.jobs`` shim):
 
-    register_handler("research", run_research_handler, max_concurrent=2)
-    register_handler("investment", run_investment_handler, max_concurrent=1)
+- ``register_handler(job_type, fn, max_concurrent=1, cancel_on_shutdown=True)``
+- ``submit_job(...)``
+- ``JobContext`` dataclass
+- ``start_dispatcher()`` (launched from platform startup)
+- ``request_shutdown()`` / ``is_shutting_down()``
+- ``get_active_job_ids()``
+- ``RequeueRequested`` exception for handler-driven requeue
 
-    # Start the dispatcher loop (call once at startup)
-    asyncio.create_task(start_dispatcher())
-
-    # Submit a job from anywhere
-    job = submit_job("research", config={...}, created_by="alice")
+Ported from ``job_dispatcher.py`` for sub-chunk 9e. Functionally
+identical; only changes are routing data-layer calls through
+``apps.jobs.data`` and the bare ``UPDATE`` for requeue through
+``execute_in_schema``.
 """
+
+from __future__ import annotations
 
 import asyncio
 import contextvars
@@ -30,9 +31,12 @@ from zoneinfo import ZoneInfo
 from typing import Callable, Awaitable
 
 from config import logger, TIMEZONE
+from app_platform.db import execute_in_schema
+from apps.jobs.data import SCHEMA as _JOBS_SCHEMA
 
 # Graceful shutdown flag
 _shutting_down = False
+
 
 def request_shutdown():
     """Signal the dispatcher to stop claiming new jobs."""
@@ -40,13 +44,15 @@ def request_shutdown():
     _shutting_down = True
     logger.info("JOB_DISPATCH: Shutdown requested — no new jobs will be claimed")
 
+
 def is_shutting_down() -> bool:
     return _shutting_down
 
+
 # Context-aware storage for current job_id (used by JobLogHandler).
 # ContextVar is asyncio-safe: each Task gets its own value, so concurrent
-# coroutines (thinking scheduler, trello sync, etc.) don't leak logs into
-# unrelated jobs.  asyncio.to_thread copies the context automatically.
+# coroutines don't leak logs into unrelated jobs. asyncio.to_thread copies
+# the context automatically.
 _current_job_id: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "_current_job_id", default=None,
 )
@@ -61,7 +67,7 @@ class JobLogHandler(logging.Handler):
         if not job_id:
             return
         try:
-            from data_layer.job_queue import append_log
+            from apps.jobs.data import append_log
             msg = self.format(record)
             append_log(job_id, record.levelname, msg)
         except Exception:
@@ -79,6 +85,7 @@ CENTRAL_TZ = ZoneInfo(TIMEZONE)
 # Check interval (seconds)
 POLL_INTERVAL = 10
 
+
 # ---------------------------------------------------------------------------
 # Handler registry
 # ---------------------------------------------------------------------------
@@ -89,7 +96,6 @@ POLL_INTERVAL = 10
 #   - returns: a result summary string
 
 _handlers: dict[str, dict] = {}
-# { "research": { "fn": <coroutine>, "max_concurrent": 2 } }
 
 
 def register_handler(
@@ -101,20 +107,22 @@ def register_handler(
     """Register a handler function for a job type.
 
     Args:
-        job_type: e.g. "research", "investment", "rebalance"
-        handler_fn: async def handler(job, ctx) -> str
+        job_type: e.g. "research", "backup", "evolve_cycle"
+        handler_fn: async def handler(job, ctx) -> str (or sync — auto-threaded)
         max_concurrent: max simultaneous jobs of this type (default 1)
         cancel_on_shutdown: if False, is_cancelled() ignores graceful
             shutdown — the job must finish before the process exits.
-            Use for financial operations that must not be interrupted.
+            Use for operations that must not be interrupted.
     """
     _handlers[job_type] = {
         "fn": handler_fn,
         "max_concurrent": max_concurrent,
         "cancel_on_shutdown": cancel_on_shutdown,
     }
-    logger.info("JOB_DISPATCH: Registered handler '%s' (max_concurrent=%d, cancel_on_shutdown=%s)",
-                job_type, max_concurrent, cancel_on_shutdown)
+    logger.info(
+        "JOB_DISPATCH: Registered handler '%s' (max_concurrent=%d, cancel_on_shutdown=%s)",
+        job_type, max_concurrent, cancel_on_shutdown,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -136,17 +144,17 @@ class JobContext:
 
     def update_progress(self, pct: int, message: str = ""):
         """Update job progress (0-100) with optional message."""
-        from data_layer.job_queue import update_progress
+        from apps.jobs.data import update_progress
         update_progress(self.job_id, pct, message)
 
     def update_output(self, **kwargs):
         """Merge key-value pairs into the job's output JSONB."""
-        from data_layer.job_queue import update_output
+        from apps.jobs.data import update_output
         update_output(self.job_id, kwargs)
 
     def log(self, message: str, level: str = "INFO"):
         """Write a log line directly to the job's log."""
-        from data_layer.job_queue import append_log
+        from apps.jobs.data import append_log
         append_log(self.job_id, level, message)
 
     def is_cancelled(self) -> bool:
@@ -162,7 +170,7 @@ class JobContext:
         if _shutting_down and self._cancel_on_shutdown:
             self._cancelled = True
             return True
-        from data_layer.job_queue import is_cancelled
+        from apps.jobs.data import is_cancelled
         self._cancelled = is_cancelled(self.job_id)
         return self._cancelled
 
@@ -187,7 +195,7 @@ def submit_job(
 
     Returns the created job dict.
     """
-    from data_layer.job_queue import create_job
+    from apps.jobs.data import create_job
 
     job_id = f"j-{uuid.uuid4().hex[:8]}"
     if not name:
@@ -215,7 +223,6 @@ def submit_job(
 # ---------------------------------------------------------------------------
 
 _active_tasks: dict[str, asyncio.Task] = {}
-# { "j-abc123": <asyncio.Task> }
 
 
 def get_active_job_ids() -> list[str]:
@@ -256,7 +263,7 @@ async def _execute_job(job: dict, handler_info: dict):
             return
 
         # Mark complete
-        from data_layer.job_queue import complete_job
+        from apps.jobs.data import complete_job
         complete_job(job_id, result=result_str)
         logger.info("JOB_DISPATCH: Completed %s [%s] — %s", job_type, job_id, result_str[:80])
 
@@ -265,8 +272,8 @@ async def _execute_job(job: dict, handler_info: dict):
 
     except RequeueRequested as rq:
         logger.info("JOB_DISPATCH: Re-queuing %s [%s] — %s", job_type, job_id, rq)
-        from data_layer.db import execute as db_execute
-        db_execute(
+        execute_in_schema(
+            _JOBS_SCHEMA,
             "UPDATE jobs SET status = 'queued', started_at = NULL, claimed_by = '' "
             "WHERE id = %s",
             (job_id,),
@@ -274,9 +281,11 @@ async def _execute_job(job: dict, handler_info: dict):
 
     except Exception as e:
         error_str = str(e)[:500]
-        logger.error("JOB_DISPATCH: Failed %s [%s] — %s", job_type, job_id, error_str,
-                      exc_info=True)
-        from data_layer.job_queue import fail_job
+        logger.error(
+            "JOB_DISPATCH: Failed %s [%s] — %s", job_type, job_id, error_str,
+            exc_info=True,
+        )
+        from apps.jobs.data import fail_job
         fail_job(job_id, error=error_str)
         await _notify_completion(job, error_str, success=False)
 
@@ -328,7 +337,6 @@ async def _notify_completion(job: dict, result: str, success: bool):
         logger.error("JOB_DISPATCH: Notification failed for %s: %s", job["id"], e)
 
 
-
 # ---------------------------------------------------------------------------
 # Main dispatcher loop
 # ---------------------------------------------------------------------------
@@ -338,7 +346,7 @@ async def _dispatch_cycle():
     if _shutting_down:
         return
 
-    from data_layer.job_queue import claim_queued_jobs, count_running
+    from apps.jobs.data import claim_queued_jobs, count_running
 
     # For each registered handler type, claim and execute up to max_concurrent
     for job_type, info in _handlers.items():
@@ -361,13 +369,18 @@ async def _dispatch_cycle():
 async def start_dispatcher():
     """Start the job dispatcher loop. Call once at application startup."""
     # Clean up jobs that were running when the agent last shut down
-    from data_layer.job_queue import fail_stale_running
+    from apps.jobs.data import fail_stale_running
     stale = await asyncio.to_thread(fail_stale_running)
     if stale:
-        logger.info("JOB_DISPATCH: Cleaned up %d stale running jobs from previous session", stale)
+        logger.info(
+            "JOB_DISPATCH: Cleaned up %d stale running jobs from previous session",
+            stale,
+        )
 
-    logger.info("JOB_DISPATCH: Started (polling every %ds, %d handler types registered)",
-                POLL_INTERVAL, len(_handlers))
+    logger.info(
+        "JOB_DISPATCH: Started (polling every %ds, %d handler types registered)",
+        POLL_INTERVAL, len(_handlers),
+    )
     for jtype, info in _handlers.items():
         logger.info("JOB_DISPATCH:   %s (max_concurrent=%d)", jtype, info["max_concurrent"])
 

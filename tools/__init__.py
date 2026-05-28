@@ -36,7 +36,8 @@ from tools.link_tool import link_entities, get_entity_links, unlink_entities
 # notifications tools moved to apps/notifications/tools.py (app package).
 # The platform loader auto-discovers them; no need to re-export here.
 from tools.artifact_tool import attach_artifact, read_artifact, list_entity_artifacts, delete_artifact_by_id
-from tools.job_tool import create_job, get_jobs, update_job, run_job
+# jobs tools moved to apps/jobs/tools.py (app package).
+# The platform loader auto-discovers them; no need to re-export here.
 # Lists + Trello tools moved to apps/lists/tools.py (app package).
 # The platform loader auto-discovers them; no need to re-export here.
 from tools.internet_search_tool import internet_search
@@ -134,10 +135,8 @@ __all__ = [
     "read_artifact",
     "list_entity_artifacts",
     "delete_artifact_by_id",
-    "create_job",
-    "get_jobs",
-    "update_job",
-    "run_job",
+    # jobs tools (create_job, get_jobs, update_job, run_job) now live at
+    # apps.jobs.tools and are registered by the platform loader.
     "internet_search",
     "git_tool",
     "get_guide",

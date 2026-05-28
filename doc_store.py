@@ -50,7 +50,7 @@ def _trigger_folder_reprocess(doc_id: str) -> None:
         folders = _dl_folders.get_folders_containing(doc_id)
         if not folders:
             return
-        from job_dispatcher import submit_job
+        from app_platform.jobs import submit_job
         for folder in folders:
             submit_job(
                 "folder_intelligence",

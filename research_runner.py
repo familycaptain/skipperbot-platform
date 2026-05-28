@@ -449,7 +449,7 @@ def _run_research_pipeline(job: dict) -> dict:
 
     Returns dict with: success (bool), doc_id, sources_found, sources_read, error.
     """
-    from job_store import update_job_progress, get_job
+    from app_platform.jobs import update_job_progress, get_job
     from doc_store import create_doc, update_doc
     from app_platform.notifications import create_notification
 
@@ -1116,7 +1116,7 @@ def _run_refine_pipeline(job: dict) -> dict:
 
     Returns dict with: success, doc_id, parent_doc_id, sources_read, error, full_content.
     """
-    from job_store import update_job_progress, get_job
+    from app_platform.jobs import update_job_progress, get_job
     from doc_store import create_doc, get_doc
     from app_platform.notifications import create_notification
 
@@ -1414,7 +1414,7 @@ _running_jobs: set[str] = set()
 
 async def check_and_run_research():
     """Called from the scheduler loop. Picks up due research jobs and runs them."""
-    from job_store import get_pending_research_jobs, record_run
+    from app_platform.jobs import get_pending_research_jobs, record_run
 
     pending = get_pending_research_jobs()
     if not pending:
@@ -1435,7 +1435,7 @@ async def check_and_run_research():
 
 async def _run_and_notify(job: dict):
     """Run research in a thread and deliver notification when done."""
-    from job_store import record_run
+    from app_platform.jobs import record_run
     job_id = job["id"]
 
     try:
@@ -1452,7 +1452,7 @@ async def _run_and_notify(job: dict):
     except Exception as e:
         logger.error("RESEARCH [%s]: Unhandled error: %s", job_id, e, exc_info=True)
         try:
-            from job_store import update_job_progress
+            from app_platform.jobs import update_job_progress
             update_job_progress(job_id, f"Failed: {str(e)[:200]}", status="failed")
         except Exception:
             pass
@@ -1462,7 +1462,7 @@ async def _run_and_notify(job: dict):
 
 async def check_and_run_refine_jobs():
     """Called from the scheduler loop. Picks up pending refine jobs and runs them."""
-    from job_store import get_pending_refine_jobs, record_run
+    from app_platform.jobs import get_pending_refine_jobs, record_run
 
     pending = get_pending_refine_jobs()
     if not pending:
@@ -1482,7 +1482,7 @@ async def check_and_run_refine_jobs():
 
 async def _run_and_notify_refine(job: dict):
     """Run refinement in a thread and deliver notification when done."""
-    from job_store import record_run
+    from app_platform.jobs import record_run
     job_id = job["id"]
 
     try:
@@ -1497,7 +1497,7 @@ async def _run_and_notify_refine(job: dict):
     except Exception as e:
         logger.error("REFINE [%s]: Unhandled error: %s", job_id, e, exc_info=True)
         try:
-            from job_store import update_job_progress
+            from app_platform.jobs import update_job_progress
             update_job_progress(job_id, f"Failed: {str(e)[:200]}", status="failed")
         except Exception:
             pass

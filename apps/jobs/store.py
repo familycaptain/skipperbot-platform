@@ -1,11 +1,23 @@
-"""Job Store
-==========
-Scheduled process execution (j-* IDs).
-A job is a command or script that runs on a schedule or on-demand,
-and emits a notification on completion.
+"""Jobs — business logic.
 
-Backed by Postgres via data_layer.job_queue (direct SQL).
+Friendly create / list / update / cancel / delete helpers on top of
+``apps.jobs.data``. This is what the four MCP tools and the desktop
+UI call.
+
+A handful of job-type-specific factories (``create_research_job``,
+``create_print_job``, ``create_refine_job``) are also kept here for
+backward compatibility — these will move into the apps that own those
+job types as each one is packaged in later chunks. The factories are
+just thin wrappers around ``apps.jobs.data.create_job(...)``.
+
+Ported from ``job_store.py`` for sub-chunk 9c-part-2. Functionally
+identical; only changes are routing all persistence through
+``apps.jobs.data`` instead of ``data_layer.job_queue`` /
+``data_layer.jobs``, and replacing the bare ``data_layer.db.execute``
+calls with the schema-scoped ``execute_in_schema``.
 """
+
+from __future__ import annotations
 
 import uuid
 from datetime import datetime
@@ -14,8 +26,11 @@ from zoneinfo import ZoneInfo
 
 from config import logger, TIMEZONE
 from auto_memory import log_entity_change
-import data_layer.job_queue as _q
+from apps.jobs import data as _q
+from app_platform.db import execute_in_schema
 
+# Module-local timezone for ISO timestamps. Mirrors the pattern used
+# by the other store modules.
 CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 VALID_STATUSES = {"active", "paused", "completed", "failed", "queued", "running", "cancelled"}
@@ -37,7 +52,7 @@ def create_job(
     notify_user: str = "",
     description: str = "",
 ) -> dict:
-    """Create a new job definition."""
+    """Create a new shell-style job definition."""
     job = _q.create_job(
         job_id=f"j-{uuid.uuid4().hex[:8]}",
         name=name,
@@ -76,15 +91,14 @@ def update_job(
     command: str = "",
     notify_user: str = "",
 ) -> str:
-    """Update a job definition."""
-    from data_layer.db import execute
+    """Update a job definition. Returns a status message."""
     job = _q.get_job(job_id)
     if not job:
         return f"Job '{job_id}' not found."
 
     changes = []
     sets = []
-    params = []
+    params: list = []
 
     if status and status.strip().lower() in VALID_STATUSES:
         old = job["status"]
@@ -104,7 +118,11 @@ def update_job(
         return f"No changes to job {job_id}."
 
     params.append(job_id)
-    execute(f"UPDATE jobs SET {', '.join(sets)} WHERE id = %s", tuple(params))
+    execute_in_schema(
+        _q.SCHEMA,
+        f"UPDATE jobs SET {', '.join(sets)} WHERE id = %s",
+        tuple(params),
+    )
     log_entity_change("updated", job_id, "job",
                       "; ".join(changes), by=updated_by)
     return f"Job {job_id} updated: {'; '.join(changes)}"
@@ -141,7 +159,7 @@ def record_run(job_id: str, result: str, success: bool = True) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Research jobs
+# Research jobs (will move to a research app when packaged)
 # ---------------------------------------------------------------------------
 
 def create_research_job(
@@ -186,14 +204,17 @@ def get_pending_research_jobs() -> list[dict]:
 def update_job_progress(job_id: str, progress: str, status: str = "",
                         output_updates: dict | None = None) -> bool:
     """Update a job's progress message and optionally status/output."""
-    from data_layer.db import execute
     sets = ["progress = %s"]
-    params = [progress]
+    params: list = [progress]
     if status and status in VALID_STATUSES:
         sets.append("status = %s")
         params.append(status)
     params.append(job_id)
-    n = execute(f"UPDATE jobs SET {', '.join(sets)} WHERE id = %s", tuple(params))
+    n = execute_in_schema(
+        _q.SCHEMA,
+        f"UPDATE jobs SET {', '.join(sets)} WHERE id = %s",
+        tuple(params),
+    )
     if output_updates:
         _q.update_output(job_id, output_updates)
     return n > 0
@@ -282,8 +303,12 @@ def get_pending_refine_jobs() -> list[dict]:
     return _q.list_jobs(status="queued", job_type="refine")
 
 
+# ---------------------------------------------------------------------------
+# Cancel / delete / format
+# ---------------------------------------------------------------------------
+
 def cancel_job(job_id: str, cancelled_by: str = "") -> str:
-    """Cancel a queued or running job."""
+    """Cancel a queued or running job. Returns a status message."""
     job = _q.get_job(job_id)
     if not job:
         return f"Job '{job_id}' not found."
@@ -296,9 +321,12 @@ def cancel_job(job_id: str, cancelled_by: str = "") -> str:
 
 
 def delete_job(job_id: str) -> bool:
-    """Delete a job."""
-    from data_layer.db import execute
-    n = execute("DELETE FROM jobs WHERE id = %s", (job_id,))
+    """Hard-delete a job by ID."""
+    n = execute_in_schema(
+        _q.SCHEMA,
+        "DELETE FROM jobs WHERE id = %s",
+        (job_id,),
+    )
     if n:
         log_entity_change("deleted", job_id, "job", "Job removed")
     return n > 0

@@ -1,0 +1,113 @@
+id: jobs
+name: Jobs
+version: 1.0.0
+description: >
+  Long-running, retryable, cancellable background work. Owns the queue,
+  the dispatcher, and the runner loop; per-job-type handlers register
+  from the apps that own them. Schedules can fire jobs at their next
+  occurrence via the schedules → jobs trigger loop.
+
+# Required core app — platform refuses to start without it. Almost
+# every other app submits jobs (research, backup, evolve cycles,
+# folder intelligence, etc.).
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns one entity prefix.
+entity_types:
+  - prefix: j
+    name: job
+    id_format: "j-{hex8}"
+    table: jobs
+
+# Platform services this app consumes.
+platform_deps:
+  - db
+  - time           # platform.time.now() for started_at / completed_at
+  - config         # per-app preferences (dispatcher tick, max-concurrent)
+  - notifications  # the runner creates notification rows on failure / completion
+  - capabilities   # some handlers gate on capabilities (e.g. OpenAI for evolve)
+
+# Other apps this app depends on. Schedules optionally triggers jobs
+# (schedules → jobs), and notifications carry results. Neither is
+# strictly required at install time — Jobs works standalone.
+app_deps: []
+
+emits:
+  - job.created
+  - job.queued
+  - job.claimed
+  - job.started
+  - job.progress
+  - job.completed
+  - job.failed
+  - job.cancelled
+
+# Jobs is foundational — doesn't react to other apps' events directly.
+# Other apps submit jobs by calling app_platform.jobs.submit_job(...).
+subscribes: []
+
+# Tool category for keyword routing.
+tool_category:
+  description: >
+    Create, list, update, and run background jobs (shell commands,
+    research, backups, evolve cycles, etc.). Use these for any
+    long-running work that should run out-of-band from chat.
+  keywords:
+    - job
+    - jobs
+    - background
+    - submit job
+    - run job
+    - create job
+    - schedule job
+    - cron
+    - cron job
+    - shell command
+    - shell job
+    - run command
+    - execute command
+    - background work
+    - long running
+    - retry
+    - retries
+    - job status
+    - job logs
+    - what jobs are running
+    - cancel job
+    - pause job
+    - failed jobs
+    - queued jobs
+
+config:
+  - key: dispatcher_tick_seconds
+    type: integer
+    default: 5
+    label: "Dispatcher tick (seconds)"
+    description: "How often the dispatcher checks the queue for newly queued jobs."
+  - key: max_concurrent_per_type
+    type: integer
+    default: 1
+    label: "Max concurrent jobs per type"
+    description: "Caps how many jobs of the same job_type can run simultaneously. 0 = unlimited."
+  - key: stale_running_minutes
+    type: integer
+    default: 60
+    label: "Stale-running window (minutes)"
+    description: "Jobs marked running but with no progress in this many minutes are auto-failed at dispatcher start."
+  - key: log_retention_days
+    type: integer
+    default: 30
+    label: "Job-log retention (days)"
+    description: "Job log rows older than this can be pruned. Manual prune; the app doesn't auto-delete."
+
+# No thinking domain — jobs is passive infrastructure. The dispatcher
+# is a runtime loop driven by the platform startup hook, not a
+# scheduled thinking domain.
+thinking: []
+
+# Generic job_types this app declares (handlers live in other apps).
+# Listed here for documentation; the dispatcher will accept any
+# job_type that has been registered via register_handler.
+job_types: []

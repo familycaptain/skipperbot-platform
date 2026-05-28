@@ -51,7 +51,8 @@ from tools.link_tool import link_entities, get_entity_links, unlink_entities
 # notifications tools moved to apps/notifications/tools.py (app package).
 # The platform loader auto-discovers them at startup.
 from tools.artifact_tool import attach_artifact, read_artifact, list_entity_artifacts, delete_artifact_by_id, update_artifact
-from tools.job_tool import create_job, get_jobs, update_job, run_job
+# jobs tools moved to apps/jobs/tools.py (app package).
+# The platform loader auto-discovers them at startup.
 # Lists + Trello + Todo tools moved to apps/lists/tools.py (app package).
 # The platform loader auto-discovers them at startup.
 from tools.internet_search_tool import internet_search
@@ -128,10 +129,8 @@ mcp.tool()(read_artifact)
 mcp.tool()(list_entity_artifacts)
 mcp.tool()(update_artifact)
 mcp.tool()(delete_artifact_by_id)
-mcp.tool()(create_job)
-mcp.tool()(get_jobs)
-mcp.tool()(update_job)
-mcp.tool()(run_job)
+# jobs tools (create_job, get_jobs, update_job, run_job) are now
+# registered by the platform loader from apps/jobs/tools.py.
 mcp.tool()(internet_search)
 mcp.tool()(git_tool)
 mcp.tool()(get_guide)

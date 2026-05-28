@@ -44,9 +44,9 @@ async def check_schedule_jobs():
     if not job_schedules:
         return
 
-    from job_dispatcher import submit_job, get_active_job_ids
+    from app_platform.jobs import submit_job, get_active_job_ids
     from apps.schedules.data import complete_schedule
-    from data_layer.job_queue import count_running
+    from app_platform.jobs import count_running
 
     active_ids = get_active_job_ids()
 

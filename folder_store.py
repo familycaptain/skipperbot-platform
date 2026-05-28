@@ -331,7 +331,7 @@ def _trigger_intelligence(folder_id: str, entity_id: str) -> None:
     Falls back to fire-and-forget if job queue is unavailable.
     """
     try:
-        from job_dispatcher import submit_job
+        from app_platform.jobs import submit_job
         submit_job(
             "folder_intelligence",
             config={"folder_id": folder_id, "entity_id": entity_id},

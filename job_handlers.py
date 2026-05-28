@@ -8,7 +8,7 @@ Handlers are registered at import time via register_all_handlers().
 
 from config import logger
 from config import TIMEZONE as _CFG_TZ
-from job_dispatcher import register_handler, JobContext
+from app_platform.jobs import register_handler, JobContext
 
 
 # ---------------------------------------------------------------------------
@@ -669,7 +669,7 @@ async def _create_items_from_synthesis(
 async def _handle_evolve_synthesis(job: dict, ctx: JobContext, config: dict) -> str:
     """Handle a synthesis unit — waits for siblings, then rolls up findings."""
     from data_layer.db import fetch_all
-    from data_layer.job_queue import get_job
+    from app_platform.jobs import get_job
 
     parent_id = job.get("parent_job_id", "")
     job_id = job["id"]
@@ -682,7 +682,7 @@ async def _handle_evolve_synthesis(job: dict, ctx: JobContext, config: dict) -> 
     incomplete = [s for s in siblings if s["status"] not in ("completed", "failed")]
     if incomplete:
         # Not ready — raise RequeueRequested so dispatcher re-queues properly
-        from job_dispatcher import RequeueRequested
+        from app_platform.jobs import RequeueRequested
         raise RequeueRequested(f"Waiting for {len(incomplete)} sibling units")
 
     ctx.update_progress(20, "All siblings complete — synthesizing...")
