@@ -35,16 +35,8 @@ from tools.link_tool import link_entities, get_entity_links, unlink_entities
 from tools.notification_tool import get_recent_notifications
 from tools.artifact_tool import attach_artifact, read_artifact, list_entity_artifacts, delete_artifact_by_id
 from tools.job_tool import create_job, get_jobs, update_job, run_job
-from tools.list_tool import (
-    create_list, show_list, show_all_lists, add_list_item, remove_list_item,
-    move_list_items, sync_list, trello_show_board, trello_add_card,
-    trello_move_card, trello_archive_card, trello_list_boards,
-    trello_suggest_list,
-    trello_get_card, trello_update_card, trello_card_checklist,
-    trello_add_comment, trello_card_labels, trello_board_labels,
-    connect_trello_board, disconnect_trello_board, set_list_aliases,
-    set_item_tracking,
-)
+# Lists + Trello tools moved to apps/lists/tools.py (app package).
+# The platform loader auto-discovers them; no need to re-export here.
 from tools.internet_search_tool import internet_search
 from tools.git_tool import git_tool
 from tools.guide_tool import get_guide
@@ -131,29 +123,9 @@ __all__ = [
     "set_project_dependency",
     "set_goal_order",
     "set_goal_dependency",
-    "create_list",
-    "show_list",
-    "show_all_lists",
-    "add_list_item",
-    "remove_list_item",
-    "move_list_items",
-    "sync_list",
-    "trello_show_board",
-    "trello_add_card",
-    "trello_move_card",
-    "trello_archive_card",
-    "trello_list_boards",
-    "trello_suggest_list",
-    "trello_get_card",
-    "trello_update_card",
-    "trello_card_checklist",
-    "trello_add_comment",
-    "trello_card_labels",
-    "trello_board_labels",
-    "connect_trello_board",
-    "disconnect_trello_board",
-    "set_list_aliases",
-    "set_item_tracking",
+    # Lists + Trello tool names are no longer re-exported from `tools.*`;
+    # they live at apps.lists.tools.* and are registered with the MCP server
+    # by the platform loader.
     "link_entities",
     "get_entity_links",
     "unlink_entities",

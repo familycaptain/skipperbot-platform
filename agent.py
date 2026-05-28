@@ -1817,7 +1817,7 @@ def _resolve_source_item(source_type: str, source_id: str) -> dict:
         return {"title": issue["title"], "severity": issue["severity"],
                 "status": issue["status"], "detail": issue.get("vehicle_name", "")}
     elif source_type == "todo":
-        from data_layer.lists import get_item
+        from apps.lists.data import get_item
         item = get_item(source_id)
         if not item:
             return {}
@@ -1829,7 +1829,7 @@ def _resolve_source_item(source_type: str, source_id: str) -> dict:
 # App API endpoints — Lists
 # ---------------------------------------------------------------------------
 
-from list_store import (
+from apps.lists.store import (
     get_all_lists as _get_all_lists,
     get_list as _get_list_by_id,
     find_list_by_name as _find_list_by_name,
@@ -2067,7 +2067,7 @@ async def api_get_todo_config(user_id: str = ""):
     cfg = await asyncio.to_thread(_fetch)
     # Also fetch the list name
     def _list_names():
-        from data_layer.lists import get_list
+        from apps.lists.data import get_list
         todo_name = ""
         backlog_name = ""
         if cfg.get("default_list_id"):
@@ -2157,7 +2157,7 @@ async def api_add_todo_item(req: AddTodoItemBacklogRequest):
                 return None
         else:
             list_id = cfg["default_list_id"]
-        # Use list_store.add_item for Trello write-through
+        # Use apps.lists.store.add_item for Trello write-through
         result = _add_list_item(list_id, req.text.strip(), req.user_id, position=0)
         if isinstance(result, str):
             return None  # error string
@@ -2220,11 +2220,11 @@ async def api_batch_reorder_todo(req: BatchReorderTodoRequest):
         list_id = cfg.get("default_list_id")
         if not list_id:
             raise HTTPException(status_code=404, detail="No default to-do list configured")
-    from data_layer.lists import batch_reorder
+    from apps.lists.data import batch_reorder
     await asyncio.to_thread(batch_reorder, list_id, req.item_ids)
     # Trello write-through: sync card positions if list is Trello-backed
     def _trello_sync():
-        from list_store import _load_list
+        from apps.lists.store import _load_list
         lst = _load_list(list_id)
         if not lst or not lst.get("trello"):
             return
@@ -2257,7 +2257,7 @@ async def api_batch_reorder_todo(req: BatchReorderTodoRequest):
 async def api_get_all_lists_for_todo(user_id: str = ""):
     """Get lists owned by user (for config picker — choose default list)."""
     def _fetch():
-        from data_layer.lists import get_all_lists
+        from apps.lists.data import get_all_lists
         all_lists = get_all_lists()
         uid = user_id.lower().strip()
         result = []

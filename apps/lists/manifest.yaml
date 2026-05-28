@@ -1,0 +1,101 @@
+id: lists
+name: Lists
+version: 1.0.0
+description: >
+  General-purpose ordered collections. Lists hold items in drag-reorderable
+  order, optionally linked to Trello boards. Foundation for the Todo app
+  (which is built as a thin lens over a single "Todo" list per user) and
+  any other "ordered items" use case.
+
+# Required core app — platform refuses to start without it.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns the lists/list_items schema.
+entity_types:
+  - prefix: l
+    name: list
+    id_format: "l-{hex8}"
+    table: lists
+  - prefix: li
+    name: list item
+    id_format: "li-{hex8}"
+    table: list_items
+
+# Platform services this app consumes.
+platform_deps:
+  - db
+  - memory      # digest_record on every list/item CRUD
+  - links       # cross-entity linking
+  - events      # emits list.created/updated/deleted/item.* etc.
+  - time        # platform.time.now() for archived_at timestamps
+  - config      # per-app preferences
+
+emits:
+  - list.created
+  - list.updated
+  - list.deleted
+  - list_item.added
+  - list_item.archived
+  - list_item.removed
+  - list.reordered
+
+# Lists is foundational — doesn't react to other apps' events in v1.
+subscribes: []
+
+# Tool category for keyword routing.
+tool_category:
+  description: >
+    Create + manage ordered lists with named items. Add, remove, archive,
+    reorder. Optional Trello sync. The Todo app is a thin lens over the
+    user's primary list.
+  keywords:
+    - list
+    - lists
+    - add to list
+    - remove from list
+    - reorder
+    - drag
+    - rearrange
+    - archive
+    - cross off
+    - check off
+    - shopping list
+    - grocery list
+    - packing list
+    - todo list
+    - to-do
+    - to do
+    - my list
+    - the list
+    - put on
+    - add to
+    - items
+    - list items
+    - checklist
+    - pick up
+
+config:
+  - key: default_view
+    type: enum
+    options: [grid, sequential]
+    default: grid
+    label: "Default Lists view"
+    description: "How the desktop Lists app renders all of your lists at once."
+  - key: show_archived_by_default
+    type: boolean
+    default: false
+    label: "Show archived items by default"
+    description: "Include archived items in the default list view."
+  - key: trello_sync_enabled
+    type: boolean
+    default: false
+    label: "Sync lists to Trello"
+    description: "Requires Trello configured in .env. See docs/03-extended-functionality.md."
+
+# No thinking domain — lists is passive infrastructure.
+thinking: []
+
+# No background jobs.
+job_types: []

@@ -1,6 +1,6 @@
 """To-Do Config — per-user default list + nudge settings
 ========================================================
-Thin layer over todo_config table + list_store for item ops.
+Thin layer over todo_config table + apps.lists.store for item ops.
 """
 
 import logging
@@ -83,7 +83,7 @@ def get_todo_items(user_id: str, include_archived: bool = False) -> dict | None:
     if not cfg or not cfg["default_list_id"]:
         return None
 
-    from data_layer.lists import get_list, get_items
+    from apps.lists.data import get_list, get_items
     lst = get_list(cfg["default_list_id"])
     if not lst:
         return None
@@ -106,7 +106,7 @@ def get_backlog_items(user_id: str, include_archived: bool = False) -> dict | No
     if not cfg or not cfg.get("backlog_list_id"):
         return None
 
-    from data_layer.lists import get_list, get_items
+    from apps.lists.data import get_list, get_items
     lst = get_list(cfg["backlog_list_id"])
     if not lst:
         return None
@@ -159,12 +159,12 @@ def ensure_default_list(user_id: str, display_name: str = "") -> dict:
     cfg = get_config(user_id)
     if cfg and cfg["default_list_id"]:
         # Verify the list still exists
-        from data_layer.lists import get_list
+        from apps.lists.data import get_list
         if get_list(cfg["default_list_id"]):
             return cfg
 
     # Create a new list
-    from list_store import create_list
+    from apps.lists.store import create_list
     name = f"{display_name or user_id.title()}'s To-Do"
     lst = create_list(name=name, created_by=user_id)
 

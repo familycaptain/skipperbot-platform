@@ -1,21 +1,31 @@
-"""List Store
-==========
-Trello-style vertical lists with two modes:
-  1. Standalone — purely local.
-  2. Trello-linked — Trello is source of truth, local is read cache + write-through.
+"""Lists — business logic.
 
-Backed by Postgres via data_layer.lists.
-List items are ordered, can be archived, and support reminders via the link registry.
+Higher-level operations on top of ``apps.lists.data``: list creation
+(with ID generation + Trello link bootstrap), rendering as text,
+alias-resolution, write-through to Trello, sync orchestration.
+
+Ported from ``list_store.py`` for sub-chunk 4c-part-2. Functionally
+identical; the only changes are:
+
+  - ``import data_layer.lists as _dl_lists`` is now
+    ``from apps.lists import data as _dl_lists`` so the schema-scoped
+    helpers in apps/lists/data.py do the persistence.
+  - All ID generation, formatting, Trello write-through, and find-by-name
+    logic is untouched.
 """
 
 import uuid
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from config import TIMEZONE
+from config import TIMEZONE, logger
 from auto_memory import log_entity_change
-import data_layer.lists as _dl_lists
+from apps.lists import data as _dl_lists
 
+# Module-local timezone for ISO timestamps. Mirrors the pattern used by
+# apps/goals/store.py and timer_store.py. The name is historical; the
+# value reflects whatever the platform TIMEZONE env var points to
+# (defaults to Etc/UTC).
 CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 
@@ -28,7 +38,7 @@ def _new_id(prefix: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Persistence — Postgres via data_layer
+# Persistence — Postgres via apps.lists.data
 # ---------------------------------------------------------------------------
 
 def _load_list(list_id: str) -> dict | None:
@@ -124,7 +134,7 @@ def find_list_by_name(name: str) -> dict | None:
         if lst["name"].strip().lower() == norm:
             return lst
 
-    # Pass 2: board-qualified match — e.g. "project-alpha Backlog" or "Backlog project-alpha"
+    # Pass 2: board-qualified match — e.g. "boardname Backlog" or "Backlog boardname"
     # Check if search term = "{board} {listname}" or "{listname} {board}"
     for lst in lists:
         trello = lst.get("trello") or {}
@@ -135,7 +145,7 @@ def find_list_by_name(name: str) -> dict | None:
                 return lst
 
     # Pass 2b: board-qualified substring — board name + list name both appear
-    # in the search term (handles "project-alpha backlog list" or similar)
+    # in the search term (handles "boardname backlog list" or similar)
     board_matches = []
     for lst in lists:
         trello = lst.get("trello") or {}
@@ -302,7 +312,6 @@ def add_item(
             item["trello_card_id"] = result.get("id", "")
             _save_list(lst)
         except Exception as e:
-            from config import logger
             logger.error("LIST: Trello write-through failed for add: %s", str(e))
 
     log_entity_change("added_item", item["id"], "list_item",
@@ -338,7 +347,6 @@ def update_item_text(list_id: str, item_id: str, new_text: str) -> str:
                         {"name": new_text.strip()}
                     )
                 except Exception as e:
-                    from config import logger
                     logger.error("LIST: Trello write-through failed for edit: %s", str(e))
 
             log_entity_change("edited_item", item_id, "list_item",
@@ -376,7 +384,6 @@ def remove_item(list_id: str, item_id: str) -> str:
                         {"closed": "true"}
                     )
                 except Exception as e:
-                    from config import logger
                     logger.error("LIST: Trello write-through failed for archive: %s", str(e))
 
             _save_list(lst)
@@ -442,7 +449,6 @@ def move_item(
                 {"idList": to_trello_list["id"], "pos": "top"}
             )
         except Exception as e:
-            from config import logger
             logger.error("LIST: Trello write-through failed for move: %s", str(e))
 
     log_entity_change("moved_item", item_id, "list_item",
@@ -510,7 +516,6 @@ def reorder_item(list_id: str, item_id: str, new_position: int) -> str:
                 {"pos": str(target_pos)}
             )
         except Exception as e:
-            from config import logger
             logger.error("LIST: Trello write-through failed for reorder: %s", str(e))
 
     return f"Moved '{item['text']}' to position {new_pos} in '{lst['name']}'."
@@ -701,7 +706,6 @@ def sync_from_trello(list_id: str) -> str:
                 titles = [item["text"] for item in new_items]
                 record_items(board, trello_list, titles)
             except Exception as e:
-                from config import logger
                 logger.error("LIST: Item history recording failed for '%s': %s", lst["name"], str(e))
 
         return (
@@ -717,8 +721,8 @@ def sync_from_trello(list_id: str) -> str:
 def sync_all_trello_lists() -> str:
     """Sync all Trello-linked lists. Called by background poller.
 
-    Skips boards that are linked to a Skipper project (those use
-    task sync via trello_task_sync instead).
+    Skips boards that are linked to a project (those use task sync via
+    trello_task_sync instead).
 
     Returns:
         Summary of all syncs.

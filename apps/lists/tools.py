@@ -14,7 +14,7 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from app_platform.memory import digest_record
-from list_store import (
+from apps.lists.store import (
     create_list as _create_list,
     get_list as _get_list,
     get_all_lists as _get_all_lists,
@@ -239,7 +239,7 @@ def mark_todo_done(user_id: str, item_text: str) -> str:
             available = [i["text"] for i in active[:10]]
             return f"Item '{item_text}' not found. Items: {', '.join(available)}"
 
-        from data_layer.lists import archive_item
+        from apps.lists.data import archive_item
         archive_item(match["id"])
 
         # If this item is synced from Trello, archive the Trello card too.
@@ -247,7 +247,7 @@ def mark_todo_done(user_id: str, item_text: str) -> str:
         trello_card_id = match.get("trello_card_id", "")
         if trello_card_id:
             try:
-                from data_layer.lists import get_list as _get_list
+                from apps.lists.data import get_list as _get_list
                 lst = _get_list(result["list_id"])
                 trello_cfg = lst.get("trello") if lst else None
                 board = trello_cfg.get("board") if trello_cfg else None
@@ -449,7 +449,7 @@ def show_all_lists(user_id: str = "") -> str:
         # Gather standalone (user-created) lists
         standalone = []
         try:
-            from list_store import get_all_lists
+            from apps.lists.store import get_all_lists
             all_local = get_all_lists()
             for lst in all_local:
                 if not lst.get("trello"):
@@ -1558,7 +1558,7 @@ def set_item_tracking(
         if not list_name or not list_name.strip():
             return "Error: list_name is required."
 
-        from list_store import find_list_by_name, set_track_items
+        from apps.lists.store import find_list_by_name, set_track_items
 
         lst = find_list_by_name(list_name.strip())
         if not lst:

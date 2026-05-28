@@ -10,7 +10,7 @@ import asyncio
 import os
 import time
 from config import logger
-from list_store import sync_all_trello_lists
+from apps.lists.store import sync_all_trello_lists
 
 
 # How often to poll Trello for updates (seconds)

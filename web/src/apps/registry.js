@@ -226,14 +226,9 @@ const APP_MANIFESTS = {
     component: lazy(() => import("./TodoApp")),
     singleton: true,
   },
-  lists: {
-    id: "lists",
-    name: "Lists",
-    icon: List,
-    component: lazy(() => import("./ListsApp")),
-    singleton: true,
-    page: 2,
-  },
+  // `lists` is now discovered from apps/lists/ui/index.js (the lists app
+  // owns its own UI). Removed from the hardcoded registry as part of the
+  // lists app packaging.
   prioritize: {
     id: "prioritize",
     name: "Prioritize",

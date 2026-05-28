@@ -50,17 +50,8 @@ from tools.link_tool import link_entities, get_entity_links, unlink_entities
 from tools.notification_tool import get_recent_notifications
 from tools.artifact_tool import attach_artifact, read_artifact, list_entity_artifacts, delete_artifact_by_id, update_artifact
 from tools.job_tool import create_job, get_jobs, update_job, run_job
-from tools.list_tool import (
-    create_list, show_list, show_all_lists, add_list_item, remove_list_item,
-    move_list_items, sync_list, trello_show_board, trello_add_card,
-    trello_move_card, trello_archive_card, trello_list_boards,
-    trello_suggest_list,
-    trello_get_card, trello_update_card, trello_card_checklist,
-    trello_add_comment, trello_card_labels, trello_board_labels,
-    connect_trello_board, disconnect_trello_board, set_list_aliases,
-    set_item_tracking,
-    get_todo_list, add_todo_item, mark_todo_done,
-)
+# Lists + Trello + Todo tools moved to apps/lists/tools.py (app package).
+# The platform loader auto-discovers them at startup.
 from tools.internet_search_tool import internet_search
 from tools.git_tool import git_tool
 from tools.guide_tool import get_guide
@@ -126,32 +117,8 @@ mcp.tool()(snooze_reminder)
 mcp.tool()(start_timer)
 mcp.tool()(list_timers)
 mcp.tool()(cancel_timer)
-mcp.tool()(create_list)
-mcp.tool()(show_list)
-mcp.tool()(show_all_lists)
-mcp.tool()(add_list_item)
-mcp.tool()(remove_list_item)
-mcp.tool()(move_list_items)
-mcp.tool()(sync_list)
-mcp.tool()(trello_show_board)
-mcp.tool()(trello_add_card)
-mcp.tool()(trello_move_card)
-mcp.tool()(trello_archive_card)
-mcp.tool()(trello_list_boards)
-mcp.tool()(trello_suggest_list)
-mcp.tool()(trello_get_card)
-mcp.tool()(trello_update_card)
-mcp.tool()(trello_card_checklist)
-mcp.tool()(trello_add_comment)
-mcp.tool()(trello_card_labels)
-mcp.tool()(trello_board_labels)
-mcp.tool()(connect_trello_board)
-mcp.tool()(disconnect_trello_board)
-mcp.tool()(set_list_aliases)
-mcp.tool()(set_item_tracking)
-mcp.tool()(get_todo_list)
-mcp.tool()(add_todo_item)
-mcp.tool()(mark_todo_done)
+# Lists / Trello / Todo tools are now registered by the platform loader
+# from apps/lists/tools.py (app package). No static mcp.tool() lines needed.
 mcp.tool()(link_entities)
 mcp.tool()(get_entity_links)
 mcp.tool()(unlink_entities)
