@@ -273,14 +273,9 @@ const APP_MANIFESTS = {
     singleton: false,
     hidden: true,
   },
-  schedules: {
-    id: "schedules",
-    name: "Schedules",
-    icon: CalendarClock,
-    component: lazy(() => import("./SchedulesApp")),
-    singleton: true,
-    page: 2,
-  },
+  // `schedules` is now discovered from apps/schedules/ui/index.js (the
+  // schedules app owns its own UI). Removed from the hardcoded registry
+  // as part of the schedules app packaging.
   scrum: {
     id: "scrum",
     name: "Scrum",

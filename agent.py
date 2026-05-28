@@ -3324,7 +3324,7 @@ async def api_system_metrics():
 # App API endpoints — Schedules
 # ---------------------------------------------------------------------------
 
-import data_layer.schedules as _dl_schedules
+import app_platform.schedules as _dl_schedules
 
 
 class CreateScheduleRequest(BaseModel):
@@ -3490,7 +3490,7 @@ async def api_update_schedule(schedule_id: str, req: UpdateScheduleRequest):
         # Parse next_due string into a timezone-aware datetime
         if "next_due" in kwargs and isinstance(kwargs["next_due"], str):
             from dateutil.parser import parse as _dtparse
-            from data_layer.schedules import CENTRAL_TZ
+            from app_platform.schedules import CENTRAL_TZ
             dt = _dtparse(kwargs["next_due"])
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=CENTRAL_TZ)

@@ -1,0 +1,115 @@
+id: schedules
+name: Schedules
+version: 1.0.0
+description: >
+  Recurring events + chores + maintenance + medical, etc. Supports
+  RRULE, cron-style, and friendly recurrence types (daily, weekly,
+  monthly, yearly, interval) plus usage-based intervals (every 5000
+  miles). Owns "next due" computation and a completion log.
+
+# Required core app — platform refuses to start without it.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns two entity prefixes — the schedule itself and the completion log.
+entity_types:
+  - prefix: sch
+    name: schedule
+    id_format: "sch-{hex8}"
+    table: schedules
+  - prefix: sc
+    name: schedule_completion
+    id_format: "sc-{hex8}"
+    table: schedule_completions
+
+# Platform services this app consumes.
+platform_deps:
+  - db
+  - memory         # digest_record on every schedule CRUD
+  - links          # cross-entity linking (a schedule may be linked to a vehicle, goal, task)
+  - events         # emits schedule.created/updated/completed/deleted
+  - time           # platform.time.now() for next-due math, timezone for display
+  - config         # per-app preferences
+  - notifications  # the notifier writes notification rows via the shim
+  - capabilities   # checks for Trello / Discord at notification time
+
+# Schedules is foundational — doesn't depend on a specific other app
+# at install time. The Reminders app *optionally* references schedules
+# via schedule_id, but that direction is reminders → schedules, not
+# the other way.
+app_deps: []
+
+emits:
+  - schedule.created
+  - schedule.updated
+  - schedule.deleted
+  - schedule.completed
+  - schedule.due
+  - schedule.notification_sent
+
+subscribes: []
+
+# Schedules currently has no MCP tools (it's REST + UI driven), so the
+# tool_category here is informational — the loader still uses the
+# keywords for routing other-app tools that mention schedules.
+tool_category:
+  description: >
+    Recurring schedules (chores, maintenance, school, auto, medical,
+    general). Other apps reference schedules via app_platform.schedules.
+  keywords:
+    - schedule
+    - schedules
+    - recurring
+    - cadence
+    - cron
+    - every monday
+    - every tuesday
+    - every wednesday
+    - every thursday
+    - every friday
+    - every saturday
+    - every sunday
+    - every week
+    - weekly
+    - bi-weekly
+    - monthly
+    - quarterly
+    - yearly
+    - annual
+    - chore
+    - chores
+    - maintenance
+    - oil change
+    - mow the lawn
+    - next due
+    - what's due
+    - what is due
+    - due today
+    - due tomorrow
+
+config:
+  - key: default_reminder_minutes
+    type: integer
+    default: 60
+    label: "Default reminder lead time (minutes)"
+    description: "How many minutes before a scheduled event a reminder notification should fire by default."
+  - key: notifier_tick_seconds
+    type: integer
+    default: 30
+    label: "Notifier tick (seconds)"
+    description: "How often the schedules notifier checks for due rows. Aligned with the reminders scheduler."
+  - key: completion_window_days
+    type: integer
+    default: 30
+    label: "Completion log retention (days)"
+    description: "Schedule completions older than this are kept but not shown in the default UI feed."
+
+# No thinking domain — schedules is passive infrastructure. The
+# notifier loop is event-driven from the reminders scheduler tick.
+thinking: []
+
+# No background jobs declared via the job system; the schedule
+# notifier + job-trigger loops are launched from the reminders
+# scheduler tick (the same pattern as notifications delivery).
+job_types: []

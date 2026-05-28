@@ -1,16 +1,23 @@
-"""
-Schedule Job Trigger
-====================
-Checks for due schedules that are linked to jobs and submits them
-to the job dispatcher.
+"""Schedules — job-trigger loop.
 
-This module bridges Schedules and Jobs without either knowing about
-the other. A schedule with linked_entity_type='job' stores the
-job_type in linked_entity_id. When the schedule fires (next_due passes),
-this module submits the job and completes the schedule (advancing next_due).
+When a schedule's ``next_due`` arrives and its ``linked_entity_type``
+is ``"job"``, this loop submits the job to the job dispatcher and
+completes the schedule (advancing ``next_due``).
 
-Called from the job_runner loop (~30s).
+Bridges Schedules and Jobs without either knowing about the other.
+A schedule with ``linked_entity_type='job'`` stores the job_type in
+``linked_entity_id``; ``job_config`` (jsonb) carries any per-occurrence
+parameters.
+
+Called from the job_runner loop (~30s, same cadence as the schedules
+notifier).
+
+Ported from ``schedule_job_trigger.py`` for sub-chunk 8e. Only change
+is the data-layer import path: ``data_layer.schedules`` →
+``apps.schedules.data``.
 """
+
+from __future__ import annotations
 
 import asyncio
 from datetime import datetime
@@ -24,9 +31,9 @@ CENTRAL_TZ = ZoneInfo(TIMEZONE)
 async def check_schedule_jobs():
     """Check for due job-linked schedules and submit jobs for each."""
     try:
-        from data_layer.schedules import get_due_schedules
+        from apps.schedules.data import get_due_schedules
         schedules = await asyncio.to_thread(
-            get_due_schedules, days_ahead=0, exclude_reminder_backed=True
+            get_due_schedules, days_ahead=0, exclude_reminder_backed=True,
         )
     except Exception as e:
         logger.error("SCHED_JOB: Failed to query due schedules: %s", e)
@@ -38,7 +45,7 @@ async def check_schedule_jobs():
         return
 
     from job_dispatcher import submit_job, get_active_job_ids
-    from data_layer.schedules import complete_schedule
+    from apps.schedules.data import complete_schedule
     from data_layer.job_queue import count_running
 
     active_ids = get_active_job_ids()
@@ -50,16 +57,20 @@ async def check_schedule_jobs():
         assigned_to = sch.get("assigned_to", "")
 
         if not job_type:
-            logger.warning("SCHED_JOB: Schedule %s has linked_entity_type='job' but no job_type in linked_entity_id",
-                           schedule_id)
+            logger.warning(
+                "SCHED_JOB: Schedule %s has linked_entity_type='job' but no job_type in linked_entity_id",
+                schedule_id,
+            )
             continue
 
         # Dedup: skip if a job of this type is already running
         try:
             running = await asyncio.to_thread(count_running, job_type)
             if running > 0:
-                logger.debug("SCHED_JOB: Skipping %s — %d %s job(s) already running",
-                             schedule_id, running, job_type)
+                logger.debug(
+                    "SCHED_JOB: Skipping %s — %d %s job(s) already running",
+                    schedule_id, running, job_type,
+                )
                 continue
         except Exception:
             pass
@@ -74,11 +85,15 @@ async def check_schedule_jobs():
                 description=f"Auto-triggered by schedule {schedule_id}",
                 config=job_config if job_config else None,
             )
-            logger.info("SCHED_JOB: Submitted %s job %s from schedule %s (%s)",
-                        job_type, job["id"], schedule_id, title)
+            logger.info(
+                "SCHED_JOB: Submitted %s job %s from schedule %s (%s)",
+                job_type, job["id"], schedule_id, title,
+            )
         except Exception as e:
-            logger.error("SCHED_JOB: Failed to submit %s job for schedule %s: %s",
-                         job_type, schedule_id, e)
+            logger.error(
+                "SCHED_JOB: Failed to submit %s job for schedule %s: %s",
+                job_type, schedule_id, e,
+            )
             continue
 
         # Complete the schedule (advances next_due)
@@ -88,6 +103,9 @@ async def check_schedule_jobs():
                 completed_by="scheduler",
                 notes=f"Triggered job {job['id']}",
             )
-            logger.info("SCHED_JOB: Completed schedule %s, advanced to next occurrence", schedule_id)
+            logger.info(
+                "SCHED_JOB: Completed schedule %s, advanced to next occurrence",
+                schedule_id,
+            )
         except Exception as e:
             logger.error("SCHED_JOB: Failed to complete schedule %s: %s", schedule_id, e)

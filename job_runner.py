@@ -45,7 +45,7 @@ async def check_and_run_jobs():
 
     # Schedule-triggered jobs (PM, future automation, etc.)
     try:
-        from schedule_job_trigger import check_schedule_jobs
+        from apps.schedules.job_trigger import check_schedule_jobs
         await check_schedule_jobs()
     except Exception as e:
         logger.error("JOB_RUNNER: Error checking schedule jobs: %s", str(e))

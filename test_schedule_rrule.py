@@ -2,7 +2,7 @@ import unittest
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from data_layer.schedules import compute_next_due, _expand_rrule_occurrences
+from app_platform.schedules import compute_next_due, _expand_rrule_occurrences
 from app_platform.reminders import _rrule_to_schedule_params
 
 

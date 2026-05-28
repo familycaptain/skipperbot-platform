@@ -48,7 +48,7 @@ def get_aggregated_events(
 
 def _events_from_schedules(from_date: str, to_date: str, assigned_to: str | None) -> list[dict]:
     try:
-        from data_layer.schedules import get_calendar_events
+        from app_platform.schedules import get_calendar_events
         raw = get_calendar_events(from_date, to_date, assigned_to=assigned_to)
         # Exclude reminder-backed schedules (they appear via _events_from_reminders)
         return [{

@@ -5,8 +5,7 @@ seconds (default 30s). For each due reminder, records a notification
 through the ``app_platform.notifications`` shim, advances the reminder's
 next occurrence (or deactivates one-shots), and on the same tick:
 
-- Runs the schedules notifier (still platform-side; schedules app is
-  pending packaging).
+- Runs the schedules notifier (apps.schedules.notifier).
 - Runs the to-do nudge notifier.
 - Runs registered nag providers.
 - Flushes the notifications delivery queue so the user sees messages
@@ -101,9 +100,9 @@ async def check_and_deliver():
         logger.error("REMINDER: Error checking due reminders: %s", str(e))
 
     # Check schedule notifications (upcoming + overdue) — creates
-    # notification records. Still platform-side until schedules is packaged.
+    # notification records via the app_platform.notifications shim.
     try:
-        from schedule_notifier import check_schedule_notifications
+        from apps.schedules.notifier import check_schedule_notifications
         await check_schedule_notifications()
     except Exception as e:
         logger.error("SCHEDULE_NOTIF: Error in schedule notification check: %s", str(e))

@@ -1,4 +1,26 @@
-"""Schedules data layer — CRUD + recurrence engine for the schedules table."""
+"""Schedules — data layer + recurrence engine.
+
+Owns reads + writes for the ``app_schedules.schedules`` and
+``app_schedules.schedule_completions`` tables, plus the RRULE / cron /
+interval / daily / weekly / monthly / yearly recurrence math
+(``compute_next_due``, ``describe_recurrence``,
+``_expand_rrule_occurrences``, and the ``_next_*`` family).
+
+Ported from ``data_layer/schedules.py`` for sub-chunk 8c-part-1.
+Functionally identical; only difference is routing all queries
+through the ``*_in_schema`` helpers from ``app_platform.db`` so the
+schedules app's tables land in (and read from) the ``app_schedules``
+schema.
+
+The recurrence engine is kept inline rather than split into a
+separate ``store.py`` because the helpers are tightly coupled to row
+layout (``recurrence_rule``, ``time_of_day``, ``next_due``); pulling
+them out would make this app harder to reason about. The
+``app_platform.schedules`` shim re-exports the public surface so
+other apps still see a clean contract.
+"""
+
+from __future__ import annotations
 
 import json
 import re
@@ -11,16 +33,53 @@ from zoneinfo import ZoneInfo
 from dateutil.rrule import rrulestr
 from psycopg2.extras import Json
 
-from data_layer.db import get_conn, fetch_one, fetch_all, execute
-from data_layer.links import ensure_edge
+from app_platform.db import (
+    execute_in_schema,
+    fetch_all_in_schema,
+    fetch_one_in_schema,
+    scoped_conn,
+)
+from data_layer.links import ensure_edge  # platform infra — links live in public.*
+
+from config import TIMEZONE as _CFG_TZ
 
 logger = logging.getLogger(__name__)
 
-from config import TIMEZONE as _CFG_TZ
+SCHEMA = "app_schedules"
+
 CENTRAL_TZ = ZoneInfo(_CFG_TZ)
 
 VALID_CATEGORIES = {"chore", "maintenance", "school", "auto", "medical", "general"}
 VALID_RECURRENCE_TYPES = {"daily", "weekly", "monthly", "yearly", "interval", "cron", "rrule"}
+
+
+# ---------------------------------------------------------------------------
+# Memory-digestion hints
+# ---------------------------------------------------------------------------
+
+_SCHEDULE_HINT = (
+    "Focus on: the schedule's title, category (chore/maintenance/school/"
+    "auto/medical/general), assignee, recurrence (what day or interval), "
+    "and next_due. Schedules are how chat answers 'what's due this week?'."
+)
+
+_COMPLETION_HINT = (
+    "Focus on: which schedule was completed, who completed it, when, and "
+    "any usage_value (e.g. odometer reading)."
+)
+
+
+# ---------------------------------------------------------------------------
+# Backfill registry
+# ---------------------------------------------------------------------------
+
+BACKFILL_ENTITIES = [
+    {
+        "entity_type": "schedule",
+        "list_fn": lambda: list_schedules(active_only=False, limit=10000),
+        "context_hint": _SCHEDULE_HINT,
+    },
+]
 
 
 # ---------------------------------------------------------------------------
@@ -45,6 +104,12 @@ def _row_to_dict(row) -> dict | None:
             d["recurrence_rule"] = json.loads(d["recurrence_rule"])
         except (json.JSONDecodeError, TypeError):
             pass
+    # job_config — same shape
+    if isinstance(d.get("job_config"), str):
+        try:
+            d["job_config"] = json.loads(d["job_config"])
+        except (json.JSONDecodeError, TypeError):
+            pass
     return d
 
 
@@ -61,7 +126,7 @@ def _now() -> datetime:
 
 
 def _coerce_central_datetime(value, fallback_time: Optional[time] = None) -> datetime:
-    """Parse a datetime-like value and normalize it to Central time."""
+    """Parse a datetime-like value and normalize it to the platform's local timezone."""
     if isinstance(value, datetime):
         dt = value
     else:
@@ -185,9 +250,10 @@ def compute_next_due(
     time_of_day: Optional[str] = None,
     from_dt: Optional[datetime] = None,
 ) -> Optional[datetime]:
-    """Compute the next occurrence after `from_dt` (default: now).
+    """Compute the next occurrence after ``from_dt`` (default: now).
 
-    Returns a timezone-aware datetime in CENTRAL_TZ, or None if unable to compute.
+    Returns a timezone-aware datetime in the platform's local timezone,
+    or None if unable to compute.
     """
     now = from_dt or _now()
     if isinstance(now, datetime) and now.tzinfo is None:
@@ -476,9 +542,10 @@ def create_schedule(
     else:
         next_due = compute_next_due(effective_recurrence_type, rule, effective_time_of_day)
 
-    with get_conn() as conn:
+    with scoped_conn(SCHEMA) as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT INTO schedules (
                     id, title, description, category, assigned_to, created_by,
                     recurrence_type, recurrence_rule, time_of_day, duration_mins,
@@ -498,21 +565,23 @@ def create_schedule(
                     TRUE, now(), now(),
                     %s
                 )
-            """, (
-                sch_id, title.strip(), description.strip(),
-                category if category in VALID_CATEGORIES else "general",
-                assigned_to.strip().lower() if assigned_to else created_by.strip().lower(),
-                created_by.strip().lower(),
-                effective_recurrence_type,
-                Json(rule),
-                effective_time_of_day if effective_time_of_day else None,
-                duration_mins,
-                usage_metric, usage_interval,
-                next_due,
-                linked_entity_id, linked_entity_type,
-                reminder_mins, notify_channel,
-                Json(job_config or {}),
-            ))
+                """,
+                (
+                    sch_id, title.strip(), description.strip(),
+                    category if category in VALID_CATEGORIES else "general",
+                    assigned_to.strip().lower() if assigned_to else created_by.strip().lower(),
+                    created_by.strip().lower(),
+                    effective_recurrence_type,
+                    Json(rule),
+                    effective_time_of_day if effective_time_of_day else None,
+                    duration_mins,
+                    usage_metric, usage_interval,
+                    next_due,
+                    linked_entity_id, linked_entity_type,
+                    reminder_mins, notify_channel,
+                    Json(job_config or {}),
+                ),
+            )
         conn.commit()
 
     if linked_entity_id:
@@ -522,7 +591,7 @@ def create_schedule(
 
 
 def get_schedule(schedule_id: str) -> dict | None:
-    row = fetch_one("SELECT * FROM schedules WHERE id = %s", (schedule_id,))
+    row = fetch_one_in_schema(SCHEMA, "SELECT * FROM schedules WHERE id = %s", (schedule_id,))
     return _row_to_dict(row)
 
 
@@ -546,14 +615,18 @@ def list_schedules(
     where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
     params.append(limit)
 
-    rows = fetch_all(f"""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        f"""
         SELECT * FROM schedules
         {where}
         ORDER BY
             next_due ASC NULLS LAST,
             created_at DESC
         LIMIT %s
-    """, tuple(params))
+        """,
+        tuple(params),
+    )
     return [_row_to_dict(r) for r in rows]
 
 
@@ -605,7 +678,8 @@ def update_schedule(schedule_id: str, **kwargs) -> dict | None:
     set_parts.append("updated_at = now()")
     params.append(schedule_id)
 
-    execute(
+    execute_in_schema(
+        SCHEMA,
         f"UPDATE schedules SET {', '.join(set_parts)} WHERE id = %s",
         tuple(params),
     )
@@ -621,7 +695,8 @@ def update_schedule(schedule_id: str, **kwargs) -> dict | None:
                 from_dt=datetime.fromisoformat(sch["last_completed"]) if sch.get("last_completed") else None,
             )
             if new_next:
-                execute(
+                execute_in_schema(
+                    SCHEMA,
                     "UPDATE schedules SET next_due = %s WHERE id = %s",
                     (new_next, schedule_id),
                 )
@@ -634,7 +709,7 @@ def update_schedule(schedule_id: str, **kwargs) -> dict | None:
 
 
 def delete_schedule(schedule_id: str) -> bool:
-    execute("DELETE FROM schedules WHERE id = %s", (schedule_id,))
+    execute_in_schema(SCHEMA, "DELETE FROM schedules WHERE id = %s", (schedule_id,))
     return True
 
 
@@ -657,12 +732,15 @@ def complete_schedule(
     comp_id = _completion_id()
 
     # Log the completion
-    with get_conn() as conn:
+    with scoped_conn(SCHEMA) as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT INTO schedule_completions (id, schedule_id, completed_at, completed_by, notes, usage_value)
                 VALUES (%s, %s, %s, %s, %s, %s)
-            """, (comp_id, schedule_id, now, completed_by.strip().lower(), notes.strip(), usage_value))
+                """,
+                (comp_id, schedule_id, now, completed_by.strip().lower(), notes.strip(), usage_value),
+            )
         conn.commit()
 
     # Compute new next_due from now
@@ -674,20 +752,25 @@ def complete_schedule(
     )
 
     # Update the schedule
-    execute("""
+    execute_in_schema(
+        SCHEMA,
+        """
         UPDATE schedules
         SET last_completed = %s,
             next_due = %s,
             completed_count = completed_count + 1,
             updated_at = now()
         WHERE id = %s
-    """, (now, new_next, schedule_id))
+        """,
+        (now, new_next, schedule_id),
+    )
 
     return get_schedule(schedule_id)
 
 
 def get_completions(schedule_id: str, limit: int = 20) -> list[dict]:
-    rows = fetch_all(
+    rows = fetch_all_in_schema(
+        SCHEMA,
         "SELECT * FROM schedule_completions WHERE schedule_id = %s ORDER BY completed_at DESC LIMIT %s",
         (schedule_id, limit),
     )
@@ -720,7 +803,9 @@ def get_due_schedules(
     if exclude_reminder_backed:
         reminder_clause = "AND (linked_entity_type IS NULL OR linked_entity_type != 'reminder')"
 
-    rows = fetch_all(f"""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        f"""
         SELECT * FROM schedules
         WHERE active = TRUE
           AND next_due IS NOT NULL
@@ -728,7 +813,9 @@ def get_due_schedules(
           {user_clause}
           {reminder_clause}
         ORDER BY next_due ASC
-    """, tuple(params))
+        """,
+        tuple(params),
+    )
     return [_row_to_dict(r) for r in rows]
 
 
@@ -761,7 +848,7 @@ def get_calendar_events(
         params.append(category)
 
     where = " AND ".join(clauses)
-    rows = fetch_all(f"SELECT * FROM schedules WHERE {where}", tuple(params))
+    rows = fetch_all_in_schema(SCHEMA, f"SELECT * FROM schedules WHERE {where}", tuple(params))
 
     events = []
     now = _now()

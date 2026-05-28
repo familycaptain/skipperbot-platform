@@ -463,7 +463,7 @@ def get_vehicle_maintenance(vehicle_id: str) -> list[dict]:
            ORDER BY next_due ASC NULLS LAST""",
         (vehicle_id,),
     )
-    from data_layer.schedules import _row_to_dict, describe_recurrence
+    from app_platform.schedules import _row_to_dict, describe_recurrence
     result = []
     for r in rows:
         d = _row_to_dict(r)
@@ -492,7 +492,7 @@ def complete_maintenance(
     Returns: { schedule, service_record }
     """
     import uuid
-    from data_layer.schedules import complete_schedule, get_schedule
+    from app_platform.schedules import complete_schedule, get_schedule
 
     # 1. Complete the schedule (advances next_due)
     sch = complete_schedule(schedule_id, completed_by=completed_by, notes=notes)

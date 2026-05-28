@@ -16,9 +16,9 @@ nag-time selection, and recurrence iteration.
 
 Ported from ``reminder_store.py`` for sub-chunk 7c-part-2. Functionally
 identical; only difference is routing all persistence through
-``apps.reminders.data`` instead of ``data_layer.reminders``. Schedule
-integration (``data_layer.schedules``) is left untouched here — the
-``schedules`` app is still pending packaging in a later chunk.
+``apps.reminders.data`` instead of ``data_layer.reminders``. After
+Chunk 8 the backing-schedule integration now goes through
+``app_platform.schedules`` (the canonical platform contract).
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ from auto_memory import log_entity_change
 from app_platform.memory import digest_record
 from config import NAG_WAKE_HOUR, NAG_SLEEP_HOUR, NAG_SLOTS, TIMEZONE
 from apps.reminders import data as _dl_rem
-import data_layer.schedules as _dl_sched  # platform-side; schedules app not yet packaged
+import app_platform.schedules as _dl_sched  # platform contract — forwards to apps.schedules
 
 
 _REMINDER_HINT = (
