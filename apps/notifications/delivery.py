@@ -1,23 +1,21 @@
-"""
-Notification Delivery
-=====================
-Centralized delivery engine for all notification entities.
+"""Notifications — outbound delivery loop.
 
-Any system that needs to notify a user (schedules, reminders, PM, etc.)
-creates a notification record with delivered=False. This module picks up
-pending notifications and delivers them via the appropriate channels:
-  - Discord DM
-  - Pushover (configured users)
-  - WebSocket (web UI)
-  - Chat history log
+Picks up undelivered notification rows from
+``app_notifications.notifications`` and dispatches them via the
+configured channels (Discord DM, Pushover, FCM mobile push, WebSocket,
+chat log). Called from the reminder scheduler tick (~30s).
 
-Called from the reminder scheduler loop (~30s).
+Ported from ``notification_delivery.py`` for sub-chunk 6e. Only change
+is the data-layer import: ``data_layer.notifications`` →
+``apps.notifications.data``.
 """
+
+from __future__ import annotations
 
 import asyncio
 from config import logger
 
-import data_layer.notifications as _dl_notif
+from apps.notifications import data as _dl_notif
 
 
 async def deliver_pending_notifications():
@@ -37,8 +35,10 @@ async def deliver_pending_notifications():
         try:
             await _deliver_one(notif)
         except Exception as e:
-            logger.error("NOTIF_DELIVERY: Failed to deliver %s: %s",
-                         notif.get("id", "?"), e, exc_info=True)
+            logger.error(
+                "NOTIF_DELIVERY: Failed to deliver %s: %s",
+                notif.get("id", "?"), e, exc_info=True,
+            )
 
 
 async def _deliver_one(notif: dict):
@@ -117,7 +117,10 @@ async def _deliver_one(notif: dict):
         if ws_sent:
             logger.info("NOTIF_DELIVERY: WebSocket sent to %s", recipient)
         else:
-            logger.warning("NOTIF_DELIVERY: WebSocket not sent to %s — not in active connections %s", recipient, active_users)
+            logger.warning(
+                "NOTIF_DELIVERY: WebSocket not sent to %s — not in active connections %s",
+                recipient, active_users,
+            )
     except Exception as e:
         logger.error("NOTIF_DELIVERY: WebSocket failed for %s: %s", recipient, e)
 
@@ -129,12 +132,14 @@ async def _deliver_one(notif: dict):
     except Exception as e:
         logger.error("NOTIF_DELIVERY: Chat log failed for %s: %s", recipient, e)
 
-    # Mark as delivered
-    delivered_ok = any("failed" not in r.lower() for r in delivery_results) if delivery_results else True
+    # Mark as delivered (best-effort: once any channel succeeded, we're done).
     try:
         await asyncio.to_thread(_dl_notif.mark_delivered, notif_id)
     except Exception as e:
         logger.error("NOTIF_DELIVERY: Failed to mark %s as delivered: %s", notif_id, e)
 
-    logger.info("NOTIF_DELIVERY: Delivered %s to %s [%s]. Results: %s",
-                notif_id, recipient, channel, "; ".join(delivery_results) or "WebSocket only")
+    logger.info(
+        "NOTIF_DELIVERY: Delivered %s to %s [%s]. Results: %s",
+        notif_id, recipient, channel,
+        "; ".join(delivery_results) or "WebSocket only",
+    )

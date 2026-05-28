@@ -106,7 +106,7 @@ def _handle_backup_check(job: dict, ctx: JobContext) -> str:
     from datetime import date
     from zoneinfo import ZoneInfo
     from data_layer.db import fetch_all
-    from notification_store import create_notification
+    from app_platform.notifications import create_notification
 
     today = date.today()
     ctx.update_progress(20, "Querying today's backup records...")

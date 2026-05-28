@@ -19,7 +19,7 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from config import logger, TIMEZONE, NAG_WAKE_HOUR, NAG_SLEEP_HOUR
-from notification_store import create_notification
+from app_platform.notifications import create_notification
 from data_layer.db import fetch_one as _db_fetch_one
 
 CENTRAL_TZ = ZoneInfo(TIMEZONE)

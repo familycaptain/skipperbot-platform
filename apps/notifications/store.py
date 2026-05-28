@@ -1,11 +1,21 @@
-"""Notification Store
-====================
-First-class notification records (n-* IDs).
-A notification is created whenever the system delivers something to a user —
-from a reminder firing, a job completing, or a system event.
+"""Notifications — business logic.
 
-Backed by Postgres via data_layer.notifications.
+The single public entry point that every other app calls is
+``create_notification(...)`` — usually via the
+``app_platform.notifications.create_notification`` shim so apps don't
+have to import this module directly. It generates the ``n-*`` id, fires
+``digest_record``, calls ``log_entity_change`` for the platform's
+auto-memory, and inserts the row via ``apps.notifications.data``.
+
+Also exposes formatting + history helpers for the
+``get_recent_notifications`` MCP tool and the desktop Notifications app.
+
+Ported from ``notification_store.py`` for sub-chunk 6c-part-2.
+Functionally identical; only difference is routing all persistence
+through ``apps.notifications.data`` instead of ``data_layer.notifications``.
 """
+
+from __future__ import annotations
 
 import uuid
 from datetime import datetime
@@ -15,13 +25,16 @@ from zoneinfo import ZoneInfo
 from config import logger, TIMEZONE
 from auto_memory import log_entity_change
 from app_platform.memory import digest_record
-import data_layer.notifications as _dl_notif
+from apps.notifications import data as _dl_notif
+
 
 _NOTIFICATION_HINT = (
     "Focus on: recipient, the message delivered, source type (reminder/job/system/agent), "
     "delivery channel (discord/pushover/chat), and whether delivery succeeded."
 )
 
+# Module-local timezone for ISO timestamps. Mirrors the pattern used by
+# apps/goals/store.py, apps/lists/store.py, and timer_store.py.
 CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 
@@ -74,14 +87,25 @@ def create_notification(
         "created_at": _now_iso(),
     }
     _dl_notif.save_notification(notif)
-    logger.info("NOTIFICATION: Created %s for %s via %s", notif["id"], recipient, channel or "unknown")
+    logger.info(
+        "NOTIFICATION: Created %s for %s via %s",
+        notif["id"], recipient, channel or "unknown",
+    )
 
-    log_entity_change("created", notif["id"], "notification",
-                      f"To {recipient}: {message[:80]}",
-                      related_entities=[source_id] if source_id else [])
-    digest_record(app_id="notifications", entity_type="notification", action="created",
-                  entity_id=notif["id"], record=notif,
-                  by=recipient, context_hint=_NOTIFICATION_HINT)
+    log_entity_change(
+        "created", notif["id"], "notification",
+        f"To {recipient}: {message[:80]}",
+        related_entities=[source_id] if source_id else [],
+    )
+    digest_record(
+        app_id="notifications",
+        entity_type="notification",
+        action="created",
+        entity_id=notif["id"],
+        record=notif,
+        by=recipient,
+        context_hint=_NOTIFICATION_HINT,
+    )
     return notif
 
 
@@ -107,11 +131,11 @@ def get_notifications(
         List of notification records.
     """
     if recipient:
-        all_notifs = _dl_notif.get_notifications_for_user(recipient.lower().strip(), limit=limit)
+        all_notifs = _dl_notif.get_notifications_for_user(
+            recipient.lower().strip(), limit=limit,
+        )
     else:
-        from data_layer.db import fetch_all
-        all_notifs = [_notif_row(r) for r in fetch_all(
-            "SELECT * FROM notifications ORDER BY created_at DESC LIMIT %s", (limit,))]
+        all_notifs = _dl_notif.get_all_notifications(limit=limit)
 
     if source_type:
         st = source_type.strip().lower()
@@ -121,19 +145,6 @@ def get_notifications(
         all_notifs = [n for n in all_notifs if n.get("source_id") == sid]
 
     return all_notifs[:limit]
-
-
-def _notif_row(row: dict) -> dict:
-    return {
-        "id": row["id"],
-        "recipient": row.get("recipient") or "",
-        "message": row["message"],
-        "source_type": row.get("source_type") or "",
-        "source_id": row.get("source_id") or "",
-        "channel": row.get("channel") or "",
-        "delivered": row.get("delivered", True),
-        "created_at": row["created_at"].isoformat() if hasattr(row.get("created_at", ""), 'isoformat') else row.get("created_at", ""),
-    }
 
 
 def format_notifications(notifs: list[dict]) -> str:
@@ -152,5 +163,7 @@ def format_notifications(notifs: list[dict]) -> str:
             source += "]"
         channel = f" via {n['channel']}" if n.get("channel") else ""
         status = "" if n.get("delivered", True) else " (FAILED)"
-        lines.append(f"  [{n['id']}] {ts} → {n['recipient']}: {n['message']}{source}{channel}{status}")
+        lines.append(
+            f"  [{n['id']}] {ts} → {n['recipient']}: {n['message']}{source}{channel}{status}"
+        )
     return "\n".join(lines)

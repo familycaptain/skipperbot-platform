@@ -3,7 +3,7 @@ import os
 import dotenv
 dotenv.load_dotenv()
 
-from notification_store import create_notification
+from app_platform.notifications import create_notification
 
 notif = create_notification(
     recipient="alice",

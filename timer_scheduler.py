@@ -17,7 +17,7 @@ import asyncio
 
 from config import logger
 import timer_store
-from notification_store import create_notification
+from app_platform.notifications import create_notification
 
 _shutting_down = False
 
@@ -95,7 +95,7 @@ async def _run_timer(timer_id: str, user_id: str, duration_seconds: int, name: s
     # Trigger immediate delivery so the user hears about the expiry now,
     # rather than waiting up to 30s for the reminder loop's tick.
     try:
-        from notification_delivery import deliver_pending_notifications
+        from apps.notifications.delivery import deliver_pending_notifications
         await deliver_pending_notifications()
     except Exception as e:
         logger.error("TIMER [%s]: Immediate delivery failed: %s", timer_id, e)

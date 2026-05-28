@@ -331,15 +331,9 @@ const APP_MANIFESTS = {
     singleton: true,
     page: 3,
   },
-  notifications: {
-    id: "notifications",
-    name: "Notifications",
-    icon: Mail,
-    component: lazy(() => import("./NotificationsApp")),
-    singleton: true,
-    appPackage: true,
-    page: 3,
-  },
+  // `notifications` is now discovered from apps/notifications/ui/index.js
+  // (the notifications app owns its own UI). Removed from the hardcoded
+  // registry as part of the notifications app packaging.
   bounties: {
     id: "bounties",
     name: "Bounties",

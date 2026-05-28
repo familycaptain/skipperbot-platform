@@ -1,17 +1,25 @@
+"""Notifications — MCP tools.
+
+One thin read-only tool that surfaces recent notification history for
+the chat agent ("did Skipper tell me about X?").
+
+Ported from ``tools/notification_tool.py`` for sub-chunk 6e. Only
+change is the import path: the store helpers now live at
+``apps.notifications.store``.
 """
-Notification Tools - View notification history.
-"""
+
+from __future__ import annotations
 
 import os
 import sys
-from dotenv import load_dotenv
-load_dotenv()
 
-APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if APP_ROOT not in sys.path:
-    sys.path.insert(0, APP_ROOT)
+# Make sure the platform root is on sys.path so this module is importable
+# both as ``apps.notifications.tools`` and (rarely) directly.
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
 
-from notification_store import get_notifications, format_notifications
+from apps.notifications.store import get_notifications, format_notifications
 
 
 def get_recent_notifications(

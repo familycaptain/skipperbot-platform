@@ -8,7 +8,7 @@ by the centralized notification_delivery module.
 import asyncio
 from config import logger
 from reminder_store import get_due_reminders, mark_delivered, assign_nag_times
-from notification_store import create_notification
+from app_platform.notifications import create_notification
 
 
 # How often to check for due reminders (seconds)
@@ -105,7 +105,7 @@ async def check_and_deliver():
 
     # Deliver any pending notifications (schedule, todo nudge, or any other source)
     try:
-        from notification_delivery import deliver_pending_notifications
+        from apps.notifications.delivery import deliver_pending_notifications
         await deliver_pending_notifications()
     except Exception as e:
         logger.error("NOTIF_DELIVERY: Error delivering pending notifications: %s", str(e))

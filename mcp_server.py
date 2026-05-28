@@ -47,7 +47,8 @@ from tools.pushover_tool import send_pushover_notification
 from tools.reminder_tool import set_reminder, get_reminders, cancel_reminder_by_id, modify_reminder_by_id, set_nag, snooze_reminder
 from tools.timer_tool import start_timer, list_timers, cancel_timer
 from tools.link_tool import link_entities, get_entity_links, unlink_entities
-from tools.notification_tool import get_recent_notifications
+# notifications tools moved to apps/notifications/tools.py (app package).
+# The platform loader auto-discovers them at startup.
 from tools.artifact_tool import attach_artifact, read_artifact, list_entity_artifacts, delete_artifact_by_id, update_artifact
 from tools.job_tool import create_job, get_jobs, update_job, run_job
 # Lists + Trello + Todo tools moved to apps/lists/tools.py (app package).
@@ -122,7 +123,8 @@ mcp.tool()(cancel_timer)
 mcp.tool()(link_entities)
 mcp.tool()(get_entity_links)
 mcp.tool()(unlink_entities)
-mcp.tool()(get_recent_notifications)
+# get_recent_notifications now registered by the platform loader from
+# apps/notifications/tools.py (no static mcp.tool() line needed).
 mcp.tool()(attach_artifact)
 mcp.tool()(read_artifact)
 mcp.tool()(list_entity_artifacts)

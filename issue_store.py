@@ -10,7 +10,7 @@ from typing import Optional
 
 from data_layer import issues as _dl
 from data_layer import users as _users
-from notification_store import create_notification
+from app_platform.notifications import create_notification
 
 logger = logging.getLogger(__name__)
 

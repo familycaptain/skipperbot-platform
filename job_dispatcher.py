@@ -299,7 +299,7 @@ async def _notify_completion(job: dict, result: str, success: bool):
     if not notify_user:
         return
     try:
-        from notification_store import create_notification
+        from app_platform.notifications import create_notification
         status = "completed" if success else "FAILED"
         msg = f"Job '{job['name']}' {status}: {result[:200]}"
         create_notification(

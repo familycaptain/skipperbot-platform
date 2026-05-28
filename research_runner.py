@@ -451,7 +451,7 @@ def _run_research_pipeline(job: dict) -> dict:
     """
     from job_store import update_job_progress, get_job
     from doc_store import create_doc, update_doc
-    from notification_store import create_notification
+    from app_platform.notifications import create_notification
 
     job_id = job["id"]
     config = job.get("config", {})
@@ -1118,7 +1118,7 @@ def _run_refine_pipeline(job: dict) -> dict:
     """
     from job_store import update_job_progress, get_job
     from doc_store import create_doc, get_doc
-    from notification_store import create_notification
+    from app_platform.notifications import create_notification
 
     job_id = job["id"]
     config = job.get("config", {})

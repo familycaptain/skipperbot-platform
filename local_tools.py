@@ -271,7 +271,7 @@ async def _queue_notification(
     if sender and f"from {sender}" not in text.lower():
         text = f"From {sender.title()} via Skipper: {text}"
 
-    from notification_store import create_notification
+    from app_platform.notifications import create_notification
 
     notif = await asyncio.to_thread(
         create_notification,

@@ -1,0 +1,76 @@
+id: notifications
+name: Notifications
+version: 1.0.0
+description: >
+  Cross-app notification fan-out. Records every "tell the user X" event
+  as a row in app_notifications.notifications, then a background
+  delivery loop pushes the message out via the configured channels
+  (Discord DM, Pushover, WebSocket, chat log, FCM mobile push).
+
+# Required core app — platform refuses to start without it. Almost
+# every other app calls into platform.notifications, so removing this
+# would silently break onboarding, reminders, the PM domain, jobs, etc.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns one entity prefix.
+entity_types:
+  - prefix: n
+    name: notification
+    id_format: "n-{hex8}"
+    table: notifications
+
+# Platform services this app consumes.
+platform_deps:
+  - db
+  - time      # platform.time.now() for created_at + delivery timestamps
+  - config    # per-app preferences (default channels, throttle, etc.)
+  - capabilities  # checks for Discord / Pushover / FCM credentials at delivery time
+
+emits:
+  - notification.created
+  - notification.delivered
+  - notification.deleted
+
+# Notifications is foundational — doesn't react to other apps' events
+# directly. (The schedule/reminder/PM/jobs apps create notification
+# rows by calling app_platform.notifications.create_notification.)
+subscribes: []
+
+# Tool category for keyword routing.
+tool_category:
+  description: >
+    View the user's recent notification history — what messages
+    Skipper has sent, when, and through which channel.
+  keywords:
+    - notification
+    - notifications
+    - notified
+    - sent me
+    - told me
+    - what did skipper say
+    - alert
+    - alerts
+    - delivery
+    - delivered
+    - history of messages
+
+config:
+  - key: default_channels
+    type: string
+    default: "discord,pushover"
+    label: "Default delivery channels"
+    description: "Comma-separated channel names tried in order when a notification omits an explicit channel."
+  - key: max_delivery_age_minutes
+    type: integer
+    default: 5
+    label: "Max delivery age (minutes)"
+    description: "Notifications older than this without being delivered are skipped to avoid stale-message blasts after a long outage."
+
+# No thinking domain — notifications is passive infrastructure.
+thinking: []
+
+# No background jobs declared via the job system; the delivery loop is
+# driven by the existing reminder scheduler tick.
+job_types: []

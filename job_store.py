@@ -124,7 +124,7 @@ def record_run(job_id: str, result: str, success: bool = True) -> str:
     job = _q.get_job(job_id)
     if job:
         try:
-            from notification_store import create_notification
+            from app_platform.notifications import create_notification
             status_label = "completed" if success else "FAILED"
             create_notification(
                 recipient=job.get("notify_user") or job.get("created_by", ""),

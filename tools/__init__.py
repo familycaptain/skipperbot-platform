@@ -32,7 +32,8 @@ from tools.pushover_tool import send_pushover_notification
 from tools.reminder_tool import set_reminder, get_reminders, cancel_reminder_by_id, modify_reminder_by_id, set_nag, snooze_reminder
 from apps.goals.tools import create_goal, create_project, create_task, update_item, get_goals_summary, get_goal_detail, get_project_detail, get_entity_detail, get_my_tasks, search_goals, update_entity_notes, get_entity_notes, set_due_reminder, delete_item, set_task_order, set_task_dependency, enable_project_nag, disable_project_nag, set_task_parent, link_project_to_trello, unlink_project_from_trello, create_trello_task, adopt_trello_card, check_trello_item, set_project_order, set_project_dependency, set_goal_order, set_goal_dependency
 from tools.link_tool import link_entities, get_entity_links, unlink_entities
-from tools.notification_tool import get_recent_notifications
+# notifications tools moved to apps/notifications/tools.py (app package).
+# The platform loader auto-discovers them; no need to re-export here.
 from tools.artifact_tool import attach_artifact, read_artifact, list_entity_artifacts, delete_artifact_by_id
 from tools.job_tool import create_job, get_jobs, update_job, run_job
 # Lists + Trello tools moved to apps/lists/tools.py (app package).
@@ -129,7 +130,8 @@ __all__ = [
     "link_entities",
     "get_entity_links",
     "unlink_entities",
-    "get_recent_notifications",
+    # get_recent_notifications now lives at apps.notifications.tools
+    # and is registered by the platform loader.
     "attach_artifact",
     "read_artifact",
     "list_entity_artifacts",

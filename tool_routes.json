@@ -421,28 +421,6 @@
       "running timers"
     ]
   },
-  "notifications": {
-    "guide": "notifications.md",
-    "description": "View notification history \u2014 what Skipper has sent to users",
-    "tools": [
-      "get_recent_notifications"
-    ],
-    "ack": {
-      "get_recent_notifications": "Checking notifications..."
-    },
-    "keywords": [
-      "notification",
-      "notifications",
-      "notified",
-      "sent me",
-      "told me",
-      "what did skipper say",
-      "alert",
-      "alerts",
-      "delivery",
-      "delivered"
-    ]
-  },
   "jobs": {
     "guide": "jobs.md",
     "description": "Create and manage scheduled or on-demand jobs (shell commands, scripts)",
