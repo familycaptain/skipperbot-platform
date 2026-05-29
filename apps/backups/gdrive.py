@@ -1,20 +1,31 @@
-"""Google Drive Backup — Upload backup artifacts to Skipper's Google Drive.
+"""Backups — Google Drive destination.
 
-Uses a GCP service account with domain-wide delegation to impersonate
-Skipper's Google Workspace account.  Files are uploaded to a
-"Backups/<date>" folder and count against Skipper's Drive quota.
+Optional destination that uploads each backup's three artifacts into
+a shared "Backups/<date>" folder on Google Drive via a service
+account with domain-wide delegation. Files count against the
+impersonated Workspace user's Drive quota.
 
-Env vars:
-    BACKUP_GOOGLE_KEY_FILE   — path to the service account JSON key file
-    GDRIVE_IMPERSONATE_EMAIL — Skipper's Workspace email to impersonate
+Configuration (all in ``scope='app:backups'``):
+
+- ``gdrive_enabled`` — boolean toggle.
+- ``gdrive_key_file`` — path to the service account JSON key.
+- ``gdrive_impersonate_email`` — the Workspace account to impersonate.
+
+If the toggle is off or either string is empty, ``upload_to_gdrive``
+returns ``{"status": "skipped", "reason": "..."}`` and the rest of
+the backup run carries on. If imports fail (the
+``google-api-python-client`` package isn't installed), we
+gracefully report ``skipped`` rather than crashing — backups should
+work even when this optional integration isn't available.
 """
 
-import os
-import logging
+from __future__ import annotations
 
-from google.oauth2.service_account import Credentials
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
+import logging
+import os
+import re
+
+from app_platform import config as platform_config
 
 logger = logging.getLogger(__name__)
 
@@ -22,18 +33,37 @@ SCOPES = ["https://www.googleapis.com/auth/drive"]
 DRIVE_FOLDER_NAME = "Backups"
 
 
+def _config(key: str, default=None):
+    return platform_config.get(key, default, scope="app:backups")
+
+
 def _build_service():
-    """Build a Google Drive API service via service account with delegation."""
-    key_file = os.getenv("BACKUP_GOOGLE_KEY_FILE", "").strip()
-    impersonate_email = os.getenv("GDRIVE_IMPERSONATE_EMAIL", "").strip()
+    """Build a Google Drive API service via service account with delegation.
+
+    Returns the service object on success, or ``None`` (with a logged
+    reason) if the destination is disabled or misconfigured.
+    """
+    if not _config("gdrive_enabled", False):
+        return None
+
+    key_file = (_config("gdrive_key_file", "") or "").strip()
+    impersonate_email = (_config("gdrive_impersonate_email", "") or "").strip()
 
     if not key_file:
+        logger.warning("GDRIVE: enabled but gdrive_key_file is empty — skipping")
         return None
     if not os.path.isfile(key_file):
-        logger.error("GDRIVE: Key file not found: %s", key_file)
+        logger.error("GDRIVE: key file not found: %s", key_file)
         return None
     if not impersonate_email:
-        logger.error("GDRIVE: GDRIVE_IMPERSONATE_EMAIL not set")
+        logger.warning("GDRIVE: enabled but gdrive_impersonate_email is empty — skipping")
+        return None
+
+    try:
+        from google.oauth2.service_account import Credentials
+        from googleapiclient.discovery import build
+    except ImportError as e:
+        logger.warning("GDRIVE: google-api-python-client not installed (%s) — skipping", e)
         return None
 
     creds = Credentials.from_service_account_file(key_file, scopes=SCOPES)
@@ -42,7 +72,6 @@ def _build_service():
 
 
 def _find_folder(service, folder_name: str) -> str | None:
-    """Find a shared folder by name. Returns folder ID or None."""
     resp = service.files().list(
         q=f"name = '{folder_name}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
         spaces="drive",
@@ -50,13 +79,10 @@ def _find_folder(service, folder_name: str) -> str | None:
         pageSize=10,
     ).execute()
     files = resp.get("files", [])
-    if files:
-        return files[0]["id"]
-    return None
+    return files[0]["id"] if files else None
 
 
 def _find_or_create_subfolder(service, parent_id: str, name: str) -> str:
-    """Find or create a subfolder inside parent_id."""
     resp = service.files().list(
         q=f"name = '{name}' and '{parent_id}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
         spaces="drive",
@@ -66,8 +92,6 @@ def _find_or_create_subfolder(service, parent_id: str, name: str) -> str:
     files = resp.get("files", [])
     if files:
         return files[0]["id"]
-
-    # Create it
     meta = {
         "name": name,
         "mimeType": "application/vnd.google-apps.folder",
@@ -78,40 +102,43 @@ def _find_or_create_subfolder(service, parent_id: str, name: str) -> str:
 
 
 def _upload_file(service, folder_id: str, local_path: str, dest_name: str) -> dict:
-    """Upload a file into a Drive folder. Returns file metadata."""
+    from googleapiclient.http import MediaFileUpload
     media = MediaFileUpload(local_path, resumable=True)
     meta = {"name": dest_name, "parents": [folder_id]}
-    f = service.files().create(body=meta, media_body=media, fields="id,name,size").execute()
-    return f
+    return service.files().create(body=meta, media_body=media, fields="id,name,size").execute()
 
 
-def upload_backup_to_gdrive(
+def upload_to_gdrive(
     date_str: str,
     dump_file: str,
     zip_file: str,
     restore_file: str,
+    retention: int = 5,
 ) -> dict:
     """Upload backup artifacts to Google Drive / Backups / <date_str>.
 
-    Returns dict with status info. Non-fatal — logs warnings on failure.
+    Returns dict with status info. Non-fatal — logs warnings on failure
+    so one bad destination doesn't poison the whole backup run.
     """
     service = _build_service()
     if service is None:
-        logger.info("GDRIVE: Skipping upload — BACKUP_GOOGLE_KEY_FILE not configured")
-        return {"status": "skipped", "reason": "not configured"}
+        return {"status": "skipped", "reason": "destination disabled or not configured"}
 
     try:
-        # Find the shared Backups folder
         root_id = _find_folder(service, DRIVE_FOLDER_NAME)
         if not root_id:
-            logger.error("GDRIVE: Shared '%s' folder not found — is it shared with the service account?", DRIVE_FOLDER_NAME)
+            logger.error(
+                "GDRIVE: shared '%s' folder not found — is it shared with the service account?",
+                DRIVE_FOLDER_NAME,
+            )
             return {"status": "error", "reason": f"'{DRIVE_FOLDER_NAME}' folder not found"}
 
-        # Create date subfolder
         date_folder_id = _find_or_create_subfolder(service, root_id, date_str)
-        logger.info("GDRIVE: Uploading to %s/%s (folder_id=%s)", DRIVE_FOLDER_NAME, date_str, date_folder_id)
+        logger.info(
+            "GDRIVE: Uploading to %s/%s (folder_id=%s)",
+            DRIVE_FOLDER_NAME, date_str, date_folder_id,
+        )
 
-        # Upload each file
         uploaded = []
         for local_path, dest_name in [
             (dump_file, "skipperbot_db.dump"),
@@ -119,7 +146,7 @@ def upload_backup_to_gdrive(
             (restore_file, "RESTORE.md"),
         ]:
             if not os.path.isfile(local_path):
-                logger.warning("GDRIVE: File not found, skipping: %s", local_path)
+                logger.warning("GDRIVE: file not found, skipping: %s", local_path)
                 continue
             size = os.path.getsize(local_path)
             logger.info("GDRIVE: Uploading %s (%.1f MB)...", dest_name, size / 1048576)
@@ -127,24 +154,17 @@ def upload_backup_to_gdrive(
             uploaded.append({"name": dest_name, "id": result["id"], "size": size})
             logger.info("GDRIVE: Uploaded %s → %s", dest_name, result["id"])
 
-        # Prune old date folders beyond retention
-        _prune_gdrive_folders(service, root_id)
+        _prune_gdrive_folders(service, root_id, keep=retention)
 
         return {"status": "ok", "folder_id": date_folder_id, "files": uploaded}
 
     except Exception as e:
-        logger.error("GDRIVE: Upload failed — %s", e)
+        logger.error("GDRIVE: upload failed — %s", e)
         return {"status": "error", "reason": str(e)[:500]}
 
 
-def _prune_gdrive_folders(service, root_id: str, keep: int = 0):
-    """Remove old date-named subfolders beyond retention.
-
-    Uses BACKUP_RETENTION env var (default 5).
-    """
-    import re
-    keep = int(os.getenv("BACKUP_RETENTION", "5"))
-
+def _prune_gdrive_folders(service, root_id: str, keep: int = 5):
+    """Remove old date-named subfolders beyond retention."""
     resp = service.files().list(
         q=f"'{root_id}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
         spaces="drive",
@@ -165,6 +185,6 @@ def _prune_gdrive_folders(service, root_id: str, keep: int = 0):
     for folder in folders[keep:]:
         try:
             service.files().delete(fileId=folder["id"]).execute()
-            logger.info("GDRIVE: Pruned old backup folder %s", folder["name"])
+            logger.info("GDRIVE: pruned old backup folder %s", folder["name"])
         except Exception as e:
-            logger.warning("GDRIVE: Failed to prune %s: %s", folder["name"], e)
+            logger.warning("GDRIVE: failed to prune %s: %s", folder["name"], e)

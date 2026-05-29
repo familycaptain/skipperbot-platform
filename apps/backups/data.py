@@ -1,25 +1,40 @@
-"""Backups Data Layer — CRUD for backup records."""
+"""Backups — data layer.
+
+Schema-scoped CRUD for ``app_backups.backups``. The runner calls these
+helpers; the platform shim ``app_platform.backups`` re-exports them
+for cross-app callers (the system app's "Run backup now" button,
+the daily ``backup_check`` job).
+"""
+
+from __future__ import annotations
 
 import logging
 from psycopg2.extras import Json
-from data_layer.db import get_conn, fetch_one, fetch_all, execute, execute_returning
+
+from app_platform.db import (
+    execute_in_schema,
+    execute_returning_in_schema,
+    fetch_one_in_schema,
+    fetch_all_in_schema,
+)
 from data_layer.links import ensure_edge
 
 logger = logging.getLogger(__name__)
 
+SCHEMA = "app_backups"
+
 
 def create_backup(backup_id: str, job_id: str = "", created_by: str = "system") -> dict:
     """Create a new backup record (status=running)."""
-    import psycopg2.extras
-    with get_conn() as conn:
-        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-            cur.execute("""
-                INSERT INTO backups (id, job_id, started_at, status, created_by)
-                VALUES (%s, %s, now(), 'running', %s)
-                RETURNING *
-            """, (backup_id, job_id or None, created_by))
-            row = cur.fetchone()
-        conn.commit()
+    row = execute_returning_in_schema(
+        SCHEMA,
+        """
+        INSERT INTO backups (id, job_id, started_at, status, created_by)
+        VALUES (%s, %s, now(), 'running', %s)
+        RETURNING *
+        """,
+        (backup_id, job_id or None, created_by),
+    )
     if row and job_id:
         ensure_edge(backup_id, job_id, "created_by_job", "produced")
     return _row(row) if row else {}
@@ -30,12 +45,13 @@ def complete_backup(
     pg_dump_size: int = 0,
     zip_size: int = 0,
     network_path: str = "",
-    files_created: list = None,
-    table_counts: dict = None,
+    files_created: list | None = None,
+    table_counts: dict | None = None,
     duration_secs: float = 0.0,
 ) -> dict:
     """Mark a backup as completed with final metadata."""
-    row = execute_returning(
+    row = execute_returning_in_schema(
+        SCHEMA,
         """UPDATE backups SET
             status = 'completed',
             completed_at = now(),
@@ -57,23 +73,25 @@ def complete_backup(
     return _row(row) if row else {}
 
 
-def skip_backup(backup_id: str) -> dict:
-    """Mark a backup as skipped (backups disabled)."""
-    row = execute_returning(
+def skip_backup(backup_id: str, reason: str = "Backups disabled") -> dict:
+    """Mark a backup as skipped (master switch off / no destinations / etc.)."""
+    row = execute_returning_in_schema(
+        SCHEMA,
         """UPDATE backups SET
             status = 'skipped',
             completed_at = now(),
             duration_secs = 0,
-            error = 'Backups disabled (BACKUP_ENABLED=false)'
+            error = %s
         WHERE id = %s RETURNING *""",
-        (backup_id,),
+        (reason[:2000], backup_id),
     )
     return _row(row) if row else {}
 
 
 def fail_backup(backup_id: str, error: str = "") -> dict:
     """Mark a backup as failed."""
-    row = execute_returning(
+    row = execute_returning_in_schema(
+        SCHEMA,
         """UPDATE backups SET
             status = 'failed',
             completed_at = now(),
@@ -86,36 +104,69 @@ def fail_backup(backup_id: str, error: str = "") -> dict:
 
 def get_backup(backup_id: str) -> dict | None:
     """Get a single backup by ID."""
-    row = fetch_one("SELECT * FROM backups WHERE id = %s", (backup_id,))
+    row = fetch_one_in_schema(SCHEMA, "SELECT * FROM backups WHERE id = %s", (backup_id,))
     return _row(row) if row else None
 
 
 def list_backups(limit: int = 20) -> list[dict]:
     """List all backups, most recent first."""
-    return [_row(r) for r in fetch_all(
-        "SELECT * FROM backups ORDER BY started_at DESC LIMIT %s", (limit,)
+    return [_row(r) for r in fetch_all_in_schema(
+        SCHEMA,
+        "SELECT * FROM backups ORDER BY started_at DESC LIMIT %s",
+        (limit,),
     )]
 
 
 def delete_backup(backup_id: str) -> bool:
     """Delete a backup record."""
-    n = execute("DELETE FROM backups WHERE id = %s", (backup_id,))
+    n = execute_in_schema(SCHEMA, "DELETE FROM backups WHERE id = %s", (backup_id,))
     return n > 0
 
 
 def prune_old_records(keep: int = 5) -> int:
     """Delete backup records beyond the retention count (oldest first).
     Only prunes completed backups. Returns number deleted."""
-    rows = fetch_all(
-        "SELECT id FROM backups WHERE status = 'completed' ORDER BY started_at DESC"
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT id FROM backups WHERE status = 'completed' ORDER BY started_at DESC",
+        (),
     )
     if len(rows) <= keep:
         return 0
     to_delete = [r["id"] for r in rows[keep:]]
-    n = execute(
-        "DELETE FROM backups WHERE id = ANY(%s)", (to_delete,)
+    n = execute_in_schema(
+        SCHEMA, "DELETE FROM backups WHERE id = ANY(%s)", (to_delete,),
     )
     return n
+
+
+def list_today(tz: str) -> list[dict]:
+    """Return today's backup records (in the given timezone), most recent first.
+
+    Used by the daily ``backup_check`` job to decide whether to nag.
+    """
+    from datetime import date
+    today = date.today()
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        """
+        SELECT id, status, error, started_at
+        FROM backups
+        WHERE (started_at AT TIME ZONE %s)::date = %s
+        ORDER BY started_at DESC
+        """,
+        (tz, today),
+    )
+    # Light coercion — the check handler only reads id/status/error/started_at.
+    return [
+        {
+            "id": r["id"],
+            "status": r.get("status") or "running",
+            "error": r.get("error") or "",
+            "started_at": r["started_at"].isoformat() if r.get("started_at") else "",
+        }
+        for r in rows
+    ]
 
 
 def _row(row: dict) -> dict:

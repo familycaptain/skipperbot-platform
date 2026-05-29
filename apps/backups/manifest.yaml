@@ -1,0 +1,134 @@
+id: backups
+name: Backups
+version: 1.0.0
+description: >
+  Database + project-files backup runner. Two destinations are
+  independently configurable: a local/network filesystem path and
+  Google Drive (service account with domain-wide delegation). Each
+  destination has its own enable/disable toggle and may be turned off
+  entirely — the platform boots cleanly with neither configured.
+
+# Required core app — the daily backup_check cron lives here and so
+# does the on-demand "run a backup now" button in the UI. The runner
+# is a graceful no-op when nothing is configured (writes an audit
+# row, no destinations touched), so the "platform works without
+# backups configured" property still holds.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns one entity prefix.
+entity_types:
+  - prefix: b
+    name: backup
+    id_format: "b-{hex8}"
+    table: backups
+
+# Platform services this app consumes.
+platform_deps:
+  - db
+  - jobs           # both job handlers are registered here
+  - notifications  # backup_check warns Alice when a daily run is missing
+  - links          # ensure_edge from backup → job
+  - config         # all toggles live in app:backups config scope
+  - time
+
+app_deps: []
+
+emits:
+  - backup.started
+  - backup.completed
+  - backup.failed
+  - backup.skipped
+  - backup.deleted
+
+subscribes: []
+
+# No chat tools — backups is a system-facing app, not a chat surface.
+# The UI exposes an on-demand "Run backup now" button that submits a
+# `backup` job through app_platform.jobs.
+tool_category: ~
+
+# Each destination is independently configurable. The whole-app
+# enabled toggle plus per-destination toggles let the user run with
+# none / one / both destinations enabled, and the platform must
+# still boot if everything is left at defaults.
+config:
+  # ----- master switches + retention -----
+  - key: enabled
+    type: boolean
+    default: true
+    label: "Run scheduled backups"
+    description: >
+      Master switch for the daily cron. When false, scheduled jobs
+      short-circuit with a 'skipped' status; on-demand runs from the
+      UI still execute so the user can produce a one-off artifact.
+  - key: cron
+    type: string
+    default: "0 2 * * *"
+    label: "Backup schedule (cron)"
+    description: "Standard 5-field cron expression in the platform timezone."
+  - key: retention
+    type: integer
+    default: 5
+    label: "Retain last N backups"
+    description: >
+      How many recent backups to keep on each destination and in the
+      audit table. Older runs are pruned at the end of each successful
+      backup.
+
+  # ----- destination 1: filesystem -----
+  - key: filesystem_enabled
+    type: boolean
+    default: false
+    label: "Copy to a filesystem path"
+    description: >
+      When enabled, each backup is copied to the filesystem path
+      below. Useful for a local NAS / SMB mount / external drive.
+  - key: filesystem_path
+    type: string
+    default: ""
+    label: "Filesystem path"
+    description: >
+      Absolute path the backup runner can write to (e.g.
+      ``/mnt/backups`` on Linux, ``/Volumes/Backups`` on macOS,
+      ``Z:\\backups`` on Windows). Ignored if
+      ``filesystem_enabled`` is false.
+
+  # ----- destination 2: google drive -----
+  - key: gdrive_enabled
+    type: boolean
+    default: false
+    label: "Upload to Google Drive"
+    description: >
+      When enabled, each backup is uploaded into a "Backups/<date>"
+      folder on Google Drive via a service account with domain-wide
+      delegation. Requires the two fields below.
+  - key: gdrive_key_file
+    type: string
+    default: ""
+    label: "Service account key file"
+    description: >
+      Path to the GCP service account JSON key with the Drive scope.
+      Ignored if ``gdrive_enabled`` is false.
+  - key: gdrive_impersonate_email
+    type: string
+    default: ""
+    label: "Workspace email to impersonate"
+    description: >
+      The Google Workspace account whose Drive owns the "Backups"
+      folder. Ignored if ``gdrive_enabled`` is false.
+
+# No thinking domain — backups runs on a fixed cron.
+thinking: []
+
+# Job types registered by apps/backups/handlers.py.
+job_types:
+  - type: backup
+    handler: apps.backups.runner.run_backup
+    max_concurrent: 1
+    cancel_on_shutdown: true
+  - type: backup_check
+    handler: apps.backups.runner.run_backup_check
+    max_concurrent: 1
+    cancel_on_shutdown: true

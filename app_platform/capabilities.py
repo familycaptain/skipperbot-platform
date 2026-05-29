@@ -146,14 +146,10 @@ CAPABILITIES: tuple[Capability, ...] = (
         docs_anchor="03-extended-functionality.md#voice",
         not_configured_message="Voice is not configured. Picovoice key required for the skipperbot-voice companion service.",
     ),
-    Capability(
-        name="gdrive_backup",
-        label="Google Drive backups",
-        env_vars=("BACKUP_GOOGLE_KEY_FILE", "GDRIVE_IMPERSONATE_EMAIL"),
-        docs_anchor="03-extended-functionality.md#google-drive-backups",
-        not_configured_message="Google Drive backup is not configured. Local backups still work.",
-        extra_check=_file_exists("BACKUP_GOOGLE_KEY_FILE"),
-    ),
+    # Note: the `gdrive_backup` capability was retired when the backups
+    # app was packaged. Per-destination toggles now live in the
+    # `app:backups` config scope and are surfaced through the Backups
+    # app's settings UI (see apps/backups/manifest.yaml `config:`).
     Capability(
         name="openai_admin",
         label="OpenAI budget tracking",

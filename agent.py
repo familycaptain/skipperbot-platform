@@ -3061,7 +3061,7 @@ async def api_trigger_evolve_cycle(req: TriggerEvolveRequest):
 # App API endpoints — Backups
 # ---------------------------------------------------------------------------
 
-import data_layer.backups as dl_backups
+import app_platform.backups as dl_backups
 
 
 @app.get("/api/apps/backups")
@@ -3069,52 +3069,73 @@ async def api_list_backups():
     """List all backup records, most recent first."""
     def _fetch():
         backups = dl_backups.list_backups(limit=50)
-        retention = int(os.getenv("BACKUP_RETENTION", "5"))
-        network_path = os.getenv("BACKUP_NETWORK_PATH", "")
-        return {"backups": backups, "count": len(backups),
-                "retention": retention, "network_path": network_path}
+        cfg = dl_backups.get_config()
+        return {
+            "backups": backups,
+            "count": len(backups),
+            "retention": int(cfg.get("retention") or 5),
+            "network_path": cfg.get("filesystem_path") or "",
+        }
     return await asyncio.to_thread(_fetch)
 
 
 @app.get("/api/apps/backups/config")
 async def api_backup_config():
-    """Get current backup configuration."""
-    return {
-        "enabled": os.getenv("BACKUP_ENABLED", "true").strip().lower() == "true",
-        "cron": os.getenv("BACKUP_CRON", "0 2 * * *"),
-        "network_path": os.getenv("BACKUP_NETWORK_PATH", ""),
-        "retention": int(os.getenv("BACKUP_RETENTION", "5")),
-    }
+    """Get current backup configuration.
+
+    Returns every config key the manifest declares so the UI can render
+    independent toggles + fields for each destination.
+    """
+    def _fetch():
+        cfg = dl_backups.get_config()
+        return {
+            # Master switches
+            "enabled": bool(cfg.get("enabled", True)),
+            "cron": cfg.get("cron") or "0 2 * * *",
+            "retention": int(cfg.get("retention") or 5),
+            # Filesystem destination
+            "filesystem_enabled": bool(cfg.get("filesystem_enabled", False)),
+            "filesystem_path": cfg.get("filesystem_path") or "",
+            # Google Drive destination
+            "gdrive_enabled": bool(cfg.get("gdrive_enabled", False)),
+            "gdrive_key_file": cfg.get("gdrive_key_file") or "",
+            "gdrive_impersonate_email": cfg.get("gdrive_impersonate_email") or "",
+        }
+    return await asyncio.to_thread(_fetch)
 
 
+class BackupConfigPatchRequest(BaseModel):
+    enabled: bool | None = None
+    cron: str | None = None
+    retention: int | None = None
+    filesystem_enabled: bool | None = None
+    filesystem_path: str | None = None
+    gdrive_enabled: bool | None = None
+    gdrive_key_file: str | None = None
+    gdrive_impersonate_email: str | None = None
+
+
+@app.patch("/api/apps/backups/config")
+async def api_patch_backup_config(req: BackupConfigPatchRequest):
+    """Patch any subset of backup config keys. Each destination toggles
+    independently — clients send only the keys they want to change.
+    """
+    updates = {k: v for k, v in req.dict().items() if v is not None}
+    if not updates:
+        return await asyncio.to_thread(dl_backups.get_config)
+    return await asyncio.to_thread(dl_backups.set_config, updates, by="web")
+
+
+# Backwards compatibility for the existing UI's simple enable/disable
+# button. New UI code should PATCH /api/apps/backups/config directly.
 class BackupEnabledRequest(BaseModel):
     enabled: bool
 
 
 @app.patch("/api/apps/backups/enabled")
 async def api_toggle_backup_enabled(req: BackupEnabledRequest):
-    """Toggle BACKUP_ENABLED — updates runtime env and .env file on disk."""
-    new_val = "true" if req.enabled else "false"
-    # Update runtime
-    os.environ["BACKUP_ENABLED"] = new_val
-    # Update .env on disk
-    def _update_env():
-        env_path = os.path.join(os.path.dirname(__file__), ".env")
-        if not os.path.isfile(env_path):
-            return
-        with open(env_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-        found = False
-        for i, line in enumerate(lines):
-            if line.strip().startswith("BACKUP_ENABLED"):
-                lines[i] = f"BACKUP_ENABLED={new_val}\n"
-                found = True
-                break
-        if not found:
-            lines.append(f"\nBACKUP_ENABLED={new_val}\n")
-        with open(env_path, "w", encoding="utf-8") as f:
-            f.writelines(lines)
-    await asyncio.to_thread(_update_env)
+    """Toggle the master switch in the app:backups config scope."""
+    await asyncio.to_thread(dl_backups.set_config, {"enabled": req.enabled}, by="web")
     return {"ok": True, "enabled": req.enabled}
 
 
@@ -3129,7 +3150,7 @@ async def api_get_backup(backup_id: str):
 
 @app.post("/api/apps/backups/run")
 async def api_run_backup():
-    """Trigger an on-demand backup (ignores BACKUP_ENABLED)."""
+    """Trigger an on-demand backup (ignores the master enabled switch)."""
     from app_platform.jobs import submit_job
     job = submit_job(
         "backup",
@@ -3143,12 +3164,11 @@ async def api_run_backup():
 
 @app.delete("/api/apps/backups/{backup_id}")
 async def api_delete_backup(backup_id: str):
-    """Delete a backup record and its network files."""
+    """Delete a backup record and its filesystem destination files (if any)."""
     def _do():
         backup = dl_backups.get_backup(backup_id)
         if not backup:
             return None
-        # Try to delete network files
         network_path = backup.get("network_path", "")
         if network_path and os.path.isdir(network_path):
             import shutil

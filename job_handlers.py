@@ -94,81 +94,8 @@ async def _handle_rebalance(job: dict, ctx: JobContext) -> str:
 # Backup handler
 # ---------------------------------------------------------------------------
 
-def _handle_backup(job: dict, ctx: JobContext) -> str:
-    """Run a backup job (synchronous — runs in thread pool)."""
-    from backup_runner import run_backup
-    ctx.update_progress(5, "Starting backup...")
-    return run_backup(job, ctx)
-
-
-def _handle_backup_check(job: dict, ctx: JobContext) -> str:
-    """Check if today's backup ran successfully; notify if failed or missing."""
-    from datetime import date
-    from zoneinfo import ZoneInfo
-    from data_layer.db import fetch_all
-    from app_platform.notifications import create_notification
-
-    today = date.today()
-    ctx.update_progress(20, "Querying today's backup records...")
-
-    rows = fetch_all(
-        """
-        SELECT id, status, error, started_at
-        FROM backups
-        WHERE (started_at AT TIME ZONE %s)::date = %s
-        ORDER BY started_at DESC
-        """,
-        (_CFG_TZ, today,),
-    )
-
-    ctx.update_progress(60, f"Found {len(rows)} backup record(s) for today")
-
-    if not rows:
-        create_notification(
-            recipient="alice",
-            message="Backup did not run today. No backup record found (expected at 2:00 AM CT).",
-            source_type="backup_check",
-            source_id="",
-            channel="both",
-            delivered=False,
-        )
-        logger.warning("BACKUP_CHECK: No backup record found for today — notification sent")
-        return "No backup found for today — notification sent"
-
-    completed = [r for r in rows if r["status"] == "completed"]
-    if completed:
-        ctx.update_progress(100, "Backup completed successfully")
-        logger.info("BACKUP_CHECK: Today's backup OK (%s)", completed[0]["id"])
-        return f"Backup OK: {completed[0]['id']}"
-
-    latest = rows[0]
-    status = latest["status"]
-    error = (latest.get("error") or "").strip()
-
-    if status == "failed":
-        msg = "Backup failed today."
-        if error:
-            msg += f" Error: {error[:300]}"
-        create_notification(
-            recipient="alice",
-            message=msg,
-            source_type="backup_check",
-            source_id=latest["id"],
-            channel="both",
-            delivered=False,
-        )
-        logger.warning("BACKUP_CHECK: Backup failed — notification sent (%s)", latest["id"])
-        return "Backup failed — notification sent"
-
-    if status == "skipped":
-        logger.info("BACKUP_CHECK: Backup was skipped (disabled) — no notification")
-        return "Backup skipped (disabled) — no notification sent"
-
-    if status == "running":
-        logger.info("BACKUP_CHECK: Backup still running at check time (%s) — no notification", latest["id"])
-        return f"Backup still running ({latest['id']}) — no action taken"
-
-    return f"Backup status: {status}"
+# Note: the backup + backup_check handlers were migrated to
+# apps/backups/handlers.py as part of packaging the backups app.
 
 
 # Email handler now auto-registered from apps/email/manifest.yaml
@@ -1081,8 +1008,7 @@ def register_all_handlers():
     register_handler("pm_check", _handle_pm_check, max_concurrent=1)
     register_handler("investment", _handle_investment, max_concurrent=1, cancel_on_shutdown=False)
     register_handler("rebalance", _handle_rebalance, max_concurrent=1, cancel_on_shutdown=False)
-    register_handler("backup", _handle_backup, max_concurrent=1)
-    register_handler("backup_check", _handle_backup_check, max_concurrent=1)
+    # backup + backup_check are registered by apps/backups/handlers.py.
     register_handler("equity_curve", _handle_equity_curve, max_concurrent=1, cancel_on_shutdown=False)
     # folder_intelligence is registered by apps/folders/handlers.py.
     register_handler("evolve_unit", _handle_evolve_unit, max_concurrent=5)

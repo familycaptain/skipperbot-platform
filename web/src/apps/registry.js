@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { FileText, Target, TrendingUp, Briefcase, Home, Search, ShoppingCart, Bell, LineChart, Hammer, Wrench, Image as ImageIcon, MapPin, Car, FlaskConical, HeartPulse, Lightbulb, HardDrive, ListChecks, List, ListTodo, Server, Mail, CalendarDays, CalendarClock, Bug, ClipboardList, Brain, Newspaper, CheckSquare, Sparkles, ChefHat, Coins, BookOpen, Rss, Tv, PlayCircle } from "lucide-react";
+import { FileText, Target, TrendingUp, Briefcase, Home, Search, ShoppingCart, Bell, LineChart, Hammer, Wrench, Image as ImageIcon, MapPin, Car, FlaskConical, HeartPulse, Lightbulb, ListChecks, List, ListTodo, Server, Mail, CalendarDays, CalendarClock, Bug, ClipboardList, Brain, Newspaper, CheckSquare, Sparkles, ChefHat, Coins, BookOpen, Rss, Tv, PlayCircle } from "lucide-react";
 
 /**
  * App registry — central manifest for all desktop apps.
@@ -185,14 +185,9 @@ const APP_MANIFESTS = {
     component: lazy(() => import("./BrainstormDetailApp")),
     singleton: false,
   },
-  backups: {
-    id: "backups",
-    name: "Backups",
-    icon: HardDrive,
-    component: lazy(() => import("./BackupsApp")),
-    singleton: true,
-    page: 3,
-  },
+  // `backups` is now discovered from apps/backups/ui/index.js
+  // (the backups app owns its own UI). Removed from the hardcoded
+  // registry as part of the backups app packaging.
   // `todo` is now discovered from apps/todo/ui/index.js (the todo app
   // owns its own UI). Removed from the hardcoded registry as part of
   // the todo app packaging.

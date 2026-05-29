@@ -402,9 +402,9 @@ function BackupSection({ sourceKey, meta, state, onRefresh, onRunNow, onToggle, 
             {config.cron || "0 2 * * *"}
           </span>
 
-          {config.network_path && (
-            <span className="text-slate-600 truncate max-w-[220px]" title={config.network_path}>
-              {config.network_path}
+          {config.filesystem_path && (
+            <span className="text-slate-600 truncate max-w-[220px]" title={config.filesystem_path}>
+              {config.filesystem_path}
             </span>
           )}
 
