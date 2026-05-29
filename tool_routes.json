@@ -495,42 +495,6 @@
       "references"
     ]
   },
-  "prioritize": {
-    "description": "Focus priorities and backlog management",
-    "guide": "prioritize.md",
-    "tools": [
-      "list_focus",
-      "promote_focus",
-      "clear_focus",
-      "get_backlog_summary",
-      "get_family_focus"
-    ],
-    "ack": {
-      "list_focus": "Checking focus priorities...",
-      "promote_focus": "Adding to focus...",
-      "clear_focus": "Removing from focus...",
-      "get_backlog_summary": "Loading backlog...",
-      "get_family_focus": "Loading family priorities..."
-    },
-    "keywords": [
-      "focus",
-      "priorities",
-      "priority",
-      "prioritize",
-      "backlog",
-      "focus slot",
-      "focus slots",
-      "what should i focus on",
-      "what am i focused on",
-      "what are my priorities",
-      "top priorities",
-      "family focus",
-      "family priorities",
-      "promote to focus",
-      "clear focus",
-      "remove from focus"
-    ]
-  },
   "brainstorming": {
     "guide": "brainstorming.md",
     "description": "Create, explore, and develop ideas — the pre-project creative workspace with markdown documents",

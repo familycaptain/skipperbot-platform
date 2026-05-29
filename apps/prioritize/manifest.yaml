@@ -1,0 +1,80 @@
+id: prioritize
+name: Prioritize
+version: 1.0.0
+description: >
+  Per-user focus slots (max 3 active priorities) plus a backlog
+  aggregator that combines goals, reminders, schedules, to-do items,
+  and any other app-package provider into a single ranked list.
+
+# Required core app — chat surfaces "show my priorities" and the
+# UI's launcher tile both depend on it. Other apps register backlog
+# providers / activity checkers at load time, so the platform refuses
+# to start without it.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns one entity prefix.
+entity_types:
+  - prefix: pf
+    name: priority_focus
+    id_format: "pf-{hex8}"
+    table: priority_focus
+
+# Platform services this app consumes.
+platform_deps:
+  - db
+  - links        # ensure_edge between pf and source
+  - memory       # digest_record on focus changes
+  - events
+  - time
+  - reminders    # backlog aggregation
+  - schedules    # backlog aggregation
+  - todo         # backlog aggregation
+
+app_deps: []
+
+emits:
+  - prioritize.focus_set
+  - prioritize.focus_cleared
+  - prioritize.focus_reordered
+  - prioritize.focus_nag_toggled
+
+subscribes: []
+
+# Tool category for keyword routing.
+tool_category:
+  description: >
+    Promote items to focus (max 3 per user), clear focus, list
+    current focus, and summarize the backlog (goals, reminders,
+    schedules, to-do, etc.).
+  keywords:
+    - prioritize
+    - prioritise
+    - priorities
+    - priority
+    - focus
+    - focusing
+    - my focus
+    - top priorities
+    - backlog
+    - what should I do
+    - what should i work on
+    - what are my priorities
+    - show my priorities
+    - show my backlog
+    - clear focus
+    - promote
+    - pin to focus
+    - family focus
+
+config:
+  - key: max_focus_slots
+    type: integer
+    default: 3
+    label: "Max focus slots per user"
+    description: "Hard cap on how many items each user can pin to focus."
+
+# No thinking domain or jobs — pure CRUD + aggregator.
+thinking: []
+job_types: []

@@ -619,7 +619,7 @@ def _append_focus_nags(actions: list[dict]):
     aren't already getting a PM DM.
     """
     try:
-        import data_layer.prioritize as _dl_pri
+        import app_platform.prioritize as _dl_pri
         import data_layer.users as _dl_users
 
         users = _dl_users.get_all_users()

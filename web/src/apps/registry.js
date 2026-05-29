@@ -199,13 +199,9 @@ const APP_MANIFESTS = {
   // `lists` is now discovered from apps/lists/ui/index.js (the lists app
   // owns its own UI). Removed from the hardcoded registry as part of the
   // lists app packaging.
-  prioritize: {
-    id: "prioritize",
-    name: "Prioritize",
-    icon: ListChecks,
-    component: lazy(() => import("./PrioritizeApp")),
-    singleton: true,
-  },
+  // `prioritize` is now discovered from apps/prioritize/ui/index.js
+  // (the prioritize app owns its own UI). Removed from the hardcoded
+  // registry as part of the prioritize app packaging.
   // `tasks` is now discovered from apps/goals/ui/index.js (the goals app
   // owns both the Goals and Tasks UI). Removed from the hardcoded registry
   // as part of the goals app packaging.

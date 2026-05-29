@@ -1656,7 +1656,7 @@ async def api_reorder_reminder(reminder_id: str, request: Request):
 # App API endpoints — Prioritize
 # ---------------------------------------------------------------------------
 
-import data_layer.prioritize as _dl_prioritize
+import app_platform.prioritize as _dl_prioritize
 
 
 @app.get("/api/apps/prioritize/focus")

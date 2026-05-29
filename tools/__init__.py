@@ -47,7 +47,7 @@ from tools.guide_tool import get_guide
 # The platform loader auto-discovers them; no need to re-export here.
 from tools.research_tool import start_research, check_research, cancel_research, list_research_jobs, refine_research
 from tools.print_tool import print_doc
-from tools.prioritize_tool import list_focus, promote_focus, clear_focus, get_backlog_summary, get_family_focus
+# Prioritize tools moved to apps/prioritize/tools.py (app package)
 from tools.brainstorming_tool import create_idea, list_ideas, search_ideas, get_idea, update_idea, delete_idea, graduate_idea, update_idea_document, append_to_idea_document, read_idea_document, revise_idea_document
 from tools.scrum_tool import respond_to_scrum_item, get_pending_scrum_items
 from tools.skipper_email_tool import check_skipper_inbox, read_skipper_email, send_skipper_email, search_skipper_email
@@ -150,11 +150,6 @@ __all__ = [
     "list_research_jobs",
     "refine_research",
     "print_doc",
-    "list_focus",
-    "promote_focus",
-    "clear_focus",
-    "get_backlog_summary",
-    "get_family_focus",
     "create_idea",
     "list_ideas",
     "search_ideas",

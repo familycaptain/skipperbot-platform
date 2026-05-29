@@ -1,15 +1,44 @@
-"""Prioritize App — Postgres CRUD
-==================================
-Focus slots (max 3 per user) and backlog queries that aggregate items
-from Goals, Reminders, and any registered app-package providers.
+"""Prioritize — data layer.
+
+Owns CRUD on ``app_prioritize.priority_focus`` (focus slots) and the
+backlog aggregator that pulls actionable items from every registered
+provider.
+
+Cross-app reads use the platform shims wherever possible
+(``app_platform.reminders`` / ``schedules`` / ``todo``) so this app
+has no hard dependency on the table layout of any other app. Goals,
+projects, tasks, and users are still in ``public.*`` until the
+goals/system apps are packaged — qualified explicitly so the
+schema-isolated search_path doesn't surprise us.
+
+Public surface — re-exported via ``app_platform.prioritize``:
+
+- Focus slots: ``get_focus_slots``, ``set_focus``, ``promote_to_focus``,
+  ``clear_focus``, ``clear_focus_by_source``, ``reorder_focus``,
+  ``cleanup_stale_focus``
+- Backlog: ``get_backlog``
+- Focus-nag toggle: ``get_focus_nag_enabled``, ``set_focus_nag_enabled``
+- Provider registries: ``register_backlog_provider``,
+  ``register_activity_checker``
 """
 
-import logging
+from __future__ import annotations
 
-from data_layer.db import get_conn, fetch_one, fetch_all, execute
+import logging
+import uuid
+from typing import Callable
+
+from app_platform.db import (
+    execute_in_schema,
+    fetch_all_in_schema,
+    scoped_conn,
+)
+from data_layer.db import fetch_one, fetch_all, execute  # public.users + legacy goals/tasks reads
 from data_layer.links import ensure_edge
 
 logger = logging.getLogger(__name__)
+
+SCHEMA = "app_prioritize"
 
 
 # ---------------------------------------------------------------------------
@@ -18,14 +47,14 @@ logger = logging.getLogger(__name__)
 # App packages register callbacks at load time so the platform has no
 # hard dependency on any particular app.
 
-_backlog_providers: dict[str, callable] = {}
+_backlog_providers: dict[str, Callable] = {}
 # key (used as dict key in get_backlog result) -> fn(user_id) -> list[dict]
 
-_activity_checkers: dict[str, callable] = {}
+_activity_checkers: dict[str, Callable] = {}
 # source_type -> fn(source_id) -> bool
 
 
-def register_backlog_provider(key: str, fn: callable):
+def register_backlog_provider(key: str, fn: Callable):
     """Register an app-package backlog provider.
 
     Args:
@@ -37,7 +66,7 @@ def register_backlog_provider(key: str, fn: callable):
     logger.info("PRIORITIZE: Registered backlog provider '%s'", key)
 
 
-def register_activity_checker(source_type: str, fn: callable):
+def register_activity_checker(source_type: str, fn: Callable):
     """Register an app-package activity checker.
 
     Args:
@@ -54,7 +83,8 @@ def register_activity_checker(source_type: str, fn: callable):
 
 def get_focus_slots(user_id: str) -> list[dict]:
     """Get all focus slots for a user, ordered by slot_number."""
-    rows = fetch_all(
+    rows = fetch_all_in_schema(
+        SCHEMA,
         "SELECT * FROM priority_focus WHERE user_id = %s ORDER BY slot_number",
         (user_id,),
     )
@@ -63,9 +93,8 @@ def get_focus_slots(user_id: str) -> list[dict]:
 
 def set_focus(user_id: str, slot_number: int, source_type: str, source_id: str) -> dict | None:
     """Pin an item to a focus slot. Replaces whatever was in that slot."""
-    import uuid
     pf_id = f"pf-{uuid.uuid4().hex[:8]}"
-    with get_conn() as conn:
+    with scoped_conn(SCHEMA) as conn:
         with conn.cursor() as cur:
             # Remove existing item from any slot for this user (in case it's already focused)
             cur.execute(
@@ -94,19 +123,19 @@ def promote_to_focus(user_id: str, source_type: str, source_id: str) -> dict | N
     """
     slots = get_focus_slots(user_id)
     used = {s["slot_number"] for s in slots}
-    # Also check if already focused
     for s in slots:
         if s["source_id"] == source_id:
-            return s  # Already in a slot
+            return s  # already in a slot
     for n in (1, 2, 3):
         if n not in used:
             return set_focus(user_id, n, source_type, source_id)
-    return None  # All slots full
+    return None  # all slots full
 
 
 def clear_focus(user_id: str, slot_number: int) -> bool:
     """Remove an item from a focus slot (does NOT close it in the source app)."""
-    return execute(
+    return execute_in_schema(
+        SCHEMA,
         "DELETE FROM priority_focus WHERE user_id = %s AND slot_number = %s",
         (user_id, slot_number),
     ) > 0
@@ -114,7 +143,8 @@ def clear_focus(user_id: str, slot_number: int) -> bool:
 
 def clear_focus_by_source(user_id: str, source_id: str) -> bool:
     """Remove an item from focus by its source ID."""
-    return execute(
+    return execute_in_schema(
+        SCHEMA,
         "DELETE FROM priority_focus WHERE user_id = %s AND source_id = %s",
         (user_id, source_id),
     ) > 0
@@ -127,15 +157,13 @@ def reorder_focus(user_id: str, ordered_source_ids: list[str]) -> bool:
     Uses a temporary negative slot_number to avoid UNIQUE constraint violations
     during the swap.
     """
-    with get_conn() as conn:
+    with scoped_conn(SCHEMA) as conn:
         with conn.cursor() as cur:
-            # First pass: move all to temporary negative slots to avoid uniqueness conflicts
             for i, source_id in enumerate(ordered_source_ids[:3], start=1):
                 cur.execute(
                     "UPDATE priority_focus SET slot_number = %s WHERE user_id = %s AND source_id = %s",
                     (-i, user_id, source_id),
                 )
-            # Second pass: set to the real slot numbers
             for i, source_id in enumerate(ordered_source_ids[:3], start=1):
                 cur.execute(
                     "UPDATE priority_focus SET slot_number = %s WHERE user_id = %s AND source_id = %s",
@@ -188,48 +216,41 @@ def get_backlog(user_id: str) -> dict:
 def _backlog_goals_tree(user_id: str) -> list[dict]:
     """Build a nested goal → project → task hierarchy for the user.
 
-    Includes:
-    - Goals the user owns or that contain relevant projects/tasks
-    - Projects the user owns or that contain tasks assigned to them
-    - Tasks assigned to the user
-
-    Each goal node has a `projects` list; each project node has a `tasks` list.
-    Goals/projects are included as context headers even if the user doesn't own
-    them, so the hierarchy makes sense.
+    Goals / projects / tasks still live in ``public.*`` — the goals app
+    hasn't been packaged yet. Queries are explicitly qualified so they
+    don't depend on the current search_path.
     """
     # 1. All active tasks assigned to user
     task_rows = fetch_all(
         """SELECT t.id, t.name, t.status, t.stack_rank, t.priority, t.due_date,
                   t.project_id, p.owners as project_owners
-           FROM tasks t
-           LEFT JOIN projects p ON p.id = t.project_id
+           FROM public.tasks t
+           LEFT JOIN public.projects p ON p.id = t.project_id
            WHERE t.status NOT IN ('done', 'cancelled')
              AND %s = ANY(t.assigned_to)
            ORDER BY t.stack_rank""",
         (user_id,),
     )
 
-    # Collect project IDs that have tasks assigned to user
     task_project_ids = {r["project_id"] for r in task_rows if r.get("project_id")}
 
     # 2. All active projects the user owns OR that contain their tasks
     project_rows = fetch_all(
         """SELECT p.id, p.name, p.status, p.stack_rank, p.priority, p.due_date,
                   p.goal_id, p.owners
-           FROM projects p
+           FROM public.projects p
            WHERE p.status NOT IN ('done', 'cancelled')
              AND (%s = ANY(p.owners) OR p.id = ANY(%s))
            ORDER BY p.stack_rank""",
         (user_id, list(task_project_ids) if task_project_ids else [""]),
     )
 
-    # Collect goal IDs that have relevant projects
     project_goal_ids = {r["goal_id"] for r in project_rows if r.get("goal_id")}
 
     # 3. All active goals the user owns OR that contain relevant projects
     goal_rows = fetch_all(
         """SELECT id, name, status, stack_rank, target_date, owners
-           FROM goals
+           FROM public.goals
            WHERE status NOT IN ('done', 'cancelled')
              AND (%s = ANY(owners) OR id = ANY(%s))
            ORDER BY stack_rank""",
@@ -261,7 +282,6 @@ def _backlog_goals_tree(user_id: str) -> list[dict]:
             "tasks": tasks_by_project.get(r["id"], []),
         })
 
-    # Build tree
     tree = []
     seen_project_ids = set()
     seen_goal_ids = set()
@@ -290,77 +310,89 @@ def _backlog_goals_tree(user_id: str) -> list[dict]:
 
 
 def _backlog_reminders(user_id: str) -> list[dict]:
-    """Active non-nag reminders for user."""
-    rows = fetch_all(
-        """SELECT id, message, remind_at, recurrence, sort_order
-           FROM reminders
-           WHERE user_id = %s AND active = TRUE AND nag = FALSE
-           ORDER BY sort_order, created_at""",
-        (user_id,),
-    )
-    return [{"source_type": "reminder", "source_id": r["id"],
-             "title": r["message"],
-             "detail": r["remind_at"].isoformat() if r.get("remind_at") else "",
-             "recurrence": r.get("recurrence") or "",
-             "sort_order": r.get("sort_order", 0)} for r in rows]
+    """Active non-nag reminders for user. Reads through the reminders shim."""
+    from app_platform.reminders import get_user_reminders
+    rows = get_user_reminders(user_id)
+    return [
+        {
+            "source_type": "reminder",
+            "source_id": r["id"],
+            "title": r["message"],
+            "detail": r["remind_at"] if isinstance(r.get("remind_at"), str)
+                      else (r["remind_at"].isoformat() if r.get("remind_at") else ""),
+            "recurrence": r.get("recurrence") or "",
+            "sort_order": r.get("sort_order", 0),
+        }
+        for r in rows
+        if r.get("active") and not r.get("nag")
+    ]
 
 
 def _backlog_nags(user_id: str) -> list[dict]:
-    """Active nags for user."""
-    rows = fetch_all(
-        """SELECT id, message, time_slot, sort_order
-           FROM reminders
-           WHERE user_id = %s AND active = TRUE AND nag = TRUE
-           ORDER BY sort_order, created_at""",
-        (user_id,),
-    )
-    return [{"source_type": "nag", "source_id": r["id"],
-             "title": r["message"],
-             "detail": r.get("time_slot") or "",
-             "sort_order": r.get("sort_order", 0)} for r in rows]
+    """Active nags for user. Reads through the reminders shim."""
+    from app_platform.reminders import get_user_reminders
+    rows = get_user_reminders(user_id)
+    return [
+        {
+            "source_type": "nag",
+            "source_id": r["id"],
+            "title": r["message"],
+            "detail": r.get("time_slot") or "",
+            "sort_order": r.get("sort_order", 0),
+        }
+        for r in rows
+        if r.get("active") and r.get("nag")
+    ]
 
 
 def _backlog_schedules(user_id: str) -> list[dict]:
-    """Active schedules assigned to user that are overdue or due within 7 days."""
-    from datetime import datetime, timedelta
+    """Active schedules assigned to user that are overdue or due within 7 days.
+
+    Delegated to the schedules shim's ``get_due_schedules`` helper —
+    cross-app reads stay on the stable platform contract instead of
+    reaching into ``app_schedules.*`` directly.
+    """
+    from datetime import datetime
     from zoneinfo import ZoneInfo
     from config import TIMEZONE as _CFG_TZ
+    from app_platform.schedules import get_due_schedules
+
     tz = ZoneInfo(_CFG_TZ)
     now = datetime.now(tz)
-    cutoff = now + timedelta(days=7)
-    rows = fetch_all(
-        """SELECT id, title, category, next_due, recurrence_type
-           FROM schedules
-           WHERE active = TRUE
-             AND assigned_to = %s
-             AND next_due IS NOT NULL
-             AND next_due <= %s
-             AND (linked_entity_type IS NULL OR linked_entity_type != 'reminder')
-           ORDER BY next_due ASC""",
-        (user_id, cutoff),
+    rows = get_due_schedules(
+        assigned_to=user_id, days_ahead=7, exclude_reminder_backed=True,
     )
     result = []
     for r in rows:
-        next_due = r.get("next_due")
+        next_due_raw = r.get("next_due")
+        # The shim returns ISO strings; coerce back to a datetime for comparison.
+        next_due = None
+        if isinstance(next_due_raw, str) and next_due_raw:
+            try:
+                next_due = datetime.fromisoformat(next_due_raw)
+            except ValueError:
+                next_due = None
+        elif hasattr(next_due_raw, "isoformat"):
+            next_due = next_due_raw
+
         overdue = False
         detail = ""
-        if next_due:
-            if hasattr(next_due, "isoformat"):
-                overdue = next_due < now
-                if overdue:
-                    delta = now - next_due
-                    days_overdue = round(delta.total_seconds() / 86400)
-                    detail = f"{days_overdue}d overdue" if days_overdue > 0 else "overdue"
-                else:
-                    detail = next_due.strftime("%I:%M %p").lstrip("0") if next_due.hour or next_due.minute else "today"
-                next_due = next_due.isoformat()
+        if next_due is not None:
+            overdue = next_due < now
+            if overdue:
+                delta = now - next_due
+                days_overdue = round(delta.total_seconds() / 86400)
+                detail = f"{days_overdue}d overdue" if days_overdue > 0 else "overdue"
+            else:
+                detail = next_due.strftime("%I:%M %p").lstrip("0") if next_due.hour or next_due.minute else "today"
+
         result.append({
             "source_type": "schedule", "source_id": r["id"],
             "title": r["title"],
             "category": r.get("category") or "general",
             "detail": detail,
             "overdue": overdue,
-            "next_due": next_due or "",
+            "next_due": next_due.isoformat() if next_due else "",
         })
     return result
 
@@ -389,47 +421,57 @@ def _backlog_todo(user_id: str) -> list[dict]:
 
 
 # ---------------------------------------------------------------------------
-# Focus nag preference
+# Focus nag preference — stored on the platform-owned users table.
 # ---------------------------------------------------------------------------
 
 def get_focus_nag_enabled(user_id: str) -> bool:
     """Check if focus nag is enabled for a user."""
-    row = fetch_one("SELECT focus_nag_enabled FROM users WHERE name = %s", (user_id,))
+    row = fetch_one("SELECT focus_nag_enabled FROM public.users WHERE name = %s", (user_id,))
     return row["focus_nag_enabled"] if row else True
 
 
 def set_focus_nag_enabled(user_id: str, enabled: bool) -> bool:
     """Toggle focus nag for a user."""
     return execute(
-        "UPDATE users SET focus_nag_enabled = %s, updated_at = now() WHERE name = %s",
+        "UPDATE public.users SET focus_nag_enabled = %s, updated_at = now() WHERE name = %s",
         (enabled, user_id),
     ) > 0
 
 
 # ---------------------------------------------------------------------------
-# Source activity check (for cleanup)
+# Source activity check (for cleanup_stale_focus)
 # ---------------------------------------------------------------------------
 
 def _source_is_active(source_type: str, source_id: str) -> bool:
-    """Check if a source item still exists and is active."""
-    if source_type in ("goal",):
-        row = fetch_one("SELECT status FROM goals WHERE id = %s", (source_id,))
+    """Check if a source item still exists and is active.
+
+    Goals/projects/tasks still in public.*. Reminders/schedules
+    go through their qualified app schemas (or, where the platform
+    shim exposes a fitting helper, the shim).
+    """
+    if source_type == "goal":
+        row = fetch_one("SELECT status FROM public.goals WHERE id = %s", (source_id,))
         return bool(row and row["status"] not in ("done", "cancelled"))
-    elif source_type in ("project",):
-        row = fetch_one("SELECT status FROM projects WHERE id = %s", (source_id,))
+    if source_type == "project":
+        row = fetch_one("SELECT status FROM public.projects WHERE id = %s", (source_id,))
         return bool(row and row["status"] not in ("done", "cancelled"))
-    elif source_type in ("task",):
-        row = fetch_one("SELECT status FROM tasks WHERE id = %s", (source_id,))
+    if source_type == "task":
+        row = fetch_one("SELECT status FROM public.tasks WHERE id = %s", (source_id,))
         return bool(row and row["status"] not in ("done", "cancelled"))
-    elif source_type in ("reminder", "nag"):
-        row = fetch_one("SELECT active FROM reminders WHERE id = %s", (source_id,))
-        return bool(row and row["active"])
-    elif source_type in ("schedule",):
-        row = fetch_one("SELECT active FROM schedules WHERE id = %s", (source_id,))
-        return bool(row and row["active"])
-    elif source_type in ("todo",):
-        row = fetch_one("SELECT id FROM list_items WHERE id = %s AND archived = FALSE", (source_id,))
-        return bool(row)
+    if source_type in ("reminder", "nag"):
+        from app_platform.reminders import get_reminder
+        r = get_reminder(source_id)
+        return bool(r and r.get("active"))
+    if source_type == "schedule":
+        from app_platform.schedules import get_schedule
+        s = get_schedule(source_id)
+        return bool(s and s.get("active"))
+    if source_type == "todo":
+        # Lists app owns list_items. Use its data-layer single-item read
+        # rather than reaching into its schema.
+        from apps.lists.data import get_item as _list_get_item
+        item = _list_get_item(source_id)
+        return bool(item and not item.get("archived"))
     # Fall through to app-package activity checkers
     checker = _activity_checkers.get(source_type)
     if checker:

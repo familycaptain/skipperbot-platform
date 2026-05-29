@@ -1,20 +1,18 @@
+"""Prioritize — MCP tools.
+
+Five tools used by the chat agent to manage user focus slots and
+view the cross-app backlog:
+
+- ``list_focus(user_id)``
+- ``promote_focus(user_id, source_type, source_id)``
+- ``clear_focus(user_id, source_id)``
+- ``get_backlog_summary(user_id)``
+- ``get_family_focus()``
 """
-Prioritize Tool — Manage focus slots and view backlog via chat.
 
-Allows Skipper to promote items to focus, clear focus, list current focus,
-and summarise the backlog for a user.
-"""
+from __future__ import annotations
 
-import os
-import sys
-from dotenv import load_dotenv
-load_dotenv()
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if BASE_DIR not in sys.path:
-    sys.path.insert(0, BASE_DIR)
-
-import data_layer.prioritize as _dl
+import apps.prioritize.data as _dl
 
 
 def list_focus(user_id: str) -> str:
@@ -161,7 +159,7 @@ def get_backlog_summary(user_id: str) -> str:
             if len(nags) > 10:
                 lines.append(f"  ... and {len(nags) - 10} more")
 
-        # Auto issues
+        # Auto issues (or any other registered backlog provider)
         issues = backlog.get("auto_issues", [])
         if issues:
             lines.append(f"\n**Auto Issues:** {len(issues)}")
@@ -216,20 +214,25 @@ def get_family_focus() -> str:
 # ---------------------------------------------------------------------------
 
 def _resolve_title(source_type: str, source_id: str) -> str:
-    """Best-effort title lookup for a source item."""
+    """Best-effort title lookup for a source item.
+
+    Goals/projects/tasks still in public.*. Reminders go through the
+    reminders shim; vehicle issues through their qualified app schema
+    (the auto app isn't packaged yet).
+    """
     try:
         if source_type in ("goal", "project", "task"):
             from data_layer.db import fetch_one
             table = {"goal": "goals", "project": "projects", "task": "tasks"}[source_type]
-            row = fetch_one(f"SELECT name FROM {table} WHERE id = %s", (source_id,))
+            row = fetch_one(f"SELECT name FROM public.{table} WHERE id = %s", (source_id,))
             return row["name"] if row else source_id
-        elif source_type in ("reminder", "nag"):
+        if source_type in ("reminder", "nag"):
+            from app_platform.reminders import get_reminder
+            r = get_reminder(source_id)
+            return r["message"] if r and r.get("message") else source_id
+        if source_type == "auto_issue":
             from data_layer.db import fetch_one
-            row = fetch_one("SELECT message FROM reminders WHERE id = %s", (source_id,))
-            return row["message"] if row else source_id
-        elif source_type == "auto_issue":
-            from data_layer.db import fetch_one
-            row = fetch_one("SELECT description FROM vehicle_issues WHERE id = %s", (source_id,))
+            row = fetch_one("SELECT description FROM app_auto.vehicle_issues WHERE id = %s", (source_id,))
             return row["description"] if row else source_id
     except Exception:
         pass
