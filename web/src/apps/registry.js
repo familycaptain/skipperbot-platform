@@ -19,21 +19,9 @@ import { FileText, Target, TrendingUp, Briefcase, Home, Search, ShoppingCart, Be
  */
 
 const APP_MANIFESTS = {
-  documents: {
-    id: "documents",
-    name: "Documents",
-    icon: FileText,
-    component: lazy(() => import("./DocListApp")),
-    singleton: true,
-    page: 3,
-  },
-  document: {
-    id: "document",
-    name: "Document",
-    icon: FileText,
-    component: lazy(() => import("./DocumentEditor")),
-    singleton: false,
-  },
+  // `documents` (listing) and `document` (singleton editor) are now
+  // discovered from apps/documents/ui/index.js. Removed from the
+  // hardcoded registry as part of the documents app packaging.
   // `goals` is now discovered from apps/goals/ui/index.js (see the
   // import.meta.glob block at the bottom of this file). Removed from the
   // hardcoded registry as part of the goals app packaging.

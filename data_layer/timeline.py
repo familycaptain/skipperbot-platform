@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 from typing import Optional
 
 from data_layer.db import get_conn, fetch_one, fetch_all, execute
-from data_layer.documents import save_document, get_document_content, delete_document
+from app_platform.documents import save_document, get_document_content, delete_document
 
 logger = logging.getLogger(__name__)
 
@@ -222,7 +222,7 @@ def update_post(
 
     # Update document content if body changed
     if body is not None and existing.get("doc_id"):
-        from data_layer.documents import update_content
+        from app_platform.documents import update_content
         update_content(existing["doc_id"], body, len(body.split()))
 
     # Update tag index

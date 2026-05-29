@@ -39,7 +39,7 @@ from data_layer.db import close_pool
 from app_platform.loader import load_all_apps, get_app_tool_routes
 from data_layer.users import authenticate, get_user, update_password, get_all_users, has_role
 from apps.goals import data as dl_goals
-import doc_store
+import app_platform.documents as doc_store
 import link_registry
 
 # Unique ID generated at agent startup — used to detect restarts on the client

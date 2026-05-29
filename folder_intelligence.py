@@ -22,7 +22,7 @@ from typing import Optional
 
 from config import openai_client, DUMB_MODEL
 import data_layer.folders as _dl_folders
-import data_layer.documents as _dl_doc
+import app_platform.documents as _dl_doc
 
 logger = logging.getLogger(__name__)
 

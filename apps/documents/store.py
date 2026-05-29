@@ -1,15 +1,24 @@
-"""Document Store
-================
-First-class markdown documents (d-* IDs) — living knowledge pages that are
-tagged, searchable, and linkable to any entity.
+"""Documents — business logic.
 
-Backed by Postgres via data_layer.documents.
+Friendly create / get / append / update / search / delete helpers on
+top of ``apps.documents.data``. Handles:
 
-Unlike artifacts (opaque file attachments), docs are always markdown,
-full-text searchable, and designed to be edited/appended over time.
+- ``d-*`` ID generation
+- ``digest_record`` + ``log_entity_change`` on every mutation
+- Embedding-on-save (calls OpenAI for the 1536-dim vector and
+  persists it via ``apps.documents.data.update_embedding``)
+- Folder reprocess trigger when a doc changes (so the Folders app's
+  intelligence stays in sync)
+- Link-registry edges to the doc's ``related_entity_id`` and
+  ``parent_doc_id`` so the Links graph reflects doc threading
 
-All times use the configured TIMEZONE.
+Ported from ``doc_store.py`` for sub-chunk 10c-part-2. Functionally
+identical; only changes are routing all persistence through
+``apps.documents.data`` and the job-submission for folder reprocess
+through ``app_platform.jobs`` (which it was already doing).
 """
+
+from __future__ import annotations
 
 import re
 import uuid
@@ -19,7 +28,8 @@ from zoneinfo import ZoneInfo
 from config import logger, TIMEZONE
 from auto_memory import log_entity_change
 from link_registry import create_link, delete_links_for_entity
-import data_layer.documents as _dl_doc
+from apps.documents import data as _dl_doc
+
 
 # ---------------------------------------------------------------------------
 # Embedding helper — compute & store document embeddings for semantic search
@@ -35,6 +45,7 @@ def _embed_document(doc_id: str, title: str, content: str, tags: list[str]):
         _dl_doc.update_embedding(doc_id, embedding)
     except Exception as e:
         logger.warning("DOC: Failed to embed document %s: %s", doc_id, e)
+
 
 CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
@@ -57,8 +68,10 @@ def _trigger_folder_reprocess(doc_id: str) -> None:
                 config={"folder_id": folder["id"], "entity_id": doc_id},
                 created_by="system:doc_update_hook",
             )
-        logger.info("DOC: Queued folder reprocess for %s across %d folders",
-                    doc_id, len(folders))
+        logger.info(
+            "DOC: Queued folder reprocess for %s across %d folders",
+            doc_id, len(folders),
+        )
     except Exception:
         logger.debug("DOC: Folder reprocess hook skipped for %s", doc_id, exc_info=True)
 
@@ -136,12 +149,16 @@ def create_doc(
         create_link(parent_ref, doc_id, relation="has_revision", created_by=created_by)
 
     related = [e for e in [entity_ref, parent_ref] if e]
-    logger.info("DOC: Created %s '%s' (v%d, %d words) by %s",
-                doc_id, title, version, meta["word_count"], created_by)
-    log_entity_change("created", doc_id, "doc",
-                      f"{title} (v{version}, {meta['word_count']} words)",
-                      by=created_by,
-                      related_entities=related)
+    logger.info(
+        "DOC: Created %s '%s' (v%d, %d words) by %s",
+        doc_id, title, version, meta["word_count"], created_by,
+    )
+    log_entity_change(
+        "created", doc_id, "doc",
+        f"{title} (v{version}, {meta['word_count']} words)",
+        by=created_by,
+        related_entities=related,
+    )
 
     # Compute embedding for semantic search
     _embed_document(doc_id, title, content, tag_list)
@@ -295,11 +312,15 @@ def update_doc(
         meta["tags"] = [t.strip().lower() for t in tags if t.strip()]
     _dl_doc.save_document(meta)
 
-    logger.info("DOC: Updated %s '%s' (%d words) by %s",
-                doc_id, meta["title"], meta["word_count"], updated_by)
-    log_entity_change("updated", doc_id, "doc",
-                      f"{meta['title']} content replaced ({meta['word_count']} words)",
-                      by=updated_by)
+    logger.info(
+        "DOC: Updated %s '%s' (%d words) by %s",
+        doc_id, meta["title"], meta["word_count"], updated_by,
+    )
+    log_entity_change(
+        "updated", doc_id, "doc",
+        f"{meta['title']} content replaced ({meta['word_count']} words)",
+        by=updated_by,
+    )
 
     # Re-embed for semantic search
     _embed_document(doc_id, meta["title"], content, meta.get("tags", []))
@@ -348,11 +369,15 @@ def append_to_doc(
     _dl_doc.save_document(meta)
 
     appended_words = len(content.split())
-    logger.info("DOC: Appended to %s '%s' (+%d words) by %s",
-                doc_id, meta["title"], appended_words, updated_by)
-    log_entity_change("updated", doc_id, "doc",
-                      f"Appended to {meta['title']} (+{appended_words} words)",
-                      by=updated_by)
+    logger.info(
+        "DOC: Appended to %s '%s' (+%d words) by %s",
+        doc_id, meta["title"], appended_words, updated_by,
+    )
+    log_entity_change(
+        "updated", doc_id, "doc",
+        f"Appended to {meta['title']} (+{appended_words} words)",
+        by=updated_by,
+    )
 
     # Re-embed for semantic search
     _embed_document(doc_id, meta["title"], new_content, meta.get("tags", []))
@@ -454,7 +479,9 @@ def format_doc_list(docs: list[dict]) -> str:
         entity = f" → {d['related_entity_id']}" if d.get("related_entity_id") else ""
         score = f" (relevance: {d['match_score']:.4f})" if "match_score" in d else ""
         lines.append(f"  [{d['id']}] {d['title']}{tags}{entity}{score}")
-        lines.append(f"    {d.get('word_count', 0)} words | "
-                     f"Updated: {d.get('updated_at', d.get('created_at', '?'))[:16]} | "
-                     f"By: {d.get('updated_by', d.get('created_by', '?'))}")
+        lines.append(
+            f"    {d.get('word_count', 0)} words | "
+            f"Updated: {d.get('updated_at', d.get('created_at', '?'))[:16]} | "
+            f"By: {d.get('updated_by', d.get('created_by', '?'))}"
+        )
     return "\n".join(lines)

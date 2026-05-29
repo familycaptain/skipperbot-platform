@@ -43,7 +43,8 @@ from tools.artifact_tool import attach_artifact, read_artifact, list_entity_arti
 from tools.internet_search_tool import internet_search
 from tools.git_tool import git_tool
 from tools.guide_tool import get_guide
-from tools.doc_tool import create_doc, get_doc, update_doc, append_to_doc, search_docs, list_docs, update_doc_meta, delete_doc, enhance_doc
+# documents tools moved to apps/documents/tools.py (app package).
+# The platform loader auto-discovers them; no need to re-export here.
 from tools.research_tool import start_research, check_research, cancel_research, list_research_jobs, refine_research
 from tools.print_tool import print_doc
 from tools.prioritize_tool import list_focus, promote_focus, clear_focus, get_backlog_summary, get_family_focus
@@ -140,15 +141,9 @@ __all__ = [
     "internet_search",
     "git_tool",
     "get_guide",
-    "create_doc",
-    "get_doc",
-    "update_doc",
-    "append_to_doc",
-    "search_docs",
-    "list_docs",
-    "update_doc_meta",
-    "delete_doc",
-    "enhance_doc",
+    # documents tools (create_doc, get_doc, update_doc, append_to_doc,
+    # search_docs, list_docs, update_doc_meta, delete_doc, enhance_doc)
+    # now live at apps.documents.tools and are registered by the loader.
     "start_research",
     "check_research",
     "cancel_research",

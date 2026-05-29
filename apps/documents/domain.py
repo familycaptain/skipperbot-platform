@@ -479,7 +479,7 @@ def _observe() -> dict:
     from data_layer.memories import load_all as load_all_memories
     from data_layer.skipper_state import list_states
     import data_layer.folders as dl_folders
-    import data_layer.documents as dl_docs
+    import apps.documents.data as dl_docs
 
     # Load working memory for this domain
     working_memory = list_states(

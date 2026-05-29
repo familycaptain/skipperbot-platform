@@ -1,0 +1,114 @@
+id: documents
+name: Documents
+version: 1.0.0
+description: >
+  Markdown documents with tags, semantic search (pgvector), parent
+  links, and an LLM thinking domain that reorganizes Skipper's
+  accumulated memories into a navigable doc tree. Used by research,
+  refine, print, brainstorming, and any app that wants to store
+  long-form structured text.
+
+# Required core app — platform refuses to start without it.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns one entity prefix.
+entity_types:
+  - prefix: d
+    name: document
+    id_format: "d-{hex8}"
+    table: documents
+
+# Platform services this app consumes.
+platform_deps:
+  - db
+  - memory         # digest_record on every doc CRUD; doc domain reads memories
+  - links          # cross-entity linking (a doc may be linked to a goal/task/job)
+  - events         # emits document.created/updated/deleted/enhanced
+  - time           # platform.time.now() for created_at / updated_at
+  - config         # per-app preferences
+  - capabilities   # documents domain needs OpenAI for embeddings + enhancement
+
+# Documents is foundational. Doesn't depend on a specific other app
+# at install time — but the document thinking domain optionally writes
+# into the Folders app when it's present (folder filing).
+app_deps: []
+
+emits:
+  - document.created
+  - document.updated
+  - document.deleted
+  - document.enhanced
+  - document.embedded
+
+subscribes: []
+
+# Tool category for keyword routing.
+tool_category:
+  description: >
+    Create, read, update, append-to, search, list, and delete
+    markdown documents. Also "enhance" — an LLM-driven section-by-
+    section rewrite path.
+  keywords:
+    - document
+    - documents
+    - doc
+    - docs
+    - write a doc
+    - write a document
+    - create a doc
+    - create a document
+    - append to doc
+    - append to document
+    - search docs
+    - search documents
+    - find document
+    - find doc
+    - list docs
+    - list documents
+    - enhance doc
+    - enhance document
+    - rewrite section
+    - markdown
+    - notes file
+    - reference doc
+    - spec doc
+    - research doc
+
+config:
+  - key: embedding_model
+    type: string
+    default: "text-embedding-3-small"
+    label: "Embedding model"
+    description: "OpenAI embedding model used for semantic search (1536 dims)."
+  - key: enhance_model
+    type: string
+    default: "gpt-5-mini"
+    label: "Enhancement model"
+    description: "Model the enhance_doc tool uses to rewrite/expand sections."
+  - key: search_hybrid_weight
+    type: string
+    default: "0.5"
+    label: "Hybrid search weight (semantic share)"
+    description: "0.0 = pure keyword, 1.0 = pure semantic. Stored as a string so the per-app config UI can show a slider."
+  - key: domain_memories_per_cycle
+    type: integer
+    default: 75
+    label: "Domain memories per cycle"
+    description: "How many useful memories the document thinking domain consumes per tick."
+
+# Document is a thinking domain — owned by this app.
+thinking:
+  - domain: document
+    description: >
+      Reads accumulated memories, decides what topics deserve their
+      own document, and creates / updates / files docs into folders.
+    schedule: "*/30 * * * *"   # cron — every 30 minutes by default
+    # catchup_threshold + catchup_interval_seconds are honored at
+    # runtime by apps/documents/domain.py (not yet first-class manifest
+    # fields — TODO when the loader grows them).
+
+# No background jobs declared here — embedding refresh + enhance runs
+# happen inline within the tools / domain.
+job_types: []

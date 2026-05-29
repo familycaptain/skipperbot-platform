@@ -11,7 +11,7 @@ from config import TIMEZONE
 from auto_memory import log_entity_change
 from link_registry import create_link, delete_links_for_entity
 import data_layer.folders as _dl
-import data_layer.documents as _dl_doc
+import app_platform.documents as _dl_doc
 
 logger = logging.getLogger(__name__)
 
@@ -282,7 +282,7 @@ def create_doc_in_folder(
     if not folder:
         return f"Error: Folder '{folder_id}' not found."
 
-    from doc_store import create_doc
+    from app_platform.documents import create_doc
     doc = create_doc(title=title, created_by=created_by, content=content, tags=tags)
 
     item = add_item(folder_id, doc["id"], added_by=created_by)

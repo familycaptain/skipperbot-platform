@@ -17,7 +17,7 @@ if BASE_DIR not in sys.path:
 
 from app_platform.memory import digest_record
 from config import openai_client, DUMB_MODEL, logger
-from doc_store import (
+from apps.documents.store import (
     create_doc as _create_doc,
     get_doc as _get_doc,
     get_doc_meta as _get_doc_meta,

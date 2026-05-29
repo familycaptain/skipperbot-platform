@@ -450,7 +450,7 @@ def _run_research_pipeline(job: dict) -> dict:
     Returns dict with: success (bool), doc_id, sources_found, sources_read, error.
     """
     from app_platform.jobs import update_job_progress, get_job
-    from doc_store import create_doc, update_doc
+    from app_platform.documents import create_doc, update_doc
     from app_platform.notifications import create_notification
 
     job_id = job["id"]
@@ -477,7 +477,7 @@ def _run_research_pipeline(job: dict) -> dict:
         if spec_doc_id:
             update_job_progress(job_id, f"Loading specification doc {spec_doc_id}...", status="running")
             try:
-                from doc_store import get_doc
+                from app_platform.documents import get_doc
                 spec_doc = get_doc(spec_doc_id)
                 if spec_doc and spec_doc.get("content"):
                     spec_doc_content = spec_doc["content"]
@@ -1117,7 +1117,7 @@ def _run_refine_pipeline(job: dict) -> dict:
     Returns dict with: success, doc_id, parent_doc_id, sources_read, error, full_content.
     """
     from app_platform.jobs import update_job_progress, get_job
-    from doc_store import create_doc, get_doc
+    from app_platform.documents import create_doc, get_doc
     from app_platform.notifications import create_notification
 
     job_id = job["id"]

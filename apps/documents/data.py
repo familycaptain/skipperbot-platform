@@ -1,22 +1,75 @@
-"""Documents — Postgres CRUD
-============================
-Drop-in replacement for doc_store.py's flat-file persistence.
+"""Documents — data layer (SQL CRUD + search).
+
+Owns reads + writes for the ``app_documents.documents`` table,
+including keyword search, semantic search (pgvector cosine), and the
+hybrid combiner used by both the chat tools and the document thinking
+domain.
+
+Ported from ``data_layer/documents.py`` for sub-chunk 10c-part-1.
+Functionally identical; only difference is routing all queries through
+the ``*_in_schema`` helpers from ``app_platform.db`` so the documents
+app's table lands in (and reads from) the ``app_documents`` schema.
+
+A new ``fetch_all_vector_in_schema`` helper was added to
+``app_platform.db`` for this app's semantic-search query (which needs
+``SET LOCAL ivfflat.probes`` to get exact top-k from the ivfflat
+index).
 """
+
+from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
 
-from data_layer.db import get_conn, fetch_one, fetch_all, execute
-from data_layer.links import ensure_edge
+from app_platform.db import (
+    execute_in_schema,
+    fetch_all_in_schema,
+    fetch_all_vector_in_schema,
+    fetch_one_in_schema,
+    scoped_conn,
+)
+from data_layer.links import ensure_edge  # platform infra — links live in public.*
+
 
 logger = logging.getLogger(__name__)
 
+SCHEMA = "app_documents"
+
+
+# ---------------------------------------------------------------------------
+# Memory-digestion hint
+# ---------------------------------------------------------------------------
+
+_DOCUMENT_HINT = (
+    "Focus on: the document's title, the topics it covers (tags), and the "
+    "first line or two of content. Documents are how chat answers 'we wrote "
+    "something about that, didn't we?'."
+)
+
+
+# ---------------------------------------------------------------------------
+# Backfill registry
+# ---------------------------------------------------------------------------
+
+BACKFILL_ENTITIES = [
+    {
+        "entity_type": "document",
+        "list_fn": lambda: get_all_documents(),
+        "context_hint": _DOCUMENT_HINT,
+    },
+]
+
+
+# ---------------------------------------------------------------------------
+# CRUD
+# ---------------------------------------------------------------------------
 
 def save_document(doc: dict):
     """Insert or update a document (metadata + content)."""
-    with get_conn() as conn:
+    with scoped_conn(SCHEMA) as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT INTO documents (id, title, content, tags, word_count,
                                        related_entity_id, parent_doc_id, version,
                                        created_by, created_at, updated_at)
@@ -30,14 +83,16 @@ def save_document(doc: dict):
                     parent_doc_id = EXCLUDED.parent_doc_id,
                     version = EXCLUDED.version,
                     updated_at = EXCLUDED.updated_at
-            """, (
-                doc["id"], doc.get("title", ""), doc.get("content", ""),
-                doc.get("tags", []), doc.get("word_count", 0),
-                doc.get("related_entity_id", ""), doc.get("parent_doc_id", ""),
-                doc.get("version", 1), doc.get("created_by", ""),
-                doc.get("created_at", datetime.now(timezone.utc).isoformat()),
-                doc.get("updated_at", datetime.now(timezone.utc).isoformat()),
-            ))
+                """,
+                (
+                    doc["id"], doc.get("title", ""), doc.get("content", ""),
+                    doc.get("tags", []), doc.get("word_count", 0),
+                    doc.get("related_entity_id", ""), doc.get("parent_doc_id", ""),
+                    doc.get("version", 1), doc.get("created_by", ""),
+                    doc.get("created_at", datetime.now(timezone.utc).isoformat()),
+                    doc.get("updated_at", datetime.now(timezone.utc).isoformat()),
+                ),
+            )
         conn.commit()
     if doc.get("related_entity_id"):
         ensure_edge(doc["id"], doc["related_entity_id"], "related_to", "related_to")
@@ -46,42 +101,50 @@ def save_document(doc: dict):
 
 
 def get_document(doc_id: str) -> dict | None:
-    row = fetch_one("SELECT * FROM documents WHERE id = %s", (doc_id,))
+    row = fetch_one_in_schema(SCHEMA, "SELECT * FROM documents WHERE id = %s", (doc_id,))
     return _row(row) if row else None
 
 
 def get_all_documents() -> list[dict]:
-    return [_row(r) for r in fetch_all("SELECT * FROM documents ORDER BY created_at DESC")]
+    return [
+        _row(r)
+        for r in fetch_all_in_schema(
+            SCHEMA, "SELECT * FROM documents ORDER BY created_at DESC",
+        )
+    ]
 
 
 def get_document_content(doc_id: str) -> str:
     """Get just the content of a document."""
-    row = fetch_one("SELECT content FROM documents WHERE id = %s", (doc_id,))
+    row = fetch_one_in_schema(SCHEMA, "SELECT content FROM documents WHERE id = %s", (doc_id,))
     return row["content"] if row else ""
 
 
 def update_content(doc_id: str, content: str, word_count: int | None = None):
     """Update document content and optionally word count."""
     if word_count is not None:
-        execute(
+        execute_in_schema(
+            SCHEMA,
             "UPDATE documents SET content = %s, word_count = %s, updated_at = %s WHERE id = %s",
             (content, word_count, datetime.now(timezone.utc).isoformat(), doc_id),
         )
     else:
-        execute(
+        execute_in_schema(
+            SCHEMA,
             "UPDATE documents SET content = %s, updated_at = %s WHERE id = %s",
             (content, datetime.now(timezone.utc).isoformat(), doc_id),
         )
 
 
 def delete_document(doc_id: str) -> bool:
-    return execute("DELETE FROM documents WHERE id = %s", (doc_id,)) > 0
+    return execute_in_schema(SCHEMA, "DELETE FROM documents WHERE id = %s", (doc_id,)) > 0
 
 
 def search_documents(query: str) -> list[dict]:
     """Simple text search across title and content."""
     pattern = f"%{query}%"
-    rows = fetch_all(
+    rows = fetch_all_in_schema(
+        SCHEMA,
         "SELECT * FROM documents WHERE title ILIKE %s OR content ILIKE %s ORDER BY created_at DESC",
         (pattern, pattern),
     )
@@ -95,24 +158,28 @@ def search_documents_hybrid(
 ) -> list[dict]:
     """Hybrid semantic + tag search for documents.
 
-    Uses pgvector cosine similarity as the primary signal, with tag overlap
-    as an additive boost — same pattern as memory search.
+    Uses pgvector cosine similarity as the primary signal, with tag
+    overlap as an additive boost — same pattern as memory search.
 
     Returns document metadata (no content) sorted by relevance.
     """
     if query_embedding:
         emb_str = _vec_to_pgvector(query_embedding)
-        from data_layer.db import fetch_all_vector  # raises ivfflat.probes for full recall
-        rows = fetch_all_vector("""
+        rows = fetch_all_vector_in_schema(
+            SCHEMA,
+            """
             SELECT *, 1 - (embedding <=> %s::vector) AS cosine_sim
             FROM documents
             WHERE embedding IS NOT NULL
             ORDER BY embedding <=> %s::vector
             LIMIT %s
-        """, (emb_str, emb_str, max_results * 3))
+            """,
+            (emb_str, emb_str, max_results * 3),
+        )
     else:
         # No embedding — fall back to recent docs
-        rows = fetch_all(
+        rows = fetch_all_in_schema(
+            SCHEMA,
             "SELECT *, 0.0 AS cosine_sim FROM documents ORDER BY updated_at DESC LIMIT %s",
             (max_results * 3,),
         )
@@ -139,7 +206,8 @@ def search_documents_hybrid(
 def update_embedding(doc_id: str, embedding: list[float]):
     """Update the embedding vector for a document."""
     emb_str = _vec_to_pgvector(embedding)
-    execute(
+    execute_in_schema(
+        SCHEMA,
         "UPDATE documents SET embedding = %s::vector WHERE id = %s",
         (emb_str, doc_id),
     )

@@ -466,7 +466,7 @@ def _run_print_pipeline(job: dict) -> dict:
             md_content, title = _load_recipe_as_markdown(recipe_id)
         else:
             update_job_progress(job_id, f"Loading document {doc_id}...", status="running")
-            from doc_store import get_doc
+            from app_platform.documents import get_doc
             doc = get_doc(doc_id)
             if not doc:
                 result["error"] = f"Document {doc_id} not found"

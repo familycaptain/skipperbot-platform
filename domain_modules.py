@@ -96,11 +96,9 @@ def _register_builtins():
     except ImportError as e:
         logger.warning("DOMAIN: Memory domain module not available: %s", e)
 
-    try:
-        from domain_document import document_domain_handler
-        register_domain("document", document_domain_handler)
-    except ImportError as e:
-        logger.warning("DOMAIN: Document domain module not available: %s", e)
+    # Document thinking domain is now registered by
+    # apps/documents/handlers.py at app-load time (the platform loader
+    # imports each apps/<id>/handlers.py module after migration apply).
 
 
 # Run on import

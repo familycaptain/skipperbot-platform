@@ -58,7 +58,8 @@ from tools.artifact_tool import attach_artifact, read_artifact, list_entity_arti
 from tools.internet_search_tool import internet_search
 from tools.git_tool import git_tool
 from tools.guide_tool import get_guide
-from tools.doc_tool import create_doc, get_doc, update_doc, append_to_doc, search_docs, list_docs, update_doc_meta, delete_doc, enhance_doc
+# documents tools moved to apps/documents/tools.py (app package).
+# The platform loader auto-discovers them at startup.
 from tools.research_tool import start_research, check_research, cancel_research, list_research_jobs, refine_research
 from tools.print_tool import print_doc
 from tools.prioritize_tool import list_focus, promote_focus, clear_focus, get_backlog_summary, get_family_focus
@@ -134,15 +135,9 @@ mcp.tool()(delete_artifact_by_id)
 mcp.tool()(internet_search)
 mcp.tool()(git_tool)
 mcp.tool()(get_guide)
-mcp.tool()(create_doc)
-mcp.tool()(get_doc)
-mcp.tool()(update_doc)
-mcp.tool()(append_to_doc)
-mcp.tool()(search_docs)
-mcp.tool()(list_docs)
-mcp.tool()(update_doc_meta)
-mcp.tool()(delete_doc)
-mcp.tool()(enhance_doc)
+# documents tools (create_doc, get_doc, update_doc, append_to_doc,
+# search_docs, list_docs, update_doc_meta, delete_doc, enhance_doc) are
+# now registered by the platform loader from apps/documents/tools.py.
 mcp.tool()(start_research)
 mcp.tool()(check_research)
 mcp.tool()(cancel_research)
