@@ -1,0 +1,36 @@
+id: settings
+name: Settings
+version: 1.0.0
+description: >
+  Central settings panel. Discovers every installed app's
+  ``config:`` schema at runtime, renders schema-driven inputs, and
+  round-trips values through ``app_platform.config`` (scope
+  ``app:<id>``). Also exposes the platform-scope settings.
+
+# Required core app — every other app's settings funnel through
+# here, so the platform refuses to start without it.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns no entity prefixes.
+entity_types: []
+
+platform_deps:
+  - db
+  - config
+
+app_deps: []
+
+emits: []
+subscribes: []
+
+# No chat tools — toggling settings is a UI / human operation.
+tool_category: ~
+
+# Settings has no per-app config of its own — it's *about* other
+# apps' config.
+config: []
+
+thinking: []
+job_types: []

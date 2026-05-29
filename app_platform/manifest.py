@@ -64,6 +64,31 @@ class ThinkingDef:
 
 
 @dataclass
+class ConfigKeyDef:
+    """One key from an app's manifest ``config:`` schema.
+
+    Surfaced by the Settings app so it can render schema-driven
+    inputs for every installed app without each app having to ship
+    its own settings UI.
+
+    The ``type`` is a hint to the UI — string / integer / boolean.
+    Unknown types fall back to a free-text input.
+    """
+    key: str
+    type: str = "string"
+    default: object = None
+    label: str = ""
+    description: str = ""
+    # Optional UI hints. Apps may declare ``secret: true`` for keys
+    # whose value should be masked in the UI (API keys, paths to
+    # credential files, etc.). The value is still stored / returned
+    # in plaintext by the config layer — masking is presentation only.
+    secret: bool = False
+    # Optional ``choices: [a, b, c]`` turns the input into a select.
+    choices: list[object] = field(default_factory=list)
+
+
+@dataclass
 class AppManifest:
     """Parsed app manifest with all declarations."""
     id: str
@@ -86,6 +111,10 @@ class AppManifest:
     # parse into the `thinking` list below. The legacy single-domain
     # accessor is preserved via the `thinking_first` property for back-compat.
     thinking: list[ThinkingDef] = field(default_factory=list)
+    # Per-app config schema. Each entry becomes a key under
+    # ``scope='app:<id>'`` in ``public.app_config`` and a schema-driven
+    # input in the Settings app's panel for this app.
+    config: list[ConfigKeyDef] = field(default_factory=list)
 
     # Computed
     has_tools: bool = False
@@ -188,6 +217,20 @@ def parse_manifest(app_dir: Path) -> AppManifest:
                 tools=td.get("tools", []),
                 model=td.get("model", "smart"),
             ))
+
+    # Per-app config schema
+    for ck in raw.get("config", []) or []:
+        if not isinstance(ck, dict) or not ck.get("key"):
+            continue
+        manifest.config.append(ConfigKeyDef(
+            key=ck["key"],
+            type=ck.get("type", "string"),
+            default=ck.get("default"),
+            label=ck.get("label", ""),
+            description=ck.get("description", ""),
+            secret=bool(ck.get("secret", False)),
+            choices=ck.get("choices") or [],
+        ))
 
     # Detect which optional files exist
     manifest.has_tools = (app_dir / "tools.py").exists()
