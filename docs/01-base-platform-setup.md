@@ -51,7 +51,37 @@ Hold onto this key — you'll paste it into `.env` in the next step.
 
 The Docker path bundles **everything** — Postgres 18, the pgvector extension, Python 3.12, Node 20, and the agent — in containers. You only need Docker installed on your machine. **You do not install Postgres separately.**
 
-1. **Install Docker.** Use Docker Desktop on Windows/macOS, Docker Engine on Linux. <https://docs.docker.com/get-docker/>
+1. **Install Docker.**
+
+   - **macOS / Windows:** install Docker Desktop from <https://docs.docker.com/desktop/>. It bundles `docker` and `docker compose` together. On Windows pick the WSL2 backend when prompted.
+   - **Linux (Ubuntu / Debian / Raspberry Pi OS, including Pi 4 and Pi 5 on 64-bit):**
+
+     ```bash
+     # Use Docker's official one-shot install script — handles apt sources,
+     # GPG keys, and arch (amd64 / arm64) automatically. The Debian
+     # `docker` package does NOT exist; `docker.io` is usually stale.
+     curl -fsSL https://get.docker.com -o get-docker.sh
+     sudo sh get-docker.sh
+
+     # Let your user run docker without sudo.
+     sudo usermod -aG docker $USER
+     newgrp docker            # apply the group in this shell without a logout
+     ```
+   - **Linux (Fedora / RHEL / openSUSE):** the same install script (`curl -fsSL https://get.docker.com | sudo sh`) handles these too. Or follow the per-distro instructions at <https://docs.docker.com/engine/install/>.
+
+   Verify:
+
+   ```bash
+   docker run --rm hello-world
+   docker compose version            # compose v2 ships as a built-in plugin
+   ```
+
+   > **Raspberry Pi note.** Pi 4 (4GB or more) and Pi 5 (any RAM size) are supported.
+   > Must be running a **64-bit** OS — `uname -m` should report `aarch64` (or
+   > `arm64`). If it reports `armv7l` you're on 32-bit Pi OS and need to
+   > reflash with the 64-bit image. Running the agent off an SSD over USB 3
+   > is strongly recommended — SD-card I/O makes migrations and the first
+   > build painful.
 
 2. **Clone + configure:**
 

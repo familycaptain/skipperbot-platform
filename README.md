@@ -29,15 +29,85 @@ Companion services run alongside the platform when you want them:
 
 ### Path 1: Docker Compose (recommended for first-timers)
 
+Docker Compose runs the platform as a small set of pre-built containers
+on your machine — one for Postgres, one for the agent, and one for the
+web UI build — all on a private network. **You do not install Postgres
+yourself.** The `db` container ships with Postgres 18 + pgvector
+pre-configured.
+
+You'll need three things on your machine before you start: Docker, a
+clone of this repository, and an OpenAI API key.
+
+**Step 0 — Install Docker.** Use Docker Desktop on macOS / Windows,
+or Docker Engine on Linux (including Raspberry Pi). The full
+per-OS install commands are in
+[docs/01-base-platform-setup.md](docs/01-base-platform-setup.md)
+under *Docker path*. Quick check:
+
+```bash
+docker run --rm hello-world
+docker compose version
+```
+
+If both work, Docker is good.
+
+**Step 1 — Get an OpenAI API key** at
+<https://platform.openai.com/api-keys>. Add a payment method and
+~$5 of credit; usage is metered. Copy the key (you won't be able
+to see it again) and keep it handy for the next step.
+
+**Step 2 — Clone the platform and create your `.env`.**
+
 ```bash
 git clone https://github.com/CHANGE_ME/skipperbot-platform.git
 cd skipperbot-platform
 cp .env.example .env
-# Edit .env: set SKIPPERBOT_DB_DSN, OPENAI_API_KEY, and POSTGRES_PASSWORD.
+```
+
+**Step 3 — Edit `.env`.** Open the file in any text editor. There
+are exactly **three lines you need to fill in** for the Docker path:
+
+```
+OPENAI_API_KEY=sk-...your-actual-key-here...
+POSTGRES_PASSWORD=pick-a-strong-password
+SKIPPERBOT_DB_DSN=dbname=skipperbot user=skipperbot_user password=pick-a-strong-password host=db port=5432
+```
+
+Two important things:
+
+- **The same password goes in both `POSTGRES_PASSWORD` and inside
+  `SKIPPERBOT_DB_DSN`** (after `password=`). The first sets the
+  password the Postgres container creates on first boot; the
+  second is what the agent uses to log in. They must match.
+- **`host=db`**, not `localhost`. Inside the docker-compose
+  network the Postgres service is named `db`. The active line
+  shipped in `.env.example` already uses `host=db` — keep it.
+
+Everything else in `.env` is optional and only enables specific
+integrations. You can come back to those later.
+
+**Step 4 — Start everything.**
+
+```bash
 docker compose up
 ```
 
-Open <http://localhost:8000> and follow the onboarding wizard.
+First boot takes a few minutes: Docker downloads the Postgres
+image, builds the agent image, installs Python dependencies, and
+builds the web UI. On a Pi 5 with an SSD, plan for around 5–10
+minutes. Subsequent boots take seconds.
+
+You'll see log lines from `db`, `agent`, and the web build. When
+you see `HTTP server listening on http://localhost:8000`, the
+agent is ready.
+
+(Press Ctrl-C in this terminal to stop the stack. Use
+`docker compose up -d` to run it detached in the background once
+you're comfortable.)
+
+**Step 5 — Open the onboarding wizard** at
+<http://localhost:8000>. It walks you through your name, timezone,
+and a final OpenAI-key check, then drops you into the desktop.
 
 ### Path 2: Native install (for developers and hackers)
 
