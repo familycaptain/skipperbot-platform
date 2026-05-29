@@ -3,7 +3,11 @@ import {
   Save, FileText, Loader2, Trash2, Printer,
   Eye, Edit3, ArrowLeft, RefreshCw, Link, Tag, X, MessageSquareQuote,
 } from "lucide-react";
-import MarkdownEditor, { getSelection } from "../components/MarkdownEditor";
+// MarkdownEditor is a platform-shared UI primitive. The relative path
+// reflects the current apps/<id>/ui/ → ../../../web/src/components/
+// layout. A `@platform/components` alias will replace this once the
+// optional-app shared-UI design lands — see OPEN_SOURCE.md TODO §6.
+import MarkdownEditor, { getSelection } from "../../../web/src/components/MarkdownEditor";
 
 /**
  * Document Editor — multi-instance app for editing a single document.
