@@ -17,6 +17,8 @@ const packagedAppDepAliases = {
   "react": path.join(webNodeModules, "react"),
   "react-dom": path.join(webNodeModules, "react-dom"),
   "lucide-react": path.join(webNodeModules, "lucide-react"),
+  "react-markdown": path.join(webNodeModules, "react-markdown"),
+  "remark-gfm": path.join(webNodeModules, "remark-gfm"),
 };
 
 export default defineConfig({
