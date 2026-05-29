@@ -21,7 +21,13 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: skipperbot
     volumes:
-      - skipper-db:/var/lib/postgresql/data
+      # Postgres 18+ stores data in major-version-specific subdirectories
+      # under /var/lib/postgresql (e.g. /var/lib/postgresql/18/main) so that
+      # in-place pg_upgrade works. The volume must be mounted at the parent
+      # path, NOT at /var/lib/postgresql/data — mounting the old location
+      # makes pg18 refuse to start with a long "Counter to that..." error.
+      # See https://github.com/docker-library/postgres/pull/1259.
+      - skipper-db:/var/lib/postgresql
       # Runs once on first DB initialization to install the pgvector extension.
       # The user never needs to manually CREATE EXTENSION.
       - ./deploy/docker-initdb:/docker-entrypoint-initdb.d:ro
