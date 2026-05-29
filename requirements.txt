@@ -1,7 +1,65 @@
-# Skipperbot Platform — Python dependencies
+# =============================================================================
+# Skipperbot Platform — Python runtime dependencies
+# =============================================================================
+# Pinned to lower bounds, not exact versions, so security patches install
+# automatically. Target: Python 3.12 only.
 #
-# This file will be populated during Phase 1 / Chunk 2 with the actual
-# pinned versions migrated from the private working repo. For now it's
-# a placeholder reserving the file path.
+# Grouped by what they enable:
+#   - Web framework + agent core
+#   - Postgres
+#   - LLM + MCP
+#   - HTTP + scraping
+#   - Optional integration adapters (Discord, Gmail/Drive, Resend, FCM)
+#   - Misc utilities
 #
-# Target: Python 3.12 only.
+# Removed for the public release:
+#   - yfinance / matplotlib / mplfinance — investment-only, stays private.
+# =============================================================================
+
+# ---- Web framework + agent core ----
+fastapi>=0.109.0
+uvicorn>=0.27.0
+pydantic>=2.0.0
+python-multipart>=0.0.6
+bcrypt>=4.0.0
+python-dotenv>=1.0.0
+
+# ---- Postgres (driver + cert wrangling) ----
+psycopg2-binary>=2.9.0
+pip-system-certs>=4.0
+
+# ---- LLM + MCP ----
+openai>=1.12.0
+fastmcp>=0.1.0
+mcp>=1.0.0
+
+# ---- HTTP + scraping ----
+requests>=2.31.0
+httpx>=0.27.0
+beautifulsoup4>=4.12.0
+
+# ---- Optional integration adapters ----
+# The platform imports these unconditionally at startup so the loader can
+# decide at runtime whether the integration is configured (env vars present).
+# Apps that don't use them pay only the import cost.
+discord.py>=2.3.0
+resend>=2.0.0
+google-auth>=2.20.0
+google-auth-oauthlib>=1.0.0
+google-api-python-client>=2.100.0
+
+# ---- System + scheduling ----
+psutil>=5.9.0
+croniter>=1.3.0
+python-dateutil>=2.8.0
+tzdata>=2024.1
+
+# ---- Print / PDF pipeline ----
+# weasyprint pulls in cairo/pango wheels for ARM and amd64.
+weasyprint>=60.0
+markdown>=3.5.0
+
+# ---- Manifests + misc ----
+pyyaml>=6.0
+prettytable>=3.0.0
+diff-match-patch>=20230430
