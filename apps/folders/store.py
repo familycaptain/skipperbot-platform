@@ -10,7 +10,7 @@ import logging
 from config import TIMEZONE
 from auto_memory import log_entity_change
 from link_registry import create_link, delete_links_for_entity
-import data_layer.folders as _dl
+import apps.folders.data as _dl
 import app_platform.documents as _dl_doc
 
 logger = logging.getLogger(__name__)

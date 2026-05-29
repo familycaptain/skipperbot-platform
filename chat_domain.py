@@ -20,7 +20,7 @@ import mcp_client
 from local_tools import LOCAL_TOOLS, LOCAL_TOOL_NAMES, handle_local_tool
 from memory_store import get_relevant_memories, format_memories_for_context, get_embedding
 from knowledge_store import get_relevant_knowledge, format_knowledge_for_context
-from folder_intelligence import get_relevant_folder_knowledge, format_folder_knowledge_for_context
+from app_platform.folders import get_relevant_folder_knowledge, format_folder_knowledge_for_context
 from tool_router import (
     get_tools_for_message, get_guides_for_message, get_category_tool_names,
     get_match_debug_for_message,

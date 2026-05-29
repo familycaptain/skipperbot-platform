@@ -1,0 +1,108 @@
+id: folders
+name: Folders
+version: 1.0.0
+description: >
+  Hierarchical folders for organizing entities (docs, links, projects,
+  etc.). Supports tags, icons, colors, soft delete, breadcrumbs, and
+  an LLM-driven intelligence pipeline that extracts facts +
+  embeddings from each folder's contents for chat-grounded retrieval.
+
+# Required core app — platform refuses to start without it. The
+# Documents app's update hook + chat's relevant-folder-knowledge
+# retrieval depend on it.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns one entity prefix.
+entity_types:
+  - prefix: fld
+    name: folder
+    id_format: "fld-{hex8}"
+    table: folders
+
+# Platform services this app consumes.
+platform_deps:
+  - db
+  - memory         # digest_record on every folder CRUD
+  - links          # cross-entity linking
+  - events         # emits folder.created/updated/deleted/restored/reorganized
+  - time           # platform.time.now() for created_at / updated_at
+  - config         # per-app preferences
+  - jobs           # the folder_intelligence job is dispatched via app_platform.jobs
+  - capabilities   # intelligence pipeline needs OpenAI for embeddings + extraction
+
+app_deps: []
+
+emits:
+  - folder.created
+  - folder.updated
+  - folder.deleted
+  - folder.restored
+  - folder.item_added
+  - folder.item_removed
+  - folder.item_moved
+  - folder.reorganized
+  - folder.knowledge_updated
+
+subscribes: []
+
+# Tool category for keyword routing.
+tool_category:
+  description: >
+    Create, list, search, edit, soft-delete, and restore folders.
+    Add/remove items, move items between folders, create docs
+    directly inside folders.
+  keywords:
+    - folder
+    - folders
+    - filing
+    - file in
+    - file under
+    - put in folder
+    - move to folder
+    - organize
+    - reorganize
+    - folder tree
+    - subfolder
+    - parent folder
+    - create folder
+    - new folder
+    - delete folder
+    - restore folder
+    - rename folder
+    - search folders
+    - list folders
+    - what is in folder
+    - what is in the folder
+    - breadcrumb
+
+config:
+  - key: intelligence_embedding_model
+    type: string
+    default: "text-embedding-3-small"
+    label: "Knowledge embedding model"
+    description: "OpenAI embedding model used by the folder intelligence pipeline (1536 dims)."
+  - key: intelligence_extraction_model
+    type: string
+    default: "gpt-5-mini"
+    label: "Knowledge extraction model"
+    description: "Model the folder intelligence pipeline uses to pull facts from each folder item."
+  - key: max_knowledge_chunks_per_item
+    type: integer
+    default: 12
+    label: "Max knowledge chunks per item"
+    description: "Caps how many fact + content chunks the pipeline writes per folder item."
+
+# Folders has no thinking domain of its own — the Documents thinking
+# domain does the cross-folder reorganization. Folders only owns the
+# per-item intelligence job handler.
+thinking: []
+
+# job_types declared so the loader can register them with the jobs
+# dispatcher (see apps/folders/handlers.py).
+job_types:
+  - type: folder_intelligence
+    handler: apps.folders.intelligence.process_folder_item
+    max_concurrent: 2
+    cancel_on_shutdown: true

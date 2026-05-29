@@ -1,19 +1,21 @@
-"""
-Folder Tool — MCP tools for managing folders, filing documents/artifacts,
-and searching folder contents.
-"""
+"""Folders — MCP tools.
 
-import os
-import sys
-from dotenv import load_dotenv
-load_dotenv()
+Ten tools used by the chat agent:
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if BASE_DIR not in sys.path:
-    sys.path.insert(0, BASE_DIR)
+- ``create_folder(name, owner, ...)``
+- ``get_folder(folder_id)``
+- ``list_folders(owner="", root_only="true")``
+- ``add_to_folder(folder_id, entity_id)``
+- ``create_doc_in_folder(folder_id, title, content, ...)``
+- ``remove_from_folder(folder_id, entity_id)``
+- ``move_to_folder(entity_id, from_folder, to_folder)``
+- ``delete_folder(folder_id)``
+- ``restore_folder(folder_id)``
+- ``search_folders(query)``
+"""
 
 from app_platform.memory import digest_record
-import folder_store as _store
+import apps.folders.store as _store
 
 
 def create_folder(name: str, owner: str = "", parent_folder: str = "",
@@ -78,18 +80,15 @@ def get_folder(folder_id: str) -> str:
     if detail.get("tags"):
         lines.append(f"  Tags: {', '.join(detail['tags'])}")
 
-    # Breadcrumbs
     if len(detail.get("breadcrumbs", [])) > 1:
         path = " > ".join(b["name"] for b in detail["breadcrumbs"])
         lines.append(f"  Path: {path}")
 
-    # Subfolders
     if detail.get("subfolders"):
         lines.append("\n  **Subfolders:**")
         for sf in detail["subfolders"]:
             lines.append(f"    📂 {sf['name']} ({sf['id']})")
 
-    # Items
     if detail.get("items"):
         lines.append("\n  **Contents:**")
         for item in detail["items"]:
@@ -153,7 +152,7 @@ def add_to_folder(folder_id: str, entity_id: str) -> str:
     """
     result = _store.add_item(folder_id.strip(), entity_id.strip(), added_by="skipper")
     if isinstance(result, str):
-        return result  # error message
+        return result
     return (f"✅ Added {entity_id} to folder {folder_id}. "
             f"Intelligence processing will extract facts and create embeddings.")
 
@@ -185,7 +184,7 @@ def create_doc_in_folder(folder_id: str, title: str, content: str = "",
         tags=tag_list,
     )
     if isinstance(result, str):
-        return result  # error message
+        return result
     doc = result["doc"]
     folder = result["folder"]
     return (f"✅ Created document **{doc['title']}** ({doc['id']}) "
@@ -230,7 +229,7 @@ def move_to_folder(entity_id: str, from_folder: str, to_folder: str) -> str:
         moved_by="skipper",
     )
     if isinstance(result, str):
-        return result  # error message
+        return result
     return f"✅ Moved {entity_id} from {from_folder} to {to_folder}. Intelligence processing queued."
 
 

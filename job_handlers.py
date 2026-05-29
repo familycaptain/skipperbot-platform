@@ -184,24 +184,8 @@ async def _handle_equity_curve(job: dict, ctx: JobContext) -> str:
     return await handle_equity_curve(job, ctx)
 
 
-# ---------------------------------------------------------------------------
-# Folder Intelligence handler
-# ---------------------------------------------------------------------------
-
-def _handle_folder_intelligence(job: dict, ctx: JobContext) -> str:
-    """Process a folder item for intelligence extraction (sync — runs in thread pool)."""
-    from folder_intelligence import process_folder_item
-    config = job.get("config") or {}
-    folder_id = config.get("folder_id", "")
-    entity_id = config.get("entity_id", "")
-    if not folder_id or not entity_id:
-        return "Missing folder_id or entity_id in job config"
-    ctx.update_progress(10, f"Processing {entity_id} in {folder_id}...")
-    result = process_folder_item(folder_id, entity_id)
-    if result.get("error") and result["error"] != "skipped:unchanged":
-        return f"Failed: {result['error']}"
-    return f"Done: {result['chunks']} chunks, {result['facts']} facts"
-
+# Note: the folder_intelligence handler was migrated to
+# apps/folders/handlers.py as part of packaging the folders app.
 
 # ---------------------------------------------------------------------------
 # Evolve unit handler (self-improvement LLM calls)
@@ -1100,7 +1084,7 @@ def register_all_handlers():
     register_handler("backup", _handle_backup, max_concurrent=1)
     register_handler("backup_check", _handle_backup_check, max_concurrent=1)
     register_handler("equity_curve", _handle_equity_curve, max_concurrent=1, cancel_on_shutdown=False)
-    register_handler("folder_intelligence", _handle_folder_intelligence, max_concurrent=2)
+    # folder_intelligence is registered by apps/folders/handlers.py.
     register_handler("evolve_unit", _handle_evolve_unit, max_concurrent=5)
     register_handler("meals_dinner_check", _handle_meals_dinner_check, max_concurrent=1)
     register_handler("scripture_prefetch", _handle_scripture_prefetch, max_concurrent=1)

@@ -1,17 +1,21 @@
-"""Folder Intelligence
-=====================
+"""Folders — intelligence job handler.
+
 Post-processing pipeline for documents and artifacts added to folders.
 Combines two approaches:
-  1. Content chunking + embedding (like knowledge_store.py)
-  2. LLM fact extraction (like chat_digest.py)
+  1. Content chunking + embedding (knowledge-style)
+  2. LLM fact extraction (digest-style)
 
 When a document or artifact is added to a folder, this module:
   - Loads the content
   - Chunks the raw text and embeds each chunk
   - Extracts structured facts via LLM and embeds each fact
-  - Stores everything in the folder_knowledge table
+  - Stores everything in the app_folders.folder_knowledge table
 
 Results are searchable via pgvector and recallable during chat.
+
+Registered as the ``folder_intelligence`` job handler at app-load time
+via ``apps/folders/handlers.py`` (which calls
+``app_platform.jobs.register_handler('folder_intelligence', ...)``).
 """
 
 import hashlib
@@ -21,16 +25,16 @@ import re
 from typing import Optional
 
 from config import openai_client, DUMB_MODEL
-import data_layer.folders as _dl_folders
+import apps.folders.data as _dl_folders
 import app_platform.documents as _dl_doc
 
 logger = logging.getLogger(__name__)
 
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIM = 1536
-CHUNK_SIZE = 500        # target tokens per chunk
-CHUNK_OVERLAP = 50      # overlap tokens between chunks
-CHARS_PER_TOKEN = 4     # rough approximation
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 50
+CHARS_PER_TOKEN = 4
 
 FOLDER_DIGEST_PROMPT = """\
 You are a knowledge extraction assistant. Given the content of a document \
@@ -80,7 +84,7 @@ def _get_embedding(text: str) -> list[float]:
 
 
 # ---------------------------------------------------------------------------
-# Chunking (same algorithm as knowledge_store.py)
+# Chunking
 # ---------------------------------------------------------------------------
 
 def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> list[str]:
@@ -97,12 +101,10 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
         end = start + char_size
 
         if end < len(text):
-            # Try to break at paragraph boundary
             para_break = text.rfind("\n\n", start + char_size // 2, end)
             if para_break > start:
                 end = para_break
             else:
-                # Try sentence boundary
                 sent_break = text.rfind(". ", start + char_size // 2, end)
                 if sent_break > start:
                     end = sent_break + 1
@@ -140,11 +142,9 @@ def _load_content(entity_id: str) -> tuple[str, str]:
             art = get_artifact(entity_id)
             if not art:
                 return "", ""
-            # For text-based artifacts, use content directly
             content = art.get("content", "") or ""
             title = art.get("name", art.get("original_name", ""))
             if not content:
-                # Build metadata string for non-text artifacts
                 parts = [f"Artifact: {title}"]
                 if art.get("mime_type"):
                     parts.append(f"Type: {art['mime_type']}")
@@ -175,7 +175,6 @@ def _extract_facts(content: str, title: str) -> list[dict]:
     if not content or len(content.strip()) < 20:
         return []
 
-    # Estimate token count for scaling
     est_tokens = len(content) // CHARS_PER_TOKEN
     estimated_facts = max(3, est_tokens // 100)
     visible_tokens = 400 + estimated_facts * 150
@@ -202,7 +201,6 @@ def _extract_facts(content: str, title: str) -> list[dict]:
         raw = raw.strip()
         logger.debug("FOLDER_INTEL: Raw fact response (%d chars): %s", len(raw), raw[:200])
 
-        # Handle markdown code fences
         if raw.startswith("```"):
             raw = re.sub(r"^```(?:json)?\s*", "", raw)
             raw = re.sub(r"\s*```$", "", raw)
@@ -229,7 +227,7 @@ def _extract_facts(content: str, title: str) -> list[dict]:
 def process_folder_item(folder_id: str, entity_id: str) -> dict:
     """Post-process a document or artifact added to a folder.
 
-    1. Loads content from doc_store or artifact_store
+    1. Loads content from documents or artifacts
     2. Checks content hash — skips if unchanged
     3. Chunks and embeds raw content (knowledge-style)
     4. Extracts structured facts via LLM (digest-style)
@@ -244,14 +242,12 @@ def process_folder_item(folder_id: str, entity_id: str) -> dict:
     """
     result = {"chunks": 0, "facts": 0, "entity_id": entity_id, "error": ""}
 
-    # 1. Load content
     content, title = _load_content(entity_id)
     if not content:
         result["error"] = f"No content found for {entity_id}"
         logger.warning("FOLDER_INTEL: %s", result["error"])
         return result
 
-    # 2. Check content hash
     new_hash = _content_hash(content)
     existing_hash = _dl_folders.get_content_hash(entity_id)
     if new_hash == existing_hash and existing_hash:
@@ -259,13 +255,11 @@ def process_folder_item(folder_id: str, entity_id: str) -> dict:
         result["error"] = "skipped:unchanged"
         return result
 
-    # 3. Clear existing knowledge for this entity in this folder
     deleted = _dl_folders.delete_knowledge_for_entity(entity_id, folder_id=folder_id)
     if deleted:
         logger.info("FOLDER_INTEL: Cleared %d old knowledge rows for %s in %s",
                      deleted, entity_id, folder_id)
 
-    # 4. Chunk and embed raw content
     chunks = chunk_text(content)
     for i, chunk in enumerate(chunks):
         try:
@@ -283,10 +277,8 @@ def process_folder_item(folder_id: str, entity_id: str) -> dict:
         except Exception as e:
             logger.error("FOLDER_INTEL: Failed to embed chunk %d for %s: %s", i, entity_id, e)
 
-    # 5. Extract facts via LLM
     raw_facts = _extract_facts(content, title)
 
-    # 6. Embed and save each fact
     for item in raw_facts:
         fact_text = item.get("fact", "").strip()
         if not fact_text:
@@ -297,7 +289,6 @@ def process_folder_item(folder_id: str, entity_id: str) -> dict:
             tags = []
         tags.append("folder_intel")
 
-        # Merge LLM-provided related_entities with regex-extracted IDs
         llm_related = item.get("related_entities", [])
         if not isinstance(llm_related, list):
             llm_related = []
@@ -397,7 +388,6 @@ def get_relevant_folder_knowledge(
     if query_embedding is None:
         query_embedding = _get_embedding(user_message)
 
-    # Search facts first (higher value), then content chunks
     facts = _dl_folders.search_knowledge(
         query_embedding=query_embedding,
         chunk_type="fact",
@@ -405,7 +395,6 @@ def get_relevant_folder_knowledge(
         min_similarity=0.35,
     )
 
-    # If we didn't get enough facts, supplement with content chunks
     remaining = max_results - len(facts)
     if remaining > 0:
         chunks = _dl_folders.search_knowledge(
@@ -429,7 +418,6 @@ def format_folder_knowledge_for_context(results: list[dict]) -> str:
 
     lines = ["## Relevant Folder Knowledge"]
 
-    # Group by source_title + folder_name
     grouped: dict[str, list[dict]] = {}
     for r in results:
         key = f"{r.get('folder_name', '?')} / {r.get('source_title', '?')}"

@@ -478,7 +478,7 @@ def _observe() -> dict:
     """Gather memories, existing folders, existing docs, and working memory."""
     from data_layer.memories import load_all as load_all_memories
     from data_layer.skipper_state import list_states
-    import data_layer.folders as dl_folders
+    import app_platform.folders as dl_folders
     import apps.documents.data as dl_docs
 
     # Load working memory for this domain

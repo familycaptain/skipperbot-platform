@@ -664,52 +664,6 @@
       "evolution finding"
     ]
   },
-  "folders": {
-    "guide": "folders.md",
-    "description": "Organize documents and artifacts into folders with automatic intelligence extraction",
-    "tools": [
-      "create_folder",
-      "get_folder",
-      "list_folders",
-      "add_to_folder",
-      "create_doc_in_folder",
-      "remove_from_folder",
-      "move_to_folder",
-      "delete_folder",
-      "restore_folder",
-      "search_folders"
-    ],
-    "ack": {
-      "create_folder": "Creating folder...",
-      "add_to_folder": "Adding to folder...",
-      "create_doc_in_folder": "Creating document in folder...",
-      "move_to_folder": "Moving item...",
-      "delete_folder": "Deleting folder...",
-      "restore_folder": "Restoring folder..."
-    },
-    "keywords": [
-      "folder",
-      "folders",
-      "subfolder",
-      "organize",
-      "file into",
-      "put in folder",
-      "move to folder",
-      "folder structure",
-      "create folder",
-      "my folders",
-      "shared folder",
-      "file it",
-      "file this",
-      "organize documents",
-      "put this in",
-      "add to folder",
-      "what's in the folder",
-      "folder contents",
-      "restore folder",
-      "undelete folder"
-    ]
-  },
   "behaviors": {
     "guide": "behaviors.md",
     "description": "Create and manage user-customizable behavior rules — always-active if/then instructions injected into every chat turn",

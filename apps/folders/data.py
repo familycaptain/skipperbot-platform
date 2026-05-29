@@ -1,18 +1,63 @@
-"""Folders — Postgres CRUD + pgvector Search
-=============================================
-Data layer for folders, folder items, and folder knowledge.
+"""Folders — data layer (SQL CRUD + knowledge search).
+
+Owns reads + writes for the ``app_folders.folders`` /
+``app_folders.folder_items`` / ``app_folders.folder_knowledge`` tables,
+including the semantic search over the ``folder_knowledge.embedding``
+column used by chat's grounded retrieval.
+
+Ported from ``data_layer/folders.py`` for sub-chunk 11c-part-1.
+Functionally identical; only changes are routing all queries through
+the ``*_in_schema`` helpers from ``app_platform.db`` so the folders
+app's tables land in (and read from) the ``app_folders`` schema.
+
+The semantic-search query goes through
+``app_platform.db.fetch_all_vector_in_schema`` (added in Chunk 10 for
+documents).
 """
+
+from __future__ import annotations
 
 import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from data_layer.db import get_conn, fetch_one, fetch_all, execute
+from app_platform.db import (
+    execute_in_schema,
+    fetch_all_in_schema,
+    fetch_all_vector_in_schema,
+    fetch_one_in_schema,
+    scoped_conn,
+)
+
 
 logger = logging.getLogger(__name__)
 
+SCHEMA = "app_folders"
 EMBEDDING_DIM = 1536
+
+
+# ---------------------------------------------------------------------------
+# Memory-digestion hints
+# ---------------------------------------------------------------------------
+
+_FOLDER_HINT = (
+    "Focus on: the folder's name, owner, parent folder, and what kinds of "
+    "entities it contains. Folders are how chat answers 'where did I file X?'."
+)
+
+
+# ---------------------------------------------------------------------------
+# Backfill registry
+# ---------------------------------------------------------------------------
+
+BACKFILL_ENTITIES = [
+    {
+        "entity_type": "folder",
+        "list_fn": lambda: get_all_folders(),
+        "context_hint": _FOLDER_HINT,
+    },
+]
 
 
 def _gen_id(prefix: str = "fld") -> str:
@@ -37,7 +82,7 @@ def create_folder(
 ) -> dict:
     """Create a new folder and return it. Raises ValueError on duplicate name within same parent."""
     # Check for duplicate name at the same level (same parent_folder_id)
-    with get_conn() as conn:
+    with scoped_conn(SCHEMA) as conn:
         with conn.cursor() as cur:
             if parent_folder_id:
                 cur.execute(
@@ -51,6 +96,7 @@ def create_folder(
                 )
             if cur.fetchone():
                 raise ValueError(f"A folder named '{name}' already exists at this level")
+
     folder = {
         "id": _gen_id("fld"),
         "name": name,
@@ -66,69 +112,92 @@ def create_folder(
         "created_at": datetime.now(timezone.utc),
         "updated_at": datetime.now(timezone.utc),
     }
-    with get_conn() as conn:
+    with scoped_conn(SCHEMA) as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT INTO folders (id, name, description, owner, parent_folder_id,
                                      related_entity_id, icon, color, sort_order, tags,
                                      created_by, created_at, updated_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                folder["id"], folder["name"], folder["description"],
-                folder["owner"], folder["parent_folder_id"],
-                folder["related_entity_id"], folder["icon"], folder["color"],
-                folder["sort_order"], folder["tags"], folder["created_by"],
-                folder["created_at"], folder["updated_at"],
-            ))
+                """,
+                (
+                    folder["id"], folder["name"], folder["description"],
+                    folder["owner"], folder["parent_folder_id"],
+                    folder["related_entity_id"], folder["icon"], folder["color"],
+                    folder["sort_order"], folder["tags"], folder["created_by"],
+                    folder["created_at"], folder["updated_at"],
+                ),
+            )
         conn.commit()
     return _folder_row_to_dict(folder)
 
 
 def get_folder(folder_id: str) -> dict | None:
-    row = fetch_one("SELECT * FROM folders WHERE id = %s AND deleted_at IS NULL", (folder_id,))
+    row = fetch_one_in_schema(
+        SCHEMA,
+        "SELECT * FROM folders WHERE id = %s AND deleted_at IS NULL",
+        (folder_id,),
+    )
     return _folder_row(row) if row else None
 
 
 def get_all_folders(owner: str = "", root_only: bool = False) -> list[dict]:
     """List folders, optionally filtered by owner and/or root-only."""
     if owner and root_only:
-        rows = fetch_all(
-            "SELECT * FROM folders WHERE owner = %s AND (parent_folder_id = '' OR parent_folder_id IS NULL) AND deleted_at IS NULL ORDER BY sort_order, name",
+        rows = fetch_all_in_schema(
+            SCHEMA,
+            "SELECT * FROM folders WHERE owner = %s "
+            "AND (parent_folder_id = '' OR parent_folder_id IS NULL) "
+            "AND deleted_at IS NULL ORDER BY sort_order, name",
             (owner,),
         )
     elif owner:
-        rows = fetch_all(
-            "SELECT * FROM folders WHERE owner = %s AND deleted_at IS NULL ORDER BY sort_order, name",
+        rows = fetch_all_in_schema(
+            SCHEMA,
+            "SELECT * FROM folders WHERE owner = %s AND deleted_at IS NULL "
+            "ORDER BY sort_order, name",
             (owner,),
         )
     elif root_only:
-        rows = fetch_all(
-            "SELECT * FROM folders WHERE (parent_folder_id = '' OR parent_folder_id IS NULL) AND deleted_at IS NULL ORDER BY sort_order, name",
+        rows = fetch_all_in_schema(
+            SCHEMA,
+            "SELECT * FROM folders WHERE (parent_folder_id = '' OR parent_folder_id IS NULL) "
+            "AND deleted_at IS NULL ORDER BY sort_order, name",
         )
     else:
-        rows = fetch_all("SELECT * FROM folders WHERE deleted_at IS NULL ORDER BY sort_order, name")
+        rows = fetch_all_in_schema(
+            SCHEMA,
+            "SELECT * FROM folders WHERE deleted_at IS NULL ORDER BY sort_order, name",
+        )
     return [_folder_row(r) for r in rows]
 
 
 def get_child_folders(parent_folder_id: str) -> list[dict]:
-    rows = fetch_all(
-        "SELECT * FROM folders WHERE parent_folder_id = %s AND deleted_at IS NULL ORDER BY sort_order, name",
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT * FROM folders WHERE parent_folder_id = %s AND deleted_at IS NULL "
+        "ORDER BY sort_order, name",
         (parent_folder_id,),
     )
     return [_folder_row(r) for r in rows]
 
 
 def get_folder_by_related_entity(related_entity_id: str) -> dict | None:
-    row = fetch_one(
-        "SELECT * FROM folders WHERE related_entity_id = %s AND deleted_at IS NULL", (related_entity_id,),
+    row = fetch_one_in_schema(
+        SCHEMA,
+        "SELECT * FROM folders WHERE related_entity_id = %s AND deleted_at IS NULL",
+        (related_entity_id,),
     )
     return _folder_row(row) if row else None
 
 
 def update_folder(folder_id: str, **kwargs) -> dict | None:
     """Update folder fields. Pass only the fields to change."""
-    allowed = {"name", "description", "owner", "parent_folder_id",
-               "related_entity_id", "icon", "color", "sort_order", "tags"}
+    allowed = {
+        "name", "description", "owner", "parent_folder_id",
+        "related_entity_id", "icon", "color", "sort_order", "tags",
+    }
     updates = {k: v for k, v in kwargs.items() if k in allowed}
     if not updates:
         return get_folder(folder_id)
@@ -137,7 +206,7 @@ def update_folder(folder_id: str, **kwargs) -> dict | None:
     set_clause = ", ".join(f"{k} = %s" for k in updates)
     values = list(updates.values()) + [folder_id]
 
-    execute(f"UPDATE folders SET {set_clause} WHERE id = %s", tuple(values))
+    execute_in_schema(SCHEMA, f"UPDATE folders SET {set_clause} WHERE id = %s", tuple(values))
     return get_folder(folder_id)
 
 
@@ -145,20 +214,37 @@ def delete_folder(folder_id: str) -> bool:
     """Soft-delete a folder by setting deleted_at. Subfolders are promoted to root."""
     now = datetime.now(timezone.utc)
     # Promote child folders to root before soft-deleting
-    execute("UPDATE folders SET parent_folder_id = NULL, updated_at = %s WHERE parent_folder_id = %s AND deleted_at IS NULL", (now, folder_id))
-    return execute("UPDATE folders SET deleted_at = %s, updated_at = %s WHERE id = %s AND deleted_at IS NULL", (now, now, folder_id)) > 0
+    execute_in_schema(
+        SCHEMA,
+        "UPDATE folders SET parent_folder_id = NULL, updated_at = %s "
+        "WHERE parent_folder_id = %s AND deleted_at IS NULL",
+        (now, folder_id),
+    )
+    return execute_in_schema(
+        SCHEMA,
+        "UPDATE folders SET deleted_at = %s, updated_at = %s "
+        "WHERE id = %s AND deleted_at IS NULL",
+        (now, now, folder_id),
+    ) > 0
 
 
 def restore_folder(folder_id: str) -> bool:
     """Restore a soft-deleted folder."""
     now = datetime.now(timezone.utc)
-    return execute("UPDATE folders SET deleted_at = NULL, updated_at = %s WHERE id = %s AND deleted_at IS NOT NULL", (now, folder_id)) > 0
+    return execute_in_schema(
+        SCHEMA,
+        "UPDATE folders SET deleted_at = NULL, updated_at = %s "
+        "WHERE id = %s AND deleted_at IS NOT NULL",
+        (now, folder_id),
+    ) > 0
 
 
 def search_folders(query: str) -> list[dict]:
     pattern = f"%{query}%"
-    rows = fetch_all(
-        "SELECT * FROM folders WHERE (name ILIKE %s OR description ILIKE %s) AND deleted_at IS NULL ORDER BY sort_order, name",
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT * FROM folders WHERE (name ILIKE %s OR description ILIKE %s) "
+        "AND deleted_at IS NULL ORDER BY sort_order, name",
         (pattern, pattern),
     )
     return [_folder_row(r) for r in rows]
@@ -190,15 +276,20 @@ def add_item(folder_id: str, entity_id: str, entity_type: str = "",
     if not entity_type:
         entity_type = _entity_type_from_id(entity_id)
     try:
-        with get_conn() as conn:
+        with scoped_conn(SCHEMA) as conn:
             with conn.cursor() as cur:
-                cur.execute("""
+                cur.execute(
+                    """
                     INSERT INTO folder_items (folder_id, entity_id, entity_type, position, added_by, added_at)
                     VALUES (%s, %s, %s, %s, %s, %s)
                     ON CONFLICT (folder_id, entity_id) DO NOTHING
                     RETURNING *
-                """, (folder_id, entity_id, entity_type, position, added_by,
-                      datetime.now(timezone.utc)))
+                    """,
+                    (
+                        folder_id, entity_id, entity_type, position, added_by,
+                        datetime.now(timezone.utc),
+                    ),
+                )
                 row = cur.fetchone()
             conn.commit()
         if row is None:
@@ -211,14 +302,16 @@ def add_item(folder_id: str, entity_id: str, entity_type: str = "",
 
 
 def remove_item(folder_id: str, entity_id: str) -> bool:
-    return execute(
+    return execute_in_schema(
+        SCHEMA,
         "DELETE FROM folder_items WHERE folder_id = %s AND entity_id = %s",
         (folder_id, entity_id),
     ) > 0
 
 
 def get_item(folder_id: str, entity_id: str) -> dict | None:
-    row = fetch_one(
+    row = fetch_one_in_schema(
+        SCHEMA,
         "SELECT * FROM folder_items WHERE folder_id = %s AND entity_id = %s",
         (folder_id, entity_id),
     )
@@ -226,7 +319,8 @@ def get_item(folder_id: str, entity_id: str) -> dict | None:
 
 
 def get_items(folder_id: str) -> list[dict]:
-    rows = fetch_all(
+    rows = fetch_all_in_schema(
+        SCHEMA,
         "SELECT * FROM folder_items WHERE folder_id = %s ORDER BY position, added_at",
         (folder_id,),
     )
@@ -235,18 +329,22 @@ def get_items(folder_id: str) -> list[dict]:
 
 def get_folders_containing(entity_id: str) -> list[dict]:
     """Get all folders that contain a given entity."""
-    rows = fetch_all("""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        """
         SELECT f.* FROM folders f
         JOIN folder_items fi ON fi.folder_id = f.id
         WHERE fi.entity_id = %s AND f.deleted_at IS NULL
         ORDER BY f.name
-    """, (entity_id,))
+        """,
+        (entity_id,),
+    )
     return [_folder_row(r) for r in rows]
 
 
 def reorder_items(folder_id: str, entity_ids: list[str]) -> None:
     """Reorder items in a folder by setting position based on list order."""
-    with get_conn() as conn:
+    with scoped_conn(SCHEMA) as conn:
         with conn.cursor() as cur:
             for i, eid in enumerate(entity_ids):
                 cur.execute(
@@ -257,7 +355,8 @@ def reorder_items(folder_id: str, entity_ids: list[str]) -> None:
 
 
 def get_item_count(folder_id: str) -> int:
-    row = fetch_one(
+    row = fetch_one_in_schema(
+        SCHEMA,
         "SELECT COUNT(*) AS cnt FROM folder_items WHERE folder_id = %s",
         (folder_id,),
     )
@@ -281,40 +380,50 @@ def save_knowledge_row(
     """Insert a single knowledge row (fact or content chunk)."""
     row_id = _gen_id("fk")
     emb_str = _vec(embedding) if embedding else None
-    with get_conn() as conn:
+    with scoped_conn(SCHEMA) as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT INTO folder_knowledge
                     (id, folder_id, entity_id, chunk_type, text, tags,
                      embedding, source_title, content_hash, processed_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                row_id, folder_id, entity_id, chunk_type, text,
-                tags or [], emb_str, source_title, content_hash,
-                datetime.now(timezone.utc),
-            ))
+                """,
+                (
+                    row_id, folder_id, entity_id, chunk_type, text,
+                    tags or [], emb_str, source_title, content_hash,
+                    datetime.now(timezone.utc),
+                ),
+            )
         conn.commit()
-    return {"id": row_id, "folder_id": folder_id, "entity_id": entity_id,
-            "chunk_type": chunk_type, "text": text, "tags": tags or [],
-            "source_title": source_title, "content_hash": content_hash}
+    return {
+        "id": row_id, "folder_id": folder_id, "entity_id": entity_id,
+        "chunk_type": chunk_type, "text": text, "tags": tags or [],
+        "source_title": source_title, "content_hash": content_hash,
+    }
 
 
 def delete_knowledge_for_entity(entity_id: str, folder_id: str = "") -> int:
     """Delete knowledge rows for an entity, optionally scoped to a folder."""
     if folder_id:
-        return execute(
+        return execute_in_schema(
+            SCHEMA,
             "DELETE FROM folder_knowledge WHERE entity_id = %s AND folder_id = %s",
             (entity_id, folder_id),
         )
-    return execute(
-        "DELETE FROM folder_knowledge WHERE entity_id = %s", (entity_id,),
+    return execute_in_schema(
+        SCHEMA,
+        "DELETE FROM folder_knowledge WHERE entity_id = %s",
+        (entity_id,),
     )
 
 
 def get_content_hash(entity_id: str) -> str:
     """Get the content_hash from the most recent knowledge row for an entity."""
-    row = fetch_one(
-        "SELECT content_hash FROM folder_knowledge WHERE entity_id = %s ORDER BY processed_at DESC LIMIT 1",
+    row = fetch_one_in_schema(
+        SCHEMA,
+        "SELECT content_hash FROM folder_knowledge WHERE entity_id = %s "
+        "ORDER BY processed_at DESC LIMIT 1",
         (entity_id,),
     )
     return row["content_hash"] if row else ""
@@ -328,7 +437,6 @@ def search_knowledge(
     min_similarity: float = 0.3,
 ) -> list[dict]:
     """Semantic search over folder knowledge using pgvector cosine distance."""
-    from data_layer.db import fetch_all_vector  # raises ivfflat.probes for full recall
     emb_str = _vec(query_embedding)
 
     params_list: list = []
@@ -337,7 +445,9 @@ def search_knowledge(
     if chunk_type:
         params_list.append(chunk_type)
 
-    rows = fetch_all_vector(f"""
+    rows = fetch_all_vector_in_schema(
+        SCHEMA,
+        f"""
         SELECT fk.*, f.name AS folder_name,
                1 - (fk.embedding <=> %s::vector) AS score
         FROM folder_knowledge fk
@@ -349,15 +459,21 @@ def search_knowledge(
           AND 1 - (fk.embedding <=> %s::vector) >= %s
         ORDER BY fk.embedding <=> %s::vector
         LIMIT %s
-    """, tuple([emb_str] + params_list + [emb_str, min_similarity, emb_str, max_results]))
+        """,
+        tuple([emb_str] + params_list + [emb_str, min_similarity, emb_str, max_results]),
+    )
 
-    return [_knowledge_row(r) | {"score": float(r["score"]), "folder_name": r["folder_name"]}
-            for r in rows]
+    return [
+        _knowledge_row(r) | {"score": float(r["score"]), "folder_name": r["folder_name"]}
+        for r in rows
+    ]
 
 
 def get_knowledge_for_entity(entity_id: str) -> list[dict]:
-    rows = fetch_all(
-        "SELECT * FROM folder_knowledge WHERE entity_id = %s ORDER BY chunk_type, processed_at",
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT * FROM folder_knowledge WHERE entity_id = %s "
+        "ORDER BY chunk_type, processed_at",
         (entity_id,),
     )
     return [_knowledge_row(r) for r in rows]

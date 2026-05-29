@@ -57,8 +57,8 @@ def _now_iso() -> str:
 def _trigger_folder_reprocess(doc_id: str) -> None:
     """If this document belongs to any folders, queue intelligence reprocessing."""
     try:
-        import data_layer.folders as _dl_folders
-        folders = _dl_folders.get_folders_containing(doc_id)
+        from app_platform.folders import get_folders_containing
+        folders = get_folders_containing(doc_id)
         if not folders:
             return
         from app_platform.jobs import submit_job

@@ -3688,7 +3688,7 @@ async def api_respond_to_scrum_item(item_id: str, req: ScrumRespondRequest):
 
 
 # ── Folders App ──
-import folder_store as _folder_store
+import app_platform.folders as _folder_store
 
 
 class FolderCreateRequest(BaseModel):

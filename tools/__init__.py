@@ -51,7 +51,7 @@ from tools.prioritize_tool import list_focus, promote_focus, clear_focus, get_ba
 from tools.brainstorming_tool import create_idea, list_ideas, search_ideas, get_idea, update_idea, delete_idea, graduate_idea, update_idea_document, append_to_idea_document, read_idea_document, revise_idea_document
 from tools.scrum_tool import respond_to_scrum_item, get_pending_scrum_items
 from tools.skipper_email_tool import check_skipper_inbox, read_skipper_email, send_skipper_email, search_skipper_email
-from tools.folder_tool import create_folder, get_folder, list_folders, add_to_folder, create_doc_in_folder, remove_from_folder, move_to_folder, delete_folder, restore_folder, search_folders
+# Folder tools moved to apps/folders/tools.py (app package)
 from tools.behavior_tool import add_behavior, list_behaviors, update_behavior, remove_behavior, toggle_behavior
 # Homeopathy tools moved to apps/homeopathy/tools.py (app package)
 
@@ -172,16 +172,6 @@ __all__ = [
     "read_skipper_email",
     "send_skipper_email",
     "search_skipper_email",
-    "create_folder",
-    "get_folder",
-    "list_folders",
-    "add_to_folder",
-    "create_doc_in_folder",
-    "remove_from_folder",
-    "move_to_folder",
-    "delete_folder",
-    "restore_folder",
-    "search_folders",
     "add_behavior",
     "list_behaviors",
     "update_behavior",

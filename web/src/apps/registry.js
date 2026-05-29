@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { FileText, Target, TrendingUp, Briefcase, Home, Search, ShoppingCart, Bell, LineChart, Hammer, Wrench, Image as ImageIcon, MapPin, Car, FlaskConical, HeartPulse, Lightbulb, HardDrive, ListChecks, List, ListTodo, Server, Mail, CalendarDays, CalendarClock, Bug, ClipboardList, Brain, Newspaper, CheckSquare, FolderOpen, Sparkles, ChefHat, Zap, Coins, BookOpen, Rss, Tv, PlayCircle } from "lucide-react";
+import { FileText, Target, TrendingUp, Briefcase, Home, Search, ShoppingCart, Bell, LineChart, Hammer, Wrench, Image as ImageIcon, MapPin, Car, FlaskConical, HeartPulse, Lightbulb, HardDrive, ListChecks, List, ListTodo, Server, Mail, CalendarDays, CalendarClock, Bug, ClipboardList, Brain, Newspaper, CheckSquare, Sparkles, ChefHat, Zap, Coins, BookOpen, Rss, Tv, PlayCircle } from "lucide-react";
 
 /**
  * App registry — central manifest for all desktop apps.
@@ -282,21 +282,9 @@ const APP_MANIFESTS = {
     singleton: true,
     appPackage: true,
   },
-  folders: {
-    id: "folders",
-    name: "Folders",
-    icon: FolderOpen,
-    component: lazy(() => import("./FoldersApp")),
-    singleton: true,
-    page: 2,
-  },
-  folder: {
-    id: "folder",
-    name: "Folder",
-    icon: FolderOpen,
-    component: lazy(() => import("./FolderDetailApp")),
-    singleton: false,
-  },
+  // `folders` + `folder` are now discovered from apps/folders/ui/index.js
+  // (the folders app owns its own UI). Removed from the hardcoded
+  // registry as part of the folders app packaging.
   evolve: {
     id: "evolve",
     name: "Evolve",
