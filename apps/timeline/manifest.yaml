@@ -1,0 +1,83 @@
+id: timeline
+name: Timeline
+version: 1.0.0
+description: >
+  Family journal + microblog. Three tables — posts, photos, and a
+  denormalised tag index. The platform's automatic activity log
+  writes personal posts here whenever any other app fires
+  digest_record on a non-read CRUD, so every action is also a
+  timeline entry by default.
+
+# Required core app — the auto-activity feed in
+# app_platform/activity.py writes here whenever any app fires
+# digest_record, and the launcher's "Timeline" tile is the
+# canonical landing page for "what happened recently". Platform
+# refuses to start without it.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns two entity prefixes.
+entity_types:
+  - prefix: tp
+    name: timeline_post
+    id_format: "tp-{hex8}"
+    table: timeline_posts
+  - prefix: tph
+    name: timeline_photo
+    id_format: "tph-{hex8}"
+    table: timeline_photos
+
+# Platform services this app consumes.
+platform_deps:
+  - db
+  - documents     # post bodies live in the documents app
+  - memory        # digest_record on every post CRUD (the activity
+                  # log skips app_id=timeline to avoid a self-loop)
+  - events
+  - time
+  - links
+
+app_deps: []
+
+emits:
+  - timeline.post_created
+  - timeline.post_updated
+  - timeline.post_deleted
+  - timeline.post_pinned
+  - timeline.photo_added
+  - timeline.photo_removed
+
+subscribes: []
+
+# Tool category for keyword routing.
+tool_category:
+  description: >
+    Family journal / microblog. Create, browse, search, edit,
+    pin, delete, and attach photos to timeline posts. The agent
+    uses these tools when the user wants to log a memory
+    ("post to timeline", "remember this", "journal entry").
+  keywords:
+    - timeline
+    - journal
+    - microblog
+    - feed
+    - post
+    - entry
+    - log entry
+    - what happened
+    - pinned post
+    - timeline tag
+    - timeline photo
+    - browse timeline
+    - search timeline
+    - family journal
+    - milestone
+    - memory log
+
+# No per-app config keys.
+config: []
+
+# No thinking domain and no jobs.
+thinking: []
+job_types: []

@@ -1,22 +1,26 @@
-"""DEPRECATED — Moved to apps/timeline/tools.py (app package).
-This file is no longer imported. Safe to delete.
+"""Timeline — MCP tools.
+
+Ten tools used by the chat agent to manage a family journal /
+microblog feed:
+
+- ``post_to_timeline(body, author_id, ...)``
+- ``list_timeline(...)``
+- ``get_timeline_post(post_id)``
+- ``update_timeline_post(post_id, ...)``
+- ``delete_timeline_post(post_id)``
+- ``search_timeline(query, tag="", limit="20")``
+- ``pin_timeline_post(post_id)``
+- ``list_timeline_tags()``
+- ``add_timeline_photos(post_id, image_ids)``
 """
-# --- Original docstring ---
-# Timeline Tools — Family journal and microblog: create posts, browse the feed,
-# search, manage tags, and attach photos.
 
-import json
-import os
-import sys
-from dotenv import load_dotenv
-load_dotenv()
+from __future__ import annotations
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if BASE_DIR not in sys.path:
-    sys.path.insert(0, BASE_DIR)
+import logging
 
-from config import logger
-from data_layer import timeline as _dl
+import apps.timeline.data as _dl
+
+logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -228,7 +232,7 @@ def update_timeline_post(
         if not post_id or not post_id.strip():
             return "Error: post_id is required."
 
-        kwargs = {}
+        kwargs: dict = {}
         if title:
             kwargs["title"] = title.strip() if title.strip() else ""
         if body:
@@ -421,7 +425,7 @@ def add_timeline_photos(
         ids = [i.strip() for i in image_ids.split(",") if i.strip()]
         existing_count = len(post.get("photos", []))
 
-        added = []
+        added: list[str] = []
         for i, img_id in enumerate(ids):
             photo = _dl.add_photo(
                 post_id=post_id.strip(),

@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { FileText, Target, TrendingUp, Briefcase, Home, Search, ShoppingCart, Bell, LineChart, Hammer, Wrench, Image as ImageIcon, MapPin, Car, FlaskConical, HeartPulse, Lightbulb, ListChecks, List, ListTodo, Server, Mail, CalendarDays, CalendarClock, Bug, ClipboardList, Brain, Newspaper, CheckSquare, Sparkles, ChefHat, Coins, BookOpen, Rss, Tv, PlayCircle } from "lucide-react";
+import { FileText, Target, TrendingUp, Briefcase, Home, Search, ShoppingCart, Bell, LineChart, Hammer, Wrench, Image as ImageIcon, MapPin, Car, FlaskConical, HeartPulse, Lightbulb, ListChecks, List, ListTodo, Server, Mail, CalendarDays, CalendarClock, Bug, ClipboardList, Brain, CheckSquare, Sparkles, ChefHat, Coins, BookOpen, Rss, Tv, PlayCircle } from "lucide-react";
 
 /**
  * App registry — central manifest for all desktop apps.
@@ -260,14 +260,9 @@ const APP_MANIFESTS = {
     singleton: true,
     page: 3,
   },
-  timeline: {
-    id: "timeline",
-    name: "Timeline",
-    icon: Newspaper,
-    component: lazy(() => import("./TimelineApp")),
-    singleton: true,
-    appPackage: true,
-  },
+  // `timeline` is now discovered from apps/timeline/ui/index.js
+  // (the timeline app owns its own UI). Removed from the hardcoded
+  // registry as part of the timeline app packaging.
   // `folders` + `folder` are now discovered from apps/folders/ui/index.js
   // (the folders app owns its own UI). Removed from the hardcoded
   // registry as part of the folders app packaging.

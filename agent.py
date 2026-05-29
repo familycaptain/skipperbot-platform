@@ -1342,7 +1342,8 @@ from data_layer import images as _dl_images
 # Homeopathy routes are now provided by apps/homeopathy/routes.py (loaded by app_platform)
 
 
-# Timeline routes are now provided by apps/timeline/routes.py (loaded by app_platform)
+# Timeline routes are provided by apps/timeline/routes.py
+# (auto-mounted by app_platform.loader at /api/apps/timeline).
 
 
 # Image upload + management
