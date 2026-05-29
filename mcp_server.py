@@ -198,14 +198,22 @@ def _register_app_tools():
             sys.modules[module_name] = module
             spec.loader.exec_module(module)
 
+            # Only register functions DEFINED in this module. Otherwise
+            # re-exports like ``from dotenv import load_dotenv`` get
+            # registered too — and load_dotenv has a ``typing.IO[str]``
+            # parameter that pydantic can't schema, so MCP rejects the
+            # whole app's tool surface.
             count = 0
             for name in dir(module):
                 if name.startswith("_"):
                     continue
                 obj = getattr(module, name)
-                if callable(obj) and inspect.isfunction(obj) and obj.__doc__:
-                    mcp.tool()(obj)
-                    count += 1
+                if not (callable(obj) and inspect.isfunction(obj) and obj.__doc__):
+                    continue
+                if getattr(obj, "__module__", "") != module_name:
+                    continue
+                mcp.tool()(obj)
+                count += 1
 
             if count:
                 logger.info("MCP: Registered %d tool(s) from app '%s'", count, app_id)

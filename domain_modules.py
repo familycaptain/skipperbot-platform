@@ -75,11 +75,10 @@ def _register_builtins():
       - 'pm'   → apps/goals/handlers.py
       - 'g-*'  → apps/goals/handlers.py
     """
-    try:
-        from chat_domain import handle_chat
-        register_domain("chat", handle_chat)
-    except ImportError as e:
-        logger.warning("DOMAIN: Chat domain module not available: %s", e)
+    # No "chat" thinking domain — chat_domain.handle_chat is the request
+    # handler for FastAPI's POST /api/chat, not a periodic tick. Registering
+    # it as a domain caused the thinking scheduler to call it every 5
+    # minutes with the wrong signature.
 
     # risk_mgmt domain removed — risk management is now handled by the
     # trading service on EC2 (trading_service/core/symbol_risk.py + scheduler).

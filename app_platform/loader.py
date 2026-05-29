@@ -272,14 +272,22 @@ def _load_tools(manifest: AppManifest, mcp=None) -> list[callable]:
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
 
-    # Collect all public functions (not starting with _)
+    # Collect only the functions DEFINED in this module — skip
+    # re-exports of `load_dotenv`, `digest_record`, etc. that an app's
+    # tools.py imports for its own use. Otherwise MCP would try to
+    # schema their signatures (load_dotenv has `IO[str]`, which
+    # pydantic refuses) and re-register the same callable from every
+    # app that imports it ("Component already exists").
     tool_fns = []
     for name in dir(module):
         if name.startswith("_"):
             continue
         obj = getattr(module, name)
-        if inspect.isfunction(obj) and obj.__doc__:
-            tool_fns.append(obj)
+        if not (inspect.isfunction(obj) and obj.__doc__):
+            continue
+        if getattr(obj, "__module__", "") != module_name:
+            continue
+        tool_fns.append(obj)
 
     # Register with MCP if provided
     if mcp and tool_fns:
