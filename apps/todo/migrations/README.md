@@ -7,7 +7,11 @@ migration once and tracks application state in `public.app_migrations`
 Files run in lexical filename order. `001_initial.sql` first.
 
 - `001_initial.sql` — creates the `app_todo` schema + `todo_config` table. **Sub-chunk 5b.**
-- `002_migrate_from_public.sql` — one-shot data move from legacy `public.todo_config`. **Sub-chunk 5d.**
+- No `002` migration — fresh installs use only
+  `001_initial.sql`. Pre-packaging installs that need to copy data
+  out of `public.todo_config` use private one-shot scripts (see
+  `private/data_migrations/todo/` in each operator's local checkout
+  — outside the public repo).
 - `003+` — additive schema changes as the app evolves.
 
 ## Rules (per `specs/APP_PACKAGES.md`)

@@ -239,8 +239,11 @@ loop, not a thinking domain).
   jobs table), 009 (column expansion + relaxed CHECK), 010 (job_logs
   table), and 063 (dropped the `schedule` column — all recurring jobs
   now driven by Schedules).
-- `migrations/002_migrate_from_public.sql` (one-shot, idempotent)
-  moves rows from `public.jobs` + `public.job_logs` into `app_jobs.*`.
+- No `migrations/002` — fresh installs use
+  only `001_initial.sql`. Pre-packaging installs that need to copy
+  data out of `public.jobs` + `public.job_logs` use private
+  one-shot scripts (see `private/data_migrations/jobs/` in each
+  operator's local checkout — outside the public repo).
 - Subsequent migrations (`003+`) add columns, indexes, or constraints
   as the schema evolves.
 

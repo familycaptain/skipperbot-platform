@@ -54,7 +54,21 @@ if [ "$needs_rebuild" = true ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 2. Exec the agent (replaces the shell so SIGTERM reaches Python).
+# 2. Initialise the database (idempotent — fast no-op after first run).
+# Set SKIPPERBOT_SKIP_INIT_DB=1 to skip (e.g. when running migrations
+# from a separate job).
+# ---------------------------------------------------------------------------
+
+if [ "${SKIPPERBOT_SKIP_INIT_DB:-0}" != "1" ]; then
+    log "running scripts/init_db.py ..."
+    if ! python "$APP_ROOT/scripts/init_db.py"; then
+        log "ERROR: init_db.py failed; not starting the agent." >&2
+        exit 1
+    fi
+fi
+
+# ---------------------------------------------------------------------------
+# 3. Exec the agent (replaces the shell so SIGTERM reaches Python).
 # ---------------------------------------------------------------------------
 
 log "starting agent"

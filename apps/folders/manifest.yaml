@@ -103,6 +103,6 @@ thinking: []
 # dispatcher (see apps/folders/handlers.py).
 job_types:
   - type: folder_intelligence
-    handler: apps.folders.intelligence.process_folder_item
+    handler: intelligence.process_folder_item
     max_concurrent: 2
     cancel_on_shutdown: true

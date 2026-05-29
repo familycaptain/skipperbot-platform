@@ -21,6 +21,9 @@ data/pm_state.json
 data/*.json
 !data/*.example.json
 
+# ----- private migration / conversion scripts (per-installation, not public) -----
+private/
+
 # ----- generated content -----
 backups/
 uploads/

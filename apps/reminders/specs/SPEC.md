@@ -191,10 +191,11 @@ None. Reminders is passive infrastructure.
 - `migrations/001_initial.sql` creates the `app_reminders` schema +
   `reminders` table + 3 indexes. Idempotent. Note: `schedule_id` is a
   plain `TEXT` column — apps don't cross-schema FK each other.
-- `migrations/002_migrate_from_public.sql` (one-shot, idempotent) moves
-  rows from `public.reminders` into `app_reminders.reminders`. Uses
-  `INSERT ... SELECT ... ON CONFLICT (id) DO NOTHING` with a sanity
-  check. Does NOT drop the source table.
+- No `migrations/002` — fresh installs use
+  only `001_initial.sql`. Pre-packaging installs that need to copy
+  data out of `public.reminders` use private one-shot scripts (see
+  `private/data_migrations/reminders/` in each operator's local
+  checkout — outside the public repo).
 - Subsequent migrations (`003+`) add columns, indexes, or constraints
   as the schema evolves.
 

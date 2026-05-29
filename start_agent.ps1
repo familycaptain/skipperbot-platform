@@ -88,6 +88,17 @@ while ($true) {
         Invoke-Rebuild
     }
 
+    # Initialise the database (idempotent — fast no-op after first run).
+    # Set $env:SKIPPERBOT_SKIP_INIT_DB = "1" to skip.
+    if (-not ($env:SKIPPERBOT_SKIP_INIT_DB -eq "1")) {
+        Log "running scripts\init_db.py ..."
+        & $Python (Join-Path $AppRoot "scripts\init_db.py")
+        if ($LASTEXITCODE -ne 0) {
+            Log "ERROR: init_db.py failed; not starting the agent."
+            exit 1
+        }
+    }
+
     Log "starting agent on :8000"
     $startTime = Get-Date
     & $Python (Join-Path $AppRoot "agent.py")

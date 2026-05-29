@@ -81,6 +81,22 @@ if [ "$needs_rebuild" = true ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Initialise the database (idempotent — fast no-op after first run).
+# Runs the platform baseline + every app's pending migration so the agent
+# can boot cleanly on a fresh install. Set SKIPPERBOT_SKIP_INIT_DB=1 in
+# the environment to skip (e.g. if you're running init_db.py by hand from
+# a CI step).
+# ---------------------------------------------------------------------------
+
+if [ "${SKIPPERBOT_SKIP_INIT_DB:-0}" != "1" ]; then
+    log "running scripts/init_db.py ..."
+    if ! "$PYTHON" "$APP_ROOT/scripts/init_db.py"; then
+        log "ERROR: init_db.py failed; not starting the agent." >&2
+        exit 1
+    fi
+fi
+
+# ---------------------------------------------------------------------------
 # Start the agent.
 # ---------------------------------------------------------------------------
 

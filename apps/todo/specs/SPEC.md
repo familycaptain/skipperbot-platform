@@ -127,10 +127,11 @@ None. Todo is passive infrastructure.
 - `migrations/001_initial.sql` creates the `app_todo` schema and the
   `todo_config` table. Idempotent — uses `CREATE TABLE IF NOT EXISTS`
   and `DO`-wrapped `ALTER TABLE ADD CONSTRAINT`.
-- `migrations/002_migrate_from_public.sql` (one-shot, idempotent) moves
-  rows from `public.todo_config` into `app_todo.todo_config`. Uses
-  `INSERT ... SELECT ... ON CONFLICT (user_id) DO NOTHING`. Does NOT drop
-  the source table. Fresh installs skip with no rows to move.
+- No `migrations/002` — fresh installs use
+  only `001_initial.sql`. Pre-packaging installs that need to copy
+  data out of `public.todo_config` use private one-shot scripts
+  (see `private/data_migrations/todo/` in each operator's local
+  checkout — outside the public repo).
 
 ## Why Todo Is a Required App
 

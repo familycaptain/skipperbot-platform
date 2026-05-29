@@ -2,8 +2,6 @@
 -- Backups app — 001_initial.sql
 -- =============================================================================
 -- Creates the app_backups schema + the backups audit table + PK index.
--- Mirrors the live public.backups schema 1:1 — same columns, same defaults —
--- so 002_migrate_from_public.sql can do a straight column-for-column copy.
 --
 -- The platform's app_platform/migrator.py invokes this with
 -- search_path = app_backups, public already set within its transaction.

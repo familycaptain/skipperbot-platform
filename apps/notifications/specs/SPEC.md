@@ -158,10 +158,11 @@ time they open chat.
 
 - `migrations/001_initial.sql` creates the `app_notifications` schema +
   `notifications` table + indexes. Idempotent.
-- `migrations/002_migrate_from_public.sql` (one-shot, idempotent) moves
-  rows from `public.notifications` into `app_notifications.notifications`.
-  Uses `INSERT ... SELECT ... ON CONFLICT (id) DO NOTHING` with a sanity
-  check. Does NOT drop the source table.
+- No `migrations/002` — fresh installs use
+  only `001_initial.sql`. Pre-packaging installs that need to copy
+  data out of `public.notifications` use private one-shot scripts
+  (see `private/data_migrations/notifications/` in each operator's
+  local checkout — outside the public repo).
 - Subsequent migrations (`003+`) add columns, indexes, or constraints as
   the schema evolves.
 

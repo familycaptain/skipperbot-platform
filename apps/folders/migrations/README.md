@@ -11,10 +11,12 @@ Files run in lexical filename order. `001_initial.sql` first.
   indexes. **Sub-chunk 11b.** Squashed from legacy migrations 048
   (initial schema + GIN/ivfflat indexes) and 058 (soft-delete column
   + partial index).
-- `002_migrate_from_public.sql` — one-shot data move from legacy
-  `public.folders` / `folder_items` / `folder_knowledge`.
-  **Sub-chunk 11d.** Handles older installs that pre-date the
-  soft-delete column.
+- No `002` migration — fresh installs use only
+  `001_initial.sql`. Pre-packaging installs that need to copy data
+  out of `public.folders` / `folder_items` / `folder_knowledge`
+  use private one-shot scripts (see
+  `private/data_migrations/folders/` in each operator's local
+  checkout — outside the public repo).
 - `003+` — additive schema changes as the app evolves.
 
 ## pgvector requirement

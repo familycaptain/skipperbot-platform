@@ -11,8 +11,11 @@ Files run in lexical filename order. `001_initial.sql` first.
   Squashed from legacy migrations 023 (the original schema) and 065
   (which widened the `recurrence_type` CHECK to include `'rrule'` —
   already present in the squashed initial).
-- `002_migrate_from_public.sql` — one-shot data move from legacy
-  `public.schedules` + `public.schedule_completions`. **Sub-chunk 8d.**
+- No `002` migration — fresh installs use only
+  `001_initial.sql`. Pre-packaging installs that need to copy data
+  out of `public.schedules` + `public.schedule_completions` use
+  private one-shot scripts (see `private/data_migrations/schedules/`
+  in each operator's local checkout — outside the public repo).
 - `003+` — additive schema changes as the app evolves.
 
 ## Rules (per `specs/APP_PACKAGES.md`)

@@ -156,12 +156,11 @@ and act on list contents.
 - `migrations/001_initial.sql` creates the `app_lists` schema and the
   two tables, indexes, foreign keys. Idempotent — uses
   `CREATE TABLE IF NOT EXISTS` and `DO`-wrapped `ALTER TABLE ADD CONSTRAINT`.
-- `migrations/002_migrate_from_public.sql` (one-shot, idempotent) moves
-  rows from `public.lists` / `public.list_items` into `app_lists.*`.
-  Uses `INSERT ... SELECT ... ON CONFLICT (id) DO NOTHING` and a sanity
-  check `RAISE EXCEPTION` if target row count is less than source row
-  count after the move. Does NOT drop source tables. Fresh installs skip
-  this migration with no rows to move.
+- No `migrations/002` — fresh installs use
+  only `001_initial.sql`. Pre-packaging installs that need to copy
+  data out of `public.lists` / `public.list_items` use private
+  one-shot scripts (see `private/data_migrations/lists/` in each
+  operator's local checkout — outside the public repo).
 - Subsequent migrations (`003+`) add columns, indexes, or constraints as
   the schema evolves.
 

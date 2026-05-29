@@ -60,10 +60,11 @@ keep that path working.
   (CASCADE) + `timeline_tag_index` + 7 indexes + the `visibility`
   column. Idempotent — older installs already running on
   `app_timeline` from a previous migration loop see a no-op.
-- No `002_migrate_from_public.sql` — these tables never lived in
-  `public.*` on the public-release codebase (the migration history
-  jumped straight into `app_timeline`). Older private-codebase
-  installs migrated this data separately.
+- No `002` migration — fresh installs use only
+  `001_initial.sql`. Pre-packaging installs that need to copy data
+  out of `public.*` use private one-shot scripts (see
+  `private/data_migrations/timeline/` in each operator's local
+  checkout — outside the public repo).
 
 ## What this app does NOT own
 - Post bodies — those are documents (the documents app owns CRUD).

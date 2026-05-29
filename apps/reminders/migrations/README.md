@@ -10,8 +10,11 @@ Files run in lexical filename order. `001_initial.sql` first.
   table + 3 indexes. **Sub-chunk 7b.** Includes the columns added by
   the legacy migrations 018 (`sort_order`) and 024 (`schedule_id`) —
   the packaged app is squashed.
-- `002_migrate_from_public.sql` — one-shot data move from legacy
-  `public.reminders`. **Sub-chunk 7d.**
+- No `002` migration — fresh installs use only
+  `001_initial.sql`. Pre-packaging installs that need to copy data
+  out of `public.reminders` use private one-shot scripts (see
+  `private/data_migrations/reminders/` in each operator's local
+  checkout — outside the public repo).
 - `003+` — additive schema changes as the app evolves.
 
 ## Rules (per `specs/APP_PACKAGES.md`)

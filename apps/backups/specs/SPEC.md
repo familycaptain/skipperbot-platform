@@ -97,8 +97,11 @@ was a dry-run-ish state and returns `completed` with an empty
 
 ## Migrations
 - `001_initial.sql` — `app_backups.backups` + PK index.
-- `002_migrate_from_public.sql` — one-shot copy of every row from
-  `public.backups`. Idempotent.
+- No `002` migration — fresh installs use only
+  `001_initial.sql`. Pre-packaging installs that need to copy data
+  out of `public.backups` use private one-shot scripts (see
+  `private/data_migrations/backups/` in each operator's local
+  checkout — outside the public repo).
 
 ## What this app does NOT own
 - The cron registration itself — the platform's schedules/jobs

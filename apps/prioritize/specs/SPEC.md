@@ -73,8 +73,11 @@ without prioritize knowing about that app.
 ## Migrations
 - `001_initial.sql` — `app_prioritize.priority_focus` + 4 indexes
   (incl. two UNIQUE).
-- `002_migrate_from_public.sql` — one-shot move from
-  `public.priority_focus`.
+- No `002` migration — fresh installs use only
+  `001_initial.sql`. Pre-packaging installs that need to copy data
+  out of `public.priority_focus` use private one-shot scripts (see
+  `private/data_migrations/prioritize/` in each operator's local
+  checkout — outside the public repo).
 
 ## What this app does NOT own
 - The `users.focus_nag_enabled` column — that stays in

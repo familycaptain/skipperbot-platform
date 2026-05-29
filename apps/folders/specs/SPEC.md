@@ -222,10 +222,12 @@ None at install time. Optional integrations:
 - `migrations/001_initial.sql` creates the `app_folders` schema +
   all three tables + 10 indexes. Squashed from legacy migrations 048
   (initial schema) and 058 (soft delete column + partial index).
-- `migrations/002_migrate_from_public.sql` (one-shot, idempotent)
-  moves rows from `public.folders` / `folder_items` /
-  `folder_knowledge` into `app_folders.*`. Handles legacy installs
-  that pre-date the soft-delete column.
+- No `migrations/002` — fresh installs use
+  only `001_initial.sql`. Pre-packaging installs that need to copy
+  data out of `public.folders` / `folder_items` /
+  `folder_knowledge` use private one-shot scripts (see
+  `private/data_migrations/folders/` in each operator's local
+  checkout — outside the public repo).
 
 ## Why Folders Is a Required App
 

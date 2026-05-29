@@ -206,9 +206,12 @@ None. Schedules is passive infrastructure.
 - `migrations/001_initial.sql` creates the `app_schedules` schema +
   both tables + 7 indexes. Squashed from legacy migrations 023 + 065
   (which only widened the recurrence_type CHECK to include `'rrule'`).
-- `migrations/002_migrate_from_public.sql` (one-shot, idempotent)
-  moves rows from `public.schedules` + `public.schedule_completions`
-  into `app_schedules.*`.
+- No `migrations/002` — fresh installs use
+  only `001_initial.sql`. Pre-packaging installs that need to copy
+  data out of `public.schedules` + `public.schedule_completions`
+  use private one-shot scripts (see
+  `private/data_migrations/schedules/` in each operator's local
+  checkout — outside the public repo).
 - Subsequent migrations (`003+`) add columns, indexes, or constraints
   as the schema evolves.
 

@@ -208,8 +208,8 @@ def list_entities(prefix: str) -> list[dict]:
 # ---------------------------------------------------------------------------
 # Save operations — upserts. digest_record is fired by save_entity() after
 # the row is persisted; the underlying _save_* helpers don't digest so we
-# can use them from migration scripts (e.g. 002_migrate_from_public.py)
-# without flooding the memory queue.
+# can use them from external migration scripts without flooding the memory
+# queue.
 # ---------------------------------------------------------------------------
 
 def save_entity(entity: dict):

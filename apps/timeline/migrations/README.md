@@ -8,10 +8,11 @@ and tracks application state in `public.app_migrations` (scope
   tables (`timeline_posts`, `timeline_photos`, `timeline_tag_index`)
   + indexes. Idempotent — older installs already on `app_timeline`
   (from a pre-public migration loop) see a no-op.
-- No `002_migrate_from_public.sql` — these tables never lived in
-  `public.*` on the public-release codebase, so there is nothing to
-  copy from. Older private-codebase installs migrated this data
-  through a separate path.
+- No `002` migration — fresh installs use only
+  `001_initial.sql`. Pre-packaging installs that need to copy data
+  out of `public.*` use private one-shot scripts (see
+  `private/data_migrations/timeline/` in each operator's local
+  checkout — outside the public repo).
 
 ## Rules (per `specs/APP_PACKAGES.md`)
 

@@ -8,8 +8,11 @@ Files run in lexical filename order. `001_initial.sql` first.
 
 - `001_initial.sql` — creates the `app_backups` schema + the
   `backups` audit table + PK index. Single-table app, no FKs.
-- `002_migrate_from_public.sql` — one-shot data move from legacy
-  `public.backups`. Idempotent (`ON CONFLICT (id) DO NOTHING`).
+- No `002` migration — fresh installs use only
+  `001_initial.sql`. Pre-packaging installs that need to copy data
+  out of `public.backups` use private one-shot scripts (see
+  `private/data_migrations/backups/` in each operator's local
+  checkout — outside the public repo).
 - `003+` — additive schema changes as the app evolves.
 
 ## Rules (per `specs/APP_PACKAGES.md`)
@@ -24,4 +27,4 @@ Files run in lexical filename order. `001_initial.sql` first.
   `duplicate_table`.
 - Every migration body is wrapped in `BEGIN; ... COMMIT;`.
 - Migrations never delete user data without an explicit destructive
-  flag — `002` does NOT drop the source table.
+  flag.

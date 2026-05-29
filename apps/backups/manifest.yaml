@@ -125,10 +125,10 @@ thinking: []
 # Job types registered by apps/backups/handlers.py.
 job_types:
   - type: backup
-    handler: apps.backups.runner.run_backup
+    handler: runner.run_backup
     max_concurrent: 1
     cancel_on_shutdown: true
   - type: backup_check
-    handler: apps.backups.runner.run_backup_check
+    handler: runner.run_backup_check
     max_concurrent: 1
     cancel_on_shutdown: true

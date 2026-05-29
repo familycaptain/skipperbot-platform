@@ -61,7 +61,11 @@ Live in `agent.py` (kept under `/api/behaviors/*` so the existing
 
 ## Migrations
 - `001_initial.sql` — `app_behaviors.behaviors` + 3 indexes.
-- `002_migrate_from_public.sql` — one-shot move from `public.behaviors`.
+- No `002` migration — fresh installs use only
+  `001_initial.sql`. Pre-packaging installs that need to copy data
+  out of `public.behaviors` use private one-shot scripts (see
+  `private/data_migrations/behaviors/` in each operator's local
+  checkout — outside the public repo).
 
 ## What this app does NOT own
 - Memory injection — `memory_store` owns semantic recall.

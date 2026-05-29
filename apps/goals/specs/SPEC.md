@@ -207,11 +207,11 @@ user to opt in, or they enable later in Settings → Goals.
 
 - `migrations/001_initial.sql` creates the `app_goals` schema and the
   three tables, indexes, foreign keys.
-- `migrations/002_migrate_from_public.py` (one-shot, idempotent) moves
-  rows from `public.goals` / `public.projects` / `public.tasks` into
-  `app_goals.*`. After the move, drops the public tables. Only relevant
-  for installs that came from a pre-packaging Skipperbot — fresh installs
-  skip this migration with no rows to move.
+- No `migrations/002` — fresh installs use
+  only `001_initial.sql`. Pre-packaging installs that need to copy
+  data out of `public.goals` / `public.projects` / `public.tasks`
+  use private one-shot scripts (see `private/data_migrations/goals/`
+  in each operator's local checkout — outside the public repo).
 - Subsequent migrations (`003+`) add columns, indexes, or constraints as
   the schema evolves.
 

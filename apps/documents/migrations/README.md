@@ -11,9 +11,11 @@ Files run in lexical filename order. `001_initial.sql` first.
   **Sub-chunk 10b.** Squashed from legacy migrations 001 (initial
   schema) and 061 (added `embedding vector(1536)` column + the
   ivfflat semantic-search index).
-- `002_migrate_from_public.sql` — one-shot data move from legacy
-  `public.documents`. **Sub-chunk 10d.** Handles older installs that
-  pre-date the embedding column.
+- No `002` migration — fresh installs use only
+  `001_initial.sql`. Pre-packaging installs that need to copy data
+  out of `public.documents` use private one-shot scripts (see
+  `private/data_migrations/documents/` in each operator's local
+  checkout — outside the public repo).
 - `003+` — additive schema changes as the app evolves.
 
 ## pgvector requirement

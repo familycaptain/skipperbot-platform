@@ -187,9 +187,11 @@ None at install time. Optional integrations:
   `documents` table + 2 indexes (GIN on tags + ivfflat on embedding).
   Squashed from legacy migrations 001 (initial schema) and 061
   (`embedding vector(1536)` column + ivfflat index).
-- `migrations/002_migrate_from_public.sql` (one-shot, idempotent)
-  moves rows from `public.documents` into `app_documents.documents`.
-  Handles legacy installs that pre-date the embedding column.
+- No `migrations/002` — fresh installs use
+  only `001_initial.sql`. Pre-packaging installs that need to copy
+  data out of `public.documents` use private one-shot scripts (see
+  `private/data_migrations/documents/` in each operator's local
+  checkout — outside the public repo).
 
 **Note on pgvector**: the migration only succeeds if the `vector`
 extension is installed in the database. The platform's standalone
