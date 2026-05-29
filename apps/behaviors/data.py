@@ -1,18 +1,39 @@
-"""Data layer for user-customizable behavior rules.
+"""Behaviors — data layer.
 
-Behaviors are if/then rules stored in the database and injected
-unconditionally into every chat system prompt for the relevant user.
-Unlike memories (semantic injection), behaviors are ALWAYS present —
-making them reliable for automation-style rules.
+Low-level CRUD for the ``app_behaviors.behaviors`` table. All queries
+are schema-scoped through ``app_platform.db``'s helpers so
+``search_path`` is reset to ``app_behaviors, public`` for every
+statement (no cross-schema leakage).
+
+Public surface — re-exported via ``app_platform.behaviors``:
+
+- ``create_behavior(trigger, action, created_by, scope='user', notes='')``
+- ``get_behavior(behavior_id)``
+- ``list_behaviors(user_id=None, scope=None, enabled_only=False)``
+- ``update_behavior(behavior_id, ...)``
+- ``toggle_behavior(behavior_id)``
+- ``delete_behavior(behavior_id)``
+- ``get_active_behaviors_for_user(user_id)``
 """
+
+from __future__ import annotations
 
 import uuid
 
-from data_layer.db import get_conn, fetch_one, fetch_all, execute
+from app_platform.db import (
+    execute_returning_in_schema,
+    execute_in_schema,
+    fetch_one_in_schema,
+    fetch_all_in_schema,
+)
+
+SCHEMA = "app_behaviors"
 
 
-def _row_to_dict(row: dict) -> dict:
+def _row_to_dict(row: dict | None) -> dict | None:
     """Normalize a DB row to a serializable behavior dict."""
+    if row is None:
+        return None
     r = dict(row)
     for k in ("created_at", "updated_at"):
         if r.get(k) and not isinstance(r[k], str):
@@ -29,22 +50,18 @@ def create_behavior(
 ) -> dict:
     """Insert a new behavior rule and return the created row."""
     behavior_id = f"beh-{uuid.uuid4().hex[:8]}"
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO behaviors
-                    (id, trigger_description, action_description, scope,
-                     enabled, created_by, notes, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, TRUE, %s, %s, now(), now())
-                RETURNING *
-                """,
-                (behavior_id, trigger_description, action_description,
-                 scope, created_by, notes),
-            )
-            columns = [d[0] for d in cur.description]
-            row = dict(zip(columns, cur.fetchone()))
-        conn.commit()
+    row = execute_returning_in_schema(
+        SCHEMA,
+        """
+        INSERT INTO behaviors
+            (id, trigger_description, action_description, scope,
+             enabled, created_by, notes, created_at, updated_at)
+        VALUES (%s, %s, %s, %s, TRUE, %s, %s, now(), now())
+        RETURNING *
+        """,
+        (behavior_id, trigger_description, action_description,
+         scope, created_by, notes),
+    )
     return _row_to_dict(row)
 
 
@@ -79,17 +96,20 @@ def list_behaviors(
         conditions.append("enabled = TRUE")
 
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
-    rows = fetch_all(
+    rows = fetch_all_in_schema(
+        SCHEMA,
         f"SELECT * FROM behaviors {where} ORDER BY scope DESC, created_at ASC",
-        tuple(params) if params else None,
+        tuple(params),
     )
     return [_row_to_dict(r) for r in rows]
 
 
 def get_behavior(behavior_id: str) -> dict | None:
     """Fetch a single behavior by ID."""
-    row = fetch_one("SELECT * FROM behaviors WHERE id = %s", (behavior_id,))
-    return _row_to_dict(row) if row else None
+    row = fetch_one_in_schema(
+        SCHEMA, "SELECT * FROM behaviors WHERE id = %s", (behavior_id,),
+    )
+    return _row_to_dict(row)
 
 
 def update_behavior(
@@ -122,47 +142,30 @@ def update_behavior(
     updates.append("updated_at = now()")
     params.append(behavior_id)
 
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                f"UPDATE behaviors SET {', '.join(updates)} "
-                f"WHERE id = %s RETURNING *",
-                tuple(params),
-            )
-            row = cur.fetchone()
-            if not row:
-                conn.commit()
-                return None
-            columns = [d[0] for d in cur.description]
-            result = dict(zip(columns, row))
-        conn.commit()
-    return _row_to_dict(result)
+    row = execute_returning_in_schema(
+        SCHEMA,
+        f"UPDATE behaviors SET {', '.join(updates)} "
+        f"WHERE id = %s RETURNING *",
+        tuple(params),
+    )
+    return _row_to_dict(row)
 
 
 def toggle_behavior(behavior_id: str) -> dict | None:
     """Flip the enabled flag of a behavior. Returns updated row."""
-    with get_conn() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "UPDATE behaviors SET enabled = NOT enabled, updated_at = now() "
-                "WHERE id = %s RETURNING *",
-                (behavior_id,),
-            )
-            row = cur.fetchone()
-            if not row:
-                conn.commit()
-                return None
-            columns = [d[0] for d in cur.description]
-            result = dict(zip(columns, row))
-        conn.commit()
-    return _row_to_dict(result)
+    row = execute_returning_in_schema(
+        SCHEMA,
+        "UPDATE behaviors SET enabled = NOT enabled, updated_at = now() "
+        "WHERE id = %s RETURNING *",
+        (behavior_id,),
+    )
+    return _row_to_dict(row)
 
 
 def delete_behavior(behavior_id: str) -> bool:
     """Delete a behavior permanently. Returns True if a row was deleted."""
-    affected = execute(
-        "DELETE FROM behaviors WHERE id = %s",
-        (behavior_id,),
+    affected = execute_in_schema(
+        SCHEMA, "DELETE FROM behaviors WHERE id = %s", (behavior_id,),
     )
     return bool(affected and affected > 0)
 

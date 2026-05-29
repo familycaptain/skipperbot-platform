@@ -52,7 +52,7 @@ from tools.brainstorming_tool import create_idea, list_ideas, search_ideas, get_
 from tools.scrum_tool import respond_to_scrum_item, get_pending_scrum_items
 from tools.skipper_email_tool import check_skipper_inbox, read_skipper_email, send_skipper_email, search_skipper_email
 # Folder tools moved to apps/folders/tools.py (app package)
-from tools.behavior_tool import add_behavior, list_behaviors, update_behavior, remove_behavior, toggle_behavior
+# Behavior tools moved to apps/behaviors/tools.py (app package)
 # Homeopathy tools moved to apps/homeopathy/tools.py (app package)
 
 __all__ = [
@@ -172,9 +172,4 @@ __all__ = [
     "read_skipper_email",
     "send_skipper_email",
     "search_skipper_email",
-    "add_behavior",
-    "list_behaviors",
-    "update_behavior",
-    "remove_behavior",
-    "toggle_behavior",
 ]

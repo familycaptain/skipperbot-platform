@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { FileText, Target, TrendingUp, Briefcase, Home, Search, ShoppingCart, Bell, LineChart, Hammer, Wrench, Image as ImageIcon, MapPin, Car, FlaskConical, HeartPulse, Lightbulb, HardDrive, ListChecks, List, ListTodo, Server, Mail, CalendarDays, CalendarClock, Bug, ClipboardList, Brain, Newspaper, CheckSquare, Sparkles, ChefHat, Zap, Coins, BookOpen, Rss, Tv, PlayCircle } from "lucide-react";
+import { FileText, Target, TrendingUp, Briefcase, Home, Search, ShoppingCart, Bell, LineChart, Hammer, Wrench, Image as ImageIcon, MapPin, Car, FlaskConical, HeartPulse, Lightbulb, HardDrive, ListChecks, List, ListTodo, Server, Mail, CalendarDays, CalendarClock, Bug, ClipboardList, Brain, Newspaper, CheckSquare, Sparkles, ChefHat, Coins, BookOpen, Rss, Tv, PlayCircle } from "lucide-react";
 
 /**
  * App registry — central manifest for all desktop apps.
@@ -112,14 +112,9 @@ const APP_MANIFESTS = {
   // `reminders` is now discovered from apps/reminders/ui/index.js (the
   // reminders app owns its own UI). Removed from the hardcoded registry
   // as part of the reminders app packaging.
-  behaviors: {
-    id: "behaviors",
-    name: "Behaviors",
-    icon: Zap,
-    component: lazy(() => import("./BehaviorsApp")),
-    singleton: true,
-    page: 2,
-  },
+  // `behaviors` is now discovered from apps/behaviors/ui/index.js (the
+  // behaviors app owns its own UI). Removed from the hardcoded registry
+  // as part of the behaviors app packaging.
   builder: {
     id: "builder",
     name: "Builder",

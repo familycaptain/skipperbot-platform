@@ -370,7 +370,7 @@ def build_active_behavior_rules(user_id: str = "") -> str:
         return ""
 
     try:
-        from data_layer.behaviors import get_active_behaviors_for_user
+        from app_platform.behaviors import get_active_behaviors_for_user
 
         active_behaviors = get_active_behaviors_for_user(normalized_user)
     except Exception:

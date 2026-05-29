@@ -512,7 +512,7 @@ def _build_system_prompt(req: ChatRequest, extra_categories: set[str]) -> str:
 
     # --- Active behavior rules (always injected, never semantic) ---
     try:
-        from data_layer.behaviors import get_active_behaviors_for_user
+        from app_platform.behaviors import get_active_behaviors_for_user
         active_behaviors = get_active_behaviors_for_user(req.user_id)
         if active_behaviors:
             lines = ["\n\n## Active Behavior Rules",

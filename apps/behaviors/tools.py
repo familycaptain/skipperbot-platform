@@ -1,26 +1,24 @@
+"""Behaviors — MCP tools.
+
+Five tools used by the chat agent to manage user-customizable if/then
+behavior rules:
+
+- ``add_behavior(user_id, trigger_description, action_description, ...)``
+- ``list_behaviors(user_id, scope="")``
+- ``update_behavior(behavior_id, ...)``
+- ``remove_behavior(behavior_id)``
+- ``toggle_behavior(behavior_id)``
+
+Behaviors are unconditionally injected into every chat system prompt
+(see ``chat_domain.py``) — call ``add_behavior`` immediately when a
+user teaches you a new rule. See ``apps/behaviors/guide.md`` for the
+full teaching-moment workflow.
 """
-Behavior Tool — Add, list, update, and remove user-customizable behavior rules.
 
-Behaviors are if/then rules stored in the database and injected
-unconditionally into every chat system prompt for the relevant user.
-Unlike memories (which are only recalled when semantically relevant),
-behaviors are ALWAYS present — making them reliable for automation-style rules.
-
-Example: "If I say I started my truck, mark the auto maintenance item with
-the same name as done."
-"""
-
-import os
-import sys
-from dotenv import load_dotenv
-load_dotenv()
-
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if BASE_DIR not in sys.path:
-    sys.path.insert(0, BASE_DIR)
+from __future__ import annotations
 
 from app_platform.memory import digest_record
-from data_layer.behaviors import (
+from apps.behaviors.data import (
     create_behavior as _create,
     get_behavior as _get,
     list_behaviors as _list,

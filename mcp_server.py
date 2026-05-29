@@ -67,7 +67,7 @@ from tools.brainstorming_tool import create_idea, list_ideas, search_ideas, get_
 from tools.scrum_tool import respond_to_scrum_item, get_pending_scrum_items
 from tools.skipper_email_tool import check_skipper_inbox, read_skipper_email, send_skipper_email, search_skipper_email
 # Folder tools moved to apps/folders/tools.py (app package)
-from tools.behavior_tool import add_behavior, list_behaviors, update_behavior, remove_behavior, toggle_behavior
+# Behavior tools moved to apps/behaviors/tools.py (app package)
 # Homeopathy tools moved to apps/homeopathy/tools.py (app package)
 
 mcp = FastMCP("SkipperBot Tools")
@@ -167,12 +167,7 @@ mcp.tool()(check_skipper_inbox)
 mcp.tool()(read_skipper_email)
 mcp.tool()(send_skipper_email)
 mcp.tool()(search_skipper_email)
-# Folder tools auto-registered via the app-package discovery below.
-mcp.tool()(add_behavior)
-mcp.tool()(list_behaviors)
-mcp.tool()(update_behavior)
-mcp.tool()(remove_behavior)
-mcp.tool()(toggle_behavior)
+# Folder + behavior tools auto-registered via the app-package discovery below.
 
 
 # ---------------------------------------------------------------------------

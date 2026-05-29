@@ -1,0 +1,74 @@
+id: behaviors
+name: Behaviors
+version: 1.0.0
+description: >
+  User-customizable if/then behavior rules. Stored per-user and
+  unconditionally injected into every chat system prompt — reliable
+  for automation-style rules ("when I say I started my truck, mark
+  the matching auto maintenance item done").
+
+# Required core app — chat won't have rules to inject without it, and
+# the agent's "teaching moment" tool calls (add_behavior) would
+# silently fail.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns one entity prefix.
+entity_types:
+  - prefix: beh
+    name: behavior
+    id_format: "beh-{hex8}"
+    table: behaviors
+
+# Platform services this app consumes.
+platform_deps:
+  - db
+  - memory       # digest_record on every behavior CRUD
+  - events       # emits behavior.created/updated/deleted/toggled
+  - time
+
+app_deps: []
+
+emits:
+  - behavior.created
+  - behavior.updated
+  - behavior.deleted
+  - behavior.toggled
+
+subscribes: []
+
+# Tool category for keyword routing.
+tool_category:
+  description: >
+    Create, list, update, toggle, and remove user behavior rules.
+    These are if/then rules injected into every chat turn for the
+    user — used for automation ("whenever I say X, do Y").
+  keywords:
+    - behavior
+    - behaviors
+    - behaviour
+    - behaviours
+    - rule
+    - rules
+    - automation
+    - always
+    - whenever
+    - from now on
+    - going forward
+    - teach skipper
+    - if/then
+    - toggle behavior
+    - disable behavior
+    - enable behavior
+    - delete behavior
+    - my rules
+    - my behaviors
+
+config: []
+
+# No thinking domain or jobs — behaviors are pure CRUD + chat-prompt
+# injection.
+thinking: []
+
+job_types: []

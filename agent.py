@@ -3984,7 +3984,7 @@ async def api_thinking_dispatch():
 
 
 # ── Behaviors API ──
-import data_layer.behaviors as _dl_behaviors
+import app_platform.behaviors as _dl_behaviors
 
 
 class BehaviorCreateRequest(BaseModel):

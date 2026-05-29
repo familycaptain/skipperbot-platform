@@ -663,57 +663,5 @@
       "evolution proposal",
       "evolution finding"
     ]
-  },
-  "behaviors": {
-    "guide": "behaviors.md",
-    "description": "Create and manage user-customizable behavior rules — always-active if/then instructions injected into every chat turn",
-    "tools": [
-      "add_behavior",
-      "list_behaviors",
-      "update_behavior",
-      "remove_behavior",
-      "toggle_behavior"
-    ],
-    "ack": {
-      "add_behavior": "Saving behavior rule...",
-      "list_behaviors": "Loading behavior rules...",
-      "update_behavior": "Updating behavior {behavior_id}...",
-      "remove_behavior": "Deleting behavior {behavior_id}...",
-      "toggle_behavior": "Toggling behavior {behavior_id}..."
-    },
-    "keywords": [
-      "behavior",
-      "behaviors",
-      "behaviour",
-      "behaviours",
-      "always do",
-      "from now on",
-      "whenever i say",
-      "when i say",
-      "when i mention",
-      "if i say",
-      "if i mention",
-      "whenever i mention",
-      "every time i",
-      "going forward",
-      "in the future",
-      "make a rule",
-      "add a rule",
-      "save that as",
-      "save this as",
-      "rule",
-      "rules",
-      "custom rule",
-      "teach you",
-      "teach skipper",
-      "train you",
-      "my behaviors",
-      "show behaviors",
-      "list behaviors",
-      "delete behavior",
-      "remove behavior",
-      "disable behavior",
-      "enable behavior"
-    ]
   }
 }
