@@ -188,6 +188,131 @@ async def set_password(request: SetPasswordRequest):
     return {"ok": True, "user": {"name": user["name"], "display_name": user["display_name"], "role": user["role"]}}
 
 
+# ---------------------------------------------------------------------------
+# Onboarding wizard (first-run setup)
+# ---------------------------------------------------------------------------
+
+class OnboardingCreateUserRequest(BaseModel):
+    username: str
+    display_name: str = ""
+    password: str = ""
+    timezone: str = "Etc/UTC"
+
+
+@app.get("/api/onboarding/status")
+async def onboarding_status():
+    """Tell the frontend whether onboarding has been completed.
+
+    The signal is simply 'are there any non-bot users in public.users'.
+    First-boot installs return ``needs_onboarding=true``; once a user
+    exists, ``needs_onboarding=false`` and the regular LoginScreen
+    takes over.
+    """
+    def _do():
+        users = get_all_users()
+        non_bot = [u for u in users if "bot" not in (u.get("role") or "")]
+        return {
+            "needs_onboarding": len(non_bot) == 0,
+            "user_count": len(non_bot),
+            "openai_key_present": bool(os.getenv("OPENAI_API_KEY", "").strip()),
+            "db_ok": True,  # The fact this endpoint replied means the DB is up.
+        }
+    return await asyncio.to_thread(_do)
+
+
+@app.post("/api/onboarding/check-openai")
+async def onboarding_check_openai():
+    """Verify the current OPENAI_API_KEY against the OpenAI API.
+
+    We use the key already set in the agent's env (set in .env by the
+    operator before `docker compose up`). This endpoint does not accept
+    a key in the request body — that would mean writing back to .env
+    from the container, which adds a bind-mount requirement we don't
+    want to assume.
+    """
+    def _do():
+        key = os.getenv("OPENAI_API_KEY", "").strip()
+        if not key:
+            return {"ok": False, "error": "OPENAI_API_KEY is not set in .env. Set it and restart the agent."}
+        import urllib.error
+        import urllib.request
+        req = urllib.request.Request(
+            "https://api.openai.com/v1/models",
+            headers={"Authorization": f"Bearer {key}"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310
+                if resp.status == 200:
+                    return {"ok": True}
+                return {"ok": False, "error": f"OpenAI returned HTTP {resp.status}"}
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                return {"ok": False, "error": "OpenAI rejected the key (HTTP 401). Check OPENAI_API_KEY in .env."}
+            return {"ok": False, "error": f"OpenAI returned HTTP {e.code}"}
+        except Exception as e:
+            return {"ok": False, "error": f"Could not reach OpenAI: {e}"}
+    return await asyncio.to_thread(_do)
+
+
+@app.post("/api/onboarding/create-user")
+async def onboarding_create_user(request: OnboardingCreateUserRequest):
+    """Create the primary admin user and write the chosen timezone into
+    `public.app_config` (scope=platform, key=timezone) so the rest of
+    the platform can pick it up after the next restart.
+
+    Refuses if any non-bot user already exists — onboarding is one-shot.
+    """
+    from data_layer.users import create_user
+
+    def _do():
+        # Refuse if onboarding has already been done.
+        users = get_all_users()
+        non_bot = [u for u in users if "bot" not in (u.get("role") or "")]
+        if non_bot:
+            return {"ok": False, "error": "Onboarding has already been completed. Use the login page."}
+
+        import re as _re
+        name = (request.username or "").strip().lower()
+        if not _re.fullmatch(r"[a-z][a-z0-9_]{1,30}", name):
+            return {"ok": False, "error": "Username must be 2-31 lowercase letters / digits / underscores, starting with a letter."}
+        if request.password and len(request.password) < 4:
+            return {"ok": False, "error": "Password must be at least 4 characters (or empty if you want to set it later)."}
+
+        display = (request.display_name or "").strip() or name.capitalize()
+        password = request.password or None
+
+        user = create_user(
+            name=name,
+            display_name=display,
+            password=password,
+            role="admin,member",
+        )
+        if not user:
+            return {"ok": False, "error": f"Could not create user '{name}' (already exists?)."}
+
+        # Persist the chosen timezone to the platform-scope settings.
+        # config.py still reads TIMEZONE from the env var on first
+        # import, but the central Settings app surfaces this so future
+        # platform consumers can read from here.
+        tz = (request.timezone or "Etc/UTC").strip() or "Etc/UTC"
+        try:
+            from app_platform import config as platform_config
+            platform_config.set("timezone", tz, scope="platform", by="onboarding")
+        except Exception as exc:
+            logger.warning("ONBOARDING: could not persist timezone: %s", exc)
+
+        return {
+            "ok": True,
+            "user": {
+                "name": user["name"],
+                "display_name": user["display_name"],
+                "role": user["role"],
+            },
+        }
+
+    return await asyncio.to_thread(_do)
+
+
 class MobileRegisterRequest(BaseModel):
     user_id: str
     fcm_token: str

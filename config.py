@@ -94,7 +94,15 @@ NAG_SLOTS = {
 NAG_SLOTS["night"] = NAG_SLOTS["evening"]  # alias
 
 TIMEZONE = os.getenv("TIMEZONE", "Etc/UTC")
-DISCORD_ENABLED = os.getenv("DISCORD_ENABLED", "true").lower() in ("true", "1", "yes")
+# Discord is an OPTIONAL integration. We only turn it on when the user
+# has actually supplied a token, OR explicitly sets DISCORD_ENABLED=true.
+# Default-on caused first-time installs to log "Discord ready" followed
+# immediately by "No DISCORD_TOKEN found in .env — bot disabled" — noise
+# that looked like a real failure.
+DISCORD_ENABLED = (
+    os.getenv("DISCORD_ENABLED", "").lower() in ("true", "1", "yes")
+    or bool(os.getenv("DISCORD_TOKEN", "").strip())
+)
 SHOW_ENTITY_IDS = os.getenv("SHOW_ENTITY_IDS", "false").lower() in ("true", "1", "yes")
 REMINDER_LEAD_MINUTES = int(os.getenv("REMINDER_LEAD_MINUTES", "120"))
 PM_QUIET_MODE = os.getenv("PM_QUIET_MODE", "false").lower() in ("true", "1", "yes")

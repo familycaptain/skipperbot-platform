@@ -3,6 +3,7 @@ import Shell from "./components/Shell";
 import LoginScreen from "./components/LoginScreen";
 import ChatPanel from "./components/ChatPanel";
 import AppPanel from "./components/AppPanel";
+import Onboarding from "./pages/Onboarding";
 import useSkipperSocket from "./hooks/useSkipperSocket";
 import { getAppManifest, newInstanceId } from "./apps/registry";
 
@@ -26,6 +27,34 @@ export default function App() {
       return null;
     }
   });
+
+  // Onboarding gate. While we don't yet know whether the platform has
+  // any users, we render nothing — the call is one-shot and resolves
+  // in <100ms locally.
+  //   needsOnboarding = null         (still checking)
+  //   needsOnboarding = true         (no non-bot users — show wizard)
+  //   needsOnboarding = false        (at least one user exists — fall through to login / desktop)
+  const [needsOnboarding, setNeedsOnboarding] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/onboarding/status");
+        if (!res.ok) {
+          // Treat any 4xx/5xx as "no onboarding needed" — don't trap
+          // the user in a wizard because of a transient API error.
+          if (!cancelled) setNeedsOnboarding(false);
+          return;
+        }
+        const data = await res.json();
+        if (!cancelled) setNeedsOnboarding(!!data.needs_onboarding);
+      } catch {
+        if (!cancelled) setNeedsOnboarding(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const userId = user?.name || null;
 
@@ -193,6 +222,24 @@ export default function App() {
   useEffect(() => {
     document.title = user ? `SkipperBot — ${user.display_name}` : "SkipperBot";
   }, [user]);
+
+  if (needsOnboarding === null) {
+    // Status check in flight — render nothing for the brief moment
+    // before we know. Otherwise the wizard would flash on screen and
+    // then immediately disappear on installs that already have users.
+    return null;
+  }
+
+  if (needsOnboarding) {
+    return (
+      <Onboarding
+        onComplete={(newUser) => {
+          handleLogin(newUser);
+          setNeedsOnboarding(false);
+        }}
+      />
+    );
+  }
 
   if (!user) {
     return <LoginScreen onLogin={handleLogin} />;

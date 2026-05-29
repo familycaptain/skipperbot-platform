@@ -85,14 +85,26 @@ def run_app_migrations(app_id: str, migrations_dir: Path) -> list[str]:
 
         logger.info("MIGRATOR: %s — running %s", app_id, sql_file.name)
 
+        # Apply the SQL file in autocommit mode so its own BEGIN/COMMIT
+        # block (every 001_initial.sql ships one for the run-by-hand case)
+        # owns atomicity. Otherwise psycopg2's implicit transaction would
+        # nest with the SQL's BEGIN and emit two warnings per file:
+        #   WARNING: there is already a transaction in progress
+        #   WARNING: there is no transaction in progress
+        # Recording the migration runs in its own follow-up transaction.
+        # All our migrations use idempotent DDL (CREATE TABLE IF NOT
+        # EXISTS, ADD CONSTRAINT in DO blocks catching duplicate_object),
+        # so a crash between the SQL file completing and the
+        # app_migrations INSERT is safe — the next run re-applies the
+        # file as a no-op and inserts the row.
         with get_conn() as conn:
             try:
+                conn.autocommit = True
                 with conn.cursor() as cur:
-                    # Set search_path so unqualified tables go to app schema
-                    cur.execute(f"SET LOCAL search_path TO {schema}, public")
+                    cur.execute(f"SET search_path TO {schema}, public")
                     cur.execute(sql)
-
-                    # Record the migration
+                conn.autocommit = False
+                with conn.cursor() as cur:
                     cur.execute(
                         "INSERT INTO app_migrations (app_id, filename, checksum) "
                         "VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
@@ -102,7 +114,11 @@ def run_app_migrations(app_id: str, migrations_dir: Path) -> list[str]:
                 newly_applied.append(sql_file.name)
                 logger.info("MIGRATOR: %s — applied %s", app_id, sql_file.name)
             except Exception as e:
-                conn.rollback()
+                try:
+                    conn.autocommit = False
+                    conn.rollback()
+                except Exception:
+                    pass
                 logger.error("MIGRATOR: %s — FAILED %s: %s", app_id, sql_file.name, e)
                 raise RuntimeError(
                     f"Migration {sql_file.name} failed for app {app_id}: {e}"
