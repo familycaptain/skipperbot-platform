@@ -9,7 +9,13 @@
 # optional apps with `cd apps && git clone ...` and the entrypoint script
 # rebuilds the web bundle in place if it detects new app UI components.
 
-FROM python:3.12-slim AS base
+# Pin to Debian Bookworm explicitly. `python:3.12-slim` floats — when
+# the upstream rolled to Debian Trixie (Aug 2025) the apt package
+# `libgdk-pixbuf2.0-0` was renamed and our build broke. Bookworm
+# is supported for security updates until ~June 2028. Re-pin to
+# `python:3.12-slim-trixie` (and update the libgdk-pixbuf name
+# below) when we're ready to move.
+FROM python:3.12-slim-bookworm AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
