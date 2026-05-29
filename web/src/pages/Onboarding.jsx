@@ -167,6 +167,47 @@ function CheckOpenAI({ onNext, onBack }) {
           </div>
         )}
         <ErrorLine>{error}</ErrorLine>
+        {state === "error" && (
+          <div className="mt-5 rounded border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-zinc-300">
+            <div className="mb-3 font-medium text-amber-200">How to fix</div>
+            <ol className="list-decimal space-y-3 pl-5">
+              <li>
+                Get a working key at{" "}
+                <a
+                  href="https://platform.openai.com/api-keys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-violet-400 hover:text-violet-300 underline"
+                >
+                  platform.openai.com/api-keys
+                </a>
+                . The account needs a payment method on file.
+              </li>
+              <li>
+                Open <code className="font-mono text-zinc-200">.env</code> in
+                the platform repo and replace the{" "}
+                <code className="font-mono text-zinc-200">OPENAI_API_KEY=</code>{" "}
+                line.
+              </li>
+              <li>
+                Restart the agent so it picks up the new key, then come back
+                here and click <span className="text-zinc-200">Retry</span>:
+                <div className="mt-2 space-y-1.5 font-mono text-xs">
+                  <div className="rounded bg-zinc-950 px-2 py-1.5 text-zinc-300">
+                    <span className="text-zinc-500"># Docker path</span>
+                    <br />
+                    docker compose restart agent
+                  </div>
+                  <div className="rounded bg-zinc-950 px-2 py-1.5 text-zinc-300">
+                    <span className="text-zinc-500"># Native path</span>
+                    <br />
+                    {"# Ctrl-C the running agent, then re-run ./start_agent.sh"}
+                  </div>
+                </div>
+              </li>
+            </ol>
+          </div>
+        )}
       </div>
       <div className="mt-8 flex items-center justify-between">
         <button
