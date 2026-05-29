@@ -133,12 +133,12 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     elif req.channel == "voice" and req.app_context:
         dynamic_context = _inject_voice_context(dynamic_context, req.app_context)
 
-    # Pending scrum items
-    dynamic_context = await _inject_scrum_items(
-        req.user_id, dynamic_context, extra_categories
-    )
-
-    # Skipper's own active work (goals/projects/tasks it owns)
+    # Skipper's own active work (goals/projects/tasks it owns).
+    # Note: scrum-item injection used to live here too, but scrum is an
+    # OPTIONAL app — wiring it into the platform's chat loop meant the
+    # public release queried a non-existent `scrum_items` table on every
+    # turn. The scrum app will register its own prompt-extender hook
+    # when it lands as a separate package in Phase 1c.
     dynamic_context = await _inject_skipper_work_context(dynamic_context)
 
     # Memory + knowledge retrieval
@@ -783,7 +783,8 @@ async def _inject_skipper_work_context(system_prompt: str) -> str:
     answer questions like 'what are you working on?' accurately.
     """
     try:
-        import data_layer.goals as _dl_goals
+        # goals is a required app; data layer moved here in the packaging chunk.
+        import apps.goals.data as _dl_goals
 
         def _fetch():
             all_goals = _dl_goals.list_entities("g-")
@@ -823,73 +824,13 @@ async def _inject_skipper_work_context(system_prompt: str) -> str:
 
     return system_prompt
 
-
-# ---------------------------------------------------------------------------
-# Scrum item injection
-# ---------------------------------------------------------------------------
-
-async def _inject_scrum_items(user_id: str, system_prompt: str,
-                              extra_categories: set[str]) -> str:
-    """Inject pending daily scrum items so the LLM can match user replies."""
-    try:
-        from data_layer.scrum import get_scrum_items as _get_scrum
-        from apps.goals.data import load_entity as _load_scrum_entity
-        from datetime import date as _date_cls
-        _today_items = await asyncio.to_thread(
-            _get_scrum, person=user_id, report_date=_date_cls.today()
-        )
-        _pending = [i for i in _today_items if not i.get("response")]
-        if _pending:
-            _scrum_lines = [
-                "\n\n## Pending Daily Scrum Items",
-                f"The user has {len(_pending)} unanswered scrum item(s) for today.",
-                "When the user replies to their daily check-in (numbered answers, status updates, etc.), "
-                "match each part of their reply to the corresponding scrum item below and call "
-                "`respond_to_scrum_item(item_id, response_text)` for EACH item they address. "
-                "You may also use goal/task tools to take actions (mark done, unblock, etc.) based on their answers.",
-                "",
-                "### Task Closure Rules (Definition of Done):",
-                "- If a task HAS a Definition of Done (DoD), compare the user's response to the DoD. "
-                "If their response indicates the DoD criteria are met — even without explicitly saying "
-                "'done' — mark the task as done via update_task. Use intent matching.",
-                "- If a task has NO DoD, do NOT mark the task as done unless the user EXPLICITLY says "
-                "the task is done, finished, complete, or closed. A progress update alone is NOT enough.\n",
-            ]
-            # Pre-load DoD for focus items with source entities
-            _dod_cache: dict[str, str] = {}
-            for _si in _pending:
-                _src_id = _si.get("source_entity_id", "")
-                if _src_id and _src_id not in _dod_cache:
-                    try:
-                        _src_ent = await asyncio.to_thread(_load_scrum_entity, _src_id)
-                        _dod_cache[_src_id] = (_src_ent.get("definition_of_done", "") or "") if _src_ent else ""
-                    except Exception:
-                        _dod_cache[_src_id] = ""
-
-            for _si in _pending:
-                _icon = {"focus": "\U0001f3af", "done": "\u2705", "blocked": "\U0001f6a7",
-                         "finding": "\U0001f4dd", "schedule": "\U0001f4c5"}.get(
-                    _si["item_type"], "\U0001f4cb")
-                _detail = f" — {_si['detail'][:120]}" if _si.get("detail") else ""
-                _proj = f" [{_si.get('project_name', '')}]" if _si.get("project_name") else ""
-                _line = f"- {_icon} `{_si['id']}` [{_si['item_type']}]{_proj} {_si['title']}{_detail}"
-                # Append DoD info for focus/blocked items that reference a task
-                _src_id = _si.get("source_entity_id", "")
-                _dod_val = _dod_cache.get(_src_id, "")
-                if _src_id and _si["item_type"] in ("focus", "blocked"):
-                    if _dod_val.strip():
-                        _line += f'\n  DoD: "{_dod_val.strip()}"'
-                    else:
-                        _line += "\n  (no DoD — require explicit 'done' to close)"
-                _scrum_lines.append(_line)
-            system_prompt += "\n".join(_scrum_lines)
-            # Force-include scrum tools when pending items exist
-            extra_categories.add("scrum")
-            logger.debug("SCRUM: Injected %d pending items for %s", len(_pending), user_id)
-    except Exception as _e:
-        logger.debug("SCRUM: Could not load pending items: %s", _e)
-
-    return system_prompt
+# NOTE: Scrum-item injection used to live here. It was a tight coupling
+# between this platform-layer chat_domain and the optional scrum app —
+# the call ran on every chat turn and queried `scrum_items`, which DB-error
+# spammed every install that did not have the optional scrum package.
+# Removed in the Phase 1d UI-pruning cleanup. When the scrum app lands as
+# its own repo, it can register a prompt-extender hook from its own
+# handlers.py rather than being hardcoded here.
 
 
 # ---------------------------------------------------------------------------
