@@ -1,0 +1,38 @@
+id: finder
+name: Finder
+version: 1.0.0
+description: >
+  Pure-UI launcher tile that aggregates search across the apps
+  owning the underlying data (goals, documents, recipes, reminders,
+  schedules, …). Finder owns no schema, tables, migrations, chat
+  tools, or REST routes — every search call dispatches to the
+  owning app's endpoint.
+
+# Required core app — Finder is the user-facing "I want to find
+# anything" entry point. Platform refuses to start without it.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Finder owns no entity prefixes — it queries other apps' data.
+entity_types: []
+
+# No platform dependencies at the Python layer (the UI talks to
+# other apps' REST endpoints directly).
+platform_deps: []
+
+app_deps: []
+
+emits: []
+subscribes: []
+
+# No chat tools — the agent uses each owning app's search tools
+# directly, not a Finder umbrella tool.
+tool_category: ~
+
+# No per-app configuration.
+config: []
+
+# No thinking domain and no jobs.
+thinking: []
+job_types: []

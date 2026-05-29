@@ -1,0 +1,30 @@
+id: tools
+name: Tools
+version: 1.0.0
+description: >
+  Browser for the tool-routing registry — categories, the tools each
+  category exposes, and the long-form prompt guide markdown beside
+  each one. Read-only UI; no schema, migrations, chat tools, or
+  platform shim.
+
+# Required core app — the agent dev / debug surface lives here and
+# every packaged app's tool category becomes browsable through it.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns no entity prefixes.
+entity_types: []
+
+platform_deps: []
+app_deps: []
+
+emits: []
+subscribes: []
+
+# No chat tools of its own — this app is *about* chat tools.
+tool_category: ~
+
+config: []
+thinking: []
+job_types: []

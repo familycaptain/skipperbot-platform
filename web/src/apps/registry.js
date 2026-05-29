@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { FileText, Target, TrendingUp, Briefcase, Home, Search, ShoppingCart, Bell, LineChart, Hammer, Wrench, Image as ImageIcon, MapPin, Car, FlaskConical, HeartPulse, Lightbulb, ListChecks, List, ListTodo, Server, Mail, CalendarDays, CalendarClock, Bug, ClipboardList, Brain, CheckSquare, Sparkles, ChefHat, Coins, BookOpen, Rss, Tv, PlayCircle } from "lucide-react";
+import { FileText, Target, TrendingUp, Briefcase, Home, ShoppingCart, Bell, LineChart, Hammer, Image as ImageIcon, MapPin, Car, FlaskConical, HeartPulse, Lightbulb, ListChecks, List, ListTodo, Mail, CalendarDays, CalendarClock, Bug, ClipboardList, Brain, CheckSquare, Sparkles, ChefHat, Coins, BookOpen, Rss, Tv, PlayCircle } from "lucide-react";
 
 /**
  * App registry — central manifest for all desktop apps.
@@ -95,13 +95,9 @@ const APP_MANIFESTS = {
     component: lazy(() => import("./ImageViewer")),
     singleton: false,
   },
-  finder: {
-    id: "finder",
-    name: "Finder",
-    icon: Search,
-    component: lazy(() => import("./FinderApp")),
-    singleton: true,
-  },
+  // `finder` is now discovered from apps/finder/ui/index.js
+  // (the finder app owns its own UI). Removed from the hardcoded
+  // registry as part of the finder app packaging.
   shopping: {
     id: "shopping",
     name: "Shopping",
@@ -123,14 +119,9 @@ const APP_MANIFESTS = {
     singleton: true,
     page: 2,
   },
-  tools: {
-    id: "tools",
-    name: "Tools",
-    icon: Wrench,
-    component: lazy(() => import("./ToolsApp")),
-    singleton: true,
-    page: 3,
-  },
+  // `tools` is now discovered from apps/tools/ui/index.js
+  // (the tools app owns its own UI). Removed from the hardcoded
+  // registry as part of the tools app packaging.
   "locator-item": {
     id: "locator-item",
     name: "Item",
@@ -201,14 +192,9 @@ const APP_MANIFESTS = {
   // owns both the Goals and Tasks UI). Removed from the hardcoded registry
   // as part of the goals app packaging.
   // `chart` removed for the public release (investment-coupled).
-  system: {
-    id: "system",
-    name: "System",
-    icon: Server,
-    component: lazy(() => import("./SystemApp")),
-    singleton: true,
-    page: 3,
-  },
+  // `system` is now discovered from apps/system/ui/index.js
+  // (the system app owns its own UI). Removed from the hardcoded
+  // registry as part of the system app packaging.
   issues: {
     id: "issues",
     name: "Issues",

@@ -1,0 +1,38 @@
+id: system
+name: System
+version: 1.0.0
+description: >
+  System-health dashboard. Aggregates record counts across every
+  installed app, plus DB size, latest job + backup, doc-curation
+  cursor, and a process-level snapshot. Owns no schema — only a
+  single read-only REST route the UI calls.
+
+# Required core app — surfaced via the launcher tile and provides
+# the canonical "what's going on" screen. Platform refuses to start
+# without it.
+core: true
+
+platform_min_version: "1.0.0"
+
+# Owns no entity prefixes (it queries other apps' data).
+entity_types: []
+
+# Reads from a handful of platform shims to keep table layouts a
+# stable contract (the rest go through raw qualified SQL).
+platform_deps:
+  - db
+
+app_deps: []
+
+emits: []
+subscribes: []
+
+# No chat tools — the agent has no need to summarise the dashboard
+# (it can re-derive the same info from the owning apps).
+tool_category: ~
+
+# No per-app configuration.
+config: []
+
+thinking: []
+job_types: []
