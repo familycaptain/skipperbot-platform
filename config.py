@@ -78,10 +78,42 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROMPTS_DIR = os.path.join(BASE_DIR, "prompts")
 
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-SMART_MODEL = os.getenv("SMART_MODEL", "gpt-5.2")
-DUMB_MODEL = os.getenv("DUMB_MODEL", "gpt-5-mini")
+
+
+def _as_bool(v) -> bool:
+    if isinstance(v, bool):
+        return v
+    return str(v).strip().lower() in ("true", "1", "yes")
+
+
+def _platform_setting(key: str, env: str, default, cast=None):
+    """Resolve a System-panel setting at import: app_config(platform) → env →
+    default. Guarded so a DB hiccup at import can never break config import —
+    it just falls back to the env var (the pre-migration behavior).
+
+    Note: resolved once at import, so changing these in the UI takes effect on
+    the next restart (fine for model names + debug flags).
+    """
+    val = None
+    try:
+        from app_platform import settings as _settings
+        val = _settings.get(key, scope="platform", env=env, default=None)
+    except Exception:
+        val = os.getenv(env)
+    if val in (None, ""):
+        return default
+    if cast:
+        try:
+            return cast(val)
+        except Exception:
+            return default
+    return val
+
+
+SMART_MODEL = _platform_setting("smart_model", "SMART_MODEL", "gpt-5.2")
+DUMB_MODEL = _platform_setting("dumb_model", "DUMB_MODEL", "gpt-5-mini")
 OPENAI_MODEL = SMART_MODEL  # backward compat alias
-DEBUG_TOKENS = os.getenv("DEBUG_TOKENS", "false").lower() in ("true", "1", "yes")
+DEBUG_TOKENS = _platform_setting("debug_tokens", "DEBUG_TOKENS", False, cast=_as_bool)
 NAG_WAKE_HOUR = int(os.getenv("NAG_WAKE_HOUR", "8"))
 NAG_SLEEP_HOUR = int(os.getenv("NAG_SLEEP_HOUR", "21"))
 
@@ -110,7 +142,7 @@ def discord_enabled() -> bool:
         return True
     # Enabled implicitly if a token is present (env or saved secret).
     return _settings.is_configured("discord_token", scope="platform", env="DISCORD_TOKEN")
-SHOW_ENTITY_IDS = os.getenv("SHOW_ENTITY_IDS", "false").lower() in ("true", "1", "yes")
+SHOW_ENTITY_IDS = _platform_setting("show_entity_ids", "SHOW_ENTITY_IDS", False, cast=_as_bool)
 REMINDER_LEAD_MINUTES = int(os.getenv("REMINDER_LEAD_MINUTES", "120"))
 PM_QUIET_MODE = os.getenv("PM_QUIET_MODE", "false").lower() in ("true", "1", "yes")
 

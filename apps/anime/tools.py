@@ -431,16 +431,19 @@ def cast_anime_episode(
     # Cast targets are on the LAN — prefer the LAN URL so streaming doesn't
     # have to hairpin through ngrok / a public CDN. SKIPPER_PUBLIC_URL stays
     # the fallback for setups without a separate LAN endpoint.
+    from app_platform import settings as _settings
     base_url = (
-        (os.getenv("SKIPPER_LAN_URL") or os.getenv("SKIPPER_PUBLIC_URL") or "")
+        (_settings.get("lan_url", scope="platform", env="SKIPPER_LAN_URL", default="")
+         or _settings.get("public_url", scope="platform", env="SKIPPER_PUBLIC_URL", default="")
+         or "")
         .strip()
         .rstrip("/")
     )
     if not base_url:
         return (
-            "Error: neither SKIPPER_LAN_URL nor SKIPPER_PUBLIC_URL is set in .env. "
-            "The cast device needs an absolute, network-reachable URL to fetch "
-            "the stream."
+            "Error: no LAN/Public URL is set (Settings → System, or SKIPPER_LAN_URL / "
+            "SKIPPER_PUBLIC_URL in .env). The cast device needs an absolute, "
+            "network-reachable URL to fetch the stream."
         )
 
     # 1. Resolve sources to confirm the episode plays at all + warm the proxy cache

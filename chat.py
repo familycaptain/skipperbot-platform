@@ -19,8 +19,23 @@ from typing import Optional, Callable, Awaitable
 sessions: dict[str, list[dict]] = {}
 
 # Sliding window: max conversation turns kept in session (1 turn = user + assistant)
-# 50 turns = 100 messages ≈ safe for most context windows
-MAX_SESSION_TURNS = int(os.getenv("MAX_SESSION_TURNS", "50"))
+# 50 turns = 100 messages ≈ safe for most context windows. Resolved from the
+# System settings panel (scope=platform) → MAX_SESSION_TURNS env → default 50;
+# guarded so a DB hiccup at import falls back to env. Restart to change.
+def _max_session_turns() -> int:
+    val = None
+    try:
+        from app_platform import settings as _settings
+        val = _settings.get("max_session_turns", scope="platform", env="MAX_SESSION_TURNS", default=None)
+    except Exception:
+        val = os.getenv("MAX_SESSION_TURNS")
+    try:
+        return int(val) if val not in (None, "") else 50
+    except (TypeError, ValueError):
+        return 50
+
+
+MAX_SESSION_TURNS = _max_session_turns()
 
 # ---------------------------------------------------------------------------
 # Varied thinking / keepalive message pools (zero-token, keyword + random)
