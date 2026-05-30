@@ -50,22 +50,24 @@ services:
     volumes:
       # ---- bind mounts (host filesystem, user-visible) ----------------------
       #
-      # .env — agent writes here during onboarding to persist user settings.
-      - ./.env:/app/.env
+      # Bind-mount the entire repo into /app so that `git pull` on the host
+      # takes effect on the next `docker compose down/up` without needing a
+      # full image rebuild. Covers platform Python (agent.py, chat_domain.py,
+      # config.py, app_platform/, data_layer/, scripts/, migrations/, ...),
+      # the web frontend source (web/src, web/vite.config.js, etc.), and the
+      # apps/ tree (which the user also extends by cloning optional apps).
       #
-      # apps/ — host directory holding all installed apps. Required apps are
-      # tracked inside the platform repo and present after `git clone`.
-      # Optional apps are added by the user with:
-      #     cd apps && git clone https://github.com/<org>/skipperbot-app-<name>.git <name>
-      # The container sees the new app immediately; the entrypoint rebuilds
-      # the web bundle on every restart so the new app's UI is bundled in.
-      - ./apps:/app/apps
-      #
-      # NOTE: web/dist is NOT bind-mounted. The entrypoint always rebuilds
-      # the bundle on start, into the image's own /app/web/dist. This avoids
-      # a class of bugs where the host's stale dist shadows the image's
-      # fresh build after `git pull && docker compose build agent`. The
-      # ~5–15s rebuild on each start is the cost of guaranteed consistency.
+      # The two anonymous volumes below mask paths inside /app where the
+      # image's content should win over the host's:
+      #   - web/node_modules: installed by `npm ci` during image build; the
+      #     host may not have these installed at all (e.g. on a Pi without
+      #     node) so the host's empty dir would shadow the deps.
+      #   - web/dist: rebuilt fresh by deploy/entrypoint.sh on every start.
+      #     Keeping it container-only avoids root-owned dist files leaking
+      #     onto the host and avoids stale host dist shadowing fresh builds.
+      - .:/app
+      - /app/web/node_modules
+      - /app/web/dist
       #
       # ---- named volumes (agent-managed, user shouldn't need to touch) -----
       #
