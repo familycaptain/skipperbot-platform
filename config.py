@@ -295,9 +295,12 @@ def get_dynamic_system_context(user_id: str = "") -> str:
     Callers should place this in a SECOND system message after the static
     prompt so the static prefix can be cached by OpenAI.
     """
-    now = datetime.now(ZoneInfo(TIMEZONE))
+    from app_platform.time import now as _platform_now, get_timezone
+
+    user_now = _platform_now(user_id or None)
+    tz = get_timezone(user_id or None)
     parts = [
-        f"Current date and time: {now.strftime('%A, %B %d, %Y at %I:%M %p')} Central Time",
+        f"Current date and time: {user_now.strftime('%A, %B %d, %Y at %I:%M %p')} ({tz.key})",
     ]
     if user_id:
         parts.append(f"You are currently talking to: {user_id}")

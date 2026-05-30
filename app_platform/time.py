@@ -40,18 +40,22 @@ def _zoneinfo(name: str) -> ZoneInfo:
 def get_timezone(user_id: str | None = None) -> ZoneInfo:
     """Return the configured timezone as a ZoneInfo.
 
-    If ``user_id`` is provided AND that user has a non-empty
-    ``users.timezone`` value, return the user's override. Otherwise fall
-    back to the platform-level setting from ``app_config``.
-
-    Defaults to ``Etc/UTC`` if nothing is configured.
+    Resolution order:
+      1. The user's ``users.timezone`` override (if user_id given).
+      2. The platform-level setting in ``app_config``.
+      3. The ``TIMEZONE`` env var (so users who set it in .env before
+         configuring via the UI still get correct local time).
+      4. ``Etc/UTC``.
     """
     if user_id:
         user_tz = _user_timezone(user_id)
         if user_tz:
             return _zoneinfo(user_tz)
 
-    platform_tz = _config_get(scope="platform", key="timezone", default=DEFAULT_TZ)
+    platform_tz = _config_get(scope="platform", key="timezone", default=None)
+    if not platform_tz:
+        import os
+        platform_tz = os.getenv("TIMEZONE", DEFAULT_TZ)
     return _zoneinfo(platform_tz)
 
 
