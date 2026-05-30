@@ -1,9 +1,9 @@
 # =============================================================================
 # Skipperbot Agent - native start script (Windows native)
 # =============================================================================
-# Does the same "rebuild web bundle if apps/ changed" check that the Docker
-# entrypoint and the Linux/macOS start_agent.sh do, so installing an app
-# is the same flow on every platform.
+# Rebuilds the web bundle on every start (cheap - ~5-15s with cached
+# node_modules) so the install-an-app or git-pull-the-platform flow never
+# leaves stale UI behind. Mirrors deploy/entrypoint.sh and start_agent.sh.
 #
 # Usage: .\start_agent.ps1
 #
@@ -16,10 +16,7 @@
 $ErrorActionPreference = "Stop"
 
 $AppRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$AppsDir = Join-Path $AppRoot "apps"
 $WebDir = Join-Path $AppRoot "web"
-$DistDir = Join-Path $WebDir "dist"
-$Stamp = Join-Path $DistDir ".last-build-stamp"
 
 # Pick the Python interpreter. Prefer the project's venv if present.
 $VenvPython = Join-Path $AppRoot ".venv\Scripts\python.exe"
@@ -38,31 +35,9 @@ function Log($msg) {
     Write-Host "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] $msg"
 }
 
-function Test-NeedsRebuild {
-    if (-not (Test-Path $DistDir) -or (Get-ChildItem $DistDir -ErrorAction SilentlyContinue | Measure-Object).Count -eq 0) {
-        Log "web/dist is empty or missing; rebuild required"
-        return $true
-    }
-    if (-not (Test-Path $Stamp)) {
-        Log "build stamp missing; rebuild required"
-        return $true
-    }
-    if (Test-Path $AppsDir) {
-        $stampTime = (Get-Item $Stamp).LastWriteTime
-        $newer = Get-ChildItem -Path $AppsDir -Recurse -File -ErrorAction SilentlyContinue |
-                 Where-Object { $_.FullName -match '\\ui\\' -and $_.LastWriteTime -gt $stampTime } |
-                 Select-Object -First 1
-        if ($newer) {
-            Log "detected app UI changes since last build; rebuild required"
-            return $true
-        }
-    }
-    return $false
-}
-
-function Invoke-Rebuild {
+function Invoke-WebBuild {
     if (-not (Test-Path (Join-Path $WebDir "package.json"))) {
-        Log "WARNING: no $WebDir\package.json; cannot rebuild UI. Starting agent anyway."
+        Log "WARNING: no $WebDir\package.json; skipping web build."
         return
     }
     Log "building web bundle (npm run build) ..."
@@ -70,8 +45,6 @@ function Invoke-Rebuild {
     try {
         & npm run build
         if ($LASTEXITCODE -eq 0) {
-            New-Item -ItemType Directory -Force -Path $DistDir | Out-Null
-            $null = New-Item -ItemType File -Force -Path $Stamp
             Log "web build OK"
         } else {
             Log "ERROR: web build failed (exit $LASTEXITCODE). Starting agent with stale dist/."
@@ -84,11 +57,9 @@ function Invoke-Rebuild {
 $env:PYTHONUTF8 = "1"
 
 while ($true) {
-    if (Test-NeedsRebuild) {
-        Invoke-Rebuild
-    }
+    Invoke-WebBuild
 
-    # Initialise the database (idempotent — fast no-op after first run).
+    # Initialise the database (idempotent - fast no-op after first run).
     # Set $env:SKIPPERBOT_SKIP_INIT_DB = "1" to skip.
     if (-not ($env:SKIPPERBOT_SKIP_INIT_DB -eq "1")) {
         Log "running scripts\init_db.py ..."

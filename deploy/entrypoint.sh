@@ -2,69 +2,36 @@
 # =============================================================================
 # Skipperbot agent container entrypoint
 # =============================================================================
-# Runs every time the container starts. Decides whether the web bundle needs
-# to be rebuilt (because the user installed/removed an app on the host since
-# the last build) and exec's the agent.
+# Runs every time the container starts. Rebuilds the web bundle from source,
+# initialises the DB (idempotent), then exec's the agent.
 
 set -euo pipefail
 
 APP_ROOT=/app
-APPS_DIR="$APP_ROOT/apps"
 WEB_DIR="$APP_ROOT/web"
-DIST_DIR="$WEB_DIR/dist"
-STAMP="$DIST_DIR/.last-build-stamp"
 
 log() {
     echo "[entrypoint] $*"
 }
 
 # ---------------------------------------------------------------------------
-# 1. Decide whether to rebuild the web bundle.
-# Rebuild if:
-#   - dist/ doesn't exist or is empty
-#   - any apps/<id>/ui/ file is newer than the stamp
-#   - the stamp itself is missing
+# 1. Rebuild the web bundle every start.
+# ---------------------------------------------------------------------------
+# Rationale: web/dist is NOT bind-mounted from the host (see docker-compose.yml)
+# so the container always owns its own dist. Rebuilding on every start removes
+# an entire class of bugs around "host's stale dist shadows image's fresh build
+# after `git pull && docker compose build agent`" — exactly what happens when
+# an operator updates the platform and forgets one of the three steps. The
+# rebuild is ~5–15s (node_modules is baked into the image), which is small
+# next to the DB init + per-app loader that follow.
 # ---------------------------------------------------------------------------
 
-needs_rebuild=false
-
-# Build cause priority — first hit wins.
-if [ ! -d "$DIST_DIR" ] || [ -z "$(ls -A "$DIST_DIR" 2>/dev/null)" ]; then
-    log "web/dist is empty or missing; rebuild required"
-    needs_rebuild=true
-elif [ ! -f "$STAMP" ]; then
-    log "build stamp missing; rebuild required"
-    needs_rebuild=true
-elif [ -d "$APPS_DIR" ] && find "$APPS_DIR" -path '*/ui/*' -newer "$STAMP" -print -quit 2>/dev/null | grep -q .; then
-    log "detected app UI changes since last build; rebuild required"
-    needs_rebuild=true
-elif [ -d "$WEB_DIR/src" ] && find "$WEB_DIR/src" -type f -newer "$STAMP" -print -quit 2>/dev/null | grep -q .; then
-    # Platform-side React code changed (App.jsx, components/, pages/, hooks/, etc).
-    # Without this check, `git pull` of the platform repo could land a new
-    # `web/src/` without ever triggering a rebuild, leaving the host's
-    # bind-mounted web/dist serving stale JS.
-    log "detected web/src changes since last build; rebuild required"
-    needs_rebuild=true
-elif [ -f "$WEB_DIR/package.json" ] && [ "$WEB_DIR/package.json" -nt "$STAMP" ]; then
-    log "web/package.json newer than last build; rebuild required"
-    needs_rebuild=true
-elif [ -f "$WEB_DIR/vite.config.js" ] && [ "$WEB_DIR/vite.config.js" -nt "$STAMP" ]; then
-    log "web/vite.config.js newer than last build; rebuild required"
-    needs_rebuild=true
-fi
-
-if [ "$needs_rebuild" = true ]; then
-    log "running 'npm run build' in $WEB_DIR ..."
-    cd "$WEB_DIR"
-    if ! npm run build; then
-        log "ERROR: web build failed. The agent will start but the desktop UI"
-        log "       may be stale or incomplete. Check the build output above."
-    else
-        mkdir -p "$DIST_DIR"
-        touch "$STAMP"
-        log "web build complete; stamp updated"
-    fi
-    cd "$APP_ROOT"
+log "running 'npm run build' in $WEB_DIR ..."
+if ! ( cd "$WEB_DIR" && npm run build ); then
+    log "ERROR: web build failed. The agent will start but the desktop UI"
+    log "       may be stale or incomplete. Check the build output above."
+else
+    log "web build complete"
 fi
 
 # ---------------------------------------------------------------------------

@@ -57,14 +57,15 @@ services:
       # tracked inside the platform repo and present after `git clone`.
       # Optional apps are added by the user with:
       #     cd apps && git clone https://github.com/<org>/skipperbot-app-<name>.git <name>
-      # The container sees the new app immediately; the entrypoint detects
-      # the change and rebuilds the web bundle on next restart.
+      # The container sees the new app immediately; the entrypoint rebuilds
+      # the web bundle on every restart so the new app's UI is bundled in.
       - ./apps:/app/apps
       #
-      # web/dist — built web bundle. Bind-mounted so the build artifact is
-      # visible on the host and the entrypoint's rebuild-on-app-change logic
-      # works across container recreates.
-      - ./web/dist:/app/web/dist
+      # NOTE: web/dist is NOT bind-mounted. The entrypoint always rebuilds
+      # the bundle on start, into the image's own /app/web/dist. This avoids
+      # a class of bugs where the host's stale dist shadows the image's
+      # fresh build after `git pull && docker compose build agent`. The
+      # ~5–15s rebuild on each start is the cost of guaranteed consistency.
       #
       # ---- named volumes (agent-managed, user shouldn't need to touch) -----
       #
