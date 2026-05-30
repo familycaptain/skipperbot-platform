@@ -1,6 +1,15 @@
 @import "tailwindcss";
 
 /*
+ * Packaged-app UI files live outside web/ (under apps/<id>/ui/) so
+ * Tailwind v4's automatic content scan — which is rooted at the Vite
+ * project root (web/) — doesn't see them. Without this @source, classes
+ * used only inside an app (e.g. SystemApp's grid-cols-4, bg-gray-800/50)
+ * never get emitted to the final CSS bundle and apps render unstyled.
+ */
+@source "../../apps/**/*.{js,jsx,ts,tsx}";
+
+/*
  * SkipperBot Web — Global Styles
  * TailwindCSS v4 handles utilities via @import above.
  * Custom styles below for markdown rendering inside chat messages.
