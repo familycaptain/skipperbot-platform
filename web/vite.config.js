@@ -4,16 +4,20 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { collectPackagedAppDeps } from "./packaged-app-deps.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const webNodeModules = path.resolve(__dirname, "node_modules");
 
 // Packaged-app UI files live outside web/ (under apps/<id>/ui/) so Vite's
-// resolver can't walk up to find web/node_modules. Alias the deps those
-// apps import to absolute paths inside web/node_modules so the resolution
-// works from any location in the repo.
-// Add a new entry here when a packaged-app UI introduces a new npm dep.
-const packagedAppDepAliases = {
+// resolver can't walk up to find web/node_modules. We alias the deps those
+// apps import to absolute paths inside web/node_modules so resolution works
+// from any location in the repo.
+//
+// CORE deps are always provided by the platform (declared in web/package.json)
+// and used by the bundled/required apps' UIs — keep them aliased here.
+// react/react-dom/lucide-react MUST be deduped to a single copy.
+const CORE_DEP_ALIASES = {
   "react": path.join(webNodeModules, "react"),
   "react-dom": path.join(webNodeModules, "react-dom"),
   "lucide-react": path.join(webNodeModules, "lucide-react"),
@@ -22,6 +26,19 @@ const packagedAppDepAliases = {
   "hls.js": path.join(webNodeModules, "hls.js"),
   "three": path.join(webNodeModules, "three"),
 };
+
+// Optional/community apps declare their own npm deps in apps/<id>/ui/package.json.
+// We discover them dynamically and alias each into web/node_modules — so a
+// `git clone <app> apps/<id>` + restart works with NO edit to this file. The
+// entrypoint installs the same union via `node packaged-app-deps.mjs --install`.
+const { deps: appDeps } = collectPackagedAppDeps();
+const packagedAppDepAliases = { ...CORE_DEP_ALIASES };
+for (const name of Object.keys(appDeps)) {
+  // Don't let an app override a core alias (e.g. ship its own react copy).
+  if (!(name in packagedAppDepAliases)) {
+    packagedAppDepAliases[name] = path.join(webNodeModules, name);
+  }
+}
 
 export default defineConfig({
   resolve: {

@@ -47,6 +47,23 @@ _deps_sync() (
 _deps_sync || true
 
 # ---------------------------------------------------------------------------
+# 0b. Install packaged-app frontend dependencies.
+# ---------------------------------------------------------------------------
+# Optional/community apps cloned into apps/<id>/ may import npm packages the
+# base platform doesn't bundle. Each declares them in apps/<id>/ui/package.json;
+# this collector unions them and installs into web/node_modules (--no-save, so
+# the platform's package.json is never mutated by an app). Vite picks up the
+# same set as resolver aliases. Net effect: `git clone <app> apps/<id>` + restart
+# just works — no edit to any platform file. Runs after the base npm ci above
+# (npm ci would otherwise prune these no-save installs) and before the build.
+# ---------------------------------------------------------------------------
+log "collecting packaged-app frontend dependencies ..."
+if ! ( cd "$WEB_DIR" && node packaged-app-deps.mjs --install ); then
+    log "WARNING: packaged-app dependency install failed; the build below may"
+    log "         fail for apps that need extra npm packages."
+fi
+
+# ---------------------------------------------------------------------------
 # 1. Rebuild the web bundle every start.
 # ---------------------------------------------------------------------------
 # Rationale: web/dist is NOT bind-mounted from the host (see docker-compose.yml)
