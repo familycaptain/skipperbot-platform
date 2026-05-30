@@ -25,10 +25,97 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from app_platform import config as platform_config
+from app_platform import settings as platform_settings
+from app_platform import secrets as platform_secrets
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+# ---------------------------------------------------------------------------
+# Platform panels — curated settings that aren't owned by a single app.
+# Stored in scope="platform". Each field can declare a legacy ``env`` var
+# (read as a fallback during the .env → settings migration) and ``secret``
+# (encrypted at rest; never sent to the client).
+# ---------------------------------------------------------------------------
+
+PLATFORM_PANELS: dict[str, dict] = {
+    "system": {
+        "name": "System",
+        "description": "Platform-wide behavior — AI models, URLs, display + debug flags.",
+        "schema": [
+            {"key": "timezone", "type": "string", "label": "Timezone",
+             "description": "IANA name, e.g. America/Chicago. Used everywhere times are shown.",
+             "env": None, "default": ""},
+            {"key": "smart_model", "type": "string", "label": "Smart model",
+             "description": "Model for complex reasoning.", "env": "SMART_MODEL", "default": ""},
+            {"key": "dumb_model", "type": "string", "label": "Fast model",
+             "description": "Cheaper model for light tasks.", "env": "DUMB_MODEL", "default": ""},
+            {"key": "realtime_model", "type": "string", "label": "Realtime/voice model",
+             "description": "Model used by the voice path.", "env": "REALTIME_MODEL", "default": ""},
+            {"key": "lan_url", "type": "string", "label": "LAN URL",
+             "description": "How devices on your network reach this server, e.g. http://skipper.local:8000.",
+             "env": "SKIPPER_LAN_URL", "default": ""},
+            {"key": "public_url", "type": "string", "label": "Public URL",
+             "description": "External URL if exposed (for links/QR). Leave blank if LAN-only.",
+             "env": "SKIPPER_PUBLIC_URL", "default": ""},
+            {"key": "show_entity_ids", "type": "boolean", "label": "Show entity IDs",
+             "description": "Surface internal IDs in the UI (debugging).", "env": "SHOW_ENTITY_IDS", "default": False},
+            {"key": "debug_tokens", "type": "boolean", "label": "Log token usage",
+             "description": "Verbose token accounting in logs.", "env": "DEBUG_TOKENS", "default": False},
+            {"key": "max_session_turns", "type": "integer", "label": "Max session turns",
+             "description": "Chat history cap per session before trimming.", "env": "MAX_SESSION_TURNS", "default": None},
+        ],
+    },
+    "integrations": {
+        "name": "Integrations",
+        "description": "Cross-cutting service credentials with no single owning app. Secrets are encrypted at rest.",
+        "schema": [
+            {"key": "discord_enabled", "type": "boolean", "label": "Discord enabled",
+             "description": "Turn the Discord chat bridge on/off.", "env": "DISCORD_ENABLED", "default": False},
+            {"key": "discord_token", "type": "string", "secret": True, "label": "Discord bot token",
+             "description": "From the Discord developer portal.", "env": "DISCORD_TOKEN", "default": ""},
+            {"key": "brave_api_key", "type": "string", "secret": True, "label": "Brave Search API key",
+             "description": "Powers web search / research.", "env": "BRAVE_API_KEY", "default": ""},
+            {"key": "openai_admin_key", "type": "string", "secret": True, "label": "OpenAI admin key",
+             "description": "Optional — enables the OpenAI cost dashboard.", "env": "OPENAI_ADMIN_KEY", "default": ""},
+            {"key": "weather_api_key", "type": "string", "secret": True, "label": "Weather API key",
+             "description": "Optional — for weather lookups (until the Weather app ships).",
+             "env": "WEATHER_API_KEY", "default": ""},
+        ],
+    },
+}
+
+
+def _panel_field_json(f: dict, *, include_set: bool) -> dict:
+    out = {
+        "key": f["key"], "type": f.get("type", "string"),
+        "label": f.get("label", f["key"]), "description": f.get("description", ""),
+        "secret": bool(f.get("secret", False)),
+        "default": f.get("default"), "choices": list(f.get("choices", []) or []),
+    }
+    if include_set and out["secret"]:
+        out["set"] = platform_settings.is_configured(f["key"], scope="platform", env=f.get("env"))
+    return out
+
+
+def _panel_payload(panel_id: str) -> dict | None:
+    panel = PLATFORM_PANELS.get(panel_id)
+    if not panel:
+        return None
+    schema, values = [], {}
+    for f in panel["schema"]:
+        schema.append(_panel_field_json(f, include_set=True))
+        if f.get("secret"):
+            values[f["key"]] = ""   # never expose a secret to the client
+        else:
+            values[f["key"]] = platform_settings.get(
+                f["key"], scope="platform", env=f.get("env"), default=f.get("default"))
+    return {
+        "id": panel_id, "name": panel["name"], "description": panel["description"],
+        "schema": schema, "values": values, "has_settings": True, "is_panel": True,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -224,3 +311,58 @@ async def api_patch_platform_settings(req: PlatformSettingsPatch):
         }
 
     return await asyncio.to_thread(_do)
+
+
+# ---------------------------------------------------------------------------
+# Platform panels (System, Integrations) — schema-driven, like app settings
+# ---------------------------------------------------------------------------
+
+@router.get("/panels")
+async def api_list_panels():
+    """List the curated platform panels (System, Integrations) with values."""
+    def _do():
+        return {"panels": [_panel_payload(pid) for pid in PLATFORM_PANELS]}
+    return await asyncio.to_thread(_do)
+
+
+@router.get("/panels/{panel_id}")
+async def api_get_panel(panel_id: str):
+    payload = await asyncio.to_thread(_panel_payload, panel_id)
+    if payload is None:
+        raise HTTPException(status_code=404, detail=f"Unknown panel '{panel_id}'")
+    return payload
+
+
+@router.patch("/panels/{panel_id}")
+async def api_patch_panel(panel_id: str, req: PlatformSettingsPatch):
+    """Save panel values. Secrets are encrypted; blank secret = leave unchanged."""
+    panel = PLATFORM_PANELS.get(panel_id)
+    if panel is None:
+        raise HTTPException(status_code=404, detail=f"Unknown panel '{panel_id}'")
+    if not req.values:
+        raise HTTPException(status_code=400, detail="No values provided")
+
+    by_key = {f["key"]: f for f in panel["schema"]}
+    unknown = sorted(set(req.values) - set(by_key))
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"Unknown keys for '{panel_id}': {unknown}")
+
+    def _do():
+        for key, value in req.values.items():
+            f = by_key[key]
+            if f.get("secret"):
+                # Blank means "keep the existing secret" (the GET never sent it).
+                if value in (None, ""):
+                    continue
+                platform_settings.set(key, value, scope="platform", secret=True, by="settings-ui")
+            else:
+                platform_settings.set(key, value, scope="platform", secret=False, by="settings-ui")
+        if "timezone" in req.values:
+            from app_platform.time import invalidate_platform_timezone_cache
+            invalidate_platform_timezone_cache()
+        return _panel_payload(panel_id)
+
+    try:
+        return await asyncio.to_thread(_do)
+    except platform_secrets.SecretKeyMissing as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

@@ -164,12 +164,17 @@ function ConfigInput({ field, value, onChange }) {
 
   // string (default) — with optional secret reveal
   const showSecret = !secret || revealed;
+  // For an already-saved secret the server sends back "" (it never exposes the
+  // value); show a placeholder so the user knows it's set and that leaving the
+  // box blank keeps the current value.
+  const secretPlaceholder = secret && field.set ? "•••••••• saved — type to replace" : "";
   return (
     <div className="flex items-center gap-2 w-full">
       <input
         type={showSecret ? "text" : "password"}
         className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono"
         value={value ?? ""}
+        placeholder={secretPlaceholder}
         onChange={(e) => onChange(e.target.value)}
       />
       {secret && (
@@ -218,7 +223,7 @@ function AppDetail({ app, onSaved }) {
           changed[k] = draft[k];
         }
       }
-      const res = await fetch(`${API}/apps/${app.id}`, {
+      const res = await fetch(`${API}${app.is_panel ? "/panels" : "/apps"}/${app.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ values: changed }),
@@ -251,7 +256,7 @@ function AppDetail({ app, onSaved }) {
     <div className="p-6">
       <div className="flex items-baseline justify-between mb-1">
         <h2 className="text-xl font-medium text-zinc-100">{app.name}</h2>
-        <span className="text-xs text-zinc-500">v{app.version || "?"}</span>
+        {!app.is_panel && <span className="text-xs text-zinc-500">v{app.version || "?"}</span>}
       </div>
       <p className="text-sm text-zinc-500 mb-6">{app.description}</p>
 
@@ -318,38 +323,35 @@ function AppDetail({ app, onSaved }) {
 
 export default function SettingsApp() {
   const [apps, setApps] = useState([]);
+  const [panels, setPanels] = useState([]);   // platform panels: System, Integrations
   const [loading, setLoading] = useState(true);
-  const [selected, setSelected] = useState(null);
+  const [selected, setSelected] = useState("__desktop__");
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/apps`);
-      if (res.ok) {
-        const data = await res.json();
-        setApps(data.apps || []);
-        if (!selected && data.apps?.length) {
-          // Default to the first app with settings.
-          const first = (data.apps || []).find((a) => a.has_settings)
-            || data.apps[0];
-          setSelected(first?.id || null);
-        }
-      }
+      const [appsRes, panelsRes] = await Promise.all([
+        fetch(`${API}/apps`),
+        fetch(`${API}/panels`),
+      ]);
+      if (appsRes.ok) setApps((await appsRes.json()).apps || []);
+      if (panelsRes.ok) setPanels((await panelsRes.json()).panels || []);
     } finally {
       setLoading(false);
     }
-  }, [selected]);
+  }, []);
 
   useEffect(() => { fetchAll(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onSaved = (fresh) => {
-    // Replace the cached app with the server's authoritative version.
+    // Replace the cached app/panel with the server's authoritative version.
     setApps((prev) => prev.map((a) => (a.id === fresh.id ? { ...a, ...fresh } : a)));
+    setPanels((prev) => prev.map((p) => (p.id === fresh.id ? { ...p, ...fresh } : p)));
   };
 
   const current = useMemo(
-    () => apps.find((a) => a.id === selected),
-    [apps, selected],
+    () => apps.find((a) => a.id === selected) || panels.find((p) => p.id === selected),
+    [apps, panels, selected],
   );
 
   if (loading) {
@@ -379,6 +381,18 @@ export default function SettingsApp() {
               <LayoutGrid size={14} /> Desktop apps
             </button>
           </li>
+          {panels.map((p) => (
+            <li key={p.id}>
+              <button
+                className={`w-full text-left px-4 py-2 text-sm transition-colors inline-flex items-center gap-2 ${
+                  selected === p.id ? "bg-zinc-800 text-zinc-100" : "text-zinc-300 hover:bg-zinc-900"
+                }`}
+                onClick={() => setSelected(p.id)}
+              >
+                <Cog size={14} /> {p.name}
+              </button>
+            </li>
+          ))}
           <li className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-wide text-zinc-600">App settings</li>
           {apps.map((a) => {
             const isCurrent = a.id === selected;
