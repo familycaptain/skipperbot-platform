@@ -69,19 +69,13 @@ _PACKAGED_COUNTS: list[tuple[str, str]] = [
     ("behaviors",          "SELECT count(*) FROM app_behaviors.behaviors"),
     ("priority_focus",     "SELECT count(*) FROM app_prioritize.priority_focus"),
     ("timeline_posts",     "SELECT count(*) FROM app_timeline.timeline_posts"),
-    ("recipes",            "SELECT count(*) FROM app_recipes.recipes"),
-    ("located_items",      "SELECT count(*) FROM app_home.located_items"),
-    ("item_locations",     "SELECT count(*) FROM app_home.item_locations"),
-    ("vehicles",           "SELECT count(*) FROM app_auto.vehicles"),
-    ("service_records",    "SELECT count(*) FROM app_auto.service_records"),
+    ("goals",              "SELECT count(*) FROM app_goals.goals"),
+    ("projects",           "SELECT count(*) FROM app_goals.projects"),
+    ("tasks",              "SELECT count(*) FROM app_goals.tasks"),
 ]
 
-# Platform-layer tables — owning app hasn't been packaged yet (or
-# never will because the table is platform infra).
+# Platform-layer tables (public schema — created by migrations/000_baseline.sql).
 _PLATFORM_COUNTS: list[tuple[str, str]] = [
-    ("goals",                  "SELECT count(*) FROM goals"),
-    ("projects",               "SELECT count(*) FROM projects"),
-    ("tasks",                  "SELECT count(*) FROM tasks"),
     ("memories",               "SELECT count(*) FROM memories"),
     ("chat_turns",             "SELECT count(*) FROM chat_turns"),
     ("knowledge_sources",      "SELECT count(*) FROM knowledge_sources"),

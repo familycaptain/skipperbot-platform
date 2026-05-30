@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   Server, Database, RefreshCw, Loader2, Activity,
-  Brain, FileText, Bell, MessageSquare, List, MapPin,
-  Car, UtensilsCrossed, TrendingUp, HardDrive, Briefcase,
+  Brain, FileText, Bell, MessageSquare, List,
+  HardDrive, Briefcase,
   Link, Image, Target, FolderKanban, CheckSquare, Clock,
   RotateCcw, BookOpen, Inbox,
 } from "lucide-react";
@@ -202,11 +202,7 @@ export default function SystemApp({ appId, userId, isActive }) {
           <StatCard icon={FolderKanban} label="Projects" value={fmtNum(c.projects)} color="text-orange-400" />
           <StatCard icon={CheckSquare} label="Tasks" value={fmtNum(c.tasks)} color="text-teal-400" />
           <StatCard icon={List} label="Lists" value={fmtNum(c.lists)} sub={`${fmtNum(c.list_items)} items`} color="text-sky-400" />
-          <StatCard icon={UtensilsCrossed} label="Recipes" value={fmtNum(c.recipes)} color="text-rose-400" />
           <StatCard icon={Image} label="Images" value={fmtNum(c.images)} color="text-pink-400" />
-          <StatCard icon={MapPin} label="Located Items" value={fmtNum(c.located_items)} sub={`${fmtNum(c.item_locations)} locations`} color="text-sky-400" />
-          <StatCard icon={Car} label="Vehicles" value={fmtNum(c.vehicles)} sub={`${fmtNum(c.service_records)} service records`} color="text-blue-400" />
-          <StatCard icon={TrendingUp} label="Inv. Snapshots" value={fmtNum(c.investment_snapshots)} color="text-emerald-400" />
           <StatCard icon={Link} label="Links" value={fmtNum(c.links)} color="text-gray-400" />
           <StatCard icon={FileText} label="Artifacts" value={fmtNum(c.artifacts)} color="text-violet-400" />
           <StatCard icon={Bell} label="Notifications" value={fmtNum(c.notifications)} color="text-amber-400" />
