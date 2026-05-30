@@ -1,7 +1,7 @@
 """Auto Maintenance — Schema-aware data layer
 ===============================================
 All queries target the app_auto schema via app_platform.db helpers.
-Cross-schema references (public.images, public.schedules) use explicit schema prefixes.
+Cross-schema references (public.images, app_schedules.schedules) use explicit schema prefixes.
 """
 
 import logging

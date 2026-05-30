@@ -207,9 +207,8 @@ def _appointment_backlog(user_id: str) -> list[dict]:
     try:
         from apps.medical import data as _dl
         from datetime import datetime, timezone
-        from zoneinfo import ZoneInfo
-        from config import TIMEZONE
-        tz = ZoneInfo(TIMEZONE)
+        from app_platform.time import get_timezone
+        tz = get_timezone()
         appts = _dl.get_upcoming_appointments(days_ahead=7)
         now = datetime.now(tz)
         result = []
@@ -439,14 +438,13 @@ async def _appointment_reminder_provider():
         from app_platform.notifications import create_notification
         from data_layer.users import get_human_users
         from datetime import datetime, timezone
-        from zoneinfo import ZoneInfo
-        from config import TIMEZONE
+        from app_platform.time import get_timezone
 
         due = _dl.get_appointments_due_for_notification()
         if not due:
             return []
 
-        tz = ZoneInfo(TIMEZONE)
+        tz = get_timezone()
         users = get_human_users()
 
         for item in due:

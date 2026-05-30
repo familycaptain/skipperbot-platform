@@ -224,8 +224,8 @@ def _backlog_goals_tree(user_id: str) -> list[dict]:
     task_rows = fetch_all(
         """SELECT t.id, t.name, t.status, t.stack_rank, t.priority, t.due_date,
                   t.project_id, p.owners as project_owners
-           FROM public.tasks t
-           LEFT JOIN public.projects p ON p.id = t.project_id
+           FROM app_goals.tasks t
+           LEFT JOIN app_goals.projects p ON p.id = t.project_id
            WHERE t.status NOT IN ('done', 'cancelled')
              AND %s = ANY(t.assigned_to)
            ORDER BY t.stack_rank""",
@@ -238,7 +238,7 @@ def _backlog_goals_tree(user_id: str) -> list[dict]:
     project_rows = fetch_all(
         """SELECT p.id, p.name, p.status, p.stack_rank, p.priority, p.due_date,
                   p.goal_id, p.owners
-           FROM public.projects p
+           FROM app_goals.projects p
            WHERE p.status NOT IN ('done', 'cancelled')
              AND (%s = ANY(p.owners) OR p.id = ANY(%s))
            ORDER BY p.stack_rank""",
@@ -250,7 +250,7 @@ def _backlog_goals_tree(user_id: str) -> list[dict]:
     # 3. All active goals the user owns OR that contain relevant projects
     goal_rows = fetch_all(
         """SELECT id, name, status, stack_rank, target_date, owners
-           FROM public.goals
+           FROM app_goals.goals
            WHERE status NOT IN ('done', 'cancelled')
              AND (%s = ANY(owners) OR id = ANY(%s))
            ORDER BY stack_rank""",
@@ -449,13 +449,13 @@ def _source_is_active(source_type: str, source_id: str) -> bool:
     shim exposes a fitting helper, the shim).
     """
     if source_type == "goal":
-        row = fetch_one("SELECT status FROM public.goals WHERE id = %s", (source_id,))
+        row = fetch_one("SELECT status FROM app_goals.goals WHERE id = %s", (source_id,))
         return bool(row and row["status"] not in ("done", "cancelled"))
     if source_type == "project":
-        row = fetch_one("SELECT status FROM public.projects WHERE id = %s", (source_id,))
+        row = fetch_one("SELECT status FROM app_goals.projects WHERE id = %s", (source_id,))
         return bool(row and row["status"] not in ("done", "cancelled"))
     if source_type == "task":
-        row = fetch_one("SELECT status FROM public.tasks WHERE id = %s", (source_id,))
+        row = fetch_one("SELECT status FROM app_goals.tasks WHERE id = %s", (source_id,))
         return bool(row and row["status"] not in ("done", "cancelled"))
     if source_type in ("reminder", "nag"):
         from app_platform.reminders import get_reminder

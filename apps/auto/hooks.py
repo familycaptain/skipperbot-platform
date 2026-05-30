@@ -114,7 +114,7 @@ def _check_oil_change_schedule(vehicle_id: str) -> str | None:
     if get_oil_tracking(vehicle_id):
         return None
     rows = _pub_fetch_all(
-        """SELECT title FROM public.schedules
+        """SELECT title FROM app_schedules.schedules
            WHERE linked_entity_type = 'vehicle'
              AND linked_entity_id = %s
              AND active = TRUE""",
@@ -131,7 +131,7 @@ def _check_overdue_maintenance(vehicle_id: str) -> list[str]:
     """Return list of overdue schedule finding strings."""
     now = datetime.now(get_timezone())
     rows = _pub_fetch_all(
-        """SELECT title, next_due FROM public.schedules
+        """SELECT title, next_due FROM app_schedules.schedules
            WHERE linked_entity_type = 'vehicle'
              AND linked_entity_id = %s
              AND active = TRUE
