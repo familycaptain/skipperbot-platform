@@ -54,6 +54,18 @@ log() {
 if [ ! -f "$WEB_DIR/package.json" ]; then
     log "WARNING: no $WEB_DIR/package.json; skipping web build."
 else
+    # Keep node_modules in sync with the lock file (installs new deps after a
+    # git pull that added one — e.g. three.js). Fast no-op when unchanged.
+    (
+        cd "$WEB_DIR" || exit 0
+        if [ -f package-lock.json ]; then LOCK=package-lock.json; else LOCK=package.json; fi
+        STAMP="node_modules/.skipper-deps-stamp"
+        SIG="$(sha1sum "$LOCK" 2>/dev/null | cut -d' ' -f1)"
+        if [ ! -d node_modules ] || [ ! -f "$STAMP" ] || [ "$(cat "$STAMP" 2>/dev/null)" != "$SIG" ]; then
+            log "web dependencies changed (or first run) — installing ..."
+            if [ -f package-lock.json ]; then npm ci; else npm install; fi && echo "$SIG" > "$STAMP"
+        fi
+    )
     log "building web bundle (npm run build) ..."
     if (cd "$WEB_DIR" && npm run build); then
         log "web build OK"

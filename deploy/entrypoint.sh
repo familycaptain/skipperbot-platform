@@ -15,6 +15,37 @@ log() {
 }
 
 # ---------------------------------------------------------------------------
+# 0. Keep web/node_modules in sync with package-lock.json.
+# ---------------------------------------------------------------------------
+# docker-compose masks /app/web/node_modules with a *persistent anonymous
+# volume* (so the host bind-mount of the repo doesn't shadow the image's
+# installed deps). That volume is populated once and survives image rebuilds,
+# so when package-lock.json gains a new dependency (e.g. three.js for the
+# arcade 3D game) the volume goes stale and the build fails with
+# "Could not load .../node_modules/<pkg>". We self-heal: when the lock file's
+# checksum changes (tracked by a stamp inside node_modules), reinstall.
+# On unchanged deps this is a fast checksum compare and a no-op.
+# ---------------------------------------------------------------------------
+
+_deps_sync() {
+    cd "$WEB_DIR" || return 0
+    local lock stamp sig
+    if [ -f package-lock.json ]; then lock=package-lock.json; else lock=package.json; fi
+    stamp="node_modules/.skipper-deps-stamp"
+    sig="$(sha1sum "$lock" 2>/dev/null | cut -d' ' -f1)"
+    if [ -d node_modules ] && [ -f "$stamp" ] && [ "$(cat "$stamp" 2>/dev/null)" = "$sig" ]; then
+        return 0   # deps already match the lock file
+    fi
+    log "web dependencies changed (or first run) — installing (this can take a few minutes on a Pi) ..."
+    if [ -f package-lock.json ]; then
+        npm ci && echo "$sig" > "$stamp" && log "npm ci complete" || log "WARNING: npm ci failed; the build below may fail until deps install."
+    else
+        npm install && echo "$sig" > "$stamp" && log "npm install complete" || log "WARNING: npm install failed."
+    fi
+}
+_deps_sync || true
+
+# ---------------------------------------------------------------------------
 # 1. Rebuild the web bundle every start.
 # ---------------------------------------------------------------------------
 # Rationale: web/dist is NOT bind-mounted from the host (see docker-compose.yml)
