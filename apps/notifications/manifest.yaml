@@ -77,6 +77,41 @@ config:
     secret: true
     label: "FCM service account JSON"
     description: "Paste the full Firebase service-account JSON. Enables mobile push."
+  # ----- Nag timing (24h hours) -----
+  - key: nag_wake_hour
+    type: integer
+    default: 8
+    label: "Wake hour"
+    description: "Earliest hour (24h) nags may fire."
+  - key: nag_sleep_hour
+    type: integer
+    default: 21
+    label: "Sleep hour"
+    description: "Latest hour (24h) nags may fire."
+  - key: nag_morning_start
+    type: integer
+    default: 7
+    label: "Morning window start"
+  - key: nag_morning_end
+    type: integer
+    default: 12
+    label: "Morning window end"
+  - key: nag_afternoon_start
+    type: integer
+    default: 12
+    label: "Afternoon window start"
+  - key: nag_afternoon_end
+    type: integer
+    default: 17
+    label: "Afternoon window end"
+  - key: nag_evening_start
+    type: integer
+    default: 17
+    label: "Evening window start"
+  - key: nag_evening_end
+    type: integer
+    default: 21
+    label: "Evening window end"
 
 # No thinking domain — notifications is passive infrastructure.
 thinking: []

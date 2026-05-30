@@ -113,14 +113,17 @@ SMART_MODEL = _platform_setting("smart_model", "gpt-5.2")
 DUMB_MODEL = _platform_setting("dumb_model", "gpt-5-mini")
 OPENAI_MODEL = SMART_MODEL  # backward compat alias
 DEBUG_TOKENS = _platform_setting("debug_tokens", False, cast=_as_bool)
-NAG_WAKE_HOUR = int(os.getenv("NAG_WAKE_HOUR", "8"))
-NAG_SLEEP_HOUR = int(os.getenv("NAG_SLEEP_HOUR", "21"))
+# Nag timing — configured in Settings → Notifications (scope=app:notifications),
+# resolved at import (restart to change). Guarded fall-back to the defaults.
+_nag = lambda key, default: _platform_setting(key, default, cast=int, scope="app:notifications")
+NAG_WAKE_HOUR = _nag("nag_wake_hour", 8)
+NAG_SLEEP_HOUR = _nag("nag_sleep_hour", 21)
 
 # Nag time-of-day slots (hours, 24h format). "evening" and "night" map to the same slot.
 NAG_SLOTS = {
-    "morning":   (int(os.getenv("NAG_MORNING_START", "7")),  int(os.getenv("NAG_MORNING_END", "12"))),
-    "afternoon": (int(os.getenv("NAG_AFTERNOON_START", "12")), int(os.getenv("NAG_AFTERNOON_END", "17"))),
-    "evening":   (int(os.getenv("NAG_EVENING_START", "17")), int(os.getenv("NAG_EVENING_END", "21"))),
+    "morning":   (_nag("nag_morning_start", 7),  _nag("nag_morning_end", 12)),
+    "afternoon": (_nag("nag_afternoon_start", 12), _nag("nag_afternoon_end", 17)),
+    "evening":   (_nag("nag_evening_start", 17), _nag("nag_evening_end", 21)),
 }
 NAG_SLOTS["night"] = NAG_SLOTS["evening"]  # alias
 
