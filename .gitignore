@@ -136,6 +136,5 @@ apps/*
 !apps/issues/
 !apps/meals/
 !apps/medical/
-!apps/newsletter/
 !apps/recipes/
 !apps/scriptures/

@@ -10,7 +10,7 @@
 #   - LLM + MCP
 #   - HTTP + scraping
 #   - Optional integration adapters (Discord, Gmail/Drive, Resend, FCM)
-#   - Bundled-app extras (anime, automation, scriptures, newsletter)
+#   - Bundled-app extras (anime, automation, scriptures)
 #   - Misc utilities
 # =============================================================================
 
@@ -52,12 +52,6 @@ google-api-python-client>=2.100.0
 cryptography>=42.0.0        # anime — AllAnime source decryption
 websockets>=12.0            # automation — local smart-home device control
 pymupdf>=1.24.0             # scriptures — one-time Bible PDF import
-# newsletter — market-data charts pipeline (heavy; only needed when the
-# newsletter job runs, not to load the app):
-numpy>=1.26.0
-pandas>=2.0.0
-matplotlib>=3.8.0
-yfinance>=0.2.0
 
 # ---- System + scheduling ----
 psutil>=5.9.0
