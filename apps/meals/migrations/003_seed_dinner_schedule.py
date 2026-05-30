@@ -10,7 +10,7 @@ from data_layer.db import get_conn
 with get_conn() as conn:
     with conn.cursor() as cur:
         cur.execute("""
-            INSERT INTO jobs (id, name, job_type, description, schedule, notify_user,
+            INSERT INTO app_jobs.jobs (id, name, job_type, description, schedule, notify_user,
                               status, created_by, created_at, config, progress)
             VALUES ('j-meals-dinner-check', 'Nightly Dinner Check', 'meals_dinner_check',
                     'Check if dinner was logged tonight; prompt the user if not',

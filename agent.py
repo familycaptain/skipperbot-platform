@@ -1931,7 +1931,7 @@ def _resolve_source_item(source_type: str, source_id: str) -> dict:
         return {"title": r["message"], "detail": r.get("remind_at", ""),
                 "recurrence": r.get("recurrence") or "", "time_slot": r.get("time_slot", "")}
     elif source_type == "auto_issue":
-        from data_layer.auto import get_issue
+        from apps.auto.data import get_issue
         issue = get_issue(source_id)
         if not issue:
             return {}

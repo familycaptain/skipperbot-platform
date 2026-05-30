@@ -10,7 +10,7 @@ from data_layer.db import get_conn
 with get_conn() as conn:
     with conn.cursor() as cur:
         cur.execute("""
-            INSERT INTO jobs (id, name, job_type, description, schedule, notify_user,
+            INSERT INTO app_jobs.jobs (id, name, job_type, description, schedule, notify_user,
                               status, created_by, created_at, config, progress)
             VALUES ('j-bounties-daily-digest', 'Daily Bounty Digest', 'bounty_daily_digest',
                     'Send daily bounty board DM to kids (open bounties + balance) and parents (pending approvals)',

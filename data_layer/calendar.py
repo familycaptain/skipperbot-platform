@@ -84,7 +84,7 @@ def _events_from_reminders(from_date: str, to_date: str, assigned_to: str | None
 
         where = " AND ".join(clauses)
         rows = fetch_all(
-            f"SELECT id, user_id, message, remind_at, recurrence FROM reminders WHERE {where}",
+            f"SELECT id, user_id, message, remind_at, recurrence FROM app_reminders.reminders WHERE {where}",
             tuple(params),
         )
 
@@ -182,7 +182,7 @@ def _events_from_goals(from_date: str, to_date: str, assigned_to: str | None) ->
 
         where = " AND ".join(clauses)
         rows = fetch_all(
-            f"SELECT id, name, target_date, owners, collaborators FROM goals WHERE {where}",
+            f"SELECT id, name, target_date, owners, collaborators FROM app_goals.goals WHERE {where}",
             tuple(params),
         )
 
@@ -243,7 +243,7 @@ def _events_from_projects(from_date: str, to_date: str, assigned_to: str | None)
 
         where = " AND ".join(clauses)
         rows = fetch_all(
-            f"SELECT id, name, due_date, priority, owners FROM projects WHERE {where}",
+            f"SELECT id, name, due_date, priority, owners FROM app_goals.projects WHERE {where}",
             tuple(params),
         )
 
@@ -303,7 +303,7 @@ def _events_from_tasks(from_date: str, to_date: str, assigned_to: str | None) ->
 
         where = " AND ".join(clauses)
         rows = fetch_all(
-            f"SELECT id, name, due_date, priority, assigned_to FROM tasks WHERE {where}",
+            f"SELECT id, name, due_date, priority, assigned_to FROM app_goals.tasks WHERE {where}",
             tuple(params),
         )
 
@@ -351,8 +351,8 @@ def _events_from_auto_service(from_date: str, to_date: str) -> list[dict]:
         rows = fetch_all(
             """SELECT sr.id, sr.vehicle_id, sr.service_type, sr.next_due_date,
                       v.name as vehicle_name
-               FROM service_records sr
-               JOIN vehicles v ON v.id = sr.vehicle_id
+               FROM app_auto.service_records sr
+               JOIN app_auto.vehicles v ON v.id = sr.vehicle_id
                WHERE sr.next_due_date IS NOT NULL
                  AND sr.next_due_date >= %s
                  AND sr.next_due_date <= %s
@@ -417,7 +417,7 @@ def _events_from_nags(from_date: str, to_date: str, assigned_to: str | None) -> 
 
         where = " AND ".join(clauses)
         rows = fetch_all(
-            f"SELECT id, user_id, message, time_slot FROM reminders WHERE {where}",
+            f"SELECT id, user_id, message, time_slot FROM app_reminders.reminders WHERE {where}",
             tuple(params),
         )
 

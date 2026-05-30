@@ -404,7 +404,7 @@ def get_upcoming_maintenance() -> list[dict]:
     # Platform schedules linked to vehicles
     sch_rows = _pub_fetch_all(
         """SELECT s.*, v.name as vehicle_name
-           FROM schedules s
+           FROM app_schedules.schedules s
            JOIN app_auto.vehicles v ON v.id = s.linked_entity_id
            WHERE s.linked_entity_type = 'vehicle'
              AND s.active = TRUE
@@ -864,7 +864,7 @@ def get_vehicle_maintenance(vehicle_id: str) -> list[dict]:
     """
     from data_layer.db import fetch_all as _pub_fetch_all
     rows = _pub_fetch_all(
-        """SELECT * FROM schedules
+        """SELECT * FROM app_schedules.schedules
            WHERE linked_entity_type = 'vehicle'
              AND linked_entity_id = %s
              AND active = TRUE

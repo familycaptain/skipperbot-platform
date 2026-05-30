@@ -367,7 +367,7 @@ def _load_recipe_as_markdown(recipe_id: str) -> tuple[str, str]:
 
     Raises ValueError if recipe not found.
     """
-    from data_layer.recipes import get_recipe
+    from apps.recipes.data import get_recipe
 
     recipe = get_recipe(recipe_id)
     if not recipe:
