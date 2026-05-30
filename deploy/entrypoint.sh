@@ -27,14 +27,15 @@ log() {
 # On unchanged deps this is a fast checksum compare and a no-op.
 # ---------------------------------------------------------------------------
 
-_deps_sync() {
-    cd "$WEB_DIR" || return 0
-    local lock stamp sig
+# Body runs in a subshell so the `cd` never leaks into this script's
+# working directory (it must stay $APP_ROOT for the agent exec below).
+_deps_sync() (
+    cd "$WEB_DIR" || exit 0
     if [ -f package-lock.json ]; then lock=package-lock.json; else lock=package.json; fi
     stamp="node_modules/.skipper-deps-stamp"
     sig="$(sha1sum "$lock" 2>/dev/null | cut -d' ' -f1)"
     if [ -d node_modules ] && [ -f "$stamp" ] && [ "$(cat "$stamp" 2>/dev/null)" = "$sig" ]; then
-        return 0   # deps already match the lock file
+        exit 0   # deps already match the lock file
     fi
     log "web dependencies changed (or first run) — installing (this can take a few minutes on a Pi) ..."
     if [ -f package-lock.json ]; then
@@ -42,7 +43,7 @@ _deps_sync() {
     else
         npm install && echo "$sig" > "$stamp" && log "npm install complete" || log "WARNING: npm install failed."
     fi
-}
+)
 _deps_sync || true
 
 # ---------------------------------------------------------------------------
@@ -84,4 +85,5 @@ fi
 # ---------------------------------------------------------------------------
 
 log "starting agent"
-exec python agent.py
+cd "$APP_ROOT"
+exec python "$APP_ROOT/agent.py"
