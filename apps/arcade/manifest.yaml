@@ -1,0 +1,43 @@
+id: arcade
+name: Arcade
+version: 1.0.0
+description: >
+  A small arcade of three original, self-contained games — Wardenfall
+  (top-down tower defense), Aeldrift (3D world exploration), and
+  Spinhazard (old-school vector shooter) — sharing one high-score board.
+  Demonstrates the platform's canvas/WebGL game capability.
+
+platform_min_version: "1.0.0"
+
+entity_types:
+  - prefix: hs
+    name: high_score
+    id_format: "hs-{hex8}"
+    table: high_scores
+
+platform_deps:
+  - db
+  - time
+
+emits: []
+subscribes: []
+
+tool_category:
+  description: >
+    Browse arcade high scores — which games have been played and the
+    top runs on each.
+  keywords:
+    - arcade
+    - game
+    - games
+    - play
+    - high score
+    - high scores
+    - leaderboard
+    - wardenfall
+    - aeldrift
+    - spinhazard
+
+config: []
+thinking: []
+job_types: []

@@ -126,6 +126,7 @@ apps/*
 !apps/settings/
 # --- bundled optional apps (hideable from the desktop in Settings) ---
 !apps/anime/
+!apps/arcade/
 !apps/brainstorming/
 !apps/images/
 !apps/locator/

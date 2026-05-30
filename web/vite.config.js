@@ -20,6 +20,7 @@ const packagedAppDepAliases = {
   "react-markdown": path.join(webNodeModules, "react-markdown"),
   "remark-gfm": path.join(webNodeModules, "remark-gfm"),
   "hls.js": path.join(webNodeModules, "hls.js"),
+  "three": path.join(webNodeModules, "three"),
 };
 
 export default defineConfig({
