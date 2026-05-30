@@ -5,7 +5,7 @@ import ChatPanel from "./components/ChatPanel";
 import AppPanel from "./components/AppPanel";
 import Onboarding from "./pages/Onboarding";
 import useSkipperSocket from "./hooks/useSkipperSocket";
-import { getAppManifest, newInstanceId } from "./apps/registry";
+import { getAppManifest, newInstanceId, setDisabledApps } from "./apps/registry";
 
 /**
  * Root application component.
@@ -52,6 +52,25 @@ export default function App() {
       } catch {
         if (!cancelled) setNeedsOnboarding(false);
       }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Load the operator's "hidden from desktop" app set so the launcher
+  // can filter those icons out. Disabling only hides the icon — the
+  // app's backend stays loaded.
+  const [disabledReady, setDisabledReady] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/apps/disabled");
+        if (res.ok) {
+          const data = await res.json();
+          setDisabledApps(data.disabled || []);
+        }
+      } catch { /* leave the set empty — show all icons */ }
+      finally { if (!cancelled) setDisabledReady(true); }
     })();
     return () => { cancelled = true; };
   }, []);

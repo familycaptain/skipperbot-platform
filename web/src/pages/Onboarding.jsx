@@ -38,7 +38,7 @@ function detectTimezone() {
 const COMMON_TIMEZONES = [
   "Etc/UTC",
   "America/New_York",
-  "America/Chicago",
+  "America/Chicago", // noqa: family-name — generic US-zone dropdown option, not a household locator
   "America/Denver",
   "America/Los_Angeles",
   "America/Anchorage",

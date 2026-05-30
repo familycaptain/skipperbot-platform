@@ -220,6 +220,34 @@ async def onboarding_status():
     return await asyncio.to_thread(_do)
 
 
+class DisabledAppsRequest(BaseModel):
+    disabled: list[str]
+
+
+@app.get("/api/apps/disabled")
+async def api_get_disabled_apps():
+    """Return the list of app ids the operator has hidden from the desktop.
+
+    Disabling only hides the launcher icon — the app's backend (routes,
+    tools, jobs) stays loaded. Stored in app_config(scope='platform').
+    """
+    def _do():
+        from app_platform import config as platform_config
+        return {"disabled": platform_config.get("disabled_apps", [], scope="platform") or []}
+    return await asyncio.to_thread(_do)
+
+
+@app.post("/api/apps/disabled")
+async def api_set_disabled_apps(request: DisabledAppsRequest):
+    """Replace the set of desktop-hidden app ids (admin action)."""
+    def _do():
+        from app_platform import config as platform_config
+        ids = sorted({str(x).strip() for x in request.disabled if str(x).strip()})
+        platform_config.set("disabled_apps", ids, scope="platform", by="settings-ui")
+        return {"disabled": ids}
+    return await asyncio.to_thread(_do)
+
+
 @app.post("/api/onboarding/check-openai")
 async def onboarding_check_openai():
     """Verify the current OPENAI_API_KEY against the OpenAI API.

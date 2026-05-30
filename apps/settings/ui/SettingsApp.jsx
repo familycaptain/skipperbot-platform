@@ -11,10 +11,87 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
-  Settings as Cog, Loader2, Save, Check, X, Eye, EyeOff, AlertCircle,
+  Settings as Cog, Loader2, Save, Check, X, Eye, EyeOff, AlertCircle, LayoutGrid,
 } from "lucide-react";
+import { getManageableApps } from "../../../web/src/apps/registry";
 
 const API = "/api/apps/settings";
+
+// ---------------------------------------------------------------------------
+// Desktop visibility — show/hide launcher icons (writes /api/apps/disabled)
+// ---------------------------------------------------------------------------
+
+function DesktopVisibilityPanel() {
+  const launcherApps = useMemo(() => getManageableApps(), []);
+  const [disabled, setDisabled] = useState(null); // Set of hidden ids
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/apps/disabled");
+        const data = res.ok ? await res.json() : { disabled: [] };
+        setDisabled(new Set(data.disabled || []));
+      } catch { setDisabled(new Set()); }
+    })();
+  }, []);
+
+  const toggle = async (id) => {
+    const next = new Set(disabled);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setDisabled(next);
+    setSaving(true);
+    try {
+      await fetch("/api/apps/disabled", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ disabled: [...next] }),
+      });
+    } finally { setSaving(false); }
+  };
+
+  if (disabled === null) {
+    return <div className="flex items-center gap-2 p-6 text-zinc-500"><Loader2 className="animate-spin" size={14} /> Loading…</div>;
+  }
+
+  return (
+    <div className="p-6 max-w-2xl">
+      <h2 className="text-xl font-medium text-zinc-100 mb-1 inline-flex items-center gap-2">
+        <LayoutGrid size={18} /> Desktop apps
+      </h2>
+      <p className="text-sm text-zinc-500 mb-5">
+        Hide an app's icon from the desktop launcher. Hiding only removes the
+        icon — the app keeps running and its chat tools stay available. Reload
+        the desktop to see changes.
+      </p>
+      <ul className="divide-y divide-zinc-800 border border-zinc-800 rounded">
+        {launcherApps.map((a) => {
+          const Icon = a.icon;
+          const hidden = disabled.has(a.id);
+          return (
+            <li key={a.id} className="flex items-center justify-between px-4 py-2.5">
+              <span className="inline-flex items-center gap-2.5 text-sm text-zinc-300">
+                {Icon && <Icon size={15} className={hidden ? "text-zinc-600" : "text-zinc-400"} />}
+                <span className={hidden ? "text-zinc-500" : ""}>{a.name}</span>
+              </span>
+              <button
+                onClick={() => toggle(a.id)}
+                disabled={saving}
+                className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded transition-colors ${
+                  hidden
+                    ? "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                    : "bg-emerald-900/30 text-emerald-300 hover:bg-emerald-900/50"
+                }`}
+              >
+                {hidden ? <><EyeOff size={12} /> Hidden</> : <><Eye size={12} /> Shown</>}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
 
 function isObject(v) {
   return v !== null && typeof v === "object" && !Array.isArray(v);
@@ -292,6 +369,17 @@ export default function SettingsApp() {
           </h1>
         </div>
         <ul className="py-1">
+          <li>
+            <button
+              className={`w-full text-left px-4 py-2 text-sm transition-colors inline-flex items-center gap-2 ${
+                selected === "__desktop__" ? "bg-zinc-800 text-zinc-100" : "text-zinc-300 hover:bg-zinc-900"
+              }`}
+              onClick={() => setSelected("__desktop__")}
+            >
+              <LayoutGrid size={14} /> Desktop apps
+            </button>
+          </li>
+          <li className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-wide text-zinc-600">App settings</li>
           {apps.map((a) => {
             const isCurrent = a.id === selected;
             const muted = !a.has_settings;
@@ -319,7 +407,9 @@ export default function SettingsApp() {
         </ul>
       </aside>
       <main className="flex-1 overflow-y-auto">
-        {current ? (
+        {selected === "__desktop__" ? (
+          <DesktopVisibilityPanel />
+        ) : current ? (
           <AppDetail key={current.id} app={current} onSaved={onSaved} />
         ) : (
           <div className="p-6 text-zinc-500">Select an app to view its settings.</div>

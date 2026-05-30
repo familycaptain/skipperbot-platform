@@ -61,14 +61,36 @@ export function getAppManifest(appType) {
 
 /** Get all registered app manifests (for launcher UI). Excludes utility apps. */
 const LAUNCHER_HIDDEN = new Set(["chart", "document", "recipe", "image", "locator-item", "auto-vehicle", "brainstorm", "calendar-day", "folder", "anime-player"]);
+
+// Runtime set of app ids the operator has disabled (hidden from the
+// desktop). Populated from GET /api/apps/disabled at startup via
+// setDisabledApps(). Disabling only hides the launcher icon — the app's
+// backend (routes, tools, jobs) stays loaded.
+let _disabledApps = new Set();
+export function setDisabledApps(ids) { _disabledApps = new Set(ids || []); }
+export function getDisabledApps() { return [..._disabledApps]; }
+export function isAppDisabled(id) { return _disabledApps.has(id); }
+
+function _launcherVisible(a) {
+  return !LAUNCHER_HIDDEN.has(a.id) && !a.hidden && !_disabledApps.has(a.id);
+}
+
 export function getAllApps() {
-  return Object.values(APP_MANIFESTS).filter(a => !LAUNCHER_HIDDEN.has(a.id)).sort((a, b) => a.name.localeCompare(b.name));
+  return Object.values(APP_MANIFESTS).filter(_launcherVisible).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Launcher apps for the management UI — includes disabled ones (so they
+ *  can be re-enabled), excludes utility/detail views. */
+export function getManageableApps() {
+  return Object.values(APP_MANIFESTS)
+    .filter(a => !LAUNCHER_HIDDEN.has(a.id) && !a.hidden)
+    .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /** Get launcher apps for a specific page (1, 2, or 3). Page 1 = everyday, page 2 = tools, page 3 = system. */
 export function getAppsForPage(page) {
   return Object.values(APP_MANIFESTS)
-    .filter(a => !LAUNCHER_HIDDEN.has(a.id) && (a.page === page || (page === 1 && !a.page)))
+    .filter(a => _launcherVisible(a) && (a.page === page || (page === 1 && !a.page)))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
