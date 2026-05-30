@@ -16,7 +16,13 @@ from data_layer.users import get_user_by_discord_id, get_discord_users
 
 load_dotenv()
 
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN", "")
+
+def _discord_token() -> str:
+    """The Discord bot token, from the Settings Integrations panel (encrypted,
+    scope=platform) with a fallback to the legacy DISCORD_TOKEN env var."""
+    from app_platform import settings as _settings
+    return _settings.get("discord_token", scope="platform",
+                         env="DISCORD_TOKEN", secret=True, default="") or ""
 
 # Signalled when the bot is fully connected and ready to receive messages
 _ready_event = asyncio.Event()
@@ -268,8 +274,8 @@ def _split_message(text: str, max_len: int = 2000) -> list[str]:
 
 async def send_dm(person_name: str, message_text: str) -> str:
     """Send a Discord DM to a family member by name. Returns status string."""
-    from config import DISCORD_ENABLED
-    if not DISCORD_ENABLED:
+    from config import discord_enabled
+    if not discord_enabled():
         return "Discord is disabled (DISCORD_ENABLED=false). Message not sent."
     # Reverse lookup: name → discord_id from cache
     discord_id = None
@@ -305,21 +311,22 @@ async def send_dm(person_name: str, message_text: str) -> str:
 
 async def wait_until_ready():
     """Block until the Discord bot is fully connected and joined guilds."""
-    if not DISCORD_TOKEN:
+    if not _discord_token():
         return  # no bot to wait for
     await _ready_event.wait()
 
 
 async def start_discord_bot():
     """Start the Discord bot. Runs forever as an async task."""
-    if not DISCORD_TOKEN:
-        logger.warning("DISCORD: No DISCORD_TOKEN found in .env — Discord bot disabled.")
+    token = _discord_token()
+    if not token:
+        logger.warning("DISCORD: No token configured — Discord bot disabled.")
         _ready_event.set()  # unblock waiters even if bot is disabled
         return
 
     logger.info("DISCORD: Starting bot...")
     try:
-        await client.start(DISCORD_TOKEN)
+        await client.start(token)
     except Exception as e:
         logger.error("DISCORD: Bot failed to start: %s", str(e))
 

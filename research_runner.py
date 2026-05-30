@@ -89,7 +89,8 @@ def _brave_search(query: str, num_results: int = 5) -> list[dict]:
 
     Retries up to 3 times with exponential backoff on 429 (rate limit) errors.
     """
-    api_key = os.getenv("BRAVE_API_KEY", "")
+    from app_platform import settings as _settings
+    api_key = _settings.get("brave_api_key", scope="platform", env="BRAVE_API_KEY", secret=True, default="") or ""
     if not api_key:
         logger.error("RESEARCH: BRAVE_API_KEY not set")
         return []

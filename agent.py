@@ -21,7 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from config import logger, DISCORD_ENABLED
+from config import logger, discord_enabled
 from connections import manager
 import mcp_client
 import tool_dispatch
@@ -74,8 +74,9 @@ async def lifespan(app: FastAPI):
             app.routes.append(app.routes.pop(i))
             break
 
+    discord_enabled_now = discord_enabled()
     discord_task = None
-    if DISCORD_ENABLED:
+    if discord_enabled_now:
         discord_task = asyncio.create_task(discord_bot.start_discord_bot())
         await discord_bot.wait_until_ready()
         logger.info("STARTUP: Discord ready — starting background tasks")
@@ -90,7 +91,7 @@ async def lifespan(app: FastAPI):
     thinking_task = asyncio.create_task(start_thinking_scheduler())
     yield
     # Shutdown
-    if DISCORD_ENABLED:
+    if discord_enabled_now:
         await discord_bot.stop_discord_bot()
         if discord_task:
             discord_task.cancel()
@@ -3910,7 +3911,8 @@ async def _fetch_openai_daily_cost() -> float | None:
     """Query OpenAI Organization Costs API for today's spend. Returns USD or None on failure."""
     import os, requests
     from datetime import datetime, timezone
-    admin_key = os.getenv("OPENAI_ADMIN_KEY")
+    from app_platform import settings as _settings
+    admin_key = _settings.get("openai_admin_key", scope="platform", env="OPENAI_ADMIN_KEY", secret=True)
     if not admin_key:
         return None
     try:

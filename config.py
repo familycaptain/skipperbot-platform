@@ -94,14 +94,22 @@ NAG_SLOTS = {
 NAG_SLOTS["night"] = NAG_SLOTS["evening"]  # alias
 
 # Discord is an OPTIONAL integration. We only turn it on when the user
-# has actually supplied a token, OR explicitly sets DISCORD_ENABLED=true.
+# has actually supplied a token, OR explicitly flips the enable toggle.
 # Default-on caused first-time installs to log "Discord ready" followed
-# immediately by "No DISCORD_TOKEN found in .env — bot disabled" — noise
-# that looked like a real failure.
-DISCORD_ENABLED = (
-    os.getenv("DISCORD_ENABLED", "").lower() in ("true", "1", "yes")
-    or bool(os.getenv("DISCORD_TOKEN", "").strip())
-)
+# immediately by "No token — bot disabled" noise that looked like a failure.
+#
+# Now resolved at call time from the Settings "Integrations" panel
+# (scope=platform), falling back to the legacy DISCORD_* env vars. It's a
+# function (not a module constant) because the value can change at runtime
+# via the UI, and to avoid a DB read at import time.
+def discord_enabled() -> bool:
+    from app_platform import settings as _settings
+    explicit = _settings.get("discord_enabled", scope="platform",
+                             env="DISCORD_ENABLED", default=False)
+    if str(explicit).lower() in ("true", "1", "yes") or explicit is True:
+        return True
+    # Enabled implicitly if a token is present (env or saved secret).
+    return _settings.is_configured("discord_token", scope="platform", env="DISCORD_TOKEN")
 SHOW_ENTITY_IDS = os.getenv("SHOW_ENTITY_IDS", "false").lower() in ("true", "1", "yes")
 REMINDER_LEAD_MINUTES = int(os.getenv("REMINDER_LEAD_MINUTES", "120"))
 PM_QUIET_MODE = os.getenv("PM_QUIET_MODE", "false").lower() in ("true", "1", "yes")

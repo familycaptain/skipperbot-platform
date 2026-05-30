@@ -56,6 +56,13 @@ class Capability:
     extra_check: Callable[[], bool] | None = None
     """Optional additional check (e.g. file exists for service-account JSON paths)."""
 
+    settings_keys: tuple[tuple[str, str, str], ...] = ()
+    """Optional (config_key, scope, env_var) triples. When present, the
+    capability is "configured" if every triple resolves via the settings
+    layer (app_config value OR its env-var fallback) — so creds saved in the
+    Settings UI count, not just .env. When empty, the legacy env-only check
+    on ``env_vars`` is used (for capabilities not yet migrated)."""
+
 
 def _file_exists(env_var: str) -> Callable[[], bool]:
     """Build an extra_check that the env var's value points at a readable file."""
@@ -82,15 +89,17 @@ CAPABILITIES: tuple[Capability, ...] = (
         name="discord",
         label="Discord",
         env_vars=("DISCORD_TOKEN",),
+        settings_keys=(("discord_token", "platform", "DISCORD_TOKEN"),),
         docs_anchor="03-extended-functionality.md#discord",
-        not_configured_message="Discord is not configured. Add DISCORD_TOKEN to .env to enable.",
+        not_configured_message="Discord is not configured. Add a token in Settings → Integrations.",
     ),
     Capability(
         name="brave_search",
         label="Brave web search",
         env_vars=("BRAVE_API_KEY",),
+        settings_keys=(("brave_api_key", "platform", "BRAVE_API_KEY"),),
         docs_anchor="03-extended-functionality.md#brave-web-search",
-        not_configured_message="Web search is not configured. Add BRAVE_API_KEY to .env to enable.",
+        not_configured_message="Web search is not configured. Add a Brave API key in Settings → Integrations.",
     ),
     Capability(
         name="trello",
@@ -154,15 +163,17 @@ CAPABILITIES: tuple[Capability, ...] = (
         name="openai_admin",
         label="OpenAI budget tracking",
         env_vars=("OPENAI_ADMIN_KEY",),
+        settings_keys=(("openai_admin_key", "platform", "OPENAI_ADMIN_KEY"),),
         docs_anchor="03-extended-functionality.md",
-        not_configured_message="OpenAI budget dashboard is not configured. Add OPENAI_ADMIN_KEY to .env to enable.",
+        not_configured_message="OpenAI budget dashboard is not configured. Add an admin key in Settings → Integrations.",
     ),
     Capability(
         name="weather",
         label="Weather lookups",
         env_vars=("WEATHER_API_KEY",),
+        settings_keys=(("weather_api_key", "platform", "WEATHER_API_KEY"),),
         docs_anchor="03-extended-functionality.md#weather",
-        not_configured_message="Weather is not configured. Add WEATHER_API_KEY to .env and install skipperbot-app-weather.",
+        not_configured_message="Weather is not configured. Add a key in Settings → Integrations.",
     ),
 )
 
@@ -171,15 +182,26 @@ _BY_NAME: dict[str, Capability] = {c.name: c for c in CAPABILITIES}
 
 
 def is_enabled(name: str) -> bool:
-    """Return True if the named capability has all required env vars set + non-empty."""
+    """Return True if the named capability is configured.
+
+    Migrated capabilities (those with ``settings_keys``) are checked through
+    the settings layer, so creds saved in the Settings UI count as well as
+    ``.env``. Others fall back to the legacy env-only check.
+    """
     cap = _BY_NAME.get(name)
     if not cap:
         logger.warning("capability lookup for unknown name: %s", name)
         return False
 
-    for var in cap.env_vars:
-        if not os.getenv(var, "").strip():
-            return False
+    if cap.settings_keys:
+        from app_platform import settings as _settings
+        for key, scope, env in cap.settings_keys:
+            if not _settings.is_configured(key, scope=scope, env=env):
+                return False
+    else:
+        for var in cap.env_vars:
+            if not os.getenv(var, "").strip():
+                return False
 
     if cap.extra_check and not cap.extra_check():
         return False
