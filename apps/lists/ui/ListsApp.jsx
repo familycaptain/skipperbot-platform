@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, Plus, List, RefreshCw, Loader2, X, Trash2,
-  ChevronDown, ChevronRight, ChevronUp, ExternalLink, Tag, Printer, Pencil,
+  ChevronDown, ChevronRight, ChevronUp, ExternalLink, Tag, Printer, Pencil, Trello,
 } from "lucide-react";
+import TrelloSettings from "./TrelloSettings.jsx";
 
 const PREVIEW_LIMIT = 4;
 
@@ -14,6 +15,7 @@ export default function ListsApp({ appId, userId, context = {}, refreshKey, isAc
   const [activeSource, setActiveSource] = useState("");
   const [expandedId, setExpandedId] = useState(null);
   const [showNewForm, setShowNewForm] = useState(false);
+  const [showTrelloSettings, setShowTrelloSettings] = useState(false);
 
   // ── Fetch ──
   const loadLists = useCallback(async () => {
@@ -75,6 +77,15 @@ export default function ListsApp({ appId, userId, context = {}, refreshKey, isAc
     setExpandedId(expandedId === listId ? null : listId);
   }
 
+  // ── Trello settings view ──
+  if (showTrelloSettings) {
+    return (
+      <TrelloSettings
+        onBack={() => { setShowTrelloSettings(false); loadLists(); }}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col h-full w-full text-sm text-gray-200 overflow-hidden">
       {/* ── Header ── */}
@@ -93,6 +104,13 @@ export default function ListsApp({ appId, userId, context = {}, refreshKey, isAc
           </div>
         </div>
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={() => setShowTrelloSettings(true)}
+            className="p-1.5 rounded hover:bg-slate-700 text-slate-400 hover:text-sky-400 transition-colors"
+            title="Trello settings"
+          >
+            <Trello size={13} />
+          </button>
           <button
             onClick={loadLists}
             className="p-1.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"

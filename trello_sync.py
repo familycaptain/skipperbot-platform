@@ -7,14 +7,23 @@ Also runs Task ↔ Card sync for projects linked to Trello boards.
 """
 
 import asyncio
-import os
 import time
 from config import logger
 from apps.lists.store import sync_all_trello_lists
 
 
-# How often to poll Trello for updates (seconds)
-SYNC_INTERVAL = int(os.getenv("TRELLO_SYNC_INTERVAL", "300"))  # default 5 minutes
+def _sync_interval() -> int:
+    """Poll interval (seconds), from the Lists app settings. Default 5 minutes."""
+    try:
+        from app_platform import settings as _settings
+        val = _settings.get("trello_sync_interval_seconds", scope="app:lists", default=300)
+        return int(val)
+    except Exception:
+        return 300
+
+
+# Resolved once at import; restart to apply a change.
+SYNC_INTERVAL = _sync_interval()
 
 
 async def sync_cycle():

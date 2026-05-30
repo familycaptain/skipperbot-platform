@@ -72,6 +72,15 @@ def _file_exists(env_var: str) -> Callable[[], bool]:
     return check
 
 
+def _trello_configured() -> bool:
+    """True if at least one Trello account is configured in the lists app DB."""
+    try:
+        from apps.lists import trello_config
+        return trello_config.any_account_configured()
+    except Exception:
+        return False
+
+
 # ---------------------------------------------------------------------------
 # Registry — every optional integration the platform knows about.
 # Adding a new integration: add a row here. The startup banner picks it up.
@@ -104,9 +113,10 @@ CAPABILITIES: tuple[Capability, ...] = (
     Capability(
         name="trello",
         label="Trello",
-        env_vars=("TRELLO_KEY", "TRELLO_TOKEN"),
+        env_vars=(),
+        extra_check=_trello_configured,
         docs_anchor="03-extended-functionality.md#trello",
-        not_configured_message="Trello is not configured. Add TRELLO_KEY and TRELLO_TOKEN to .env to enable.",
+        not_configured_message="Trello is not configured. Add an account in the Lists app (Trello settings).",
     ),
     Capability(
         name="resend",

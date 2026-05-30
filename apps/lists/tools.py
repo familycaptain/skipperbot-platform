@@ -45,19 +45,15 @@ def _try_trello_match(name: str) -> tuple[str, str] | None:
         (board_name, trello_list_name) or None if no match.
     """
     try:
-        from trello_client import _load_config, get_lists
+        from trello_client import get_lists
+        from apps.lists import trello_config
 
-        config = _load_config()
-        boards = config.get("boards", {})
         norm = name.strip().lower()
 
         # For each configured board, check if the board name appears in the input
-        for board_key, board_cfg in boards.items():
-            board_names = [board_key]
-            if board_cfg.get("board_name"):
-                board_names.append(board_cfg["board_name"].lower())
-
-            for bname in board_names:
+        for board in trello_config.list_boards():
+            board_key = board["name"]
+            for bname in [board_key]:
                 if bname in norm:
                     # Board name found in input; strip it and match the remainder to a list
                     remainder = norm.replace(bname, "").strip()
@@ -65,7 +61,7 @@ def _try_trello_match(name: str) -> tuple[str, str] | None:
                         continue
 
                     # Check list_aliases — exact matches first, then substrings
-                    aliases = board_cfg.get("list_aliases", {})
+                    aliases = board.get("list_aliases", {})
                     # Pass 1: exact alias key or name match
                     for alias_key, alias_name in aliases.items():
                         if remainder == alias_key or remainder == alias_name.lower():
@@ -1150,11 +1146,13 @@ def connect_trello_board(
 ) -> str:
     """Connect a Trello board — register it, scan all lists, create local l-* files, and sync cards.
 
-    If the board is not yet in trello_boards.json, it will be added automatically.
-    You need the Trello board ID (from the board URL or Trello settings).
+    If the board is not yet configured (in the Lists app Trello settings), it will
+    be added automatically. You need the Trello board ID (from the board URL or
+    Trello settings).
 
-    Account auto-detection uses board name matching (configured in trello_boards.json).
-    If the correct account is unclear from context, ask the user which account to use.
+    Account auto-detection uses the only/first configured account when one isn't
+    given. If the correct account is unclear from context, ask the user which
+    account to use.
 
     After connecting, every list on the board becomes a local list that the user
     can reference by name (e.g. "add screws to hobby lobby"). Write-through to
@@ -1162,9 +1160,9 @@ def connect_trello_board(
 
     Args:
         board_name: Short name/key for the board (e.g. "shopping", "walmart", "project-alpha").
-            Used as the lookup key in trello_boards.json.
+            Used as the board lookup key.
         connected_by: Who is connecting this board (person name).
-        board_id: Trello board ID. Required for new boards not yet in trello_boards.json.
+        board_id: Trello board ID. Required for boards not yet configured.
             Found in the board URL: https://trello.com/b/{board_id}/...
         account: Which Trello account credentials to use (matches account keys in config).
             If empty, auto-detects based on board name.
@@ -1183,14 +1181,15 @@ def connect_trello_board(
         board = board_name.strip().lower()
         user = connected_by.strip().lower()
 
-        from trello_client import _load_config, _save_config, get_lists, check_board
+        from trello_client import get_lists, check_board
+        from apps.lists import trello_config
 
-        config = _load_config()
-        boards = config.get("boards", {})
+        existing = trello_config.get_board(board)
+        accounts = [a["name"] for a in trello_config.list_accounts()]
         registered_new = False
 
         # If board not in config, register it
-        if board not in boards:
+        if not existing:
             if not board_id or not board_id.strip():
                 return (
                     f"Board '{board}' is not yet configured. "
@@ -1198,33 +1197,20 @@ def connect_trello_board(
                     f"https://trello.com/b/BOARD_ID/board-name)."
                 )
 
-            # Auto-detect account from config
+            # Pick the account: explicit arg, else the only/first configured one.
             acct = account.strip().lower() if account else ""
             if not acct:
-                board_cfg = boards.get(board, {})
-                acct = board_cfg.get("account", config.get("default_account", ""))
-                if not acct:
-                    # Fall back to first account in config
-                    accounts = config.get("accounts", {})
-                    acct = next(iter(accounts), "") if accounts else ""
+                acct = accounts[0] if accounts else ""
 
-            # Verify the account exists in config
-            if acct not in config.get("accounts", {}):
-                available = ", ".join(config.get("accounts", {}).keys())
+            if acct not in accounts:
+                available = ", ".join(accounts) or "(none)"
                 return (
-                    f"Account '{acct}' not found in trello_boards.json. "
+                    f"Trello account '{acct}' is not configured. "
                     f"Available accounts: {available}. "
-                    f"Specify the correct account name."
+                    f"Add one in the Lists app (Trello settings) or specify the correct account name."
                 )
 
-            boards[board] = {
-                "account": acct,
-                "board_id": board_id.strip(),
-                "board_name": board_name.strip(),
-                "default_list": "",
-            }
-            config["boards"] = boards
-            _save_config(config)
+            trello_config.save_board(board, acct, board_id.strip(), "")
             registered_new = True
 
         # Verify board access
@@ -1248,7 +1234,7 @@ def connect_trello_board(
 
         # Build alias map from board config (list_aliases maps alias → Trello list name)
         # Reverse it to: trello_list_name_lower → [alias1, alias2, ...]
-        board_cfg = boards[board]
+        board_cfg = trello_config.get_board(board) or {}
         alias_map: dict[str, list[str]] = {}
         for alias_key, alias_target in board_cfg.get("list_aliases", {}).items():
             target_lower = alias_target.strip().lower()
@@ -1284,7 +1270,7 @@ def connect_trello_board(
 
         lines = []
         if registered_new:
-            acct_used = boards[board]["account"]
+            acct_used = (trello_config.get_board(board) or {}).get("account", "")
             lines.append(f"Registered new board '{board}' (account: {acct_used}, id: {board_id.strip()})")
         lines.append(f"Connected to Trello board '{board}':")
         if created:
@@ -1309,11 +1295,11 @@ def connect_trello_board(
 def disconnect_trello_board(
     board_name: str,
 ) -> str:
-    """Disconnect a Trello board — remove local l-* files and the board entry from trello_boards.json.
+    """Disconnect a Trello board — remove local l-* files and the board's config entry.
 
     This does NOT delete anything on Trello. It removes:
     1. All local l-* list files linked to this board
-    2. The board entry from trello_boards.json
+    2. The board's configuration entry (Lists app Trello settings)
 
     The board can be re-connected later with connect_trello_board.
 
@@ -1340,14 +1326,9 @@ def disconnect_trello_board(
                 _delete_list(lst["id"])
                 removed.append(f"{lst['id']} — {lst['name']}")
 
-        # Remove from trello_boards.json
-        from trello_client import _load_config, _save_config
-        config = _load_config()
-        config_removed = False
-        if board in config.get("boards", {}):
-            del config["boards"][board]
-            _save_config(config)
-            config_removed = True
+        # Remove the board config from the lists app DB
+        from apps.lists import trello_config
+        config_removed = trello_config.delete_board(board)
 
         if not removed and not config_removed:
             return f"Board '{board}' not found in config or local lists."
@@ -1358,7 +1339,7 @@ def disconnect_trello_board(
             for r in removed:
                 lines.append(f"    {r}")
         if config_removed:
-            lines.append(f"  Removed '{board}' from trello_boards.json")
+            lines.append(f"  Removed '{board}' from Trello config")
         lines.append("\nTrello board and cards are untouched.")
         return "\n".join(lines)
 

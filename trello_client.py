@@ -3,8 +3,9 @@
 Multi-account Trello REST client. Supports multiple credential sets
 (e.g., a primary family account + a secondary project account).
 
-Board configurations are stored in trello_boards.json.
-Credentials are read from environment variables specified per-account.
+Accounts (credentials, encrypted) and board configurations are stored in
+the Lists app DB and managed through its Trello settings UI. This module
+delegates all config/credential lookups to ``apps.lists.trello_config``.
 """
 
 import json
@@ -58,73 +59,31 @@ load_dotenv()
 
 API_BASE = "https://api.trello.com/1"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-BOARDS_CONFIG_PATH = os.path.join(BASE_DIR, "data", "trello_boards.json")
 
 
 # ---------------------------------------------------------------------------
-# Config loading
+# Config — accounts + boards live in the lists app DB (encrypted creds),
+# managed via the Lists app UI. See apps/lists/trello_config.py.
 # ---------------------------------------------------------------------------
-
-def _load_config() -> dict:
-    """Load trello_boards.json config."""
-    if not os.path.exists(BOARDS_CONFIG_PATH):
-        return {"accounts": {}, "boards": {}}
-    try:
-        with open(BOARDS_CONFIG_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (json.JSONDecodeError, IOError):
-        return {"accounts": {}, "boards": {}}
-
-
-def _save_config(config: dict):
-    """Save trello_boards.json config."""
-    with open(BOARDS_CONFIG_PATH, "w", encoding="utf-8") as f:
-        json.dump(config, f, indent=2)
-        f.flush()
-        os.fsync(f.fileno())
-
 
 def _get_account_creds(account_name: str) -> tuple[str, str]:
-    """Get (key, token) for a named account from env vars.
+    """Get (api_key, api_token) for a named account — decrypted from the DB.
 
-    Returns:
-        (api_key, api_token) tuple.
-
-    Raises:
-        ValueError if credentials not found.
+    Raises ValueError if the account isn't configured.
     """
-    config = _load_config()
-    account = config.get("accounts", {}).get(account_name)
-    if not account:
-        raise ValueError(f"Trello account '{account_name}' not found in config.")
-
-    key_env = account.get("key_env", "")
-    token_env = account.get("token_env", "")
-
-    key = os.getenv(key_env, "")
-    token = os.getenv(token_env, "")
-
-    if not key or not token:
-        raise ValueError(
-            f"Trello credentials missing for account '{account_name}'. "
-            f"Expected env vars: {key_env}, {token_env}"
-        )
-    return (key, token)
+    from apps.lists import trello_config
+    return trello_config.get_account_creds(account_name)
 
 
 def get_board_config(board_name: str) -> dict:
-    """Get config for a named board.
+    """Get config for a named board (account, board_id, default_list).
 
-    Returns:
-        Board config dict with account, board_id, etc.
-
-    Raises:
-        ValueError if board not configured.
+    Raises ValueError if the board isn't configured.
     """
-    config = _load_config()
-    board = config.get("boards", {}).get(board_name.lower())
+    from apps.lists import trello_config
+    board = trello_config.get_board(board_name)
     if not board:
-        available = list(config.get("boards", {}).keys())
+        available = [b["name"] for b in trello_config.list_boards()]
         raise ValueError(
             f"Board '{board_name}' not configured. "
             f"Available: {', '.join(available) if available else '(none)'}"
@@ -134,16 +93,8 @@ def get_board_config(board_name: str) -> dict:
 
 def list_configured_boards() -> list[dict]:
     """List all configured boards with their settings."""
-    config = _load_config()
-    result = []
-    for name, board in config.get("boards", {}).items():
-        result.append({
-            "name": name,
-            "account": board.get("account"),
-            "board_id": board.get("board_id"),
-            "default_list": board.get("default_list", ""),
-        })
-    return result
+    from apps.lists import trello_config
+    return trello_config.list_boards()
 
 
 # ---------------------------------------------------------------------------

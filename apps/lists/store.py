@@ -66,7 +66,7 @@ def create_list(
     Args:
         name: Display name of the list.
         created_by: Who created it.
-        trello_board: Optional board name from trello_boards.json for sync.
+        trello_board: Optional configured board name (Lists app Trello settings) for sync.
         trello_list_name: Optional Trello list name to link to.
         aliases: Optional list of nickname strings for matching.
 

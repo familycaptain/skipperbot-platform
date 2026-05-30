@@ -92,7 +92,12 @@ config:
     type: boolean
     default: false
     label: "Sync lists to Trello"
-    description: "Requires Trello configured in .env. See docs/03-extended-functionality.md."
+    description: "Requires a Trello account configured below. See docs/03-extended-functionality.md."
+  - key: trello_sync_interval_seconds
+    type: integer
+    default: 300
+    label: "Trello sync interval (seconds)"
+    description: "How often the background loop polls Trello for changes. Restart to apply."
 
 # No thinking domain — lists is passive infrastructure.
 thinking: []
