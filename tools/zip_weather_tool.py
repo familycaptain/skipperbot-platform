@@ -10,9 +10,7 @@ from datetime import date, datetime, time, timedelta
 from statistics import mean
 from zoneinfo import ZoneInfo
 
-from config import TIMEZONE
-
-_FALLBACK_TZ = ZoneInfo(TIMEZONE)
+from app_platform.time import get_timezone
 
 
 def _clean_zip(zip_code: str) -> str:
@@ -167,7 +165,7 @@ def _local_now(forecast: dict) -> datetime:
     try:
         return datetime.now(ZoneInfo(tz_name)).replace(tzinfo=None)
     except Exception:
-        return datetime.now(_FALLBACK_TZ).replace(tzinfo=None)
+        return datetime.now(get_timezone()).replace(tzinfo=None)
 
 
 def _period_window(period: str, now: datetime) -> tuple[datetime, datetime, str]:

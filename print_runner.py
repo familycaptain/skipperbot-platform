@@ -19,11 +19,9 @@ import shutil
 import subprocess
 import tempfile
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from config import logger, TIMEZONE
+from config import logger
 
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 

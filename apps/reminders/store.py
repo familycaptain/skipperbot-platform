@@ -32,7 +32,8 @@ from dateutil.rrule import rrulestr
 
 from auto_memory import log_entity_change
 from app_platform.memory import digest_record
-from config import NAG_WAKE_HOUR, NAG_SLEEP_HOUR, NAG_SLOTS, TIMEZONE
+from config import NAG_WAKE_HOUR, NAG_SLEEP_HOUR, NAG_SLOTS
+from app_platform.time import get_timezone
 from apps.reminders import data as _dl_rem
 import app_platform.schedules as _dl_sched  # platform contract — forwards to apps.schedules
 
@@ -41,11 +42,6 @@ _REMINDER_HINT = (
     "Focus on: who the reminder is for, the reminder message, when it fires (remind_at), "
     "whether it repeats (recurrence rule), and whether it is a daily nag reminder."
 )
-
-# Module-local timezone for ISO timestamps. Mirrors the pattern used by
-# the other store modules (goals, lists, notifications). The name is
-# historical; the value reflects whatever the TIMEZONE env var points to.
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 # RRULE day abbreviation → schedule day name
 # Mapping for converting old dict-format recurrence to RRULE strings
@@ -102,7 +98,7 @@ def create_reminder(
     """
     reminders = _load_reminders()
 
-    now = datetime.now(CENTRAL_TZ)
+    now = datetime.now(get_timezone())
 
     # Normalize recurrence: convert old dict format to RRULE string
     rrule_str = None
@@ -184,7 +180,7 @@ def create_nag(user_id: str, message: str, time_slot: str | None = None) -> dict
             time_slot = None  # fall back to full waking hours
 
     reminders = _load_reminders()
-    now = datetime.now(CENTRAL_TZ)
+    now = datetime.now(get_timezone())
     today = now.date()
 
     nag_id = f"r-{uuid.uuid4().hex[:8]}"
@@ -238,7 +234,7 @@ def assign_nag_times():
     so that nags within the same slot are spread across that window.
     """
     reminders = _load_reminders()
-    today = datetime.now(CENTRAL_TZ).date()
+    today = datetime.now(get_timezone()).date()
     changed = False
 
     # Group active nags by (user_id, time_slot) for proper slot spreading
@@ -264,7 +260,7 @@ def assign_nag_times():
             # Assign a new random time for today — but only if it's still in the future
             new_time = _nag_time_for_date(nag["id"], today, idx, total,
                                           time_slot=nag.get("time_slot"))
-            if new_time > datetime.now(CENTRAL_TZ):
+            if new_time > datetime.now(get_timezone()):
                 nag["remind_at"] = new_time.isoformat()
                 changed = True
 
@@ -312,7 +308,7 @@ def _nag_time_for_date(
     return datetime(
         target_date.year, target_date.month, target_date.day,
         fire_minute // 60, fire_minute % 60,
-        tzinfo=CENTRAL_TZ,
+        tzinfo=get_timezone(),
     )
 
 
@@ -424,7 +420,7 @@ def modify_reminder(
 
                 # Reschedule into the new window if slot changed and no explicit remind_at
                 if slot_changed and remind_at is None:
-                    now = datetime.now(CENTRAL_TZ)
+                    now = datetime.now(get_timezone())
                     today = now.date()
                     same_slot_nags = [x for x in reminders
                                       if x.get("nag") and x.get("active", True)
@@ -461,9 +457,9 @@ def modify_reminder(
                         try:
                             next_due = datetime.fromisoformat(r["remind_at"])
                             if next_due.tzinfo is None:
-                                next_due = next_due.replace(tzinfo=CENTRAL_TZ)
+                                next_due = next_due.replace(tzinfo=get_timezone())
                             else:
-                                next_due = next_due.astimezone(CENTRAL_TZ)
+                                next_due = next_due.astimezone(get_timezone())
                             sched_updates["next_due"] = next_due
                         except (ValueError, TypeError):
                             pass
@@ -502,13 +498,13 @@ def _rrule_to_schedule_params(rrule_str: str, dtstart_iso: str) -> dict:
     try:
         dt = datetime.fromisoformat(dtstart_iso)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=CENTRAL_TZ)
+            dt = dt.replace(tzinfo=get_timezone())
         else:
-            dt = dt.astimezone(CENTRAL_TZ)
+            dt = dt.astimezone(get_timezone())
         if dt.hour or dt.minute:
             time_of_day = f"{dt.hour:02d}:{dt.minute:02d}"
     except (ValueError, TypeError):
-        dt = datetime.now(CENTRAL_TZ)
+        dt = datetime.now(get_timezone())
     return {
         "recurrence_type": "rrule",
         "recurrence_rule": {
@@ -576,7 +572,7 @@ def _fix_until_tz(rrule_string: str, dtstart: datetime) -> str:
     try:
         naive_dt = datetime.strptime(naive_str, "%Y%m%dT%H%M%S")
         # Treat as platform-local, convert to UTC
-        local_dt = naive_dt.replace(tzinfo=CENTRAL_TZ)
+        local_dt = naive_dt.replace(tzinfo=get_timezone())
         utc_dt = local_dt.astimezone(ZoneInfo("UTC"))
         utc_str = utc_dt.strftime("%Y%m%dT%H%M%S") + "Z"
         return rrule_string.replace(f"UNTIL={naive_str}", f"UNTIL={utc_str}")
@@ -591,7 +587,7 @@ def _fix_until_tz(rrule_string: str, dtstart: datetime) -> str:
 def get_due_reminders() -> list[dict]:
     """Get all active reminders that are due (remind_at <= now)."""
     reminders = _load_reminders()
-    now = datetime.now(CENTRAL_TZ)
+    now = datetime.now(get_timezone())
     due = []
     for r in reminders:
         if not r.get("active", True):
@@ -599,7 +595,7 @@ def get_due_reminders() -> list[dict]:
         try:
             remind_at = datetime.fromisoformat(r["remind_at"])
             if remind_at.tzinfo is None:
-                remind_at = remind_at.replace(tzinfo=CENTRAL_TZ)
+                remind_at = remind_at.replace(tzinfo=get_timezone())
             if remind_at <= now:
                 due.append(r)
         except (ValueError, KeyError):
@@ -616,7 +612,7 @@ def mark_delivered(reminder_id: str):
         if r["id"] == reminder_id:
             if r.get("nag"):
                 # Nag: record today, assign a new random time for tomorrow
-                today = datetime.now(CENTRAL_TZ).date()
+                today = datetime.now(get_timezone()).date()
                 r["last_nagged"] = today.isoformat()
                 tomorrow = today + timedelta(days=1)
                 # Count this user's active nags in the same time_slot to spread times
@@ -646,7 +642,7 @@ def mark_delivered(reminder_id: str):
                     if r.get("recurrence"):
                         current_dt = datetime.fromisoformat(r["remind_at"])
                         if current_dt.tzinfo is None:
-                            current_dt = current_dt.replace(tzinfo=CENTRAL_TZ)
+                            current_dt = current_dt.replace(tzinfo=get_timezone())
                         next_time = compute_next_occurrence(current_dt, r["recurrence"])
                         if next_time:
                             r["remind_at"] = next_time.isoformat()
@@ -657,7 +653,7 @@ def mark_delivered(reminder_id: str):
             elif r.get("recurrence"):
                 current_dt = datetime.fromisoformat(r["remind_at"])
                 if current_dt.tzinfo is None:
-                    current_dt = current_dt.replace(tzinfo=CENTRAL_TZ)
+                    current_dt = current_dt.replace(tzinfo=get_timezone())
                 next_time = compute_next_occurrence(current_dt, r["recurrence"])
                 if next_time:
                     r["remind_at"] = next_time.isoformat()
@@ -686,7 +682,7 @@ def snooze_reminder(reminder_id: str, minutes: int) -> dict | str:
     if not original:
         return f"Reminder '{reminder_id}' not found."
 
-    now = datetime.now(CENTRAL_TZ)
+    now = datetime.now(get_timezone())
     fire_at = now + timedelta(minutes=max(1, minutes))
 
     # Build message — preserve the original message, note it's a follow-up
@@ -734,7 +730,7 @@ def compute_next_occurrence(current_dt: datetime, recurrence) -> datetime | None
         Next timezone-aware datetime in the platform's local timezone, or None if ended.
     """
     if current_dt.tzinfo is None:
-        current_dt = current_dt.replace(tzinfo=CENTRAL_TZ)
+        current_dt = current_dt.replace(tzinfo=get_timezone())
 
     # Convert legacy dict to RRULE string
     if isinstance(recurrence, dict):
@@ -753,7 +749,7 @@ def compute_next_occurrence(current_dt: datetime, recurrence) -> datetime | None
             return None
         # Ensure local timezone
         if next_dt.tzinfo is None:
-            next_dt = next_dt.replace(tzinfo=CENTRAL_TZ)
+            next_dt = next_dt.replace(tzinfo=get_timezone())
         return next_dt
     except (ValueError, TypeError) as e:
         # Fallback: if RRULE parsing fails, return None (deactivates reminder)

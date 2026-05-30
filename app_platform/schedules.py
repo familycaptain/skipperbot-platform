@@ -41,9 +41,6 @@ from apps.schedules.data import (
     # reach in for row-dict normalization or RRULE iteration helpers.
     _row_to_dict,
     _expand_rrule_occurrences,
-    # Module-local timezone (a small handful of agent.py call sites
-    # import this).
-    CENTRAL_TZ,
 )
 
 __all__ = [
@@ -58,5 +55,4 @@ __all__ = [
     "get_calendar_events",
     "compute_next_due",
     "describe_recurrence",
-    "CENTRAL_TZ",
 ]

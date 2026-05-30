@@ -7,12 +7,9 @@ observation, note, process_position).
 
 import uuid
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from config import TIMEZONE
+from app_platform.time import get_timezone
 from data_layer.db import fetch_one, fetch_all, execute
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 VALID_STATE_TYPES = frozenset([
     "focus", "working_memory", "pending_action",
@@ -28,7 +25,7 @@ def _new_id() -> str:
 
 
 def _now() -> datetime:
-    return datetime.now(CENTRAL_TZ)
+    return datetime.now(get_timezone())
 
 
 def _row_to_dict(row) -> dict | None:

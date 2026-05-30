@@ -19,11 +19,8 @@ import asyncio
 import json
 import time
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
-
-from config import logger, TIMEZONE
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
+from config import logger
+from app_platform.time import get_timezone
 
 # How often the supervisor checks for domain config changes (enable/disable)
 SUPERVISOR_INTERVAL_SECONDS = 120
@@ -258,7 +255,7 @@ async def _domain_loop(domain_name: str, domain_config: dict):
         sleep_seconds = default_interval
 
         try:
-            now = datetime.now(CENTRAL_TZ)
+            now = datetime.now(get_timezone())
 
             # Time-based gating
             if len(active_hours) >= 2:

@@ -12,16 +12,14 @@ import os
 import re
 from datetime import datetime, time as dtime
 from typing import Any, Optional
-from zoneinfo import ZoneInfo
 
 import logging
 
 import httpx
 from dotenv import load_dotenv
 
-from config import logger, TIMEZONE
-
-_LOCAL_TZ = ZoneInfo(TIMEZONE)
+from config import logger
+from app_platform.time import get_timezone
 
 
 def _normalize_due_date(due: str) -> str:
@@ -47,7 +45,7 @@ def _normalize_due_date(due: str) -> str:
     date_str = m.group(1)
     try:
         d = datetime.strptime(date_str, "%Y-%m-%d")
-        eod = datetime.combine(d.date(), dtime(23, 59, 59), tzinfo=_LOCAL_TZ)
+        eod = datetime.combine(d.date(), dtime(23, 59, 59), tzinfo=get_timezone())
         return eod.isoformat()
     except ValueError:
         return due

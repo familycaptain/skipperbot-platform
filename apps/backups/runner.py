@@ -63,13 +63,13 @@ def _staging_dir() -> str:
 
 
 def _timezone() -> ZoneInfo:
-    from config import TIMEZONE
-    return ZoneInfo(TIMEZONE)
+    from app_platform.time import get_timezone
+    return get_timezone()
 
 
 def _tz_name() -> str:
-    from config import TIMEZONE
-    return TIMEZONE
+    from app_platform.time import get_timezone
+    return get_timezone().key
 
 
 ZIP_EXCLUDES = {

@@ -3,12 +3,9 @@ Data layer for thinking_domains — registry of domains Skipper thinks about.
 """
 
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from config import TIMEZONE
+from app_platform.time import get_timezone
 from data_layer.db import fetch_one, fetch_all, execute
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 
 def _row_to_dict(row) -> dict | None:
@@ -45,7 +42,7 @@ def update_domain(name: str, **kwargs) -> dict | None:
     if not updates:
         return get_domain(name)
 
-    updates["updated_at"] = datetime.now(CENTRAL_TZ)
+    updates["updated_at"] = datetime.now(get_timezone())
 
     set_parts = []
     params: list = []
@@ -77,7 +74,7 @@ def create_domain(
 ) -> dict:
     """Create a new thinking domain."""
     import json
-    now = datetime.now(CENTRAL_TZ)
+    now = datetime.now(get_timezone())
     execute("""
         INSERT INTO thinking_domains
             (name, description, observe_tool, evaluate_tool, act_tool,

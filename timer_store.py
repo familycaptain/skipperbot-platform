@@ -12,11 +12,8 @@ tool functions), so no locking is required.
 import uuid
 from datetime import datetime
 from typing import Optional
-from zoneinfo import ZoneInfo
 
-from config import TIMEZONE
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
+from app_platform.time import get_timezone
 
 # Active timers, keyed by "tm-xxxxxxxx" id. Each value:
 #   {
@@ -36,7 +33,7 @@ def new_timer_id() -> str:
 
 
 def _now() -> datetime:
-    return datetime.now(CENTRAL_TZ)
+    return datetime.now(get_timezone())
 
 
 def register(timer_id: str, user_id: str, name: str, duration_seconds: int, task) -> dict:

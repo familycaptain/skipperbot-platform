@@ -12,12 +12,9 @@ load_dotenv()
 import os
 import stat
 import datetime
-from zoneinfo import ZoneInfo
 from typing import List, Tuple
 
-from config import TIMEZONE
-
-_TZ = ZoneInfo(TIMEZONE)
+from app_platform.time import get_timezone
 
 
 def ls_dir(path: str = ".",
@@ -130,7 +127,7 @@ def ls_dir(path: str = ".",
         for rel, st in entries:
             mode = stat.filemode(st.st_mode)
             size = st.st_size
-            mtime = datetime.datetime.fromtimestamp(st.st_mtime, _TZ).strftime("%Y-%m-%d %H:%M:%S")
+            mtime = datetime.datetime.fromtimestamp(st.st_mtime, get_timezone()).strftime("%Y-%m-%d %H:%M:%S")
             lines.append(f"{mode:<10} {size:>10}  {mtime}  {rel}")
 
         if not entries:

@@ -20,9 +20,9 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import Optional
-from zoneinfo import ZoneInfo
 
-from config import logger, TIMEZONE
+from config import logger
+from app_platform.time import get_timezone
 from auto_memory import log_entity_change
 from app_platform.memory import digest_record
 from apps.notifications import data as _dl_notif
@@ -33,13 +33,9 @@ _NOTIFICATION_HINT = (
     "delivery channel (discord/pushover/chat), and whether delivery succeeded."
 )
 
-# Module-local timezone for ISO timestamps. Mirrors the pattern used by
-# apps/goals/store.py, apps/lists/store.py, and timer_store.py.
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
-
 
 def _now_iso() -> str:
-    return datetime.now(CENTRAL_TZ).isoformat()
+    return datetime.now(get_timezone()).isoformat()
 
 
 # ---------------------------------------------------------------------------

@@ -22,23 +22,19 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import Optional
-from zoneinfo import ZoneInfo
 
-from config import logger, TIMEZONE
+from config import logger
+from app_platform.time import get_timezone
 from auto_memory import log_entity_change
 from apps.jobs import data as _q
 from app_platform.db import execute_in_schema
-
-# Module-local timezone for ISO timestamps. Mirrors the pattern used
-# by the other store modules.
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 VALID_STATUSES = {"active", "paused", "completed", "failed", "queued", "running", "cancelled"}
 VALID_JOB_TYPES = {"shell", "research", "print", "refine", "pm", "investment", "rebalance"}
 
 
 def _now_iso() -> str:
-    return datetime.now(CENTRAL_TZ).isoformat()
+    return datetime.now(get_timezone()).isoformat()
 
 
 # ---------------------------------------------------------------------------

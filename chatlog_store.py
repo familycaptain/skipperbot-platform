@@ -9,17 +9,14 @@ import os
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
-from zoneinfo import ZoneInfo
 
 from openai import OpenAI
 from dotenv import load_dotenv
 
-from config import TIMEZONE
+from app_platform.time import get_timezone
 import data_layer.chatlogs as _dl_chat
 
 load_dotenv()
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIM = 1536
@@ -142,7 +139,7 @@ def _parse_date(date_str: str) -> Optional[datetime]:
     for fmt in ("%Y-%m-%d", "%m/%d/%Y", "%B %d, %Y", "%b %d, %Y", "%Y-%m-%dT%H:%M:%S"):
         try:
             dt = datetime.strptime(date_str, fmt)
-            return dt.replace(tzinfo=CENTRAL_TZ)
+            return dt.replace(tzinfo=get_timezone())
         except ValueError:
             continue
     return None

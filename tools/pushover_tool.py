@@ -2,14 +2,13 @@ import json
 import os
 import time
 from datetime import datetime
-from zoneinfo import ZoneInfo
 import requests
 
 import sys
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _BASE_DIR not in sys.path:
     sys.path.insert(0, _BASE_DIR)
-from config import TIMEZONE
+from app_platform.time import get_timezone
 
 _CONFIG_PATH = os.path.join(_BASE_DIR, "data", "pushover_users.json")
 
@@ -79,7 +78,7 @@ def send_pushover_notification(user_id: str, message: str, cooldown_seconds: int
             return f"Skipped: duplicate alert cooldown active for {remaining}s for message: {msg!r}"
 
         # Priority based on configured timezone hour
-        now_ct = datetime.now(ZoneInfo(TIMEZONE))
+        now_ct = datetime.now(get_timezone())
         hour = now_ct.hour
         if hour >= 22 or hour < 6:
             priority = -1

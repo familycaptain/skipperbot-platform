@@ -5,12 +5,9 @@ Data layer for thinking_log — audit trail of every thinking cycle.
 import uuid
 import json
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from config import TIMEZONE
+from app_platform.time import get_timezone
 from data_layer.db import fetch_one, fetch_all, execute
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 
 def _new_id() -> str:
@@ -39,7 +36,7 @@ def log_cycle(
 ) -> dict:
     """Record a thinking cycle to the log."""
     log_id = _new_id()
-    now = datetime.now(CENTRAL_TZ)
+    now = datetime.now(get_timezone())
 
     execute("""
         INSERT INTO thinking_log

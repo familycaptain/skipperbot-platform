@@ -41,13 +41,11 @@ from app_platform.db import (
 )
 from data_layer.links import ensure_edge  # platform infra — links live in public.*
 
-from config import TIMEZONE as _CFG_TZ
+from app_platform.time import get_timezone
 
 logger = logging.getLogger(__name__)
 
 SCHEMA = "app_schedules"
-
-CENTRAL_TZ = ZoneInfo(_CFG_TZ)
 
 VALID_CATEGORIES = {"chore", "maintenance", "school", "auto", "medical", "general"}
 VALID_RECURRENCE_TYPES = {"daily", "weekly", "monthly", "yearly", "interval", "cron", "rrule"}
@@ -122,7 +120,7 @@ def _completion_id() -> str:
 
 
 def _now() -> datetime:
-    return datetime.now(CENTRAL_TZ)
+    return datetime.now(get_timezone())
 
 
 def _coerce_central_datetime(value, fallback_time: Optional[time] = None) -> datetime:
@@ -133,9 +131,9 @@ def _coerce_central_datetime(value, fallback_time: Optional[time] = None) -> dat
         from dateutil.parser import parse as _dtparse
         dt = _dtparse(str(value))
     if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=CENTRAL_TZ)
+        dt = dt.replace(tzinfo=get_timezone())
     else:
-        dt = dt.astimezone(CENTRAL_TZ)
+        dt = dt.astimezone(get_timezone())
     if fallback_time is not None:
         dt = dt.replace(
             hour=fallback_time.hour,
@@ -168,7 +166,7 @@ def _fix_until_tz(rrule_string: str, dtstart: datetime) -> str:
     naive_str = match.group(1)
     try:
         naive_dt = datetime.strptime(naive_str, "%Y%m%dT%H%M%S")
-        utc_dt = naive_dt.replace(tzinfo=CENTRAL_TZ).astimezone(ZoneInfo("UTC"))
+        utc_dt = naive_dt.replace(tzinfo=get_timezone()).astimezone(ZoneInfo("UTC"))
         return rrule_string.replace(
             f"UNTIL={naive_str}",
             f"UNTIL={utc_dt.strftime('%Y%m%dT%H%M%SZ')}",
@@ -218,9 +216,9 @@ def _next_rrule(now: datetime, rule: dict) -> Optional[datetime]:
     if next_dt is None:
         return None
     if next_dt.tzinfo is None:
-        next_dt = next_dt.replace(tzinfo=CENTRAL_TZ)
+        next_dt = next_dt.replace(tzinfo=get_timezone())
     else:
-        next_dt = next_dt.astimezone(CENTRAL_TZ)
+        next_dt = next_dt.astimezone(get_timezone())
     return next_dt
 
 
@@ -230,9 +228,9 @@ def _expand_rrule_occurrences(rule: dict, start: datetime, end: datetime) -> lis
     normalized = []
     for occ in occurrences:
         if occ.tzinfo is None:
-            occ = occ.replace(tzinfo=CENTRAL_TZ)
+            occ = occ.replace(tzinfo=get_timezone())
         else:
-            occ = occ.astimezone(CENTRAL_TZ)
+            occ = occ.astimezone(get_timezone())
         normalized.append(occ)
     return normalized
 
@@ -257,7 +255,7 @@ def compute_next_due(
     """
     now = from_dt or _now()
     if isinstance(now, datetime) and now.tzinfo is None:
-        now = now.replace(tzinfo=CENTRAL_TZ)
+        now = now.replace(tzinfo=get_timezone())
 
     tod = _parse_time_of_day(time_of_day)
 
@@ -298,9 +296,9 @@ def _next_month_start(year: int, month: int) -> tuple[int, int]:
 
 def _monthly_matches(year: int, month: int, weekdays: list[int]) -> list[datetime]:
     matches: list[datetime] = []
-    cursor = datetime(year, month, 1, tzinfo=CENTRAL_TZ)
+    cursor = datetime(year, month, 1, tzinfo=get_timezone())
     next_year, next_month = _next_month_start(year, month)
-    month_end = datetime(next_year, next_month, 1, tzinfo=CENTRAL_TZ)
+    month_end = datetime(next_year, next_month, 1, tzinfo=get_timezone())
     while cursor < month_end:
         if cursor.weekday() in weekdays:
             matches.append(cursor)
@@ -363,9 +361,9 @@ def _next_monthly(now: datetime, rule: dict, tod: Optional[time]) -> datetime:
         year = now.year
         for _ in range(3):
             if month == 12:
-                next_month_first = datetime(year + 1, 1, 1, tzinfo=CENTRAL_TZ)
+                next_month_first = datetime(year + 1, 1, 1, tzinfo=get_timezone())
             else:
-                next_month_first = datetime(year, month + 1, 1, tzinfo=CENTRAL_TZ)
+                next_month_first = datetime(year, month + 1, 1, tzinfo=get_timezone())
             last_day = next_month_first - timedelta(days=1)
             candidate = _apply_time(last_day, tod)
             if candidate > now:
@@ -378,7 +376,7 @@ def _next_monthly(now: datetime, rule: dict, tod: Optional[time]) -> datetime:
         for _ in range(3):
             try:
                 candidate = _apply_time(
-                    datetime(year, month, day, tzinfo=CENTRAL_TZ), tod
+                    datetime(year, month, day, tzinfo=get_timezone()), tod
                 )
                 if candidate > now:
                     return candidate
@@ -418,7 +416,7 @@ def _next_yearly(now: datetime, rule: dict, tod: Optional[time]) -> datetime:
         for month in months:
             try:
                 candidate = _apply_time(
-                    datetime(year, month, min(day, 28), tzinfo=CENTRAL_TZ), tod
+                    datetime(year, month, min(day, 28), tzinfo=get_timezone()), tod
                 )
                 if candidate > now:
                     return candidate
@@ -442,7 +440,7 @@ def _next_cron(now: datetime, rule: dict) -> Optional[datetime]:
     try:
         from croniter import croniter
         cron = croniter(expr, now)
-        return cron.get_next(datetime).replace(tzinfo=CENTRAL_TZ)
+        return cron.get_next(datetime).replace(tzinfo=get_timezone())
     except ImportError:
         logger.warning("croniter not installed — cron schedule ignored")
     except Exception as e:
@@ -537,7 +535,7 @@ def create_schedule(
             h, m = (int(x) for x in effective_time_of_day.split(":"))
             dt = dt.replace(hour=h, minute=m, second=0)
         if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=CENTRAL_TZ)
+            dt = dt.replace(tzinfo=get_timezone())
         next_due = dt
     else:
         next_due = compute_next_due(effective_recurrence_type, rule, effective_time_of_day)
@@ -834,8 +832,8 @@ def get_calendar_events(
     Returns a list of event dicts, one per occurrence per day, sorted by date.
     Each event: {schedule_id, title, category, assigned_to, date, time_of_day, overdue}
     """
-    start = datetime.strptime(from_date, "%Y-%m-%d").replace(tzinfo=CENTRAL_TZ)
-    end = datetime.strptime(to_date, "%Y-%m-%d").replace(tzinfo=CENTRAL_TZ, hour=23, minute=59, second=59)
+    start = datetime.strptime(from_date, "%Y-%m-%d").replace(tzinfo=get_timezone())
+    end = datetime.strptime(to_date, "%Y-%m-%d").replace(tzinfo=get_timezone(), hour=23, minute=59, second=59)
 
     # Fetch all active schedules
     clauses = ["active = TRUE"]

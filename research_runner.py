@@ -20,11 +20,9 @@ import urllib.parse
 import urllib.request
 from datetime import datetime
 from html.parser import HTMLParser
-from zoneinfo import ZoneInfo
 
-from config import logger, openai_client, SMART_MODEL, DUMB_MODEL, TIMEZONE
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
+from config import logger, openai_client, SMART_MODEL, DUMB_MODEL
+from app_platform.time import get_timezone
 
 # Max chars of page text to send to the LLM for summarization
 _MAX_PAGE_CHARS = 6000
@@ -593,7 +591,7 @@ def _run_research_pipeline(job: dict) -> dict:
         header = (
             f"# Research: {query}\n\n"
             f"> *Automated research by SkipperBot | "
-            f"{datetime.now(CENTRAL_TZ).strftime('%B %d, %Y at %I:%M %p')} CT | "
+            f"{datetime.now(get_timezone()).strftime('%B %d, %Y at %I:%M %p')} CT | "
             f"{result['sources_read']}/{result['sources_found']} sources read"
             f"{spec_note}*\n{strategy_note}\n"
         )
@@ -1261,7 +1259,7 @@ def _run_refine_pipeline(job: dict) -> dict:
         header = (
             f"# {original_title} (v{new_version})\n\n"
             f"> *Revised by SkipperBot | "
-            f"{datetime.now(CENTRAL_TZ).strftime('%B %d, %Y at %I:%M %p')} CT | "
+            f"{datetime.now(get_timezone()).strftime('%B %d, %Y at %I:%M %p')} CT | "
             f"Based on {doc_id} | "
             f"{result['sources_read']} additional sources*\n\n"
             f"> *Refinement: {instructions[:200]}*\n\n"

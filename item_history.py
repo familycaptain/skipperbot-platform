@@ -20,11 +20,8 @@ import json
 import os
 import re
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from config import TIMEZONE
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
+from app_platform.time import get_timezone
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 HISTORY_PATH = os.path.join(BASE_DIR, "data", "trello_item_history.json")
 
@@ -87,7 +84,7 @@ def record_items(board: str, list_name: str, card_titles: list[str]):
         return
 
     data = _load()
-    now = datetime.now(CENTRAL_TZ).isoformat()
+    now = datetime.now(get_timezone()).isoformat()
 
     for title in card_titles:
         key = _normalize_key(title)
@@ -111,7 +108,7 @@ def record_items_bulk(board: str, cards_by_list: dict[str, list[str]]):
         cards_by_list: {list_name: [card_title, ...], ...}
     """
     data = _load()
-    now = datetime.now(CENTRAL_TZ).isoformat()
+    now = datetime.now(get_timezone()).isoformat()
 
     for list_name, titles in cards_by_list.items():
         for title in titles:

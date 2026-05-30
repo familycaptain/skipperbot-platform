@@ -12,18 +12,16 @@ import mimetypes
 import os
 import uuid
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from config import logger, TIMEZONE
+from config import logger
+from app_platform.time import get_timezone
 from auto_memory import log_entity_change
 from link_registry import create_link, delete_links_for_entity
 import data_layer.artifacts as _dl_art
 
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
-
 
 def _now_iso() -> str:
-    return datetime.now(CENTRAL_TZ).isoformat()
+    return datetime.now(get_timezone()).isoformat()
 
 
 # ---------------------------------------------------------------------------

@@ -11,11 +11,9 @@ import asyncio
 import json
 import os
 from datetime import datetime, date, timedelta
-from zoneinfo import ZoneInfo
 
-from config import logger, pm_audit_logger, TIMEZONE, PM_QUIET_MODE
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
+from config import logger, pm_audit_logger, PM_QUIET_MODE
+from app_platform.time import get_timezone
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PM_STATE_FILE = os.path.join(BASE_DIR, "data", "pm_state.json")
 
@@ -67,7 +65,7 @@ async def check_and_run_pm(force: bool = False):
     to prevent duplicate scrum DMs when multiple triggers fire on the same day.
     Use run_pm_now() to truly bypass the guard (it clears last_run_date first).
     """
-    now = datetime.now(CENTRAL_TZ)
+    now = datetime.now(get_timezone())
 
     if not force and now.hour < PM_RUN_HOUR:
         return  # too early
@@ -161,7 +159,7 @@ async def run_pm_check():
                 if pa.get("due_at"):
                     try:
                         due_dt = datetime.fromisoformat(pa["due_at"])
-                        age_days = (datetime.now(CENTRAL_TZ) - due_dt).days
+                        age_days = (datetime.now(get_timezone()) - due_dt).days
                         if age_days > 7:
                             expire_state(pa["id"])
                             actions_taken[-1]["action"] = "expired (>7d old)"
@@ -343,7 +341,7 @@ def _gather_scrum_data() -> dict[str, dict]:
         get_next_naggable_task,
     )
 
-    now = datetime.now(CENTRAL_TZ)
+    now = datetime.now(get_timezone())
     yesterday_cutoff = now.timestamp() - 86400  # 24 hours ago
 
     # System users that should never receive scrum DMs
@@ -411,7 +409,7 @@ def _gather_scrum_data() -> dict[str, dict]:
                             try:
                                 ts = datetime.fromisoformat(h["timestamp"])
                                 if ts.tzinfo is None:
-                                    ts = ts.replace(tzinfo=CENTRAL_TZ)
+                                    ts = ts.replace(tzinfo=get_timezone())
                                 if ts.timestamp() >= yesterday_cutoff:
                                     recent_done.append((t.get("name", t["id"]), t["id"]))
                             except (ValueError, KeyError, TypeError):

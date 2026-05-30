@@ -16,12 +16,10 @@ import asyncio
 import json
 import os
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
-from config import logger, SMART_MODEL, TIMEZONE, PROMPTS_DIR
+from config import logger, SMART_MODEL, PROMPTS_DIR
+from app_platform.time import get_timezone
 import agent_loop
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 DUMB_MODEL = os.getenv("DUMB_MODEL", "gpt-5-mini")
 
 # Threshold: below this many state items we use the cheaper model
@@ -252,7 +250,7 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
                     content=json.dumps({
                         "dm_to": dm_to,
                         "dm_text": dm_text[:200],
-                        "sent_at": datetime.now(CENTRAL_TZ).isoformat(),
+                        "sent_at": datetime.now(get_timezone()).isoformat(),
                     }),
                     priority="medium",
                 )
@@ -384,7 +382,7 @@ def _observe(goal_id: str, domain_name: str) -> dict:
         "working_memory": working_memory,
         "working_memory_count": len(working_memory),
         "memories": memories,
-        "now": datetime.now(CENTRAL_TZ).isoformat(),
+        "now": datetime.now(get_timezone()).isoformat(),
     }
 
 

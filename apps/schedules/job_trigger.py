@@ -21,11 +21,8 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from config import logger, TIMEZONE
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
+from config import logger
 
 
 async def check_schedule_jobs():

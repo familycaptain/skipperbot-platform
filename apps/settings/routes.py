@@ -212,6 +212,12 @@ async def api_patch_platform_settings(req: PlatformSettingsPatch):
     def _do():
         for key, value in req.values.items():
             platform_config.set(key, value, scope="platform", by="settings-ui")
+        # Invalidate in-process caches for keys that are cached by
+        # app_platform services. Currently just the timezone — extend
+        # this list when other platform settings start being cached.
+        if "timezone" in req.values:
+            from app_platform.time import invalidate_platform_timezone_cache
+            invalidate_platform_timezone_cache()
         return {
             "scope": "platform",
             "values": platform_config.list_keys(scope="platform"),

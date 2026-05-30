@@ -93,7 +93,6 @@ NAG_SLOTS = {
 }
 NAG_SLOTS["night"] = NAG_SLOTS["evening"]  # alias
 
-TIMEZONE = os.getenv("TIMEZONE", "Etc/UTC")
 # Discord is an OPTIONAL integration. We only turn it on when the user
 # has actually supplied a token, OR explicitly sets DISCORD_ENABLED=true.
 # Default-on caused first-time installs to log "Discord ready" followed

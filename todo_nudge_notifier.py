@@ -13,17 +13,15 @@ Nudge fires once per week on the user's configured nudge_day at nudge_time.
 
 import asyncio
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
-from config import logger, TIMEZONE
+from config import logger
+from app_platform.time import get_timezone
 from app_platform.notifications import create_notification
 from data_layer.db import fetch_one as _db_fetch_one
 
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
-
 
 def _now():
-    return datetime.now(CENTRAL_TZ)
+    return datetime.now(get_timezone())
 
 
 def _has_nudge_today(user_id: str) -> bool:

@@ -13,7 +13,8 @@ import inspect
 from pathlib import Path
 from typing import Iterable
 
-from config import PROMPTS_DIR, TIMEZONE, apply_prompt_templates
+from config import PROMPTS_DIR, apply_prompt_templates
+from app_platform.time import get_timezone
 
 
 GLOBAL_CATEGORIES = {"core", "utility", "web", "knowledge", "filesystem", "timers"}
@@ -305,9 +306,8 @@ def build_current_time_context() -> str:
     fresh on each wake-word detection, so this stays accurate per conversation.
     """
     from datetime import datetime
-    from zoneinfo import ZoneInfo
 
-    now = datetime.now(ZoneInfo(TIMEZONE))
+    now = datetime.now(get_timezone())
     return (
         "\n## Current Time\n"
         f"- {now.strftime('%A, %B %d, %Y at %I:%M %p')} Central Time "

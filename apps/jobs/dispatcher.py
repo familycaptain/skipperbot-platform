@@ -27,10 +27,9 @@ import contextvars
 import logging
 import uuid
 from datetime import datetime
-from zoneinfo import ZoneInfo
 from typing import Callable, Awaitable
 
-from config import logger, TIMEZONE
+from config import logger
 from app_platform.db import execute_in_schema
 from apps.jobs.data import SCHEMA as _JOBS_SCHEMA
 
@@ -79,8 +78,6 @@ _job_log_handler = JobLogHandler()
 _job_log_handler.setLevel(logging.INFO)
 _job_log_handler.setFormatter(logging.Formatter("%(message)s"))
 logging.getLogger().addHandler(_job_log_handler)
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 # Check interval (seconds)
 POLL_INTERVAL = 10

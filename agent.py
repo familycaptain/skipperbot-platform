@@ -296,9 +296,9 @@ async def onboarding_create_user(request: OnboardingCreateUserRequest):
             return {"ok": False, "error": f"Could not create user '{name}' (already exists?)."}
 
         # Persist the chosen timezone to the platform-scope settings.
-        # config.py still reads TIMEZONE from the env var on first
-        # import, but the central Settings app surfaces this so future
-        # platform consumers can read from here.
+        # app_platform.time.get_timezone() reads from this app_config
+        # row, with a per-process cache that the Settings app
+        # invalidates when it rewrites the value.
         tz = (request.timezone or "Etc/UTC").strip() or "Etc/UTC"
         try:
             from app_platform import config as platform_config
@@ -2834,8 +2834,7 @@ async def api_promote_evolution_item(item_id: str, req: PromoteRequest = Promote
     """
     import uuid
     from datetime import datetime
-    from zoneinfo import ZoneInfo
-    from config import TIMEZONE
+    from app_platform.time import get_timezone
     from apps.goals.data import save_entity
 
     item = await asyncio.to_thread(dl_evolution.get_item, item_id)
@@ -2843,7 +2842,7 @@ async def api_promote_evolution_item(item_id: str, req: PromoteRequest = Promote
         raise HTTPException(status_code=404, detail="Evolution item not found")
 
     item_type = item.get("type", "")
-    now = datetime.now(ZoneInfo(TIMEZONE)).isoformat()
+    now = datetime.now(get_timezone()).isoformat()
 
     if item_type == "goal":
         goal_id = f"g-{uuid.uuid4().hex[:8]}"
@@ -3454,10 +3453,10 @@ async def api_update_schedule(schedule_id: str, req: UpdateScheduleRequest):
         # Parse next_due string into a timezone-aware datetime
         if "next_due" in kwargs and isinstance(kwargs["next_due"], str):
             from dateutil.parser import parse as _dtparse
-            from app_platform.schedules import CENTRAL_TZ
+            from app_platform.time import get_timezone
             dt = _dtparse(kwargs["next_due"])
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=CENTRAL_TZ)
+                dt = dt.replace(tzinfo=get_timezone())
             kwargs["next_due"] = dt
         return _dl_schedules.update_schedule(schedule_id, **kwargs)
     result = await asyncio.to_thread(_update)

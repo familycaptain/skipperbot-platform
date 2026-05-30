@@ -13,15 +13,13 @@ import asyncio
 import json
 import os
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
 from config import (
     logger, pm_audit_logger,
-    SMART_MODEL, TIMEZONE, PROMPTS_DIR, PM_QUIET_MODE,
+    SMART_MODEL, PROMPTS_DIR, PM_QUIET_MODE,
 )
+from app_platform.time import get_timezone
 import agent_loop
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 DUMB_MODEL = os.getenv("DUMB_MODEL", "gpt-5-mini")
 
 # Max items before we escalate from cheap to standard model
@@ -253,7 +251,7 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
                     content=json.dumps({
                         "dm_to": dm_to,
                         "dm_text": dm_text[:200],
-                        "sent_at": datetime.now(CENTRAL_TZ).isoformat(),
+                        "sent_at": datetime.now(get_timezone()).isoformat(),
                     }),
                     priority="medium",
                 )
@@ -422,7 +420,7 @@ def _observe() -> dict:
         "reviewed_project_id": reviewed_project_id,
         "recent_conversations": recent_conversations,
         "memories": memories,
-        "now": datetime.now(CENTRAL_TZ).isoformat(),
+        "now": datetime.now(get_timezone()).isoformat(),
     }
 
 
@@ -476,7 +474,7 @@ def _gather_conversation_context(
                     turns = get_recent_turns(person.lower().strip(), limit=5)
                     # Only include if there are recent messages (last 24h)
                     if turns:
-                        cutoff = (datetime.now(CENTRAL_TZ) - timedelta(hours=24)).isoformat()
+                        cutoff = (datetime.now(get_timezone()) - timedelta(hours=24)).isoformat()
                         recent = [t for t in turns if t.get("timestamp", "") > cutoff]
                         if recent:
                             conversations[person] = recent
@@ -603,7 +601,7 @@ def _pick_next_project(observations: list[dict]) -> str | None:
     )
     wm_project_ids = {wm.get("subject_id") for wm in wm_entries if wm.get("subject_id", "").startswith("p-")}
 
-    now = datetime.now(CENTRAL_TZ)
+    now = datetime.now(get_timezone())
     priority_score = {"high": 3, "medium": 2, "low": 1}
 
     scores = {}
@@ -732,7 +730,7 @@ def _record_project_review(project_id: str):
         domain="pm", state_type="process_position", status="active",
         subject_id=project_id, limit=1,
     )
-    now_str = datetime.now(CENTRAL_TZ).isoformat()
+    now_str = datetime.now(get_timezone()).isoformat()
     if positions:
         update_state(positions[0]["id"], content=json.dumps({"last_reviewed": now_str}))
     else:

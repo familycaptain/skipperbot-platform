@@ -16,12 +16,10 @@ import json
 import os
 import re
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from config import logger, SMART_MODEL, TIMEZONE, PROMPTS_DIR
+from config import logger, SMART_MODEL, PROMPTS_DIR
+from app_platform.time import get_timezone
 import agent_loop
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 DUMB_MODEL = os.getenv("DUMB_MODEL", "gpt-5-mini")
 
 # How many useful memories to feed per cycle (after noise filtering)
@@ -403,7 +401,7 @@ async def document_domain_handler(domain: dict, budget_status: dict) -> dict:
                         "offered_count": ctx["unprocessed_memory_count"],
                         "all_processed": all_processed,
                         "latest_id": cursor_id,
-                        "processed_at": datetime.now(CENTRAL_TZ).isoformat(),
+                        "processed_at": datetime.now(get_timezone()).isoformat(),
                     }),
                 )
             except Exception as e:
@@ -432,7 +430,7 @@ async def document_domain_handler(domain: dict, budget_status: dict) -> dict:
                         "auto_advanced": True,
                         "offered_count": ctx["unprocessed_memory_count"],
                         "latest_id": ctx["raw_last_id"],
-                        "processed_at": datetime.now(CENTRAL_TZ).isoformat(),
+                        "processed_at": datetime.now(get_timezone()).isoformat(),
                     }),
                 )
             except Exception as e:
@@ -618,7 +616,7 @@ def _observe() -> dict:
         "existing_doc_count": len(all_doc_summaries),
         "working_memory": working_memory,
         "working_memory_count": len(working_memory),
-        "now": datetime.now(CENTRAL_TZ).isoformat(),
+        "now": datetime.now(get_timezone()).isoformat(),
     }
 
 

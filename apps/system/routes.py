@@ -102,9 +102,9 @@ async def api_system_metrics():
     """
     def _fetch():
         from data_layer.db import fetch_one
-        from config import TIMEZONE
+        from app_platform.time import get_timezone
 
-        tz = ZoneInfo(TIMEZONE)
+        tz = get_timezone()
 
         # ---- counts -------------------------------------------------
         counts: dict[str, int | None] = {}

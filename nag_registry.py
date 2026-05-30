@@ -13,13 +13,11 @@ delivery is handled by the centralized notification_delivery module.
 import asyncio
 import hashlib
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from config import logger, TIMEZONE, NAG_WAKE_HOUR, NAG_SLEEP_HOUR
+from config import logger, NAG_WAKE_HOUR, NAG_SLEEP_HOUR
+from app_platform.time import get_timezone
 from app_platform.notifications import create_notification
 from data_layer.db import fetch_one as _db_fetch_one
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 # ---------------------------------------------------------------------------
 # Provider registry
@@ -48,7 +46,7 @@ def register_nag_provider(key: str, fn: callable):
 # ---------------------------------------------------------------------------
 
 def _now():
-    return datetime.now(CENTRAL_TZ)
+    return datetime.now(get_timezone())
 
 
 def _has_nag_today(recipient: str, source_type: str) -> bool:
@@ -79,7 +77,7 @@ def _nag_time_for_today(seed_key: str) -> datetime:
     return datetime(
         today.year, today.month, today.day,
         fire_minute // 60, fire_minute % 60,
-        tzinfo=CENTRAL_TZ,
+        tzinfo=get_timezone(),
     )
 
 

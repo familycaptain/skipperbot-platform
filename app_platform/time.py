@@ -37,26 +37,54 @@ def _zoneinfo(name: str) -> ZoneInfo:
         return ZoneInfo(DEFAULT_TZ)
 
 
+# Cache the platform timezone *name* in-process. Onboarding writes it
+# once; later changes via the Settings app take effect after a restart
+# (or by calling ``invalidate_platform_timezone_cache`` from the setter).
+# Storing only the resolved name (not the DB read result) means a "no row
+# yet" outcome is NOT cached — we'll re-check next call so a freshly
+# completed onboarding starts working without a restart.
+_PLATFORM_TZ_NAME: str | None = None
+
+
+def invalidate_platform_timezone_cache() -> None:
+    """Drop the cached platform timezone name so the next call re-reads
+    ``app_config``. Call this from any code path that mutates the
+    platform-scoped ``timezone`` setting (e.g. the Settings app)."""
+    global _PLATFORM_TZ_NAME
+    _PLATFORM_TZ_NAME = None
+
+
 def get_timezone(user_id: str | None = None) -> ZoneInfo:
     """Return the configured timezone as a ZoneInfo.
 
     Resolution order:
       1. The user's ``users.timezone`` override (if user_id given).
-      2. The platform-level setting in ``app_config``.
-      3. The ``TIMEZONE`` env var (so users who set it in .env before
-         configuring via the UI still get correct local time).
-      4. ``Etc/UTC``.
+      2. The platform-level setting in ``app_config`` (set during
+         onboarding; editable via the Settings app).
+      3. ``Etc/UTC``.
     """
+    global _PLATFORM_TZ_NAME
+
     if user_id:
         user_tz = _user_timezone(user_id)
         if user_tz:
             return _zoneinfo(user_tz)
 
-    platform_tz = _config_get(scope="platform", key="timezone", default=None)
-    if not platform_tz:
-        import os
-        platform_tz = os.getenv("TIMEZONE", DEFAULT_TZ)
-    return _zoneinfo(platform_tz)
+    if _PLATFORM_TZ_NAME is not None:
+        return _zoneinfo(_PLATFORM_TZ_NAME)
+
+    try:
+        platform_tz = _config_get(scope="platform", key="timezone", default=None)
+    except Exception:
+        platform_tz = None
+
+    if platform_tz:
+        # Persist for subsequent calls. Skip caching when unset so that a
+        # freshly onboarded install picks up the new value immediately.
+        _PLATFORM_TZ_NAME = str(platform_tz)
+        return _zoneinfo(_PLATFORM_TZ_NAME)
+
+    return _zoneinfo(DEFAULT_TZ)
 
 
 def now(user_id: str | None = None) -> datetime:

@@ -23,11 +23,9 @@ import json
 import os
 import uuid
 from datetime import datetime, date, timedelta
-from zoneinfo import ZoneInfo
 
-from config import logger, SMART_MODEL, TIMEZONE
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
+from config import logger, SMART_MODEL
+from app_platform.time import get_timezone
 
 PLATFORM_REGISTRY_DIR = os.path.join(os.path.dirname(__file__), "docs", "platform")
 
@@ -162,7 +160,7 @@ def _determine_cycle_type(domain: dict) -> str | None:
     # DISABLED: Automatic cycles off — use manual trigger only (POST /api/apps/evolve/trigger)
     return None
 
-    # now = datetime.now(CENTRAL_TZ)
+    # now = datetime.now(get_timezone())
     # cadence = domain.get("cadence") or {}
     #
     # deep_day = cadence.get("deep_cycle_day", "sunday")
@@ -195,7 +193,7 @@ def _get_last_cycle_date(cycle_type: str) -> date | None:
     if row and row.get("created_at"):
         dt = row["created_at"]
         if hasattr(dt, "astimezone"):
-            return dt.astimezone(CENTRAL_TZ).date()
+            return dt.astimezone(get_timezone()).date()
     return None
 
 
@@ -1264,7 +1262,7 @@ def _worker_is_dead(unit: dict) -> bool:
     if not started:
         return True
     if hasattr(started, "timestamp"):
-        age = datetime.now(CENTRAL_TZ).timestamp() - started.timestamp()
+        age = datetime.now(get_timezone()).timestamp() - started.timestamp()
     else:
         return False
     return age > 600  # 10 minutes

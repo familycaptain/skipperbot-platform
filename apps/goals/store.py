@@ -15,16 +15,14 @@ import json
 import re
 import uuid
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from config import logger, TIMEZONE
+from config import logger
+from app_platform.time import get_timezone
 from auto_memory import log_entity_change
 from link_registry import create_link, delete_links_for_entity
 from apps.goals import data as _dl_goals
 # legacy data_layer.config replaced with platform.config (scope=platform)
 from app_platform import config as _dl_config
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 VALID_STATUSES = {"not_started", "in_progress", "done", "blocked", "deferred", "cancelled"}
 TERMINAL_STATUSES = {"done", "cancelled", "deferred"}
@@ -59,7 +57,7 @@ def _delete_entity(entity_id: str) -> bool:
 # ---------------------------------------------------------------------------
 
 def _now_iso() -> str:
-    return datetime.now(CENTRAL_TZ).isoformat()
+    return datetime.now(get_timezone()).isoformat()
 
 
 def _add_history(item: dict, by: str, note: str):
@@ -2231,7 +2229,7 @@ def set_due_date_reminder(
 
         due = parse_date(date_str)
         if due.tzinfo is None:
-            due = due.replace(tzinfo=CENTRAL_TZ)
+            due = due.replace(tzinfo=get_timezone())
 
         remind_at = due - timedelta(days=days_before)
         remind_at = remind_at.replace(hour=9, minute=0, second=0)

@@ -28,12 +28,10 @@ from __future__ import annotations
 import asyncio
 import hashlib
 from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
 
-from config import logger, TIMEZONE, NAG_WAKE_HOUR, NAG_SLEEP_HOUR
+from config import logger, NAG_WAKE_HOUR, NAG_SLEEP_HOUR
+from app_platform.time import get_timezone
 from app_platform.notifications import create_notification, get_notifications
-
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
 
 
 # ---------------------------------------------------------------------------
@@ -56,7 +54,7 @@ def register_schedule_claim(linked_entity_type: str):
 
 
 def _now():
-    return datetime.now(CENTRAL_TZ)
+    return datetime.now(get_timezone())
 
 
 def _has_recent_notification(schedule_id: str, hours: int = 12) -> bool:
@@ -70,7 +68,7 @@ def _has_recent_notification(schedule_id: str, hours: int = 12) -> bool:
     except (ValueError, KeyError, TypeError):
         return False
     if created.tzinfo is None:
-        created = created.replace(tzinfo=CENTRAL_TZ)
+        created = created.replace(tzinfo=get_timezone())
     return created >= cutoff
 
 
@@ -85,7 +83,7 @@ def _has_overdue_notification_today(schedule_id: str) -> bool:
     except (ValueError, KeyError, TypeError):
         return False
     if created.tzinfo is None:
-        created = created.replace(tzinfo=CENTRAL_TZ)
+        created = created.replace(tzinfo=get_timezone())
     return created >= today_start
 
 
@@ -191,7 +189,7 @@ def _nag_time_for_today(schedule_id: str) -> datetime:
     return datetime(
         today.year, today.month, today.day,
         fire_minute // 60, fire_minute % 60,
-        tzinfo=CENTRAL_TZ,
+        tzinfo=get_timezone(),
     )
 
 

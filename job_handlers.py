@@ -7,7 +7,6 @@ Handlers are registered at import time via register_all_handlers().
 """
 
 from config import logger
-from config import TIMEZONE as _CFG_TZ
 from app_platform.jobs import register_handler, JobContext
 
 

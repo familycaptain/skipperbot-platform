@@ -16,21 +16,15 @@ identical; the only changes are:
 
 import uuid
 from datetime import datetime
-from zoneinfo import ZoneInfo
 
-from config import TIMEZONE, logger
+from config import logger
+from app_platform.time import get_timezone
 from auto_memory import log_entity_change
 from apps.lists import data as _dl_lists
 
-# Module-local timezone for ISO timestamps. Mirrors the pattern used by
-# apps/goals/store.py and timer_store.py. The name is historical; the
-# value reflects whatever the platform TIMEZONE env var points to
-# (defaults to Etc/UTC).
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
-
 
 def _now_iso() -> str:
-    return datetime.now(CENTRAL_TZ).isoformat()
+    return datetime.now(get_timezone()).isoformat()
 
 
 def _new_id(prefix: str) -> str:

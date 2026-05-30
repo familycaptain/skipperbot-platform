@@ -353,11 +353,10 @@ def _backlog_schedules(user_id: str) -> list[dict]:
     reaching into ``app_schedules.*`` directly.
     """
     from datetime import datetime
-    from zoneinfo import ZoneInfo
-    from config import TIMEZONE as _CFG_TZ
+    from app_platform.time import get_timezone
     from app_platform.schedules import get_due_schedules
 
-    tz = ZoneInfo(_CFG_TZ)
+    tz = get_timezone()
     now = datetime.now(tz)
     rows = get_due_schedules(
         assigned_to=user_id, days_ahead=7, exclude_reminder_backed=True,

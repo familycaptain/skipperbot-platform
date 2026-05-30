@@ -6,14 +6,11 @@ auto service records, and nags into a single event stream.
 
 import logging
 from datetime import datetime, timedelta, date, time as dtime
-from zoneinfo import ZoneInfo
 
+from app_platform.time import get_timezone
 from data_layer.db import fetch_all
 
 logger = logging.getLogger(__name__)
-
-from config import TIMEZONE as _CFG_TZ
-CENTRAL_TZ = ZoneInfo(_CFG_TZ)
 
 
 def get_aggregated_events(
@@ -73,11 +70,11 @@ def _events_from_schedules(from_date: str, to_date: str, assigned_to: str | None
 
 def _events_from_reminders(from_date: str, to_date: str, assigned_to: str | None) -> list[dict]:
     try:
-        start_dt = datetime.strptime(from_date, "%Y-%m-%d").replace(tzinfo=CENTRAL_TZ)
+        start_dt = datetime.strptime(from_date, "%Y-%m-%d").replace(tzinfo=get_timezone())
         end_dt = datetime.strptime(to_date, "%Y-%m-%d").replace(
-            tzinfo=CENTRAL_TZ, hour=23, minute=59, second=59,
+            tzinfo=get_timezone(), hour=23, minute=59, second=59,
         )
-        now = datetime.now(CENTRAL_TZ)
+        now = datetime.now(get_timezone())
 
         clauses = ["active = TRUE", "nag = FALSE"]
         params: list = []
@@ -97,12 +94,12 @@ def _events_from_reminders(from_date: str, to_date: str, assigned_to: str | None
             if not remind_at:
                 continue
             if hasattr(remind_at, "isoformat"):
-                remind_dt = remind_at if remind_at.tzinfo else remind_at.replace(tzinfo=CENTRAL_TZ)
+                remind_dt = remind_at if remind_at.tzinfo else remind_at.replace(tzinfo=get_timezone())
             else:
                 try:
                     remind_dt = datetime.fromisoformat(str(remind_at))
                     if remind_dt.tzinfo is None:
-                        remind_dt = remind_dt.replace(tzinfo=CENTRAL_TZ)
+                        remind_dt = remind_dt.replace(tzinfo=get_timezone())
                 except (ValueError, TypeError):
                     continue
 
@@ -121,7 +118,7 @@ def _events_from_reminders(from_date: str, to_date: str, assigned_to: str | None
                         "category": "reminder",
                         "date": occ_date.isoformat(),
                         "time_of_day": time_str,
-                        "overdue": occ < now if isinstance(occ, datetime) else datetime.combine(occ_date, dtime(), CENTRAL_TZ) < now,
+                        "overdue": occ < now if isinstance(occ, datetime) else datetime.combine(occ_date, dtime(), get_timezone()) < now,
                         "assigned_to": r.get("user_id") or "",
                         "all_day": time_str is None,
                     })
@@ -168,7 +165,7 @@ def _expand_rrule(dtstart: datetime, rrule_string: str, start: datetime, end: da
 
 def _events_from_goals(from_date: str, to_date: str, assigned_to: str | None) -> list[dict]:
     try:
-        now_date = datetime.now(CENTRAL_TZ).date()
+        now_date = datetime.now(get_timezone()).date()
 
         clauses = [
             "status NOT IN ('done', 'cancelled')",
@@ -229,7 +226,7 @@ def _events_from_goals(from_date: str, to_date: str, assigned_to: str | None) ->
 
 def _events_from_projects(from_date: str, to_date: str, assigned_to: str | None) -> list[dict]:
     try:
-        now_date = datetime.now(CENTRAL_TZ).date()
+        now_date = datetime.now(get_timezone()).date()
 
         clauses = [
             "status NOT IN ('done', 'cancelled')",
@@ -289,7 +286,7 @@ def _events_from_projects(from_date: str, to_date: str, assigned_to: str | None)
 
 def _events_from_tasks(from_date: str, to_date: str, assigned_to: str | None) -> list[dict]:
     try:
-        now = datetime.now(CENTRAL_TZ)
+        now = datetime.now(get_timezone())
         now_date = now.date()
 
         clauses = [
@@ -349,7 +346,7 @@ def _events_from_tasks(from_date: str, to_date: str, assigned_to: str | None) ->
 
 def _events_from_auto_service(from_date: str, to_date: str) -> list[dict]:
     try:
-        now_date = datetime.now(CENTRAL_TZ).date()
+        now_date = datetime.now(get_timezone()).date()
 
         rows = fetch_all(
             """SELECT sr.id, sr.vehicle_id, sr.service_type, sr.next_due_date,
@@ -404,7 +401,7 @@ def _events_from_auto_service(from_date: str, to_date: str) -> list[dict]:
 
 def _events_from_nags(from_date: str, to_date: str, assigned_to: str | None) -> list[dict]:
     try:
-        today = datetime.now(CENTRAL_TZ).date()
+        today = datetime.now(get_timezone()).date()
         start_d = date.fromisoformat(from_date)
         end_d = date.fromisoformat(to_date)
 

@@ -11,19 +11,16 @@ Entity type resolution via data_layer.entity_types (DB-backed registry).
 import uuid
 from datetime import datetime
 from typing import Optional
-from zoneinfo import ZoneInfo
 
-from config import TIMEZONE
+from app_platform.time import get_timezone
 from auto_memory import log_entity_change
 import data_layer.links as _dl_links
 import data_layer.entity_types as _dl_entity_types
 
-CENTRAL_TZ = ZoneInfo(TIMEZONE)
-
 
 
 def _now_iso() -> str:
-    return datetime.now(CENTRAL_TZ).isoformat()
+    return datetime.now(get_timezone()).isoformat()
 
 
 def _entity_type(entity_id: str) -> str:

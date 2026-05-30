@@ -534,8 +534,8 @@ def append_entity_note(
             return "Error: note content is required."
         resolved_id = _resolve_rank(item_id.strip())
         from datetime import datetime
-        from zoneinfo import ZoneInfo
-        timestamp = datetime.now(ZoneInfo(__import__("config").TIMEZONE)).strftime("%Y-%m-%d %H:%M")
+        from app_platform.time import get_timezone
+        timestamp = datetime.now(get_timezone()).strftime("%Y-%m-%d %H:%M")
         label = f"**{author.strip()}**" if author and author.strip() else "**Note**"
         entry = f"\n\n---\n{label} ({timestamp}): {note.strip()}\n"
         from apps.goals.data import append_note
