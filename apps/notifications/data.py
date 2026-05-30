@@ -188,3 +188,84 @@ def _row(row: dict) -> dict:
         "delivered": row.get("delivered", True),
         "created_at": row["created_at"].isoformat() if row.get("created_at") else "",
     }
+
+
+# ---------------------------------------------------------------------------
+# Pushover per-user opt-in
+# ---------------------------------------------------------------------------
+# The shared Pushover application token is an app-config secret
+# (app:notifications / pushover_app_token). Each user opts in here with their
+# own Pushover user key, stored encrypted in app_notifications.pushover_subscriptions.
+
+def app_token() -> str:
+    """The shared Pushover application token (admin-set, encrypted)."""
+    from app_platform import settings as _settings
+    return _settings.get("pushover_app_token", scope="app:notifications", secret=True, default="") or ""
+
+
+def get_pushover_status(user_id: str) -> dict:
+    """UI-safe status for a user — never returns the actual user key."""
+    row = fetch_one_in_schema(
+        SCHEMA, "SELECT user_key, device, enabled FROM pushover_subscriptions WHERE user_id = %s",
+        (user_id.lower().strip(),),
+    )
+    return {
+        "app_token_configured": bool(app_token()),
+        "configured": bool(row and row.get("user_key")),
+        "enabled": bool(row and row.get("enabled")),
+        "device": (row.get("device") if row else "") or "",
+    }
+
+
+def save_pushover_subscription(user_id: str, user_key: str = "", device: str = "",
+                               enabled: bool = True) -> None:
+    """Upsert a user's Pushover opt-in. A blank user_key keeps the existing one
+    (so the UI can toggle enabled / change device without re-entering the key)."""
+    from app_platform import secrets as _secrets
+    uid = user_id.lower().strip()
+    key = (user_key or "").strip()
+    enc_key = _secrets.encrypt(key) if key else None  # None → keep existing in COALESCE
+    with scoped_conn(SCHEMA) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO pushover_subscriptions (user_id, user_key, device, enabled, updated_at)
+                VALUES (%s, COALESCE(%s, ''), %s, %s, now())
+                ON CONFLICT (user_id) DO UPDATE SET
+                    user_key = COALESCE(%s, pushover_subscriptions.user_key),
+                    device = EXCLUDED.device,
+                    enabled = EXCLUDED.enabled,
+                    updated_at = now()
+                """,
+                (uid, enc_key, (device or "").strip(), bool(enabled), enc_key),
+            )
+        conn.commit()
+
+
+def delete_pushover_subscription(user_id: str) -> bool:
+    return execute_in_schema(
+        SCHEMA, "DELETE FROM pushover_subscriptions WHERE user_id = %s",
+        (user_id.lower().strip(),),
+    ) > 0
+
+
+def get_pushover_creds(user_id: str) -> dict | None:
+    """Resolve send-ready creds for a user, or None if not opted in / disabled /
+    no app token. Returns {token, user_key, device} with the key decrypted."""
+    token = app_token()
+    if not token:
+        return None
+    row = fetch_one_in_schema(
+        SCHEMA, "SELECT user_key, device, enabled FROM pushover_subscriptions WHERE user_id = %s",
+        (user_id.lower().strip(),),
+    )
+    if not row or not row.get("enabled") or not row.get("user_key"):
+        return None
+    from app_platform import secrets as _secrets
+    try:
+        user_key = _secrets.decrypt(row["user_key"])
+    except _secrets.SecretError:
+        return None
+    if not user_key:
+        return None
+    return {"token": token, "user_key": user_key, "device": (row.get("device") or "")}

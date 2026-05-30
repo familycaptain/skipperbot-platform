@@ -67,6 +67,11 @@ config:
     default: 5
     label: "Max delivery age (minutes)"
     description: "Notifications older than this without being delivered are skipped to avoid stale-message blasts after a long outage."
+  - key: pushover_app_token
+    type: string
+    secret: true
+    label: "Pushover application token"
+    description: "Your Skipper Pushover app token (admin sets this once). Create an app at pushover.net/apps. Each person then opts in with their own user key from the Notifications app."
 
 # No thinking domain — notifications is passive infrastructure.
 thinking: []

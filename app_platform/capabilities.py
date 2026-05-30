@@ -138,8 +138,9 @@ CAPABILITIES: tuple[Capability, ...] = (
         name="pushover",
         label="Pushover",
         env_vars=("PUSHOVER_APP_TOKEN", "PUSHOVER_USER_KEY"),
+        settings_keys=(("pushover_app_token", "app:notifications"),),
         docs_anchor="03-extended-functionality.md#pushover",
-        not_configured_message="Pushover is not configured. Add PUSHOVER_APP_TOKEN and PUSHOVER_USER_KEY to .env to enable.",
+        not_configured_message="Pushover is not set up. Set the app token in Settings → Notifications, then each person opts in from the Notifications app.",
     ),
     Capability(
         name="home_assistant",

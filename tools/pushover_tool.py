@@ -1,4 +1,3 @@
-import json
 import os
 import time
 from datetime import datetime
@@ -10,35 +9,34 @@ if _BASE_DIR not in sys.path:
     sys.path.insert(0, _BASE_DIR)
 from app_platform.time import get_timezone
 
-_CONFIG_PATH = os.path.join(_BASE_DIR, "data", "pushover_users.json")
-
-def _load_config() -> dict:
-    if not os.path.exists(_CONFIG_PATH):
-        return {}
-    with open(_CONFIG_PATH, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-_config = _load_config()
-
 # Module-level cooldown tracking (per process)
 _last_sent = {}
 
 
 def is_pushover_user(user_id: str) -> bool:
-    """Check if a user has Pushover credentials configured."""
-    user_cfg = _config.get("users", {}).get(user_id.lower(), {})
-    return bool(user_cfg.get("app_token") and user_cfg.get("user_key"))
+    """True if the user has opted into Pushover (and the app token is set).
+
+    Backed by the notifications app: the shared app token is an app-config
+    secret and each user's key lives encrypted in
+    app_notifications.pushover_subscriptions — configured via the
+    Notifications app UI, not a JSON file.
+    """
+    try:
+        from apps.notifications.data import get_pushover_creds
+        return get_pushover_creds(user_id) is not None
+    except Exception:
+        return False
 
 
 def send_pushover_notification(user_id: str, message: str, cooldown_seconds: int = 300) -> str:
-    """Send a Pushover notification to a configured user.
+    """Send a Pushover notification to a user who has opted in.
 
-    Credentials and per-user device settings are loaded from
-    data/pushover_users.json. Applies a duplicate-message cooldown and
-    sets priority based on Central time: silent from 10PM-6AM CT, high priority otherwise.
+    Credentials come from the notifications app (shared app token + the user's
+    own encrypted key + optional device). Applies a duplicate-message cooldown
+    and sets priority by local time: silent 10PM-6AM, high priority otherwise.
 
     Args:
-        user_id: The person name (e.g. "alice"). Must exist in pushover_users.json.
+        user_id: The person name (e.g. "alice"). Must have opted into Pushover.
         message: The message text to send.
         cooldown_seconds: Minimum seconds before sending the same message again.
 
@@ -52,18 +50,15 @@ def send_pushover_notification(user_id: str, message: str, cooldown_seconds: int
         if not msg:
             return "Error: message is required."
 
-        users = _config.get("users", {})
-        user_cfg = users.get(user_id.lower())
-        if user_cfg is None:
-            valid = ", ".join(sorted(users.keys()))
-            return f"Error: '{user_id}' not configured for Pushover. Configured users: {valid}"
+        from apps.notifications.data import get_pushover_creds
+        creds = get_pushover_creds(user_id)
+        if creds is None:
+            return (f"Error: '{user_id}' has not opted into Pushover (or the app token "
+                    f"isn't set). Configure it in the Notifications app.")
 
-        token = user_cfg.get("app_token")
-        user_key = user_cfg.get("user_key")
-        if not token or not user_key:
-            return f"Error: '{user_id}' is missing app_token or user_key in pushover config."
-
-        device = user_cfg.get("device")  # optional per-user device
+        token = creds["token"]
+        user_key = creds["user_key"]
+        device = creds.get("device")  # optional per-user device
 
         # Cooldown check for exact message duplicates
         cooldown_key = f"{user_id.lower()}:{msg}"
