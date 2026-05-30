@@ -11,7 +11,7 @@ the manifest's ``config:`` schema:
 
 - **Filesystem** (``filesystem_enabled`` + ``filesystem_path``) — copy
   artifacts under a local path / mounted network share.
-- **Google Drive** (``gdrive_enabled`` + ``gdrive_key_file`` +
+- **Google Drive** (``gdrive_enabled`` + ``gdrive_service_account_json`` +
   ``gdrive_impersonate_email``) — upload to a shared "Backups/<date>"
   folder via a service account with domain-wide delegation.
 

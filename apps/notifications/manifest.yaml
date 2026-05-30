@@ -72,6 +72,11 @@ config:
     secret: true
     label: "Pushover application token"
     description: "Your Skipper Pushover app token (admin sets this once). Create an app at pushover.net/apps. Each person then opts in with their own user key from the Notifications app."
+  - key: fcm_service_account_json
+    type: string
+    secret: true
+    label: "FCM service account JSON"
+    description: "Paste the full Firebase service-account JSON. Enables mobile push."
 
 # No thinking domain — notifications is passive infrastructure.
 thinking: []

@@ -8,7 +8,7 @@ impersonated Workspace user's Drive quota.
 Configuration (all in ``scope='app:backups'``):
 
 - ``gdrive_enabled`` — boolean toggle.
-- ``gdrive_key_file`` — path to the service account JSON key.
+- ``gdrive_service_account_json`` — service-account JSON content (secret, Settings → Backups).
 - ``gdrive_impersonate_email`` — the Workspace account to impersonate.
 
 If the toggle is off or either string is empty, ``upload_to_gdrive``
@@ -46,27 +46,34 @@ def _build_service():
     if not _config("gdrive_enabled", False):
         return None
 
-    key_file = (_config("gdrive_key_file", "") or "").strip()
+    # Service-account JSON is pasted into Settings → Backups (encrypted at
+    # rest); no key file on disk. Same creds the skipper-email sender uses.
+    from app_platform import settings as _settings
+    raw = _settings.get("gdrive_service_account_json", scope="app:backups", secret=True, default="") or ""
     impersonate_email = (_config("gdrive_impersonate_email", "") or "").strip()
 
-    if not key_file:
-        logger.warning("GDRIVE: enabled but gdrive_key_file is empty — skipping")
-        return None
-    if not os.path.isfile(key_file):
-        logger.error("GDRIVE: key file not found: %s", key_file)
+    if not raw.strip():
+        logger.warning("GDRIVE: enabled but gdrive_service_account_json is empty — skipping")
         return None
     if not impersonate_email:
         logger.warning("GDRIVE: enabled but gdrive_impersonate_email is empty — skipping")
         return None
 
     try:
+        import json
         from google.oauth2.service_account import Credentials
         from googleapiclient.discovery import build
     except ImportError as e:
         logger.warning("GDRIVE: google-api-python-client not installed (%s) — skipping", e)
         return None
 
-    creds = Credentials.from_service_account_file(key_file, scopes=SCOPES)
+    try:
+        info = json.loads(raw)
+    except (ValueError, TypeError) as e:
+        logger.error("GDRIVE: gdrive_service_account_json is not valid JSON (%s) — skipping", e)
+        return None
+
+    creds = Credentials.from_service_account_info(info, scopes=SCOPES)
     creds = creds.with_subject(impersonate_email)
     return build("drive", "v3", credentials=creds, cache_discovery=False)
 

@@ -50,8 +50,9 @@ CONFIG_KEYS: tuple[str, ...] = (
     "filesystem_enabled",
     "filesystem_path",
     "gdrive_enabled",
-    "gdrive_key_file",
     "gdrive_impersonate_email",
+    # gdrive_service_account_json is a SECRET — managed only through the
+    # Settings → Backups panel (encrypted at rest), never the legacy config API.
 )
 
 

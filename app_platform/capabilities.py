@@ -119,6 +119,7 @@ CAPABILITIES: tuple[Capability, ...] = (
         name="gmail",
         label="Gmail (inbound)",
         env_vars=("GMAIL_CLIENT_ID", "GMAIL_CLIENT_SECRET", "GMAIL_REDIRECT_URI"),
+        settings_keys=(("gmail_client_id", "app:email"), ("gmail_client_secret", "app:email")),
         docs_anchor="03-extended-functionality.md#gmail-inbound",
         not_configured_message=(
             "Gmail inbound is not configured. Requires a Tier 3 (external) "
@@ -130,9 +131,9 @@ CAPABILITIES: tuple[Capability, ...] = (
         name="fcm",
         label="FCM mobile push",
         env_vars=("FCM_SERVICE_ACCOUNT_FILE",),
+        settings_keys=(("fcm_service_account_json", "app:notifications"),),
         docs_anchor="03-extended-functionality.md#fcm-mobile-push",
-        not_configured_message="Mobile push is not configured. Add FCM_SERVICE_ACCOUNT_FILE to .env to enable.",
-        extra_check=_file_exists("FCM_SERVICE_ACCOUNT_FILE"),
+        not_configured_message="Mobile push is not configured. Paste the FCM service-account JSON in Settings → Notifications.",
     ),
     Capability(
         name="pushover",

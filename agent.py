@@ -3217,11 +3217,15 @@ async def api_backup_config():
             # Filesystem destination
             "filesystem_enabled": bool(cfg.get("filesystem_enabled", False)),
             "filesystem_path": cfg.get("filesystem_path") or "",
-            # Google Drive destination
+            # Google Drive destination — the service-account JSON is a secret
+            # set via Settings → Backups (encrypted); never returned here. We
+            # only report whether it's been configured.
             "gdrive_enabled": bool(cfg.get("gdrive_enabled", False)),
-            "gdrive_key_file": cfg.get("gdrive_key_file") or "",
+            "gdrive_credentials_set": _backups_settings.is_configured(
+                "gdrive_service_account_json", scope="app:backups"),
             "gdrive_impersonate_email": cfg.get("gdrive_impersonate_email") or "",
         }
+    from app_platform import settings as _backups_settings
     return await asyncio.to_thread(_fetch)
 
 
@@ -3232,7 +3236,6 @@ class BackupConfigPatchRequest(BaseModel):
     filesystem_enabled: bool | None = None
     filesystem_path: str | None = None
     gdrive_enabled: bool | None = None
-    gdrive_key_file: str | None = None
     gdrive_impersonate_email: str | None = None
 
 

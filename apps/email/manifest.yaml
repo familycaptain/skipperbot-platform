@@ -28,3 +28,20 @@ job_types:
 
 emits: []
 subscribes: []
+
+# Gmail OAuth credentials (Settings → Email). Inbound Gmail requires a
+# Tier-3/external deployment + Google OAuth app — see docs. No .env.
+config:
+  - key: gmail_client_id
+    type: string
+    label: "Gmail OAuth client ID"
+    description: "From your Google Cloud OAuth 2.0 client (Web application)."
+  - key: gmail_client_secret
+    type: string
+    secret: true
+    label: "Gmail OAuth client secret"
+    description: "The client secret paired with the client ID above."
+  - key: gmail_redirect_uri
+    type: string
+    label: "OAuth redirect URI"
+    description: "Must match the redirect URI registered in Google Cloud. Default: <your public URL>/api/apps/email/oauth/callback"

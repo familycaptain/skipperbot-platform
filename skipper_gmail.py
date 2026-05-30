@@ -4,12 +4,15 @@ Authenticates as Skipper's Google Workspace account via service account
 impersonation.  Provides inbox checking, email reading, searching, and
 sending capabilities.
 
-Env vars:
-    BACKUP_GOOGLE_KEY_FILE   — path to the service account JSON key file
-    GDRIVE_IMPERSONATE_EMAIL — Skipper's Workspace email to impersonate
+Credentials come from app settings (scope ``app:backups``):
+    gdrive_service_account_json — full service-account JSON *content* (secret)
+    gdrive_impersonate_email    — Workspace email to impersonate
+
+The JSON is parsed and credentials are built via
+``from_service_account_info`` — no key file is ever read from disk.
 """
 
-import os
+import json
 import base64
 import logging
 from datetime import datetime, timezone
@@ -30,22 +33,45 @@ SCOPES = [
 
 def _build_service():
     """Build a Gmail API service via service account with delegation."""
-    key_file = os.getenv("BACKUP_GOOGLE_KEY_FILE", "").strip()
-    impersonate_email = os.getenv("GDRIVE_IMPERSONATE_EMAIL", "").strip()
+    from app_platform import settings as _settings
 
-    if not key_file or not os.path.isfile(key_file):
-        raise RuntimeError(f"SKIPPER_GMAIL: Key file not found or not set: {key_file!r}")
+    raw = _settings.get(
+        "gdrive_service_account_json",
+        scope="app:backups",
+        secret=True,
+        default="",
+    )
+    impersonate_email = get_skipper_email()
+
+    if not raw or not str(raw).strip():
+        raise RuntimeError(
+            "SKIPPER_GMAIL: gdrive_service_account_json (app:backups) not configured"
+        )
     if not impersonate_email:
-        raise RuntimeError("SKIPPER_GMAIL: GDRIVE_IMPERSONATE_EMAIL not set")
+        raise RuntimeError(
+            "SKIPPER_GMAIL: gdrive_impersonate_email (app:backups) not configured"
+        )
 
-    creds = Credentials.from_service_account_file(key_file, scopes=SCOPES)
+    try:
+        info = json.loads(raw)
+    except (ValueError, TypeError) as e:
+        raise RuntimeError(
+            f"SKIPPER_GMAIL: gdrive_service_account_json is not valid JSON: {e}"
+        )
+
+    creds = Credentials.from_service_account_info(info, scopes=SCOPES)
     creds = creds.with_subject(impersonate_email)
     return build("gmail", "v1", credentials=creds, cache_discovery=False)
 
 
 def get_skipper_email() -> str:
     """Return Skipper's configured email address."""
-    return os.getenv("GDRIVE_IMPERSONATE_EMAIL", "").strip()
+    from app_platform import settings as _settings
+
+    return (
+        _settings.get("gdrive_impersonate_email", scope="app:backups", default="")
+        or ""
+    ).strip()
 
 
 def check_inbox(max_results: int = 10, query: str = "") -> list[dict]:

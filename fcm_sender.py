@@ -3,45 +3,79 @@ FCM Sender
 ==========
 Sends push notifications via Firebase Cloud Messaging v1 HTTP API.
 
-Uses a service account JSON key file (path set via FCM_SERVICE_ACCOUNT_FILE
-env var). Tokens are cached and refreshed automatically by google-auth.
+The service-account credentials are read from app settings (the
+``fcm_service_account_json`` secret in the ``app:notifications`` scope) as
+JSON *content* — the operator pastes the full Firebase service-account JSON
+into that field, so no key file ever touches disk. Credentials are built via
+``from_service_account_info`` and tokens are cached/refreshed by google-auth.
 
 Data-only messages are used (no "notification" key) so the Android app
 controls rendering via FirebaseMessagingService.
 """
 
 import json
-import os
 from config import logger
 
-_FCM_ENABLED = False
+SCOPES = ["https://www.googleapis.com/auth/firebase.messaging"]
+
+# Lazily-initialized, cached credential state (built on first use).
 _credentials = None
 _project_id = None
 
-try:
-    from google.auth.transport.requests import Request
-    from google.oauth2 import service_account
-    import requests as _requests
 
-    _sa_file = os.getenv("FCM_SERVICE_ACCOUNT_FILE", "")
-    if _sa_file and os.path.isfile(_sa_file):
-        SCOPES = ["https://www.googleapis.com/auth/firebase.messaging"]
-        _credentials = service_account.Credentials.from_service_account_file(
-            _sa_file, scopes=SCOPES
+def _get_credentials():
+    """Build (and cache) FCM credentials from app settings.
+
+    Returns ``(credentials, project_id)`` or ``(None, None)`` when FCM is not
+    configured / the deps are missing / the pasted JSON is invalid.
+    """
+    global _credentials, _project_id
+
+    if _credentials is not None:
+        return _credentials, _project_id
+
+    try:
+        from google.oauth2 import service_account
+    except ImportError:
+        logger.info("FCM_SENDER: Disabled — google-auth not installed")
+        return None, None
+
+    from app_platform import settings as _settings
+
+    raw = _settings.get(
+        "fcm_service_account_json",
+        scope="app:notifications",
+        secret=True,
+        default="",
+    )
+    if not raw or not str(raw).strip():
+        logger.info("FCM disabled — not configured")
+        return None, None
+
+    try:
+        info = json.loads(raw)
+    except (ValueError, TypeError) as e:
+        logger.warning("FCM disabled — not configured (invalid service-account JSON: %s)", e)
+        return None, None
+
+    try:
+        creds = service_account.Credentials.from_service_account_info(
+            info, scopes=SCOPES
         )
-        with open(_sa_file, encoding="utf-8") as f:
-            _project_id = json.load(f).get("project_id")
-        _FCM_ENABLED = True
-        logger.info("FCM_SENDER: Initialized for project '%s'", _project_id)
-    else:
-        logger.info("FCM_SENDER: Disabled — FCM_SERVICE_ACCOUNT_FILE not set or not found")
-except ImportError:
-    logger.info("FCM_SENDER: Disabled — google-auth or requests not installed")
+    except Exception as e:
+        logger.warning("FCM disabled — not configured (could not build credentials: %s)", e)
+        return None, None
+
+    _credentials = creds
+    _project_id = info.get("project_id")
+    logger.info("FCM_SENDER: Initialized for project '%s'", _project_id)
+    return _credentials, _project_id
 
 
 def is_enabled() -> bool:
     """Check if FCM sending is configured and available."""
-    return _FCM_ENABLED
+    creds, _ = _get_credentials()
+    return creds is not None
 
 
 def send_push(
@@ -56,14 +90,18 @@ def send_push(
     Returns:
         {"success": True} or {"success": False, "error": str, "unregistered": bool}
     """
-    if not _FCM_ENABLED:
+    from google.auth.transport.requests import Request
+    import requests as _requests
+
+    credentials, project_id = _get_credentials()
+    if credentials is None:
         return {"success": False, "error": "FCM not configured"}
 
     # Refresh credentials if expired
-    if _credentials.expired or not _credentials.token:
-        _credentials.refresh(Request())
+    if credentials.expired or not credentials.token:
+        credentials.refresh(Request())
 
-    url = f"https://fcm.googleapis.com/v1/projects/{_project_id}/messages:send"
+    url = f"https://fcm.googleapis.com/v1/projects/{project_id}/messages:send"
 
     message = {
         "message": {
@@ -85,7 +123,7 @@ def send_push(
             url,
             json=message,
             headers={
-                "Authorization": f"Bearer {_credentials.token}",
+                "Authorization": f"Bearer {credentials.token}",
                 "Content-Type": "application/json",
             },
             timeout=10,

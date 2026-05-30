@@ -104,20 +104,19 @@ config:
       When enabled, each backup is uploaded into a "Backups/<date>"
       folder on Google Drive via a service account with domain-wide
       delegation. Requires the two fields below.
-  - key: gdrive_key_file
+  - key: gdrive_service_account_json
     type: string
+    secret: true
     default: ""
-    label: "Service account key file"
+    label: "Google Drive service-account JSON"
     description: >
-      Path to the GCP service account JSON key with the Drive scope.
-      Ignored if ``gdrive_enabled`` is false.
+      Paste the full service-account JSON to enable Google Drive backups.
   - key: gdrive_impersonate_email
     type: string
     default: ""
     label: "Workspace email to impersonate"
     description: >
-      The Google Workspace account whose Drive owns the "Backups"
-      folder. Ignored if ``gdrive_enabled`` is false.
+      The Google Workspace user whose Drive backups are written to.
 
 # No thinking domain — backups runs on a fixed cron.
 thinking: []

@@ -17,23 +17,36 @@ from googleapiclient.discovery import build
 
 from config import logger
 
-# OAuth config from .env
-GMAIL_CLIENT_ID = os.getenv("GMAIL_CLIENT_ID", "")
-GMAIL_CLIENT_SECRET = os.getenv("GMAIL_CLIENT_SECRET", "")
-GMAIL_REDIRECT_URI = os.getenv("GMAIL_REDIRECT_URI", "http://localhost:8000/api/apps/email/oauth/callback")
-
+# OAuth config — from the email app settings (Settings → Email), no .env.
 SCOPES = ["https://www.googleapis.com/auth/gmail.modify"]
+
+_DEFAULT_REDIRECT = "http://localhost:8000/api/apps/email/oauth/callback"
+
+
+def _gmail_client_id() -> str:
+    from app_platform import settings as _settings
+    return _settings.get("gmail_client_id", scope="app:email", default="") or ""
+
+
+def _gmail_client_secret() -> str:
+    from app_platform import settings as _settings
+    return _settings.get("gmail_client_secret", scope="app:email", secret=True, default="") or ""
+
+
+def _redirect_uri() -> str:
+    from app_platform import settings as _settings
+    return _settings.get("gmail_redirect_uri", scope="app:email", default="") or _DEFAULT_REDIRECT
 
 
 def _client_config() -> dict:
-    """Build OAuth client config dict from env vars."""
+    """Build OAuth client config dict from the email app settings."""
     return {
         "web": {
-            "client_id": GMAIL_CLIENT_ID,
-            "client_secret": GMAIL_CLIENT_SECRET,
+            "client_id": _gmail_client_id(),
+            "client_secret": _gmail_client_secret(),
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
             "token_uri": "https://oauth2.googleapis.com/token",
-            "redirect_uris": [GMAIL_REDIRECT_URI],
+            "redirect_uris": [_redirect_uri()],
         }
     }
 
@@ -44,7 +57,7 @@ def get_oauth_url(state: str = "") -> tuple[str, str]:
     Returns (url, code_verifier) — caller must persist the code_verifier
     and pass it back to exchange_code().
     """
-    flow = Flow.from_client_config(_client_config(), scopes=SCOPES, redirect_uri=GMAIL_REDIRECT_URI)
+    flow = Flow.from_client_config(_client_config(), scopes=SCOPES, redirect_uri=_redirect_uri())
     url, _ = flow.authorization_url(
         access_type="offline",
         prompt="consent",
@@ -59,7 +72,7 @@ def exchange_code(code: str, code_verifier: str = None) -> dict:
 
     Returns dict with: access_token, refresh_token, token_uri, client_id, client_secret, scopes, expiry
     """
-    flow = Flow.from_client_config(_client_config(), scopes=SCOPES, redirect_uri=GMAIL_REDIRECT_URI)
+    flow = Flow.from_client_config(_client_config(), scopes=SCOPES, redirect_uri=_redirect_uri())
     flow.fetch_token(code=code, code_verifier=code_verifier)
     creds = flow.credentials
     return {
@@ -92,8 +105,8 @@ def _build_service(credentials: dict):
         token=credentials.get("token"),
         refresh_token=credentials.get("refresh_token"),
         token_uri=credentials.get("token_uri", "https://oauth2.googleapis.com/token"),
-        client_id=credentials.get("client_id", GMAIL_CLIENT_ID),
-        client_secret=credentials.get("client_secret", GMAIL_CLIENT_SECRET),
+        client_id=credentials.get("client_id", _gmail_client_id()),
+        client_secret=credentials.get("client_secret", _gmail_client_secret()),
         scopes=credentials.get("scopes", SCOPES),
         expiry=expiry,
     )
