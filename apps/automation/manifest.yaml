@@ -57,3 +57,16 @@ tool_category:
     - check the sensor
     - check batteries
     - low batteries
+
+# Per-app settings (Settings → Automation). Home Assistant creds live here
+# now (not .env). The token is encrypted at rest.
+config:
+  - key: home_assistant_url
+    type: string
+    label: "Home Assistant URL"
+    description: "Base URL, e.g. http://homeassistant.local:8123"
+  - key: home_assistant_token
+    type: string
+    secret: true
+    label: "Long-lived access token"
+    description: "Home Assistant → your profile → Long-Lived Access Tokens"

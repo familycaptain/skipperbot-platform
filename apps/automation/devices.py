@@ -45,14 +45,16 @@ _entities_lock = Lock()
 # ---------------------------------------------------------------------------
 
 def _ha_base_url() -> str:
-    raw = (os.getenv("HOME_ASSISTANT_URL") or os.getenv("HA_URL") or "").strip().rstrip("/")
+    from app_platform import settings as _settings
+    raw = (_settings.get("home_assistant_url", scope="app:automation", default="") or "").strip().rstrip("/")
     if raw.endswith("/api"):
         raw = raw[:-4]
     return raw
 
 
 def _ha_token() -> str:
-    return (os.getenv("HOME_ASSISTANT_TOKEN") or os.getenv("HA_TOKEN") or "").strip()
+    from app_platform import settings as _settings
+    return (_settings.get("home_assistant_token", scope="app:automation", secret=True, default="") or "").strip()
 
 
 def _ws_url() -> str:

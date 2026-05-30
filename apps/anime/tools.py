@@ -433,8 +433,8 @@ def cast_anime_episode(
     # the fallback for setups without a separate LAN endpoint.
     from app_platform import settings as _settings
     base_url = (
-        (_settings.get("lan_url", scope="platform", env="SKIPPER_LAN_URL", default="")
-         or _settings.get("public_url", scope="platform", env="SKIPPER_PUBLIC_URL", default="")
+        (_settings.get("lan_url", scope="platform", default="")
+         or _settings.get("public_url", scope="platform", default="")
          or "")
         .strip()
         .rstrip("/")

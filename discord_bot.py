@@ -19,10 +19,9 @@ load_dotenv()
 
 def _discord_token() -> str:
     """The Discord bot token, from the Settings Integrations panel (encrypted,
-    scope=platform) with a fallback to the legacy DISCORD_TOKEN env var."""
+    scope=platform). App settings are authoritative — no .env fallback."""
     from app_platform import settings as _settings
-    return _settings.get("discord_token", scope="platform",
-                         env="DISCORD_TOKEN", secret=True, default="") or ""
+    return _settings.get("discord_token", scope="platform", secret=True, default="") or ""
 
 # Signalled when the bot is fully connected and ready to receive messages
 _ready_event = asyncio.Event()

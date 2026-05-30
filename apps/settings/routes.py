@@ -35,9 +35,8 @@ router = APIRouter()
 
 # ---------------------------------------------------------------------------
 # Platform panels — curated settings that aren't owned by a single app.
-# Stored in scope="platform". Each field can declare a legacy ``env`` var
-# (read as a fallback during the .env → settings migration) and ``secret``
-# (encrypted at rest; never sent to the client).
+# Stored in scope="platform". App settings are authoritative (no .env
+# fallback). ``secret`` fields are encrypted at rest and never sent to client.
 # ---------------------------------------------------------------------------
 
 PLATFORM_PANELS: dict[str, dict] = {
@@ -46,26 +45,23 @@ PLATFORM_PANELS: dict[str, dict] = {
         "description": "Platform-wide behavior — AI models, URLs, display + debug flags.",
         "schema": [
             {"key": "timezone", "type": "string", "label": "Timezone",
-             "description": "IANA name, e.g. Europe/Paris. Used everywhere times are shown.",
-             "env": None, "default": ""},
+             "description": "IANA name, e.g. Europe/Paris. Used everywhere times are shown.", "default": ""},
             {"key": "smart_model", "type": "string", "label": "Smart model",
-             "description": "Model for complex reasoning.", "env": "SMART_MODEL", "default": ""},
+             "description": "Model for complex reasoning.", "default": ""},
             {"key": "dumb_model", "type": "string", "label": "Fast model",
-             "description": "Cheaper model for light tasks.", "env": "DUMB_MODEL", "default": ""},
+             "description": "Cheaper model for light tasks.", "default": ""},
             {"key": "realtime_model", "type": "string", "label": "Realtime/voice model",
-             "description": "Model used by the voice path.", "env": "REALTIME_MODEL", "default": ""},
+             "description": "Model used by the voice path.", "default": ""},
             {"key": "lan_url", "type": "string", "label": "LAN URL",
-             "description": "How devices on your network reach this server, e.g. http://skipper.local:8000.",
-             "env": "SKIPPER_LAN_URL", "default": ""},
+             "description": "How devices on your network reach this server, e.g. http://skipper.local:8000.", "default": ""},
             {"key": "public_url", "type": "string", "label": "Public URL",
-             "description": "External URL if exposed (for links/QR). Leave blank if LAN-only.",
-             "env": "SKIPPER_PUBLIC_URL", "default": ""},
+             "description": "External URL if exposed (for links/QR). Leave blank if LAN-only.", "default": ""},
             {"key": "show_entity_ids", "type": "boolean", "label": "Show entity IDs",
-             "description": "Surface internal IDs in the UI (debugging).", "env": "SHOW_ENTITY_IDS", "default": False},
+             "description": "Surface internal IDs in the UI (debugging).", "default": False},
             {"key": "debug_tokens", "type": "boolean", "label": "Log token usage",
-             "description": "Verbose token accounting in logs.", "env": "DEBUG_TOKENS", "default": False},
+             "description": "Verbose token accounting in logs.", "default": False},
             {"key": "max_session_turns", "type": "integer", "label": "Max session turns",
-             "description": "Chat history cap per session before trimming.", "env": "MAX_SESSION_TURNS", "default": None},
+             "description": "Chat history cap per session before trimming.", "default": None},
         ],
     },
     "integrations": {
@@ -73,16 +69,15 @@ PLATFORM_PANELS: dict[str, dict] = {
         "description": "Cross-cutting service credentials with no single owning app. Secrets are encrypted at rest.",
         "schema": [
             {"key": "discord_enabled", "type": "boolean", "label": "Discord enabled",
-             "description": "Turn the Discord chat bridge on/off.", "env": "DISCORD_ENABLED", "default": False},
+             "description": "Turn the Discord chat bridge on/off.", "default": False},
             {"key": "discord_token", "type": "string", "secret": True, "label": "Discord bot token",
-             "description": "From the Discord developer portal.", "env": "DISCORD_TOKEN", "default": ""},
+             "description": "From the Discord developer portal.", "default": ""},
             {"key": "brave_api_key", "type": "string", "secret": True, "label": "Brave Search API key",
-             "description": "Powers web search / research.", "env": "BRAVE_API_KEY", "default": ""},
+             "description": "Powers web search / research.", "default": ""},
             {"key": "openai_admin_key", "type": "string", "secret": True, "label": "OpenAI admin key",
-             "description": "Optional — enables the OpenAI cost dashboard.", "env": "OPENAI_ADMIN_KEY", "default": ""},
+             "description": "Optional — enables the OpenAI cost dashboard.", "default": ""},
             {"key": "weather_api_key", "type": "string", "secret": True, "label": "Weather API key",
-             "description": "Optional — for weather lookups (until the Weather app ships).",
-             "env": "WEATHER_API_KEY", "default": ""},
+             "description": "Optional — for weather lookups (until the Weather app ships).", "default": ""},
         ],
     },
 }
@@ -96,7 +91,7 @@ def _panel_field_json(f: dict, *, include_set: bool) -> dict:
         "default": f.get("default"), "choices": list(f.get("choices", []) or []),
     }
     if include_set and out["secret"]:
-        out["set"] = platform_settings.is_configured(f["key"], scope="platform", env=f.get("env"))
+        out["set"] = platform_settings.is_configured(f["key"], scope="platform")
     return out
 
 
@@ -111,7 +106,7 @@ def _panel_payload(panel_id: str) -> dict | None:
             values[f["key"]] = ""   # never expose a secret to the client
         else:
             values[f["key"]] = platform_settings.get(
-                f["key"], scope="platform", env=f.get("env"), default=f.get("default"))
+                f["key"], scope="platform", default=f.get("default"))
     return {
         "id": panel_id, "name": panel["name"], "description": panel["description"],
         "schema": schema, "values": values, "has_settings": True, "is_panel": True,
@@ -122,13 +117,13 @@ def _panel_payload(panel_id: str) -> dict | None:
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _serialise_config_key(ck) -> dict:
+def _serialise_config_key(ck, *, scope: str | None = None) -> dict:
     """Convert a ``ConfigKeyDef`` to a JSON-safe dict.
 
-    Defaults are passed through unchanged — the config layer stores
-    JSONB and does no coercion.
+    For secret keys, includes a ``set`` flag (is a value stored?) so the UI
+    can show "saved" without the value ever leaving the server.
     """
-    return {
+    out = {
         "key": ck.key,
         "type": ck.type,
         "default": ck.default,
@@ -137,19 +132,25 @@ def _serialise_config_key(ck) -> dict:
         "secret": bool(getattr(ck, "secret", False)),
         "choices": list(getattr(ck, "choices", []) or []),
     }
+    if out["secret"] and scope:
+        out["set"] = platform_settings.is_configured(ck.key, scope=scope)
+    return out
 
 
 def _current_values(app_id: str, schema: list) -> dict[str, Any]:
     """Return the current value for every key in the schema.
 
-    Falls back to the manifest ``default`` when a key has never been
-    written so first-boot installs surface the documented defaults
-    rather than ``null``.
+    Secret values are NEVER returned (blanked); the ``set`` flag on the
+    schema entry says whether one is stored. Non-secret values fall back to
+    the manifest ``default`` when never written.
     """
     scope = f"app:{app_id}"
     out: dict[str, Any] = {}
     for ck in schema:
-        out[ck.key] = platform_config.get(ck.key, ck.default, scope=scope)
+        if getattr(ck, "secret", False):
+            out[ck.key] = ""
+        else:
+            out[ck.key] = platform_config.get(ck.key, ck.default, scope=scope)
     return out
 
 
@@ -174,7 +175,7 @@ async def api_list_app_settings():
     def _do():
         apps = []
         for m in _loaded_apps_sorted():
-            schema = [_serialise_config_key(ck) for ck in m.config]
+            schema = [_serialise_config_key(ck, scope=f"app:{m.id}") for ck in m.config]
             values = _current_values(m.id, m.config) if m.config else {}
             apps.append({
                 "id": m.id,
@@ -204,7 +205,7 @@ async def api_get_app_settings(app_id: str):
             "name": m.name,
             "description": m.description,
             "version": m.version,
-            "schema": [_serialise_config_key(ck) for ck in m.config],
+            "schema": [_serialise_config_key(ck, scope=f"app:{app_id}") for ck in m.config],
             "values": _current_values(m.id, m.config),
             "has_settings": bool(m.config),
         }
@@ -245,18 +246,28 @@ async def api_patch_app_settings(app_id: str, req: AppSettingsPatch):
             )
 
         scope = f"app:{app_id}"
+        secret_keys = {ck.key for ck in m.config if getattr(ck, "secret", False)}
         for key, value in req.values.items():
-            platform_config.set(key, value, scope=scope, by="settings-ui")
+            if key in secret_keys:
+                # Blank means "keep the existing secret" (GET never sends it).
+                if value in (None, ""):
+                    continue
+                platform_settings.set(key, value, scope=scope, secret=True, by="settings-ui")
+            else:
+                platform_config.set(key, value, scope=scope, by="settings-ui")
 
         return ({
             "id": m.id,
             "name": m.name,
-            "schema": [_serialise_config_key(ck) for ck in m.config],
+            "schema": [_serialise_config_key(ck, scope=scope) for ck in m.config],
             "values": _current_values(m.id, m.config),
             "has_settings": True,
         }, None)
 
-    result, err = await asyncio.to_thread(_do)
+    try:
+        result, err = await asyncio.to_thread(_do)
+    except platform_secrets.SecretKeyMissing as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if result is None:
         raise HTTPException(
             status_code=400 if (err and "Unknown" in err) else 404,

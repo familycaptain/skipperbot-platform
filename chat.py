@@ -26,7 +26,7 @@ def _max_session_turns() -> int:
     val = None
     try:
         from app_platform import settings as _settings
-        val = _settings.get("max_session_turns", scope="platform", env="MAX_SESSION_TURNS", default=None)
+        val = _settings.get("max_session_turns", scope="platform", default=None)
     except Exception:
         val = os.getenv("MAX_SESSION_TURNS")
     try:

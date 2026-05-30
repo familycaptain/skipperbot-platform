@@ -24,7 +24,7 @@ def internet_search(query: str, num_results: int = 5) -> str:
     """
     try:
         from app_platform import settings as _settings
-        api_key = _settings.get("brave_api_key", scope="platform", env="BRAVE_API_KEY", secret=True, default="")
+        api_key = _settings.get("brave_api_key", scope="platform", secret=True, default="")
         if not api_key:
             return "Error: BRAVE_API_KEY is not set in the .env file."
 

@@ -17,27 +17,29 @@ ALIASES_PATH = Path(__file__).with_name("aliases.json")
 
 
 def _ha_base_url() -> str:
-    url = (os.getenv("HOME_ASSISTANT_URL") or os.getenv("HA_URL") or "").strip().rstrip("/")
+    from app_platform import settings as _settings
+    url = (_settings.get("home_assistant_url", scope="app:automation", default="") or "").strip().rstrip("/")
     if url.endswith("/api"):
         url = url[:-4]
     return url
 
 
 def _ha_token() -> str:
-    return (os.getenv("HOME_ASSISTANT_TOKEN") or os.getenv("HA_TOKEN") or "").strip()
+    from app_platform import settings as _settings
+    return (_settings.get("home_assistant_token", scope="app:automation", secret=True, default="") or "").strip()
 
 
 def _ha_setup_error() -> str:
     missing = []
     if not _ha_base_url():
-        missing.append("HOME_ASSISTANT_URL")
+        missing.append("URL")
     if not _ha_token():
-        missing.append("HOME_ASSISTANT_TOKEN")
+        missing.append("access token")
     if missing:
         return (
-            "Home Assistant is not configured. Set "
+            "Home Assistant is not configured. Set the "
             + " and ".join(missing)
-            + " in .env. Use a Home Assistant long-lived access token."
+            + " in Settings → Automation (use a Home Assistant long-lived access token)."
         )
     return ""
 

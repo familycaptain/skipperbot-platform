@@ -56,12 +56,12 @@ class Capability:
     extra_check: Callable[[], bool] | None = None
     """Optional additional check (e.g. file exists for service-account JSON paths)."""
 
-    settings_keys: tuple[tuple[str, str, str], ...] = ()
-    """Optional (config_key, scope, env_var) triples. When present, the
-    capability is "configured" if every triple resolves via the settings
-    layer (app_config value OR its env-var fallback) — so creds saved in the
-    Settings UI count, not just .env. When empty, the legacy env-only check
-    on ``env_vars`` is used (for capabilities not yet migrated)."""
+    settings_keys: tuple[tuple[str, str], ...] = ()
+    """Optional (config_key, scope) pairs. When present, the capability is
+    "configured" if every key has a stored value in app_config — i.e. it was
+    set through the Settings UI (app settings are authoritative; no .env
+    fallback). When empty, the legacy env-only check on ``env_vars`` is used
+    for capabilities not yet migrated to settings."""
 
 
 def _file_exists(env_var: str) -> Callable[[], bool]:
@@ -89,7 +89,7 @@ CAPABILITIES: tuple[Capability, ...] = (
         name="discord",
         label="Discord",
         env_vars=("DISCORD_TOKEN",),
-        settings_keys=(("discord_token", "platform", "DISCORD_TOKEN"),),
+        settings_keys=(("discord_token", "platform"),),
         docs_anchor="03-extended-functionality.md#discord",
         not_configured_message="Discord is not configured. Add a token in Settings → Integrations.",
     ),
@@ -97,7 +97,7 @@ CAPABILITIES: tuple[Capability, ...] = (
         name="brave_search",
         label="Brave web search",
         env_vars=("BRAVE_API_KEY",),
-        settings_keys=(("brave_api_key", "platform", "BRAVE_API_KEY"),),
+        settings_keys=(("brave_api_key", "platform"),),
         docs_anchor="03-extended-functionality.md#brave-web-search",
         not_configured_message="Web search is not configured. Add a Brave API key in Settings → Integrations.",
     ),
@@ -145,8 +145,9 @@ CAPABILITIES: tuple[Capability, ...] = (
         name="home_assistant",
         label="Home Assistant",
         env_vars=("HOME_ASSISTANT_URL", "HOME_ASSISTANT_TOKEN"),
+        settings_keys=(("home_assistant_url", "app:automation"), ("home_assistant_token", "app:automation")),
         docs_anchor="03-extended-functionality.md#home-assistant",
-        not_configured_message="Home Assistant is not configured. Add HOME_ASSISTANT_URL and HOME_ASSISTANT_TOKEN to .env to enable.",
+        not_configured_message="Home Assistant is not configured. Add the URL + token in Settings → Automation.",
     ),
     Capability(
         name="picovoice",
@@ -163,7 +164,7 @@ CAPABILITIES: tuple[Capability, ...] = (
         name="openai_admin",
         label="OpenAI budget tracking",
         env_vars=("OPENAI_ADMIN_KEY",),
-        settings_keys=(("openai_admin_key", "platform", "OPENAI_ADMIN_KEY"),),
+        settings_keys=(("openai_admin_key", "platform"),),
         docs_anchor="03-extended-functionality.md",
         not_configured_message="OpenAI budget dashboard is not configured. Add an admin key in Settings → Integrations.",
     ),
@@ -171,7 +172,7 @@ CAPABILITIES: tuple[Capability, ...] = (
         name="weather",
         label="Weather lookups",
         env_vars=("WEATHER_API_KEY",),
-        settings_keys=(("weather_api_key", "platform", "WEATHER_API_KEY"),),
+        settings_keys=(("weather_api_key", "platform"),),
         docs_anchor="03-extended-functionality.md#weather",
         not_configured_message="Weather is not configured. Add a key in Settings → Integrations.",
     ),
@@ -195,8 +196,8 @@ def is_enabled(name: str) -> bool:
 
     if cap.settings_keys:
         from app_platform import settings as _settings
-        for key, scope, env in cap.settings_keys:
-            if not _settings.is_configured(key, scope=scope, env=env):
+        for key, scope in cap.settings_keys:
+            if not _settings.is_configured(key, scope=scope):
                 return False
     else:
         for var in cap.env_vars:

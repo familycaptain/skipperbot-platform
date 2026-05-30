@@ -36,34 +36,33 @@ def get(
     key: str,
     *,
     scope: str | None = None,
-    env: str | None = None,
     secret: bool = False,
     default=None,
 ):
-    """Resolve a setting: app_config (decrypted if secret) → env var → default.
+    """Resolve a setting from app_config (decrypted if secret), else default.
+
+    App settings are authoritative: there is NO .env fallback. Bootstrap
+    values that must exist before the DB (OpenAI key, DB connection, the
+    secret-encryption key) stay in .env and are read directly via os.getenv,
+    not through this layer.
 
     scope:   app_config scope ("platform" or "app:<id>"); auto-scopes to the
              calling app when None (same rule as app_platform.config.get).
-    env:     optional env var name to fall back to (migration support).
     secret:  if True, a stored value is decrypted before returning.
     """
     stored = _config.get(key, None, scope=scope)
-    if stored not in (None, ""):
-        if not secret:
-            return stored
-        try:
-            return _secrets.decrypt(stored)
-        except _secrets.SecretError as exc:
-            # Don't take the platform down over one unreadable secret — log
-            # loudly and fall through to the env var / default below.
-            logger.warning("SETTINGS: could not decrypt secret '%s' (%s): %s",
-                           key, scope or "app", exc)
-
-    if env:
-        env_val = os.getenv(env)
-        if env_val not in (None, ""):
-            return env_val
-    return default
+    if stored in (None, ""):
+        return default
+    if not secret:
+        return stored
+    try:
+        return _secrets.decrypt(stored)
+    except _secrets.SecretError as exc:
+        # Don't take the platform down over one unreadable secret — log
+        # loudly and fall back to the default.
+        logger.warning("SETTINGS: could not decrypt secret '%s' (%s): %s",
+                       key, scope or "app", exc)
+        return default
 
 
 def set(  # noqa: A001 — match the natural settings API
@@ -84,13 +83,11 @@ def set(  # noqa: A001 — match the natural settings API
     _config.set(key, stored, scope=scope, by=by)
 
 
-def is_configured(key: str, *, scope: str | None = None, env: str | None = None) -> bool:
-    """True if a setting has a value (in app_config or the fallback env var).
+def is_configured(key: str, *, scope: str | None = None) -> bool:
+    """True if a setting has a stored value in app_config.
 
     Does NOT decrypt — safe for "is this integration set up?" checks in the UI
     without exposing the secret.
     """
     stored = _config.get(key, None, scope=scope)
-    if stored not in (None, ""):
-        return True
-    return bool(env and os.getenv(env))
+    return stored not in (None, "")

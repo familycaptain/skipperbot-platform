@@ -3912,7 +3912,7 @@ async def _fetch_openai_daily_cost() -> float | None:
     import os, requests
     from datetime import datetime, timezone
     from app_platform import settings as _settings
-    admin_key = _settings.get("openai_admin_key", scope="platform", env="OPENAI_ADMIN_KEY", secret=True)
+    admin_key = _settings.get("openai_admin_key", scope="platform", secret=True)
     if not admin_key:
         return None
     try:

@@ -86,20 +86,18 @@ def _as_bool(v) -> bool:
     return str(v).strip().lower() in ("true", "1", "yes")
 
 
-def _platform_setting(key: str, env: str, default, cast=None):
-    """Resolve a System-panel setting at import: app_config(platform) → env →
-    default. Guarded so a DB hiccup at import can never break config import —
-    it just falls back to the env var (the pre-migration behavior).
-
-    Note: resolved once at import, so changing these in the UI takes effect on
-    the next restart (fine for model names + debug flags).
+def _platform_setting(key: str, default, cast=None):
+    """Resolve a System-panel setting from app_config(scope=platform), else
+    the hardcoded default. App settings are authoritative — no .env fallback.
+    Guarded so a DB hiccup at import can never break config import (returns
+    the default). Resolved once at import, so UI changes take effect on the
+    next restart (fine for model names + debug flags).
     """
-    val = None
     try:
         from app_platform import settings as _settings
-        val = _settings.get(key, scope="platform", env=env, default=None)
+        val = _settings.get(key, scope="platform", default=None)
     except Exception:
-        val = os.getenv(env)
+        val = None
     if val in (None, ""):
         return default
     if cast:
@@ -110,10 +108,10 @@ def _platform_setting(key: str, env: str, default, cast=None):
     return val
 
 
-SMART_MODEL = _platform_setting("smart_model", "SMART_MODEL", "gpt-5.2")
-DUMB_MODEL = _platform_setting("dumb_model", "DUMB_MODEL", "gpt-5-mini")
+SMART_MODEL = _platform_setting("smart_model", "gpt-5.2")
+DUMB_MODEL = _platform_setting("dumb_model", "gpt-5-mini")
 OPENAI_MODEL = SMART_MODEL  # backward compat alias
-DEBUG_TOKENS = _platform_setting("debug_tokens", "DEBUG_TOKENS", False, cast=_as_bool)
+DEBUG_TOKENS = _platform_setting("debug_tokens", False, cast=_as_bool)
 NAG_WAKE_HOUR = int(os.getenv("NAG_WAKE_HOUR", "8"))
 NAG_SLEEP_HOUR = int(os.getenv("NAG_SLEEP_HOUR", "21"))
 
@@ -130,19 +128,17 @@ NAG_SLOTS["night"] = NAG_SLOTS["evening"]  # alias
 # Default-on caused first-time installs to log "Discord ready" followed
 # immediately by "No token — bot disabled" noise that looked like a failure.
 #
-# Now resolved at call time from the Settings "Integrations" panel
-# (scope=platform), falling back to the legacy DISCORD_* env vars. It's a
-# function (not a module constant) because the value can change at runtime
-# via the UI, and to avoid a DB read at import time.
+# Resolved at call time from the Settings "Integrations" panel
+# (scope=platform). It's a function (not a module constant) because the value
+# changes at runtime via the UI, and to avoid a DB read at import time.
 def discord_enabled() -> bool:
     from app_platform import settings as _settings
-    explicit = _settings.get("discord_enabled", scope="platform",
-                             env="DISCORD_ENABLED", default=False)
+    explicit = _settings.get("discord_enabled", scope="platform", default=False)
     if str(explicit).lower() in ("true", "1", "yes") or explicit is True:
         return True
-    # Enabled implicitly if a token is present (env or saved secret).
-    return _settings.is_configured("discord_token", scope="platform", env="DISCORD_TOKEN")
-SHOW_ENTITY_IDS = _platform_setting("show_entity_ids", "SHOW_ENTITY_IDS", False, cast=_as_bool)
+    # Enabled implicitly if a token has been saved.
+    return _settings.is_configured("discord_token", scope="platform")
+SHOW_ENTITY_IDS = _platform_setting("show_entity_ids", False, cast=_as_bool)
 REMINDER_LEAD_MINUTES = int(os.getenv("REMINDER_LEAD_MINUTES", "120"))
 PM_QUIET_MODE = os.getenv("PM_QUIET_MODE", "false").lower() in ("true", "1", "yes")
 
