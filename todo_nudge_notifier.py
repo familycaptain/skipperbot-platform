@@ -28,7 +28,7 @@ def _has_nudge_today(user_id: str) -> bool:
     """Check if a to-do nudge was already created for this user today."""
     today_start = _now().replace(hour=0, minute=0, second=0, microsecond=0)
     row = _db_fetch_one(
-        "SELECT 1 FROM notifications WHERE recipient = %s AND source_type = %s AND created_at >= %s LIMIT 1",
+        "SELECT 1 FROM app_notifications.notifications WHERE recipient = %s AND source_type = %s AND created_at >= %s LIMIT 1",
         (user_id, "todo_nudge", today_start),
     )
     return row is not None

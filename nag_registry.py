@@ -53,7 +53,7 @@ def _has_nag_today(recipient: str, source_type: str) -> bool:
     """Check if a nag was already created for this recipient+source_type today."""
     today_start = _now().replace(hour=0, minute=0, second=0, microsecond=0)
     row = _db_fetch_one(
-        "SELECT 1 FROM notifications WHERE recipient = %s AND source_type = %s AND created_at >= %s LIMIT 1",
+        "SELECT 1 FROM app_notifications.notifications WHERE recipient = %s AND source_type = %s AND created_at >= %s LIMIT 1",
         (recipient, source_type, today_start),
     )
     return row is not None
