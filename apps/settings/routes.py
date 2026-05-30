@@ -46,7 +46,7 @@ PLATFORM_PANELS: dict[str, dict] = {
         "description": "Platform-wide behavior — AI models, URLs, display + debug flags.",
         "schema": [
             {"key": "timezone", "type": "string", "label": "Timezone",
-             "description": "IANA name, e.g. America/Chicago. Used everywhere times are shown.",
+             "description": "IANA name, e.g. Europe/Paris. Used everywhere times are shown.",
              "env": None, "default": ""},
             {"key": "smart_model", "type": "string", "label": "Smart model",
              "description": "Model for complex reasoning.", "env": "SMART_MODEL", "default": ""},
