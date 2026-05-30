@@ -23,7 +23,7 @@ export default function LocatorListApp({ appId, userId, context = {}, onOpenApp,
       const params = new URLSearchParams();
       if (searchQuery.trim()) params.set("q", searchQuery.trim());
       else if (activeLocation) params.set("location", activeLocation);
-      const res = await fetch(`/api/apps/home?${params}`);
+      const res = await fetch(`/api/apps/locator?${params}`);
       if (res.ok) {
         const data = await res.json();
         setItems(data.items || []);
@@ -34,7 +34,7 @@ export default function LocatorListApp({ appId, userId, context = {}, onOpenApp,
 
   const loadLocations = useCallback(async () => {
     try {
-      const res = await fetch("/api/apps/home/locations");
+      const res = await fetch("/api/apps/locator/locations");
       if (res.ok) {
         const data = await res.json();
         setLocations(data.locations || []);
@@ -68,7 +68,7 @@ export default function LocatorListApp({ appId, userId, context = {}, onOpenApp,
 
   async function handleCreateItem() {
     try {
-      const res = await fetch("/api/apps/home", {
+      const res = await fetch("/api/apps/locator", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "New Item", created_by: userId }),
@@ -85,7 +85,7 @@ export default function LocatorListApp({ appId, userId, context = {}, onOpenApp,
     e.preventDefault();
     if (!newLocName.trim()) return;
     try {
-      await fetch("/api/apps/home/locations", {
+      await fetch("/api/apps/locator/locations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newLocName.trim() }),
@@ -97,7 +97,7 @@ export default function LocatorListApp({ appId, userId, context = {}, onOpenApp,
 
   async function handleDeleteLocation(locId) {
     try {
-      await fetch(`/api/apps/home/locations/${locId}`, { method: "DELETE" });
+      await fetch(`/api/apps/locator/locations/${locId}`, { method: "DELETE" });
       if (activeLocation === locations.find(l => l.id === locId)?.name) {
         setActiveLocation("");
       }

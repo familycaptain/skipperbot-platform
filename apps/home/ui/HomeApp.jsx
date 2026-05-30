@@ -5,7 +5,6 @@ import {
   Clock, AlertCircle, CalendarCheck, RotateCcw, Trash2, Edit2,
   AlertTriangle, Camera, Image as ImageIcon,
 } from "lucide-react";
-import LocatorListApp from "./LocatorListApp";
 
 /**
  * Home App — combined hub for home-related features.
@@ -15,7 +14,6 @@ import LocatorListApp from "./LocatorListApp";
  *   Appliances   – purchase history
  *   Insurance    – valuations, coverage, asset list
  *   Contractors  – electricians, plumbers, roofers, painters, etc.
- *   Locator      – item locator (embeds LocatorListApp)
  *
  * Props: appId, userId, context, onTitle, onOpenApp, refreshKey, isActive
  */
@@ -26,7 +24,6 @@ const TABS = [
   { id: "appliances",  label: "Appliances",  icon: ShoppingCart },
   { id: "insurance",   label: "Insurance",   icon: Shield },
   { id: "contractors", label: "Contractors", icon: HardHat },
-  { id: "locator",     label: "Locator",     icon: MapPin },
 ];
 
 export default function HomeApp({ appId, userId, context = {}, onTitle, onOpenApp, refreshKey, isActive }) {
@@ -73,16 +70,6 @@ export default function HomeApp({ appId, userId, context = {}, onTitle, onOpenAp
         )}
         {activeTab === "contractors" && (
           <ContractorsTab />
-        )}
-        {activeTab === "locator" && (
-          <LocatorListApp
-            appId={appId}
-            userId={userId}
-            context={context}
-            onOpenApp={onOpenApp}
-            refreshKey={refreshKey}
-            isActive={isActive && activeTab === "locator"}
-          />
         )}
       </div>
     </div>

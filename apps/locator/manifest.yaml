@@ -1,0 +1,38 @@
+id: locator
+name: Locator
+version: "1.0.0"
+description: >
+  Item locator — track where physical items are stored around the household.
+  Find things by location, category, tags, or search, and attach photos to items.
+
+platform_deps:
+  - images          # locator_images references public.images
+  - db
+  - memory
+  - events
+  - time
+
+entity_types:
+  - prefix: "loc"
+    name: Located Item
+    table: located_items
+  - prefix: "iloc"
+    name: Item Location
+    table: item_locations
+
+tool_category:
+  description: >
+    Track where physical items are stored in the household — find things
+    by location, category, tags, or search; record where items are put away
+    and stored.
+  keywords:
+    - locate
+    - locator
+    - location
+    - where is
+    - find item
+    - put away
+    - stored
+    - storage
+
+config: []

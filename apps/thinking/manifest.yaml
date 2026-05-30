@@ -1,0 +1,21 @@
+id: thinking
+name: Thinking
+version: 1.0.0
+description: Thinking-domain viewer — inspect Skipper's working memory, reasoning log, token budget, and cognitive domains.
+
+# Tables (public.thinking_log, public.thinking_domains) live in the public baseline.
+# Backend routes are served by agent.py at /api/apps/thinking/*; this package only
+# provides the desktop icon and UI.
+schema: public
+
+tool_category:
+  description: "Inspect Skipper's thinking state, reasoning log, budget, and cognitive domains"
+  keywords:
+    - thinking
+    - reasoning
+    - cognition
+    - domain
+    - reflect
+
+emits: []
+subscribes: []

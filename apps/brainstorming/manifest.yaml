@@ -1,0 +1,31 @@
+id: brainstorming
+name: Brainstorming
+version: 1.0.0
+description: Idea capture and development — create, browse, and search ideas with structured documents, flowcharts, statuses, priorities, and tags.
+
+# The data layer (data_layer/brainstorming.py) uses UNQUALIFIED table names,
+# so ideas + idea_parts live in the public schema (the agent DB pool's default
+# search_path). Migration 001 creates them in public on a fresh install.
+schema: public
+
+entity_types:
+  - prefix: bs
+    name: idea
+    id_format: "bs-{hex8}"
+    table: ideas
+  - prefix: bp
+    name: idea_part
+    id_format: "bp-{hex8}"
+    table: idea_parts
+
+tool_category:
+  description: "Capture and develop ideas with documents, flowcharts, statuses, priorities, and tags"
+  keywords:
+    - idea
+    - ideas
+    - brainstorm
+    - brainstorming
+    - concept
+    - notion
+
+config: []

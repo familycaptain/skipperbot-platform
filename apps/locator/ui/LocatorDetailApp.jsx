@@ -27,7 +27,7 @@ export default function LocatorDetailApp({ appId, userId, context = {}, onTitle,
     if (!id) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/apps/home/${id}`);
+      const res = await fetch(`/api/apps/locator/${id}`);
       if (res.ok) {
         const data = await res.json();
         setItem(data);
@@ -40,7 +40,7 @@ export default function LocatorDetailApp({ appId, userId, context = {}, onTitle,
 
   const loadLocations = useCallback(async () => {
     try {
-      const res = await fetch("/api/apps/home/locations");
+      const res = await fetch("/api/apps/locator/locations");
       if (res.ok) {
         const data = await res.json();
         setLocations(data.locations || []);
@@ -94,7 +94,7 @@ export default function LocatorDetailApp({ appId, userId, context = {}, onTitle,
         quantity: form.quantity ? parseInt(form.quantity, 10) || null : null,
         notes: form.notes || null,
       };
-      const res = await fetch(`/api/apps/home/${itemId}`, {
+      const res = await fetch(`/api/apps/locator/${itemId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -114,7 +114,7 @@ export default function LocatorDetailApp({ appId, userId, context = {}, onTitle,
   async function handleDelete() {
     if (!itemId) return;
     try {
-      const res = await fetch(`/api/apps/home/${itemId}`, { method: "DELETE" });
+      const res = await fetch(`/api/apps/locator/${itemId}`, { method: "DELETE" });
       if (res.ok) {
         onClose?.();
       }

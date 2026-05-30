@@ -1,5 +1,7 @@
--- Home app — initial migration
--- Creates locator tables in app_home schema and copies data from public.
+-- Locator app — initial migration
+-- Creates locator tables in the app_locator schema.
+-- (Migrator runs with search_path = app_locator, public, so unqualified
+--  CREATE TABLE lands in app_locator.)
 
 -- ============================================================================
 -- ITEM LOCATIONS (predefined storage locations)

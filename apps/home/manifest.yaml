@@ -2,20 +2,13 @@ id: home
 name: Home
 version: "1.0.0"
 description: >
-  Home management hub — item locator, maintenance, appliances, and insurance.
-  The Locator tab tracks physical items and their storage locations around the
-  household.
+  Home management hub — maintenance tasks, appliances, insurance, and home issues.
+  Tracks recurring maintenance, repairs, and problems around the household.
 
 platform_deps:
-  - images          # locator_images references public.images
+  - images          # home_issue_images references public.images
 
 entity_types:
-  - prefix: "loc"
-    name: Located Item
-    table: located_items
-  - prefix: "iloc"
-    name: Item Location
-    table: item_locations
   - prefix: "hmt"
     name: Home Task
     table: home_tasks
@@ -25,66 +18,9 @@ entity_types:
 
 tool_category:
   description: >
-    Track where physical items are stored in the household — find things
-    by location, category, or search. Also manage recurring home maintenance
-    tasks like A/C filter changes, septic treatment, gutter cleaning, etc.
+    Manage recurring home maintenance tasks like A/C filter changes, septic
+    treatment, gutter cleaning, etc., and track home issues and repairs.
   keywords:
-    # Asking where something is
-    - where is
-    - where are
-    - where did i put
-    - where did we put
-    - where do we keep
-    - where does the
-    - find the
-    - locate
-    - locator
-    - location
-    - can't find
-    - looking for the
-    # Telling where something is
-    - is in the
-    - are in the
-    - it's in the
-    - they're in the
-    - i put the
-    - i left the
-    - we keep the
-    - we put the
-    - i moved the
-    - i stored the
-    - i placed the
-    - is on the
-    - are on the
-    - sitting on
-    - hanging in
-    - hanging on
-    - tucked in
-    - stashed in
-    - stored in
-    - put it in
-    - put them in
-    - moved it to
-    - keeping it in
-    # Storage / container words
-    - stored
-    - storage
-    - put away
-    - stashed
-    - bin
-    - shelf
-    - cabinet
-    - drawer
-    - counter
-    - hook
-    - rack
-    - crate
-    - tub
-    - box
-    - container
-    - cubby
-    - inventory
-    - item locator
     # Common household locations
     - garage
     - attic
@@ -108,7 +44,6 @@ tool_category:
     - nightstand
     - dresser
     - workbench
-    - what's in the
     # Home maintenance
     - home maintenance
     - house maintenance

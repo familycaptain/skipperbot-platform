@@ -1,0 +1,29 @@
+id: images
+name: Images
+version: 1.0.0
+description: Photo gallery — browse, view, and manage saved images and generated charts.
+
+# Tables (public.images) live in the public baseline.
+# Backend routes are served by agent.py at /api/apps/images*; this package only
+# provides the desktop icon and UI. The loader still creates an empty
+# app_images schema, which is fine.
+schema: public
+
+entity_types:
+  - prefix: img
+    name: image
+    id_format: "img-{hex8}"
+    table: images
+
+tool_category:
+  description: "Browse and manage saved images, photos, and generated charts in the gallery"
+  keywords:
+    - image
+    - images
+    - photo
+    - photos
+    - gallery
+    - picture
+
+emits: []
+subscribes: []
