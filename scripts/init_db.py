@@ -363,6 +363,19 @@ def main() -> int:
     dsn = _load_env()
     info(f"Using DSN: {_redact_dsn(dsn)}")
 
+    # Self-provision the secret-encryption key on first boot so a new user
+    # can save API keys/tokens in the Settings UI without hand-generating one.
+    # Skip during --check (read-only).
+    if not args.check:
+        from app_platform.secrets import ensure_secret_key
+        status = ensure_secret_key(PROJECT_ROOT / ".env")
+        if status == "generated":
+            ok("Generated SKIPPERBOT_SECRET_KEY and saved it to .env "
+               "(keep .env safe — you need this key to read saved secrets if you move the DB).")
+        elif status == "unpersisted":
+            warn("Generated a SKIPPERBOT_SECRET_KEY but could not write it to .env; "
+                 "it will regenerate next boot. Set it manually in .env to persist saved secrets.")
+
     conn = _connect(dsn)
     try:
         _ensure_or_warn_pgvector(conn)
