@@ -4,7 +4,10 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "emit-app-sources": "node packaged-app-deps.mjs --emit-sources",
+    "predev": "node packaged-app-deps.mjs --emit-sources",
     "dev": "vite",
+    "prebuild": "node packaged-app-deps.mjs --emit-sources",
     "build": "vite build",
     "preview": "vite preview"
   },
