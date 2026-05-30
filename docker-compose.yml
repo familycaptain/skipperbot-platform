@@ -8,8 +8,8 @@
 #
 # Usage:
 #   1. cp .env.example .env
-#   2. Edit .env — set OPENAI_API_KEY and POSTGRES_PASSWORD.
-#      SKIPPERBOT_DB_DSN should reference the 'db' host (see .env.example).
+#   2. Edit .env — set OPENAI_API_KEY and POSTGRES_PASSWORD. That's it; the
+#      agent derives its DB connection from POSTGRES_PASSWORD (no separate DSN).
 #   3. docker compose up
 #   4. Open http://localhost:8000 to begin onboarding
 
@@ -17,9 +17,12 @@ services:
   db:
     image: pgvector/pgvector:pg18
     environment:
-      POSTGRES_USER: skipperbot_user
+      # User/DB default to these names but can be overridden in .env. The
+      # agent derives its connection from the SAME vars (plus DB_HOST below),
+      # so POSTGRES_PASSWORD is the only value you must set — no separate DSN.
+      POSTGRES_USER: ${POSTGRES_USER:-skipperbot_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: skipperbot
+      POSTGRES_DB: ${POSTGRES_DB:-skipperbot}
     volumes:
       # Postgres 18+ stores data in major-version-specific subdirectories
       # under /var/lib/postgresql (e.g. /var/lib/postgresql/18/main) so that
@@ -45,6 +48,11 @@ services:
         condition: service_healthy
     ports:
       - "8000:8000"
+    environment:
+      # The agent builds its DSN from POSTGRES_* (read from .env) + this host,
+      # which is the compose service name of the database. Set SKIPPERBOT_DB_DSN
+      # in .env only if you need a full custom/external connection string.
+      DB_HOST: db
     env_file:
       - .env
     volumes:

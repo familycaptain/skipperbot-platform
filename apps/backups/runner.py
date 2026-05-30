@@ -98,8 +98,13 @@ def _new_id() -> str:
 
 
 def _parse_dsn() -> dict:
-    """Parse SKIPPERBOT_DB_DSN into components for pg_dump."""
-    dsn = os.getenv("SKIPPERBOT_DB_DSN", "")
+    """Parse the effective DSN into components for pg_dump.
+
+    Uses the same resolver as the rest of the platform, so it works whether
+    the operator set a full SKIPPERBOT_DB_DSN or just POSTGRES_PASSWORD.
+    """
+    from data_layer.dsn import resolve_dsn
+    dsn = resolve_dsn()
     parts = {}
     for token in dsn.split():
         if "=" in token:

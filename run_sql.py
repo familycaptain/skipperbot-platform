@@ -17,27 +17,27 @@ import psycopg2.extras
 
 
 def _load_dsn() -> str:
-    """Load SKIPPERBOT_DB_DSN from the process env or .env file.
+    """Resolve the DB DSN from .env (or process env).
 
-    Reads .env manually (split on first '=') to avoid python-dotenv
-    mangling values that contain multiple '=' signs.
+    Loads the relevant .env keys into the environment, then defers to the
+    shared resolver so it works whether the operator set a full
+    SKIPPERBOT_DB_DSN or just POSTGRES_PASSWORD.
     """
-    # Try .env file first — the system env var may be stale or incomplete
     env_path = os.path.join(os.path.dirname(__file__), ".env")
-    if not os.path.isfile(env_path):
-        return ""
+    if os.path.isfile(env_path):
+        with open(env_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line.startswith("#") or "=" not in line:
+                    continue
+                key, _, value = line.partition("=")
+                key = key.strip()
+                if key in ("SKIPPERBOT_DB_DSN", "POSTGRES_USER", "POSTGRES_PASSWORD",
+                           "POSTGRES_DB", "DB_HOST", "DB_PORT"):
+                    os.environ.setdefault(key, value.strip().strip('"').strip("'"))
 
-    with open(env_path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line.startswith("#") or "=" not in line:
-                continue
-            key, _, value = line.partition("=")
-            if key.strip() == "SKIPPERBOT_DB_DSN":
-                return value.strip().strip('"').strip("'")
-
-    # Fall back to system env var
-    return os.getenv("SKIPPERBOT_DB_DSN", "")
+    from data_layer.dsn import resolve_dsn
+    return resolve_dsn()
 
 
 def main():

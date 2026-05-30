@@ -89,12 +89,15 @@ def _load_env() -> str:
         except ImportError:
             warn("python-dotenv not installed; reading SKIPPERBOT_DB_DSN from process env only")
 
-    dsn = os.environ.get("SKIPPERBOT_DB_DSN", "").strip()
-    if not dsn:
+    from data_layer.dsn import resolve_dsn
+    dsn = resolve_dsn()
+    # resolve_dsn always returns a string; it's only "unusable" if neither a
+    # full SKIPPERBOT_DB_DSN nor a POSTGRES_PASSWORD was provided.
+    if not os.getenv("SKIPPERBOT_DB_DSN", "").strip() and not os.getenv("POSTGRES_PASSWORD", "").strip():
         err(
-            "SKIPPERBOT_DB_DSN is empty. Copy .env.example to .env and fill it in.\n"
-            "             Example: SKIPPERBOT_DB_DSN=dbname=skipperbot user=skipperbot_user "
-            "password=... host=localhost port=5432"
+            "No database configured. Copy .env.example to .env and set POSTGRES_PASSWORD\n"
+            "             (Docker path), or set SKIPPERBOT_DB_DSN to a full connection string\n"
+            "             (native/external path)."
         )
         sys.exit(2)
     return dsn

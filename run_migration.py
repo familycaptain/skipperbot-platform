@@ -5,8 +5,9 @@ from dotenv import load_dotenv
 load_dotenv(override=True)
 
 from data_layer.db import get_conn, redact_dsn
+from data_layer.dsn import resolve_dsn
 
-print("DSN from env:", redact_dsn(os.environ.get("SKIPPERBOT_DB_DSN", "NOT SET")))
+print("DSN:", redact_dsn(resolve_dsn()))
 
 if len(sys.argv) < 2:
     print("Usage: python run_migration.py <path_to_sql>")

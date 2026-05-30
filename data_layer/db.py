@@ -28,21 +28,12 @@ logger = logging.getLogger(__name__)
 # Connection pool
 # ---------------------------------------------------------------------------
 
-_DSN = os.getenv("SKIPPERBOT_DB_DSN", "")
+# DSN resolution + redaction live in a dependency-free module so scripts
+# can reuse them without importing this pool (and psycopg2). Re-exported
+# here for backward compatibility with existing imports.
+from data_layer.dsn import resolve_dsn, redact_dsn  # noqa: E402
 
-# Matches `password=...` in libpq key=value DSNs and `://user:pass@` in URI
-# DSNs. We never want either to land in logs.
-_DSN_PASSWORD_KV_RE = re.compile(r"(password\s*=\s*)\S+", re.IGNORECASE)
-_DSN_PASSWORD_URI_RE = re.compile(r"(://[^:/@\s]+:)([^@\s]+)(@)")
-
-
-def redact_dsn(dsn: str) -> str:
-    """Return *dsn* with any embedded password replaced by ``***``."""
-    if not dsn:
-        return dsn
-    redacted = _DSN_PASSWORD_KV_RE.sub(r"\1***", dsn)
-    redacted = _DSN_PASSWORD_URI_RE.sub(r"\1***\3", redacted)
-    return redacted
+_DSN = resolve_dsn()
 
 
 _pool: psycopg2.pool.ThreadedConnectionPool | None = None
