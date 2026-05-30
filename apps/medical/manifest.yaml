@@ -1,0 +1,82 @@
+id: medical
+name: Medical
+version: "1.0.0"
+description: >
+  Family medical tracker — medications with refill nag reminders, recurring
+  treatments (injections, infusions), medical event journal (visits, surgeries,
+  labs, notes), and lab result tracking with trend history.
+
+platform_deps: []
+
+entity_types:
+  - prefix: "mmbr"
+    name: Medical Member
+    table: medical_members
+  - prefix: "mmed"
+    name: Medication
+    table: medical_medications
+  - prefix: "mevt"
+    name: Medical Event
+    table: medical_events
+  - prefix: "mtrx"
+    name: Treatment
+    table: medical_treatments
+  - prefix: "mtrxl"
+    name: Treatment Log
+    table: medical_treatment_log
+  - prefix: "mlbt"
+    name: Lab Test
+    table: medical_lab_tests
+  - prefix: "mlbr"
+    name: Lab Result
+    table: medical_lab_results
+
+tool_category:
+  description: >
+    Track family medical records — medications and refill reminders, recurring
+    treatments like injections, medical events (doctor visits, surgeries, lab
+    results, notes), and lab value trend tracking.
+  keywords:
+    - doctor
+    - appointment
+    - medication
+    - medicine
+    - prescription
+    - refill
+    - pharmacy
+    - visit
+    - procedure
+    - health
+    - medical
+    - checkup
+    - physical
+    - lab
+    - blood work
+    - blood test
+    - lab results
+    - lab values
+    - phosphorous
+    - hemoglobin
+    - calcium
+    - pth
+    - potassium
+    - dentist
+    - eye doctor
+    - optometrist
+    - dermatologist
+    - specialist
+    - injection
+    - shot
+    - infusion
+    - treatment
+    - surgery
+    - follow-up
+    - follow up
+    - refill reminder
+    - prescription runs out
+    - when does my medication
+    - medical history
+    - health notes
+
+emits: []
+subscribes: []

@@ -98,12 +98,15 @@ Thumbs.db
 .security/
 
 # ----- app installs in apps/ -----
-# Required apps are tracked by the platform repo. Optional apps are cloned
-# per-install (each is its own skipperbot-app-<name> repo with its own
-# .git/). Ignore everything in apps/ EXCEPT the 17 required apps + the
-# README. Anything else (recipes, meals, etc.) belongs to a separate repo.
+# The platform ships bundled with all originally-built apps (the 17 core
+# apps + the optional apps below) so a fresh install has the full feature
+# set out of the box. Apps a user later installs from a third-party
+# GitHub repo are cloned per-install (each its own skipperbot-app-<name>
+# repo with its own .git/) and are NOT tracked here. So: ignore everything
+# in apps/ EXCEPT the bundled apps explicitly allow-listed below.
 apps/*
 !apps/README.md
+# --- core apps (platform refuses to start without these) ---
 !apps/notifications/
 !apps/timeline/
 !apps/goals/
@@ -121,3 +124,18 @@ apps/*
 !apps/system/
 !apps/tools/
 !apps/settings/
+# --- bundled optional apps (hideable from the desktop in Settings) ---
+!apps/anime/
+!apps/auto/
+!apps/automation/
+!apps/bounties/
+!apps/chores/
+!apps/email/
+!apps/home/
+!apps/homeopathy/
+!apps/issues/
+!apps/meals/
+!apps/medical/
+!apps/newsletter/
+!apps/recipes/
+!apps/scriptures/

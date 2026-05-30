@@ -1,0 +1,58 @@
+id: recipes
+name: Recipes
+version: 1.0.0
+description: Family recipe collection — create, browse, search, and manage recipes with structured ingredients, steps, categories, and images.
+
+# Tables originally created in public schema by migration 011.
+# Migration 001 copies data into the app_recipes schema.
+
+platform_deps:
+  - images   # recipe_images.image_id references public.images
+
+entity_types:
+  - prefix: re
+    name: Recipe
+    id_format: "re-{hex8}"
+    table: recipes
+  - prefix: cat
+    name: Recipe Category
+    id_format: "cat-{hex8}"
+    table: recipe_categories
+
+tool_category:
+  description: "Create and manage family recipes with structured ingredients, steps, categories, ratings, and images"
+  keywords:
+    - recipe
+    - recipes
+    - cook
+    - cooking
+    - ingredient
+    - ingredients
+    - meal
+    - dinner
+    - lunch
+    - breakfast
+    - food
+    - cuisine
+    - bake
+    - baking
+    - grill
+    - roast
+    - fry
+    - new recipe
+    - create a recipe
+    - save this recipe
+    - make a recipe
+    - add a recipe
+    - servings
+    - prep time
+    - cook time
+    - instructions
+    - directions
+    - print recipe
+    - print the recipe
+    - category
+    - categories
+
+emits: []
+subscribes: []

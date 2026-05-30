@@ -1,0 +1,58 @@
+id: meals
+name: Meals
+version: "1.0.0"
+description: >
+  Meal idea generator and decision assistant. Filter a curated library of meals
+  by cuisine, effort, tags, and components to decide what to eat.
+
+entity_types:
+  - prefix: "ml"
+    name: Meal
+    table: meals
+  - prefix: "mc"
+    name: Meal Component
+    table: meal_components
+  - prefix: "mcu"
+    name: Meal Cuisine
+    table: meal_cuisines
+  - prefix: "mtg"
+    name: Meal Tag
+    table: meal_tags
+
+tool_category:
+  description: >
+    Browse, filter, and manage the family meal library. Find meal ideas by
+    cuisine, effort level, tags, or specific ingredients/components.
+    Add new meals and components to the library.
+  keywords:
+    - what's for dinner
+    - what should we eat
+    - meal ideas
+    - dinner ideas
+    - what to make
+    - meal list
+    - meals
+    - dinner tonight
+    - lunch idea
+    - snack idea
+    - snack options
+    - random snack
+    - "#snack"
+    - find a meal
+    - something quick
+    - easy dinner
+    - low effort meal
+    - what can we make
+    - no mexican
+    - something with chicken
+    - something with potatoes
+    - meal filter
+    - add a meal
+    - new meal
+    - meal library
+    - meal component
+    - add component
+    - cuisine
+    - effort level
+    - surprise me
+    - random meal

@@ -1,0 +1,30 @@
+id: email
+name: Email
+version: "1.0.0"
+description: >
+  Gmail integration with OAuth, rule-based email processing, and activity log.
+  Connect Gmail accounts, define inbox rules (label, archive, mark read),
+  and view processed email history.
+
+platform_deps: []
+
+entity_types:
+  - prefix: "ea"
+    name: Email Account
+    table_name: email_accounts
+  - prefix: "er"
+    name: Email Rule
+    table_name: email_rules
+  - prefix: "el"
+    name: Email Log Entry
+    table_name: email_log
+
+tool_category: null
+
+job_types:
+  - type: email
+    handler: runner.run_email_sync
+    max_concurrent: 1
+
+emits: []
+subscribes: []

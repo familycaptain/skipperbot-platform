@@ -10,10 +10,8 @@
 #   - LLM + MCP
 #   - HTTP + scraping
 #   - Optional integration adapters (Discord, Gmail/Drive, Resend, FCM)
+#   - Bundled-app extras (anime, automation, scriptures, newsletter)
 #   - Misc utilities
-#
-# Removed for the public release:
-#   - yfinance / matplotlib / mplfinance — investment-only, stays private.
 # =============================================================================
 
 # ---- Web framework + agent core ----
@@ -47,6 +45,19 @@ resend>=2.0.0
 google-auth>=2.20.0
 google-auth-oauthlib>=1.0.0
 google-api-python-client>=2.100.0
+
+# ---- Bundled-app extras ----
+# These power specific bundled apps. If you disable the app (hide it in
+# Settings) you can drop the matching line to slim the image.
+cryptography>=42.0.0        # anime — AllAnime source decryption
+websockets>=12.0            # automation — local smart-home device control
+pymupdf>=1.24.0             # scriptures — one-time Bible PDF import
+# newsletter — market-data charts pipeline (heavy; only needed when the
+# newsletter job runs, not to load the app):
+numpy>=1.26.0
+pandas>=2.0.0
+matplotlib>=3.8.0
+yfinance>=0.2.0
 
 # ---- System + scheduling ----
 psutil>=5.9.0

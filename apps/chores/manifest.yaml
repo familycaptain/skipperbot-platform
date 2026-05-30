@@ -1,0 +1,97 @@
+id: chores
+name: Chores
+version: "1.0.0"
+description: >
+  Recurring household chores rotated across the kids. Replaces the family
+  Chore Manager spreadsheet. Daily 9:00 AM push to each kid with their
+  chores, kid-driven check-off, full chore/zone/kid CRUD via UI and chat.
+
+entity_types:
+  - prefix: "kid"
+    name: Kid
+    table: kids
+  - prefix: "cz"
+    name: Chore Zone
+    table: zones
+  - prefix: "ch"
+    name: Chore
+    table: chores
+  - prefix: "cc"
+    name: Chore Completion
+    table: chore_completions
+
+platform_deps:
+  - notifications
+  - events
+
+emits:
+  - chore.completed
+  - chore.uncompleted
+  - chore.added
+  - chore.updated
+  - chore.removed
+  - zone.added
+  - zone.updated
+  - zone.removed
+  - kid.added
+  - kid.updated
+  - kid.removed
+  - chore.morning_notified
+  - chore.evening_nudged
+
+job_types:
+  - type: chores_morning
+    handler: handlers.handle_chores_morning
+    max_concurrent: 1
+  - type: chores_evening
+    handler: handlers.handle_chores_evening
+    max_concurrent: 1
+
+tool_category:
+  description: >
+    Recurring daily household chores. The kids' rotating chore assignments,
+    completion check-offs, schedule rotation. For one-off paid tasks see
+    the Bounties app.
+  keywords:
+    # Core nouns
+    - chore
+    - chores
+    - today's chores
+    - daily chore
+    - weekly chore
+    - bathroom chore
+    - bedroom chore
+    - my chore
+    - kid1's chores
+    - kid2's chores
+    - kid3's chores
+    # Specific chore actions (likely in a kid's reply)
+    - vacuum
+    - dust
+    - mop
+    - toilet
+    - sink
+    - declutter
+    - laundry
+    - empty trash
+    - clean my room
+    - clean the bathroom
+    # Reply / acknowledgment phrases — kids replying to the 9 AM push
+    - did it
+    - did them
+    - did them all
+    - did the
+    - did my
+    - did all my
+    - finished it
+    - finished my
+    - finished the
+    - finished them
+    - all done
+    - i'm done
+    - im done
+    - done with my
+    - done with the
+    - checked it off
+    - mark it done
+    - mark done

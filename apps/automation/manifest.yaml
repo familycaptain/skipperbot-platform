@@ -1,0 +1,59 @@
+id: automation
+name: Automation
+version: "1.0.0"
+description: >
+  Home Assistant automation bridge for checking sensors, controlling smart
+  home devices, listing services, and finding low batteries.
+
+platform_deps: []
+
+entity_types: []
+
+tool_category:
+  description: >
+    Control and inspect Home Assistant automation entities such as lights,
+    switches, sensors, covers, climate devices, door sensors, garage sensors,
+    and battery devices.
+  keywords:
+    - automation
+    - home assistant
+    - ha
+    - home automation
+    - smart home
+    - smart-home
+    - lights
+    - light
+    - lamp
+    - lamps
+    - switch
+    - switches
+    - sensor
+    - sensors
+    - tv
+    - television
+    - media player
+    - media_player
+    - binary sensor
+    - door sensor
+    - contact sensor
+    - garage
+    - garage door
+    - door
+    - doors
+    - gate
+    - window
+    - thermostat
+    - climate
+    - temperature
+    - battery
+    - batteries
+    - turn on
+    - turn off
+    - toggle
+    - dim the
+    - set the light
+    - is the garage
+    - is the door
+    - check the sensor
+    - check batteries
+    - low batteries

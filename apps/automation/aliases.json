@@ -1,0 +1,70 @@
+{
+  "alfred": {
+    "entity_id": "roborock.vacuum.a19",
+    "notes": "Alias for the Roborock vacuum cleaner."
+  },
+  "alfred junior": {
+    "entity_id": "sensor.alfred_jr_battery",
+    "notes": "Alias for Alfred Jr. Battery sensor"
+  },
+  "chromecast": {
+    "entity_id": "media_player.living_room_chromecast",
+    "notes": "Living Room Chromecast device"
+  },
+  "coffee": {
+    "entity_id": "automation.turn_on_coffee_pot_to_make_coffee",
+    "notes": "Turn on coffee pot to make coffee"
+  },
+  "dns server ping": {
+    "entity_id": "binary_sensor.ddns_server_pings",
+    "notes": "DDNS-SERVER Pings"
+  },
+  "door": {
+    "entity_id": "binary_sensor.garage_door",
+    "notes": "Garage-Door"
+  },
+  "garage door": {
+    "entity_id": "binary_sensor.garage_door",
+    "notes": "Garage-Door"
+  },
+  "ice machine": {
+    "entity_id": "input_boolean.ice_machine_batch_complete",
+    "notes": "Ice Machine Batch Complete"
+  },
+  "internet ping": {
+    "entity_id": "binary_sensor.internet_pings",
+    "notes": "Internet Pings"
+  },
+  "kitchen door": {
+    "entity_id": "binary_sensor.kitchen_door_sensor",
+    "notes": "Kitchen-Door-Sensor"
+  },
+  "living room tv": {
+    "entity_id": "media_player.lg_webos_tv_oled65c2pua_2",
+    "notes": "Living room LG webOS TV"
+  },
+  "nightstand light": {
+    "entity_id": "button.primary_bedroom_nightstand_light_allow_remote_binding",
+    "notes": "Primary-Bedroom-Nightstand-Light Allow remote binding"
+  },
+  "office temperature": {
+    "entity_id": "sensor.temp_sensor_1_temperature",
+    "notes": "Temp-Sensor-Office Temperature"
+  },
+  "primary bedroom nightstand light": {
+    "entity_id": "light.third_reality_inc_3rcb01057z",
+    "notes": "Primary-Bedroom-Nightstand-Light"
+  },
+  "roku": {
+    "entity_id": "media_player.roku_4850x_c911",
+    "notes": "Roku streaming device"
+  },
+  "temperature": {
+    "entity_id": "sensor.temp_sensor_1_temperature",
+    "notes": "Temp-Sensor-Office Temperature"
+  },
+  "tv": {
+    "entity_id": "media_player.lg_webos_tv_oled65c2pua_2",
+    "notes": "Living room LG webOS TV"
+  }
+}

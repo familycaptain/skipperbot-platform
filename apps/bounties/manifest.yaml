@@ -1,0 +1,57 @@
+id: bounties
+name: Bounties
+version: "1.0.0"
+description: >
+  Family chore-and-reward system. Parents post tasks with dollar values,
+  kids complete them for balance credits, parents record external payments.
+
+entity_types:
+  - prefix: "bt"
+    name: Bounty Template
+    table: bounty_templates
+  - prefix: "bnt"
+    name: Bounty
+    table: bounties
+  - prefix: "btx"
+    name: Bounty Transaction
+    table: bounty_transactions
+  - prefix: "bcat"
+    name: Bounty Category
+    table: bounty_categories
+
+platform_deps:
+  - notifications
+  - links
+
+emits:
+  - bounty.created
+  - bounty.submitted
+  - bounty.approved
+  - bounty.rejected
+  - bounty.payment_recorded
+
+job_types:
+  - type: bounty_daily_digest
+    handler: handlers.handle_daily_digest
+    max_concurrent: 1
+
+tool_category:
+  description: >
+    Family bounty/chore system. Create chores with dollar values, submit
+    completions, approve work, check balances, and view the leaderboard.
+  keywords:
+    - bounty
+    - bounties
+    - chore
+    - chores
+    - earn money
+    - balance
+    - how much have I earned
+    - what chores
+    - I did it
+    - approve
+    - reject
+    - leaderboard
+    - pay
+    - record payment
+    - cash out

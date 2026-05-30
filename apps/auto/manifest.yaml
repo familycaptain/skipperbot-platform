@@ -1,0 +1,64 @@
+id: auto
+name: Auto Maintenance
+version: "1.0.0"
+description: >
+  Track household vehicles, service history, issues, valuations,
+  and periodic condition reports.
+
+platform_deps:
+  - images          # vehicle_images references public.images
+
+entity_types:
+  - prefix: "veh"
+    name: Vehicle
+    table: vehicles
+  - prefix: "svc"
+    name: Service Record
+    table: service_records
+  - prefix: "vis"
+    name: Vehicle Issue
+    table: vehicle_issues
+  - prefix: "vval"
+    name: Vehicle Valuation
+    table: vehicle_valuations
+  - prefix: "vcon"
+    name: Vehicle Condition
+    table: vehicle_conditions
+
+tool_category:
+  description: >
+    Track vehicles, service records, issues, valuations, and condition
+    reports for household vehicles
+  keywords:
+    - vehicle
+    - vehicles
+    - car
+    - truck
+    - van
+    - suv
+    - oil change
+    - tire
+    - tires
+    - tire rotation
+    - brakes
+    - brake
+    - maintenance
+    - service
+    - mechanic
+    - auto
+    - inspection
+    - tune up
+    - transmission
+    - engine
+    - mileage
+    - odometer
+    - valuation
+    - blue book
+    - kbb
+    - trade in
+    - condition report
+    - battery
+    - windshield
+    - paint
+    - dent
+    - scratch

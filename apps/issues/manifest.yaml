@@ -1,0 +1,19 @@
+id: issues
+name: Issues
+version: "1.0.0"
+description: >
+  Bug and feature request tracker. Family members report issues,
+  developer triages and resolves them, reporters validate fixes.
+
+platform_deps:
+  - images
+
+entity_types:
+  - prefix: "iss"
+    name: Issue
+    table_name: issues
+
+tool_category: null
+
+emits: []
+subscribes: []
