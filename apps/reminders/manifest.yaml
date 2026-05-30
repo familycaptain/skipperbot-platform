@@ -105,6 +105,11 @@ config:
     default: 30
     label: "Scheduler tick (seconds)"
     description: "How often the scheduler loop checks for due reminders. Lower = lower latency, higher = less DB load."
+  - key: reminder_lead_minutes
+    type: integer
+    default: 120
+    label: "Reminder lead time (minutes)"
+    description: "How far ahead of a due time the platform fires the reminder."
 
 # No thinking domain — reminders is passive infrastructure (the
 # scheduler is event-driven, not a thinking domain).

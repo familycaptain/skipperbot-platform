@@ -86,16 +86,17 @@ def _as_bool(v) -> bool:
     return str(v).strip().lower() in ("true", "1", "yes")
 
 
-def _platform_setting(key: str, default, cast=None):
-    """Resolve a System-panel setting from app_config(scope=platform), else
-    the hardcoded default. App settings are authoritative — no .env fallback.
-    Guarded so a DB hiccup at import can never break config import (returns
-    the default). Resolved once at import, so UI changes take effect on the
-    next restart (fine for model names + debug flags).
+def _platform_setting(key: str, default, cast=None, scope: str = "platform"):
+    """Resolve a setting from app_config (default scope=platform; pass an
+    app scope like "app:reminders" for app-owned tuning), else the hardcoded
+    default. App settings are authoritative — no .env fallback. Guarded so a
+    DB hiccup at import can never break config import (returns the default).
+    Resolved once at import, so UI changes take effect on the next restart
+    (fine for model names, debug flags, and tuning constants).
     """
     try:
         from app_platform import settings as _settings
-        val = _settings.get(key, scope="platform", default=None)
+        val = _settings.get(key, scope=scope, default=None)
     except Exception:
         val = None
     if val in (None, ""):
@@ -139,8 +140,9 @@ def discord_enabled() -> bool:
     # Enabled implicitly if a token has been saved.
     return _settings.is_configured("discord_token", scope="platform")
 SHOW_ENTITY_IDS = _platform_setting("show_entity_ids", False, cast=_as_bool)
-REMINDER_LEAD_MINUTES = int(os.getenv("REMINDER_LEAD_MINUTES", "120"))
-PM_QUIET_MODE = os.getenv("PM_QUIET_MODE", "false").lower() in ("true", "1", "yes")
+# App-owned tuning: configured in Settings → Reminders / Settings → Goals.
+REMINDER_LEAD_MINUTES = _platform_setting("reminder_lead_minutes", 120, cast=int, scope="app:reminders")
+PM_QUIET_MODE = _platform_setting("pm_quiet_mode", False, cast=_as_bool, scope="app:goals")
 
 
 # ---------------------------------------------------------------------------
