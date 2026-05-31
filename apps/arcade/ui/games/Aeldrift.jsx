@@ -18,6 +18,7 @@ const COLLECT_DIST = 3.2; // distance at which a shard is picked up
 
 export default function Aeldrift({ userId, onGameOver, onExit }) {
   const mountRef = useRef(null);
+  const rootRef = useRef(null);
 
   // Refs to the live three.js objects so the animation loop can read them
   // without re-creating the scene on every React render.
@@ -55,6 +56,8 @@ export default function Aeldrift({ userId, onGameOver, onExit }) {
   const startPlaying = useCallback(() => {
     startedRef.current = true;
     setPhase("playing");
+    // The start button had focus; hand it back to the game element.
+    rootRef.current?.focus();
   }, []);
 
   const resetRun = useCallback(() => {
@@ -74,6 +77,7 @@ export default function Aeldrift({ userId, onGameOver, onExit }) {
     setCollected(0);
     startedRef.current = true;
     setPhase("playing");
+    rootRef.current?.focus();
   }, []);
 
   // ---- Scene setup / teardown (runs once for the component's lifetime) ----
@@ -291,6 +295,16 @@ export default function Aeldrift({ userId, onGameOver, onExit }) {
     };
     window.addEventListener("keydown", onKeyDown, { passive: false });
     window.addEventListener("keyup", onKeyUp, { passive: false });
+    // Also bind to the focusable root and focus it. In the desktop shell,
+    // window keydown isn't reliably delivered to the game (focus is elsewhere
+    // and arrow keys get consumed for scroll/nav), so a focused element that
+    // owns the listener is the reliable path; window stays as a fallback.
+    const root = rootRef.current;
+    if (root) {
+      root.addEventListener("keydown", onKeyDown, { passive: false });
+      root.addEventListener("keyup", onKeyUp, { passive: false });
+      root.focus();
+    }
 
     // ---- Resize handling ----
     const fit = () => {
@@ -409,6 +423,10 @@ export default function Aeldrift({ userId, onGameOver, onExit }) {
       renderer.setAnimationLoop(null);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      if (root) {
+        root.removeEventListener("keydown", onKeyDown);
+        root.removeEventListener("keyup", onKeyUp);
+      }
       ro.disconnect();
 
       // Dispose geometries + materials
@@ -432,7 +450,12 @@ export default function Aeldrift({ userId, onGameOver, onExit }) {
   }, [fireGameOver]);
 
   return (
-    <div className="absolute inset-0 overflow-hidden select-none">
+    <div
+      ref={rootRef}
+      tabIndex={0}
+      onPointerDown={() => rootRef.current?.focus()}
+      className="absolute inset-0 overflow-hidden select-none outline-none"
+    >
       {/* three.js canvas mount */}
       <div ref={mountRef} className="absolute inset-0" />
 

@@ -206,6 +206,16 @@ export default function Spinhazard({ userId, onGameOver, onExit }) {
     };
     window.addEventListener("keydown", onKeyDown);
     window.addEventListener("keyup", onKeyUp);
+    // Also bind to the focusable container and focus it. In the desktop shell,
+    // window keydown isn't always delivered to the game (focus is elsewhere and
+    // arrow keys get consumed for scroll/nav), so a focused element that owns
+    // the listener is the reliable path; window stays as a fallback.
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener("keydown", onKeyDown);
+      container.addEventListener("keyup", onKeyUp);
+      container.focus();
+    }
 
     const step = (ts) => {
       const canvas = canvasRef.current;
@@ -230,6 +240,10 @@ export default function Spinhazard({ userId, onGameOver, onExit }) {
       cancelAnimationFrame(rafRef.current);
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
+      if (container) {
+        container.removeEventListener("keydown", onKeyDown);
+        container.removeEventListener("keyup", onKeyUp);
+      }
       ro.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -518,11 +532,19 @@ export default function Spinhazard({ userId, onGameOver, onExit }) {
     lastTsRef.current = 0;
     setHud({ score: 0, lives: 3, wave: 1 });
     setPhase("playing");
+    // The start overlay's button had focus; move it back to the game so the
+    // container key listener receives input.
+    containerRef.current?.focus();
   }, [fitCanvas, resetWorld]);
 
   // ---------------------------------------------------------------------------
   return (
-    <div ref={containerRef} className="absolute inset-0 bg-black overflow-hidden select-none">
+    <div
+      ref={containerRef}
+      tabIndex={0}
+      onPointerDown={() => containerRef.current?.focus()}
+      className="absolute inset-0 bg-black overflow-hidden select-none outline-none"
+    >
       <canvas ref={canvasRef} className="block w-full h-full" />
 
       {/* HUD */}
