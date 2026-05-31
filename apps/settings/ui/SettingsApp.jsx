@@ -708,31 +708,36 @@ export default function SettingsApp({ userId }) {
               </button>
             </li>
           ))}
-          <li className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-wide text-zinc-600">App settings</li>
-          {apps.map((a) => {
-            const isCurrent = a.id === selected;
-            const muted = !a.has_settings;
+          {/* Only apps that actually have configurable settings. Apps with an
+              empty config: schema (e.g. the System app, and the Settings app
+              itself) would render a blank "no settings" page, so we hide them
+              here. The platform-level panels (System/Integrations) above are a
+              separate list and are unaffected. */}
+          {(() => {
+            const configurable = apps.filter((a) => a.has_settings);
+            if (configurable.length === 0) return null;
             return (
-              <li key={a.id}>
-                <button
-                  className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-baseline justify-between gap-2 ${
-                    isCurrent
-                      ? "bg-zinc-800 text-zinc-100"
-                      : muted
-                      ? "text-zinc-600 hover:text-zinc-400"
-                      : "text-zinc-300 hover:bg-zinc-900"
-                  }`}
-                  onClick={() => setSelected(a.id)}
-                >
-                  <span className="truncate">{a.name || a.id}</span>
-                  {muted && <span className="text-xs text-zinc-700">—</span>}
-                  {!muted && (
-                    <span className="text-xs text-zinc-600">{a.schema.length}</span>
-                  )}
-                </button>
-              </li>
+              <>
+                <li className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-wide text-zinc-600">App settings</li>
+                {configurable.map((a) => {
+                  const isCurrent = a.id === selected;
+                  return (
+                    <li key={a.id}>
+                      <button
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-baseline justify-between gap-2 ${
+                          isCurrent ? "bg-zinc-800 text-zinc-100" : "text-zinc-300 hover:bg-zinc-900"
+                        }`}
+                        onClick={() => setSelected(a.id)}
+                      >
+                        <span className="truncate">{a.name || a.id}</span>
+                        <span className="text-xs text-zinc-600">{a.schema.length}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </>
             );
-          })}
+          })()}
         </ul>
       </aside>
       <main className="flex-1 overflow-y-auto">
