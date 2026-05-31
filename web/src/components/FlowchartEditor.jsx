@@ -153,29 +153,51 @@ export default function FlowchartEditor({ meta, onMetaChange, readOnly = false }
   nodesRef.current = nodes;
   edgesRef.current = edges;
 
+  // Keep the latest onMetaChange in a ref. The parent passes a fresh inline
+  // callback every render; without this, debouncedSave (and its effect) would
+  // be recreated each render and keep clearing/rescheduling the 500ms timer,
+  // so a rapid edit could never actually flush.
+  const onMetaChangeRef = useRef(onMetaChange);
+  onMetaChangeRef.current = onMetaChange;
+
+  const buildMeta = useCallback(() => ({
+    nodes: nodesRef.current.map((n) => ({
+      id: n.id,
+      label: n.data?.label || "",
+      position: n.position,
+      style: n.style !== defaultNodeStyle ? n.style : undefined,
+    })),
+    edges: edgesRef.current.map((e) => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      label: e.label || "",
+    })),
+  }), []);
+
   const debouncedSave = useCallback(() => {
     clearTimeout(saveTimeoutRef.current);
     saveTimeoutRef.current = setTimeout(() => {
-      const saveMeta = {
-        nodes: nodesRef.current.map((n) => ({
-          id: n.id,
-          label: n.data?.label || "",
-          position: n.position,
-          style: n.style !== defaultNodeStyle ? n.style : undefined,
-        })),
-        edges: edgesRef.current.map((e) => ({
-          id: e.id,
-          source: e.source,
-          target: e.target,
-          label: e.label || "",
-        })),
-      };
-      onMetaChange?.(saveMeta);
+      saveTimeoutRef.current = null;
+      onMetaChangeRef.current?.(buildMeta());
     }, 500);
-  }, [onMetaChange]);
+  }, [buildMeta]);
 
   // Trigger save on any change
   useEffect(() => { debouncedSave(); }, [nodes, edges, debouncedSave]);
+
+  // Flush a pending save on unmount so leaving the brainstorming document (or
+  // switching parts) before the 500ms debounce fires doesn't drop the last
+  // edit — the root cause of "added node disappears after leaving and returning".
+  useEffect(() => {
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+        saveTimeoutRef.current = null;
+        onMetaChangeRef.current?.(buildMeta());
+      }
+    };
+  }, [buildMeta]);
 
   function handleLabelChange(nodeId, newLabel) {
     setNodes((nds) =>
