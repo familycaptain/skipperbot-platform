@@ -16,6 +16,13 @@
 services:
   db:
     image: pgvector/pgvector:pg18
+    # Publish Postgres to the host so LAN clients (DBeaver, psql, etc.) can
+    # connect at <host>:5432 — e.g. skipper-pi.local:5432. Auth still required
+    # (POSTGRES_PASSWORD). The agent reaches the DB in-network as db:5432
+    # regardless; this is only for external tooling. Override the host port via
+    # POSTGRES_PORT in .env if 5432 is taken on the host.
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     environment:
       # User/DB default to these names but can be overridden in .env. The
       # agent derives its connection from the SAME vars (plus DB_HOST below),
