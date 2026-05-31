@@ -83,35 +83,43 @@ config:
     default: 8
     label: "Wake hour"
     description: "Earliest hour (24h) nags may fire."
+    requires_restart: true
   - key: nag_sleep_hour
     type: integer
     default: 21
     label: "Sleep hour"
     description: "Latest hour (24h) nags may fire."
+    requires_restart: true
   - key: nag_morning_start
     type: integer
     default: 7
     label: "Morning window start"
+    requires_restart: true
   - key: nag_morning_end
     type: integer
     default: 12
     label: "Morning window end"
+    requires_restart: true
   - key: nag_afternoon_start
     type: integer
     default: 12
     label: "Afternoon window start"
+    requires_restart: true
   - key: nag_afternoon_end
     type: integer
     default: 17
     label: "Afternoon window end"
+    requires_restart: true
   - key: nag_evening_start
     type: integer
     default: 17
     label: "Evening window start"
+    requires_restart: true
   - key: nag_evening_end
     type: integer
     default: 21
     label: "Evening window end"
+    requires_restart: true
 
 # No thinking domain — notifications is passive infrastructure.
 thinking: []

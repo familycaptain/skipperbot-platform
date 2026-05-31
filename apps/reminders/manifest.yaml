@@ -110,6 +110,7 @@ config:
     default: 120
     label: "Reminder lead time (minutes)"
     description: "How far ahead of a due time the platform fires the reminder."
+    requires_restart: true
 
 # No thinking domain — reminders is passive infrastructure (the
 # scheduler is event-driven, not a thinking domain).

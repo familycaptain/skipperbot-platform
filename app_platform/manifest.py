@@ -86,6 +86,10 @@ class ConfigKeyDef:
     secret: bool = False
     # Optional ``choices: [a, b, c]`` turns the input into a select.
     choices: list[object] = field(default_factory=list)
+    # Optional ``requires_restart: true`` flags a key whose value is only read
+    # at process startup (e.g. captured into a module constant). The Settings
+    # UI marks it and, on save, tells the user to restart the server.
+    requires_restart: bool = False
 
 
 @dataclass
@@ -230,6 +234,7 @@ def parse_manifest(app_dir: Path) -> AppManifest:
             description=ck.get("description", ""),
             secret=bool(ck.get("secret", False)),
             choices=ck.get("choices") or [],
+            requires_restart=bool(ck.get("requires_restart", False)),
         ))
 
     # Detect which optional files exist

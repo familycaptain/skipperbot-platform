@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Settings as Cog, Loader2, Save, Check, X, Eye, EyeOff, AlertCircle, LayoutGrid,
-  Users, UserPlus, Trash2, KeyRound, ShieldCheck,
+  Users, UserPlus, Trash2, KeyRound, ShieldCheck, RotateCcw,
 } from "lucide-react";
 import { getManageableApps } from "../../../web/src/apps/registry";
 
@@ -209,6 +209,9 @@ function AppDetail({ app, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState(0);
   const [error, setError] = useState("");
+  // Labels of restart-required settings that changed on the last save; when
+  // non-empty, a modal tells the user to restart the server.
+  const [restartNotice, setRestartNotice] = useState([]);
 
   useEffect(() => { setDraft(app.values || {}); setError(""); }, [app.id, app.values]);
 
@@ -243,6 +246,11 @@ function AppDetail({ app, onSaved }) {
       }
       const fresh = await res.json();
       setSavedAt(Date.now());
+      // If any changed key only takes effect at startup, prompt for a restart.
+      const needRestart = (app.schema || [])
+        .filter((f) => f.requires_restart && Object.prototype.hasOwnProperty.call(changed, f.key))
+        .map((f) => f.label || f.key);
+      if (needRestart.length) setRestartNotice(needRestart);
       onSaved(fresh);
     } catch (e) {
       setError(String(e.message || e));
@@ -276,6 +284,14 @@ function AppDetail({ app, onSaved }) {
               <label className="text-sm text-zinc-300 font-medium">
                 {field.label || field.key}
                 <span className="ml-2 text-zinc-600 font-mono text-xs">{field.key}</span>
+                {field.requires_restart && (
+                  <span
+                    className="ml-2 inline-flex items-center gap-1 text-[10px] text-amber-400/90 align-middle"
+                    title="Takes effect after a server restart"
+                  >
+                    <RotateCcw size={10} /> restart
+                  </span>
+                )}
               </label>
               <span className="text-xs text-zinc-600">{field.type}</span>
             </div>
@@ -322,6 +338,40 @@ function AppDetail({ app, onSaved }) {
           </button>
         )}
       </div>
+
+      {restartNotice.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setRestartNotice([])}
+        >
+          <div
+            className="max-w-md w-full rounded-lg border border-amber-700/60 bg-zinc-900 p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-2 mb-3 text-amber-400">
+              <RotateCcw size={18} />
+              <h3 className="text-base font-semibold">Restart required</h3>
+            </div>
+            <p className="text-sm text-zinc-300">
+              Your changes were saved, but {restartNotice.length === 1 ? "this setting" : "these settings"} only
+              take effect after you restart the server:
+            </p>
+            <ul className="mt-2 mb-4 list-disc list-inside text-sm text-zinc-200">
+              {restartNotice.map((label) => (
+                <li key={label}>{label}</li>
+              ))}
+            </ul>
+            <div className="flex justify-end">
+              <button
+                className="px-4 py-2 rounded bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium"
+                onClick={() => setRestartNotice([])}
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

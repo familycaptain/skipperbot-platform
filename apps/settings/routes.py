@@ -48,9 +48,9 @@ PLATFORM_PANELS: dict[str, dict] = {
              "description": "Used everywhere times are shown. Stored as the IANA name.",
              "default": "", "choices_provider": "timezones"},
             {"key": "smart_model", "type": "string", "label": "Smart model",
-             "description": "Model for complex reasoning.", "default": ""},
+             "description": "Model for complex reasoning.", "default": "", "requires_restart": True},
             {"key": "dumb_model", "type": "string", "label": "Fast model",
-             "description": "Cheaper model for light tasks.", "default": ""},
+             "description": "Cheaper model for light tasks.", "default": "", "requires_restart": True},
             {"key": "realtime_model", "type": "string", "label": "Realtime/voice model",
              "description": "Model used by the voice path.", "default": ""},
             {"key": "lan_url", "type": "string", "label": "LAN URL",
@@ -58,9 +58,11 @@ PLATFORM_PANELS: dict[str, dict] = {
             {"key": "public_url", "type": "string", "label": "Public URL",
              "description": "External URL if exposed (for links/QR). Leave blank if LAN-only.", "default": ""},
             {"key": "show_entity_ids", "type": "boolean", "label": "Show entity IDs",
-             "description": "Surface internal IDs in the UI (debugging).", "default": False},
+             "description": "Surface internal IDs in the UI (debugging).", "default": False,
+             "requires_restart": True},
             {"key": "debug_tokens", "type": "boolean", "label": "Log token usage",
-             "description": "Verbose token accounting in logs.", "default": False},
+             "description": "Verbose token accounting in logs.", "default": False,
+             "requires_restart": True},
             {"key": "max_session_turns", "type": "integer", "label": "Max session turns",
              "description": "Chat history cap per session before trimming.", "default": None},
         ],
@@ -70,9 +72,11 @@ PLATFORM_PANELS: dict[str, dict] = {
         "description": "Cross-cutting service credentials with no single owning app. Secrets are encrypted at rest.",
         "schema": [
             {"key": "discord_enabled", "type": "boolean", "label": "Discord enabled",
-             "description": "Turn the Discord chat bridge on/off.", "default": False},
+             "description": "Turn the Discord chat bridge on/off.", "default": False,
+             "requires_restart": True},
             {"key": "discord_token", "type": "string", "secret": True, "label": "Discord bot token",
-             "description": "From the Discord developer portal.", "default": ""},
+             "description": "From the Discord developer portal.", "default": "",
+             "requires_restart": True},
             {"key": "brave_api_key", "type": "string", "secret": True, "label": "Brave Search API key",
              "description": "Powers web search / research.", "default": ""},
             {"key": "openai_admin_key", "type": "string", "secret": True, "label": "OpenAI admin key",
@@ -119,6 +123,7 @@ def _panel_field_json(f: dict, *, include_set: bool) -> dict:
         "label": f.get("label", f["key"]), "description": f.get("description", ""),
         "secret": bool(f.get("secret", False)),
         "default": f.get("default"), "choices": _resolve_choices(f),
+        "requires_restart": bool(f.get("requires_restart", False)),
     }
     if include_set and out["secret"]:
         out["set"] = platform_settings.is_configured(f["key"], scope="platform")
@@ -161,6 +166,7 @@ def _serialise_config_key(ck, *, scope: str | None = None) -> dict:
         "description": ck.description,
         "secret": bool(getattr(ck, "secret", False)),
         "choices": list(getattr(ck, "choices", []) or []),
+        "requires_restart": bool(getattr(ck, "requires_restart", False)),
     }
     if out["secret"] and scope:
         out["set"] = platform_settings.is_configured(ck.key, scope=scope)

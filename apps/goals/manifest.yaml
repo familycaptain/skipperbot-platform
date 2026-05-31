@@ -105,6 +105,7 @@ config:
     default: false
     label: "Quiet mode (log only — no DMs)"
     description: "When ON, PM logs its findings but does not send any notifications."
+    requires_restart: true
   - key: default_priority
     type: enum
     options: [low, medium, high]
