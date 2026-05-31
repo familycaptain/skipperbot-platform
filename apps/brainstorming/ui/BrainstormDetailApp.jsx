@@ -246,8 +246,16 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
   // Save flowchart meta (debounced by FlowchartEditor, called on every change)
   async function handleSaveFlowchartMeta(newMeta) {
     if (!ideaId || !activePartId) return;
+    const pid = activePartId;
+    // Keep the in-memory idea in sync with what we just saved. activePart.meta
+    // is derived from `idea.parts`, so without this the node persists to the DB
+    // but switching parts (or away and back) re-mounts the editor from stale
+    // local state and the node appears to vanish. (iss-a22aa180)
+    setIdea((prev) =>
+      prev ? { ...prev, parts: (prev.parts || []).map((p) => (p.id === pid ? { ...p, meta: newMeta } : p)) } : prev
+    );
     try {
-      await fetch(`/api/apps/brainstorming/${ideaId}/parts/${activePartId}`, {
+      await fetch(`/api/apps/brainstorming/${ideaId}/parts/${pid}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ meta: newMeta }),
