@@ -13,6 +13,24 @@ platform_deps: []
 emits: []
 subscribes: []
 
+tool_category:
+  description: >
+    Calculators — a scientific expression evaluator plus compound-interest and
+    loan-amortization (payment/payoff) calculators. Everything the Calculators
+    app UI does is also available here through chat.
+  keywords:
+    - calculator
+    - calculate
+    - compound interest
+    - interest
+    - loan
+    - mortgage
+    - amortization
+    - payment
+    - payoff
+    - scientific
+    - math
+
 config: []
 thinking: []
 job_types: []
