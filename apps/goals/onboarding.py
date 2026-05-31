@@ -14,7 +14,7 @@ Idempotent: guarded by a `config` flag so re-running init_db never duplicates it
 
 import logging
 
-from data_layer.config import get_config, set_config
+from app_platform import config as platform_config
 from apps.goals import store
 from apps.goals.lifecycle import sync_goal_domain
 
@@ -38,7 +38,7 @@ def ensure_onboarding(apps_info: list[dict]) -> str:
     Returns:
         A short status string for the caller to log.
     """
-    if (get_config(_SEEDED_KEY) or {}).get("done"):
+    if (platform_config.get(_SEEDED_KEY, scope="app:goals") or {}).get("done"):
         return "already seeded — skipping"
 
     goal = store.create_goal(
@@ -91,5 +91,5 @@ def ensure_onboarding(apps_info: list[dict]) -> str:
     except Exception:
         logger.warning("onboarding: could not sync goal domain for %s", goal_id, exc_info=True)
 
-    set_config(_SEEDED_KEY, {"done": True, "goal_id": goal_id})
+    platform_config.set(_SEEDED_KEY, {"done": True, "goal_id": goal_id}, scope="app:goals")
     return f"created onboarding goal {goal_id} ({n_apps} app project(s))"
