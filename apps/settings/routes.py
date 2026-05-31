@@ -45,7 +45,8 @@ PLATFORM_PANELS: dict[str, dict] = {
         "description": "Platform-wide behavior — AI models, URLs, display + debug flags.",
         "schema": [
             {"key": "timezone", "type": "string", "label": "Timezone",
-             "description": "IANA name, e.g. Europe/Paris. Used everywhere times are shown.", "default": ""},
+             "description": "Used everywhere times are shown. Stored as the IANA name.",
+             "default": "", "choices_provider": "timezones"},
             {"key": "smart_model", "type": "string", "label": "Smart model",
              "description": "Model for complex reasoning.", "default": ""},
             {"key": "dumb_model", "type": "string", "label": "Fast model",
@@ -83,12 +84,41 @@ PLATFORM_PANELS: dict[str, dict] = {
 }
 
 
+def _timezone_choices() -> list[dict]:
+    """All IANA timezones as ``{value, label}`` pairs, label showing the zone's
+    current UTC offset (DST-aware), sorted by offset then name. The stored value
+    is the bare IANA name; the offset is display-only."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo, available_timezones
+    out = []
+    for name in available_timezones():
+        try:
+            off = datetime.now(ZoneInfo(name)).utcoffset()
+        except Exception:
+            continue
+        minutes = int(off.total_seconds() // 60) if off else 0
+        sign = "+" if minutes >= 0 else "-"
+        am = abs(minutes)
+        out.append({"value": name, "label": f"{name} (UTC{sign}{am // 60:02d}:{am % 60:02d})",
+                    "_off": minutes})
+    out.sort(key=lambda z: (z["_off"], z["value"]))
+    return [{"value": z["value"], "label": z["label"]} for z in out]
+
+
+def _resolve_choices(f: dict) -> list:
+    """Static ``choices`` list, or a dynamically-generated one named by
+    ``choices_provider`` (e.g. the full timezone list)."""
+    if f.get("choices_provider") == "timezones":
+        return _timezone_choices()
+    return list(f.get("choices", []) or [])
+
+
 def _panel_field_json(f: dict, *, include_set: bool) -> dict:
     out = {
         "key": f["key"], "type": f.get("type", "string"),
         "label": f.get("label", f["key"]), "description": f.get("description", ""),
         "secret": bool(f.get("secret", False)),
-        "default": f.get("default"), "choices": list(f.get("choices", []) or []),
+        "default": f.get("default"), "choices": _resolve_choices(f),
     }
     if include_set and out["secret"]:
         out["set"] = platform_settings.is_configured(f["key"], scope="platform")

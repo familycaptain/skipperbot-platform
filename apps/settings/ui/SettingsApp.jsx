@@ -122,14 +122,22 @@ function ConfigInput({ field, value, onChange }) {
   const [revealed, setRevealed] = useState(false);
 
   if (choices && choices.length > 0) {
+    // Choices may be plain strings (value === label) or {value, label} objects
+    // (e.g. timezones, where the label shows the UTC offset but the stored
+    // value is the bare IANA name).
+    const opts = choices.map((c) =>
+      c && typeof c === "object" ? { value: c.value, label: c.label ?? c.value } : { value: c, label: c },
+    );
+    const hasCurrent = opts.some((o) => String(o.value) === String(value ?? ""));
     return (
       <select
         className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100"
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
       >
-        {choices.map((c) => (
-          <option key={String(c)} value={String(c)}>{String(c)}</option>
+        {!hasCurrent && <option value="" disabled>— Select —</option>}
+        {opts.map((o) => (
+          <option key={String(o.value)} value={String(o.value)}>{String(o.label)}</option>
         ))}
       </select>
     );
