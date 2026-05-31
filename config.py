@@ -344,4 +344,20 @@ def get_dynamic_system_context(user_id: str = "") -> str:
     ]
     if user_id:
         parts.append(f"You are currently talking to: {user_id}")
+
+    # Home ZIP code (Settings → System → Default ZIP code). Surfacing it here
+    # lets the assistant answer "what's my zip?" and pass it to the weather
+    # tools instead of guessing a location. Read live so it works without a
+    # restart. Best-effort — never break context assembly over it.
+    try:
+        from app_platform import settings as _settings
+        _zip = (_settings.get("default_zip", scope="platform", default="") or "").strip()
+        if _zip:
+            parts.append(
+                f"The user's home ZIP code is {_zip}. Use it for weather and other "
+                f"location lookups when they don't specify one — never invent a location."
+            )
+    except Exception:
+        pass
+
     return "\n".join(parts)
