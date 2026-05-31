@@ -145,6 +145,43 @@ After install, the platform has these required apps built in:
 | Tools | MCP tool inspector |
 | Settings | Aggregated per-app settings UI |
 
+## Onboarding & first run
+
+**Your account.** On first boot the onboarding wizard (Step 5 above) creates
+the first user as an **admin** and sets your timezone and OpenAI key. That's the
+only account you need to get started.
+
+**Adding the rest of the family.** Open the **Settings** app → **Members**
+(admins only). From there you can add members (username, display name, roles,
+and a temporary password they change on first login), change roles, reset
+passwords, and remove people. Everyone can change their own password from the
+same panel.
+
+**Editing settings.** The **Settings** app aggregates configuration in one
+place:
+- **System** and **Integrations** panels — platform-wide settings (timezone,
+  default ZIP code, AI models, URLs, Discord/Brave/Weather keys, etc.). Settings
+  that only take effect at startup are marked "↻ restart" and prompt you to
+  restart after saving.
+- **Per-app settings** — each installed app that has options shows its own
+  panel (apps with nothing to configure are hidden).
+
+**The onboarding Goal (Skipper guides you).** When the database is first
+initialised, Skipperbot seeds a built-in system user named **`skipper`** (role
+`bot`, hidden from the Members list) and one **onboarding goal**, "Get started
+with Skipper", owned by `skipper`. It contains:
+- a *Get to know the family* project,
+- a *Configure Skipper* project, and
+- a *Try the <App>* project for each installed user-facing app.
+
+Because the goal is owned by `skipper`, the **PM (Project Manager) thinking
+domain** automatically attaches to it — exactly like any other goal Skipper
+owns. At its normal cadence, the PM proactively nudges you to introduce your
+family, configure your settings, and try each app, and it **closes out each
+item as you do it** (or when you tell Skipper you're not interested). It follows
+the standard PM cadence and quiet-mode rules, so it nudges rather than nags. The
+seed is one-time and idempotent — it never duplicates on later restarts.
+
 ## Adding more capability
 
 - **More apps?** See [**docs/02-adding-apps.md**](docs/02-adding-apps.md) for
