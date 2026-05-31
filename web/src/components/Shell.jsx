@@ -38,7 +38,9 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
     setRestarting(true);
     setShowRestartConfirm(false);
     try {
-      await fetch(`${API}/api/admin/restart`, { method: "POST" });
+      // Deploy = graceful drain + (host watcher) git pull + docker recycle.
+      // Falls back to a plain restart if no deploy watcher is installed.
+      await fetch(`${API}/api/admin/deploy`, { method: "POST" });
     } catch {}
     // Wait a moment for the agent to begin shutting down, then poll until it's back
     await new Promise(r => setTimeout(r, 3000));
@@ -274,8 +276,8 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-slate-800 border border-slate-700 rounded-lg p-5 shadow-xl max-w-xs w-full text-center space-y-3">
             <Power size={28} className="mx-auto text-red-400" />
-            <p className="text-sm text-slate-200">Restart the agent?</p>
-            <p className="text-xs text-slate-500">All in-flight work will be drained before restart.</p>
+            <p className="text-sm text-slate-200">Restart &amp; update the agent?</p>
+            <p className="text-xs text-slate-500">In-flight work is drained first, then Skipper pulls the latest code and recycles the stack.</p>
             <div className="flex justify-center gap-2 pt-1">
               <button
                 onClick={() => setShowRestartConfirm(false)}

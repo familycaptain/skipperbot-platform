@@ -4243,11 +4243,16 @@ async def api_admin_status():
     }
 
 
-async def _drain_and_exit(max_wait: int = 30):
+async def _drain_and_exit(max_wait: int = 30, deploy: bool = False):
     """Background task: wait for in-flight work to finish, then force-exit.
 
     Runs detached from the HTTP request so the client gets a response
     immediately and Ctrl+C is not blocked by the drain loop.
+
+    When *deploy* is True, a ``.deploy_pending`` sentinel is written just before
+    exit so the host deploy watcher (scripts/deploy_watcher.sh) runs
+    ``git pull`` + a compose recycle. With no watcher installed it's a no-op and
+    ``restart: always`` just bounces the container (a plain restart).
     """
     import threading
     from thinking_scheduler import get_dispatch_status
@@ -4272,7 +4277,14 @@ async def _drain_and_exit(max_wait: int = 30):
         logger.warning("ADMIN: Drain timeout after %ds \u2014 forcing shutdown", max_wait)
 
     def _do_exit():
-        logger.info("ADMIN: Exiting with code 42 (restart signal)")
+        if deploy:
+            try:
+                sentinel = Path(__file__).resolve().parent / ".deploy_pending"
+                sentinel.write_text(f"deploy requested at {int(time.time())}\n", encoding="utf-8")
+                logger.info("ADMIN: wrote deploy sentinel %s", sentinel)
+            except Exception:
+                logger.warning("ADMIN: could not write deploy sentinel", exc_info=True)
+        logger.info("ADMIN: Exiting with code 42 (%s signal)", "deploy" if deploy else "restart")
         os._exit(42)
 
     threading.Timer(1.0, _do_exit).start()
@@ -4305,6 +4317,33 @@ async def api_admin_restart(request: Request):
     asyncio.create_task(_drain_and_exit(max_wait=30))
 
     return {"status": "restarting", "message": "Agent will restart shortly (draining in background)"}
+
+
+@app.post("/api/admin/deploy")
+async def api_admin_deploy(request: Request):
+    """Graceful deploy: drain in-flight work, then signal the host deploy
+    watcher (option B) to `git pull` + recycle the stack. The agent never gets
+    host/docker control — it only writes a sentinel; scripts/deploy_watcher.sh
+    on the host does the pull + `docker compose down/up`. Same UI flow as a
+    restart. If no watcher is installed, `restart: always` just bounces the
+    container (equivalent to a plain restart, no code update)."""
+    from thinking_scheduler import request_shutdown as thinking_shutdown, is_shutting_down
+    from app_platform.jobs import request_shutdown as jobs_shutdown
+    from apps.reminders.scheduler import request_shutdown as reminders_shutdown
+
+    if is_shutting_down():
+        return {"status": "already_shutting_down"}
+
+    thinking_shutdown()
+    jobs_shutdown()
+    reminders_shutdown()
+    logger.info("ADMIN: Deploy requested — draining (max 30s), then git pull + recycle via host watcher")
+
+    await manager.broadcast({"type": "server_restarting"})
+
+    asyncio.create_task(_drain_and_exit(max_wait=30, deploy=True))
+
+    return {"status": "deploying", "message": "Draining in-flight work, then pulling latest + recycling."}
 
 
 # ── Mobile capture page (served before SPA catch-all) ──

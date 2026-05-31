@@ -2,6 +2,9 @@
 # Skipperbot Platform — .gitignore
 # =============================================================================
 
+# ----- runtime sentinels -----
+.deploy_pending          # written by /api/admin/deploy; consumed by deploy_watcher.sh
+
 # ----- secrets and credentials (NEVER commit) -----
 .env
 .env.local
