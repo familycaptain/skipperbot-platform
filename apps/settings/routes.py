@@ -155,9 +155,14 @@ def _current_values(app_id: str, schema: list) -> dict[str, Any]:
 
 
 def _loaded_apps_sorted() -> list:
-    """Return every loaded app, ordered by id for a stable sidebar."""
+    """Return every loaded app (except this Settings app itself), ordered by id
+    for a stable sidebar. Settings aggregates other apps' panels — rendering
+    itself in that list is recursive and has nothing to configure."""
     from app_platform.loader import get_loaded_apps
-    return sorted(get_loaded_apps().values(), key=lambda m: m.id)
+    return sorted(
+        (m for m in get_loaded_apps().values() if m.id != "settings"),
+        key=lambda m: m.id,
+    )
 
 
 # ---------------------------------------------------------------------------

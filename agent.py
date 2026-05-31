@@ -37,7 +37,7 @@ from memory_store import backfill_embeddings
 from knowledge_store import migrate_chunk_embeddings
 from data_layer.db import close_pool
 from app_platform.loader import load_all_apps, get_app_tool_routes
-from data_layer.users import authenticate, get_user, update_password, get_all_users, has_role
+from data_layer.users import authenticate, get_user, update_password, get_all_users, has_role, create_user, update_role, delete_user, parse_roles
 from apps.goals import data as dl_goals
 import app_platform.documents as doc_store
 import link_registry
@@ -1144,12 +1144,182 @@ async def save_entity_notes_inline(entity_id: str, req: SaveNotesRequest):
 
 @app.get("/api/users")
 async def list_users(include_bots: bool = False):
-    """Get users for dropdowns. Excludes bots by default."""
+    """Get users for dropdowns + the Settings → Members panel. Excludes bots by default."""
     def _fetch():
         from data_layer.users import get_human_users
         users = get_all_users() if include_bots else get_human_users()
-        return [{"name": u["name"], "display_name": u.get("display_name", u["name"]), "role": u.get("role", "member"), "sort_order": u.get("sort_order", 99)} for u in users]
+        return [{
+            "name": u["name"],
+            "display_name": u.get("display_name", u["name"]),
+            "role": u.get("role", "member"),
+            "sort_order": u.get("sort_order", 99),
+            "has_password": bool(u.get("password_hash")),
+        } for u in users]
     return await asyncio.to_thread(_fetch)
+
+
+# ---------------------------------------------------------------------------
+# Household member management (Settings → Members)
+# ---------------------------------------------------------------------------
+# Auth model matches the rest of the platform: write actions take an ``actor``
+# (the caller's canonical username) and are gated on the actor's ``admin`` role.
+# Self-service password change verifies the user's current password instead.
+
+import re as _re_users
+
+_ALLOWED_ROLES = ("admin", "member", "parent")
+_USERNAME_RE = _re_users.compile(r"^[a-z][a-z0-9_]{1,30}$")
+
+
+def _is_admin(name: str) -> bool:
+    u = get_user((name or "").lower().strip())
+    return bool(u and has_role(u, "admin"))
+
+
+def _admin_count() -> int:
+    return sum(1 for u in get_all_users() if has_role(u, "admin"))
+
+
+def _normalize_roles(role_str: str) -> str | None:
+    """Validate + normalize a comma-separated role string. Returns None if it
+    contains anything outside the allowed set (e.g. an attempt to grant 'bot')."""
+    roles = [r for r in parse_roles(role_str)] or ["member"]
+    if any(r not in _ALLOWED_ROLES for r in roles):
+        return None
+    # Keep a stable, de-duped order.
+    return ",".join([r for r in ("admin", "parent", "member") if r in roles])
+
+
+class CreateUserRequest(BaseModel):
+    actor: str
+    username: str
+    display_name: str = ""
+    role: str = "member"
+    password: str = ""
+
+
+class UpdateRoleRequest(BaseModel):
+    actor: str
+    role: str
+
+
+class ResetPasswordRequest(BaseModel):
+    actor: str
+    new_password: str
+
+
+class ChangePasswordRequest(BaseModel):
+    username: str
+    current_password: str
+    new_password: str
+
+
+@app.post("/api/users")
+async def api_create_user(req: CreateUserRequest):
+    """Admin-only: create a household member with a temporary password.
+
+    The new member logs in with the temp password, then changes it via
+    POST /api/auth/change-password.
+    """
+    def _do():
+        if not _is_admin(req.actor):
+            return {"ok": False, "error": "Admin access required."}
+        name = (req.username or "").lower().strip()
+        if not _USERNAME_RE.match(name):
+            return {"ok": False, "error": "Username must be 2–31 chars: lowercase letters/digits/underscores, starting with a letter."}
+        if get_user(name):
+            return {"ok": False, "error": f"User '{name}' already exists."}
+        roles = _normalize_roles(req.role)
+        if roles is None:
+            return {"ok": False, "error": f"Invalid role. Allowed: {', '.join(_ALLOWED_ROLES)}."}
+        if req.password and len(req.password) < 4:
+            return {"ok": False, "error": "Temporary password must be at least 4 characters."}
+        user = create_user(
+            name=name,
+            display_name=(req.display_name or "").strip() or name.capitalize(),
+            password=req.password or None,
+            role=roles,
+        )
+        if not user:
+            return {"ok": False, "error": f"Could not create user '{name}'."}
+        return {"ok": True, "user": {"name": user["name"], "display_name": user["display_name"], "role": user["role"]}}
+    return await asyncio.to_thread(_do)
+
+
+@app.patch("/api/users/{name}/role")
+async def api_update_user_role(name: str, req: UpdateRoleRequest):
+    """Admin-only: change a member's roles. Won't drop the last admin."""
+    def _do():
+        if not _is_admin(req.actor):
+            return {"ok": False, "error": "Admin access required."}
+        target = (name or "").lower().strip()
+        user = get_user(target)
+        if not user:
+            return {"ok": False, "error": f"User '{target}' not found."}
+        roles = _normalize_roles(req.role)
+        if roles is None:
+            return {"ok": False, "error": f"Invalid role. Allowed: {', '.join(_ALLOWED_ROLES)}."}
+        # Don't strip admin from the last remaining admin.
+        if has_role(user, "admin") and "admin" not in parse_roles(roles) and _admin_count() <= 1:
+            return {"ok": False, "error": "Can't remove the last admin. Promote another member first."}
+        update_role(target, roles)
+        return {"ok": True}
+    return await asyncio.to_thread(_do)
+
+
+@app.post("/api/users/{name}/reset-password")
+async def api_reset_user_password(name: str, req: ResetPasswordRequest):
+    """Admin-only: set a new temporary password for a member (no current
+    password needed). The member can change it afterwards."""
+    def _do():
+        if not _is_admin(req.actor):
+            return {"ok": False, "error": "Admin access required."}
+        target = (name or "").lower().strip()
+        if not get_user(target):
+            return {"ok": False, "error": f"User '{target}' not found."}
+        if len(req.new_password or "") < 4:
+            return {"ok": False, "error": "Password must be at least 4 characters."}
+        update_password(target, req.new_password)
+        return {"ok": True}
+    return await asyncio.to_thread(_do)
+
+
+@app.delete("/api/users/{name}")
+async def api_delete_user(name: str, actor: str = ""):
+    """Admin-only: remove a member. Can't remove yourself or the last admin."""
+    def _do():
+        if not _is_admin(actor):
+            return {"ok": False, "error": "Admin access required."}
+        target = (name or "").lower().strip()
+        if target == (actor or "").lower().strip():
+            return {"ok": False, "error": "You can't remove your own account."}
+        user = get_user(target)
+        if not user:
+            return {"ok": False, "error": f"User '{target}' not found."}
+        if has_role(user, "admin") and _admin_count() <= 1:
+            return {"ok": False, "error": "Can't remove the last admin."}
+        delete_user(target)
+        return {"ok": True}
+    return await asyncio.to_thread(_do)
+
+
+@app.post("/api/auth/change-password")
+async def api_change_password(req: ChangePasswordRequest):
+    """Self-service: a logged-in member changes their own password by proving
+    their current one. Used after an admin hands out a temporary password."""
+    def _do():
+        name = (req.username or "").lower().strip()
+        user = get_user(name)
+        if not user:
+            return {"ok": False, "error": "Unknown user."}
+        if len(req.new_password or "") < 4:
+            return {"ok": False, "error": "New password must be at least 4 characters."}
+        # Verify the current password (unless none is set yet — first password).
+        if user.get("password_hash") and not authenticate(name, req.current_password or ""):
+            return {"ok": False, "error": "Current password is incorrect."}
+        update_password(name, req.new_password)
+        return {"ok": True}
+    return await asyncio.to_thread(_do)
 
 
 @app.delete("/api/apps/goals/entities/{entity_id}")

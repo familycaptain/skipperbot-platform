@@ -70,6 +70,16 @@ def require_apps(*app_ids: str) -> None:
         )
 
 
+# Apps the platform refuses to run without (core: true in their manifests).
+# They ship inside the platform repo. If a folder is deleted or an app fails
+# to load, boot aborts with a clear message rather than silently degrading.
+REQUIRED_APPS = (
+    "backups", "behaviors", "documents", "finder", "folders", "goals",
+    "jobs", "lists", "notifications", "prioritize", "reminders", "schedules",
+    "settings", "system", "timeline", "todo", "tools",
+)
+
+
 def get_app_tools() -> dict[str, list[callable]]:
     """Return dict of app_id -> tool functions."""
     return dict(_app_tools)
@@ -107,6 +117,11 @@ def load_all_apps(apps_dir: Path, fastapi_app=None, mcp=None):
             logger.error("APP LOADER: Failed to load '%s': %s", manifest.id, e,
                          exc_info=True)
             _mark_app_status(manifest.id, "error", str(e), manifest)
+
+    # Refuse to run without the required (core) apps. A core app that's missing
+    # or that failed to load above won't be in _loaded_apps, so this fails the
+    # boot loudly with the exact app(s) to fix instead of degrading silently.
+    require_apps(*REQUIRED_APPS)
 
     # Merge app tool routes into the tool router for keyword matching
     if _app_tool_routes:

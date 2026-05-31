@@ -12,6 +12,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Settings as Cog, Loader2, Save, Check, X, Eye, EyeOff, AlertCircle, LayoutGrid,
+  Users, UserPlus, Trash2, KeyRound, ShieldCheck,
 } from "lucide-react";
 import { getManageableApps } from "../../../web/src/apps/registry";
 
@@ -321,7 +322,251 @@ function AppDetail({ app, onSaved }) {
 // Sidebar + top-level shell
 // ---------------------------------------------------------------------------
 
-export default function SettingsApp() {
+// ---------------------------------------------------------------------------
+// Members panel — household member management + self-service password change.
+// Admins see the full roster (add / remove / change roles / reset password);
+// every user sees the "Change my password" card.
+// ---------------------------------------------------------------------------
+
+const ROLE_OPTIONS = ["member", "parent", "admin"];
+
+function hasRole(roleStr, role) {
+  return (roleStr || "").split(",").map((r) => r.trim()).includes(role);
+}
+
+function MembersPanel({ userId }) {
+  const [users, setUsers] = useState(null);
+  const [err, setErr] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [form, setForm] = useState({ username: "", display_name: "", roles: ["member"], password: "" });
+  const [pw, setPw] = useState({ current: "", next: "" });
+  const [pwMsg, setPwMsg] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/users");
+      setUsers(res.ok ? await res.json() : []);
+    } catch {
+      setUsers([]);
+    }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const me = (users || []).find((u) => u.name === userId);
+  const isAdmin = !!me && hasRole(me.role, "admin");
+
+  const call = useCallback(async (url, opts = {}) => {
+    setErr("");
+    setBusy(true);
+    try {
+      const res = await fetch(url, opts);
+      const j = await res.json().catch(() => ({}));
+      if (!j.ok) { setErr(j.error || `Request failed (${res.status}).`); return false; }
+      return true;
+    } catch {
+      setErr("Network error.");
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const json = (method, body) => ({
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  async function addMember(e) {
+    e.preventDefault();
+    const ok = await call("/api/users", json("POST", {
+      actor: userId,
+      username: form.username,
+      display_name: form.display_name,
+      role: form.roles.join(",") || "member",
+      password: form.password,
+    }));
+    if (ok) { setForm({ username: "", display_name: "", roles: ["member"], password: "" }); load(); }
+  }
+
+  async function removeMember(name) {
+    if (!window.confirm(`Remove ${name}? This permanently deletes their account.`)) return;
+    if (await call(`/api/users/${encodeURIComponent(name)}?actor=${encodeURIComponent(userId)}`, { method: "DELETE" })) load();
+  }
+
+  async function setRole(name, roleStr) {
+    if (await call(`/api/users/${encodeURIComponent(name)}/role`, json("PATCH", { actor: userId, role: roleStr }))) load();
+  }
+
+  async function resetPassword(name) {
+    const np = window.prompt(`New temporary password for ${name}.\nThey can change it after logging in (min 4 characters):`);
+    if (np == null) return;
+    if (await call(`/api/users/${encodeURIComponent(name)}/reset-password`, json("POST", { actor: userId, new_password: np }))) {
+      window.alert(`Temporary password set for ${name}.`);
+      load();
+    }
+  }
+
+  async function changeMyPassword(e) {
+    e.preventDefault();
+    setPwMsg("");
+    try {
+      const res = await fetch("/api/auth/change-password", json("POST", {
+        username: userId, current_password: pw.current, new_password: pw.next,
+      }));
+      const j = await res.json().catch(() => ({}));
+      if (j.ok) { setPwMsg("Password changed."); setPw({ current: "", next: "" }); }
+      else setPwMsg(j.error || "Could not change password.");
+    } catch { setPwMsg("Network error."); }
+  }
+
+  const toggleFormRole = (role) =>
+    setForm((f) => ({
+      ...f,
+      roles: f.roles.includes(role) ? f.roles.filter((r) => r !== role) : [...f.roles, role],
+    }));
+
+  if (users === null) {
+    return <div className="flex items-center gap-2 p-6 text-zinc-500"><Loader2 className="animate-spin" size={14} /> Loading members…</div>;
+  }
+
+  const inputCls = "w-full rounded bg-zinc-900 border border-zinc-700 px-2.5 py-1.5 text-sm text-zinc-200 focus:border-indigo-500 focus:outline-none";
+
+  return (
+    <div className="p-6 max-w-2xl space-y-8">
+      <div>
+        <h2 className="text-base font-semibold text-zinc-200 inline-flex items-center gap-2"><Users size={16} /> Members</h2>
+        <p className="text-xs text-zinc-500 mt-1">
+          {isAdmin
+            ? "Add or remove household members and set their roles. New members get a temporary password — they change it themselves after their first login."
+            : "Change your own password below. Ask an admin to add or remove members."}
+        </p>
+      </div>
+
+      {err && (
+        <div className="flex items-center gap-2 rounded bg-red-950/50 border border-red-900 px-3 py-2 text-sm text-red-300">
+          <AlertCircle size={14} /> {err}
+        </div>
+      )}
+
+      {isAdmin && (
+        <>
+          {/* Roster */}
+          <div className="rounded-lg border border-zinc-800 divide-y divide-zinc-800">
+            {users.map((u) => (
+              <div key={u.name} className="flex items-center gap-3 px-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm text-zinc-200 truncate">
+                    {u.display_name || u.name}
+                    {u.name === userId && <span className="ml-1.5 text-[10px] text-zinc-500">(you)</span>}
+                  </div>
+                  <div className="text-[11px] text-zinc-500 truncate">
+                    @{u.name}{!u.has_password && " · no password set"}
+                  </div>
+                </div>
+                {/* Role pickers */}
+                <div className="flex items-center gap-1.5">
+                  {ROLE_OPTIONS.map((role) => {
+                    const on = hasRole(u.role, role);
+                    return (
+                      <button
+                        key={role}
+                        disabled={busy}
+                        onClick={() => {
+                          const roles = u.role.split(",").map((r) => r.trim()).filter(Boolean);
+                          const next = on ? roles.filter((r) => r !== role) : [...roles, role];
+                          setRole(u.name, next.join(",") || "member");
+                        }}
+                        className={`px-2 py-0.5 rounded text-[11px] border transition-colors ${
+                          on
+                            ? "bg-indigo-600/30 border-indigo-600 text-indigo-200"
+                            : "border-zinc-700 text-zinc-500 hover:text-zinc-300"
+                        }`}
+                        title={on ? `Remove ${role}` : `Grant ${role}`}
+                      >
+                        {role === "admin" && <ShieldCheck size={10} className="inline mr-0.5 -mt-0.5" />}{role}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button onClick={() => resetPassword(u.name)} disabled={busy}
+                  title="Set a temporary password" className="text-zinc-500 hover:text-amber-400 p-1">
+                  <KeyRound size={14} />
+                </button>
+                <button onClick={() => removeMember(u.name)} disabled={busy || u.name === userId}
+                  title={u.name === userId ? "You can't remove yourself" : "Remove member"}
+                  className="text-zinc-500 hover:text-red-400 p-1 disabled:opacity-30 disabled:hover:text-zinc-500">
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Add member */}
+          <form onSubmit={addMember} className="rounded-lg border border-zinc-800 p-4 space-y-3">
+            <h3 className="text-sm font-medium text-zinc-300 inline-flex items-center gap-2"><UserPlus size={14} /> Add a member</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block">
+                <span className="text-[11px] text-zinc-500">Username (login)</span>
+                <input className={inputCls} value={form.username} required
+                  onChange={(e) => setForm({ ...form, username: e.target.value })}
+                  placeholder="e.g. alex" autoComplete="off" />
+              </label>
+              <label className="block">
+                <span className="text-[11px] text-zinc-500">Display name</span>
+                <input className={inputCls} value={form.display_name}
+                  onChange={(e) => setForm({ ...form, display_name: e.target.value })}
+                  placeholder="e.g. Alex" autoComplete="off" />
+              </label>
+            </div>
+            <label className="block">
+              <span className="text-[11px] text-zinc-500">Temporary password</span>
+              <input className={inputCls} value={form.password} required minLength={4} type="text"
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                placeholder="they'll change it after first login" autoComplete="new-password" />
+            </label>
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-zinc-500 mr-1">Roles:</span>
+              {ROLE_OPTIONS.map((role) => (
+                <label key={role} className="inline-flex items-center gap-1 text-xs text-zinc-400">
+                  <input type="checkbox" checked={form.roles.includes(role)} onChange={() => toggleFormRole(role)} />
+                  {role}
+                </label>
+              ))}
+            </div>
+            <button type="submit" disabled={busy}
+              className="rounded bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white inline-flex items-center gap-1.5 disabled:opacity-50">
+              <UserPlus size={14} /> Add member
+            </button>
+          </form>
+        </>
+      )}
+
+      {/* Change my own password — everyone */}
+      <form onSubmit={changeMyPassword} className="rounded-lg border border-zinc-800 p-4 space-y-3">
+        <h3 className="text-sm font-medium text-zinc-300 inline-flex items-center gap-2"><KeyRound size={14} /> Change my password</h3>
+        <p className="text-[11px] text-zinc-500 -mt-1">Signed in as @{userId}.</p>
+        <label className="block">
+          <span className="text-[11px] text-zinc-500">Current password</span>
+          <input className={inputCls} type="password" value={pw.current} autoComplete="current-password"
+            onChange={(e) => setPw({ ...pw, current: e.target.value })} />
+        </label>
+        <label className="block">
+          <span className="text-[11px] text-zinc-500">New password (min 4 characters)</span>
+          <input className={inputCls} type="password" value={pw.next} required minLength={4} autoComplete="new-password"
+            onChange={(e) => setPw({ ...pw, next: e.target.value })} />
+        </label>
+        {pwMsg && <div className="text-xs text-zinc-400">{pwMsg}</div>}
+        <button type="submit"
+          className="rounded bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 text-sm font-medium text-white inline-flex items-center gap-1.5">
+          <Save size={14} /> Update password
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export default function SettingsApp({ userId }) {
   const [apps, setApps] = useState([]);
   const [panels, setPanels] = useState([]);   // platform panels: System, Integrations
   const [loading, setLoading] = useState(true);
@@ -381,6 +626,16 @@ export default function SettingsApp() {
               <LayoutGrid size={14} /> Desktop apps
             </button>
           </li>
+          <li>
+            <button
+              className={`w-full text-left px-4 py-2 text-sm transition-colors inline-flex items-center gap-2 ${
+                selected === "__members__" ? "bg-zinc-800 text-zinc-100" : "text-zinc-300 hover:bg-zinc-900"
+              }`}
+              onClick={() => setSelected("__members__")}
+            >
+              <Users size={14} /> Members
+            </button>
+          </li>
           {panels.map((p) => (
             <li key={p.id}>
               <button
@@ -423,6 +678,8 @@ export default function SettingsApp() {
       <main className="flex-1 overflow-y-auto">
         {selected === "__desktop__" ? (
           <DesktopVisibilityPanel />
+        ) : selected === "__members__" ? (
+          <MembersPanel userId={userId} />
         ) : current ? (
           <AppDetail key={current.id} app={current} onSaved={onSaved} />
         ) : (
