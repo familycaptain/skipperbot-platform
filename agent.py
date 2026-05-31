@@ -4319,6 +4319,27 @@ async def api_admin_restart(request: Request):
     return {"status": "restarting", "message": "Agent will restart shortly (draining in background)"}
 
 
+@app.get("/api/apps/{app_id}/help")
+async def api_app_help(app_id: str):
+    """User-facing help doc for an app's in-app Help panel.
+
+    Serves apps/<id>/help.md (markdown). app_id is validated against the loaded
+    apps (so it can't traverse the filesystem). Returns an empty `help` string
+    when the app hasn't shipped a help.md yet — the UI shows a placeholder."""
+    from app_platform.loader import get_loaded_apps
+    manifest = get_loaded_apps().get(app_id)
+    if not manifest:
+        raise HTTPException(status_code=404, detail="Unknown app")
+    help_path = Path(__file__).resolve().parent / "apps" / app_id / "help.md"
+    text = ""
+    if help_path.is_file():
+        try:
+            text = help_path.read_text(encoding="utf-8")
+        except Exception:
+            logger.warning("could not read help.md for %s", app_id, exc_info=True)
+    return {"app_id": app_id, "name": manifest.name, "help": text}
+
+
 @app.post("/api/admin/deploy")
 async def api_admin_deploy(request: Request):
     """Graceful deploy: drain in-flight work, then signal the host deploy

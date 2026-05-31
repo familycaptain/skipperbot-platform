@@ -1,5 +1,6 @@
 import { Suspense, useRef, useState, useEffect, useCallback } from "react";
-import { X, Compass, Loader2, Home, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Compass, Loader2, Home, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 import { getAppManifest, getAppsForPage } from "../apps/registry";
 
 /**
@@ -45,6 +46,23 @@ export default function AppPanel({
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+
+  // In-app Help panel (per-app help.md, served by GET /api/apps/<id>/help).
+  const [helpFor, setHelpFor] = useState(null);   // { appType, name } or null
+  const [helpText, setHelpText] = useState("");
+  const [helpLoading, setHelpLoading] = useState(false);
+
+  const openHelp = useCallback(async () => {
+    if (!activeApp) return;
+    setHelpFor({ appType: activeApp.appType, name: activeApp.name });
+    setHelpLoading(true);
+    setHelpText("");
+    try {
+      const res = await fetch(`/api/apps/${activeApp.appType}/help`);
+      if (res.ok) setHelpText((await res.json()).help || "");
+    } catch { /* leave blank → placeholder */ }
+    finally { setHelpLoading(false); }
+  }, [activeApp]);
 
   const checkOverflow = useCallback(() => {
     const el = scrollRef.current;
@@ -143,6 +161,17 @@ export default function AppPanel({
             <ChevronRight size={14} />
           </button>
         )}
+
+        {/* Per-app Help — opens the active app's help.md */}
+        {activeApp && (
+          <button
+            onClick={openHelp}
+            title={`Help — ${activeApp.name}`}
+            className="px-1.5 h-full text-slate-500 hover:text-white shrink-0"
+          >
+            <HelpCircle size={15} />
+          </button>
+        )}
       </div>
 
       {/* ── App Content Area ── */}
@@ -195,6 +224,40 @@ export default function AppPanel({
           );
         })}
       </div>
+
+      {/* ── Per-app Help modal ── */}
+      {helpFor && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setHelpFor(null)}
+        >
+          <div
+            className="bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 shrink-0">
+              <div className="flex items-center gap-2 text-slate-100">
+                <HelpCircle size={16} className="text-sky-400" />
+                <h3 className="text-sm font-semibold">{helpFor.name} — Help</h3>
+              </div>
+              <button onClick={() => setHelpFor(null)} className="text-slate-400 hover:text-white">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-4 overflow-y-auto text-sm text-slate-300 markdown-body">
+              {helpLoading ? (
+                <div className="flex items-center gap-2 text-slate-400">
+                  <Loader2 size={14} className="animate-spin" /> Loading…
+                </div>
+              ) : helpText ? (
+                <ReactMarkdown>{helpText}</ReactMarkdown>
+              ) : (
+                <p className="text-slate-500">Help for {helpFor.name} is coming soon.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
