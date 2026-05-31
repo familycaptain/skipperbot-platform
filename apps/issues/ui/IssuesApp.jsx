@@ -260,6 +260,20 @@ function ListView({ issues, filter, setFilter, showFixed, setShowFixed, onIssueC
     }
   }
 
+  // Validation failed — the "fix" didn't actually fix it. Send it back to open
+  // so it re-enters the work queue instead of being stuck on pending_validation.
+  async function rejectFix(issueId) {
+    try {
+      await apiMutate(`/api/apps/issues/${issueId}`, "PATCH", {
+        updated_by: userId,
+        status: "open",
+      });
+      onRefresh();
+    } catch (err) {
+      setError?.(err.message);
+    }
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
@@ -325,8 +339,15 @@ function ListView({ issues, filter, setFilter, showFixed, setShowFixed, onIssueC
                   </div>
                 </button>
                 <button
+                  onClick={() => rejectFix(iss.id)}
+                  title="It's not actually fixed — reopen it"
+                  className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-xs font-medium transition-colors"
+                >
+                  Not Fixed
+                </button>
+                <button
                   onClick={() => confirmFixed(iss.id)}
-                  className="shrink-0 mr-3 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition-colors"
+                  className="shrink-0 mx-3 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition-colors"
                 >
                   Confirm Fixed
                 </button>
