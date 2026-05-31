@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Play, RotateCcw, LogOut, Shield, Zap, Flame } from "lucide-react";
+import { sfx, resume as resumeAudio } from "../sfx";
 
 /**
  * Wardenfall — a top-down tower-defense game.
@@ -167,6 +168,7 @@ export default function Wardenfall({ userId, onGameOver, onExit }) {
   // ---- Wave generation ----------------------------------------------------
   function spawnWave(s) {
     s.wave += 1;
+    if (s.wave > 1) sfx.wave(); // wave 1 coincides with the start jingle
     const w = s.wave;
     const count = 6 + Math.floor(w * 1.5);
     const hp = Math.floor(28 * Math.pow(1.18, w - 1));
@@ -226,6 +228,7 @@ export default function Wardenfall({ userId, onGameOver, onExit }) {
     const spec = TOWERS[s.building];
     if (s.gold < spec.cost) return;
     s.gold -= spec.cost;
+    sfx.place();
     s.towers.push({
       c,
       r,
@@ -298,6 +301,7 @@ export default function Wardenfall({ userId, onGameOver, onExit }) {
         // Reached the keep.
         e.dead = true;
         s.lives -= 1;
+        sfx.hit();
       }
     }
 
@@ -319,6 +323,7 @@ export default function Wardenfall({ userId, onGameOver, onExit }) {
       }
       if (target) {
         t.cd = spec.cooldown;
+        sfx.shoot();
         s.projectiles.push({
           x: t.x,
           y: t.y,
@@ -366,6 +371,7 @@ export default function Wardenfall({ userId, onGameOver, onExit }) {
       if (e.dead && e.hp <= 0) {
         s.kills += 1;
         s.gold += e.reward;
+        sfx.smallExplode();
       }
       if (!e.dead) stillAlive.push(e);
     }
@@ -666,6 +672,7 @@ export default function Wardenfall({ userId, onGameOver, onExit }) {
         goRef.current = true;
         const finalS = computeScore(s);
         setFinalScore(finalS);
+        sfx.gameover();
         setPhase("over");
         if (typeof onGameOverRef.current === "function") {
           onGameOverRef.current(finalS);
@@ -691,6 +698,8 @@ export default function Wardenfall({ userId, onGameOver, onExit }) {
 
   // ---- Control actions ----------------------------------------------------
   const startGame = () => {
+    resumeAudio();
+    sfx.start();
     const fresh = makeFreshState();
     fresh.running = true;
     G.current = fresh;

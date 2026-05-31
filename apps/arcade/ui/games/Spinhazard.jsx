@@ -11,6 +11,7 @@
 //
 import { useRef, useEffect, useState, useCallback } from "react";
 import { ArrowLeft } from "lucide-react";
+import { sfx, resume as resumeAudio } from "../sfx";
 
 // ---- tunables ---------------------------------------------------------------
 const SHIP_R = 14;              // ship radius (nose distance)
@@ -117,6 +118,8 @@ export default function Spinhazard({ userId, onGameOver, onExit }) {
   const spawnWave = (world, waveNum) => {
     const { w, h } = sizeRef.current;
     world.wave = waveNum;
+    if (waveNum > 1) sfx.wave(); // wave 1 coincides with the start jingle
+
     const count = 3 + waveNum; // 4, 5, 6, ...
     const speedScale = 1 + (waveNum - 1) * 0.16;
     for (let i = 0; i < count; i++) {
@@ -291,6 +294,7 @@ export default function Spinhazard({ userId, onGameOver, onExit }) {
       // Fire.
       if (keys.fire && world.fireCd <= 0 && world.bullets.length < MAX_BULLETS) {
         world.fireCd = FIRE_COOLDOWN;
+        sfx.laser();
         const nx = Math.cos(ship.angle);
         const ny = Math.sin(ship.angle);
         world.bullets.push({
@@ -352,6 +356,8 @@ export default function Spinhazard({ userId, onGameOver, onExit }) {
           const def = ROCK_SIZES[r.size];
           world.score += def.score;
           world.rocks.splice(ri, 1);
+          if (def.next) sfx.explode();
+          else sfx.smallExplode();
           if (def.next) {
             const speedScale = 1 + (world.wave - 1) * 0.16 + 0.3;
             const a = makeRock(def.next, r.x, r.y, speedScale);
@@ -415,12 +421,14 @@ export default function Spinhazard({ userId, onGameOver, onExit }) {
   const killShip = (world) => {
     world.lives -= 1;
     world.shake = 18;
+    sfx.explode();
     if (world.lives <= 0) {
       world.ship.alive = false;
       // Fire game over exactly once.
       if (!gameOverFiredRef.current) {
         gameOverFiredRef.current = true;
         const finalScore = Math.round(world.score);
+        sfx.gameover();
         setPhase("over");
         if (typeof onGameOver === "function") onGameOver(finalScore);
       }
@@ -527,6 +535,8 @@ export default function Spinhazard({ userId, onGameOver, onExit }) {
 
   // ---- UI actions -----------------------------------------------------------
   const launch = useCallback(() => {
+    resumeAudio();
+    sfx.start();
     fitCanvas();
     resetWorld();
     lastTsRef.current = 0;

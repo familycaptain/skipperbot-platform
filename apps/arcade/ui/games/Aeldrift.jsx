@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import * as THREE from "three";
 import { ArrowLeft, Flag, RotateCcw, Sparkles } from "lucide-react";
+import { sfx, resume as resumeAudio } from "../sfx";
 
 /**
  * Aeldrift — a small 3D world-exploration game.
@@ -54,6 +55,8 @@ export default function Aeldrift({ userId, onGameOver, onExit }) {
   );
 
   const startPlaying = useCallback(() => {
+    resumeAudio();
+    sfx.start();
     startedRef.current = true;
     setPhase("playing");
     // The start button had focus; hand it back to the game element.
@@ -75,6 +78,8 @@ export default function Aeldrift({ userId, onGameOver, onExit }) {
     gameOverFiredRef.current = false;
     collectedRef.current = 0;
     setCollected(0);
+    resumeAudio();
+    sfx.start();
     startedRef.current = true;
     setPhase("playing");
     rootRef.current?.focus();
@@ -382,8 +387,11 @@ export default function Aeldrift({ userId, onGameOver, onExit }) {
           collectedRef.current = next;
           setCollected(next);
           if (next >= SHARD_COUNT) {
+            sfx.win();
             setPhase("cleared");
             fireGameOver(next);
+          } else {
+            sfx.pickup();
           }
         }
       }
@@ -445,6 +453,7 @@ export default function Aeldrift({ userId, onGameOver, onExit }) {
   }, [fireGameOver]);
 
   const handleFinish = useCallback(() => {
+    sfx.wave();
     fireGameOver(collectedRef.current);
     setPhase("cleared");
   }, [fireGameOver]);

@@ -9,7 +9,24 @@
 //   - onExit()                  — return to the menu
 //
 import { useState, useEffect, useCallback, Suspense, lazy } from "react";
-import { Gamepad2, Castle, Globe2, Rocket, Trophy, Loader2, ArrowLeft } from "lucide-react";
+import { Gamepad2, Castle, Globe2, Rocket, Trophy, Loader2, ArrowLeft, Volume2, VolumeX } from "lucide-react";
+import { isMuted, toggleMuted, onMuteChange } from "./sfx";
+
+// Shared mute toggle — reflects + flips the arcade-wide (localStorage-backed)
+// sound preference, kept in sync across games via onMuteChange.
+function MuteButton({ className = "" }) {
+  const [muted, setMutedState] = useState(isMuted());
+  useEffect(() => onMuteChange(setMutedState), []);
+  return (
+    <button
+      onClick={() => setMutedState(toggleMuted())}
+      title={muted ? "Sound off — click to unmute" : "Sound on — click to mute"}
+      className={`text-slate-400 hover:text-white transition-colors ${className}`}
+    >
+      {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+    </button>
+  );
+}
 
 const API = "/api/apps/arcade";
 
@@ -114,6 +131,7 @@ export default function ArcadeApp({ userId }) {
           </button>
           <span className="text-xs text-slate-600">/</span>
           <span className="text-xs text-slate-300">{game.name}</span>
+          <MuteButton className="ml-auto" />
         </div>
         <div className="flex-1 min-h-0 relative">
           <Suspense fallback={<div className="absolute inset-0 grid place-items-center text-slate-500"><Loader2 className="animate-spin" /></div>}>
@@ -130,6 +148,7 @@ export default function ArcadeApp({ userId }) {
         <div className="flex items-center gap-2.5 mb-1">
           <Gamepad2 className="text-indigo-400" size={22} />
           <h1 className="text-xl font-bold text-slate-100">Arcade</h1>
+          <MuteButton className="ml-auto" />
         </div>
         <p className="text-sm text-slate-500 mb-6">Three original games, one leaderboard. Pick your poison.</p>
 
