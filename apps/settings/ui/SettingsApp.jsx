@@ -595,7 +595,9 @@ export default function SettingsApp({ userId }) {
   };
 
   const current = useMemo(
-    () => apps.find((a) => a.id === selected) || panels.find((p) => p.id === selected),
+    // Platform panels are selected under a "panel:" key so a panel can never be
+    // shadowed by an app sharing its id (e.g. the "system" app vs the System panel).
+    () => apps.find((a) => a.id === selected) || panels.find((p) => `panel:${p.id}` === selected),
     [apps, panels, selected],
   );
 
@@ -640,9 +642,9 @@ export default function SettingsApp({ userId }) {
             <li key={p.id}>
               <button
                 className={`w-full text-left px-4 py-2 text-sm transition-colors inline-flex items-center gap-2 ${
-                  selected === p.id ? "bg-zinc-800 text-zinc-100" : "text-zinc-300 hover:bg-zinc-900"
+                  selected === `panel:${p.id}` ? "bg-zinc-800 text-zinc-100" : "text-zinc-300 hover:bg-zinc-900"
                 }`}
-                onClick={() => setSelected(p.id)}
+                onClick={() => setSelected(`panel:${p.id}`)}
               >
                 <Cog size={14} /> {p.name}
               </button>
@@ -681,7 +683,7 @@ export default function SettingsApp({ userId }) {
         ) : selected === "__members__" ? (
           <MembersPanel userId={userId} />
         ) : current ? (
-          <AppDetail key={current.id} app={current} onSaved={onSaved} />
+          <AppDetail key={selected} app={current} onSaved={onSaved} />
         ) : (
           <div className="p-6 text-zinc-500">Select an app to view its settings.</div>
         )}
