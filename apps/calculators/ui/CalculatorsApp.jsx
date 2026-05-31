@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Calculator, TrendingUp, Landmark, AlertCircle } from "lucide-react";
+import { Calculator, TrendingUp, Landmark, AlertCircle, FlaskConical } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Math helpers — pure functions, no UI.
@@ -240,23 +240,184 @@ function Stat({ label, value, highlight }) {
   );
 }
 
-export default function FinanceCalcApp() {
-  const [tab, setTab] = useState("compound");
+// ---------------------------------------------------------------------------
+// Scientific calculator — tokenizer + shunting-yard evaluator (no eval()).
+// ---------------------------------------------------------------------------
+
+const SCI_FUNCS = {
+  sin: (x, deg) => Math.sin(deg ? (x * Math.PI) / 180 : x),
+  cos: (x, deg) => Math.cos(deg ? (x * Math.PI) / 180 : x),
+  tan: (x, deg) => Math.tan(deg ? (x * Math.PI) / 180 : x),
+  asin: (x, deg) => (deg ? (Math.asin(x) * 180) / Math.PI : Math.asin(x)),
+  acos: (x, deg) => (deg ? (Math.acos(x) * 180) / Math.PI : Math.acos(x)),
+  atan: (x, deg) => (deg ? (Math.atan(x) * 180) / Math.PI : Math.atan(x)),
+  ln: (x) => Math.log(x),
+  log: (x) => Math.log10(x),
+  sqrt: (x) => Math.sqrt(x),
+  abs: (x) => Math.abs(x),
+  exp: (x) => Math.exp(x),
+};
+const SCI_OPS = {
+  "+": { p: 2, f: (a, b) => a + b },
+  "-": { p: 2, f: (a, b) => a - b },
+  "*": { p: 3, f: (a, b) => a * b },
+  "/": { p: 3, f: (a, b) => a / b },
+  "^": { p: 4, right: true, f: (a, b) => Math.pow(a, b) },
+};
+function sciFactorial(n) {
+  if (n < 0 || !Number.isInteger(n)) return NaN;
+  let r = 1;
+  for (let k = 2; k <= n; k++) r *= k;
+  return r;
+}
+function sciTokenize(expr) {
+  const s = expr.replace(/×/g, "*").replace(/÷/g, "/").replace(/−/g, "-").replace(/π/g, "PI").replace(/√/g, "sqrt");
+  const tokens = [];
+  let i = 0;
+  while (i < s.length) {
+    const ch = s[i];
+    if (ch === " ") { i++; continue; }
+    if (/[0-9.]/.test(ch)) {
+      let n = ""; while (i < s.length && /[0-9.]/.test(s[i])) n += s[i++];
+      tokens.push({ t: "num", v: parseFloat(n) }); continue;
+    }
+    if (/[a-zA-Z]/.test(ch)) {
+      let name = ""; while (i < s.length && /[a-zA-Z0-9]/.test(s[i])) name += s[i++];
+      if (name === "PI") tokens.push({ t: "num", v: Math.PI });
+      else if (name === "e") tokens.push({ t: "num", v: Math.E });
+      else if (SCI_FUNCS[name]) tokens.push({ t: "func", v: name });
+      else throw new Error("unknown " + name);
+      continue;
+    }
+    if (ch === "!") { tokens.push({ t: "fact" }); i++; continue; }
+    if (ch === "(") { tokens.push({ t: "lp" }); i++; continue; }
+    if (ch === ")") { tokens.push({ t: "rp" }); i++; continue; }
+    if (SCI_OPS[ch]) { tokens.push({ t: "op", v: ch }); i++; continue; }
+    throw new Error("bad char " + ch);
+  }
+  return tokens;
+}
+function sciToRPN(tokens) {
+  const out = [], ops = [];
+  let prev = null;
+  for (const tk of tokens) {
+    if (tk.t === "num") out.push(tk);
+    else if (tk.t === "func") ops.push(tk);
+    else if (tk.t === "fact") out.push(tk);
+    else if (tk.t === "op") {
+      const unary = tk.v === "-" && (prev === null || prev.t === "op" || prev.t === "lp" || prev.t === "func");
+      if (unary) { ops.push({ t: "uneg" }); }
+      else {
+        const o1 = SCI_OPS[tk.v];
+        while (ops.length) {
+          const top = ops[ops.length - 1];
+          if (top.t === "func" || top.t === "uneg") { out.push(ops.pop()); continue; }
+          if (top.t === "op") {
+            const o2 = SCI_OPS[top.v];
+            if (o1.right ? o1.p < o2.p : o1.p <= o2.p) { out.push(ops.pop()); continue; }
+          }
+          break;
+        }
+        ops.push(tk);
+      }
+    } else if (tk.t === "lp") ops.push(tk);
+    else if (tk.t === "rp") {
+      while (ops.length && ops[ops.length - 1].t !== "lp") out.push(ops.pop());
+      if (!ops.length) throw new Error("mismatched )");
+      ops.pop();
+      if (ops.length && ops[ops.length - 1].t === "func") out.push(ops.pop());
+    }
+    prev = tk;
+  }
+  while (ops.length) {
+    const top = ops.pop();
+    if (top.t === "lp") throw new Error("mismatched (");
+    out.push(top);
+  }
+  return out;
+}
+function sciEval(expr, deg) {
+  const st = [];
+  for (const tk of sciToRPN(sciTokenize(expr))) {
+    if (tk.t === "num") st.push(tk.v);
+    else if (tk.t === "uneg") st.push(-st.pop());
+    else if (tk.t === "fact") st.push(sciFactorial(st.pop()));
+    else if (tk.t === "func") st.push(SCI_FUNCS[tk.v](st.pop(), deg));
+    else if (tk.t === "op") { const b = st.pop(), a = st.pop(); st.push(SCI_OPS[tk.v].f(a, b)); }
+  }
+  if (st.length !== 1) throw new Error("invalid");
+  return st[0];
+}
+
+function ScientificTab() {
+  const [expr, setExpr] = useState("");
+  const [deg, setDeg] = useState(true);
+  const [err, setErr] = useState(false);
+  const push = (s) => { setErr(false); setExpr((e) => e + s); };
+  const clear = () => { setExpr(""); setErr(false); };
+  const back = () => { setErr(false); setExpr((e) => e.slice(0, -1)); };
+  const equals = () => {
+    if (!expr.trim()) return;
+    try {
+      const v = sciEval(expr, deg);
+      if (!Number.isFinite(v)) throw new Error("math");
+      setExpr(String(Math.round(v * 1e12) / 1e12));
+    } catch { setErr(true); }
+  };
+
+  // [label, onClick, className]
+  const C = "bg-slate-800 hover:bg-slate-700 text-slate-200";
+  const Fn = "bg-slate-700/70 hover:bg-slate-600 text-sky-300 text-xs";
+  const Op = "bg-slate-700 hover:bg-slate-600 text-amber-300";
+  const Eq = "bg-sky-600 hover:bg-sky-500 text-white";
+  const keys = [
+    [deg ? "DEG" : "RAD", () => setDeg((d) => !d), "bg-slate-700 hover:bg-slate-600 text-emerald-300 text-xs"],
+    ["(", () => push("("), Fn], [")", () => push(")"), Fn], ["C", clear, "bg-rose-800/70 hover:bg-rose-700 text-rose-200"], ["⌫", back, C],
+    ["sin", () => push("sin("), Fn], ["cos", () => push("cos("), Fn], ["tan", () => push("tan("), Fn], ["^", () => push("^"), Op], ["√", () => push("sqrt("), Fn],
+    ["ln", () => push("ln("), Fn], ["log", () => push("log("), Fn], ["7", () => push("7"), C], ["8", () => push("8"), C], ["9", () => push("9"), C],
+    ["π", () => push("π"), Fn], ["e", () => push("e"), Fn], ["4", () => push("4"), C], ["5", () => push("5"), C], ["6", () => push("6"), C],
+    ["x!", () => push("!"), Fn], ["÷", () => push("÷"), Op], ["1", () => push("1"), C], ["2", () => push("2"), C], ["3", () => push("3"), C],
+    ["×", () => push("×"), Op], ["−", () => push("-"), Op], ["0", () => push("0"), C], [".", () => push("."), C], ["+", () => push("+"), Op],
+  ];
+
+  return (
+    <div className="max-w-xs">
+      <div className={`rounded-lg border px-3 py-3 mb-3 text-right font-mono break-all min-h-[3.5rem] ${err ? "border-rose-700 bg-rose-900/20" : "border-slate-700 bg-slate-900"}`}>
+        <div className="text-lg text-slate-100">{expr || "0"}</div>
+        {err && <div className="text-xs text-rose-400">Error</div>}
+      </div>
+      <div className="grid grid-cols-5 gap-1.5">
+        {keys.map(([label, onClick, cls], idx) => (
+          <button key={idx} onClick={onClick} className={`h-10 rounded text-sm font-medium ${cls}`}>{label}</button>
+        ))}
+        <button onClick={equals} className={`col-span-5 h-10 rounded text-sm font-semibold ${Eq}`}>=</button>
+      </div>
+      <p className="text-[10px] text-slate-500 mt-2">Trig uses {deg ? "degrees" : "radians"} — tap DEG/RAD to switch. Supports + − × ÷ ^, parentheses, π, e, √, ln, log, factorial (x!).</p>
+    </div>
+  );
+}
+
+export default function CalculatorsApp() {
+  const [tab, setTab] = useState("scientific");
+  const tabBtn = (id, label, Icon, activeCls) => (
+    <button onClick={() => setTab(id)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm ${tab === id ? activeCls : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`}>
+      <Icon size={14} /> {label}
+    </button>
+  );
   return (
     <div className="h-full overflow-y-auto p-4 max-w-2xl">
       <div className="flex items-center gap-2 mb-4">
         <Calculator size={18} className="text-sky-400" />
-        <h1 className="text-base font-bold text-slate-200">Finance Calculator</h1>
+        <h1 className="text-base font-bold text-slate-200">Calculators</h1>
       </div>
-      <div className="flex gap-1 mb-4">
-        <button onClick={() => setTab("compound")} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm ${tab === "compound" ? "bg-sky-700 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`}>
-          <TrendingUp size={14} /> Compound interest
-        </button>
-        <button onClick={() => setTab("loan")} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm ${tab === "loan" ? "bg-emerald-700 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`}>
-          <Landmark size={14} /> Loan / amortization
-        </button>
+      <div className="flex flex-wrap gap-1 mb-4">
+        {tabBtn("scientific", "Scientific", FlaskConical, "bg-slate-600 text-white")}
+        {tabBtn("compound", "Compound interest", TrendingUp, "bg-sky-700 text-white")}
+        {tabBtn("loan", "Loan / amortization", Landmark, "bg-emerald-700 text-white")}
       </div>
-      {tab === "compound" ? <CompoundTab /> : <LoanTab />}
+      {tab === "scientific" && <ScientificTab />}
+      {tab === "compound" && <CompoundTab />}
+      {tab === "loan" && <LoanTab />}
     </div>
   );
 }

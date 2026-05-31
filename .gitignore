@@ -142,7 +142,7 @@ apps/*
 !apps/bounties/
 !apps/chores/
 !apps/email/
-!apps/finance/
+!apps/calculators/
 !apps/home/
 !apps/homeopathy/
 !apps/issues/
