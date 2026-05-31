@@ -23,6 +23,27 @@ def _validate_zip(zip_code: str) -> str | None:
     return None
 
 
+def _default_zip() -> str:
+    """The configured default ZIP (Settings → System → Default ZIP code), or ''."""
+    try:
+        from app_platform import settings as _settings
+        return _clean_zip(_settings.get("default_zip", scope="platform", default="") or "")
+    except Exception:
+        return ""
+
+
+def _resolve_zip(zip_code: str) -> str:
+    """Use the given ZIP, or fall back to the configured default. Callers that
+    get '' should return _NO_ZIP_MSG (no ZIP given and none configured)."""
+    return _clean_zip(zip_code) or _default_zip()
+
+
+_NO_ZIP_MSG = (
+    "No ZIP code was provided and no default is configured. Set one in "
+    "Settings → System → \"Default ZIP code\", or include a 5-digit US ZIP."
+)
+
+
 def _fetch_json(url: str, timeout: int = 10) -> dict:
     req = urllib.request.Request(url, headers={"User-Agent": "SkipperBot/0.1"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -41,18 +62,21 @@ def _lookup_zip(zip_code: str) -> dict:
     }
 
 
-def get_current_weather_by_zip(zip_code: str) -> str:
+def get_current_weather_by_zip(zip_code: str = "") -> str:
     """
     Get the current weather for a US zip code.
-    
+
     Args:
-        zip_code: US ZIP code (e.g., "90210", "60601")
-    
+        zip_code: US ZIP code (e.g., "90210", "60601"). Optional — if omitted,
+            uses the configured default ZIP (Settings → System → Default ZIP code).
+
     Returns:
         Current weather conditions as a formatted string
     """
-    zip_code = _clean_zip(zip_code)
-    
+    zip_code = _resolve_zip(zip_code)
+    if not zip_code:
+        return _NO_ZIP_MSG
+
     error = _validate_zip(zip_code)
     if error:
         return error
@@ -256,7 +280,7 @@ def _fmt_date(day: date) -> str:
     return f"{day.strftime('%a %b')} {day.day}"
 
 
-def get_rain_chance_by_zip(zip_code: str, period: str = "today") -> str:
+def get_rain_chance_by_zip(zip_code: str = "", period: str = "today") -> str:
     """Get the chance of rain for a US ZIP code over a natural-language period.
 
     Use this for questions about rain probability or precipitation chance,
@@ -267,7 +291,8 @@ def get_rain_chance_by_zip(zip_code: str, period: str = "today") -> str:
     context, not the headline answer, unless the user explicitly asks for it.
 
     Args:
-        zip_code: US ZIP code (e.g., "90210", "60601").
+        zip_code: US ZIP code (e.g., "90210", "60601"). Optional — if omitted,
+            uses the configured default ZIP (Settings → System → Default ZIP code).
         period: Natural-language period. Supported examples: "overnight",
             "tonight", "today", "tomorrow", "next 24 hours", "next 3 days",
             "next week", or "over the next week".
@@ -277,7 +302,9 @@ def get_rain_chance_by_zip(zip_code: str, period: str = "today") -> str:
 
     Ack: Checking rain chances...
     """
-    zip_code = _clean_zip(zip_code)
+    zip_code = _resolve_zip(zip_code)
+    if not zip_code:
+        return _NO_ZIP_MSG
     error = _validate_zip(zip_code)
     if error:
         return error
@@ -319,7 +346,7 @@ def get_rain_chance_by_zip(zip_code: str, period: str = "today") -> str:
         return f"Error fetching rain forecast: {str(e)}"
 
 
-def get_hourly_forecast_by_zip(zip_code: str, hours: int = 12) -> str:
+def get_hourly_forecast_by_zip(zip_code: str = "", hours: int = 12) -> str:
     """Get an hour-by-hour weather forecast for a US ZIP code.
 
     Returns temperature, conditions, precipitation chance, and wind for each
@@ -328,7 +355,8 @@ def get_hourly_forecast_by_zip(zip_code: str, hours: int = 12) -> str:
     "what will it be like later today".
 
     Args:
-        zip_code: US ZIP code (e.g., "90210", "72956").
+        zip_code: US ZIP code (e.g., "90210", "72956"). Optional — if omitted,
+            uses the configured default ZIP (Settings → System → Default ZIP code).
         hours: How many hours ahead to report (1-48). Defaults to 12.
 
     Returns:
@@ -336,7 +364,9 @@ def get_hourly_forecast_by_zip(zip_code: str, hours: int = 12) -> str:
 
     Ack: Pulling the hourly forecast...
     """
-    zip_code = _clean_zip(zip_code)
+    zip_code = _resolve_zip(zip_code)
+    if not zip_code:
+        return _NO_ZIP_MSG
     error = _validate_zip(zip_code)
     if error:
         return error

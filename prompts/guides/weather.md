@@ -2,6 +2,8 @@
 
 Weather is separate from generic web lookup. Prefer these tools over internet search when the user asks about current conditions, forecast, rain chance, precipitation, temperature, wind, or similar weather conditions.
 
+**Default location:** all weather tools accept an optional `zip_code`. If the user doesn't name a location (e.g. just "what's the weather?"), call the tool with **no zip_code** — it falls back to the configured default ZIP (Settings → System → "Default ZIP code"). Only ask the user for a ZIP if the tool replies that none was provided and no default is configured. This is how voice "what's the forecast?" requests resolve a location.
+
 ## get_current_weather_by_zip
 
 Current conditions only: temperature, feels-like, humidity, wind, and condition text.
