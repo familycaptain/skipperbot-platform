@@ -1,0 +1,18 @@
+id: finance
+name: Finance Calculator
+version: 1.0.0
+description: >
+  Compound interest and loan amortization calculator. Enter the values you
+  know and leave exactly one blank — it solves for the missing value — then
+  shows payoff totals and a full amortization schedule. Runs entirely in the
+  browser; no data is stored.
+
+platform_min_version: "1.0.0"
+
+platform_deps: []
+emits: []
+subscribes: []
+
+config: []
+thinking: []
+job_types: []
