@@ -45,18 +45,20 @@ def ensure_onboarding(apps_info: list[dict]) -> str:
         name="Get started with Skipper",
         created_by=SKIPPER_USER,
         description=(
-            "Skipper's onboarding plan for a new household.\n\n"
+            "Skipper's plan to onboard the person who just installed it — the "
+            "PRIMARY USER (the first human user created, not the skipper bot). "
+            "This is about helping that one person get started; it is NOT about "
+            "onboarding every family member.\n\n"
             "PM guidance (how to work this goal): act like a warm, encouraging "
-            "friend showing someone a brand-new program for the first time — "
-            "proactive and helpful, but never naggy. Work these items at the "
+            "friend showing that person around a brand-new program — proactive "
+            "and helpful, but never naggy. Engage them directly in chat at the "
             "normal PM cadence, one gentle nudge at a time (don't dump everything "
-            "at once). For each app project below, reach out in chat to introduce "
-            "the app, ask if they've tried it yet, and offer a concrete tip or "
-            "two on getting value from it. Mark an item done once the family has "
-            "engaged with it — or, if they say they're not interested, drop that "
-            "item gracefully without pushing.\n\n"
-            "Success looks like: the family knows Skipper, has configured what "
-            "they need, and has tried each installed app at least once."
+            "at once). For each app project below, introduce the app to them, ask "
+            "if they've tried it yet, and offer a concrete tip or two. Mark an "
+            "item done once they've engaged with it — or, if they're not "
+            "interested, drop that item gracefully without pushing.\n\n"
+            "Success looks like: the primary user knows Skipper, has configured "
+            "what they need, and has tried each installed app at least once."
         ),
         owners=[SKIPPER_USER],
     )
@@ -72,12 +74,12 @@ def ensure_onboarding(apps_info: list[dict]) -> str:
 
     fam = _project(
         "Get to know the family",
-        "PM: warmly learn who's in the household — each person's name, role, and "
-        "what they'd like help with — so Skipper can personalize reminders, "
-        "chores, and notifications. Ask a little at a time in a friendly way; "
-        "never interrogate.",
+        "PM: in friendly chat with the primary user, learn about their household "
+        "— who's in the family and what each person might want help with — so "
+        "Skipper can personalize reminders, chores, and notifications. Ask the "
+        "user a little at a time; never interrogate.",
     )
-    _task(fam, "Have a friendly chat to learn each family member's name and what they'd like Skipper to help them with.")
+    _task(fam, "Ask the user about their household — family members' names and what they'd like Skipper to help each person with.")
 
     cfg = _project(
         "Configure Skipper",
