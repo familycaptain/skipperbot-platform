@@ -153,6 +153,52 @@ After install, the platform has these required apps built in:
 | Tools | MCP tool inspector |
 | Settings | Aggregated per-app settings UI |
 
+## How Skipper compares
+
+A few other self-hosted, chat-connected AI agents have appeared recently — most
+notably **OpenClaw** and **Hermes Agent**. All three are local-first and run on
+your own hardware, but they aim at different things. (Details on OpenClaw and
+Hermes below reflect their public documentation as of June 2026; check their
+sites for the latest.)
+
+| | **Skipper** | **OpenClaw** | **Hermes Agent** |
+|---|---|---|---|
+| What it is | A self-hosted **household assistant** — a "life OS" for a family | A self-hosted **gateway** bridging chat apps to AI coding agents | A self-hosted **autonomous personal agent** |
+| Primary focus | Running real life: ~35 domain apps (goals, reminders, recipes, chores, meals, medical, auto, weather, …) | Connecting 12+ messaging platforms to coding agents | A general, always-on, self-improving assistant |
+| Multiple people | **Yes** — family members with roles, per-user data, reminders, and focus | Single operator across their channels | Single user (with user modeling) |
+| Interfaces | Web desktop UI, chat, voice, Discord, mobile | WhatsApp, Telegram, Discord, Slack, Matrix, Signal, iMessage, … | CLI, Telegram, Discord, Slack, WhatsApp, Signal, Email, SMS, Home Assistant, … |
+| Extensibility | **App packages** — drop in an app folder (UI + tools + schema + migrations) | Channel/agent plugins and "skills" | 40+ built-in tools, 200+ LLM backends |
+| Storage | PostgreSQL + pgvector | Markdown files in the agent workspace | Local SQLite |
+| Self-improvement | **Issue-driven Evolve loop** — Claude Code builds new features/apps from issues you log | — (it's a gateway) | GEPA prompt evolution + learned "skill" documents |
+| License | BUSL 1.1 (converts to Apache 2.0 after 4 years) | Open source | MIT |
+
+### How memory works
+
+The three take noticeably different approaches to remembering things:
+
+- **Skipper** — memory lives in **PostgreSQL with pgvector**, fed two ways: an
+  explicit semantic memory (`remember` / `recall`), and an *automatic digest* —
+  every record you create in any app (a recipe, a service log, a reminder) is
+  summarized into memory. So you can later just ask ("when did we last rotate the
+  tires?", "what's a good dinner idea?") and Skipper recalls it. Structured data
+  also stays first-class in each app's own schema, so it's queryable, not just
+  recalled.
+- **OpenClaw** — memory is **plain Markdown files** in the agent's workspace; the
+  files are the source of truth and the model only "remembers" what gets written
+  to disk. It exposes `memory_search` (semantic recall over indexed snippets) and
+  `memory_get` (read a specific file); the semantic backend is opt-in.
+- **Hermes Agent** — a **three-layer memory** (skill memory, conversational
+  memory, and user modeling) in local SQLite with FTS5 full-text search, plus
+  self-authored "skill" documents it reloads when it hits a similar task again.
+
+In short: Skipper leans on a database + per-app structure so household *records*
+are first-class and queryable; OpenClaw keeps memory as human-readable files; and
+Hermes centers on a self-improving skill/full-text store. Skipper is also the only
+one of the three built around **multiple people and life-management apps** rather
+than a single power user or a coding workflow.
+
+*Sources: [OpenClaw docs](https://docs.openclaw.ai/) and [Hermes Agent](https://hermes-agent.org/) (as of June 2026).*
+
 ## Onboarding & first run
 
 **Your account.** On first boot the onboarding wizard (Step 5 above) creates
