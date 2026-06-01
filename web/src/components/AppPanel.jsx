@@ -225,35 +225,38 @@ export default function AppPanel({
         })}
       </div>
 
-      {/* ── Per-app Help modal ── */}
+      {/* ── Per-app Help panel — full-width + scrollable (manuals can be long) ── */}
       {helpFor && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-black/70 sm:p-4"
           onClick={() => setHelpFor(null)}
         >
           <div
-            className="bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col overflow-hidden"
+            className="bg-slate-900 border border-slate-700 shadow-xl w-full h-full sm:h-[94vh] sm:max-w-5xl sm:rounded-lg flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 shrink-0">
               <div className="flex items-center gap-2 text-slate-100">
                 <HelpCircle size={16} className="text-sky-400" />
-                <h3 className="text-sm font-semibold">{helpFor.name} — Help</h3>
+                <h3 className="text-sm font-semibold">{helpFor.name} — Help &amp; user guide</h3>
               </div>
-              <button onClick={() => setHelpFor(null)} className="text-slate-400 hover:text-white">
-                <X size={16} />
+              <button onClick={() => setHelpFor(null)} className="text-slate-400 hover:text-white" title="Close">
+                <X size={18} />
               </button>
             </div>
-            <div className="p-4 overflow-y-auto text-sm text-slate-300 markdown-body">
-              {helpLoading ? (
-                <div className="flex items-center gap-2 text-slate-400">
-                  <Loader2 size={14} className="animate-spin" /> Loading…
-                </div>
-              ) : helpText ? (
-                <ReactMarkdown>{helpText}</ReactMarkdown>
-              ) : (
-                <p className="text-slate-500">Help for {helpFor.name} is coming soon.</p>
-              )}
+            {/* Scrollable body; content held to a comfortable reading measure. */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="max-w-3xl mx-auto px-5 py-6 text-sm text-slate-300 markdown-body">
+                {helpLoading ? (
+                  <div className="flex items-center gap-2 text-slate-400">
+                    <Loader2 size={14} className="animate-spin" /> Loading…
+                  </div>
+                ) : helpText ? (
+                  <ReactMarkdown>{helpText}</ReactMarkdown>
+                ) : (
+                  <p className="text-slate-500">Help for {helpFor.name} is coming soon.</p>
+                )}
+              </div>
             </div>
           </div>
         </div>
