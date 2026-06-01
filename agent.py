@@ -310,16 +310,18 @@ async def onboarding_create_user(request: OnboardingCreateUserRequest):
         display = (request.display_name or "").strip() or name.capitalize()
         password = request.password or None
 
-        # The first user is the household admin AND a parent by default.
-        # 'parent' unlocks PM behaviour, family-rules, and child-account
-        # management that 'admin' alone doesn't grant. Operators in
-        # non-family installs can drop the parent role from the central
-        # Settings app later (or via the users table directly).
+        # The first user is the household admin AND a parent by default, and is
+        # the 'primary' user (the installer/owner). 'parent' unlocks PM
+        # behaviour, family-rules, and child-account management that 'admin'
+        # alone doesn't grant; 'primary' is the authoritative marker that
+        # get_primary_user() prefers (onboarding + proactive outreach target
+        # this person). Operators can adjust roles later in Settings → Members
+        # (note: 'primary' is shown there as a read-only badge, not a toggle).
         user = create_user(
             name=name,
             display_name=display,
             password=password,
-            role="admin,member,parent",
+            role="admin,member,parent,primary",
         )
         if not user:
             return {"ok": False, "error": f"Could not create user '{name}' (already exists?)."}
