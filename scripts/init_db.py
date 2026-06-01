@@ -336,46 +336,32 @@ def _run_app_migrations(*, check_only: bool, verbose: bool) -> None:
 # ---------------------------------------------------------------------------
 
 def _seed_onboarding(*, verbose: bool) -> None:
-    """Create the `skipper` bot user and the one-time onboarding goal.
+    """Create the `skipper` bot user.
 
-    Both steps are idempotent (skip when already present), so re-running
-    init_db on an existing database is a no-op. Failures here are logged but
-    do NOT fail DB init — onboarding is a convenience, not a prerequisite.
+    Idempotent (skips when already present), so re-running init_db on an
+    existing database is a no-op. Failures here are logged but do NOT fail DB
+    init.
+
+    NOTE: the onboarding GOAL is intentionally NOT seeded here. At init_db time
+    only the skipper bot exists, so get_primary_user() would be unknown and the
+    onboarding descriptions couldn't name the installer. Instead the goal is
+    seeded from the first-run wizard (agent.onboarding_create_user) right after
+    the primary admin account is created, when the name IS known.
     """
     try:
         from data_layer.users import get_user, create_user
-        from app_platform.manifest import parse_manifest
 
-        # 1. The system "skipper" user: single 'bot' role, password = the
-        #    encryption key (already in this process's env via ensure_secret_key).
-        #    Bots are hidden from the Settings → Members list (get_human_users).
+        # The system "skipper" user: single 'bot' role, password = the
+        # encryption key (already in this process's env via ensure_secret_key).
+        # Bots are hidden from the Settings → Members list (get_human_users).
         if not get_user(SKIPPER_USER):
             secret = os.getenv("SKIPPERBOT_SECRET_KEY", "").strip()
             create_user(SKIPPER_USER, "Skipper", password=secret or None, role="bot")
             ok("Created the 'skipper' bot user (role=bot, hidden from the family list).")
         elif verbose:
             info("'skipper' bot user already exists.")
-
-        # 2. Enumerate installed apps (id, name, description, has UI).
-        apps_info = []
-        for app_id in sorted(p.name for p in APPS_DIR.iterdir() if (p / "manifest.yaml").is_file()):
-            app_dir = APPS_DIR / app_id
-            try:
-                m = parse_manifest(app_dir)
-                apps_info.append({
-                    "id": app_id,
-                    "name": getattr(m, "name", "") or app_id,
-                    "description": getattr(m, "description", "") or "",
-                    "has_ui": (app_dir / "ui").is_dir(),
-                })
-            except Exception:
-                continue
-
-        # 3. Seed the onboarding goal owned by skipper (idempotent).
-        from apps.goals.onboarding import ensure_onboarding
-        ok(f"Onboarding: {ensure_onboarding(apps_info)}")
     except Exception as e:
-        warn(f"Onboarding seed skipped ({e}); DB init is unaffected.")
+        warn(f"Skipper bot seed skipped ({e}); DB init is unaffected.")
 
 
 SKIPPER_USER = "skipper"

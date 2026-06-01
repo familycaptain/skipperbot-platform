@@ -13,6 +13,7 @@ Idempotent: guarded by a `config` flag so re-running init_db never duplicates it
 """
 
 import logging
+from pathlib import Path
 
 from app_platform import config as platform_config
 from apps.goals import store
@@ -29,18 +30,52 @@ _SEEDED_KEY = "onboarding_seeded"
 _INFRA_APPS = {"settings", "system", "tools", "finder", "jobs", "notifications", "timeline"}
 
 
-def ensure_onboarding(apps_info: list[dict]) -> str:
+def _enumerate_apps() -> list[dict]:
+    """Enumerate installed apps (id, name, description, has UI) from manifests.
+
+    Lets ensure_onboarding() be called with no arguments — e.g. from the
+    first-run wizard once the primary user exists — without the caller having
+    to gather the app list itself.
+    """
+    from app_platform.manifest import parse_manifest
+
+    apps_dir = Path(__file__).resolve().parent.parent
+    apps_info: list[dict] = []
+    for app_id in sorted(p.name for p in apps_dir.iterdir() if (p / "manifest.yaml").is_file()):
+        app_dir = apps_dir / app_id
+        try:
+            m = parse_manifest(app_dir)
+            apps_info.append({
+                "id": app_id,
+                "name": getattr(m, "name", "") or app_id,
+                "description": getattr(m, "description", "") or "",
+                "has_ui": (app_dir / "ui").is_dir(),
+            })
+        except Exception:
+            continue
+    return apps_info
+
+
+def ensure_onboarding(apps_info: list[dict] | None = None) -> str:
     """Create the one-time onboarding goal if it hasn't been created yet.
+
+    Seeded from the first-run wizard (agent.onboarding_create_user) AFTER the
+    primary admin account is created, so get_primary_user() resolves and the
+    descriptions can name them. (It is deliberately NOT seeded during init_db,
+    where only the skipper bot exists and the name would be unknown.)
 
     Args:
         apps_info: installed apps as dicts with keys ``id``, ``name``,
-            ``description``, ``has_ui``.
+            ``description``, ``has_ui``. If omitted, enumerated from manifests.
 
     Returns:
         A short status string for the caller to log.
     """
     if (platform_config.get(_SEEDED_KEY, scope="app:goals") or {}).get("done"):
         return "already seeded — skipping"
+
+    if apps_info is None:
+        apps_info = _enumerate_apps()
 
     # Resolve the primary user NOW and name them directly in the descriptions.
     # The PM is a thinking domain that works off these task/goal descriptions —

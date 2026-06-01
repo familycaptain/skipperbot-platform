@@ -335,6 +335,15 @@ async def onboarding_create_user(request: OnboardingCreateUserRequest):
         except Exception as exc:
             logger.warning("ONBOARDING: could not persist timezone: %s", exc)
 
+        # Seed the onboarding goal NOW — after the primary admin exists — so its
+        # descriptions can name them (get_primary_user() resolves to this user).
+        # Best-effort: a failure here must never block account creation.
+        try:
+            from apps.goals.onboarding import ensure_onboarding
+            logger.info("ONBOARDING: %s", ensure_onboarding())
+        except Exception as exc:
+            logger.warning("ONBOARDING: could not seed onboarding goal: %s", exc, exc_info=True)
+
         return {
             "ok": True,
             "user": {
