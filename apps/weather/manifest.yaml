@@ -1,0 +1,24 @@
+id: weather
+name: Weather
+version: "1.0.0"
+description: >
+  Local weather dashboard — current conditions (temperature, feels-like,
+  humidity, wind, UV), a 12-hour hourly forecast, and a 10-day outlook for your
+  ZIP code (uses the configured home ZIP by default). Keyless data via
+  open-meteo. A ~100-mile radar/alerts map is a planned follow-up.
+
+platform_min_version: "1.0.0"
+
+# UI-only consumer of external weather APIs — stores nothing, no entities/migrations.
+platform_deps: []
+entity_types: []
+emits: []
+subscribes: []
+
+# Chat weather tools live at the platform level (the "weather" tool category);
+# this app is the UI. No app-level tool_category to avoid an empty app:weather one.
+tool_category: null
+
+config: []
+thinking: []
+job_types: []

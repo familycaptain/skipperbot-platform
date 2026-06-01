@@ -154,3 +154,4 @@ apps/*
 !apps/medical/
 !apps/recipes/
 !apps/scriptures/
+!apps/weather/
