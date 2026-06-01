@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Settings as Cog, Loader2, Save, Check, X, Eye, EyeOff, AlertCircle, LayoutGrid,
-  Users, UserPlus, Trash2, KeyRound, ShieldCheck, RotateCcw,
+  Users, UserPlus, Trash2, KeyRound, ShieldCheck, RotateCcw, Star,
 } from "lucide-react";
 import { getManageableApps } from "../../../web/src/apps/registry";
 
@@ -524,6 +524,21 @@ function MembersPanel({ userId }) {
                 </div>
                 {/* Role pickers */}
                 <div className="flex items-center gap-1.5">
+                  {/* Read-only badges for roles that aren't user-togglable here
+                      (e.g. `primary` — the single owner — or `kid`/`bot`). */}
+                  {(u.role || "")
+                    .split(",")
+                    .map((r) => r.trim())
+                    .filter((r) => r && !ROLE_OPTIONS.includes(r))
+                    .map((role) => (
+                      <span
+                        key={role}
+                        title={role === "primary" ? "Primary user (owner) — set in the database" : `${role} (not editable here)`}
+                        className="px-2 py-0.5 rounded text-[11px] border border-amber-700/60 bg-amber-900/20 text-amber-300"
+                      >
+                        {role === "primary" && <Star size={10} className="inline mr-0.5 -mt-0.5" />}{role}
+                      </span>
+                    ))}
                   {ROLE_OPTIONS.map((role) => {
                     const on = hasRole(u.role, role);
                     return (
