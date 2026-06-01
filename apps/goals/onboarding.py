@@ -17,6 +17,7 @@ import logging
 from app_platform import config as platform_config
 from apps.goals import store
 from apps.goals.lifecycle import sync_goal_domain
+from data_layer.users import get_primary_user
 
 logger = logging.getLogger(__name__)
 
@@ -41,23 +42,38 @@ def ensure_onboarding(apps_info: list[dict]) -> str:
     if (platform_config.get(_SEEDED_KEY, scope="app:goals") or {}).get("done"):
         return "already seeded — skipping"
 
+    # Resolve the primary user NOW and name them directly in the descriptions.
+    # The PM is a thinking domain that works off these task/goal descriptions —
+    # it does NOT see the chat system prompt — so naming the primary user here
+    # is how the PM knows who to have the onboarding chat with. Falls back to
+    # generic phrasing if no human user exists yet at seed time.
+    primary = (get_primary_user() or "").strip()
+    if primary:
+        who_clause = (
+            f"the PRIMARY USER — {primary} — the first human user created "
+            "(not the skipper bot)"
+        )
+        chat_with = primary
+    else:
+        who_clause = "the PRIMARY USER (the first human user created, not the skipper bot)"
+        chat_with = "the primary user"
+
     goal = store.create_goal(
         name="Get started with Skipper",
         created_by=SKIPPER_USER,
         description=(
-            "Skipper's plan to onboard the person who just installed it — the "
-            "PRIMARY USER (the first human user created, not the skipper bot). "
+            f"Skipper's plan to onboard the person who just installed it — {who_clause}. "
             "This is about helping that one person get started; it is NOT about "
             "onboarding every family member.\n\n"
             "PM guidance (how to work this goal): act like a warm, encouraging "
-            "friend showing that person around a brand-new program — proactive "
+            f"friend showing {chat_with} around a brand-new program — proactive "
             "and helpful, but never naggy. Engage them directly in chat at the "
             "normal PM cadence, one gentle nudge at a time (don't dump everything "
             "at once). For each app project below, introduce the app to them, ask "
             "if they've tried it yet, and offer a concrete tip or two. Mark an "
             "item done once they've engaged with it — or, if they're not "
             "interested, drop that item gracefully without pushing.\n\n"
-            "Success looks like: the primary user knows Skipper, has configured "
+            f"Success looks like: {chat_with} knows Skipper, has configured "
             "what they need, and has tried each installed app at least once."
         ),
         owners=[SKIPPER_USER],
@@ -74,20 +90,20 @@ def ensure_onboarding(apps_info: list[dict]) -> str:
 
     fam = _project(
         "Get to know the family",
-        "PM: in friendly chat with the primary user, learn about their household "
+        f"PM: in friendly chat with {chat_with}, learn about their household "
         "— who's in the family and what each person might want help with — so "
-        "Skipper can personalize reminders, chores, and notifications. Ask the "
-        "user a little at a time; never interrogate.",
+        "Skipper can personalize reminders, chores, and notifications. Ask "
+        f"{chat_with} a little at a time; never interrogate.",
     )
-    _task(fam, "Ask the user about their household — family members' names and what they'd like Skipper to help each person with.")
+    _task(fam, f"Ask {chat_with} about their household — family members' names and what they'd like Skipper to help each person with.")
 
     cfg = _project(
         "Configure Skipper",
-        "PM: gently guide the user through configuring Skipper. Point them to "
+        f"PM: gently guide {chat_with} through configuring Skipper. Point them to "
         "Settings → System (timezone, ZIP code), Integrations, and each app's own "
         "settings, and offer to help with anything they're unsure about.",
     )
-    _task(cfg, "Encourage the user to open Settings and set timezone, ZIP code, integrations, and per-app options — and offer to walk them through it.")
+    _task(cfg, f"Encourage {chat_with} to open Settings and set timezone, ZIP code, integrations, and per-app options — and offer to walk them through it.")
 
     n_apps = 0
     for app in sorted(apps_info, key=lambda a: (a.get("name") or a.get("id") or "").lower()):
@@ -97,7 +113,7 @@ def ensure_onboarding(apps_info: list[dict]) -> str:
         desc = (app.get("description") or "").strip()
         proj = _project(
             f"Try the {name} app",
-            f"PM: introduce the {name} app to the family — briefly say what it's "
+            f"PM: introduce the {name} app to {chat_with} — briefly say what it's "
             f"for, ask if they've tried it yet, and offer a tip on getting the "
             f"most from it. One friendly nudge, no pressure."
             + (f"\n\nWhat {name} does: {desc}" if desc else ""),
