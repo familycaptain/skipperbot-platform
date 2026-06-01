@@ -260,20 +260,6 @@ function ListView({ issues, filter, setFilter, showFixed, setShowFixed, onIssueC
     }
   }
 
-  // Validation failed — the "fix" didn't actually fix it. Send it back to open
-  // so it re-enters the work queue instead of being stuck on pending_validation.
-  async function rejectFix(issueId) {
-    try {
-      await apiMutate(`/api/apps/issues/${issueId}`, "PATCH", {
-        updated_by: userId,
-        status: "open",
-      });
-      onRefresh();
-    } catch (err) {
-      setError?.(err.message);
-    }
-  }
-
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
@@ -339,8 +325,8 @@ function ListView({ issues, filter, setFilter, showFixed, setShowFixed, onIssueC
                   </div>
                 </button>
                 <button
-                  onClick={() => rejectFix(iss.id)}
-                  title="It's not actually fixed — reopen it"
+                  onClick={() => onIssueClick(iss.id)}
+                  title="It's not actually fixed — open it to reopen and add details"
                   className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-xs font-medium transition-colors"
                 >
                   Not Fixed
@@ -702,22 +688,44 @@ function DetailView({ issue, userId, users = [], apiMutate, onBack, onRefresh, s
         )}
       </div>
 
-      {/* Nudge reporter button — only for pending_validation */}
-      {status === "pending_validation" && issue.reported_by && (
-        <div className="ml-8">
+      {/* Validation actions — only for pending_validation. Available to any
+          user (the status dropdown above is dev-only), so reporters can act
+          without being stuck. */}
+      {status === "pending_validation" && (
+        <div className="ml-8 flex flex-wrap items-center gap-2">
           <button
-            onClick={handleNudge}
-            disabled={nudging || nudged}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              nudged
-                ? "bg-emerald-900/30 text-emerald-400 border border-emerald-700/40"
-                : "bg-amber-900/30 text-amber-300 border border-amber-700/40 hover:bg-amber-800/40"
-            } disabled:opacity-60`}
+            onClick={() => { setStatus("fixed"); setDirty(true); }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-900/30 text-emerald-400 border border-emerald-700/40 hover:bg-emerald-800/40 transition-colors"
           >
-            <Bell size={12} />
-            {nudging ? "Sending..." : nudged ? `Pinged ${issue.reported_by}` : `Ping ${issue.reported_by} to validate`}
+            <Bug size={12} /> Confirm fixed
           </button>
+          <button
+            onClick={() => { setStatus("open"); setDirty(true); }}
+            title="It's not actually fixed — reopen so it gets worked again"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-amber-900/30 text-amber-300 border border-amber-700/40 hover:bg-amber-800/40 transition-colors"
+          >
+            <X size={12} /> Not fixed — reopen
+          </button>
+          {issue.reported_by && (
+            <button
+              onClick={handleNudge}
+              disabled={nudging || nudged}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                nudged
+                  ? "bg-emerald-900/30 text-emerald-400 border border-emerald-700/40"
+                  : "bg-slate-800 text-slate-300 border border-slate-600 hover:bg-slate-700"
+              } disabled:opacity-60`}
+            >
+              <Bell size={12} />
+              {nudging ? "Sending..." : nudged ? `Pinged ${issue.reported_by}` : `Ping ${issue.reported_by}`}
+            </button>
+          )}
         </div>
+      )}
+      {status === "pending_validation" && (
+        <p className="ml-8 text-[11px] text-slate-500">
+          Picked an action? Add any notes below, then <b>Save</b> to apply. "Not fixed" sends it back to open to be worked again.
+        </p>
       )}
 
       {/* Description */}
