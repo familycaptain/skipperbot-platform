@@ -450,7 +450,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     focus_nag_enabled boolean DEFAULT true NOT NULL,
     sort_order integer DEFAULT 99 NOT NULL,
-    CONSTRAINT users_role_check CHECK ((role ~ '^(admin|member|kid|bot|parent)(,(admin|member|kid|bot|parent))*$'::text))
+    CONSTRAINT users_role_check CHECK ((role ~ '^(admin|member|kid|bot|parent|primary)(,(admin|member|kid|bot|parent|primary))*$'::text))
 );
 
 

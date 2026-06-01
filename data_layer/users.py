@@ -97,14 +97,24 @@ def get_all_users() -> list[dict]:
 
 
 def get_primary_user() -> str:
-    """The primary user — the person who installed Skipper (the first human user).
+    """The primary user — the person who installed/owns this Skipper.
 
     Used so onboarding, the PM, and chat know WHO to engage (e.g. the onboarding
-    goal is about this person). Resolution order: the stored reference
-    (app_config scope=platform, key=primary_user) if set, otherwise the
-    earliest-created non-bot user — which is then cached so it's stable even if
-    the user list changes later. Returns "" if no human user exists yet.
+    goal is about this person). Resolution order:
+      1. The explicit ``primary`` role (authoritative — a human assigned it).
+      2. The stored reference (app_config scope=platform, key=primary_user).
+      3. The earliest-created non-bot user (the installer), which is then cached.
+    Returns "" if no human user exists yet.
     """
+    # 1. Explicit 'primary' role wins.
+    row = fetch_one(
+        "SELECT name FROM users WHERE position('primary' in lower(role)) > 0 "
+        "ORDER BY created_at, name LIMIT 1"
+    )
+    if row and row.get("name"):
+        return row["name"]
+
+    # 2. Stored reference.
     try:
         from app_platform import config as _pc
         stored = _pc.get("primary_user", scope="platform")
@@ -112,6 +122,8 @@ def get_primary_user() -> str:
             return str(stored)
     except Exception:
         pass
+
+    # 3. Fallback: earliest non-bot user; cache it so it's stable.
     row = fetch_one(
         "SELECT name FROM users WHERE position('bot' in lower(role)) = 0 "
         "ORDER BY created_at, name LIMIT 1"
