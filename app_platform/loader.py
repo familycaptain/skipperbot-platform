@@ -75,9 +75,12 @@ def require_apps(*app_ids: str) -> None:
 # to load, boot aborts with a clear message rather than silently degrading.
 REQUIRED_APPS = (
     "backups", "behaviors", "documents", "finder", "folders", "goals",
-    "jobs", "lists", "notifications", "prioritize", "reminders", "schedules",
-    "settings", "system", "timeline", "todo", "tools",
+    "issues", "jobs", "lists", "notifications", "prioritize", "reminders",
+    "schedules", "settings", "system", "timeline", "todo", "tools",
 )
+# Note: "issues" is required because the Evolve workflow depends on it
+# (see require_apps usage) and it ships in the public platform repo. Being in
+# REQUIRED_APPS makes it boot-mandatory AND blocks uninstall_app() below.
 
 
 def get_app_tools() -> dict[str, list[callable]]:
@@ -521,7 +524,18 @@ def uninstall_app(app_id: str, purge: bool = False):
 
     Args:
         purge: If True, drops the app's Postgres schema (RESTRICT).
+
+    Raises:
+        ValueError: if ``app_id`` is a required core app. Core apps (incl.
+            ``issues``, which Evolve depends on) are bundled and cannot be
+            uninstalled — the platform refuses to boot without them, so
+            removing one would only break the next startup.
     """
+    if app_id in REQUIRED_APPS:
+        raise ValueError(
+            f"'{app_id}' is a required core app and cannot be uninstalled."
+        )
+
     if purge:
         from app_platform.migrator import drop_app_schema
         drop_app_schema(app_id, purge=True)
