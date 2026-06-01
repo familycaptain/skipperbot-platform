@@ -13,6 +13,7 @@ from tools.zip_weather_tool import (
     get_current_weather_by_zip,
     get_rain_chance_by_zip,
     get_hourly_forecast_by_zip,
+    get_daily_forecast_by_zip,
 )
 from tools.app_help_tool import list_installed_apps, get_app_help
 from tools.glob_search_tool import glob_search
@@ -74,6 +75,7 @@ __all__ = [
     "get_current_weather_by_zip",
     "get_rain_chance_by_zip",
     "get_hourly_forecast_by_zip",
+    "get_daily_forecast_by_zip",
     "glob_search",
     "get_tool_creation_guide",
     "remember",

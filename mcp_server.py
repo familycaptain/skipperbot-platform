@@ -28,6 +28,7 @@ from tools.zip_weather_tool import (
     get_current_weather_by_zip,
     get_rain_chance_by_zip,
     get_hourly_forecast_by_zip,
+    get_daily_forecast_by_zip,
 )
 from tools.glob_search_tool import glob_search
 from tools.app_help_tool import list_installed_apps, get_app_help
@@ -90,6 +91,7 @@ mcp.tool()(mcp_server_status)
 mcp.tool()(get_current_weather_by_zip)
 mcp.tool()(get_rain_chance_by_zip)
 mcp.tool()(get_hourly_forecast_by_zip)
+mcp.tool()(get_daily_forecast_by_zip)
 mcp.tool()(list_installed_apps)
 mcp.tool()(get_app_help)
 mcp.tool()(glob_search)

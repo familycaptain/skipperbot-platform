@@ -632,13 +632,15 @@
     "description": "Current conditions, hourly forecast, and rain chance for a US ZIP code (keyless NOAA / open-meteo data — no API key required)",
     "tools": [
       "get_current_weather_by_zip",
+      "get_daily_forecast_by_zip",
       "get_hourly_forecast_by_zip",
       "get_rain_chance_by_zip"
     ],
     "ack": {
       "get_current_weather_by_zip": "Checking the current weather...",
       "get_hourly_forecast_by_zip": "Pulling the hourly forecast...",
-      "get_rain_chance_by_zip": "Checking the chance of rain..."
+      "get_rain_chance_by_zip": "Checking the chance of rain...",
+      "get_daily_forecast_by_zip": "Pulling the daily forecast..."
     },
     "keywords": [
       "weather",
@@ -675,7 +677,22 @@
       "tomorrow's forecast",
       "weather today",
       "weather tomorrow",
-      "uv index"
+      "uv index",
+      "daily forecast",
+      "10 day forecast",
+      "10-day forecast",
+      "ten day forecast",
+      "7 day forecast",
+      "7-day forecast",
+      "extended forecast",
+      "this week's weather",
+      "weather this week",
+      "highs and lows",
+      "high and low",
+      "forecast this week",
+      "next few days",
+      "multi day forecast",
+      "week forecast"
     ]
   }
 }

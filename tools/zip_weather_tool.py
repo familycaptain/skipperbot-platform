@@ -149,6 +149,27 @@ def _hourly_forecast_for_zip(zip_code: str) -> tuple[dict, dict]:
     return place, _fetch_json(url, timeout=15)
 
 
+def _daily_forecast_for_zip(zip_code: str, days: int) -> tuple[dict, dict]:
+    """Fetch a multi-day daily forecast (highs/lows, precip, conditions, wind)."""
+    place = _lookup_zip(zip_code)
+    params = {
+        "latitude": place["lat"],
+        "longitude": place["lon"],
+        "daily": (
+            "weathercode,temperature_2m_max,temperature_2m_min,"
+            "apparent_temperature_max,precipitation_sum,precipitation_probability_max,"
+            "wind_speed_10m_max,wind_direction_10m_dominant"
+        ),
+        "temperature_unit": "fahrenheit",
+        "precipitation_unit": "inch",
+        "wind_speed_unit": "mph",
+        "timezone": "auto",
+        "forecast_days": days,
+    }
+    url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
+    return place, _fetch_json(url, timeout=15)
+
+
 # Open-Meteo / WMO weather codes. Trimmed to the buckets that matter for
 # a short text summary; everything else falls back to "code N".
 _WMO_DESC = {
@@ -463,3 +484,82 @@ def get_hourly_forecast_by_zip(zip_code: str = "", hours: int = 12) -> str:
         return "\n".join(lines)
     except Exception as e:
         return f"Error fetching hourly forecast: {str(e)}"
+
+
+def get_daily_forecast_by_zip(zip_code: str = "", days: int = 7) -> str:
+    """Get a multi-day daily forecast (high/low per day) for a US ZIP code.
+
+    Returns one line per day with the high/low temperature, conditions, rain
+    chance, precipitation total, and peak wind. Use this for questions like
+    "daily forecast", "10-day forecast", "what's the weather this week",
+    "highs and lows", "extended forecast", or "forecast for the next few days".
+
+    Args:
+        zip_code: US ZIP code (e.g., "90210", "72956"). Optional — if omitted,
+            uses the configured default ZIP (Settings → System → Default ZIP code).
+        days: How many days ahead to report (1-16). Defaults to 7.
+
+    Returns:
+        Formatted day-by-day forecast pulled from Open-Meteo via ZIP lookup.
+
+    Ack: Pulling the daily forecast...
+    """
+    zip_code = _resolve_zip(zip_code)
+    if not zip_code:
+        return _NO_ZIP_MSG
+    error = _validate_zip(zip_code)
+    if error:
+        return error
+
+    try:
+        n = max(1, min(int(days or 7), 16))
+    except (TypeError, ValueError):
+        n = 7
+
+    try:
+        place, forecast = _daily_forecast_for_zip(zip_code, n)
+        daily = forecast.get("daily") or {}
+        times = daily.get("time") or []
+        if not times:
+            return f"No daily forecast was available for {zip_code}."
+
+        codes = daily.get("weathercode") or []
+        tmax = daily.get("temperature_2m_max") or []
+        tmin = daily.get("temperature_2m_min") or []
+        precip = daily.get("precipitation_sum") or []
+        probs = daily.get("precipitation_probability_max") or []
+        wind = daily.get("wind_speed_10m_max") or []
+        wind_dir = daily.get("wind_direction_10m_dominant") or []
+
+        lines = [
+            f"Daily forecast for {place['city']}, {place['region']} "
+            f"({zip_code}) — next {min(n, len(times))} day(s):"
+        ]
+        for i, ts in enumerate(times[:n]):
+            try:
+                day = date.fromisoformat(ts)
+            except ValueError:
+                continue
+            hi = f"{round(tmax[i])}°F" if i < len(tmax) and tmax[i] is not None else "?"
+            lo = f"{round(tmin[i])}°F" if i < len(tmin) and tmin[i] is not None else "?"
+            cond = _wmo_desc(codes[i]) if i < len(codes) else "unknown"
+            prob = probs[i] if i < len(probs) and probs[i] is not None else None
+            prob_str = f"{int(prob)}% rain" if prob is not None else ""
+            pr = precip[i] if i < len(precip) and precip[i] is not None else None
+            precip_str = f" ({pr:.2f} in)" if pr is not None and pr > 0 else ""
+            wind_str = ""
+            if i < len(wind) and wind[i] is not None:
+                compass = _wind_compass(wind_dir[i] if i < len(wind_dir) else None)
+                wind_str = f"wind {round(wind[i])} mph" + (f" {compass}" if compass else "")
+
+            parts = [f"H {hi} / L {lo}", cond]
+            if prob_str:
+                parts.append(prob_str + precip_str)
+            if wind_str:
+                parts.append(wind_str)
+            lines.append(f"  {_fmt_date(day)}: " + " | ".join(parts))
+
+        lines.append("  Source: Open-Meteo daily forecast via ZIP lookup.")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error fetching daily forecast: {str(e)}"
