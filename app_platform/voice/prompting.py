@@ -161,6 +161,7 @@ def build_app_voice_payload(
     personality = load_personality_prompt()
     guide = load_guide(category) or ""
     time_context = build_current_time_context()
+    location_context = build_voice_location_context()
     device_context = build_device_context(device_info)
     user_context = build_voice_user_context(user_id, device_info)
     behavior_rules = build_active_behavior_rules(user_id)
@@ -191,6 +192,7 @@ def build_app_voice_payload(
         "to return to the default voice mode.\n"
         "Do not use the open_app tool for voice app switching. Use switch_voice_app instead.\n"
         f"{time_context}"
+        f"{location_context}"
         f"{device_context}"
         f"{user_context}"
         f"{behavior_rules}"
@@ -227,6 +229,7 @@ def build_base_voice_instructions(
     default_categories = default_categories or get_default_categories(device_info)
     personality = load_personality_prompt()
     time_context = build_current_time_context()
+    location_context = build_voice_location_context()
     device_context = build_device_context(device_info)
     user_context = build_voice_user_context(user_id, device_info)
     behavior_rules = build_active_behavior_rules(user_id)
@@ -285,6 +288,7 @@ def build_base_voice_instructions(
         "---\n"
         f"{mode}"
         f"{time_context}"
+        f"{location_context}"
         f"{device_context}"
         f"{user_context}"
         f"{behavior_rules}"
@@ -314,6 +318,29 @@ def build_current_time_context() -> str:
         f"({now.strftime('%Y-%m-%dT%H:%M:%S%z')})\n"
         "- Use this when resolving relative times like 'in 1 hour', 'tomorrow', "
         "or 'tonight'. Do not guess the current time.\n"
+    )
+
+
+def build_voice_location_context() -> str:
+    """Inject the user's home ZIP so voice can answer weather/location queries.
+
+    Mirrors the web chat's dynamic context (config.get_dynamic_system_context):
+    read live from Settings -> System -> Default ZIP code. The stored value can
+    come back as an int (e.g. 72956) — coerce to str before stripping, since
+    int.strip() raises. Best-effort; never break prompt assembly over it.
+    """
+    try:
+        from app_platform import settings as _settings
+
+        zip_code = str(_settings.get("default_zip", scope="platform", default="") or "").strip()
+    except Exception:
+        return ""
+    if not zip_code:
+        return ""
+    return (
+        "\n## Home Location\n"
+        f"- The user's home ZIP code is {zip_code}. Use it for weather and other "
+        "location lookups when they don't specify one — never invent a location.\n"
     )
 
 
