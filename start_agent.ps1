@@ -43,6 +43,15 @@ function Invoke-WebBuild {
     Log "building web bundle (npm run build) ..."
     Push-Location $WebDir
     try {
+        # Install packaged-app frontend deps (mirrors deploy/entrypoint.sh) so
+        # apps that declare extra npm deps in apps/<id>/ui/package.json build
+        # natively too — not just under Docker.
+        if (Test-Path (Join-Path $WebDir "packaged-app-deps.mjs")) {
+            & node packaged-app-deps.mjs --install
+            if ($LASTEXITCODE -ne 0) {
+                Log "WARNING: packaged-app dep install failed; build may fail for apps needing extra deps."
+            }
+        }
         & npm run build
         if ($LASTEXITCODE -eq 0) {
             Log "web build OK"

@@ -66,6 +66,17 @@ else
             if [ -f package-lock.json ]; then npm ci; else npm install; fi && echo "$SIG" > "$STAMP"
         fi
     )
+    # Install packaged-app frontend deps (mirrors deploy/entrypoint.sh). Apps
+    # declare extra npm deps in apps/<id>/ui/package.json; this installs the
+    # union into web/node_modules so the vite build below can resolve them
+    # (e.g. an app that needs three.js). Runs AFTER the base npm ci above (which
+    # would prune these --no-save installs) and BEFORE the build. Without it,
+    # native (non-Docker) installs couldn't build any app needing extra deps.
+    if [ -f "$WEB_DIR/packaged-app-deps.mjs" ]; then
+        if ! (cd "$WEB_DIR" && node packaged-app-deps.mjs --install); then
+            log "WARNING: packaged-app dep install failed; build may fail for apps needing extra deps." >&2
+        fi
+    fi
     log "building web bundle (npm run build) ..."
     if (cd "$WEB_DIR" && npm run build); then
         log "web build OK"
