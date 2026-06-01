@@ -45,10 +45,18 @@ def ensure_onboarding(apps_info: list[dict]) -> str:
         name="Get started with Skipper",
         created_by=SKIPPER_USER,
         description=(
-            "Skipper's onboarding plan: get to know the family and help everyone "
-            "start using each installed app. Skipper works these at its normal PM "
-            "cadence and closes each one as you do it — or just say you're not "
-            "interested and Skipper will drop that item."
+            "Skipper's onboarding plan for a new household.\n\n"
+            "PM guidance (how to work this goal): act like a warm, encouraging "
+            "friend showing someone a brand-new program for the first time — "
+            "proactive and helpful, but never naggy. Work these items at the "
+            "normal PM cadence, one gentle nudge at a time (don't dump everything "
+            "at once). For each app project below, reach out in chat to introduce "
+            "the app, ask if they've tried it yet, and offer a concrete tip or "
+            "two on getting value from it. Mark an item done once the family has "
+            "engaged with it — or, if they say they're not interested, drop that "
+            "item gracefully without pushing.\n\n"
+            "Success looks like: the family knows Skipper, has configured what "
+            "they need, and has tried each installed app at least once."
         ),
         owners=[SKIPPER_USER],
     )
@@ -64,15 +72,20 @@ def ensure_onboarding(apps_info: list[dict]) -> str:
 
     fam = _project(
         "Get to know the family",
-        "Learn who's in the household so Skipper can personalise reminders, chores, and notifications.",
+        "PM: warmly learn who's in the household — each person's name, role, and "
+        "what they'd like help with — so Skipper can personalize reminders, "
+        "chores, and notifications. Ask a little at a time in a friendly way; "
+        "never interrogate.",
     )
-    _task(fam, "Introduce your family members to Skipper")
+    _task(fam, "Have a friendly chat to learn each family member's name and what they'd like Skipper to help them with.")
 
     cfg = _project(
         "Configure Skipper",
-        "Set up the platform-level settings and any integrations you want to use.",
+        "PM: gently guide the user through configuring Skipper. Point them to "
+        "Settings → System (timezone, ZIP code), Integrations, and each app's own "
+        "settings, and offer to help with anything they're unsure about.",
     )
-    _task(cfg, "Review Settings → System, Integrations, and each app's settings")
+    _task(cfg, "Encourage the user to open Settings and set timezone, ZIP code, integrations, and per-app options — and offer to walk them through it.")
 
     n_apps = 0
     for app in sorted(apps_info, key=lambda a: (a.get("name") or a.get("id") or "").lower()):
@@ -80,8 +93,14 @@ def ensure_onboarding(apps_info: list[dict]) -> str:
             continue
         name = app.get("name") or app["id"]
         desc = (app.get("description") or "").strip()
-        proj = _project(f"Try the {name} app", desc or f"Start using the {name} app.")
-        _task(proj, f"Explore {name} — ask Skipper what it does and how to use it best")
+        proj = _project(
+            f"Try the {name} app",
+            f"PM: introduce the {name} app to the family — briefly say what it's "
+            f"for, ask if they've tried it yet, and offer a tip on getting the "
+            f"most from it. One friendly nudge, no pressure."
+            + (f"\n\nWhat {name} does: {desc}" if desc else ""),
+        )
+        _task(proj, f"Reach out about the {name} app — e.g. \"Have you tried {name} yet? Here's what it can do…\" — and offer a couple of tips.")
         if proj:
             n_apps += 1
 
