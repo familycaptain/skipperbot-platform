@@ -30,6 +30,7 @@ from tools.zip_weather_tool import (
     get_hourly_forecast_by_zip,
 )
 from tools.glob_search_tool import glob_search
+from tools.app_help_tool import list_installed_apps, get_app_help
 from tools.tool_guide_tool import get_tool_creation_guide
 from tools.memory_tool import remember, recall, forget
 from tools.knowledge_tool import learn_from_url, query_knowledge, list_knowledge_sources, remove_knowledge_source, list_knowledge_crawls, get_knowledge_crawl
@@ -89,6 +90,8 @@ mcp.tool()(mcp_server_status)
 mcp.tool()(get_current_weather_by_zip)
 mcp.tool()(get_rain_chance_by_zip)
 mcp.tool()(get_hourly_forecast_by_zip)
+mcp.tool()(list_installed_apps)
+mcp.tool()(get_app_help)
 mcp.tool()(glob_search)
 mcp.tool()(get_tool_creation_guide)
 mcp.tool()(remember)

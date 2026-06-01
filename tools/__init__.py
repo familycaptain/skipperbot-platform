@@ -14,6 +14,7 @@ from tools.zip_weather_tool import (
     get_rain_chance_by_zip,
     get_hourly_forecast_by_zip,
 )
+from tools.app_help_tool import list_installed_apps, get_app_help
 from tools.glob_search_tool import glob_search
 from tools.tool_guide_tool import get_tool_creation_guide
 from tools.memory_tool import remember, recall, forget
