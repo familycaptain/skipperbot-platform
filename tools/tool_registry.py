@@ -111,22 +111,12 @@ def _extract_ack(tool_name: str, function_name: str) -> str:
 
 
 def _update_tool_routes_ack(category: str, function_name: str, ack_template: str) -> str:
-    """Add an ack template entry to tool_routes.json for the given category and tool."""
+    """Add an ack template for a tool. Persisted via tool_router into the
+    gitignored local overlay (tool_routes.local.json) — NOT the tracked
+    tool_routes.json — so runtime writes can never conflict with a deploy."""
     try:
-        with open(TOOL_ROUTES_PATH, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        if category not in data:
-            return f"Warning: category '{category}' not in tool_routes.json — ack not added."
-        cat = data[category]
-        if "ack" not in cat or not isinstance(cat.get("ack"), dict):
-            cat["ack"] = {}
-        cat["ack"][function_name] = ack_template
-        with open(TOOL_ROUTES_PATH, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-            f.write('\n')
-            f.flush()
-            os.fsync(f.fileno())
-        return f"Added ack for {function_name}: \"{ack_template}\""
+        from tool_router import set_local_ack
+        return set_local_ack(category, function_name, ack_template)
     except Exception as e:
         return f"Warning: Failed to add ack — {str(e)}"
 

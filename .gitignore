@@ -4,6 +4,10 @@
 
 # ----- runtime sentinels -----
 .deploy_pending          # written by /api/admin/deploy; consumed by deploy_watcher.sh
+# Runtime tool-route overlay (create_tool/register_tool_route). Kept OUT of git
+# so deploys never conflict on it; tracked tool_routes.json holds only the
+# canonical built-in categories. See tool_router.py.
+tool_routes.local.json
 
 # ----- secrets and credentials (NEVER commit) -----
 .env

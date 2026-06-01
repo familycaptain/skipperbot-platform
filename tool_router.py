@@ -12,39 +12,101 @@ import os
 import re
 
 # ---------------------------------------------------------------------------
-# Load categories from tool_routes.json (single source of truth)
+# Tool categories come from THREE layers, merged into TOOL_CATEGORIES:
+#   1. base  — tool_routes.json (git-tracked, READ-ONLY at runtime): the
+#              canonical built-in categories. Deploys (git pull) update this.
+#   2. local — tool_routes.local.json (GITIGNORED): routes registered at
+#              runtime (create_tool / register_tool_route / acks). Written by
+#              _save_routes; never tracked, so it can't collide with git pull.
+#   3. app   — in-memory `app:<id>` categories from loaded app packages
+#              (merge_app_tool_routes); rebuilt every boot, never persisted.
+#
+# Keeping runtime writes OUT of the tracked file is the durable fix for deploys
+# corrupting routing: tool_routes.json used to be tracked AND written at
+# runtime, so a deploy's merge left conflict markers → unparseable JSON →
+# every category silently dropped.
 # ---------------------------------------------------------------------------
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROUTES_FILE = os.path.join(BASE_DIR, "tool_routes.json")
+LOCAL_ROUTES_FILE = os.path.join(BASE_DIR, "tool_routes.local.json")
 GUIDES_DIR = os.path.join(BASE_DIR, "prompts", "guides")
 
 TOOL_CATEGORIES: dict = {}
+_BASE_ROUTES: dict = {}
+_LOCAL_ROUTES: dict = {}
+_APP_ROUTES: dict = {}
+
+
+def _read_json(path: str) -> dict:
+    if not os.path.exists(path):
+        return {}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def _blank_category() -> dict:
+    return {"description": "", "tools": [], "keywords": [], "ack": {}}
+
+
+def _merge_category(dst: dict, src: dict) -> None:
+    """Overlay src onto dst in place: union tools/keywords, merge acks."""
+    if src.get("description") and not dst.get("description"):
+        dst["description"] = src["description"]
+    for tool in src.get("tools", []) or []:
+        if tool not in dst["tools"]:
+            dst["tools"].append(tool)
+    for kw in src.get("keywords", []) or []:
+        if kw not in dst["keywords"]:
+            dst["keywords"].append(kw)
+    ack = src.get("ack")
+    if isinstance(ack, dict):
+        dst["ack"].update(ack)
+    for extra in ("_guide_path", "guide"):
+        if src.get(extra) and not dst.get(extra):
+            dst[extra] = src[extra]
+
+
+def _rebuild_categories():
+    """Rebuild TOOL_CATEGORIES = base ← local ← app, then refresh the lookup."""
+    global TOOL_CATEGORIES
+    merged: dict = {}
+    for layer in (_BASE_ROUTES, _LOCAL_ROUTES, _APP_ROUTES):
+        for name, info in layer.items():
+            if not isinstance(info, dict):
+                continue
+            _merge_category(merged.setdefault(name, _blank_category()), info)
+    TOOL_CATEGORIES = merged
+    _rebuild_lookup()
 
 
 def _load_routes():
-    """Load all tool categories from tool_routes.json."""
-    global TOOL_CATEGORIES
-    if not os.path.exists(ROUTES_FILE):
-        TOOL_CATEGORIES = {}
-        return
-    try:
-        with open(ROUTES_FILE, "r", encoding="utf-8") as f:
-            TOOL_CATEGORIES = json.load(f)
-    except (json.JSONDecodeError, OSError):
-        TOOL_CATEGORIES = {}
+    """(Re)load the base + local route layers from disk and rebuild categories.
+
+    App-package routes (_APP_ROUTES) are preserved across reloads so picking up
+    new MCP tools after a restart doesn't drop the loaded apps' categories.
+    """
+    global _BASE_ROUTES, _LOCAL_ROUTES
+    _BASE_ROUTES = _read_json(ROUTES_FILE)
+    _LOCAL_ROUTES = _read_json(LOCAL_ROUTES_FILE)
+    _rebuild_categories()
 
 
 def _save_routes():
-    """Persist all tool categories to tool_routes.json."""
-    with open(ROUTES_FILE, "w", encoding="utf-8") as f:
-        json.dump(TOOL_CATEGORIES, f, indent=2)
+    """Persist ONLY the runtime/local layer to the gitignored overlay file.
+
+    The tracked tool_routes.json is never written at runtime — that's what
+    keeps deploys (git pull) from ever conflicting on it.
+    """
+    with open(LOCAL_ROUTES_FILE, "w", encoding="utf-8") as f:
+        json.dump(_LOCAL_ROUTES, f, indent=2, ensure_ascii=False)
+        f.write("\n")
         f.flush()
         os.fsync(f.fileno())
-
-
-# Load on import
-_load_routes()
 
 
 def reload_routes():
@@ -54,7 +116,6 @@ def reload_routes():
     so the agent process picks up the changes.
     """
     _load_routes()
-    _rebuild_lookup()
 
 
 # Build a flat lookup: tool_name → category
@@ -67,7 +128,8 @@ def _rebuild_lookup():
 
 
 TOOL_TO_CATEGORY = {}
-_rebuild_lookup()
+# Load on import (now that _rebuild_lookup is defined): builds base ← local.
+_load_routes()
 
 # Meta-tool names (always injected as LOCAL_TOOLS, handled separately)
 META_TOOL_NAMES = {"list_all_tools", "request_tools", "open_app", "restart_agent"}
@@ -421,15 +483,20 @@ def register_tool_route(
     if category not in TOOL_CATEGORIES:
         return f"Error: Category '{category}' does not exist. Use create_category first."
 
-    cat = TOOL_CATEGORIES[category]
-    if tool_name not in cat["tools"]:
-        cat["tools"].append(tool_name)
+    # Write into the local (gitignored) overlay, not the tracked base file.
+    local = _LOCAL_ROUTES.setdefault(category, {"tools": [], "keywords": [], "ack": {}})
+    local.setdefault("tools", [])
+    local.setdefault("keywords", [])
+    if tool_name not in TOOL_CATEGORIES[category].get("tools", []) and tool_name not in local["tools"]:
+        local["tools"].append(tool_name)
     if keywords:
+        existing_kw = set(TOOL_CATEGORIES[category].get("keywords", []))
         for kw in keywords:
-            if kw.lower() not in cat["keywords"]:
-                cat["keywords"].append(kw.lower())
+            k = kw.lower()
+            if k not in existing_kw and k not in local["keywords"]:
+                local["keywords"].append(k)
 
-    _rebuild_lookup()
+    _rebuild_categories()
     _save_routes()
 
     return f"Tool '{tool_name}' registered in category '{category}'."
@@ -455,31 +522,59 @@ def create_category(
     if name in TOOL_CATEGORIES:
         return f"Category '{name}' already exists."
 
-    TOOL_CATEGORIES[name] = {
+    _LOCAL_ROUTES[name] = {
         "description": description,
         "tools": [],
         "keywords": [kw.lower() for kw in keywords],
+        "ack": {},
     }
-    _rebuild_lookup()
+    _rebuild_categories()
     _save_routes()
 
     return f"Category '{name}' created with keywords: {keywords}"
 
 
 def unregister_tool_route(tool_name: str) -> str:
-    """Remove a tool from all categories."""
-    removed_from = []
-    for cat_name, cat_info in TOOL_CATEGORIES.items():
-        if tool_name in cat_info["tools"]:
-            cat_info["tools"].remove(tool_name)
-            removed_from.append(cat_name)
+    """Remove a runtime-registered tool from the local overlay categories.
 
-    _rebuild_lookup()
+    Only routes in the local (gitignored) layer can be removed — built-in
+    routes from the tracked base file are permanent at runtime.
+    """
+    removed_from = []
+    for cat_name, cat_info in _LOCAL_ROUTES.items():
+        tools = cat_info.get("tools", [])
+        if tool_name in tools:
+            tools.remove(tool_name)
+            removed_from.append(cat_name)
+        ack = cat_info.get("ack")
+        if isinstance(ack, dict):
+            ack.pop(tool_name, None)
+
+    _rebuild_categories()
     _save_routes()
 
     if removed_from:
         return f"Tool '{tool_name}' removed from categories: {', '.join(removed_from)}"
+    if tool_name in TOOL_TO_CATEGORY:
+        return (f"Tool '{tool_name}' is a built-in route (category "
+                f"'{TOOL_TO_CATEGORY[tool_name]}') and can't be unregistered at runtime.")
     return f"Tool '{tool_name}' was not in any category."
+
+
+def set_local_ack(category: str, tool_name: str, ack_template: str) -> str:
+    """Persist an ack template for a tool into the local (gitignored) overlay.
+
+    Used by the tool registry when create_tool adds a tool, so acks are never
+    written into the tracked tool_routes.json.
+    """
+    category = category.lower().strip()
+    if category not in TOOL_CATEGORIES:
+        return f"Warning: category '{category}' not in tool routes — ack not added."
+    local = _LOCAL_ROUTES.setdefault(category, {"tools": [], "keywords": [], "ack": {}})
+    local.setdefault("ack", {})[tool_name] = ack_template
+    _rebuild_categories()
+    _save_routes()
+    return f"Added ack for {tool_name}: \"{ack_template}\""
 
 
 def list_categories_text() -> str:
@@ -502,16 +597,17 @@ def merge_app_tool_routes(app_routes: dict[str, dict]):
     and optionally 'guide_path' (absolute path to the app's guide.md).
 
     App routes are keyed by app_id and prefixed with 'app:' to avoid
-    collisions with legacy categories.
+    collisions with legacy categories. They live in the in-memory _APP_ROUTES
+    layer (never persisted), so reloading the on-disk layers can't drop them.
     """
     for app_id, route_info in app_routes.items():
         cat_name = f"app:{app_id}"
 
         entry = {
             "description": route_info.get("description", ""),
-            "tools": route_info.get("tools", []),
-            "ack": route_info.get("ack", {}),
-            "keywords": route_info.get("keywords", []),
+            "tools": list(route_info.get("tools", [])),
+            "ack": dict(route_info.get("ack", {})),
+            "keywords": list(route_info.get("keywords", [])),
         }
 
         # Store guide_path for the guide loader (not standard tool_routes field)
@@ -519,6 +615,6 @@ def merge_app_tool_routes(app_routes: dict[str, dict]):
         if guide_path:
             entry["_guide_path"] = guide_path
 
-        TOOL_CATEGORIES[cat_name] = entry
+        _APP_ROUTES[cat_name] = entry
 
-    _rebuild_lookup()
+    _rebuild_categories()
