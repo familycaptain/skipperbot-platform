@@ -27,6 +27,14 @@ Companion services run alongside the platform when you want them:
 
 ## Three paths from here
 
+> **Quickest start (the `skipper` command).** After cloning, run
+> `./scripts/skipper` from the repo. On first run it asks for your OpenAI key
+> and a Postgres password, writes `.env`, optionally installs the deploy
+> watcher, then starts Skipper (via Docker if present, otherwise natively).
+> Later, `skipper` just starts it; `skipper install` puts it on your `PATH` so
+> you can run `skipper` from anywhere (`skipper help` lists all commands). The
+> manual paths below are still fully supported if you'd rather do it by hand.
+
 ### Path 1: Docker Compose (recommended for first-timers)
 
 Docker Compose runs the platform as a small set of pre-built containers
