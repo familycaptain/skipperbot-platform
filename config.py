@@ -351,7 +351,9 @@ def get_dynamic_system_context(user_id: str = "") -> str:
     # restart. Best-effort — never break context assembly over it.
     try:
         from app_platform import settings as _settings
-        _zip = (_settings.get("default_zip", scope="platform", default="") or "").strip()
+        # str() — the stored value can come back as an int (e.g. 72956), and
+        # int.strip() would raise (and the old silent except hid it).
+        _zip = str(_settings.get("default_zip", scope="platform", default="") or "").strip()
         if _zip:
             parts.append(
                 f"The user's home ZIP code is {_zip}. Use it for weather and other "

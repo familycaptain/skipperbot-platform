@@ -13,8 +13,10 @@ from zoneinfo import ZoneInfo
 from app_platform.time import get_timezone
 
 
-def _clean_zip(zip_code: str) -> str:
-    return (zip_code or "").strip().split("-")[0]
+def _clean_zip(zip_code) -> str:
+    # str() — a configured default ZIP can come back as an int (e.g. 72956);
+    # calling .strip() on an int would raise.
+    return str(zip_code or "").strip().split("-")[0]
 
 
 def _validate_zip(zip_code: str) -> str | None:
