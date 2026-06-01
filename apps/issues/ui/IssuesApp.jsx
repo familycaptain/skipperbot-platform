@@ -761,25 +761,18 @@ function DetailView({ issue, userId, users = [], apiMutate, onBack, onRefresh, s
         </div>
       </div>
 
-      {/* Resolution (developer only for editing, read-only for others when filled) */}
-      {(isDev || resolution) && (
-        <div className="ml-8">
-          <label className="block text-xs text-slate-500 mb-1">Resolution</label>
-          {isDev ? (
-            <textarea
-              value={resolution}
-              onChange={(e) => { setResolution(e.target.value); setDirty(true); }}
-              placeholder="What was done to fix this..."
-              rows={3}
-              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-y"
-            />
-          ) : (
-            <div className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-300 whitespace-pre-wrap">
-              {resolution}
-            </div>
-          )}
-        </div>
-      )}
+      {/* Resolution — editable by any user (matches the original Skipper).
+          Explain what was done / why it's closed, then Save. */}
+      <div className="ml-8">
+        <label className="block text-xs text-slate-500 mb-1">Resolution</label>
+        <textarea
+          value={resolution}
+          onChange={(e) => { setResolution(e.target.value); setDirty(true); }}
+          placeholder="What was done to fix this (or why it's won't-fix / a duplicate)…"
+          rows={3}
+          className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-y"
+        />
+      </div>
 
       {/* Save */}
       {dirty && (
