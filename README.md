@@ -27,13 +27,19 @@ Companion services run alongside the platform when you want them:
 
 ## Three paths from here
 
-> **Quickest start (the `skipper` command).** After cloning, run
-> `./scripts/skipper` from the repo. On first run it asks for your OpenAI key
-> and a Postgres password, writes `.env`, optionally installs the deploy
-> watcher, then starts Skipper (via Docker if present, otherwise natively).
-> Later, `skipper` just starts it; `skipper install` puts it on your `PATH` so
-> you can run `skipper` from anywhere (`skipper help` lists all commands). The
-> manual paths below are still fully supported if you'd rather do it by hand.
+> **Quickest start (the `skipper` command).** After cloning, run the appropriate
+> launcher for your OS:
+> - **Linux/macOS:** `./scripts/skipper.sh` 
+> - **Windows:** `scripts\skipper.bat` or `powershell -ExecutionPolicy Bypass -File scripts\skipper.ps1`
+>
+> On first run it asks for your OpenAI key and a Postgres password, writes `.env`,
+> then starts Skipper (via Docker if present, otherwise natively). Later, just run
+> the command again to start Skipper. (Optional: on Linux/Mac, `./scripts/skipper.sh install`
+> adds `skipper` to your `PATH` so you can type just `skipper` from anywhere.
+> On first run, you'll also be offered the chance to set up an automatic updater —
+> a lightweight background service that lets you update Skipper from within the app
+> instead of manually stopping and restarting it.) The manual paths below are still
+> fully supported if you'd rather do it by hand.
 
 ### Path 1: Docker Compose (recommended for first-timers)
 
@@ -47,9 +53,10 @@ You'll need three things on your machine before you start: Docker, a
 clone of this repository, and an OpenAI API key.
 
 **Step 0 — Install Docker.** Use Docker Desktop on macOS / Windows,
-or Docker Engine on Linux (including Raspberry Pi). The full
-per-OS install commands are in
-[docs/01-base-platform-setup.md](docs/01-base-platform-setup.md)
+or Docker Engine on Linux (including Raspberry Pi). Docker runs
+Skipper in containers so you don't have to manage Postgres,
+Python, or Node versions yourself. The full per-OS install commands
+are in [docs/01-base-platform-setup.md](docs/01-base-platform-setup.md)
 under *Docker path*. Quick check:
 
 ```bash
@@ -71,6 +78,8 @@ git clone https://github.com/CHANGE_ME/skipperbot-platform.git
 cd skipperbot-platform
 cp .env.example .env
 ```
+
+(On Windows, replace the last line with `copy .env.example .env` or use `copy` in cmd.exe / PowerShell.)
 
 **Step 3 — Edit `.env`.** Open the file in any text editor. There
 are exactly **three lines you need to fill in** for the Docker path:
@@ -94,10 +103,20 @@ Two important things:
 Everything else in `.env` is optional and only enables specific
 integrations. You can come back to those later.
 
-**Step 4 — Start everything.**
+**Step 4 — Start Skipper using the launcher script.**
 
+**Linux/macOS:**
 ```bash
-docker compose up
+./scripts/skipper.sh
+```
+
+**Windows:**
+```cmd
+scripts\skipper.bat
+```
+Or in PowerShell:
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\skipper.ps1
 ```
 
 First boot takes a few minutes: Docker downloads the Postgres
@@ -109,13 +128,16 @@ You'll see log lines from `db`, `agent`, and the web build. When
 you see `HTTP server listening on http://localhost:8000`, the
 agent is ready.
 
-(Press Ctrl-C in this terminal to stop the stack. Use
-`docker compose up -d` to run it detached in the background once
-you're comfortable.)
+(Press Ctrl-C in this terminal to stop the stack. To run in the
+background, stop the script and run `docker compose up -d`.)
 
 **Step 5 — Open the onboarding wizard** at
 <http://localhost:8000>. It walks you through your name, timezone,
 and a final OpenAI-key check, then drops you into the desktop.
+
+(To stop Skipper later: Press Ctrl-C in the terminal where it's running,
+or use `docker compose down` if running detached. To start again, just
+run the launcher script again.)
 
 ### Path 2: Native install (for developers and hackers)
 
