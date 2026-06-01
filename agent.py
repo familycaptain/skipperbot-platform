@@ -1168,6 +1168,11 @@ async def list_users(include_bots: bool = False):
 import re as _re_users
 
 _ALLOWED_ROLES = ("admin", "member", "parent")
+# Valid roles that the Members roster does NOT offer as toggles (they aren't
+# user-grantable here): `primary` is the single owner, `kid`/`bot` are special.
+# They're preserved as-is when an admin edits a user's editable roles, so a
+# round-trip through the role pickers never silently drops them.
+_PRESERVED_ROLES = ("primary", "kid", "bot")
 _USERNAME_RE = _re_users.compile(r"^[a-z][a-z0-9_]{1,30}$")
 
 
@@ -1182,12 +1187,16 @@ def _admin_count() -> int:
 
 def _normalize_roles(role_str: str) -> str | None:
     """Validate + normalize a comma-separated role string. Returns None if it
-    contains anything outside the allowed set (e.g. an attempt to grant 'bot')."""
+    contains anything outside the known set (editable + preserved). Roles in
+    _PRESERVED_ROLES (e.g. `primary`) aren't offered as roster toggles but are
+    kept intact when present, so editing a user's roles doesn't drop them."""
     roles = [r for r in parse_roles(role_str)] or ["member"]
-    if any(r not in _ALLOWED_ROLES for r in roles):
+    known = set(_ALLOWED_ROLES) | set(_PRESERVED_ROLES)
+    if any(r not in known for r in roles):
         return None
-    # Keep a stable, de-duped order.
-    return ",".join([r for r in ("admin", "parent", "member") if r in roles])
+    # Keep a stable, de-duped order (editable first, then preserved).
+    order = ("admin", "parent", "member", "primary", "kid", "bot")
+    return ",".join([r for r in order if r in roles])
 
 
 class CreateUserRequest(BaseModel):
