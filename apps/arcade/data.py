@@ -5,6 +5,7 @@ Schema-scoped CRUD for ``app_arcade.high_scores``.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from datetime import datetime
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 SCHEMA = "app_arcade"
 
-VALID_GAMES = {"wardenfall", "aeldrift", "spinhazard"}
+VALID_GAMES = {"wardenfall", "aeldrift", "spinhazard", "solitaire"}
 
 _SCORE_HINT = (
     "Focus on: which game was played, who played it, and the score. "
@@ -98,3 +99,51 @@ def _row(r: dict) -> dict:
         "score": r.get("score", 0),
         "created_at": ca.isoformat() if hasattr(ca, "isoformat") else (ca or ""),
     }
+
+
+# ---------------------------------------------------------------------------
+# Solitaire (Klondike) — one saved in-progress game per user (resume later).
+# ---------------------------------------------------------------------------
+
+def get_solitaire_save(player: str) -> dict | None:
+    """Return the user's saved Solitaire game state, or None if there isn't one."""
+    player = (player or "").strip().lower()
+    if not player:
+        return None
+    rows = fetch_all_in_schema(
+        SCHEMA, "SELECT state FROM solitaire_saves WHERE player = %s", (player,)
+    )
+    if not rows:
+        return None
+    state = rows[0].get("state")
+    if isinstance(state, str):
+        try:
+            state = json.loads(state)
+        except (ValueError, TypeError):
+            return None
+    return state if isinstance(state, dict) else None
+
+
+def set_solitaire_save(player: str, state: dict) -> None:
+    """Upsert the user's in-progress Solitaire game state."""
+    player = (player or "").strip().lower()
+    if not player or not isinstance(state, dict):
+        return
+    payload = json.dumps(state)
+    with scoped_conn(SCHEMA) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "INSERT INTO solitaire_saves (player, state, updated_at) "
+                "VALUES (%s, %s::jsonb, now()) "
+                "ON CONFLICT (player) DO UPDATE SET state = EXCLUDED.state, updated_at = now()",
+                (player, payload),
+            )
+        conn.commit()
+
+
+def clear_solitaire_save(player: str) -> None:
+    """Remove the user's saved Solitaire game (on win or new game)."""
+    player = (player or "").strip().lower()
+    if not player:
+        return
+    execute_in_schema(SCHEMA, "DELETE FROM solitaire_saves WHERE player = %s", (player,))

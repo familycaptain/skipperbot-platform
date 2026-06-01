@@ -1,11 +1,11 @@
 id: arcade
 name: Arcade
-version: 1.0.0
+version: 1.1.0
 description: >
-  A small arcade of three original, self-contained games — Wardenfall
-  (top-down tower defense), Aeldrift (3D world exploration), and
-  Spinhazard (old-school vector shooter) — sharing one high-score board.
-  Demonstrates the platform's canvas/WebGL game capability.
+  A small arcade of self-contained games — Wardenfall (top-down tower
+  defense), Aeldrift (3D world exploration), Spinhazard (old-school vector
+  shooter), and Solitaire (Klondike, with per-user save/resume) — sharing one
+  high-score board. Demonstrates the platform's canvas/WebGL game capability.
 
 platform_min_version: "1.0.0"
 
@@ -37,6 +37,10 @@ tool_category:
     - wardenfall
     - aeldrift
     - spinhazard
+    - solitaire
+    - cards
+    - klondike
+    - patience
 
 config: []
 thinking: []

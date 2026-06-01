@@ -9,7 +9,7 @@
 //   - onExit()                  — return to the menu
 //
 import { useState, useEffect, useCallback, Suspense, lazy } from "react";
-import { Gamepad2, Castle, Globe2, Rocket, Trophy, Loader2, ArrowLeft, Volume2, VolumeX } from "lucide-react";
+import { Gamepad2, Castle, Globe2, Rocket, Spade, Trophy, Loader2, ArrowLeft, Volume2, VolumeX } from "lucide-react";
 import { isMuted, toggleMuted, onMuteChange } from "./sfx";
 
 // Shared mute toggle — reflects + flips the arcade-wide (localStorage-backed)
@@ -33,6 +33,7 @@ const API = "/api/apps/arcade";
 const Wardenfall = lazy(() => import("./games/Wardenfall"));
 const Aeldrift = lazy(() => import("./games/Aeldrift"));
 const Spinhazard = lazy(() => import("./games/Spinhazard"));
+const Solitaire = lazy(() => import("./games/Solitaire"));
 
 const GAMES = [
   {
@@ -64,6 +65,16 @@ const GAMES = [
     accent: "from-emerald-500/20 to-teal-500/10 border-emerald-700/40",
     iconColor: "text-emerald-400",
     Comp: Spinhazard,
+  },
+  {
+    id: "solitaire",
+    name: "Solitaire",
+    tagline: "Klondike patience",
+    blurb: "The classic. Draw three, build the foundations ace-to-king, and clear the board. Your game saves automatically — leave and come back any time.",
+    icon: Spade,
+    accent: "from-slate-500/20 to-emerald-500/10 border-slate-600/40",
+    iconColor: "text-slate-300",
+    Comp: Solitaire,
   },
 ];
 
@@ -150,7 +161,7 @@ export default function ArcadeApp({ userId }) {
           <h1 className="text-xl font-bold text-slate-100">Arcade</h1>
           <MuteButton className="ml-auto" />
         </div>
-        <p className="text-sm text-slate-500 mb-6">Three original games, one leaderboard. Pick your poison.</p>
+        <p className="text-sm text-slate-500 mb-6">Four games, one leaderboard. Pick your poison.</p>
 
         <div className="grid md:grid-cols-3 gap-3 mb-6">
           {GAMES.map((g) => {
