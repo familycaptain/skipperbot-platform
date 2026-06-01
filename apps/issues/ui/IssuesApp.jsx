@@ -668,29 +668,23 @@ function DetailView({ issue, userId, users = [], apiMutate, onBack, onRefresh, s
         </div>
       </div>
 
-      {/* Status */}
+      {/* Status — editable by any user (matches the original Skipper). Change
+          it, then Save. */}
       <div className="ml-8">
         <label className="block text-xs text-slate-500 mb-1">Status</label>
-        {isDev ? (
-          <select
-            value={status}
-            onChange={(e) => { setStatus(e.target.value); setDirty(true); }}
-            className="text-xs bg-slate-800 border border-slate-600 rounded px-2 py-1 text-slate-300"
-          >
-            {ALL_STATUSES.map((s) => (
-              <option key={s} value={s}>{s.replace("_", " ")}</option>
-            ))}
-          </select>
-        ) : (
-          <span className={`text-xs px-2 py-0.5 rounded-full text-white ${STATUS_COLORS[status] || "bg-slate-600"}`}>
-            {status.replace("_", " ")}
-          </span>
-        )}
+        <select
+          value={status}
+          onChange={(e) => { setStatus(e.target.value); setDirty(true); }}
+          className="text-xs bg-slate-800 border border-slate-600 rounded px-2 py-1 text-slate-300"
+        >
+          {ALL_STATUSES.map((s) => (
+            <option key={s} value={s}>{s.replace("_", " ")}</option>
+          ))}
+        </select>
       </div>
 
-      {/* Validation actions — only for pending_validation. Available to any
-          user (the status dropdown above is dev-only), so reporters can act
-          without being stuck. */}
+      {/* Validation shortcuts — only for pending_validation, so reporters can
+          act in one click instead of using the dropdown. */}
       {status === "pending_validation" && (
         <div className="ml-8 flex flex-wrap items-center gap-2">
           <button
