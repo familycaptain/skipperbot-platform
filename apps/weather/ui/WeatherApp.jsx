@@ -6,10 +6,11 @@
 // (A ~100-mile radar/alerts map is a planned follow-up — see the issue.)
 // =============================================================================
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, lazy, Suspense } from "react";
 import { CloudSun, Loader2, Search, Wind, Droplets, Sun, RefreshCw } from "lucide-react";
 
 const API = "/api/apps/weather";
+const WeatherMap = lazy(() => import("./WeatherMap"));
 
 // WMO weather code -> emoji.
 const ICON = (code) => {
@@ -154,8 +155,14 @@ export default function WeatherApp() {
               ))}
             </div>
 
+            {/* radar + severe-weather map (~100 mi) */}
+            <h2 className="text-sm font-semibold text-slate-300 mt-5 mb-2">Radar &amp; severe-weather (~100 mi)</h2>
+            <Suspense fallback={<div className="text-slate-500 text-sm py-6 text-center">Loading map…</div>}>
+              <WeatherMap place={data.place} />
+            </Suspense>
+
             <p className="text-[11px] text-slate-600 mt-4">
-              Keyless data via open-meteo. A ~100-mile radar / NWS-alerts map view is a planned follow-up.
+              Keyless data via open-meteo; base map © OpenStreetMap, radar © IEM NEXRAD, severe-weather alerts © NWS.
             </p>
           </>
         )}

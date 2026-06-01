@@ -6,7 +6,7 @@ import asyncio
 
 from fastapi import APIRouter, Query
 
-from .data import weather_summary
+from .data import weather_summary, nws_alerts
 
 router = APIRouter()
 
@@ -19,3 +19,9 @@ async def api_summary(
 ):
     """Current conditions + hourly + daily for the dashboard (one round-trip)."""
     return await asyncio.to_thread(weather_summary, zip, hours, days)
+
+
+@router.get("/alerts")
+async def api_alerts(zip: str = Query("", description="US ZIP code; blank uses the configured default")):
+    """Active NWS severe-weather alerts near the ZIP, as GeoJSON (for the map)."""
+    return await asyncio.to_thread(nws_alerts, zip)

@@ -165,8 +165,50 @@ def weather_summary(zip_code: str = "", hours: int = 12, days: int = 10) -> dict
         })
 
     return {
-        "place": {"city": place["city"], "region": place["region"], "zip": zc},
+        "place": {"city": place["city"], "region": place["region"], "zip": zc,
+                  "lat": place["lat"], "lon": place["lon"]},
         "current": current,
         "hourly": hourly,
         "daily": daily,
     }
+
+
+def nws_alerts(zip_code: str = "") -> dict:
+    """Active NWS severe-weather alerts near the ZIP, as GeoJSON.
+
+    Fetched server-side because the NWS API expects a descriptive User-Agent
+    (browsers can't set one). Returns a GeoJSON FeatureCollection trimmed to
+    what the map needs; empty features on any error (alerts are best-effort).
+    """
+    zc = _clean_zip(zip_code) or _default_zip()
+    empty = {"type": "FeatureCollection", "features": []}
+    if not zc or not zc.isdigit() or len(zc) != 5:
+        return empty
+    try:
+        place = _lookup_zip(zc)
+        url = f"https://api.weather.gov/alerts/active?point={place['lat']},{place['lon']}"
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "SkipperBot Weather app (self-hosted)",
+            "Accept": "application/geo+json",
+        })
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode())
+    except Exception:
+        return empty
+
+    feats = []
+    for f in data.get("features", []) or []:
+        if not f.get("geometry"):
+            continue  # zone-only alerts have no polygon to draw
+        p = f.get("properties", {}) or {}
+        feats.append({
+            "type": "Feature",
+            "geometry": f["geometry"],
+            "properties": {
+                "event": p.get("event"),
+                "headline": p.get("headline"),
+                "severity": p.get("severity"),
+                "area": p.get("areaDesc"),
+            },
+        })
+    return {"type": "FeatureCollection", "features": feats}

@@ -1,0 +1,8 @@
+{
+  "name": "@skipper-app/weather-ui",
+  "private": true,
+  "description": "Frontend deps for the Weather app's radar/alerts map. Auto-installed by web/packaged-app-deps.mjs; the platform never hardcodes app deps.",
+  "dependencies": {
+    "leaflet": "^1.9.4"
+  }
+}
