@@ -1,13 +1,40 @@
 # Images
 
-A gallery for images Skipper stores — generated images, uploads, and pictures
-attached to other items (recipes, documents, timeline posts).
+A gallery for the pictures Skipper stores — uploads, generated images, and charts
+— shared across all the apps that use them.
 
-## What you can do
-- **Browse** images in a gallery and open them full-size.
-- **Reference images** from other apps (they share one image store).
-- **Ask Skipper** — "show me the photos from the recipe I added", or "generate an
-  image of …" (when image generation is enabled).
+## Overview
+
+Images is the household photo/figure gallery. There's one shared image store, so
+a picture attached to a recipe, a document, a timeline post, or a vehicle shows
+up here too. Use it to browse everything visually and open any image full size.
+
+## Screens
+
+- **Gallery.** A grid of saved images — thumbnails you can scroll and open.
+- **Full-size view.** Open any image to see it large.
+- Images carry their link back to whatever they're attached to (a recipe, doc, etc.).
+
+## Example workflows
+
+**Browse your images**
+- *In the app:* open Images and scroll the gallery; click any to enlarge.
+
+**Find images from another app**
+- *Through chat:* "show me the photos from that recipe", "show the vehicle's
+  damage photos" — the same image store backs every app.
+
+**Generated images / charts**
+- *Through chat:* charts and any generated images Skipper makes are saved here
+  alongside your uploads (image generation where enabled).
 
 ## Tips
-- Images are shared platform-wide, so the same picture can appear in multiple apps.
+
+- It's one shared store — the same picture can appear in multiple apps without duplicating it.
+- To attach a picture to something, do it from that item (e.g. add a photo to a recipe); it then appears in the gallery.
+
+## Your data
+
+Saved images (and their links to the items they belong to) are **kept in the
+shared image store and referenced from Skipper's memory**, so when you ask about
+an item Skipper knows which pictures go with it. Images stay within your household.
