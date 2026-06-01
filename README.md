@@ -170,19 +170,22 @@ sites for the latest.)
 | Extensibility | **App packages** — drop in an app folder (UI + tools + schema + migrations) | Channel/agent plugins and "skills" | 40+ built-in tools, 200+ LLM backends |
 | Storage | PostgreSQL + pgvector | Markdown files in the agent workspace | Local SQLite |
 | Self-improvement | **Issue-driven Evolve loop** — Claude Code builds new features/apps from issues you log | — (it's a gateway) | GEPA prompt evolution + learned "skill" documents |
-| License | BUSL 1.1 (converts to Apache 2.0 after 4 years) | Open source | MIT |
 
 ### How memory works
 
 The three take noticeably different approaches to remembering things:
 
-- **Skipper** — memory lives in **PostgreSQL with pgvector**, fed two ways: an
-  explicit semantic memory (`remember` / `recall`), and an *automatic digest* —
-  every record you create in any app (a recipe, a service log, a reminder) is
-  summarized into memory. So you can later just ask ("when did we last rotate the
-  tires?", "what's a good dinner idea?") and Skipper recalls it. Structured data
-  also stays first-class in each app's own schema, so it's queryable, not just
-  recalled.
+- **Skipper** — memory lives in **PostgreSQL with pgvector**, fed three ways:
+  explicit semantic memory (`remember` / `recall`), an *automatic digest* from
+  app records (every recipe, service log, reminder is summarized into memory),
+  and *chat-extracted facts* — a postprocessing LLM step continuously pulls facts
+  from your conversations and records those as auto-memories too. Then a separate
+  layer takes *all* memories and self-organizes them into readable markdown
+  documents (Auto Documents) in a self-organizing folder structure you can view.
+  So you can ask ("when did we last rotate the tires?", "what's a good dinner
+  idea?", "what did I say about my back pain last month?") and Skipper recalls
+  it. Structured data also stays first-class in each app's own schema, so it's
+  queryable, not just recalled.
 - **OpenClaw** — memory is **plain Markdown files** in the agent's workspace; the
   files are the source of truth and the model only "remembers" what gets written
   to disk. It exposes `memory_search` (semantic recall over indexed snippets) and
