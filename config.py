@@ -360,6 +360,19 @@ def get_dynamic_system_context(user_id: str = "") -> str:
                 f"location lookups when they don't specify one — never invent a location."
             )
     except Exception:
-        pass
+        logger.warning("dynamic context: default_zip lookup failed", exc_info=True)
+
+    # Primary user — the person who installed/owns this Skipper. Lets onboarding
+    # and proactive outreach know who to engage (onboarding is about this person).
+    try:
+        from data_layer.users import get_primary_user
+        _primary = get_primary_user()
+        if _primary:
+            parts.append(
+                f"The primary user (the person who installed and owns this Skipper) is "
+                f"'{_primary}'. Onboarding and proactive outreach are about helping them."
+            )
+    except Exception:
+        logger.warning("dynamic context: primary_user lookup failed", exc_info=True)
 
     return "\n".join(parts)

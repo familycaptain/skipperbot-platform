@@ -96,6 +96,36 @@ def get_all_users() -> list[dict]:
     return fetch_all("SELECT * FROM users ORDER BY name")
 
 
+def get_primary_user() -> str:
+    """The primary user — the person who installed Skipper (the first human user).
+
+    Used so onboarding, the PM, and chat know WHO to engage (e.g. the onboarding
+    goal is about this person). Resolution order: the stored reference
+    (app_config scope=platform, key=primary_user) if set, otherwise the
+    earliest-created non-bot user — which is then cached so it's stable even if
+    the user list changes later. Returns "" if no human user exists yet.
+    """
+    try:
+        from app_platform import config as _pc
+        stored = _pc.get("primary_user", scope="platform")
+        if stored:
+            return str(stored)
+    except Exception:
+        pass
+    row = fetch_one(
+        "SELECT name FROM users WHERE position('bot' in lower(role)) = 0 "
+        "ORDER BY created_at, name LIMIT 1"
+    )
+    name = row["name"] if row else ""
+    if name:
+        try:
+            from app_platform import config as _pc
+            _pc.set("primary_user", name, scope="platform", by="system")
+        except Exception:
+            pass
+    return name
+
+
 def get_human_users() -> list[dict]:
     """Get only human users (excludes bots). Use for UI pickers/dropdowns."""
     return [user for user in get_all_users() if not has_role(user, "bot")]
