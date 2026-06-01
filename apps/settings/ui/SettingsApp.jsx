@@ -412,6 +412,9 @@ function MembersPanel({ userId }) {
 
   const me = (users || []).find((u) => u.name === userId);
   const isAdmin = !!me && hasRole(me.role, "admin");
+  // Never let the household end up with zero admins — guard the controls that
+  // could strip the last one (backend enforces this too; this is just UX).
+  const adminCount = (users || []).filter((u) => hasRole(u.role, "admin")).length;
 
   const call = useCallback(async (url, opts = {}) => {
     setErr("");
@@ -541,21 +544,23 @@ function MembersPanel({ userId }) {
                     ))}
                   {ROLE_OPTIONS.map((role) => {
                     const on = hasRole(u.role, role);
+                    // Can't un-toggle admin off the last remaining admin.
+                    const lastAdmin = role === "admin" && on && adminCount <= 1;
                     return (
                       <button
                         key={role}
-                        disabled={busy}
+                        disabled={busy || lastAdmin}
                         onClick={() => {
                           const roles = u.role.split(",").map((r) => r.trim()).filter(Boolean);
                           const next = on ? roles.filter((r) => r !== role) : [...roles, role];
                           setRole(u.name, next.join(",") || "member");
                         }}
-                        className={`px-2 py-0.5 rounded text-[11px] border transition-colors ${
+                        className={`px-2 py-0.5 rounded text-[11px] border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                           on
                             ? "bg-indigo-600/30 border-indigo-600 text-indigo-200"
                             : "border-zinc-700 text-zinc-500 hover:text-zinc-300"
                         }`}
-                        title={on ? `Remove ${role}` : `Grant ${role}`}
+                        title={lastAdmin ? "At least one admin is required" : on ? `Remove ${role}` : `Grant ${role}`}
                       >
                         {role === "admin" && <ShieldCheck size={10} className="inline mr-0.5 -mt-0.5" />}{role}
                       </button>
@@ -566,8 +571,15 @@ function MembersPanel({ userId }) {
                   title="Set a temporary password" className="text-zinc-500 hover:text-amber-400 p-1">
                   <KeyRound size={14} />
                 </button>
-                <button onClick={() => removeMember(u.name)} disabled={busy || u.name === userId}
-                  title={u.name === userId ? "You can't remove yourself" : "Remove member"}
+                <button onClick={() => removeMember(u.name)}
+                  disabled={busy || u.name === userId || (hasRole(u.role, "admin") && adminCount <= 1)}
+                  title={
+                    u.name === userId
+                      ? "You can't remove yourself"
+                      : hasRole(u.role, "admin") && adminCount <= 1
+                        ? "Can't remove the last admin"
+                        : "Remove member"
+                  }
                   className="text-zinc-500 hover:text-red-400 p-1 disabled:opacity-30 disabled:hover:text-zinc-500">
                   <Trash2 size={14} />
                 </button>
