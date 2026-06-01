@@ -10,7 +10,9 @@
       "broadcast_announcement",
       "search_chat_history",
       "list_chat_users",
-      "get_guide"
+      "get_guide",
+      "list_installed_apps",
+      "get_app_help"
     ],
     "ack": {
       "remember": "Saving that to memory...",
@@ -21,7 +23,9 @@
       "broadcast_announcement": "Queueing announcement to all family members...",
       "search_chat_history": "Searching chat history...",
       "list_chat_users": "Checking chat users...",
-      "get_guide": "Loading guide..."
+      "get_guide": "Loading guide...",
+      "list_installed_apps": "Checking installed apps...",
+      "get_app_help": "Reading the app's help..."
     },
     "keywords": [
       "announce",
