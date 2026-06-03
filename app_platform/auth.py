@@ -20,8 +20,11 @@ auth doesn't invalidate stored encrypted settings (and vice-versa). Same
 key-handling rules as app_platform.secrets (32-byte urlsafe-b64, else SHA-256
 of the passphrase).
 
-Enforcement lives in the agent's HTTP middleware (sets ``request.state.principal``);
-the FastAPI deps below read that (with a header fallback so they work standalone).
+Enforcement is unconditional: the agent's HTTP middleware rejects any
+unauthenticated request to a non-public path and sets ``request.state.principal``
+for everything else; the FastAPI deps below read that (with a header fallback so
+they work standalone). There is no on/off switch — every mounted route requires a
+valid bearer token.
 """
 
 from __future__ import annotations
@@ -59,19 +62,6 @@ def _auth_key() -> bytes | None:
 
 def auth_key_available() -> bool:
     return _auth_key() is not None
-
-
-def auth_enforced() -> bool:
-    """Whether the API rejects unauthenticated requests.
-
-    OFF by default so the whole auth layer can ship dormant and be flipped on
-    (``SKIPPERBOT_AUTH_ENFORCE=1``) to test on a live host — and flipped back
-    instantly if something misbehaves, with no redeploy. When off: tokens are
-    still verified and the principal attached when present (so the new
-    identity-derivation paths work), but missing/invalid tokens are NOT rejected
-    and handlers fall back to legacy behavior.
-    """
-    return os.getenv("SKIPPERBOT_AUTH_ENFORCE", "").strip().lower() in ("1", "true", "yes", "on")
 
 
 def _now() -> int:
@@ -212,29 +202,17 @@ def current_principal(request) -> dict | None:
 
 
 def enforce_admin(request) -> None:
-    """Require an admin principal when enforcement is on; no-op when off.
-
-    For endpoints that previously had NO auth (so legacy behavior must be
-    preserved until the flag flips)."""
-    from fastapi import HTTPException
-    from data_layer.users import has_role
-    if auth_enforced():
-        p = current_principal(request)
-        if not (p and has_role(p, "admin")):
-            raise HTTPException(status_code=403, detail="Admin access required")
+    """Require an admin principal; raise 401/403 otherwise."""
+    require_admin(request)
 
 
 def scope_user(request, requested_user_id: str | None) -> str:
     """Whose data the caller may act on.
 
-    With a verified principal: self by default, another user only for
-    admin/parent (IDOR guard). Without one (enforcement off / no token): the
-    legacy client-supplied value, lowercased — preserving pre-auth behavior.
+    Self by default; another user only for admin/parent (IDOR guard), else 403.
+    The caller is always the verified principal — auth is unconditional.
     """
-    p = current_principal(request)
-    if p is None:
-        return (requested_user_id or "").lower().strip()
-    return resolve_target(p, requested_user_id)
+    return resolve_target(require_user(request), requested_user_id)
 
 
 def resolve_target(principal: dict, requested_user_id: str | None) -> str:

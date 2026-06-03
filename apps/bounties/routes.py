@@ -18,17 +18,16 @@ from data_layer import users as _users
 router = APIRouter()
 
 
-def _actor(request: Request, fallback: str) -> str:
-    """The authoritative actor name.
+def _actor(request: Request, fallback: str = "") -> str:
+    """The authoritative actor name, taken from the verified principal.
 
-    When auth is enforced a verified principal is present and we trust *it*,
-    never the client-supplied actor field — otherwise a kid could spoof a
-    parent's name to pass ``_require_parent_actor`` (or submit/claim a bounty
-    as someone else). When auth is dormant (no principal) we fall back to the
-    legacy body/query value so behavior is unchanged.
+    Auth is unconditional, so a principal is always present on this route; the
+    client-supplied actor field is never trusted (otherwise a kid could spoof a
+    parent's name to pass ``_require_parent_actor``, or submit/claim a bounty as
+    someone else). ``fallback`` is vestigial.
     """
     p = current_principal(request)
-    return p["name"] if p else (fallback or "")
+    return p["name"] if p else ""
 
 
 # ---------------------------------------------------------------------------

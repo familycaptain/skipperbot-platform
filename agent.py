@@ -38,7 +38,7 @@ from knowledge_store import migrate_chunk_embeddings
 from data_layer.db import close_pool
 from app_platform.loader import load_all_apps, get_app_tool_routes
 from data_layer.users import authenticate, get_user, update_password, get_all_users, has_role, create_user, update_role, delete_user, parse_roles
-from app_platform.auth import principal_from_request, principal_from_ws, auth_enforced, require_user, require_admin, resolve_target, scope_user
+from app_platform.auth import principal_from_request, principal_from_ws, require_user, require_admin, resolve_target, scope_user
 from apps.goals import data as dl_goals
 import app_platform.documents as doc_store
 import link_registry
@@ -122,10 +122,9 @@ app = FastAPI(title="SkipperBot Agent", version="0.1.0", lifespan=lifespan)
 
 
 # ---------------------------------------------------------------------------
-# Authentication gate (see app_platform/auth.py). Verifies a bearer token and
-# attaches request.state.principal. When SKIPPERBOT_AUTH_ENFORCE is on, rejects
-# unauthenticated non-public requests with 401; when off (default), it's a no-op
-# beyond attaching the principal — so this can ship dormant and be flipped on.
+# Authentication gate (see app_platform/auth.py). Verifies a bearer token,
+# attaches request.state.principal, and rejects any unauthenticated request to a
+# non-public path with 401. Enforcement is unconditional — there is no off switch.
 # ---------------------------------------------------------------------------
 _PUBLIC_EXACT = {"/", "/api/health", "/auth/login", "/auth/set-password",
                  "/api/onboarding/status", "/api/onboarding/check-openai"}
@@ -156,7 +155,7 @@ async def auth_gate(request: Request, call_next):
         request.state.principal = principal_from_request(request)
     except Exception:
         request.state.principal = None
-    if auth_enforced() and request.state.principal is None and not _is_public_path(request):
+    if request.state.principal is None and not _is_public_path(request):
         return JSONResponse({"detail": "Authentication required"}, status_code=401)
     return await call_next(request)
 
@@ -314,7 +313,7 @@ async def api_get_disabled_apps():
 @app.post("/api/apps/disabled")
 async def api_set_disabled_apps(request: DisabledAppsRequest, http_request: Request):
     """Replace the set of desktop-hidden app ids (admin action)."""
-    if auth_enforced() and not _is_admin_req(http_request):
+    if not _is_admin_req(http_request):
         return JSONResponse({"ok": False, "error": "Admin access required."}, status_code=403)
     def _do():
         from app_platform import config as platform_config
@@ -552,16 +551,15 @@ async def voice_tool_relay(websocket: WebSocket, session_id: str):
         return
 
     principal = principal_from_ws(websocket)
-    if auth_enforced():
-        if not principal:
-            await websocket.close(code=4401, reason="Authentication required")
-            return
-        # A service token (voice satellite), the session's own user, or an admin may connect.
-        if (not principal.get("is_service")
-                and principal.get("name") != session.get("user_id")
-                and not has_role(principal, "admin")):
-            await websocket.close(code=4403, reason="Forbidden")
-            return
+    if not principal:
+        await websocket.close(code=4401, reason="Authentication required")
+        return
+    # A service token (voice satellite), the session's own user, or an admin may connect.
+    if (not principal.get("is_service")
+            and principal.get("name") != session.get("user_id")
+            and not has_role(principal, "admin")):
+        await websocket.close(code=4403, reason="Forbidden")
+        return
 
     await websocket.accept()
     user_id = session["user_id"]
@@ -639,11 +637,10 @@ def get_user_app_context(user_id: str) -> dict | None:
 async def websocket_chat(websocket: WebSocket, user_id: str):
     """WebSocket endpoint for real-time chat per user."""
     principal = principal_from_ws(websocket)
-    if auth_enforced() and not principal:
+    if not principal:
         await websocket.close(code=4401, reason="Authentication required")
         return
-    if principal:
-        user_id = principal["name"]  # authoritative identity — ignore the path param
+    user_id = principal["name"]  # authoritative identity — ignore the path param
     await manager.connect(user_id, websocket)
     # Send build ID so client can detect agent restarts
     await websocket.send_json({"type": "build_id", "build_id": BUILD_ID})
@@ -1292,20 +1289,18 @@ def _principal(request: Request) -> dict | None:
 
 
 def _is_admin_req(request: Request, fallback_actor: str = "") -> bool:
-    """Admin check from the authenticated principal when present; otherwise the
-    legacy client-supplied actor (used only when enforcement is off and no token
-    was sent, preserving pre-auth behavior)."""
+    """Admin check from the authenticated principal. Auth is unconditional, so the
+    principal is always present on a mounted route; the client-supplied actor is
+    never trusted."""
     p = _principal(request)
-    if p is not None:
-        return has_role(p, "admin")
-    return _is_admin(fallback_actor)
+    return bool(p and has_role(p, "admin"))
 
 
 def _actor_name(request: Request, fallback: str = "") -> str:
-    """The acting user's canonical name — the verified principal if present, else
-    the legacy fallback."""
+    """The acting user's canonical name, taken from the verified principal. The
+    client-supplied value is never trusted."""
     p = _principal(request)
-    return ((p["name"] if p else fallback) or "").lower().strip()
+    return ((p["name"] if p else "")).lower().strip()
 
 
 def _admin_count() -> int:
@@ -4449,7 +4444,7 @@ async def api_admin_restart(request: Request):
     is not held open and Ctrl+C remains responsive.
     A wrapper script (run-agent.ps1) sees exit code 42 and restarts the process.
     """
-    if auth_enforced() and not _is_admin_req(request):
+    if not _is_admin_req(request):
         return JSONResponse({"ok": False, "error": "Admin access required."}, status_code=403)
     from thinking_scheduler import request_shutdown as thinking_shutdown, is_shutting_down
     from app_platform.jobs import request_shutdown as jobs_shutdown
@@ -4501,7 +4496,7 @@ async def api_admin_deploy(request: Request):
     on the host does the pull + `docker compose down/up`. Same UI flow as a
     restart. If no watcher is installed, `restart: always` just bounces the
     container (equivalent to a plain restart, no code update)."""
-    if auth_enforced() and not _is_admin_req(request):
+    if not _is_admin_req(request):
         return JSONResponse({"ok": False, "error": "Admin access required."}, status_code=403)
     from thinking_scheduler import request_shutdown as thinking_shutdown, is_shutting_down
     from app_platform.jobs import request_shutdown as jobs_shutdown

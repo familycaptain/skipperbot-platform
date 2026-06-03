@@ -91,17 +91,15 @@ class CompleteChoreRequest(BaseModel):
 # Permission helpers
 # ---------------------------------------------------------------------------
 
-def _actor(request: Request, fallback: str) -> str:
-    """The authoritative actor name.
+def _actor(request: Request, fallback: str = "") -> str:
+    """The authoritative actor name, taken from the verified principal.
 
-    When auth is enforced a verified principal is present and we trust *it*,
-    never the client-supplied ``acted_by`` — otherwise a kid could spoof a
-    parent's name to pass ``_require_parent``. When auth is dormant (no
-    principal) we fall back to the legacy body/query value so behavior is
-    unchanged.
+    Auth is unconditional, so a principal is always present on this route; the
+    client-supplied ``acted_by`` is never trusted (otherwise a kid could spoof a
+    parent's name to pass ``_require_parent``). ``fallback`` is vestigial.
     """
     p = current_principal(request)
-    return p["name"] if p else (fallback or "")
+    return p["name"] if p else ""
 
 
 def _get_actor(user_id: str) -> dict:
