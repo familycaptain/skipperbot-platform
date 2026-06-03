@@ -38,7 +38,7 @@ from knowledge_store import migrate_chunk_embeddings
 from data_layer.db import close_pool
 from app_platform.loader import load_all_apps, get_app_tool_routes
 from data_layer.users import authenticate, get_user, update_password, get_all_users, has_role, create_user, update_role, delete_user, parse_roles
-from app_platform.auth import principal_from_request, principal_from_ws, auth_enforced, require_user, require_admin, resolve_target
+from app_platform.auth import principal_from_request, principal_from_ws, auth_enforced, require_user, require_admin, resolve_target, scope_user
 from apps.goals import data as dl_goals
 import app_platform.documents as doc_store
 import link_registry
@@ -2023,8 +2023,9 @@ async def api_rerun_job(job_id: str, user_id: str = ""):
 # ---------------------------------------------------------------------------
 
 @app.get("/api/apps/reminders")
-async def api_list_reminders(user_id: str = "", include_inactive: str = "false"):
+async def api_list_reminders(request: Request, user_id: str = "", include_inactive: str = "false"):
     """List reminders for a user, or all reminders if user_id is empty."""
+    user_id = scope_user(request, user_id)
     def _fetch():
         from app_platform.reminders import list_reminders as _list, _load_reminders
         inc = include_inactive.strip().lower() == "true"
@@ -2089,8 +2090,9 @@ import app_platform.prioritize as _dl_prioritize
 
 
 @app.get("/api/apps/prioritize/focus")
-async def api_get_focus(user_id: str = ""):
+async def api_get_focus(request: Request, user_id: str = ""):
     """Get focus slots for a user. Also runs stale cleanup."""
+    user_id = scope_user(request, user_id)
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id required")
     await asyncio.to_thread(_dl_prioritize.cleanup_stale_focus, user_id)
@@ -2127,8 +2129,9 @@ async def api_get_family_focus():
 
 
 @app.get("/api/apps/prioritize/backlog")
-async def api_get_backlog(user_id: str = ""):
+async def api_get_backlog(request: Request, user_id: str = ""):
     """Get all actionable items for a user, grouped by source app."""
+    user_id = scope_user(request, user_id)
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id required")
     backlog = await asyncio.to_thread(_dl_prioritize.get_backlog, user_id)
@@ -2156,8 +2159,9 @@ class PromoteFocusRequest(BaseModel):
 
 
 @app.post("/api/apps/prioritize/focus")
-async def api_promote_focus(request: PromoteFocusRequest):
+async def api_promote_focus(request: PromoteFocusRequest, http_request: Request):
     """Promote an item to a focus slot."""
+    request.user_id = scope_user(http_request, request.user_id)
     if request.slot_number:
         result = await asyncio.to_thread(
             _dl_prioritize.set_focus,
@@ -2174,8 +2178,9 @@ async def api_promote_focus(request: PromoteFocusRequest):
 
 
 @app.delete("/api/apps/prioritize/focus/{slot_number}")
-async def api_clear_focus(slot_number: int, user_id: str = ""):
+async def api_clear_focus(slot_number: int, request: Request, user_id: str = ""):
     """Remove an item from a focus slot."""
+    user_id = scope_user(request, user_id)
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id required")
     ok = await asyncio.to_thread(_dl_prioritize.clear_focus, user_id, slot_number)
@@ -2188,8 +2193,9 @@ class ReorderFocusRequest(BaseModel):
 
 
 @app.post("/api/apps/prioritize/focus/reorder")
-async def api_reorder_focus(request: ReorderFocusRequest):
+async def api_reorder_focus(request: ReorderFocusRequest, http_request: Request):
     """Reorder focus slots."""
+    request.user_id = scope_user(http_request, request.user_id)
     ok = await asyncio.to_thread(
         _dl_prioritize.reorder_focus, request.user_id, request.ordered_source_ids,
     )
@@ -2200,7 +2206,7 @@ async def api_reorder_focus(request: ReorderFocusRequest):
 async def api_toggle_focus_nag(request: Request):
     """Toggle focus nag for a user."""
     body = await request.json()
-    user_id = body.get("user_id", "")
+    user_id = scope_user(request, body.get("user_id", ""))
     enabled = body.get("enabled", True)
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id required")
@@ -2500,8 +2506,9 @@ dl_todo = _SimpleNamespace(
 
 
 @app.get("/api/apps/todo/config")
-async def api_get_todo_config(user_id: str = ""):
+async def api_get_todo_config(request: Request, user_id: str = ""):
     """Get to-do config for a user.  Auto-creates default list if needed."""
+    user_id = scope_user(request, user_id)
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id required")
     def _fetch():
@@ -2534,8 +2541,9 @@ class UpdateTodoConfigRequest(BaseModel):
 
 
 @app.put("/api/apps/todo/config")
-async def api_update_todo_config(req: UpdateTodoConfigRequest):
+async def api_update_todo_config(req: UpdateTodoConfigRequest, request: Request):
     """Update to-do config for a user."""
+    req.user_id = scope_user(request, req.user_id)
     if not req.user_id:
         raise HTTPException(status_code=400, detail="user_id required")
     def _update():
@@ -2553,8 +2561,9 @@ async def api_update_todo_config(req: UpdateTodoConfigRequest):
 
 
 @app.get("/api/apps/todo/items")
-async def api_get_todo_items(user_id: str = "", include_archived: bool = False):
+async def api_get_todo_items(request: Request, user_id: str = "", include_archived: bool = False):
     """Get the user's default to-do list items."""
+    user_id = scope_user(request, user_id)
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id required")
     def _fetch():
@@ -2568,8 +2577,9 @@ async def api_get_todo_items(user_id: str = "", include_archived: bool = False):
 
 
 @app.get("/api/apps/todo/backlog")
-async def api_get_backlog_items(user_id: str = "", include_archived: bool = False):
+async def api_get_backlog_items(request: Request, user_id: str = "", include_archived: bool = False):
     """Get the user's backlog list items."""
+    user_id = scope_user(request, user_id)
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id required")
     def _fetch():
@@ -2587,8 +2597,9 @@ class AddTodoItemBacklogRequest(BaseModel):
 
 
 @app.post("/api/apps/todo/items")
-async def api_add_todo_item(req: AddTodoItemBacklogRequest):
+async def api_add_todo_item(req: AddTodoItemBacklogRequest, request: Request):
     """Add an item to the user's to-do or backlog list (at the top)."""
+    req.user_id = scope_user(request, req.user_id)
     if not req.user_id or not req.text.strip():
         raise HTTPException(status_code=400, detail="user_id and text required")
     def _do():
@@ -2623,8 +2634,9 @@ class MoveTodoItemRequest(BaseModel):
 
 
 @app.post("/api/apps/todo/move-item")
-async def api_move_todo_item(req: MoveTodoItemRequest):
+async def api_move_todo_item(req: MoveTodoItemRequest, request: Request):
     """Move an item between to-do and backlog lists."""
+    req.user_id = scope_user(request, req.user_id)
     if not req.user_id or not req.item_id:
         raise HTTPException(status_code=400, detail="user_id and item_id required")
     if req.direction not in ("to_backlog", "to_todo"):
@@ -2647,8 +2659,9 @@ async def api_move_todo_item(req: MoveTodoItemRequest):
 
 
 @app.post("/api/apps/todo/reorder")
-async def api_batch_reorder_todo(req: BatchReorderTodoRequest):
+async def api_batch_reorder_todo(req: BatchReorderTodoRequest, request: Request):
     """Batch reorder to-do items by providing the full ordered list of item IDs."""
+    req.user_id = scope_user(request, req.user_id)
     if not req.user_id or not req.item_ids:
         raise HTTPException(status_code=400, detail="user_id and item_ids required")
     cfg = await asyncio.to_thread(dl_todo.get_config, req.user_id)
@@ -2696,8 +2709,9 @@ async def api_batch_reorder_todo(req: BatchReorderTodoRequest):
 
 
 @app.get("/api/apps/todo/lists")
-async def api_get_all_lists_for_todo(user_id: str = ""):
+async def api_get_all_lists_for_todo(request: Request, user_id: str = ""):
     """Get lists owned by user (for config picker — choose default list)."""
+    user_id = scope_user(request, user_id)
     def _fetch():
         from apps.lists.data import get_all_lists
         all_lists = get_all_lists()
