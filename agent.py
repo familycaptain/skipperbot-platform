@@ -312,8 +312,10 @@ async def api_get_disabled_apps():
 
 
 @app.post("/api/apps/disabled")
-async def api_set_disabled_apps(request: DisabledAppsRequest):
+async def api_set_disabled_apps(request: DisabledAppsRequest, http_request: Request):
     """Replace the set of desktop-hidden app ids (admin action)."""
+    if auth_enforced() and not _is_admin_req(http_request):
+        return JSONResponse({"ok": False, "error": "Admin access required."}, status_code=403)
     def _do():
         from app_platform import config as platform_config
         ids = sorted({str(x).strip() for x in request.disabled if str(x).strip()})
@@ -1284,6 +1286,28 @@ def _is_admin(name: str) -> bool:
     return bool(u and has_role(u, "admin"))
 
 
+def _principal(request: Request) -> dict | None:
+    """The authenticated principal attached by the auth middleware, or None."""
+    return getattr(request.state, "principal", None)
+
+
+def _is_admin_req(request: Request, fallback_actor: str = "") -> bool:
+    """Admin check from the authenticated principal when present; otherwise the
+    legacy client-supplied actor (used only when enforcement is off and no token
+    was sent, preserving pre-auth behavior)."""
+    p = _principal(request)
+    if p is not None:
+        return has_role(p, "admin")
+    return _is_admin(fallback_actor)
+
+
+def _actor_name(request: Request, fallback: str = "") -> str:
+    """The acting user's canonical name — the verified principal if present, else
+    the legacy fallback."""
+    p = _principal(request)
+    return ((p["name"] if p else fallback) or "").lower().strip()
+
+
 def _admin_count() -> int:
     return sum(1 for u in get_all_users() if has_role(u, "admin"))
 
@@ -1327,14 +1351,14 @@ class ChangePasswordRequest(BaseModel):
 
 
 @app.post("/api/users")
-async def api_create_user(req: CreateUserRequest):
+async def api_create_user(req: CreateUserRequest, request: Request):
     """Admin-only: create a household member with a temporary password.
 
     The new member logs in with the temp password, then changes it via
     POST /api/auth/change-password.
     """
     def _do():
-        if not _is_admin(req.actor):
+        if not _is_admin_req(request, req.actor):
             return {"ok": False, "error": "Admin access required."}
         name = (req.username or "").lower().strip()
         if not _USERNAME_RE.match(name):
@@ -1359,10 +1383,10 @@ async def api_create_user(req: CreateUserRequest):
 
 
 @app.patch("/api/users/{name}/role")
-async def api_update_user_role(name: str, req: UpdateRoleRequest):
+async def api_update_user_role(name: str, req: UpdateRoleRequest, request: Request):
     """Admin-only: change a member's roles. Won't drop the last admin."""
     def _do():
-        if not _is_admin(req.actor):
+        if not _is_admin_req(request, req.actor):
             return {"ok": False, "error": "Admin access required."}
         target = (name or "").lower().strip()
         user = get_user(target)
@@ -1380,11 +1404,11 @@ async def api_update_user_role(name: str, req: UpdateRoleRequest):
 
 
 @app.post("/api/users/{name}/reset-password")
-async def api_reset_user_password(name: str, req: ResetPasswordRequest):
+async def api_reset_user_password(name: str, req: ResetPasswordRequest, request: Request):
     """Admin-only: set a new temporary password for a member (no current
     password needed). The member can change it afterwards."""
     def _do():
-        if not _is_admin(req.actor):
+        if not _is_admin_req(request, req.actor):
             return {"ok": False, "error": "Admin access required."}
         target = (name or "").lower().strip()
         if not get_user(target):
@@ -1397,13 +1421,13 @@ async def api_reset_user_password(name: str, req: ResetPasswordRequest):
 
 
 @app.delete("/api/users/{name}")
-async def api_delete_user(name: str, actor: str = ""):
+async def api_delete_user(name: str, request: Request, actor: str = ""):
     """Admin-only: remove a member. Can't remove yourself or the last admin."""
     def _do():
-        if not _is_admin(actor):
+        if not _is_admin_req(request, actor):
             return {"ok": False, "error": "Admin access required."}
         target = (name or "").lower().strip()
-        if target == (actor or "").lower().strip():
+        if target == _actor_name(request, actor):
             return {"ok": False, "error": "You can't remove your own account."}
         user = get_user(target)
         if not user:
@@ -1416,11 +1440,12 @@ async def api_delete_user(name: str, actor: str = ""):
 
 
 @app.post("/api/auth/change-password")
-async def api_change_password(req: ChangePasswordRequest):
+async def api_change_password(req: ChangePasswordRequest, request: Request):
     """Self-service: a logged-in member changes their own password by proving
-    their current one. Used after an admin hands out a temporary password."""
+    their current one. When authenticated, the target is the principal (you can
+    only change your OWN password); the request username is a legacy fallback."""
     def _do():
-        name = (req.username or "").lower().strip()
+        name = _actor_name(request, req.username)
         user = get_user(name)
         if not user:
             return {"ok": False, "error": "Unknown user."}
@@ -4410,6 +4435,8 @@ async def api_admin_restart(request: Request):
     is not held open and Ctrl+C remains responsive.
     A wrapper script (run-agent.ps1) sees exit code 42 and restarts the process.
     """
+    if auth_enforced() and not _is_admin_req(request):
+        return JSONResponse({"ok": False, "error": "Admin access required."}, status_code=403)
     from thinking_scheduler import request_shutdown as thinking_shutdown, is_shutting_down
     from app_platform.jobs import request_shutdown as jobs_shutdown
     from apps.reminders.scheduler import request_shutdown as reminders_shutdown
@@ -4460,6 +4487,8 @@ async def api_admin_deploy(request: Request):
     on the host does the pull + `docker compose down/up`. Same UI flow as a
     restart. If no watcher is installed, `restart: always` just bounces the
     container (equivalent to a plain restart, no code update)."""
+    if auth_enforced() and not _is_admin_req(request):
+        return JSONResponse({"ok": False, "error": "Admin access required."}, status_code=403)
     from thinking_scheduler import request_shutdown as thinking_shutdown, is_shutting_down
     from app_platform.jobs import request_shutdown as jobs_shutdown
     from apps.reminders.scheduler import request_shutdown as reminders_shutdown
