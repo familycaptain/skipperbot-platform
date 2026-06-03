@@ -24,7 +24,7 @@ from app_platform.folders import get_relevant_folder_knowledge, format_folder_kn
 from tool_router import (
     get_tools_for_message, get_guides_for_message, get_category_tool_names,
     get_match_debug_for_message,
-    META_TOOL_NAMES, reload_routes, get_ack_template, TOOL_CATEGORIES,
+    META_TOOL_NAMES, DISABLED_CHAT_TOOLS, reload_routes, get_ack_template, TOOL_CATEGORIES,
 )
 import agent_loop
 
@@ -214,6 +214,11 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
         # Add any dynamically requested categories
         for cat in extra_categories:
             allowed |= get_category_tool_names(cat)
+
+        # Never offer the disabled (code-authoring / shell / MCP-control) tools to
+        # the LLM, no matter how they were routed or requested. Applied last so no
+        # routing/request/context path can reintroduce them.
+        allowed -= DISABLED_CHAT_TOOLS
 
         # Filter MCP tools to only those in allowed set
         mcp_tools = []

@@ -138,6 +138,16 @@ async def call_tool(tool_name: str, arguments: dict) -> str:
 
     Falls back to MCP subprocess for tools not in the registry.
     """
+    # Hard refusal for tools disabled from the chat surface (code authoring /
+    # shell / MCP control). Defense in depth behind chat_domain's offer-time
+    # filter; internal/operator code that calls these functions directly does
+    # not route through call_tool and is unaffected.
+    from tool_router import DISABLED_CHAT_TOOLS
+    if tool_name in DISABLED_CHAT_TOOLS:
+        logger.warning("TOOL_DISPATCH: refused disabled tool '%s'", tool_name)
+        return (f"Error: Tool '{tool_name}' is disabled. Code and app changes go "
+                f"through the Evolve workflow, not in-chat tools.")
+
     fn = _registry.get(tool_name)
     if fn is None:
         from mcp_client import call_mcp_tool

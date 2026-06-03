@@ -134,6 +134,24 @@ _load_routes()
 # Meta-tool names (always injected as LOCAL_TOOLS, handled separately)
 META_TOOL_NAMES = {"list_all_tools", "request_tools", "open_app", "restart_agent"}
 
+# Tools the chat LLM may NEVER be offered or allowed to call. These let the model
+# write/modify/execute platform code or arbitrary shell — the platform's worst
+# RCE / secret-exfil surface (security audit findings 2, 3, 6). Self-extension and
+# app-building now go exclusively through the Evolve → Claude Code build engine, so
+# the chat LLM never needs them. Enforced in two places: chat_domain._build_tools
+# subtracts this set from the offered tools, and tool_dispatch.call_tool refuses to
+# execute any name in it (defense in depth — internal/operator code paths that call
+# the underlying functions directly are unaffected).
+DISABLED_CHAT_TOOLS = frozenset({
+    # Dynamic tool authoring (writes Python the server then imports & runs)
+    "create_tool", "update_tool", "register_tool", "unregister_tool",
+    "delete_tool", "read_tool", "list_tool_files", "get_tool_creation_guide",
+    # MCP server control (reloads / re-imports tool modules in-process)
+    "restart_mcp_server", "start_mcp_server", "stop_mcp_server", "mcp_server_status",
+    # Shell execution (run_job runs free-form command strings with shell=True)
+    "run_job", "create_job", "update_job",
+})
+
 
 # ---------------------------------------------------------------------------
 # Keyword matching

@@ -189,58 +189,6 @@
       "read this page"
     ]
   },
-  "system": {
-    "description": "Create, modify, and manage MCP tools and the MCP server",
-    "tools": [
-      "create_tool",
-      "update_tool",
-      "delete_tool",
-      "list_tool_files",
-      "read_tool",
-      "register_tool",
-      "unregister_tool",
-      "get_tool_creation_guide",
-      "restart_mcp_server",
-      "start_mcp_server",
-      "stop_mcp_server",
-      "mcp_server_status"
-    ],
-    "ack": {
-      "create_tool": "Creating tool {tool_name}...",
-      "update_tool": "Updating tool {tool_name}...",
-      "delete_tool": "Deleting tool {tool_name}...",
-      "list_tool_files": "Listing tool files...",
-      "read_tool": "Reading tool source...",
-      "register_tool": "Registering tool...",
-      "unregister_tool": "Unregistering tool...",
-      "get_tool_creation_guide": "Loading tool creation guide...",
-      "restart_mcp_server": "Restarting MCP server...",
-      "start_mcp_server": "Starting MCP server...",
-      "stop_mcp_server": "Stopping MCP server...",
-      "mcp_server_status": "Checking MCP server status..."
-    },
-    "keywords": [
-      "tool",
-      "create tool",
-      "build tool",
-      "make tool",
-      "update tool",
-      "delete tool",
-      "register",
-      "unregister",
-      "mcp",
-      "server",
-      "restart",
-      "new tool",
-      "crontab",
-      "cron",
-      "crontab entry",
-      "cron job",
-      "add crontab",
-      "remove crontab",
-      "update crontab"
-    ]
-  },
   "utility": {
     "description": "Time, math, and testing utilities",
     "tools": [
