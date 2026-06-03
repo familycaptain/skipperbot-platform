@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import { getToken } from "../utils/api";
 
 /**
  * WebSocket hook for SkipperBot chat.
@@ -52,7 +53,9 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
   const getWsUrl = useCallback(() => {
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;
-    return `${proto}//${host}/ws/${encodeURIComponent(userId)}`;
+    const token = getToken();
+    const q = token ? `?token=${encodeURIComponent(token)}` : "";
+    return `${proto}//${host}/ws/${encodeURIComponent(userId)}${q}`;
   }, [userId]);
 
   const connect = useCallback(() => {

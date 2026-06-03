@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { clearToken } from "./utils/api";
 import Shell from "./components/Shell";
 import LoginScreen from "./components/LoginScreen";
 import ChatPanel from "./components/ChatPanel";
@@ -215,6 +216,7 @@ export default function App() {
   }
 
   function handleLogout() {
+    clearToken();
     localStorage.removeItem("skipperbot_user");
     setUser(null);
   }

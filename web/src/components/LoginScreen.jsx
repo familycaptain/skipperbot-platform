@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { setToken } from "../utils/api";
 
 /**
  * Login screen with two-step authentication.
@@ -82,6 +83,7 @@ export default function LoginScreen({ onLogin }) {
       const data = await res.json();
 
       if (data.ok) {
+        setToken(data.token);
         onLogin(data.user);
       } else {
         setError(data.error || "Login failed.");
@@ -115,6 +117,7 @@ export default function LoginScreen({ onLogin }) {
       const data = await res.json();
 
       if (data.ok) {
+        setToken(data.token);
         onLogin(data.user);
       } else {
         setError(data.error || "Failed to set password.");

@@ -17,6 +17,7 @@
 // Styling matches LoginScreen — dark background, centered card.
 
 import { useEffect, useMemo, useState } from "react";
+import { setToken } from "../utils/api";
 import {
   ArrowRight, ArrowLeft, Check, Loader2, AlertCircle, KeyRound, User as UserIcon, ShieldCheck,
 } from "lucide-react";
@@ -286,6 +287,7 @@ function CreatePrimaryUser({ onCreated, onBack }) {
         setError(data.error || "Could not create user.");
         return;
       }
+      setToken(data.token);
       onCreated(data.user);
     } catch (e) {
       setError(String(e.message || e));

@@ -2,6 +2,11 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import { installAuthFetch } from "./utils/api";
+
+// Attach the bearer token to every same-origin API/ws request (and handle 401 →
+// logout). Must run before any component fires a fetch.
+installAuthFetch();
 
 // Auto-reload when a new service worker takes over (prevents stale chunk errors).
 // Skip if we just did an intentional update-reload (Shell "Update Available" button)
