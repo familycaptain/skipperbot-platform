@@ -12,9 +12,17 @@ from datetime import date
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from app_platform.auth import current_principal
 from apps.auto import data as _dl
 
 router = APIRouter()
+
+
+def _actor(request: Request) -> str:
+    """The authenticated actor's name. Auth is unconditional, so a verified
+    principal is always present; the client-supplied value is never trusted."""
+    p = current_principal(request)
+    return (p["name"] if p else "").lower().strip()
 
 
 # ---------------------------------------------------------------------------
@@ -68,7 +76,8 @@ class CreateVehicleRequest(BaseModel):
 
 
 @router.post("")
-async def api_create_vehicle(request: CreateVehicleRequest):
+async def api_create_vehicle(request: CreateVehicleRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     veh_id = f"veh-{uuid.uuid4().hex[:8]}"
     vehicle = {
         "id": veh_id,
@@ -165,7 +174,8 @@ async def api_get_services(vehicle_id: str):
 
 
 @router.post("/{vehicle_id}/services")
-async def api_log_service(vehicle_id: str, request: LogServiceRequest):
+async def api_log_service(vehicle_id: str, request: LogServiceRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     svc_id = f"svc-{uuid.uuid4().hex[:8]}"
     record = {
         "id": svc_id,
@@ -231,7 +241,8 @@ async def api_get_issues(vehicle_id: str, status: str = ""):
 
 
 @router.post("/{vehicle_id}/issues")
-async def api_report_issue(vehicle_id: str, request: ReportIssueRequest):
+async def api_report_issue(vehicle_id: str, request: ReportIssueRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     issue_id = f"vis-{uuid.uuid4().hex[:8]}"
     issue = {
         "id": issue_id,
@@ -299,7 +310,8 @@ async def api_get_valuations(vehicle_id: str):
 
 
 @router.post("/{vehicle_id}/valuations")
-async def api_log_valuation(vehicle_id: str, request: LogValuationRequest):
+async def api_log_valuation(vehicle_id: str, request: LogValuationRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     val_id = f"vval-{uuid.uuid4().hex[:8]}"
     val = {
         "id": val_id,
@@ -352,7 +364,8 @@ async def api_get_conditions(vehicle_id: str):
 
 
 @router.post("/{vehicle_id}/conditions")
-async def api_log_condition(vehicle_id: str, request: LogConditionRequest):
+async def api_log_condition(vehicle_id: str, request: LogConditionRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     cond_id = f"vcon-{uuid.uuid4().hex[:8]}"
     cond = {
         "id": cond_id,
@@ -434,7 +447,8 @@ class CreateMaintenanceRequest(BaseModel):
 
 
 @router.post("/{vehicle_id}/maintenance")
-async def api_create_vehicle_maintenance(vehicle_id: str, req: CreateMaintenanceRequest):
+async def api_create_vehicle_maintenance(vehicle_id: str, req: CreateMaintenanceRequest, request: Request):
+    req.created_by = _actor(request)
     def _create():
         from apps.schedules.data import create_schedule
         veh = _dl.get_vehicle(vehicle_id)
@@ -469,7 +483,8 @@ class CompleteMaintenanceRequest(BaseModel):
 
 
 @router.post("/{vehicle_id}/maintenance/{schedule_id}/complete")
-async def api_complete_vehicle_maintenance(vehicle_id: str, schedule_id: str, req: CompleteMaintenanceRequest):
+async def api_complete_vehicle_maintenance(vehicle_id: str, schedule_id: str, req: CompleteMaintenanceRequest, request: Request):
+    req.completed_by = _actor(request)
     def _complete():
         return _dl.complete_maintenance(
             schedule_id=schedule_id,

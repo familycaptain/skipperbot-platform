@@ -7,12 +7,20 @@ Mounted at /api/apps/medical/ by the app platform loader.
 import asyncio
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from app_platform.auth import current_principal
 from apps.medical import data as _dl
 
 router = APIRouter()
+
+
+def _actor(request: Request) -> str:
+    """The authenticated actor's name. Auth is unconditional, so a verified
+    principal is always present; the client-supplied value is never trusted."""
+    p = current_principal(request)
+    return (p["name"] if p else "").lower().strip()
 
 
 # ===========================================================================
@@ -97,7 +105,8 @@ class CreateMedicationRequest(BaseModel):
 
 
 @router.post("/medications")
-async def api_create_medication(request: CreateMedicationRequest):
+async def api_create_medication(request: CreateMedicationRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     med_id = f"mmed-{uuid.uuid4().hex[:8]}"
     med = await asyncio.to_thread(_dl.create_medication, {
         "id": med_id,
@@ -198,7 +207,8 @@ class CreateEventRequest(BaseModel):
 
 
 @router.post("/events")
-async def api_create_event(request: CreateEventRequest):
+async def api_create_event(request: CreateEventRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     event_id = f"mevt-{uuid.uuid4().hex[:8]}"
     event = await asyncio.to_thread(_dl.create_event, {
         "id": event_id,
@@ -277,7 +287,8 @@ class CreateTreatmentRequest(BaseModel):
 
 
 @router.post("/treatments")
-async def api_create_treatment(request: CreateTreatmentRequest):
+async def api_create_treatment(request: CreateTreatmentRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     treatment_id = f"mtrx-{uuid.uuid4().hex[:8]}"
     treatment = await asyncio.to_thread(_dl.create_treatment, {
         "id": treatment_id,
@@ -334,7 +345,8 @@ class LogTreatmentRequest(BaseModel):
 
 
 @router.post("/treatments/{treatment_id}/log")
-async def api_log_treatment(treatment_id: str, request: LogTreatmentRequest):
+async def api_log_treatment(treatment_id: str, request: LogTreatmentRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     log_id = f"mtrxl-{uuid.uuid4().hex[:8]}"
     entry = await asyncio.to_thread(_dl.log_treatment, {
         "id": log_id,
@@ -489,7 +501,8 @@ class BulkCreateLabResultsRequest(BaseModel):
 
 
 @router.post("/lab-results")
-async def api_create_lab_result(request: CreateLabResultRequest):
+async def api_create_lab_result(request: CreateLabResultRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     result_id = f"mlbr-{uuid.uuid4().hex[:8]}"
     result = await asyncio.to_thread(_dl.create_lab_result, {"id": result_id, **request.model_dump()})
     if not result:
@@ -498,7 +511,8 @@ async def api_create_lab_result(request: CreateLabResultRequest):
 
 
 @router.post("/lab-results/bulk")
-async def api_bulk_create_lab_results(request: BulkCreateLabResultsRequest):
+async def api_bulk_create_lab_results(request: BulkCreateLabResultsRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     created = []
     for item in request.results:
         result_id = f"mlbr-{uuid.uuid4().hex[:8]}"
@@ -594,7 +608,8 @@ class CreateAppointmentRequest(BaseModel):
 
 
 @router.post("/appointments")
-async def api_create_appointment(request: CreateAppointmentRequest):
+async def api_create_appointment(request: CreateAppointmentRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     appt_id = f"mappt-{uuid.uuid4().hex[:8]}"
     appt = await asyncio.to_thread(_dl.create_appointment, {
         "id": appt_id,
@@ -664,7 +679,8 @@ class CreateEquipmentRequest(BaseModel):
 
 
 @router.post("/equipment")
-async def api_create_equipment(request: CreateEquipmentRequest):
+async def api_create_equipment(request: CreateEquipmentRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     equip_id = f"meq-{uuid.uuid4().hex[:8]}"
     equip = await asyncio.to_thread(_dl.create_equipment, {"id": equip_id, **request.model_dump()})
     if not equip:
@@ -720,7 +736,8 @@ class CreateEquipTaskRequest(BaseModel):
 
 
 @router.post("/equipment/{equip_id}/tasks")
-async def api_create_equip_task(equip_id: str, request: CreateEquipTaskRequest):
+async def api_create_equip_task(equip_id: str, request: CreateEquipTaskRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     task_id = f"meqt-{uuid.uuid4().hex[:8]}"
     data = request.model_dump()
     data["equipment_id"] = equip_id
@@ -764,7 +781,8 @@ class CompleteEquipTaskRequest(BaseModel):
 
 
 @router.post("/equipment/tasks/{task_id}/complete")
-async def api_complete_equip_task(task_id: str, request: CompleteEquipTaskRequest):
+async def api_complete_equip_task(task_id: str, request: CompleteEquipTaskRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     result = await asyncio.to_thread(
         _dl.complete_equip_task,
         task_id, request.completed_at, request.notes, request.created_by,

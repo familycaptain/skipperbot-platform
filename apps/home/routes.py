@@ -7,12 +7,20 @@ Mounted at /api/apps/home/ by the app platform loader.
 import asyncio
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from app_platform.auth import current_principal
 from apps.home import data as _dl
 
 router = APIRouter()
+
+
+def _actor(request: Request) -> str:
+    """The authenticated actor's name. Auth is unconditional, so a verified
+    principal is always present; the client-supplied value is never trusted."""
+    p = current_principal(request)
+    return (p["name"] if p else "").lower().strip()
 
 
 # ---------------------------------------------------------------------------
@@ -49,7 +57,8 @@ async def api_list_home_issues(status: str = "", location: str = ""):
 
 
 @router.post("/issues")
-async def api_create_home_issue(request: CreateIssueRequest):
+async def api_create_home_issue(request: CreateIssueRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     issue_id = f"hi-{uuid.uuid4().hex[:8]}"
     issue = {
         "id": issue_id,
@@ -225,7 +234,8 @@ class CreateTaskRequest(BaseModel):
 
 
 @router.post("/maintenance/tasks")
-async def api_create_task(request: CreateTaskRequest):
+async def api_create_task(request: CreateTaskRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     task_id = f"hmt-{uuid.uuid4().hex[:8]}"
     task = {
         "id": task_id,
@@ -294,7 +304,8 @@ class CompleteTaskRequest(BaseModel):
 
 
 @router.post("/maintenance/tasks/{task_id}/complete")
-async def api_complete_task(task_id: str, request: CompleteTaskRequest):
+async def api_complete_task(task_id: str, request: CompleteTaskRequest, http_request: Request):
+    request.completed_by = _actor(http_request)
     result = await asyncio.to_thread(
         _dl.complete_task,
         task_id,

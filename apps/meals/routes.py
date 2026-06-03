@@ -9,13 +9,21 @@ import json
 import random
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
+from app_platform.auth import current_principal
 from apps.meals import data as _dl
 
 router = APIRouter()
+
+
+def _actor(request: Request) -> str:
+    """The authenticated actor's name. Auth is unconditional, so a verified
+    principal is always present; the client-supplied value is never trusted."""
+    p = current_principal(request)
+    return (p["name"] if p else "").lower().strip()
 
 # ---------------------------------------------------------------------------
 # SSE broadcast
@@ -216,7 +224,8 @@ async def api_list_meals(effort: str = "", q: str = "", tag: str = "", include_p
 
 
 @router.post("")
-async def api_create_meal(req: CreateMealRequest):
+async def api_create_meal(req: CreateMealRequest, request: Request):
+    req.created_by = _actor(request)
     if not req.name.strip():
         raise HTTPException(400, "name is required")
     if req.effort not in ("low", "medium", "high"):
@@ -287,7 +296,8 @@ async def api_get_today_meals():
 
 
 @router.post("/meal-log")
-async def api_create_meal_log(req: MealLogRequest):
+async def api_create_meal_log(req: MealLogRequest, request: Request):
+    req.logged_by = _actor(request)
     from datetime import date
     logged_date = req.logged_date.strip() if req.logged_date else date.today().isoformat()
     meal_type = req.meal_type if req.meal_type in ("dinner", "lunch", "breakfast", "snack") else "dinner"

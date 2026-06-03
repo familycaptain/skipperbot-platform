@@ -8,12 +8,20 @@ import asyncio
 import uuid
 from datetime import datetime, timezone, timedelta
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
+from app_platform.auth import current_principal
 from apps.recipes import data as _dl
 
 router = APIRouter()
+
+
+def _actor(request: Request) -> str:
+    """The authenticated actor's name. Auth is unconditional, so a verified
+    principal is always present; the client-supplied value is never trusted."""
+    p = current_principal(request)
+    return (p["name"] if p else "").lower().strip()
 
 
 # ---------------------------------------------------------------------------
@@ -129,7 +137,8 @@ class CreateRecipeRequest(BaseModel):
 
 
 @router.post("")
-async def api_create_recipe(request: CreateRecipeRequest):
+async def api_create_recipe(request: CreateRecipeRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     recipe_id = f"re-{uuid.uuid4().hex[:8]}"
     recipe = {
         "id": recipe_id,

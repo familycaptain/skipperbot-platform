@@ -7,12 +7,20 @@ Mounted at /api/apps/locator/ by the app platform loader.
 import asyncio
 import uuid
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from app_platform.auth import current_principal
 from apps.locator import data as _dl
 
 router = APIRouter()
+
+
+def _actor(request: Request) -> str:
+    """The authenticated actor's name. Auth is unconditional, so a verified
+    principal is always present; the client-supplied value is never trusted."""
+    p = current_principal(request)
+    return (p["name"] if p else "").lower().strip()
 
 
 # ---------------------------------------------------------------------------
@@ -83,7 +91,8 @@ class CreateLocatedItemRequest(BaseModel):
 
 
 @router.post("")
-async def api_create_located_item(request: CreateLocatedItemRequest):
+async def api_create_located_item(request: CreateLocatedItemRequest, http_request: Request):
+    request.created_by = _actor(http_request)
     item_id = f"loc-{uuid.uuid4().hex[:8]}"
     item = {
         "id": item_id,

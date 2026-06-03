@@ -1607,8 +1607,9 @@ class CreateDocRequest(BaseModel):
 
 
 @app.post("/api/apps/documents")
-async def api_create_document(request: CreateDocRequest):
+async def api_create_document(request: CreateDocRequest, http_request: Request):
     """Create a new standalone document."""
+    request.created_by = _actor_name(http_request)
     def _create():
         tag_list = [t.strip() for t in request.tags.split(",") if t.strip()] if request.tags else []
         return doc_store.create_doc(
@@ -1630,8 +1631,9 @@ class UpdateDocRequest(BaseModel):
 
 
 @app.put("/api/apps/documents/{doc_id}")
-async def api_update_document(doc_id: str, request: UpdateDocRequest):
+async def api_update_document(doc_id: str, request: UpdateDocRequest, http_request: Request):
     """Update a document's content (and optionally title/tags)."""
+    request.updated_by = _actor_name(http_request)
     def _update():
         tag_list = [t.strip() for t in request.tags.split(",") if t.strip()] if request.tags is not None else None
         return doc_store.update_doc(
@@ -1655,8 +1657,9 @@ class PatchDocMetaRequest(BaseModel):
 
 
 @app.patch("/api/apps/documents/{doc_id}")
-async def api_patch_document_meta(doc_id: str, request: PatchDocMetaRequest):
+async def api_patch_document_meta(doc_id: str, request: PatchDocMetaRequest, http_request: Request):
     """Update document metadata (title, tags, linked entity) without changing content."""
+    request.updated_by = _actor_name(http_request)
     def _patch():
         tag_list = [t.strip() for t in request.tags.split(",") if t.strip()] if request.tags is not None else None
         entity_ref = None
@@ -1744,8 +1747,9 @@ class LinkDocRequest(BaseModel):
 
 
 @app.post("/api/apps/documents/{doc_id}/link")
-async def api_link_doc_to_entity(doc_id: str, request: LinkDocRequest):
+async def api_link_doc_to_entity(doc_id: str, request: LinkDocRequest, http_request: Request):
     """Link a document to a goal/project/task."""
+    request.created_by = _actor_name(http_request)
     def _link():
         return link_registry.create_link(
             source_id=request.entity_id.strip(),
@@ -1973,10 +1977,10 @@ async def api_get_job(job_id: str, user_id: str = ""):
 
 
 @app.post("/api/jobs/{job_id}/cancel")
-async def api_cancel_job(job_id: str, user_id: str = ""):
+async def api_cancel_job(job_id: str, request: Request, user_id: str = ""):
     """Cancel a queued or running job."""
     from app_platform.jobs import cancel_job
-    result = await asyncio.to_thread(cancel_job, job_id, user_id)
+    result = await asyncio.to_thread(cancel_job, job_id, _actor_name(request))
     if not result:
         raise HTTPException(status_code=404, detail="Job not found or already finished")
     return result
@@ -1991,7 +1995,7 @@ async def api_get_job_logs(job_id: str, after: int = 0, limit: int = 500,
 
 
 @app.post("/api/jobs/{job_id}/rerun")
-async def api_rerun_job(job_id: str, user_id: str = ""):
+async def api_rerun_job(job_id: str, request: Request, user_id: str = ""):
     """Re-run a completed/failed job by creating a new child job."""
     from app_platform.jobs import get_job
     from app_platform.jobs import submit_job
@@ -2002,7 +2006,7 @@ async def api_rerun_job(job_id: str, user_id: str = ""):
         job_type=original["job_type"],
         name=original["name"],
         config=original.get("config"),
-        created_by=user_id or original.get("created_by", ""),
+        created_by=_actor_name(request) or original.get("created_by", ""),
         notify_user=original.get("notify_user", ""),
         description=original.get("description", ""),
     )
