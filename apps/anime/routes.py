@@ -28,6 +28,8 @@ from urllib.parse import urljoin
 
 import httpx
 from fastapi import APIRouter, HTTPException, Query, Request
+
+from app_platform.auth import scope_user
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
@@ -371,8 +373,9 @@ class RecordWatchRequest(BaseModel):
 
 
 @router.get("/history")
-async def api_history(user_id: str, limit: int = 25):
+async def api_history(user_id: str, request: Request, limit: int = 25):
     """Watch history is per-user. user_id is required."""
+    user_id = scope_user(request, user_id)
     if not user_id.strip():
         raise HTTPException(400, "user_id is required")
     rows = await asyncio.to_thread(_dl.get_history, user_id, limit)
@@ -380,7 +383,8 @@ async def api_history(user_id: str, limit: int = 25):
 
 
 @router.post("/history/record")
-async def api_record_watch(req: RecordWatchRequest):
+async def api_record_watch(req: RecordWatchRequest, request: Request):
+    req.user_id = scope_user(request, req.user_id)
     title_row = await asyncio.to_thread(
         _dl.upsert_title, req.allanime_id, req.title, req.episode_count
     )
@@ -402,8 +406,9 @@ async def api_record_watch(req: RecordWatchRequest):
 
 
 @router.get("/resume")
-async def api_resume(user_id: str):
+async def api_resume(user_id: str, request: Request):
     """Most-recent unfinished watch, with the next episode pre-resolved."""
+    user_id = scope_user(request, user_id)
     if not user_id.strip():
         raise HTTPException(400, "user_id is required")
     rows = await asyncio.to_thread(_dl.get_history, user_id, 5)
@@ -427,7 +432,8 @@ class WatchlistAddRequest(BaseModel):
 
 
 @router.get("/watchlist")
-async def api_get_watchlist(user_id: str):
+async def api_get_watchlist(user_id: str, request: Request):
+    user_id = scope_user(request, user_id)
     if not user_id.strip():
         raise HTTPException(400, "user_id is required")
     rows = await asyncio.to_thread(_dl.get_watchlist, user_id)
@@ -435,8 +441,9 @@ async def api_get_watchlist(user_id: str):
 
 
 @router.get("/watchlist/check/{allanime_id}")
-async def api_check_watchlist(allanime_id: str, user_id: str):
+async def api_check_watchlist(allanime_id: str, user_id: str, request: Request):
     """Used by the search/episode-picker UI to render the right star state."""
+    user_id = scope_user(request, user_id)
     if not user_id.strip():
         raise HTTPException(400, "user_id is required")
     in_list = await asyncio.to_thread(_dl.is_in_watchlist, user_id, allanime_id)
@@ -444,7 +451,8 @@ async def api_check_watchlist(allanime_id: str, user_id: str):
 
 
 @router.post("/watchlist")
-async def api_add_watchlist(req: WatchlistAddRequest):
+async def api_add_watchlist(req: WatchlistAddRequest, request: Request):
+    req.user_id = scope_user(request, req.user_id)
     if not req.user_id.strip():
         raise HTTPException(400, "user_id is required")
     entry = await asyncio.to_thread(
@@ -459,7 +467,8 @@ async def api_add_watchlist(req: WatchlistAddRequest):
 
 
 @router.delete("/watchlist/{allanime_id}")
-async def api_remove_watchlist(allanime_id: str, user_id: str):
+async def api_remove_watchlist(allanime_id: str, user_id: str, request: Request):
+    user_id = scope_user(request, user_id)
     if not user_id.strip():
         raise HTTPException(400, "user_id is required")
     ok = await asyncio.to_thread(_dl.remove_from_watchlist, user_id, allanime_id)

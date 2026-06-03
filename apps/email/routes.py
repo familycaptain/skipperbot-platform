@@ -8,6 +8,7 @@ import logging
 from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
+from app_platform.auth import scope_user
 from apps.email import data as dl_email
 from apps.email import gmail_client
 
@@ -58,7 +59,8 @@ _oauth_verifiers: dict[str, str] = {}  # state -> code_verifier
 # ---------------------------------------------------------------------------
 
 @router.get("/accounts")
-async def api_email_accounts(user: str = ""):
+async def api_email_accounts(request: Request, user: str = ""):
+    user = scope_user(request, user)
     if not user:
         return {"error": "user query param required"}
     accounts = await asyncio.to_thread(dl_email.list_accounts, user)
@@ -204,7 +206,8 @@ async def api_email_reorder_rules(req: EmailRuleReorderRequest):
 # ---------------------------------------------------------------------------
 
 @router.get("/log")
-async def api_email_log(account_id: str = "", user: str = "", limit: int = 50, offset: int = 0):
+async def api_email_log(request: Request, account_id: str = "", user: str = "", limit: int = 50, offset: int = 0):
+    user = scope_user(request, user)
     rows = await asyncio.to_thread(dl_email.list_log, account_id=account_id, user_id=user, limit=limit, offset=offset)
     return {"log": rows}
 

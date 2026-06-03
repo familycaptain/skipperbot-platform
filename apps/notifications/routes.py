@@ -7,17 +7,19 @@ from __future__ import annotations
 
 import asyncio
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
+from app_platform.auth import scope_user
 from . import data as _data
 
 router = APIRouter()
 
 
 @router.get("")
-async def list_notifications(recipient: str = "", limit: int = 50):
+async def list_notifications(request: Request, recipient: str = "", limit: int = 50):
     """List notifications for a recipient, newest first. Backs the history UI."""
+    recipient = scope_user(request, recipient)
     notifications = await asyncio.to_thread(_data.get_notifications_for_user, recipient, limit)
     return {"notifications": notifications}
 
@@ -27,8 +29,9 @@ async def list_notifications(recipient: str = "", limit: int = 50):
 # ---------------------------------------------------------------------------
 
 @router.get("/pushover")
-async def pushover_status(user_id: str = ""):
+async def pushover_status(request: Request, user_id: str = ""):
     """Is Pushover set up for this user? Never returns the actual key."""
+    user_id = scope_user(request, user_id)
     if not user_id.strip():
         return {"app_token_configured": False, "configured": False, "enabled": False, "device": ""}
     return await asyncio.to_thread(_data.get_pushover_status, user_id)
@@ -42,8 +45,9 @@ class PushoverIn(BaseModel):
 
 
 @router.post("/pushover")
-async def pushover_save(body: PushoverIn):
+async def pushover_save(body: PushoverIn, request: Request):
     """Save a user's Pushover opt-in (user key encrypted at rest)."""
+    body.user_id = scope_user(request, body.user_id)
     if not body.user_id.strip():
         return {"ok": False, "error": "user_id is required"}
     await asyncio.to_thread(
@@ -54,8 +58,9 @@ async def pushover_save(body: PushoverIn):
 
 
 @router.delete("/pushover")
-async def pushover_delete(user_id: str = ""):
+async def pushover_delete(request: Request, user_id: str = ""):
     """Remove a user's Pushover opt-in entirely."""
+    user_id = scope_user(request, user_id)
     if not user_id.strip():
         return {"ok": False, "error": "user_id is required"}
     await asyncio.to_thread(_data.delete_pushover_subscription, user_id)
@@ -63,8 +68,9 @@ async def pushover_delete(user_id: str = ""):
 
 
 @router.post("/pushover/test")
-async def pushover_test(body: PushoverIn):
+async def pushover_test(body: PushoverIn, request: Request):
     """Send a test Pushover notification to confirm setup."""
+    body.user_id = scope_user(request, body.user_id)
     if not body.user_id.strip():
         return {"ok": False, "error": "user_id is required"}
 
