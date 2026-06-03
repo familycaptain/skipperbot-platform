@@ -61,6 +61,19 @@ def auth_key_available() -> bool:
     return _auth_key() is not None
 
 
+def auth_enforced() -> bool:
+    """Whether the API rejects unauthenticated requests.
+
+    OFF by default so the whole auth layer can ship dormant and be flipped on
+    (``SKIPPERBOT_AUTH_ENFORCE=1``) to test on a live host — and flipped back
+    instantly if something misbehaves, with no redeploy. When off: tokens are
+    still verified and the principal attached when present (so the new
+    identity-derivation paths work), but missing/invalid tokens are NOT rejected
+    and handlers fall back to legacy behavior.
+    """
+    return os.getenv("SKIPPERBOT_AUTH_ENFORCE", "").strip().lower() in ("1", "true", "yes", "on")
+
+
 def _now() -> int:
     return int(time.time())
 

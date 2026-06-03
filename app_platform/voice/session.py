@@ -80,7 +80,9 @@ def mint_ephemeral_token(user_id: str, device_info: dict | None = None) -> dict 
             return None
 
         data = resp.json()
-        session_id = f"vs-{uuid.uuid4().hex[:12]}"
+        # Full-entropy id (was 48-bit uuid[:12]); the WS also requires a bearer token.
+        import secrets as _secrets
+        session_id = f"vs-{_secrets.token_urlsafe(24)}"
 
         session_info = {
             "session_id": session_id,

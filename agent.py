@@ -18,7 +18,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from config import logger, discord_enabled
@@ -38,6 +38,7 @@ from knowledge_store import migrate_chunk_embeddings
 from data_layer.db import close_pool
 from app_platform.loader import load_all_apps, get_app_tool_routes
 from data_layer.users import authenticate, get_user, update_password, get_all_users, has_role, create_user, update_role, delete_user, parse_roles
+from app_platform.auth import principal_from_request, principal_from_ws, auth_enforced, require_user, require_admin, resolve_target
 from apps.goals import data as dl_goals
 import app_platform.documents as doc_store
 import link_registry
@@ -119,12 +120,58 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="SkipperBot Agent", version="0.1.0", lifespan=lifespan)
 
+
+# ---------------------------------------------------------------------------
+# Authentication gate (see app_platform/auth.py). Verifies a bearer token and
+# attaches request.state.principal. When SKIPPERBOT_AUTH_ENFORCE is on, rejects
+# unauthenticated non-public requests with 401; when off (default), it's a no-op
+# beyond attaching the principal — so this can ship dormant and be flipped on.
+# ---------------------------------------------------------------------------
+_PUBLIC_EXACT = {"/", "/api/health", "/auth/login", "/auth/set-password",
+                 "/api/onboarding/status", "/api/onboarding/check-openai"}
+_PUBLIC_PREFIXES = ("/assets/", "/static/", "/web/")
+
+
+def _is_public_path(request: Request) -> bool:
+    path = request.url.path
+    if path in _PUBLIC_EXACT or path.startswith(_PUBLIC_PREFIXES):
+        return True
+    # SPA + static assets (anything that isn't an API/auth/ws/chat path).
+    if not path.startswith(("/api/", "/auth/", "/ws", "/chat")):
+        return True
+    # First-run: allow creating the very first user only while none exist.
+    if path == "/api/onboarding/create-user":
+        try:
+            return not any("bot" not in (u.get("role") or "") for u in get_all_users())
+        except Exception:
+            return False
+    return False
+
+
+@app.middleware("http")
+async def auth_gate(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
+    try:
+        request.state.principal = principal_from_request(request)
+    except Exception:
+        request.state.principal = None
+    if auth_enforced() and request.state.principal is None and not _is_public_path(request):
+        return JSONResponse({"detail": "Authentication required"}, status_code=401)
+    return await call_next(request)
+
+
+# CORS is added AFTER the auth gate so it remains the OUTERMOST middleware —
+# that keeps CORS headers on 401 responses. Bearer tokens (not cookies) mean we
+# don't need credentialed CORS; pin origins via SKIPPERBOT_ALLOWED_ORIGINS
+# (comma-separated) or default to open (safe without credentials).
+_allowed_origins = [o.strip() for o in os.getenv("SKIPPERBOT_ALLOWED_ORIGINS", "").split(",") if o.strip()] or ["*"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_allowed_origins,
+    allow_credentials=False,
     allow_methods=["*"],
-    allow_headers=["*"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 
@@ -502,6 +549,18 @@ async def voice_tool_relay(websocket: WebSocket, session_id: str):
         await websocket.close(code=4001, reason="Unknown session")
         return
 
+    principal = principal_from_ws(websocket)
+    if auth_enforced():
+        if not principal:
+            await websocket.close(code=4401, reason="Authentication required")
+            return
+        # A service token (voice satellite), the session's own user, or an admin may connect.
+        if (not principal.get("is_service")
+                and principal.get("name") != session.get("user_id")
+                and not has_role(principal, "admin")):
+            await websocket.close(code=4403, reason="Forbidden")
+            return
+
     await websocket.accept()
     user_id = session["user_id"]
     logger.info("VOICE: Sideband WS connected for session %s (user=%s)", session_id, user_id)
@@ -577,6 +636,12 @@ def get_user_app_context(user_id: str) -> dict | None:
 @app.websocket("/ws/{user_id}")
 async def websocket_chat(websocket: WebSocket, user_id: str):
     """WebSocket endpoint for real-time chat per user."""
+    principal = principal_from_ws(websocket)
+    if auth_enforced() and not principal:
+        await websocket.close(code=4401, reason="Authentication required")
+        return
+    if principal:
+        user_id = principal["name"]  # authoritative identity — ignore the path param
     await manager.connect(user_id, websocket)
     # Send build ID so client can detect agent restarts
     await websocket.send_json({"type": "build_id", "build_id": BUILD_ID})
