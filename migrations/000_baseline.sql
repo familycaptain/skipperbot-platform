@@ -450,7 +450,23 @@ CREATE TABLE IF NOT EXISTS public.users (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     focus_nag_enabled boolean DEFAULT true NOT NULL,
     sort_order integer DEFAULT 99 NOT NULL,
+    token_version integer DEFAULT 0 NOT NULL,   -- bump to revoke a user's outstanding session tokens
     CONSTRAINT users_role_check CHECK ((role ~ '^(admin|member|kid|bot|parent|primary)(,(admin|member|kid|bot|parent|primary))*$'::text))
+);
+
+-- Auth: long-lived bearer tokens for non-browser companion clients (voice,
+-- mobile). Only the SHA-256 hash is stored. See app_platform/auth.py +
+-- data_layer/service_tokens.py. (Also created idempotently at startup so
+-- existing deployments pick it up without a baseline re-run.)
+CREATE TABLE IF NOT EXISTS public.service_tokens (
+    id           text PRIMARY KEY,
+    label        text NOT NULL,
+    token_hash   text NOT NULL UNIQUE,
+    bound_user   text,
+    role         text DEFAULT 'member'::text NOT NULL,
+    created_at   timestamp with time zone DEFAULT now() NOT NULL,
+    last_used_at timestamp with time zone,
+    revoked_at   timestamp with time zone
 );
 
 

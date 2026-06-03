@@ -49,6 +49,14 @@ BUILD_ID = str(int(time.time()))
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize MCP connection and (optionally) Discord bot on startup."""
+    # Ensure the auth schema (service_tokens table + users.token_version column)
+    # exists. Idempotent — lets existing deployments pick it up without a
+    # baseline re-run; fresh installs already have it from 000_baseline.sql.
+    try:
+        from data_layer.service_tokens import ensure_auth_schema
+        await asyncio.to_thread(ensure_auth_schema)
+    except Exception as e:
+        logger.error("STARTUP: ensure_auth_schema failed: %s", e)
     # One-time migrations: backfill memory embeddings + migrate knowledge to binary
     await asyncio.to_thread(backfill_embeddings)
     await asyncio.to_thread(migrate_chunk_embeddings)
@@ -153,9 +161,23 @@ async def root():
     return {"status": "ok", "agent": "SkipperBot", "version": "0.1.0"}
 
 
+def _issue_token(user: dict) -> str:
+    """Mint a session token for a just-authenticated user (best-effort; never
+    blocks login if the auth key is somehow unavailable)."""
+    try:
+        from app_platform.auth import mint_session_token
+        # Re-fetch so token_version is included even if the passed dict predates it.
+        fresh = get_user(user["name"]) or user
+        return mint_session_token(fresh)
+    except Exception as e:
+        logger.warning("AUTH: could not mint session token for %s: %s",
+                       user.get("name"), e)
+        return ""
+
+
 @app.post("/auth/login")
 async def login(request: LoginRequest):
-    """Authenticate a web user. Returns canonical user_id on success."""
+    """Authenticate a web user. Returns canonical user_id + a session token."""
     name = request.username.lower().strip()
     user = await asyncio.to_thread(get_user, name)
     if not user:
@@ -171,7 +193,9 @@ async def login(request: LoginRequest):
     authed = await asyncio.to_thread(authenticate, name, request.password)
     if not authed:
         return {"ok": False, "error": "Wrong password."}
-    return {"ok": True, "user": {"name": authed["name"], "display_name": authed["display_name"], "role": authed["role"]}}
+    return {"ok": True,
+            "user": {"name": authed["name"], "display_name": authed["display_name"], "role": authed["role"]},
+            "token": _issue_token(authed)}
 
 
 @app.post("/auth/set-password")
@@ -186,7 +210,9 @@ async def set_password(request: SetPasswordRequest):
     if len(request.password) < 4:
         return {"ok": False, "error": "Password must be at least 4 characters."}
     await asyncio.to_thread(update_password, name, request.password)
-    return {"ok": True, "user": {"name": user["name"], "display_name": user["display_name"], "role": user["role"]}}
+    return {"ok": True,
+            "user": {"name": user["name"], "display_name": user["display_name"], "role": user["role"]},
+            "token": _issue_token(user)}
 
 
 # ---------------------------------------------------------------------------
@@ -353,6 +379,7 @@ async def onboarding_create_user(request: OnboardingCreateUserRequest):
                 "display_name": user["display_name"],
                 "role": user["role"],
             },
+            "token": _issue_token(user),
         }
 
     return await asyncio.to_thread(_do)
