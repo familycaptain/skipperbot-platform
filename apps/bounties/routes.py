@@ -7,14 +7,28 @@ Mounted at /api/apps/bounties/ by the app platform loader.
 import asyncio
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from app_platform.auth import current_principal
 from apps.bounties import data as _dl
 from apps.bounties import store as _store
 from data_layer import users as _users
 
 router = APIRouter()
+
+
+def _actor(request: Request, fallback: str) -> str:
+    """The authoritative actor name.
+
+    When auth is enforced a verified principal is present and we trust *it*,
+    never the client-supplied actor field — otherwise a kid could spoof a
+    parent's name to pass ``_require_parent_actor`` (or submit/claim a bounty
+    as someone else). When auth is dormant (no principal) we fall back to the
+    legacy body/query value so behavior is unchanged.
+    """
+    p = current_principal(request)
+    return p["name"] if p else (fallback or "")
 
 
 # ---------------------------------------------------------------------------
@@ -109,7 +123,8 @@ async def api_list_bounties(status: str = "", category: str = ""):
 
 
 @router.post("")
-async def api_create_bounty(req: CreateBountyRequest):
+async def api_create_bounty(req: CreateBountyRequest, request: Request):
+    req.created_by = _actor(request, req.created_by)
     await asyncio.to_thread(_require_parent_actor, req.created_by, "Only parents can create bounties")
     bounty_data = req.model_dump(exclude_none=True)
     bounty = await asyncio.to_thread(_dl.create_bounty, bounty_data)
@@ -139,7 +154,8 @@ async def api_get_bounty(bounty_id: str):
 
 
 @router.patch("/bounty/{bounty_id}")
-async def api_update_bounty(bounty_id: str, req: UpdateBountyRequest):
+async def api_update_bounty(bounty_id: str, req: UpdateBountyRequest, request: Request):
+    req.updated_by = _actor(request, req.updated_by)
     await asyncio.to_thread(_require_parent_actor, req.updated_by, "Only parents can edit bounties")
     updates = {
         k: v for k, v in req.model_dump().items()
@@ -154,7 +170,8 @@ async def api_update_bounty(bounty_id: str, req: UpdateBountyRequest):
 
 
 @router.delete("/bounty/{bounty_id}")
-async def api_delete_bounty(bounty_id: str, acted_by: str = ""):
+async def api_delete_bounty(bounty_id: str, request: Request, acted_by: str = ""):
+    acted_by = _actor(request, acted_by)
     await asyncio.to_thread(_require_parent_actor, acted_by, "Only parents can delete bounties")
     ok = await asyncio.to_thread(_dl.delete_bounty, bounty_id)
     if not ok:
@@ -163,7 +180,8 @@ async def api_delete_bounty(bounty_id: str, acted_by: str = ""):
 
 
 @router.post("/bounty/{bounty_id}/submit")
-async def api_submit_bounty(bounty_id: str, req: SubmitBountyRequest):
+async def api_submit_bounty(bounty_id: str, req: SubmitBountyRequest, request: Request):
+    req.submitted_by = _actor(request, req.submitted_by)
     result = await asyncio.to_thread(_store.submit_bounty, bounty_id, req.submitted_by, req.note)
     if "error" in result:
         raise HTTPException(status_code=400, detail=result["error"])
@@ -171,7 +189,8 @@ async def api_submit_bounty(bounty_id: str, req: SubmitBountyRequest):
 
 
 @router.post("/bounty/{bounty_id}/approve")
-async def api_approve_bounty(bounty_id: str, req: ReviewBountyRequest):
+async def api_approve_bounty(bounty_id: str, req: ReviewBountyRequest, request: Request):
+    req.reviewed_by = _actor(request, req.reviewed_by)
     await asyncio.to_thread(_require_parent_actor, req.reviewed_by, "Only parents can approve bounties")
     result = await asyncio.to_thread(_store.approve_bounty, bounty_id, req.reviewed_by, req.note)
     if "error" in result:
@@ -180,7 +199,8 @@ async def api_approve_bounty(bounty_id: str, req: ReviewBountyRequest):
 
 
 @router.post("/bounty/{bounty_id}/reject")
-async def api_reject_bounty(bounty_id: str, req: ReviewBountyRequest):
+async def api_reject_bounty(bounty_id: str, req: ReviewBountyRequest, request: Request):
+    req.reviewed_by = _actor(request, req.reviewed_by)
     await asyncio.to_thread(_require_parent_actor, req.reviewed_by, "Only parents can reject bounties")
     result = await asyncio.to_thread(_store.reject_bounty, bounty_id, req.reviewed_by, req.note)
     if "error" in result:
@@ -189,7 +209,8 @@ async def api_reject_bounty(bounty_id: str, req: ReviewBountyRequest):
 
 
 @router.post("/bounty/{bounty_id}/skip")
-async def api_skip_bounty(bounty_id: str, req: SkipBountyRequest):
+async def api_skip_bounty(bounty_id: str, req: SkipBountyRequest, request: Request):
+    req.skipped_by = _actor(request, req.skipped_by)
     await asyncio.to_thread(_require_parent_actor, req.skipped_by, "Only parents can skip bounties")
     result = await asyncio.to_thread(_store.skip_bounty, bounty_id, req.skipped_by)
     if "error" in result:
@@ -208,7 +229,8 @@ async def api_list_templates(active_only: bool = True):
 
 
 @router.post("/templates")
-async def api_create_template(req: CreateTemplateRequest):
+async def api_create_template(req: CreateTemplateRequest, request: Request):
+    req.created_by = _actor(request, req.created_by)
     await asyncio.to_thread(_require_parent_actor, req.created_by, "Only parents can create templates")
     result = await asyncio.to_thread(_store.create_template, req.model_dump())
     if "error" in result:
@@ -225,7 +247,8 @@ async def api_get_template(tpl_id: str):
 
 
 @router.patch("/templates/{tpl_id}")
-async def api_update_template(tpl_id: str, req: UpdateTemplateRequest):
+async def api_update_template(tpl_id: str, req: UpdateTemplateRequest, request: Request):
+    req.updated_by = _actor(request, req.updated_by)
     await asyncio.to_thread(_require_parent_actor, req.updated_by, "Only parents can edit templates")
     updates = {
         k: v for k, v in req.model_dump().items()
@@ -240,7 +263,8 @@ async def api_update_template(tpl_id: str, req: UpdateTemplateRequest):
 
 
 @router.delete("/templates/{tpl_id}")
-async def api_delete_template(tpl_id: str, acted_by: str = ""):
+async def api_delete_template(tpl_id: str, request: Request, acted_by: str = ""):
+    acted_by = _actor(request, acted_by)
     await asyncio.to_thread(_require_parent_actor, acted_by, "Only parents can delete templates")
     ok = await asyncio.to_thread(_dl.delete_template, tpl_id)
     if not ok:
@@ -249,7 +273,8 @@ async def api_delete_template(tpl_id: str, acted_by: str = ""):
 
 
 @router.post("/templates/{tpl_id}/generate")
-async def api_generate_from_template(tpl_id: str, acted_by: str = ""):
+async def api_generate_from_template(tpl_id: str, request: Request, acted_by: str = ""):
+    acted_by = _actor(request, acted_by)
     await asyncio.to_thread(_require_parent_actor, acted_by, "Only parents can generate bounties from templates")
     bounty = await asyncio.to_thread(_store.generate_from_template, tpl_id)
     if not bounty:
@@ -281,7 +306,8 @@ async def api_get_transactions(user_id: str, limit: int = 50):
 
 
 @router.post("/balances/{user_id}/pay")
-async def api_record_payment(user_id: str, req: RecordPaymentRequest):
+async def api_record_payment(user_id: str, req: RecordPaymentRequest, request: Request):
+    req.recorded_by = _actor(request, req.recorded_by)
     await asyncio.to_thread(_require_parent_actor, req.recorded_by, "Only parents can record payments")
     result = await asyncio.to_thread(
         _store.record_payment,
@@ -303,7 +329,8 @@ async def api_list_categories():
 
 
 @router.post("/categories")
-async def api_create_category(req: CreateCategoryRequest):
+async def api_create_category(req: CreateCategoryRequest, request: Request):
+    req.created_by = _actor(request, req.created_by)
     await asyncio.to_thread(_require_parent_actor, req.created_by, "Only parents can create categories")
     cat = await asyncio.to_thread(_dl.create_category, req.name.strip(), req.icon.strip())
     if not cat:
@@ -312,7 +339,8 @@ async def api_create_category(req: CreateCategoryRequest):
 
 
 @router.delete("/categories/{cat_id}")
-async def api_delete_category(cat_id: str, acted_by: str = ""):
+async def api_delete_category(cat_id: str, request: Request, acted_by: str = ""):
+    acted_by = _actor(request, acted_by)
     await asyncio.to_thread(_require_parent_actor, acted_by, "Only parents can delete categories")
     ok = await asyncio.to_thread(_dl.delete_category, cat_id)
     if not ok:
@@ -340,7 +368,8 @@ async def api_get_config():
 
 
 @router.put("/config")
-async def api_update_config(req: UpdateConfigRequest):
+async def api_update_config(req: UpdateConfigRequest, request: Request):
+    req.updated_by = _actor(request, req.updated_by)
     await asyncio.to_thread(_require_parent_actor, req.updated_by, "Only parents can update bounty settings")
     updates = {
         k: v for k, v in req.model_dump().items()

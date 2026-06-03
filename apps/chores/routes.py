@@ -7,9 +7,10 @@ import asyncio
 import datetime as dt
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from app_platform.auth import current_principal
 from apps.chores import data as _dl
 from apps.chores import store as _store
 from data_layer import users as _users
@@ -90,6 +91,19 @@ class CompleteChoreRequest(BaseModel):
 # Permission helpers
 # ---------------------------------------------------------------------------
 
+def _actor(request: Request, fallback: str) -> str:
+    """The authoritative actor name.
+
+    When auth is enforced a verified principal is present and we trust *it*,
+    never the client-supplied ``acted_by`` — otherwise a kid could spoof a
+    parent's name to pass ``_require_parent``. When auth is dormant (no
+    principal) we fall back to the legacy body/query value so behavior is
+    unchanged.
+    """
+    p = current_principal(request)
+    return p["name"] if p else (fallback or "")
+
+
 def _get_actor(user_id: str) -> dict:
     actor = _users.get_user(user_id)
     if not actor:
@@ -150,7 +164,8 @@ async def api_get_kid(kid_id: str):
 
 
 @router.post("/kids")
-async def api_create_kid(req: CreateKidRequest):
+async def api_create_kid(req: CreateKidRequest, request: Request):
+    req.acted_by = _actor(request, req.acted_by)
     await asyncio.to_thread(_require_parent, req.acted_by, "Only parents can create kids")
     kid = await asyncio.to_thread(
         _dl.create_kid,
@@ -163,7 +178,8 @@ async def api_create_kid(req: CreateKidRequest):
 
 
 @router.patch("/kids/{kid_id}")
-async def api_update_kid(kid_id: str, req: UpdateKidRequest):
+async def api_update_kid(kid_id: str, req: UpdateKidRequest, request: Request):
+    req.acted_by = _actor(request, req.acted_by)
     await asyncio.to_thread(_require_parent, req.acted_by, "Only parents can edit kids")
     fields = {k: v for k, v in req.model_dump().items() if k != "acted_by"}
     kid = await asyncio.to_thread(_dl.update_kid, kid_id, by=req.acted_by, **fields)
@@ -174,7 +190,8 @@ async def api_update_kid(kid_id: str, req: UpdateKidRequest):
 
 
 @router.delete("/kids/{kid_id}")
-async def api_delete_kid(kid_id: str, acted_by: str = ""):
+async def api_delete_kid(kid_id: str, request: Request, acted_by: str = ""):
+    acted_by = _actor(request, acted_by)
     await asyncio.to_thread(_require_parent, acted_by, "Only parents can remove kids")
     ok = await asyncio.to_thread(_dl.soft_delete_kid, kid_id, by=acted_by)
     if not ok:
@@ -207,7 +224,8 @@ async def api_get_zone(zone_id: str):
 
 
 @router.post("/zones")
-async def api_create_zone(req: CreateZoneRequest):
+async def api_create_zone(req: CreateZoneRequest, request: Request):
+    req.acted_by = _actor(request, req.acted_by)
     await asyncio.to_thread(_require_parent, req.acted_by, "Only parents can create zones")
     zone = await asyncio.to_thread(
         _dl.create_zone,
@@ -225,7 +243,8 @@ async def api_create_zone(req: CreateZoneRequest):
 
 
 @router.patch("/zones/{zone_id}")
-async def api_update_zone(zone_id: str, req: UpdateZoneRequest):
+async def api_update_zone(zone_id: str, req: UpdateZoneRequest, request: Request):
+    req.acted_by = _actor(request, req.acted_by)
     await asyncio.to_thread(_require_parent, req.acted_by, "Only parents can edit zones")
     updates = {k: v for k, v in req.model_dump().items()
                if k not in ("acted_by", "member_kid_ids") and v is not None}
@@ -248,7 +267,8 @@ async def api_update_zone(zone_id: str, req: UpdateZoneRequest):
 
 
 @router.delete("/zones/{zone_id}")
-async def api_delete_zone(zone_id: str, acted_by: str = ""):
+async def api_delete_zone(zone_id: str, request: Request, acted_by: str = ""):
+    acted_by = _actor(request, acted_by)
     await asyncio.to_thread(_require_parent, acted_by, "Only parents can delete zones")
     try:
         ok = await asyncio.to_thread(_dl.delete_zone, zone_id, by=acted_by)
@@ -287,7 +307,8 @@ async def api_get_chore(chore_id: str):
 
 
 @router.post("/chores")
-async def api_create_chore(req: CreateChoreRequest):
+async def api_create_chore(req: CreateChoreRequest, request: Request):
+    req.acted_by = _actor(request, req.acted_by)
     await asyncio.to_thread(_require_parent, req.acted_by, "Only parents can create chores")
     chore = await asyncio.to_thread(
         _dl.create_chore,
@@ -302,7 +323,8 @@ async def api_create_chore(req: CreateChoreRequest):
 
 
 @router.patch("/chores/{chore_id}")
-async def api_update_chore(chore_id: str, req: UpdateChoreRequest):
+async def api_update_chore(chore_id: str, req: UpdateChoreRequest, request: Request):
+    req.acted_by = _actor(request, req.acted_by)
     await asyncio.to_thread(_require_parent, req.acted_by, "Only parents can edit chores")
     fields = {k: v for k, v in req.model_dump().items()
               if k != "acted_by" and v is not None}
@@ -314,7 +336,8 @@ async def api_update_chore(chore_id: str, req: UpdateChoreRequest):
 
 
 @router.delete("/chores/{chore_id}")
-async def api_delete_chore(chore_id: str, acted_by: str = ""):
+async def api_delete_chore(chore_id: str, request: Request, acted_by: str = ""):
+    acted_by = _actor(request, acted_by)
     await asyncio.to_thread(_require_parent, acted_by, "Only parents can delete chores")
     ok = await asyncio.to_thread(_dl.soft_delete_chore, chore_id, by=acted_by)
     if not ok:
@@ -328,7 +351,8 @@ async def api_delete_chore(chore_id: str, acted_by: str = ""):
 # ---------------------------------------------------------------------------
 
 @router.post("/complete")
-async def api_complete(req: CompleteChoreRequest):
+async def api_complete(req: CompleteChoreRequest, request: Request):
+    req.acted_by = _actor(request, req.acted_by)
     actor = await asyncio.to_thread(_get_actor, req.acted_by)
     kid = await asyncio.to_thread(_dl.get_kid, req.kid_id)
     if not kid:
@@ -348,7 +372,8 @@ async def api_complete(req: CompleteChoreRequest):
 
 
 @router.delete("/complete/{completion_id}")
-async def api_uncomplete(completion_id: str, acted_by: str = ""):
+async def api_uncomplete(completion_id: str, request: Request, acted_by: str = ""):
+    acted_by = _actor(request, acted_by)
     actor = await asyncio.to_thread(_get_actor, acted_by)
     # We need the completion to find its kid for permission check
     removed = await asyncio.to_thread(_dl.delete_completion, completion_id)
