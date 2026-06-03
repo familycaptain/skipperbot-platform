@@ -203,11 +203,11 @@ The three take noticeably different approaches to remembering things:
   and *chat-extracted facts* — a postprocessing LLM step continuously pulls facts
   from your conversations and records those as auto-memories too. Then a separate
   layer takes *all* memories and self-organizes them into readable markdown
-  documents (Auto Documents) in a self-organizing folder structure you can view.
-  So you can ask ("when did we last rotate the tires?", "what's a good dinner
+  documents (Auto Documents) in a self-organizing folder structure you can view
+  in the app's UI. So you can ask ("when did we last rotate the tires?", "what's a good dinner
   idea?", "what did I say about my back pain last month?") and Skipper recalls
   it. Structured data also stays first-class in each app's own schema, so it's
-  queryable, not just recalled.
+  queryable and viewable in each app's UI, not just recalled.
 - **OpenClaw** — memory is **plain Markdown files** in the agent's workspace; the
   files are the source of truth and the model only "remembers" what gets written
   to disk. It exposes `memory_search` (semantic recall over indexed snippets) and

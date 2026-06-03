@@ -33,6 +33,8 @@ one, open an issue tagged `app-proposal` with:
 If the proposal is accepted, the maintainers help bootstrap the repo and
 add it to the official optional-app catalog in `docs/02-adding-apps.md`.
 
+Of course, you are always welcome to build your own app!
+
 ## Pull requests
 
 For changes to the platform itself:
@@ -45,7 +47,8 @@ For changes to the platform itself:
    and other security checks must all be green.
 6. Open a PR. Reference any related issue.
 
-For changes to an app: PR goes to that app's own repo, not here.
+For changes to an app: if the app ships with the platform (one of the built-in apps),
+PR goes to this repo. If it's a separately distributed app, PR goes to that app's own repo.
 
 ## Architecture rules — non-negotiable
 
