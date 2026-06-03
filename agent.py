@@ -1472,8 +1472,9 @@ async def delete_entity_api(entity_id: str, updated_by: str = ""):
 
 
 @app.get("/api/apps/goals/my-tasks/{user_id}")
-async def my_tasks_api(user_id: str, status_filter: str = ""):
+async def my_tasks_api(user_id: str, http_request: Request, status_filter: str = ""):
     """Get all tasks assigned to a user across all projects."""
+    user_id = scope_user(http_request, user_id)
     def _fetch():
         all_tasks = dl_goals.list_entities("t-")
         user_lower = user_id.lower().strip()

@@ -10,10 +10,18 @@ import logging
 
 from fastapi import APIRouter, HTTPException, Request
 
+from app_platform.auth import current_principal
 from apps.scriptures import data as _dl
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+def _actor(request: Request) -> str:
+    """The authenticated actor's name. Auth is unconditional, so a verified
+    principal is always present; the client-supplied value is never trusted."""
+    p = current_principal(request)
+    return (p["name"] if p else "").lower().strip()
 
 
 # --- Versions ---
@@ -539,7 +547,7 @@ async def api_create_bookmark(request: Request):
         book=body.get("book", 1),
         chapter=body.get("chapter", 1),
         color=body.get("color"),
-        created_by=body.get("user_id", ""),
+        created_by=_actor(request),
     )
     return bm
 
@@ -558,7 +566,7 @@ async def api_move_bookmark(bookmark_id: str, request: Request):
     body = await request.json()
     book = body.get("book")
     chapter = body.get("chapter")
-    user_id = body.get("user_id", "")
+    user_id = _actor(request)
     if book is None or chapter is None:
         raise HTTPException(400, "book and chapter are required")
     ok = await asyncio.to_thread(_dl.move_bookmark, bookmark_id, book, chapter, user_id)
