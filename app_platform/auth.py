@@ -206,6 +206,37 @@ def require_admin(request) -> dict:
     return principal
 
 
+def current_principal(request) -> dict | None:
+    """The authenticated principal attached by the middleware, or None."""
+    return getattr(request.state, "principal", None)
+
+
+def enforce_admin(request) -> None:
+    """Require an admin principal when enforcement is on; no-op when off.
+
+    For endpoints that previously had NO auth (so legacy behavior must be
+    preserved until the flag flips)."""
+    from fastapi import HTTPException
+    from data_layer.users import has_role
+    if auth_enforced():
+        p = current_principal(request)
+        if not (p and has_role(p, "admin")):
+            raise HTTPException(status_code=403, detail="Admin access required")
+
+
+def scope_user(request, requested_user_id: str | None) -> str:
+    """Whose data the caller may act on.
+
+    With a verified principal: self by default, another user only for
+    admin/parent (IDOR guard). Without one (enforcement off / no token): the
+    legacy client-supplied value, lowercased — preserving pre-auth behavior.
+    """
+    p = current_principal(request)
+    if p is None:
+        return (requested_user_id or "").lower().strip()
+    return resolve_target(p, requested_user_id)
+
+
 def resolve_target(principal: dict, requested_user_id: str | None) -> str:
     """Return whose data the caller may act on.
 

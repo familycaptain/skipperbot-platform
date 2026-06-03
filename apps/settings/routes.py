@@ -21,9 +21,10 @@ import asyncio
 import logging
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from app_platform.auth import enforce_admin
 from app_platform import config as platform_config
 from app_platform import settings as platform_settings
 from app_platform import secrets as platform_secrets
@@ -265,12 +266,13 @@ class AppSettingsPatch(BaseModel):
 
 
 @router.patch("/apps/{app_id}")
-async def api_patch_app_settings(app_id: str, req: AppSettingsPatch):
-    """Patch one or more keys for an app.
+async def api_patch_app_settings(app_id: str, req: AppSettingsPatch, request: Request):
+    """Patch one or more keys for an app (admin-only when auth is enforced).
 
     The manifest's ``config:`` block is the schema contract —
     unknown keys are rejected with 400.
     """
+    enforce_admin(request)
     if not req.values:
         raise HTTPException(status_code=400, detail="No values provided")
 
@@ -325,12 +327,14 @@ async def api_patch_app_settings(app_id: str, req: AppSettingsPatch):
 # ---------------------------------------------------------------------------
 
 @router.get("/platform")
-async def api_get_platform_settings():
-    """Return every key currently in ``scope='platform'``.
+async def api_get_platform_settings(request: Request):
+    """Return every key currently in ``scope='platform'`` (admin-only when
+    auth is enforced).
 
     No schema — the agent's startup code is the consumer, so we
     expose raw key/value pairs.
     """
+    enforce_admin(request)
     def _do():
         return {
             "scope": "platform",
@@ -344,10 +348,9 @@ class PlatformSettingsPatch(BaseModel):
 
 
 @router.patch("/platform")
-async def api_patch_platform_settings(req: PlatformSettingsPatch):
-    """Patch platform-scope keys. No schema gate — the caller is
-    trusted to know which keys the platform reads.
-    """
+async def api_patch_platform_settings(req: PlatformSettingsPatch, request: Request):
+    """Patch platform-scope keys (admin-only when auth is enforced)."""
+    enforce_admin(request)
     if not req.values:
         raise HTTPException(status_code=400, detail="No values provided")
 
@@ -389,8 +392,10 @@ async def api_get_panel(panel_id: str):
 
 
 @router.patch("/panels/{panel_id}")
-async def api_patch_panel(panel_id: str, req: PlatformSettingsPatch):
-    """Save panel values. Secrets are encrypted; blank secret = leave unchanged."""
+async def api_patch_panel(panel_id: str, req: PlatformSettingsPatch, request: Request):
+    """Save panel values (admin-only when auth is enforced). Secrets are
+    encrypted; blank secret = leave unchanged."""
+    enforce_admin(request)
     panel = PLATFORM_PANELS.get(panel_id)
     if panel is None:
         raise HTTPException(status_code=404, detail=f"Unknown panel '{panel_id}'")
