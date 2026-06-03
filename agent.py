@@ -1031,8 +1031,9 @@ class InlineUpdateRequest(BaseModel):
 
 
 @app.patch("/api/apps/goals/entities/{entity_id}")
-async def patch_entity(entity_id: str, req: InlineUpdateRequest):
+async def patch_entity(entity_id: str, req: InlineUpdateRequest, http_request: Request):
     """Inline field update for any goal/project/task from the Goals app UI."""
+    req.updated_by = _actor_name(http_request)
     from apps.goals.store import update_item as _update_item
     fields = {}
     if req.priority:
@@ -1087,8 +1088,9 @@ class CreateGoalRequest(BaseModel):
 
 
 @app.post("/api/apps/goals")
-async def create_goal_api(req: CreateGoalRequest):
+async def create_goal_api(req: CreateGoalRequest, http_request: Request):
     """Create a new goal from the Goals app UI."""
+    req.created_by = _actor_name(http_request)
     from apps.goals.store import create_goal as _create_goal
     owner_list = (
         [o.strip().lower() for o in req.owners.split(",") if o.strip()]
@@ -1126,8 +1128,9 @@ class CreateProjectRequest(BaseModel):
 
 
 @app.post("/api/apps/goals/projects")
-async def create_project_api(req: CreateProjectRequest):
+async def create_project_api(req: CreateProjectRequest, http_request: Request):
     """Create a new project from the Goals app UI."""
+    req.created_by = _actor_name(http_request)
     from apps.goals.store import create_project as _create_project
     owner_list = (
         [o.strip().lower() for o in req.owners.split(",") if o.strip()]
@@ -1159,8 +1162,9 @@ class CreateTaskRequest(BaseModel):
 
 
 @app.post("/api/apps/goals/tasks")
-async def create_task_api(req: CreateTaskRequest):
+async def create_task_api(req: CreateTaskRequest, http_request: Request):
     """Create a new task from the Goals app UI."""
+    req.created_by = _actor_name(http_request)
     from apps.goals.store import create_task as _create_task
     assignee_list = (
         [a.strip().lower() for a in req.assigned_to.split(",") if a.strip()]
@@ -1229,8 +1233,9 @@ class SaveNotesRequest(BaseModel):
 
 
 @app.put("/api/apps/goals/entities/{entity_id}/notes")
-async def save_entity_notes_inline(entity_id: str, req: SaveNotesRequest):
+async def save_entity_notes_inline(entity_id: str, req: SaveNotesRequest, http_request: Request):
     """Save notes for any entity from the Goals app inline editor."""
+    req.updated_by = _actor_name(http_request)
     from apps.goals.store import update_notes as _update_notes
     def _do():
         return _update_notes(
@@ -2389,8 +2394,9 @@ class CreateListRequest(BaseModel):
 
 
 @app.post("/api/apps/lists")
-async def api_create_list(req: CreateListRequest):
+async def api_create_list(req: CreateListRequest, http_request: Request):
     """Create a new list."""
+    req.created_by = _actor_name(http_request)
     def _do():
         return _create_list_store(
             name=req.name.strip(),
@@ -2778,8 +2784,9 @@ async def api_list_ideas(status: str = "", tag: str = "", q: str = "", user: str
 
 
 @app.post("/api/apps/brainstorming")
-async def api_create_idea(req: CreateIdeaRequest):
+async def api_create_idea(req: CreateIdeaRequest, http_request: Request):
     """Create a new idea with a main document part."""
+    req.created_by = _actor_name(http_request)
     result = await asyncio.to_thread(
         dl_brainstorm.create_idea, req.title, req.summary, req.tags, req.priority, req.created_by
     )
@@ -2930,8 +2937,9 @@ async def api_list_evolution_items(
 
 
 @app.post("/api/apps/evolve/items")
-async def api_create_evolution_item(req: CreateEvolutionItemRequest):
+async def api_create_evolution_item(req: CreateEvolutionItemRequest, http_request: Request):
     """Create a new evolution item."""
+    req.created_by = _actor_name(http_request)
     item = await asyncio.to_thread(
         dl_evolution.create_item,
         item_type=req.type,
@@ -3698,7 +3706,8 @@ async def api_list_schedules(category: str = "", assigned_to: str = "", active_o
 
 
 @app.post("/api/apps/schedules")
-async def api_create_schedule(req: CreateScheduleRequest):
+async def api_create_schedule(req: CreateScheduleRequest, http_request: Request):
+    req.created_by = _actor_name(http_request)
     def _create():
         return _dl_schedules.create_schedule(
             title=req.title,
@@ -3824,7 +3833,8 @@ async def api_delete_schedule(schedule_id: str):
 
 
 @app.post("/api/apps/schedules/{schedule_id}/complete")
-async def api_complete_schedule(schedule_id: str, req: CompleteScheduleRequest):
+async def api_complete_schedule(schedule_id: str, req: CompleteScheduleRequest, http_request: Request):
+    req.completed_by = _actor_name(http_request)
     def _complete():
         return _dl_schedules.complete_schedule(
             schedule_id=schedule_id,
@@ -4329,7 +4339,8 @@ async def api_list_behaviors(user_id: str = "", scope: str = ""):
 
 
 @app.post("/api/behaviors")
-async def api_create_behavior(req: BehaviorCreateRequest):
+async def api_create_behavior(req: BehaviorCreateRequest, http_request: Request):
+    req.created_by = _actor_name(http_request)
     behavior = await asyncio.to_thread(
         _dl_behaviors.create_behavior,
         trigger_description=req.trigger_description,

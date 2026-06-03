@@ -5,14 +5,22 @@ Mounted at /api/apps/issues/ by the app platform loader.
 
 import asyncio
 import logging
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from pydantic import BaseModel
 
+from app_platform.auth import current_principal
 from apps.issues import store as _store
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _actor(request: Request) -> str:
+    """The authenticated actor's name. Auth is unconditional, so a verified
+    principal is always present; the client-supplied value is never trusted."""
+    p = current_principal(request)
+    return (p["name"] if p else "").lower().strip()
 
 
 # ---------------------------------------------------------------------------
@@ -52,8 +60,9 @@ async def api_list_issues(status: str = "", reported_by: str = ""):
 
 
 @router.post("")
-async def api_create_issue(req: CreateIssueRequest):
+async def api_create_issue(req: CreateIssueRequest, request: Request):
     """Create a new issue."""
+    req.reported_by = _actor(request)
     def _create():
         return _store.create_issue(
             description=req.description,
@@ -75,8 +84,9 @@ async def api_get_issue(issue_id: str):
 
 
 @router.patch("/{issue_id}")
-async def api_update_issue(issue_id: str, req: UpdateIssueRequest):
+async def api_update_issue(issue_id: str, req: UpdateIssueRequest, request: Request):
     """Update issue fields."""
+    req.updated_by = _actor(request)
     def _update():
         return _store.update_issue(
             issue_id=issue_id,
