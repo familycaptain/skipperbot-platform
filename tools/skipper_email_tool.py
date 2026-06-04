@@ -111,6 +111,12 @@ def send_skipper_email(to: str, subject: str, body: str, cc: str = "", bcc: str 
         if not body or not body.strip():
             return "Error: 'body' is required."
 
+        # Bound mass-send (spam / slow exfil) from prompt-injected turns.
+        from tools.outbound_guard import rate_limit
+        limited = rate_limit("email", max_events=10, window_seconds=3600)
+        if limited:
+            return limited
+
         result = _send_email(
             to=to.strip(),
             subject=subject.strip(),

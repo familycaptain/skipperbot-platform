@@ -72,6 +72,13 @@ def send_pushover_notification(user_id: str, message: str, cooldown_seconds: int
             remaining = int(cd - (now - last_time))
             return f"Skipped: duplicate alert cooldown active for {remaining}s for message: {msg!r}"
 
+        # Cap total outbound volume (mass-send guard) on top of the per-message
+        # duplicate cooldown above.
+        from tools.outbound_guard import rate_limit
+        limited = rate_limit("pushover", max_events=30, window_seconds=3600)
+        if limited:
+            return limited
+
         # Priority based on configured timezone hour
         now_ct = datetime.now(get_timezone())
         hour = now_ct.hour
