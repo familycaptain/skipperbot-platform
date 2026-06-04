@@ -56,20 +56,57 @@ class SecretDecryptError(SecretError):
     """A value could not be decrypted (wrong/rotated key, or corrupt data)."""
 
 
-def _key() -> bytes | None:
-    """Return the 32-byte AES key, or None if SKIPPERBOT_SECRET_KEY is unset."""
-    raw = os.getenv("SKIPPERBOT_SECRET_KEY", "").strip()
-    if not raw:
-        return None
-    # Preferred: an exact 32-byte urlsafe-base64 key (what generate_key emits).
+# Fixed application salt for the passphrase-stretching KDF. A per-deployment
+# random salt has nowhere to live (the key is the only secret), but scrypt's
+# work factor still makes brute-forcing a low-entropy passphrase orders of
+# magnitude costlier than the old bare SHA-256. (Audit #36.)
+_KDF_SALT = b"skipperbot-secret-kdf-v1"
+_KDF_N = 2 ** 14
+_KDF_R = 8
+_KDF_P = 1
+
+
+def _decoded_32(raw: str) -> bytes | None:
+    """Return raw decoded as an exact 32-byte urlsafe-b64 key, else None."""
     try:
         decoded = base64.urlsafe_b64decode(raw + "=" * (-len(raw) % 4))
         if len(decoded) == 32:
             return decoded
     except Exception:
         pass
-    # Fallback: derive deterministically from an arbitrary passphrase.
-    return hashlib.sha256(raw.encode("utf-8")).digest()
+    return None
+
+
+def _key() -> bytes | None:
+    """Return the 32-byte AES key used for ENCRYPTION, or None if unset.
+
+    Preferred: an exact 32-byte urlsafe-base64 key (what generate_key emits,
+    and what ensure_secret_key auto-provisions). Otherwise the value is treated
+    as a passphrase and stretched with scrypt.
+    """
+    raw = os.getenv("SKIPPERBOT_SECRET_KEY", "").strip()
+    if not raw:
+        return None
+    direct = _decoded_32(raw)
+    if direct is not None:
+        return direct
+    return hashlib.scrypt(raw.encode("utf-8"), salt=_KDF_SALT,
+                          n=_KDF_N, r=_KDF_R, p=_KDF_P, dklen=32,
+                          maxmem=128 * _KDF_N * _KDF_R * 2)
+
+
+def _decrypt_keys() -> list[bytes]:
+    """Keys to try when DECRYPTING, newest first. Includes the legacy bare-SHA256
+    passphrase key so values encrypted before the scrypt upgrade still decrypt."""
+    raw = os.getenv("SKIPPERBOT_SECRET_KEY", "").strip()
+    if not raw:
+        return []
+    direct = _decoded_32(raw)
+    if direct is not None:
+        return [direct]
+    keys = [_key()]                                          # scrypt (new)
+    keys.append(hashlib.sha256(raw.encode("utf-8")).digest())  # legacy (old data)
+    return [k for k in keys if k]
 
 
 def secret_key_available() -> bool:
@@ -111,20 +148,26 @@ def decrypt(token: str) -> str:
     """
     if not is_encrypted(token):
         return token
-    key = _key()
-    if key is None:
+    keys = _decrypt_keys()
+    if not keys:
         raise SecretKeyMissing(
             "SKIPPERBOT_SECRET_KEY is not set — cannot decrypt a stored secret."
         )
     try:
         blob = base64.urlsafe_b64decode(token[len(_PREFIX):])
         nonce, ct = blob[:_NONCE_BYTES], blob[_NONCE_BYTES:]
-        return AESGCM(key).decrypt(nonce, ct, None).decode("utf-8")
-    except Exception as exc:  # InvalidTag, malformed base64, short blob, ...
-        raise SecretDecryptError(
-            "Could not decrypt a stored secret — SKIPPERBOT_SECRET_KEY may have "
-            "changed since it was saved, or the value is corrupt."
-        ) from exc
+    except Exception as exc:
+        raise SecretDecryptError("Stored secret is malformed.") from exc
+    last_exc: Exception | None = None
+    for key in keys:                       # try scrypt, then legacy sha256
+        try:
+            return AESGCM(key).decrypt(nonce, ct, None).decode("utf-8")
+        except Exception as exc:           # InvalidTag for the wrong key
+            last_exc = exc
+    raise SecretDecryptError(
+        "Could not decrypt a stored secret — SKIPPERBOT_SECRET_KEY may have "
+        "changed since it was saved, or the value is corrupt."
+    ) from last_exc
 
 
 def ensure_secret_key(env_path=None) -> str:
@@ -147,6 +190,16 @@ def ensure_secret_key(env_path=None) -> str:
     The key is deliberately stored in ``.env`` (outside the database) so a
     leaked DB backup can't decrypt anything.
     """
+    import pathlib as _pathlib
+    # Harden .env permissions to owner-only (audit #30): it holds the master
+    # secret key + DB/OpenAI creds and must not be group/world-readable.
+    try:
+        _env = _pathlib.Path(env_path) if env_path else _pathlib.Path(".env")
+        if _env.exists():
+            os.chmod(_env, 0o600)
+    except OSError:
+        pass
+
     if os.getenv("SKIPPERBOT_SECRET_KEY", "").strip():
         return "present"
 

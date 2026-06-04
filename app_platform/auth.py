@@ -46,7 +46,14 @@ SESSION_TTL = int(os.getenv("SKIPPERBOT_SESSION_TTL", str(30 * 24 * 3600)))
 
 
 def _auth_key() -> bytes | None:
-    """The 32-byte signing key (SKIPPERBOT_AUTH_KEY, else SKIPPERBOT_SECRET_KEY)."""
+    """The 32-byte signing key (SKIPPERBOT_AUTH_KEY, else SKIPPERBOT_SECRET_KEY).
+
+    A proper 32-byte urlsafe-base64 key is used directly. A passphrase is
+    stretched with scrypt (audit #36) under an auth-specific salt — distinct
+    from the at-rest secret salt so the two derived keys differ even from the
+    same passphrase. (Changing this invalidates existing session tokens, which
+    just forces a one-time re-login; the default 32-byte key path is unaffected.)
+    """
     raw = (os.getenv("SKIPPERBOT_AUTH_KEY", "").strip()
            or os.getenv("SKIPPERBOT_SECRET_KEY", "").strip())
     if not raw:
@@ -57,7 +64,8 @@ def _auth_key() -> bytes | None:
             return decoded
     except Exception:
         pass
-    return hashlib.sha256(raw.encode("utf-8")).digest()
+    return hashlib.scrypt(raw.encode("utf-8"), salt=b"skipperbot-auth-kdf-v1",
+                          n=2 ** 14, r=8, p=1, dklen=32, maxmem=128 * (2 ** 14) * 8 * 2)
 
 
 def auth_key_available() -> bool:
