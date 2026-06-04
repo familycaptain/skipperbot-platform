@@ -60,6 +60,7 @@ def grep_search(
         "--devices",
         "--directories",
         "--exclude-from",  # reads external file list
+        "--file",          # reads an arbitrary file as the pattern source (audit #13)
         "--files-with-matches",  # could be fine, but keep output predictable
         "--files-without-match",
         "--include-from",  # reads external file list
@@ -70,6 +71,7 @@ def grep_search(
         "-D",  # --devices
         "-d",  # --directories
         "-Z",  # --null
+        "-f",  # --file: reads an arbitrary file as the pattern source (audit #13)
     }
 
     for a in arg_list:

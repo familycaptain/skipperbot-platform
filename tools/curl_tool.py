@@ -68,58 +68,26 @@ def curl_request(
 
     hostname = parsed.hostname or ""
 
-    # --- Block localhost / private / link-local / metadata ranges ---
-    # Resolve DNS and check returned addresses.
+    # --- Resolve DNS and screen destination addresses ---
+    # Operator policy (deliberate): internal / home-lab destinations — localhost,
+    # RFC-1918 (10/8, 172.16/12, 192.168/16), CGNAT, link-local, IPv6 ULA — ARE
+    # allowed, so Skipper apps can reach locally-hosted APIs on the home network.
+    # Only the cloud instance-metadata endpoints are blocked: never a legitimate
+    # home-lab target, and the classic SSRF credential-theft target on cloud.
     try:
         addrinfos = socket.getaddrinfo(hostname, None)
         ips = sorted({ai[4][0] for ai in addrinfos})
     except Exception as e:
         return f"Error: could not resolve host '{hostname}' ({e})"
 
-    def _is_blocked_ip(ip: str) -> bool:
-        # IPv4 checks
-        if ":" not in ip:
-            parts = ip.split(".")
-            if len(parts) != 4:
-                return True
-            try:
-                o1, o2, o3, o4 = [int(p) for p in parts]
-            except Exception:
-                return True
-            # 0.0.0.0/8, 10/8, 127/8, 169.254/16, 172.16/12, 192.168/16
-            if o1 == 0:
-                return True
-            if o1 == 10:
-                return True
-            if o1 == 127:
-                return True
-            if o1 == 169 and o2 == 254:
-                return True
-            if o1 == 172 and 16 <= o2 <= 31:
-                return True
-            if o1 == 192 and o2 == 168:
-                return True
-            # CGNAT 100.64.0.0/10
-            if o1 == 100 and 64 <= o2 <= 127:
-                return True
-            # metadata IP
-            if ip == "169.254.169.254":
-                return True
-            return False
+    _METADATA_IPS = {"169.254.169.254", "fd00:ec2::254"}
 
-        # IPv6 checks: block loopback, link-local, unique local
-        ip_l = ip.lower()
-        if ip_l == "::1":
-            return True
-        if ip_l.startswith("fe80:"):
-            return True
-        if ip_l.startswith("fc") or ip_l.startswith("fd"):
-            return True
-        return False
+    def _is_blocked_ip(ip: str) -> bool:
+        return ip.lower() in _METADATA_IPS
 
     blocked = [ip for ip in ips if _is_blocked_ip(ip)]
     if blocked:
-        return f"Error: blocked destination (resolves to private/local IPs: {', '.join(blocked)})"
+        return f"Error: blocked destination (cloud metadata endpoint: {', '.join(blocked)})"
 
     # --- Parse headers ---
     try:

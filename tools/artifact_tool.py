@@ -12,6 +12,7 @@ if APP_ROOT not in sys.path:
     sys.path.insert(0, APP_ROOT)
 
 from app_platform.memory import digest_record
+from tools.secret_guard import is_secret_path
 from artifact_store import (
     create_artifact as _create_artifact,
     get_artifact_meta as _get_meta,
@@ -51,6 +52,16 @@ def attach_artifact(
             return "Error: name is required."
         if not created_by or not created_by.strip():
             return "Error: created_by is required."
+
+        # Sandbox source_path: only copy in files that live under the app root,
+        # and never secret/credential files. Without this, an absolute path lets
+        # the model exfiltrate /app/.env, ~/.pgpass, /etc/*, etc. (audit #19).
+        if source_path and source_path.strip():
+            sp = os.path.realpath(source_path.strip())
+            if not (sp == APP_ROOT or sp.startswith(APP_ROOT + os.sep)):
+                return "Error: source_path must be a file within the app folder."
+            if is_secret_path(sp):
+                return "Error: attaching secret/credential files is not permitted."
 
         tag_list = [t.strip().lower() for t in tags.split(",") if t.strip()] if tags else None
 

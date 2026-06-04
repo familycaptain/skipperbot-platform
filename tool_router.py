@@ -150,6 +150,9 @@ DISABLED_CHAT_TOOLS = frozenset({
     "restart_mcp_server", "start_mcp_server", "stop_mcp_server", "mcp_server_status",
     # Shell execution (run_job runs free-form command strings with shell=True)
     "run_job", "create_job", "update_job",
+    # git: clone/fetch/-c/ext:: flags are an RCE vector and repo operations
+    # belong to the Evolve → Claude Code path, not the chat LLM (audit #12/#28).
+    "git_tool",
 })
 
 
