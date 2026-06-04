@@ -39,6 +39,10 @@ from data_layer.db import close_pool
 from app_platform.loader import load_all_apps, get_app_tool_routes
 from data_layer.users import authenticate, get_user, update_password, get_all_users, has_role, create_user, update_role, delete_user, parse_roles
 from app_platform.auth import principal_from_request, principal_from_ws, require_user, require_admin, resolve_target, scope_user
+from app_platform.ratelimit import check_rate
+
+# Minimum web password length (audit #31/#35).
+MIN_PASSWORD_LEN = 8
 from apps.goals import data as dl_goals
 import app_platform.documents as doc_store
 import link_registry
@@ -174,6 +178,19 @@ app.add_middleware(
 )
 
 
+@app.exception_handler(Exception)
+async def _generic_error_handler(request: Request, exc: Exception):
+    """Don't leak internals (stack/str(e)) to clients on unhandled errors.
+
+    Log the detail server-side; return a generic 500. HTTPException and
+    handler-returned error payloads keep their own messages — this only catches
+    exceptions that would otherwise surface str(exc) to the caller. (Audit #38.)
+    """
+    logger.error("Unhandled error on %s %s: %s",
+                 request.method, request.url.path, exc, exc_info=True)
+    return JSONResponse({"detail": "Internal server error"}, status_code=500)
+
+
 class ChatRequest(BaseModel):
     message: str
     user_id: str
@@ -222,9 +239,16 @@ def _issue_token(user: dict) -> str:
 
 
 @app.post("/auth/login")
-async def login(request: LoginRequest):
+async def login(request: LoginRequest, http_request: Request):
     """Authenticate a web user. Returns canonical user_id + a session token."""
     name = request.username.lower().strip()
+    # Throttle brute force: cap attempts per account (audit #31).
+    wait = check_rate(f"login:{name}", max_events=10, window_seconds=300)
+    if wait:
+        return JSONResponse(
+            {"ok": False, "error": f"Too many login attempts. Try again in ~{wait}s."},
+            status_code=429,
+        )
     user = await asyncio.to_thread(get_user, name)
     if not user:
         return {"ok": False, "error": "Unknown user."}
@@ -253,8 +277,8 @@ async def set_password(request: SetPasswordRequest):
         return {"ok": False, "error": "Unknown user."}
     if user.get("password_hash"):
         return {"ok": False, "error": "Password already set. Use the chat to request a reset."}
-    if len(request.password) < 4:
-        return {"ok": False, "error": "Password must be at least 4 characters."}
+    if len(request.password) < MIN_PASSWORD_LEN:
+        return {"ok": False, "error": f"Password must be at least {MIN_PASSWORD_LEN} characters."}
     await asyncio.to_thread(update_password, name, request.password)
     return {"ok": True,
             "user": {"name": user["name"], "display_name": user["display_name"], "role": user["role"]},
@@ -378,8 +402,8 @@ async def onboarding_create_user(request: OnboardingCreateUserRequest):
         name = (request.username or "").strip().lower()
         if not _re.fullmatch(r"[a-z][a-z0-9_]{1,30}", name):
             return {"ok": False, "error": "Username must be 2-31 lowercase letters / digits / underscores, starting with a letter."}
-        if request.password and len(request.password) < 4:
-            return {"ok": False, "error": "Password must be at least 4 characters (or empty if you want to set it later)."}
+        if request.password and len(request.password) < MIN_PASSWORD_LEN:
+            return {"ok": False, "error": f"Password must be at least {MIN_PASSWORD_LEN} characters (or empty if you want to set it later)."}
 
         display = (request.display_name or "").strip() or name.capitalize()
         password = request.password or None
@@ -1368,8 +1392,8 @@ async def api_create_user(req: CreateUserRequest, request: Request):
         roles = _normalize_roles(req.role)
         if roles is None:
             return {"ok": False, "error": f"Invalid role. Allowed: {', '.join(_ALLOWED_ROLES)}."}
-        if req.password and len(req.password) < 4:
-            return {"ok": False, "error": "Temporary password must be at least 4 characters."}
+        if req.password and len(req.password) < MIN_PASSWORD_LEN:
+            return {"ok": False, "error": f"Temporary password must be at least {MIN_PASSWORD_LEN} characters."}
         user = create_user(
             name=name,
             display_name=(req.display_name or "").strip() or name.capitalize(),
@@ -1413,8 +1437,8 @@ async def api_reset_user_password(name: str, req: ResetPasswordRequest, request:
         target = (name or "").lower().strip()
         if not get_user(target):
             return {"ok": False, "error": f"User '{target}' not found."}
-        if len(req.new_password or "") < 4:
-            return {"ok": False, "error": "Password must be at least 4 characters."}
+        if len(req.new_password or "") < MIN_PASSWORD_LEN:
+            return {"ok": False, "error": f"Password must be at least {MIN_PASSWORD_LEN} characters."}
         update_password(target, req.new_password)
         return {"ok": True}
     return await asyncio.to_thread(_do)
@@ -1449,8 +1473,8 @@ async def api_change_password(req: ChangePasswordRequest, request: Request):
         user = get_user(name)
         if not user:
             return {"ok": False, "error": "Unknown user."}
-        if len(req.new_password or "") < 4:
-            return {"ok": False, "error": "New password must be at least 4 characters."}
+        if len(req.new_password or "") < MIN_PASSWORD_LEN:
+            return {"ok": False, "error": f"New password must be at least {MIN_PASSWORD_LEN} characters."}
         # Verify the current password (unless none is set yet — first password).
         if user.get("password_hash") and not authenticate(name, req.current_password or ""):
             return {"ok": False, "error": "Current password is incorrect."}
