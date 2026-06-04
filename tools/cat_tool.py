@@ -2,6 +2,8 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
+from tools.secret_guard import deny_if_secret
+
 
 def cat_file(path: str, max_chars: int = 20000) -> str:
     """Read a text file within the app folder (sandboxed cat).
@@ -28,6 +30,10 @@ def cat_file(path: str, max_chars: int = 20000) -> str:
         abs_path = os.path.abspath(os.path.join(app_root, normalized))
         if not abs_path.startswith(app_root + os.sep) and abs_path != app_root:
             return "Error: path escapes the app root"
+
+        secret_err = deny_if_secret(abs_path)
+        if secret_err:
+            return secret_err
 
         if not os.path.exists(abs_path):
             return f"Error: file not found: {path}"

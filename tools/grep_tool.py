@@ -7,6 +7,8 @@ import shlex
 import subprocess
 from typing import List, Optional
 
+from tools.secret_guard import is_secret_path
+
 
 def grep_search(
     pattern: str,
@@ -41,6 +43,10 @@ def grep_search(
     target_abs = os.path.abspath(os.path.join(app_root, path))
     if not (target_abs == app_root or target_abs.startswith(app_root + os.sep)):
         return "Error: 'path' escapes the application root; operation not permitted."
+
+    # Never grep a secret file directly (e.g. grep_search('KEY', '.env')).
+    if is_secret_path(target_abs):
+        return "Error: searching secret/credential files (.env, keys, etc.) is not permitted."
 
     # Parse args safely
     try:
@@ -86,8 +92,10 @@ def grep_search(
                       "--include=*.yml", "--include=*.sql",
                       "--include=*.txt", "--include=*.html",
                       "--include=*.css", "--include=*.toml",
-                      "--exclude-dir=.git", "--exclude-dir=node_modules",
-                      "--exclude-dir=__pycache__"]
+                      "--exclude-dir=.git", "--exclude-dir=.ssh",
+                      "--exclude-dir=node_modules", "--exclude-dir=__pycache__",
+                      "--exclude=.env", "--exclude=.env.*", "--exclude=*.pem",
+                      "--exclude=*.key", "--exclude=.pgpass"]
 
     # Find grep binary — on Windows, fall back to Git for Windows' bundled grep
     grep_bin = "grep"

@@ -5,6 +5,8 @@ import shlex
 import subprocess
 from typing import List
 
+from tools.secret_guard import is_secret_name
+
 
 def os_level_find(
     name: str = "",
@@ -61,7 +63,7 @@ load_dotenv()
         # Walk the directory tree using Python (cross-platform)
         import fnmatch
         results: List[str] = []
-        skip_dirs = {".git", "__pycache__", "node_modules", ".venv", "venv"}
+        skip_dirs = {".git", ".ssh", "__pycache__", "node_modules", ".venv", "venv"}
 
         for dirpath, dirnames, filenames in os.walk(search_root):
             # Skip hidden/noisy directories
@@ -87,6 +89,8 @@ load_dotenv()
                     full = os.path.join(dirpath, f)
                     rel = os.path.relpath(full, app_root_abs)
                     base = f
+                    if is_secret_name(base):
+                        continue
                     if name and not fnmatch.fnmatch(base, name):
                         continue
                     if contains and contains.lower() not in base.lower():

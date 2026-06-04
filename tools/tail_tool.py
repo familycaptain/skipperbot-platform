@@ -5,6 +5,8 @@ load_dotenv()
 import os
 from typing import Optional
 
+from tools.secret_guard import deny_if_secret
+
 
 def tail_file(path: str, lines: int = 50, max_chars: int = 20000) -> str:
     """Show the end of a text file (like `tail`).
@@ -37,6 +39,10 @@ def tail_file(path: str, lines: int = 50, max_chars: int = 20000) -> str:
         target_path = os.path.abspath(os.path.join(app_root, path))
         if not target_path.startswith(app_root + os.sep) and target_path != app_root:
             return "Error in tail_file: requested path is outside the app root."
+
+        secret_err = deny_if_secret(target_path)
+        if secret_err:
+            return secret_err
 
         if not os.path.exists(target_path):
             return f"Error in tail_file: file not found: {path}"

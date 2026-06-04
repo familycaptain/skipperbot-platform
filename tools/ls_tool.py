@@ -15,6 +15,7 @@ import datetime
 from typing import List, Tuple
 
 from app_platform.time import get_timezone
+from tools.secret_guard import is_secret_name
 
 
 def ls_dir(path: str = ".",
@@ -76,6 +77,9 @@ def ls_dir(path: str = ".",
         entries: List[Tuple[str, os.stat_result]] = []
 
         def should_include(name: str) -> bool:
+            # Secret/credential files are never listed, even with show_hidden.
+            if is_secret_name(name):
+                return False
             if show_hidden:
                 return True
             return not name.startswith(".")
