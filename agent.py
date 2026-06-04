@@ -4577,12 +4577,17 @@ if _DIST.is_dir():
     # Serve root-level static files (manifest, SW, icons)
     @app.get("/{filename:path}")
     async def spa_fallback(request: Request, filename: str):
-        # If the file exists in dist, serve it directly
-        file_path = _DIST / filename
-        if filename and file_path.is_file():
-            return FileResponse(file_path)
+        # If the file exists in dist, serve it directly — but only if the
+        # resolved path stays INSIDE the built web dir. Without this, an
+        # unauthenticated request like /../../.env or /../../../etc/passwd would
+        # traverse out of dist and FileResponse would serve it (audit #20).
+        dist_root = _DIST.resolve()
+        if filename:
+            candidate = (dist_root / filename).resolve()
+            if (candidate == dist_root or dist_root in candidate.parents) and candidate.is_file():
+                return FileResponse(candidate)
         # Otherwise serve index.html (SPA client-side routing)
-        return FileResponse(_DIST / "index.html")
+        return FileResponse(dist_root / "index.html")
 
 
 if __name__ == "__main__":
