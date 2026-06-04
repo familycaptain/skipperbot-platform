@@ -1823,6 +1823,26 @@ import uuid as _uuid
 UPLOAD_DIR = Path("uploads/images")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+# Upload hardening (audit #25): cap size, allowlist real image types by sniffing
+# magic bytes, and derive the stored extension ourselves — never trust the
+# client-supplied filename/extension or Content-Type.
+MAX_IMAGE_BYTES = 15 * 1024 * 1024  # 15 MB
+
+
+def _sniff_image_ext(data: bytes) -> str | None:
+    """Return a safe extension if `data` is a recognized image, else None."""
+    if data[:3] == b"\xff\xd8\xff":
+        return ".jpg"
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return ".png"
+    if data[:6] in (b"GIF87a", b"GIF89a"):
+        return ".gif"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return ".webp"
+    if data[4:8] == b"ftyp" and data[8:12] in (b"heic", b"heif", b"hevc", b"mif1", b"heix"):
+        return ".heic"
+    return None
+
 
 @app.get("/api/apps/images")
 async def api_list_images():
@@ -1867,20 +1887,37 @@ async def api_upload_image(request: Request):
             status_code=400,
         )
 
-    contents = await file.read()
+    # Read at most the cap + 1 byte so an oversized upload can't exhaust memory.
+    contents = await file.read(MAX_IMAGE_BYTES + 1)
+    if len(contents) > MAX_IMAGE_BYTES:
+        return JSONResponse(
+            {"error": f"Image exceeds the {MAX_IMAGE_BYTES // (1024 * 1024)}MB limit."},
+            status_code=413,
+        )
+
+    # Validate it's actually an image by content, not by the client's extension
+    # or Content-Type, and derive the stored extension ourselves.
+    ext = _sniff_image_ext(contents)
+    if not ext:
+        return JSONResponse(
+            {"error": "Unsupported file type — only JPEG/PNG/GIF/WebP/HEIC images are allowed."},
+            status_code=415,
+        )
+
     image_id = f"i-{_uuid.uuid4().hex[:8]}"
-    ext = Path(file.filename).suffix or ".jpg"
     storage_name = f"{image_id}{ext}"
     storage_path = UPLOAD_DIR / storage_name
 
     with open(storage_path, "wb") as f:
         f.write(contents)
 
+    _mime_for_ext = {".jpg": "image/jpeg", ".png": "image/png", ".gif": "image/gif",
+                     ".webp": "image/webp", ".heic": "image/heic"}
     image = {
         "id": image_id,
         "title": title or "",
         "filename": file.filename or "",
-        "mime_type": file.content_type or "image/jpeg",
+        "mime_type": _mime_for_ext.get(ext, "application/octet-stream"),
         "size_bytes": len(contents),
         "storage_path": f"uploads/images/{storage_name}",
         "uploaded_by": uploaded_by or "",
