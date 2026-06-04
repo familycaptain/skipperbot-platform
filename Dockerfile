@@ -26,7 +26,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 #   - postgresql-client       for pg_dump (used by the backups app)
 #   - weasyprint deps         for PDF rendering in the print pipeline
 #   - curl, ca-certificates   for HTTPS fetch tools + healthcheck
-#   - Node 20+                for the web UI build (build-time + runtime via entrypoint)
+#   - Node 24 LTS             for the web UI build (build-time + runtime via entrypoint)
 RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
@@ -38,7 +38,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         libffi-dev \
         libgdk-pixbuf2.0-0 \
         shared-mime-info \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
