@@ -170,6 +170,36 @@ def decrypt(token: str) -> str:
     ) from last_exc
 
 
+def _restrict_to_owner(path) -> None:
+    """Best-effort: make *path* readable only by its owner (audit #30).
+
+    POSIX (incl. the Docker container): ``chmod 600``.
+    Windows: ``os.chmod`` can't express POSIX modes — it only toggles the
+    read-only bit and would leave the file world-readable. Use ``icacls`` to
+    drop inherited ACLs and grant the current user alone. Both paths are
+    wrapped so a failure never blocks startup.
+    """
+    if os.name == "nt":
+        import getpass
+        import subprocess
+        try:
+            user = getpass.getuser()
+            if not user:
+                return
+            subprocess.run(
+                ["icacls", str(path), "/inheritance:r", "/grant:r", f"{user}:F"],
+                check=False, capture_output=True,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except Exception:
+            pass
+    else:
+        try:
+            os.chmod(path, 0o600)
+        except OSError:
+            pass
+
+
 def ensure_secret_key(env_path=None) -> str:
     """Make sure SKIPPERBOT_SECRET_KEY exists; self-provision it if not.
 
@@ -193,11 +223,12 @@ def ensure_secret_key(env_path=None) -> str:
     import pathlib as _pathlib
     # Harden .env permissions to owner-only (audit #30): it holds the master
     # secret key + DB/OpenAI creds and must not be group/world-readable.
+    # Cross-platform (chmod on POSIX, icacls on Windows).
     try:
         _env = _pathlib.Path(env_path) if env_path else _pathlib.Path(".env")
         if _env.exists():
-            os.chmod(_env, 0o600)
-    except OSError:
+            _restrict_to_owner(_env)
+    except Exception:
         pass
 
     if os.getenv("SKIPPERBOT_SECRET_KEY", "").strip():
