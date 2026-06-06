@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { LogOut, Wifi, WifiOff, Star, Target, FolderKanban, CheckSquare, Bell, BellRing, Car, RefreshCw, Bug, Power, Mail, PanelRightClose, PanelRightOpen, Info, LayoutGrid, MessageSquare } from "lucide-react";
+import { LogOut, Wifi, WifiOff, Star, Target, FolderKanban, CheckSquare, Bell, BellRing, Car, RefreshCw, Bug, Power, Mail, PanelRightClose, PanelRightOpen, Info, LayoutGrid, MessageSquare, Settings } from "lucide-react";
 import { hasRole } from "../utils/roles";
 
 const API = window.__API_BASE ?? "";
@@ -187,6 +187,13 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
             title="Report an issue"
           >
             <Bug size={14} />
+          </button>
+          <button
+            onClick={() => onOpenApp?.("settings")}
+            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+            title="Settings"
+          >
+            <Settings size={14} />
           </button>
           <a
             href="https://skipperbot.com"
