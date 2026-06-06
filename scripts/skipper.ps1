@@ -1,11 +1,11 @@
 # =============================================================================
-# skipper.ps1 — Windows PowerShell launcher for the Skipperbot platform
+# skipper.ps1 - Windows PowerShell launcher for the Skipperbot platform
 # =============================================================================
 # After cloning the repo, run this script. Behaviour:
 #
 #   * First run (no usable .env): asks for your OpenAI key and a Postgres
 #     password, writes .env, then starts Skipper.
-#   * Later runs: just starts Skipper — via Docker if available, otherwise
+#   * Later runs: just starts Skipper - via Docker if available, otherwise
 #     natively (start_agent.ps1).
 #
 # Subcommands: setup | start | stop | restart | update | logs | status | help
@@ -33,7 +33,7 @@ function Log {
 
 function Ok {
     param([string]$Message)
-    Write-Host "✓ $Message" -ForegroundColor Green
+    Write-Host "[OK] $Message" -ForegroundColor Green
 }
 
 function Warn {
@@ -43,7 +43,7 @@ function Warn {
 
 function Die {
     param([string]$Message)
-    Write-Host "✗ $Message" -ForegroundColor Red -ErrorAction Stop
+    Write-Host "[X] $Message" -ForegroundColor Red -ErrorAction Stop
     exit 1
 }
 
@@ -114,7 +114,7 @@ function NeedsSetup {
 
 # --- first-run setup --------------------------------------------------------
 function Setup {
-    Log "First-time setup — creating $ENV_FILE"
+    Log "First-time setup - creating $ENV_FILE"
     if (-not (Test-Path $ENV_FILE)) {
         Copy-Item $EXAMPLE_ENV $ENV_FILE
     }
@@ -136,7 +136,7 @@ function Setup {
         if (-not [string]::IsNullOrWhiteSpace($pw) -and $pw -eq $pw2) {
             break
         }
-        Warn "Passwords were empty or didn't match — try again."
+        Warn "Passwords were empty or didn't match - try again."
     }
 
     SetEnv "OPENAI_API_KEY" $key
@@ -148,24 +148,24 @@ function Setup {
 # --- start / stop -----------------------------------------------------------
 function Start-Skipper {
     if (HasDocker) {
-        Log "Starting Skipper via Docker (docker compose up -d) — first boot builds the UI, can take a few minutes…"
+        Log "Starting Skipper via Docker (docker compose up -d) - first boot builds the UI, can take a few minutes..."
         docker compose up -d
         Ok "Skipper is starting. Open http://localhost:8000   (follow logs: skipper logs)"
     }
     else {
-        Warn "Docker not found — starting natively via start_agent.ps1."
+        Warn "Docker not found - starting natively via start_agent.ps1."
         $agentScript = "$REPO/start_agent.ps1"
         if (-not (Test-Path $agentScript)) {
             Die "start_agent.ps1 not found. See README 'Path 2: Native install'."
         }
-        Log "Running start_agent.ps1…"
+        Log "Running start_agent.ps1..."
         & $agentScript
     }
 }
 
 function Stop-Skipper {
     if (HasDocker) {
-        Log "Stopping Docker stack (docker compose down)…"
+        Log "Stopping Docker stack (docker compose down)..."
         docker compose down
         Ok "Stopped."
     }
@@ -203,7 +203,7 @@ function Show-Update {
 
 function Show-Usage {
     $usage = @"
-skipper — launch and manage the Skipperbot platform (Windows PowerShell)
+skipper - launch and manage the Skipperbot platform (Windows PowerShell)
 
 Usage: powershell -ExecutionPolicy Bypass -File skipper.ps1 [command]
 
