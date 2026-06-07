@@ -7,7 +7,8 @@
 #     and verifies that runtime's prerequisites before doing anything else.
 #       - Docker: bundles Postgres + Python + Node in containers (recommended).
 #       - Native: runs on the host; you must already have PostgreSQL 18 +
-#         pgvector, Python 3.12, and Node 24+ installed (checked, not installed).
+#         pgvector, Python 3.12, and Node 24+ installed. The launcher then
+#         installs the project's own deps for you (venv + pip + npm ci).
 #   * First run (no usable .env): asks for your OpenAI key and a Postgres
 #     password, writes .env, then starts Skipper.
 #   * Later runs: just starts Skipper.
@@ -92,7 +93,8 @@ function Resolve-Runtime {
 #              never ask for your OpenAI key on a machine that can't run.
 #   Database - Postgres reachability; checked AFTER setup, because setup is
 #              what asks you for the DB host and writes it into .env.
-# For native, these only CHECK and instruct - nothing is installed for you.
+# For native, the tooling phase auto-installs the project's own deps (venv, pip,
+# npm ci) but never the system runtimes (Node/Python/Postgres - those are yours).
 function Ensure-RuntimeTooling {
     $rt = Resolve-Runtime
     if ($rt -eq "docker") { Require-Docker } else { Require-NativeTooling }
@@ -157,13 +159,35 @@ function Test-TcpPort {
     }
 }
 
+# Locate a Python 3.12 interpreter to build the venv with. Returns an object
+# { Cmd = <exe>; Pre = <leading args> } or $null. Prefers the 'py -3.12' launcher.
+function Find-Python312 {
+    foreach ($cand in @(
+            @{ Cmd = "py";         Pre = @("-3.12") },
+            @{ Cmd = "python3.12"; Pre = @() },
+            @{ Cmd = "python";     Pre = @() })) {
+        try {
+            $v = (& $cand.Cmd @($cand.Pre + @("--version"))) 2>$null
+            if ($LASTEXITCODE -eq 0 -and $v -match "3\.12") {
+                return [pscustomobject]@{ Cmd = $cand.Cmd; Pre = $cand.Pre }
+            }
+        }
+        catch { }
+    }
+    return $null
+}
+
+# Checks the system runtimes (Node 24+, Python 3.12) - which the user must
+# install themselves - and then AUTO-INSTALLS the project's own dependencies
+# (creates the venv, pip install, npm ci) when those runtimes are present.
 function Require-NativeTooling {
-    Log "Native run selected - checking Node + Python (nothing is installed for you)..."
+    Log "Native run selected - checking runtimes; project dependencies are installed for you..."
     $problems = @()
 
-    # --- Node.js >= 24 (must match web/package.json "engines") ---
+    # --- Node.js >= 24 (system runtime; must match web/package.json "engines") ---
     $node = $null
     try { $node = (& node --version) 2>$null } catch { $node = $null }
+    $nodeOk = $false
     if ([string]::IsNullOrWhiteSpace($node)) {
         $problems += "Node.js not found. Install Node.js 24 LTS or newer from https://nodejs.org/ (needed to build the web UI)."
     }
@@ -175,63 +199,98 @@ function Require-NativeTooling {
         }
         else {
             Ok "Node.js $node"
+            $nodeOk = $true
         }
     }
 
-    # --- Python 3.12 ONLY + venv + installed deps ---
+    # --- Python 3.12 venv (auto-created) ---
     # The platform pins 3.12 (pyproject.toml requires-python ==3.12.*); newer
     # versions (3.13/3.14) are unsupported and break the voice companion's deps.
     $venvPython = Join-Path $REPO ".venv\Scripts\python.exe"
+    $pyOk = $false
     if (Test-Path $venvPython) {
         $pyver = (& $venvPython --version) 2>$null
         if ($pyver -notmatch "3\.12") {
-            $problems += "Project requires Python 3.12, but .venv is '$pyver' (3.13/3.14 are unsupported and break voice). Recreate it:  Remove-Item -Recurse -Force .venv ;  py -3.12 -m venv .venv ;  .\.venv\Scripts\python.exe -m pip install -r requirements.txt"
+            $problems += "Project requires Python 3.12, but .venv is '$pyver' (3.13/3.14 unsupported). Remove it and re-run:  Remove-Item -Recurse -Force .venv"
         }
         else {
             Ok "Python virtual-env present ($pyver)"
-            $hasDeps = $false
-            try {
-                & $venvPython -c "import fastapi" 2>$null
-                $hasDeps = ($LASTEXITCODE -eq 0)
-            }
-            catch { $hasDeps = $false }
-            if (-not $hasDeps) {
-                $problems += "Python dependencies not installed in .venv. Run:  .\.venv\Scripts\python.exe -m pip install -r requirements.txt"
+            $pyOk = $true
+        }
+    }
+    else {
+        $py312 = Find-Python312
+        if ($null -eq $py312) {
+            $problems += "Python 3.12 not found. Install it from https://www.python.org/downloads/ (the Windows installer registers it as 'py -3.12')."
+        }
+        else {
+            Log "Creating Python 3.12 virtual-env (.venv)..."
+            & $py312.Cmd @($py312.Pre + @("-m", "venv", (Join-Path $REPO ".venv")))
+            if (Test-Path $venvPython) {
+                Ok "Created .venv (Python 3.12)"
+                $pyOk = $true
             }
             else {
-                Ok "Python dependencies installed"
+                $problems += "Failed to create the Python 3.12 virtual-env. Create it by hand:  py -3.12 -m venv .venv"
             }
         }
     }
-    else {
-        $py = $null
-        try { $py = (& python --version) 2>$null } catch { $py = $null }
-        if ([string]::IsNullOrWhiteSpace($py)) {
-            $problems += "Python not found. Install Python 3.12 from https://www.python.org/downloads/."
+
+    # --- Python dependencies (auto-installed into the venv) ---
+    if ($pyOk) {
+        $hasDeps = $false
+        try { & $venvPython -c "import fastapi" 2>$null; $hasDeps = ($LASTEXITCODE -eq 0) } catch { $hasDeps = $false }
+        if ($hasDeps) {
+            Ok "Python dependencies installed"
         }
-        elseif ($py -notmatch "3\.12") {
-            $problems += "Python 3.12 required (found '$py'; 3.13/3.14 unsupported). Install 3.12 from https://www.python.org/downloads/."
+        else {
+            Log "Installing Python dependencies (pip install -r requirements.txt)..."
+            & $venvPython -m pip install -r (Join-Path $REPO "requirements.txt")
+            if ($LASTEXITCODE -eq 0) {
+                Ok "Python dependencies installed"
+            }
+            else {
+                $problems += "Python dependency install failed. Run it by hand:  .\.venv\Scripts\python.exe -m pip install -r requirements.txt"
+            }
         }
-        $problems += "Python virtual-env not set up. From the repo root run:  py -3.12 -m venv .venv  then  .\.venv\Scripts\python.exe -m pip install -r requirements.txt"
     }
 
-    # --- Web UI dependencies (web/node_modules, incl. vite) ---
-    # start_agent.ps1 runs `npm run build`, which needs the web deps installed.
-    if (Test-Path (Join-Path $REPO "web\node_modules\vite")) {
-        Ok "Web UI dependencies installed"
-    }
-    else {
-        $problems += "Web UI dependencies not installed (web/node_modules). Install them:  Push-Location web ;  npm ci ;  Pop-Location"
+    # --- Web UI dependencies (auto npm ci; needed by start_agent.ps1's build) ---
+    if ($nodeOk) {
+        if (Test-Path (Join-Path $REPO "web\node_modules\vite")) {
+            Ok "Web UI dependencies installed"
+        }
+        elseif (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
+            $problems += "npm not found on PATH (it ships with Node.js). Reinstall Node 24+ from https://nodejs.org/, then re-run."
+        }
+        else {
+            Log "Installing web UI dependencies (npm ci) - first time can take a minute or two..."
+            $npmCode = 1
+            Push-Location (Join-Path $REPO "web")
+            try {
+                & npm ci
+                $npmCode = $LASTEXITCODE
+            }
+            finally {
+                Pop-Location
+            }
+            if ($npmCode -eq 0 -and (Test-Path (Join-Path $REPO "web\node_modules\vite"))) {
+                Ok "Web UI dependencies installed"
+            }
+            else {
+                $problems += "Web UI dependency install (npm ci) failed. Run it by hand:  Push-Location web ;  npm ci ;  Pop-Location"
+            }
+        }
     }
 
     if ($problems.Count -gt 0) {
         Write-Host ""
-        Warn "Native tooling prerequisites are not satisfied:"
+        Warn "Native prerequisites are not satisfied:"
         foreach ($p in $problems) { Write-Host "   - $p" -ForegroundColor Yellow }
         Write-Host ""
-        Die "Fix the items above, or re-run and choose Docker (it bundles Postgres, Python, and Node). Full native guide: docs/01-base-platform-setup.md"
+        Die "Install the missing runtimes above, then re-run 'skipper' (it installs the project dependencies for you). Or choose Docker. Full native guide: docs/01-base-platform-setup.md"
     }
-    Ok "Node + Python prerequisites satisfied."
+    Ok "Node + Python ready (project dependencies installed)."
 }
 
 # Checked AFTER setup, so the host/port reflect what you were asked for and

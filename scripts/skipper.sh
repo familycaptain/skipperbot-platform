@@ -9,7 +9,8 @@
 #     and verifies that runtime's prerequisites before doing anything else.
 #       - Docker: bundles Postgres + Python + Node in containers (recommended).
 #       - Native: runs on the host; you must already have PostgreSQL 18 +
-#         pgvector, Python 3.12, and Node 24+ installed (checked, not installed).
+#         pgvector, Python 3.12, and Node 24+ installed. The launcher then
+#         installs the project's own deps for you (venv + pip + npm ci).
 #   * First run (no usable .env): asks for your OpenAI key and a Postgres
 #     password, writes .env, offers to install the deploy-watcher service,
 #     then starts Skipper.
@@ -115,7 +116,8 @@ resolve_runtime() {
 #              never ask for your OpenAI key on a machine that can't run.
 #   Database — Postgres reachability; checked AFTER setup, because setup is
 #              what asks you for the DB host and writes it into .env.
-# For native, these only CHECK and instruct — nothing is installed for you.
+# For native, the tooling phase auto-installs the project's own deps (venv, pip,
+# npm ci) but never the system runtimes (Node/Python/Postgres — those are yours).
 ensure_runtime_tooling() {
     resolve_runtime
     if [ "$RUNTIME" = "docker" ]; then require_docker; else require_native_tooling; fi
@@ -172,11 +174,26 @@ tcp_open() {  # tcp_open HOST PORT -> 0 if a TCP connection succeeds
     fi
 }
 
-require_native_tooling() {
-    log "Native run selected — checking Node + Python (nothing is installed for you)…"
-    local problems=()
+# Echo a command that runs Python 3.12 (to build the venv with), or nothing.
+find_python312() {
+    local c
+    for c in python3.12 python3 python; do
+        if command -v "$c" >/dev/null 2>&1 && "$c" --version 2>&1 | grep -q "3\.12"; then
+            echo "$c"; return 0
+        fi
+    done
+    return 0
+}
 
-    # --- Node.js >= 24 (must match web/package.json "engines") ---
+# Checks the system runtimes (Node 24+, Python 3.12) — which the user must
+# install themselves — and then AUTO-INSTALLS the project's own dependencies
+# (creates the venv, pip install, npm ci) when those runtimes are present.
+require_native_tooling() {
+    log "Native run selected — checking runtimes; project dependencies are installed for you…"
+    local problems=()
+    local node_ok=0 py_ok=0
+
+    # --- Node.js >= 24 (system runtime; must match web/package.json "engines") ---
     if ! command -v node >/dev/null 2>&1; then
         problems+=("Node.js not found. Install Node.js 24 LTS or newer from https://nodejs.org/ (needed to build the web UI).")
     else
@@ -186,53 +203,73 @@ require_native_tooling() {
         if ! [[ "$major" =~ ^[0-9]+$ ]] || [ "$major" -lt 24 ]; then
             problems+=("Node.js 24+ required (found $nodev). Update from https://nodejs.org/ or your package manager.")
         else
-            ok "Node.js $nodev"
+            ok "Node.js $nodev"; node_ok=1
         fi
     fi
 
-    # --- Python 3.12 ONLY + venv + installed deps ---
+    # --- Python 3.12 venv (auto-created) ---
     # The platform pins 3.12 (pyproject.toml requires-python ==3.12.*); newer
     # versions (3.13/3.14) are unsupported and break the voice companion's deps.
     local venv_py="$REPO/.venv/bin/python"
     if [ -x "$venv_py" ]; then
         local venv_ver; venv_ver="$("$venv_py" --version 2>&1)"
         if [[ "$venv_ver" != *"3.12"* ]]; then
-            problems+=("Project requires Python 3.12, but .venv is '$venv_ver' (3.13/3.14 are unsupported and break voice). Recreate it:  rm -rf .venv && python3.12 -m venv .venv && ./.venv/bin/python -m pip install -r requirements.txt")
+            problems+=("Project requires Python 3.12, but .venv is '$venv_ver' (3.13/3.14 unsupported). Remove it and re-run:  rm -rf .venv")
         else
-            ok "Python virtual-env present ($venv_ver)"
-            if "$venv_py" -c "import fastapi" >/dev/null 2>&1; then
-                ok "Python dependencies installed"
+            ok "Python virtual-env present ($venv_ver)"; py_ok=1
+        fi
+    else
+        local py312; py312="$(find_python312)"
+        if [ -z "$py312" ]; then
+            problems+=("Python 3.12 not found. Install it (e.g. 'sudo apt install python3.12 python3.12-venv', or 'brew install python@3.12').")
+        else
+            log "Creating Python 3.12 virtual-env (.venv)…"
+            if "$py312" -m venv "$REPO/.venv" 2>/dev/null && [ -x "$venv_py" ]; then
+                ok "Created .venv (Python 3.12)"; py_ok=1
             else
-                problems+=("Python dependencies not installed in .venv. Run:  ./.venv/bin/python -m pip install -r requirements.txt")
+                problems+=("Failed to create the Python 3.12 virtual-env. Create it by hand:  python3.12 -m venv .venv")
             fi
         fi
-    else
-        local pyv=""
-        command -v python3 >/dev/null 2>&1 && pyv="$(python3 --version 2>&1)"
-        if [ -z "$pyv" ]; then
-            problems+=("Python not found. Install Python 3.12.")
-        elif [[ "$pyv" != *"3.12"* ]]; then
-            problems+=("Python 3.12 required (found '$pyv'; 3.13/3.14 unsupported). Install 3.12.")
-        fi
-        problems+=("Python virtual-env not set up. From the repo root run:  python3.12 -m venv .venv  then  ./.venv/bin/python -m pip install -r requirements.txt")
     fi
 
-    # --- Web UI dependencies (web/node_modules, incl. vite) ---
-    # start_agent.sh runs `npm run build`, which needs the web deps installed.
-    if [ -d "$REPO/web/node_modules/vite" ]; then
-        ok "Web UI dependencies installed"
-    else
-        problems+=("Web UI dependencies not installed (web/node_modules). Install them:  (cd web && npm ci)")
+    # --- Python dependencies (auto-installed into the venv) ---
+    if [ "$py_ok" -eq 1 ]; then
+        if "$venv_py" -c "import fastapi" >/dev/null 2>&1; then
+            ok "Python dependencies installed"
+        else
+            log "Installing Python dependencies (pip install -r requirements.txt)…"
+            if "$venv_py" -m pip install -r "$REPO/requirements.txt"; then
+                ok "Python dependencies installed"
+            else
+                problems+=("Python dependency install failed. Run it by hand:  ./.venv/bin/python -m pip install -r requirements.txt")
+            fi
+        fi
+    fi
+
+    # --- Web UI dependencies (auto npm ci; needed by start_agent.sh's build) ---
+    if [ "$node_ok" -eq 1 ]; then
+        if [ -d "$REPO/web/node_modules/vite" ]; then
+            ok "Web UI dependencies installed"
+        elif ! command -v npm >/dev/null 2>&1; then
+            problems+=("npm not found on PATH (it ships with Node.js). Reinstall Node 24+, then re-run.")
+        else
+            log "Installing web UI dependencies (npm ci) — first time can take a minute or two…"
+            if ( cd "$REPO/web" && npm ci ) && [ -d "$REPO/web/node_modules/vite" ]; then
+                ok "Web UI dependencies installed"
+            else
+                problems+=("Web UI dependency install (npm ci) failed. Run it by hand:  (cd web && npm ci)")
+            fi
+        fi
     fi
 
     if [ "${#problems[@]}" -gt 0 ]; then
         echo
-        warn "Native tooling prerequisites are not satisfied:"
+        warn "Native prerequisites are not satisfied:"
         for p in "${problems[@]}"; do printf '   - %s\n' "$p"; done
         echo
-        die "Fix the items above, or re-run and choose Docker (it bundles Postgres, Python, and Node). Full native guide: docs/01-base-platform-setup.md"
+        die "Install the missing runtimes above, then re-run 'skipper' (it installs the project dependencies for you). Or choose Docker. Full native guide: docs/01-base-platform-setup.md"
     fi
-    ok "Node + Python prerequisites satisfied."
+    ok "Node + Python ready (project dependencies installed)."
 }
 
 # Checked AFTER setup, so the host/port reflect what you were asked for and

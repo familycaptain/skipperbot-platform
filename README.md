@@ -173,44 +173,27 @@ launcher and choosing the *native* option, make sure you have:
     [docs/01-base-platform-setup.md](docs/01-base-platform-setup.md) step 4 for
     the per-distro commands.
 
-  **Then create the virtualenv with 3.12** (note the explicit version selector —
-  don't use a bare `python`, which may point at a newer release) and install
-  dependencies:
+  Once Python 3.12 is installed, **you don't create the venv or run `pip`
+  yourself** — the launcher creates `.venv` with 3.12 and installs the Python
+  dependencies for you. (To do it by hand instead: `py -3.12 -m venv .venv` on
+  Windows / `python3.12 -m venv .venv` on Linux/macOS, then the venv's
+  `python -m pip install -r requirements.txt`.)
 
-  **Windows (PowerShell):**
-
-  ```powershell
-  py -3.12 -m venv .venv
-  .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-  ```
-
-  **Linux / macOS:**
-
-  ```bash
-  python3.12 -m venv .venv
-  source .venv/bin/activate
-  pip install -r requirements.txt
-  ```
-
-  Verify the venv is on 3.12: `.\.venv\Scripts\python.exe --version` (Windows) or
-  `.venv/bin/python --version` (Linux/macOS) should print `Python 3.12.x`.
-
-- **Node.js 24+** — needed to build the web UI. After cloning, install the web
-  dependencies once (this is what provides `vite`, used by the build):
-
-  ```bash
-  cd web
-  npm ci
-  cd ..
-  ```
+- **Node.js 24+** — needed to build the web UI. Install it from
+  <https://nodejs.org/> (or your package manager); the launcher runs `npm ci` in
+  `web/` for you on first run (that's what provides `vite`).
 
 - **Git**.
 
-The `scripts\skipper` launcher checks all of these when you pick *native* and
-tells you exactly what's missing (it never installs anything for you). For the
-full step-by-step — installing PostgreSQL + pgvector, creating the database,
-and configuring `.env` — follow
-[**docs/01-base-platform-setup.md**](docs/01-base-platform-setup.md) end-to-end.
+When you pick *native*, the `scripts\skipper` launcher checks these **runtimes**
+and tells you exactly what's missing — but it does **not** install Postgres,
+Python, or Node for you (those are yours to install). Once they're present it
+handles the rest automatically: creates the Python venv, installs the Python
+dependencies, runs `npm ci`, asks for your OpenAI key + Postgres details, writes
+`.env`, and offers to create the database + role + pgvector. For the full manual
+walkthrough — installing PostgreSQL + pgvector, creating the database, and
+configuring `.env` by hand — see
+[**docs/01-base-platform-setup.md**](docs/01-base-platform-setup.md).
 
 ### Path 3: Just exploring
 
