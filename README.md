@@ -75,41 +75,19 @@ If both work, Docker is good.
 **Step 1 — Get an OpenAI API key** at
 <https://platform.openai.com/api-keys>. Add a payment method and
 ~$5 of credit; usage is metered. Copy the key (you won't be able
-to see it again) and keep it handy for the next step.
+to see it again) and keep it handy — the launcher asks for it in Step 3.
 
-**Step 2 — Clone the platform and create your `.env`.**
+**Step 2 — Clone the platform.**
 
 ```bash
 git clone https://github.com/CHANGE_ME/skipperbot-platform.git
 cd skipperbot-platform
-cp .env.example .env
 ```
 
-(On Windows, replace the last line with `copy .env.example .env` or use `copy` in cmd.exe / PowerShell.)
+That's all the manual setup. **You don't create or edit `.env` by hand** — the
+launcher does that for you in the next step.
 
-**Step 3 — Edit `.env`.** Open the file in any text editor. There
-are exactly **three lines you need to fill in** for the Docker path:
-
-```
-OPENAI_API_KEY=sk-...your-actual-key-here...
-POSTGRES_PASSWORD=pick-a-strong-password
-SKIPPERBOT_DB_DSN=dbname=skipperbot user=skipperbot_user password=pick-a-strong-password host=db port=5432
-```
-
-Two important things:
-
-- **The same password goes in both `POSTGRES_PASSWORD` and inside
-  `SKIPPERBOT_DB_DSN`** (after `password=`). The first sets the
-  password the Postgres container creates on first boot; the
-  second is what the agent uses to log in. They must match.
-- **`host=db`**, not `localhost`. Inside the docker-compose
-  network the Postgres service is named `db`. The active line
-  shipped in `.env.example` already uses `host=db` — keep it.
-
-Everything else in `.env` is optional and only enables specific
-integrations. You can come back to those later.
-
-**Step 4 — Start Skipper using the launcher script.**
+**Step 3 — Run the launcher. It builds your `.env` and starts everything.**
 
 **Linux/macOS:**
 ```bash
@@ -125,25 +103,26 @@ Or in PowerShell:
 powershell -ExecutionPolicy Bypass -File scripts\skipper.ps1
 ```
 
-First boot takes a few minutes: Docker downloads the Postgres
-image, builds the agent image, installs Python dependencies, and
-builds the web UI. On a Pi 5 with an SSD, plan for around 5–10
-minutes. Subsequent boots take seconds.
+On first run the launcher asks how you want to run Skipper — **choose Docker** —
+then prompts for your **OpenAI API key** and a **Postgres password** of your
+choosing, writes `.env` for you, and brings the stack up with `docker compose`
+(detached). No file editing. (Everything else in `.env` is optional — integrations
+you can add later.)
 
-You'll see log lines from `db`, `agent`, and the web build. When
-you see `HTTP server listening on http://localhost:8000`, the
-agent is ready.
+First boot takes a few minutes: Docker downloads the Postgres image, builds the
+agent image, installs Python dependencies, and builds the web UI. On a Pi 5 with
+an SSD, plan for around 5–10 minutes. Subsequent boots take seconds.
 
-(Press Ctrl-C in this terminal to stop the stack. To run in the
-background, stop the script and run `docker compose up -d`.)
+Follow the boot with `scripts\skipper.bat logs` (or `./scripts/skipper.sh logs`).
+When you see `HTTP server listening on http://localhost:8000`, the agent is ready.
 
-**Step 5 — Open the onboarding wizard** at
+**Step 4 — Open the onboarding wizard** at
 <http://localhost:8000>. It walks you through your name, timezone,
 and a final OpenAI-key check, then drops you into the desktop.
 
-(To stop Skipper later: Press Ctrl-C in the terminal where it's running,
-or use `docker compose down` if running detached. To start again, just
-run the launcher script again.)
+(To stop Skipper later, run `scripts\skipper.bat stop` — or
+`./scripts/skipper.sh stop` on Linux/macOS. To start it again, just run the
+launcher again.)
 
 ### Path 2: Native install (for developers and hackers)
 
