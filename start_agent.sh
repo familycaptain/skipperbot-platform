@@ -85,6 +85,16 @@ else
     fi
 fi
 
+# The agent mounts /assets from web/dist/assets and exits non-zero if it's
+# missing. Fail fast with a clear message rather than a confusing traceback
+# (and, under systemd, an immediate restart loop).
+if [ ! -d "$WEB_DIR/dist/assets" ]; then
+    log "FATAL: $WEB_DIR/dist/assets is missing — the web UI build produced no output." >&2
+    log "Fix the build error shown above, then re-run. Common causes: web deps not" >&2
+    log "installed (run 'npm ci' in web/), or a packaged-app dependency failed to install." >&2
+    exit 1
+fi
+
 # ---------------------------------------------------------------------------
 # Initialise the database (idempotent — fast no-op after first run).
 # Runs the platform baseline + every app's pending migration so the agent

@@ -159,6 +159,29 @@ function Test-TcpPort {
     }
 }
 
+# Run a Python script with the venv interpreter and capture stdout+stderr+exit
+# WITHOUT PowerShell 5.1's "NativeCommandError" noise - it wraps a native
+# command's stderr as a red error for BOTH 2>&1 and 2>file. Start-Process with
+# redirected files captures the raw streams cleanly. Returns { Code; Output }.
+function Invoke-CapturedPython {
+    param([string]$PythonExe, [string[]]$Arguments)
+    $outFile = [System.IO.Path]::GetTempFileName()
+    $errFile = [System.IO.Path]::GetTempFileName()
+    try {
+        $argString = ($Arguments | ForEach-Object { '"' + $_ + '"' }) -join ' '
+        $p = Start-Process -FilePath $PythonExe -ArgumentList $argString -NoNewWindow -Wait -PassThru `
+            -RedirectStandardOutput $outFile -RedirectStandardError $errFile
+        $code = $p.ExitCode
+        $stdout = (Get-Content -Raw -Path $outFile -ErrorAction SilentlyContinue)
+        $stderr = (Get-Content -Raw -Path $errFile -ErrorAction SilentlyContinue)
+    }
+    finally {
+        Remove-Item $outFile, $errFile -Force -ErrorAction SilentlyContinue
+    }
+    $text = (@($stderr, $stdout) | Where-Object { $_ } | ForEach-Object { $_.Trim() }) -join "`n"
+    return [pscustomobject]@{ Code = $code; Output = $text.Trim() }
+}
+
 # Locate a Python 3.12 interpreter to build the venv with. Returns an object
 # { Cmd = <exe>; Pre = <leading args> } or $null. Prefers the 'py -3.12' launcher.
 function Find-Python312 {
@@ -318,8 +341,9 @@ function Require-NativeDatabase {
         Die "Cannot reach PostgreSQL at $($target.DbHost):$($target.Port). Start it (or fix the host), then re-run 'skipper'. Your .env is already written."
     }
 
-    $err = (& $venvPython $checkScript 2>&1 | Out-String).Trim()
-    $code = $LASTEXITCODE
+    $res = Invoke-CapturedPython -PythonExe $venvPython -Arguments @($checkScript)
+    $err = $res.Output
+    $code = $res.Code
     if ($code -eq 0) {
         Ok "PostgreSQL ready at $($target.DbHost):$($target.Port) (connected, pgvector present)."
         return
@@ -370,8 +394,9 @@ function Invoke-NativeDbBootstrap {
     $env:SKIPPER_SUPERUSER = $suUser
     $env:SKIPPER_SUPERPASS = $suPass
     try {
-        $out = (& $VenvPython (Join-Path $REPO "scripts\bootstrap_db.py") 2>&1 | Out-String).Trim()
-        $code = $LASTEXITCODE
+        $res = Invoke-CapturedPython -PythonExe $VenvPython -Arguments @((Join-Path $REPO "scripts\bootstrap_db.py"))
+        $out = $res.Output
+        $code = $res.Code
     }
     finally {
         Remove-Item Env:SKIPPER_SUPERPASS -ErrorAction SilentlyContinue
@@ -382,8 +407,8 @@ function Invoke-NativeDbBootstrap {
 
     switch ($code) {
         0 {
-            & $VenvPython $CheckScript 2>$null | Out-Null
-            if ($LASTEXITCODE -eq 0) {
+            $verify = Invoke-CapturedPython -PythonExe $VenvPython -Arguments @($CheckScript)
+            if ($verify.Code -eq 0) {
                 Ok "Database is ready (role + database + pgvector created)."
                 return
             }

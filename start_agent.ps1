@@ -68,6 +68,15 @@ $env:PYTHONUTF8 = "1"
 while ($true) {
     Invoke-WebBuild
 
+    # The agent mounts /assets from web/dist/assets and exits non-zero if it's
+    # missing. Without this guard a failed build would crash-loop here forever.
+    if (-not (Test-Path (Join-Path $WebDir "dist\assets"))) {
+        Log "FATAL: web/dist/assets is missing - the web UI build produced no output."
+        Log "Fix the build error shown above, then re-run. Common causes: web deps not"
+        Log "installed (run 'npm ci' in web/), or a packaged-app dependency failed to install."
+        exit 1
+    }
+
     # Initialise the database (idempotent - fast no-op after first run).
     # Set $env:SKIPPERBOT_SKIP_INIT_DB = "1" to skip.
     if (-not ($env:SKIPPERBOT_SKIP_INIT_DB -eq "1")) {

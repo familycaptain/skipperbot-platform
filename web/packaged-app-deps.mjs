@@ -22,7 +22,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { execFileSync } from "node:child_process";
+import { execSync } from "node:child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_DIR = __dirname;
@@ -197,12 +197,15 @@ function runInstall() {
   }
 
   console.log(`[app-deps] installing: ${specs.join(" ")}`);
-  // On Windows npm is `npm.cmd`; execFileSync/spawnSync won't resolve a bare
-  // `npm` to it (ENOENT). Name the platform-specific binary explicitly rather
-  // than using shell:true, so version specs containing `^` aren't mangled by
-  // cmd.exe.
-  const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
-  execFileSync(npmCmd, ["install", "--no-save", "--no-audit", "--no-fund", ...specs], {
+  // Run npm through the shell (execSync), NOT execFileSync('npm'/'npm.cmd'):
+  //   - bare `npm` on Windows -> ENOENT (npm is npm.cmd, not npm)
+  //   - `npm.cmd` via execFileSync -> EINVAL on modern Node, which refuses to
+  //     spawn .cmd/.bat files directly (the CVE-2024-27980 mitigation)
+  // execSync uses a shell on every platform, so npm resolves normally. Quote
+  // each spec so a version range like ^1.9.4 survives cmd.exe (where `^` is an
+  // escape char) and the Unix shell alike.
+  const quoted = specs.map((s) => `"${s}"`).join(" ");
+  execSync(`npm install --no-save --no-audit --no-fund ${quoted}`, {
     cwd: WEB_DIR,
     stdio: "inherit",
   });
