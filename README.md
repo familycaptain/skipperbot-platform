@@ -31,6 +31,8 @@ Companion services run alongside the platform when you want them:
 > launcher for your OS:
 > - **Linux/macOS:** `./scripts/skipper.sh` 
 > - **Windows:** `scripts\skipper.bat` or `powershell -ExecutionPolicy Bypass -File scripts\skipper.ps1`
+> - **Windows + WSL:** you're in a Linux shell inside WSL, so use the Linux
+>   command — `./scripts/skipper.sh` — for both Docker and native runs.
 >
 > The launcher first **asks how you want to run Skipper — Docker or native** — and
 > verifies that runtime's prerequisites before doing anything else:

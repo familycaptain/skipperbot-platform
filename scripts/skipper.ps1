@@ -571,7 +571,7 @@ function Show-Status {
 }
 
 function Show-Update {
-    & "$REPO/scripts/update_server.sh"
+    & "$REPO/scripts/update_server.ps1"
 }
 
 function Show-Usage {

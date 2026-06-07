@@ -415,7 +415,11 @@ setup() {
     # auto-generates and persists it to .env on first boot (ensure_secret_key).
     ok ".env written (the secret-encryption key is auto-generated on first boot)."
 
-    if confirm "Install the deploy-watcher service now? (enables the in-app 'deploy + restart' button)"; then
+    # The deploy-watcher is a systemd service that recycles the Docker stack, so
+    # only offer it for a Docker run on a systemd host (skips macOS, WSL without
+    # systemd, and native runs - matching the Windows launcher, which has none).
+    if [ "$RUNTIME" = "docker" ] && command -v systemctl >/dev/null 2>&1 \
+        && confirm "Install the deploy-watcher service now? (enables the in-app 'deploy + restart' button)"; then
         install_watcher || warn "Deploy watcher not installed — you can run 'skipper.sh' again later or install it by hand."
     fi
 }
