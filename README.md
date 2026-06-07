@@ -32,9 +32,15 @@ Companion services run alongside the platform when you want them:
 > - **Linux/macOS:** `./scripts/skipper.sh` 
 > - **Windows:** `scripts\skipper.bat` or `powershell -ExecutionPolicy Bypass -File scripts\skipper.ps1`
 >
-> On first run it asks for your OpenAI key and a Postgres password, writes `.env`,
-> then starts Skipper (via Docker if present, otherwise natively). Later, just run
-> the command again to start Skipper. (Optional: on Linux/Mac, `./scripts/skipper.sh install`
+> The launcher first **asks how you want to run Skipper — Docker or native** — and
+> verifies that runtime's prerequisites before doing anything else:
+> - **Docker** (recommended) bundles Postgres, Python, and Node in containers, so
+>   the only thing you need installed is Docker itself.
+> - **Native** runs directly on your machine and requires you to have already
+>   installed PostgreSQL 18 + pgvector, Python 3.12, and Node 24+ (see Path 2).
+>
+> It then asks for your OpenAI key and a Postgres password, writes `.env`,
+> and starts Skipper. Later, just run the command again to start it. (Optional: on Linux/Mac, `./scripts/skipper.sh install`
 > adds `skipper` to your `PATH` so you can type just `skipper` from anywhere.
 > On first run, you'll also be offered the chance to set up an automatic updater —
 > a lightweight background service that lets you update Skipper from within the app
@@ -141,10 +147,91 @@ run the launcher script again.)
 
 ### Path 2: Native install (for developers and hackers)
 
-If you'd rather run Postgres and the agent natively without Docker, follow
+> **Windows users — read this first.** A *fully native* Windows install is the
+> hardest path, because **pgvector has no prebuilt Windows binaries**: you'd have
+> to compile it from source against your PostgreSQL install (Visual Studio C++
+> build tools, the Postgres headers, and `nmake` — see the
+> [pgvector install docs](https://github.com/pgvector/pgvector#installation)).
+> For almost everyone on Windows, don't do that — instead:
+> - **Best: use Docker** ([Path 1](#path-1-docker-compose-recommended-for-first-timers)).
+>   It bundles Postgres 18 + pgvector + Python + Node, so there's nothing to compile.
+> - **Next best: WSL2 (Linux on Windows).** Run `wsl --install` (installs Ubuntu),
+>   open the Ubuntu shell, and follow the **Linux** native steps below *inside* WSL,
+>   where pgvector installs in one line (`sudo apt install postgresql-18-pgvector`).
+>   Run `./scripts/skipper.sh` from the WSL shell.
+> - **Or point at a remote Postgres** that already has pgvector — the launcher asks
+>   for the host, so a Postgres on your network or in Docker works fine.
+>
+> Only do a true native-Windows install if you specifically need PostgreSQL running
+> as a native Windows service.
+
+If you'd rather run Postgres and the agent natively without Docker, **you install
+the runtimes yourself** — Docker does none of this for you. Before running the
+launcher and choosing the *native* option, make sure you have:
+
+- **PostgreSQL 18.x + pgvector**, running and reachable. This can be **on this
+  machine or any Postgres server on your network** — on a native run the launcher
+  asks for the host (default `localhost`) and writes it to `.env` for you; it does
+  *not* install or start Postgres itself. If the `skipperbot` database/role and
+  the pgvector extension don't exist yet, **the launcher offers to create them
+  for you** using your Postgres superuser login (it stops with guidance if
+  pgvector isn't installed on the server). A non-default database name/user is
+  fine too: set `POSTGRES_DB` / `POSTGRES_USER` (or a full `SKIPPERBOT_DB_DSN`)
+  in `.env`. (On Windows, pgvector is the catch — see the callout above.)
+- **Python 3.12 specifically** — not 3.13 or 3.14. The platform pins 3.12
+  (`pyproject.toml`, Dockerfile), and the `skipperbot-voice` companion's
+  audio/wake-word dependencies don't yet support newer versions.
+
+  **First install Python 3.12** if you don't already have it (having a newer
+  Python on your PATH is fine — you'll target 3.12 explicitly below):
+
+  - **Windows:** download the 3.12.x installer from
+    <https://www.python.org/downloads/windows/> and run it. This registers 3.12
+    with the `py` launcher so you can select it as `py -3.12`.
+  - **macOS:** `brew install python@3.12`
+  - **Linux:** install your distro's 3.12 package, e.g.
+    `sudo apt install -y python3.12 python3.12-venv` — see
+    [docs/01-base-platform-setup.md](docs/01-base-platform-setup.md) step 4 for
+    the per-distro commands.
+
+  **Then create the virtualenv with 3.12** (note the explicit version selector —
+  don't use a bare `python`, which may point at a newer release) and install
+  dependencies:
+
+  **Windows (PowerShell):**
+
+  ```powershell
+  py -3.12 -m venv .venv
+  .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+  ```
+
+  **Linux / macOS:**
+
+  ```bash
+  python3.12 -m venv .venv
+  source .venv/bin/activate
+  pip install -r requirements.txt
+  ```
+
+  Verify the venv is on 3.12: `.\.venv\Scripts\python.exe --version` (Windows) or
+  `.venv/bin/python --version` (Linux/macOS) should print `Python 3.12.x`.
+
+- **Node.js 24+** — needed to build the web UI. After cloning, install the web
+  dependencies once (this is what provides `vite`, used by the build):
+
+  ```bash
+  cd web
+  npm ci
+  cd ..
+  ```
+
+- **Git**.
+
+The `scripts\skipper` launcher checks all of these when you pick *native* and
+tells you exactly what's missing (it never installs anything for you). For the
+full step-by-step — installing PostgreSQL + pgvector, creating the database,
+and configuring `.env` — follow
 [**docs/01-base-platform-setup.md**](docs/01-base-platform-setup.md) end-to-end.
-It walks through installing PostgreSQL 18.x + pgvector, Python 3.12, Node 20+,
-creating the database, creating your OpenAI API key, and bringing up the agent.
 
 ### Path 3: Just exploring
 

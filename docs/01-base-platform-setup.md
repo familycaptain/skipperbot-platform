@@ -6,7 +6,7 @@ you can chat with.
 Pick one of two paths:
 
 - **[Docker path](#docker-path-recommended-3-steps)** (recommended, ~5 minutes) — clone, set 2 env vars, `docker compose up`. Postgres and pgvector are bundled in the container; the user doesn't install or configure either.
-- **[Native path](#native-path)** (~30 minutes) — for users who already run Postgres natively or don't want Docker. You install PostgreSQL 18 + pgvector + Python 3.12 + Node 20 yourself.
+- **[Native path](#native-path)** (~30 minutes) — for users who already run Postgres natively or don't want Docker. You install PostgreSQL 18 + pgvector + Python 3.12 + Node 24 yourself.
 
 Both paths end with the **first-run web onboarding wizard** (set your name, timezone, confirm OpenAI key works).
 
@@ -25,8 +25,8 @@ Both paths end with the **first-run web onboarding wizard** (set your name, time
 The Docker path needs only the above. The native path additionally needs:
 
 - **PostgreSQL 18.x** with pgvector — covered below.
-- **Python 3.12** — single supported version.
-- **Node.js 20+** — needed for the web UI build.
+- **Python 3.12** — single supported version. Not 3.13 or 3.14: the platform pins 3.12, and the `skipperbot-voice` companion's audio/wake-word dependencies don't yet build on newer Python.
+- **Node.js 24+** — needed for the web UI build.
 - **Git** — to clone the platform and any apps you install later.
 
 ---
@@ -49,7 +49,7 @@ Hold onto this key — you'll paste it into `.env` in the next step.
 
 ## Docker path (recommended, 3 steps)
 
-The Docker path bundles **everything** — Postgres 18, the pgvector extension, Python 3.12, Node 20, and the agent — in containers. You only need Docker installed on your machine. **You do not install Postgres separately.**
+The Docker path bundles **everything** — Postgres 18, the pgvector extension, Python 3.12, Node 24, and the agent — in containers. You only need Docker installed on your machine. **You do not install Postgres separately.**
 
 1. **Install Docker.**
 
@@ -223,7 +223,7 @@ PGPASSWORD='choose-a-strong-password-here' psql -h localhost -U skipperbot_user 
 # expected: vector extension listed
 ```
 
-### Step 4 — Install Python 3.12 + Node 20
+### Step 4 — Install Python 3.12 + Node 24
 
 #### Linux
 
@@ -231,21 +231,21 @@ PGPASSWORD='choose-a-strong-password-here' psql -h localhost -U skipperbot_user 
 # Python 3.12 — adjust for your distro
 sudo apt install -y python3.12 python3.12-venv python3.12-dev      # Debian / Ubuntu
 sudo dnf install -y python3.12                                      # RHEL / Fedora
-# Node 20
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo bash -      # Debian / Ubuntu
+# Node 24
+curl -fsSL https://deb.nodesource.com/setup_24.x | sudo bash -      # Debian / Ubuntu
 sudo apt install -y nodejs
 ```
 
 #### macOS
 
 ```bash
-brew install python@3.12 node@20
+brew install python@3.12 node@24
 ```
 
 #### Windows
 
 - Python 3.12 from <https://www.python.org/downloads/>
-- Node 20+ from <https://nodejs.org/>
+- Node 24+ from <https://nodejs.org/>
 
 ### Step 5 — Clone, set up venv, build web UI
 
@@ -259,7 +259,7 @@ source .venv/bin/activate          # Linux / macOS
 # .venv\Scripts\activate            # Windows PowerShell
 pip install -r requirements.txt
 
-# Web UI build (need Node 20+)
+# Web UI build (need Node 24+)
 cd web
 npm ci
 npm run build
@@ -339,7 +339,7 @@ If all four work, you're set up.
 | Native: Agent fails at boot with `pgvector extension not installed in this database` | Connected to right DB but extension missing | `psql -d skipperbot -c 'CREATE EXTENSION vector;'` (as the postgres superuser). |
 | Agent boots but `OpenAI=OFF` in banner | Key missing or invalid | Re-check `OPENAI_API_KEY` in `.env`. Test with `curl` against `https://api.openai.com/v1/models` using your key. |
 | Port 8000 in use | Another service holds the port | Change the port in `.env` and (for Docker) in `docker-compose.yml`, restart. |
-| Native: `npm run build` fails with "node not found" | Node not installed or wrong version | Install Node 20+. |
+| Native: `npm run build` fails with "node not found" | Node not installed or wrong version | Install Node 24+. |
 | Web UI loads but launcher is empty | Web bundle out of date | Native: `cd web && npm run build`, restart. Docker: `docker compose build agent && docker compose up -d`. |
 | Onboarding wizard can't write to `.env` (Docker) | `.env` not bind-mounted | Confirm `docker-compose.yml` has `./.env:/app/.env` in agent's volumes. |
 

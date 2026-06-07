@@ -197,7 +197,12 @@ function runInstall() {
   }
 
   console.log(`[app-deps] installing: ${specs.join(" ")}`);
-  execFileSync("npm", ["install", "--no-save", "--no-audit", "--no-fund", ...specs], {
+  // On Windows npm is `npm.cmd`; execFileSync/spawnSync won't resolve a bare
+  // `npm` to it (ENOENT). Name the platform-specific binary explicitly rather
+  // than using shell:true, so version specs containing `^` aren't mangled by
+  // cmd.exe.
+  const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
+  execFileSync(npmCmd, ["install", "--no-save", "--no-audit", "--no-fund", ...specs], {
     cwd: WEB_DIR,
     stdio: "inherit",
   });
