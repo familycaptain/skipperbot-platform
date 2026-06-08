@@ -130,7 +130,7 @@ app = FastAPI(title="SkipperBot Agent", version="0.1.0", lifespan=lifespan)
 # attaches request.state.principal, and rejects any unauthenticated request to a
 # non-public path with 401. Enforcement is unconditional — there is no off switch.
 # ---------------------------------------------------------------------------
-_PUBLIC_EXACT = {"/", "/api/health", "/auth/login", "/auth/set-password",
+_PUBLIC_EXACT = {"/", "/api/health", "/auth/login",
                  "/api/onboarding/status", "/api/onboarding/check-openai"}
 _PUBLIC_PREFIXES = ("/assets/", "/static/", "/web/")
 
@@ -206,11 +206,6 @@ class LoginRequest(BaseModel):
     password: str = ""
 
 
-class SetPasswordRequest(BaseModel):
-    username: str
-    password: str
-
-
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "agent": "SkipperBot", "version": "0.1.0"}
@@ -224,9 +219,23 @@ async def root():
     return {"status": "ok", "agent": "SkipperBot", "version": "0.1.0"}
 
 
+# Returned to the client when we authenticated the user but could not mint a
+# session token (the auth signing key is unavailable). Auth is unconditional, so
+# a tokenless session is useless — surfacing a clear error keeps the client on
+# the login/onboarding screen instead of saving a half-session that can only
+# 401/403 (which previously left the desktop stuck on "Reconnecting").
+_NO_SESSION_ERR = ("Could not establish a session: the server's auth signing "
+                   "key is not configured. Set SKIPPERBOT_SECRET_KEY (or "
+                   "SKIPPERBOT_AUTH_KEY) in .env and restart the agent.")
+
+
 def _issue_token(user: dict) -> str:
-    """Mint a session token for a just-authenticated user (best-effort; never
-    blocks login if the auth key is somehow unavailable)."""
+    """Mint a session token for a just-authenticated user.
+
+    Returns "" if the auth key is unavailable (or minting otherwise fails);
+    callers MUST treat an empty token as a hard failure and return
+    ``_NO_SESSION_ERR`` rather than reporting success — a session with no token
+    cannot make any authenticated request."""
     try:
         from app_platform.auth import mint_session_token
         # Re-fetch so token_version is included even if the passed dict predates it.
@@ -263,26 +272,20 @@ async def login(request: LoginRequest, http_request: Request):
     authed = await asyncio.to_thread(authenticate, name, request.password)
     if not authed:
         return {"ok": False, "error": "Wrong password."}
+    token = _issue_token(authed)
+    if not token:
+        return {"ok": False, "error": _NO_SESSION_ERR}
     return {"ok": True,
             "user": {"name": authed["name"], "display_name": authed["display_name"], "role": authed["role"]},
-            "token": _issue_token(authed)}
+            "token": token}
 
 
-@app.post("/auth/set-password")
-async def set_password(request: SetPasswordRequest):
-    """Set or reset a user's web password. Only works if they have no password yet."""
-    name = request.username.lower().strip()
-    user = await asyncio.to_thread(get_user, name)
-    if not user:
-        return {"ok": False, "error": "Unknown user."}
-    if user.get("password_hash"):
-        return {"ok": False, "error": "Password already set. Use the chat to request a reset."}
-    if len(request.password) < MIN_PASSWORD_LEN:
-        return {"ok": False, "error": f"Password must be at least {MIN_PASSWORD_LEN} characters."}
-    await asyncio.to_thread(update_password, name, request.password)
-    return {"ok": True,
-            "user": {"name": user["name"], "display_name": user["display_name"], "role": user["role"]},
-            "token": _issue_token(user)}
+# NOTE: there is deliberately NO public "set a password for a passwordless
+# account" endpoint. Every account is created WITH a password (onboarding and
+# admin "Add member" both require one), so a self-service claim flow would only
+# be a way to seize a passwordless account by knowing its username. If an account
+# ever ends up without a password, an admin sets a temporary one via
+# POST /api/users/{name}/reset-password (admin-only) — see api_reset_password.
 
 
 # ---------------------------------------------------------------------------
@@ -402,8 +405,8 @@ async def onboarding_create_user(request: OnboardingCreateUserRequest):
         name = (request.username or "").strip().lower()
         if not _re.fullmatch(r"[a-z][a-z0-9_]{1,30}", name):
             return {"ok": False, "error": "Username must be 2-31 lowercase letters / digits / underscores, starting with a letter."}
-        if request.password and len(request.password) < MIN_PASSWORD_LEN:
-            return {"ok": False, "error": f"Password must be at least {MIN_PASSWORD_LEN} characters (or empty if you want to set it later)."}
+        if len(request.password or "") < MIN_PASSWORD_LEN:
+            return {"ok": False, "error": f"A password is required and must be at least {MIN_PASSWORD_LEN} characters."}
 
         display = (request.display_name or "").strip() or name.capitalize()
         password = request.password or None
@@ -444,6 +447,13 @@ async def onboarding_create_user(request: OnboardingCreateUserRequest):
         except Exception as exc:
             logger.warning("ONBOARDING: could not seed onboarding goal: %s", exc, exc_info=True)
 
+        token = _issue_token(user)
+        if not token:
+            # The admin account was created, but we can't hand back a usable
+            # session. Don't report success with an empty token (that traps the
+            # client). Once the key is configured + the agent restarted, the
+            # login screen takes over for this already-created user.
+            return {"ok": False, "error": _NO_SESSION_ERR}
         return {
             "ok": True,
             "user": {
@@ -451,7 +461,7 @@ async def onboarding_create_user(request: OnboardingCreateUserRequest):
                 "display_name": user["display_name"],
                 "role": user["role"],
             },
-            "token": _issue_token(user),
+            "token": token,
         }
 
     return await asyncio.to_thread(_do)
@@ -1392,8 +1402,8 @@ async def api_create_user(req: CreateUserRequest, request: Request):
         roles = _normalize_roles(req.role)
         if roles is None:
             return {"ok": False, "error": f"Invalid role. Allowed: {', '.join(_ALLOWED_ROLES)}."}
-        if req.password and len(req.password) < MIN_PASSWORD_LEN:
-            return {"ok": False, "error": f"Temporary password must be at least {MIN_PASSWORD_LEN} characters."}
+        if len(req.password or "") < MIN_PASSWORD_LEN:
+            return {"ok": False, "error": f"A temporary password is required and must be at least {MIN_PASSWORD_LEN} characters."}
         user = create_user(
             name=name,
             display_name=(req.display_name or "").strip() or name.capitalize(),

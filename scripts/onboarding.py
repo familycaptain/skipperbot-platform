@@ -331,8 +331,15 @@ def step_primary_user(env: dict[str, str], *, check_only: bool) -> None:
             name = ""
 
     display_name = ask("Display name (shown in the UI)", name.capitalize())
-    password = ask("Web UI password (leave blank to set later)", "")
-    pw_hash = _hash_password(password) if password else ""
+    # A password is required — accounts are never created passwordless (there is
+    # no self-service "claim a passwordless account" path; recovery is an admin
+    # reset). Minimum 8 characters, matching the web onboarding + MIN_PASSWORD_LEN.
+    password = ""
+    while len(password) < 8:
+        password = ask("Web UI password (min 8 characters)", "")
+        if len(password) < 8:
+            warn("A password is required and must be at least 8 characters.")
+    pw_hash = _hash_password(password)
 
     import psycopg2
     with psycopg2.connect(dsn, connect_timeout=5) as conn:
@@ -348,7 +355,7 @@ def step_primary_user(env: dict[str, str], *, check_only: bool) -> None:
             )
         conn.commit()
     ok(f"Created user '{name}' (role: admin,member).")
-    if password and not pw_hash:
+    if not pw_hash:
         warn("Password was not hashed — bcrypt / platform hasher unavailable.")
 
 

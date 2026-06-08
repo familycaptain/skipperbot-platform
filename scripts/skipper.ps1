@@ -3,15 +3,18 @@
 # =============================================================================
 # After cloning the repo, run this script. Behaviour:
 #
-#   * Every start/setup first ASKS how to run Skipper - Docker or native -
-#     and verifies that runtime's prerequisites before doing anything else.
+#   * First run ASKS how to run Skipper - Docker or native - and REMEMBERS the
+#     choice in .env (SKIPPER_RUNTIME); later runs reuse it without asking.
+#     Run 'skipper setup' to change it. Each run verifies that runtime's
+#     prerequisites before doing anything else.
 #       - Docker: bundles Postgres + Python + Node in containers (recommended).
 #       - Native: runs on the host; you must already have PostgreSQL 18 +
 #         pgvector, Python 3.12, and Node 24+ installed. The launcher then
 #         installs the project's own deps for you (venv + pip + npm ci).
 #   * First run (no usable .env): asks for your OpenAI key and a Postgres
 #     password, writes .env, then starts Skipper.
-#   * Later runs: just starts Skipper.
+#   * Later runs: start Skipper, wait until it has finished booting, then drop
+#     you into the live log (Ctrl+C stops watching; Skipper keeps running).
 #
 # Subcommands: setup | start | stop | restart | update | logs | status | help
 #              (no subcommand = setup-if-needed + start)
@@ -62,10 +65,23 @@ function Confirm {
 # skipper supports two runtimes:
 #   docker - bundles Postgres + Python + Node in containers (recommended)
 #   native - runs on the host; YOU must have Postgres/Python/Node installed
-# We always ASK which one to use, then verify that runtime's prerequisites
-# before doing anything else (so we never get half-way and then fail).
+# The choice is remembered in .env (SKIPPER_RUNTIME) so we only ASK once; later
+# runs reuse it silently. 'skipper setup' forces the question again (it sets
+# $script:ForceAskRuntime). After resolving we verify that runtime's
+# prerequisites before doing anything else (so we never get half-way and fail).
 function Resolve-Runtime {
     if ($script:Runtime) { return $script:Runtime }
+
+    # Reuse a previously-saved choice unless the user explicitly ran 'setup'.
+    if (-not $script:ForceAskRuntime) {
+        $saved = EnvGet "SKIPPER_RUNTIME"
+        if ($saved -eq "docker" -or $saved -eq "native") {
+            $script:Runtime = $saved
+            Log "Using saved runtime: $saved (run 'skipper setup' to change)."
+            return $script:Runtime
+        }
+    }
+
     $dockerAvailable = HasDocker
     Write-Host ""
     Log "How do you want to run Skipper?"
@@ -85,6 +101,9 @@ function Resolve-Runtime {
         "^[Nn]" { $script:Runtime = "native" }
         default { Die "Unrecognized choice '$reply'. Run again and enter D (Docker) or N (native)." }
     }
+    # Persist the choice so later runs don't re-ask. On a brand-new install .env
+    # doesn't exist yet (setup creates it and re-saves this too); guard for that.
+    if (Test-Path $ENV_FILE) { SetEnv "SKIPPER_RUNTIME" $script:Runtime }
     return $script:Runtime
 }
 
@@ -522,6 +541,8 @@ function Setup {
 
     SetEnv "OPENAI_API_KEY" $key
     SetEnv "POSTGRES_PASSWORD" $pw
+    # Remember how to run Skipper so later starts don't re-ask Docker-vs-native.
+    SetEnv "SKIPPER_RUNTIME" (Resolve-Runtime)
 
     # For a native run, ask where Postgres lives and write it into .env so the
     # agent connects to your host DB (not the docker-compose 'db' service).
@@ -540,13 +561,41 @@ function Setup {
     Ok ".env written (the secret-encryption key is auto-generated on first boot)."
 }
 
+# Poll the health endpoint until the agent has finished booting. The Docker
+# entrypoint does npm install + build + init_db BEFORE binding port 8000, so
+# 'docker compose up -d' returns long before the site is actually reachable -
+# without this, users browse to a dead page and think the install failed.
+# Returns $true once HTTP responds, $false if it never came up in time.
+function Wait-Until-Ready {
+    $url = "http://localhost:8000/api/onboarding/status"
+    $tries = 120   # ~10 min at 5s; first build on a slow box can be minutes
+    Log "Waiting for Skipper to finish booting (first build can take a few minutes)..."
+    for ($i = 0; $i -lt $tries; $i++) {
+        try {
+            Invoke-WebRequest -Uri $url -TimeoutSec 3 -UseBasicParsing | Out-Null
+            Write-Host ""
+            Ok "Ready - open http://localhost:8000"
+            return $true
+        }
+        catch { }
+        Write-Host "." -NoNewline
+        Start-Sleep -Seconds 5
+    }
+    Write-Host ""
+    Warn "Skipper isn't responding yet. Watch the log below for build errors (Ctrl+C stops watching; Skipper keeps running)."
+    return $false
+}
+
 # --- start / stop -----------------------------------------------------------
 function Start-Skipper {
     $rt = Resolve-Runtime
     if ($rt -eq "docker") {
         Log "Starting Skipper via Docker (docker compose up -d) - first boot builds the UI, can take a few minutes..."
         docker compose up -d
-        Ok "Skipper is starting. Open http://localhost:8000   (follow logs: skipper logs)"
+        Wait-Until-Ready | Out-Null
+        Write-Host ""
+        Log "Showing the live log. Ctrl+C stops watching - Skipper keeps running in the background (skipper stop to halt it)."
+        docker compose logs -f agent
     }
     else {
         $agentScript = "$REPO/start_agent.ps1"
@@ -605,10 +654,13 @@ skipper - launch and manage the Skipperbot platform (Windows PowerShell)
 
 Usage: powershell -ExecutionPolicy Bypass -File skipper.ps1 [command]
 
-  (no command)   Ask Docker-vs-native, verify that runtime's prerequisites,
-                 run first-time setup if needed, then start Skipper.
-  setup          (Re)configure .env (OpenAI key + Postgres password).
-  start          Start Skipper (asks Docker or native first).
+  (no command)   Resolve runtime (asks once, then remembered), verify that
+                 runtime's prerequisites, run first-time setup if needed, then
+                 start Skipper and follow its log.
+  setup          (Re)configure .env (runtime choice + OpenAI key + Postgres
+                 password). Re-asks Docker-vs-native.
+  start          Start Skipper, wait until it has booted, then follow the log
+                 (Ctrl+C stops watching; Skipper keeps running).
   stop           Stop Skipper (Docker stack, or reminds you for native).
   restart        Restart (stop + start).
   update         git pull + recycle.
@@ -649,7 +701,7 @@ switch -Wildcard ($Command) {
         Ensure-RuntimeDatabase
         Start-Skipper
     }
-    "setup" { Ensure-RuntimeTooling | Out-Null; Setup; Ensure-RuntimeDatabase }
+    "setup" { $script:ForceAskRuntime = $true; Ensure-RuntimeTooling | Out-Null; Setup; Ensure-RuntimeDatabase }
     "start" { Ensure-RuntimeTooling | Out-Null; if (NeedsSetup) { Setup }; Ensure-RuntimeDatabase; Start-Skipper }
     "stop" { Stop-Skipper }
     "restart" { Ensure-RuntimeTooling | Out-Null; if (NeedsSetup) { Setup }; Ensure-RuntimeDatabase; Stop-Skipper; Start-Skipper }

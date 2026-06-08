@@ -98,6 +98,28 @@ if [ "${SKIPPERBOT_SKIP_INIT_DB:-0}" != "1" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# 2b. Bridge the auto-provisioned secret key into THIS boot's environment.
+# ---------------------------------------------------------------------------
+# init_db.py (above) self-provisions SKIPPERBOT_SECRET_KEY into .env on first
+# boot. But docker-compose's `env_file: .env` injected an EMPTY value at
+# container start (the placeholder line in .env.example), and that empty value
+# sits in our process env. The agent's config.py calls load_dotenv() with the
+# default override=False, so it won't replace the already-present empty value —
+# the agent would run keyless and fail to mint session tokens ("AUTH: could not
+# mint session token ... neither SKIPPERBOT_AUTH_KEY nor SKIPPERBOT_SECRET_KEY
+# is set"), leaving the web UI stuck "Reconnecting" until the NEXT restart.
+# Re-export the real key from .env here so the agent we exec sees it this boot.
+# Only act when our current value is empty/unset, so an explicitly-provided key
+# (via compose `environment:` or a real .env value) is never overwritten.
+if [ -z "${SKIPPERBOT_SECRET_KEY:-}" ] && [ -f "$APP_ROOT/.env" ]; then
+    _k=$(grep -E '^[[:space:]]*SKIPPERBOT_SECRET_KEY=.+' "$APP_ROOT/.env" | tail -n1 | cut -d= -f2- || true)
+    if [ -n "$_k" ]; then
+        export SKIPPERBOT_SECRET_KEY="$_k"
+        log "loaded auto-provisioned SKIPPERBOT_SECRET_KEY from .env for this boot"
+    fi
+fi
+
+# ---------------------------------------------------------------------------
 # 3. Exec the agent (replaces the shell so SIGTERM reaches Python).
 # ---------------------------------------------------------------------------
 

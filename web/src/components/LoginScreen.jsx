@@ -6,9 +6,12 @@ import { setToken } from "../utils/api";
  *
  * Flow:
  *  Step 1: Enter username → "Continue"
- *  Step 2a: User has password → show password field → "Sign In"
- *  Step 2b: User has no password → show set-password fields → "Set Password & Continue"
+ *  Step 2: User has password → show password field → "Sign In"
  *  On success → onLogin({ name, display_name, role })
+ *
+ * There is intentionally no self-service "set a password" path: every account is
+ * created with a password, so a passwordless account is an admin-recovery case
+ * (Settings → Members → reset password), not something any visitor can claim.
  */
 
 const API_BASE = "";  // same origin (Vite proxy in dev)
@@ -16,13 +19,11 @@ const API_BASE = "";  // same origin (Vite proxy in dev)
 export default function LoginScreen({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   // "name" = step 1 (enter username)
-  // "password" = step 2a (enter existing password)
-  // "set_password" = step 2b (create new password)
+  // "password" = step 2 (enter existing password)
   const [step, setStep] = useState("name");
   const [userInfo, setUserInfo] = useState(null); // { name, display_name }
 
@@ -30,7 +31,7 @@ export default function LoginScreen({ onLogin }) {
 
   // Auto-focus password field when step changes
   useEffect(() => {
-    if ((step === "password" || step === "set_password") && passwordRef.current) {
+    if (step === "password" && passwordRef.current) {
       passwordRef.current.focus();
     }
   }, [step]);
@@ -51,8 +52,10 @@ export default function LoginScreen({ onLogin }) {
       const data = await res.json();
 
       if (data.error === "no_password") {
-        setUserInfo({ name: data.name, display_name: data.display_name });
-        setStep("set_password");
+        // Accounts are always created with a password (onboarding + admin "Add
+        // member" both require one), so there is no self-service claim. A
+        // passwordless account is recovered by an admin setting a temporary one.
+        setError("This account has no password yet. Ask an admin to set a temporary password for you (Settings → Members → reset password).");
       } else if (data.error === "password_required") {
         setUserInfo({ name: data.name, display_name: data.display_name });
         setStep("password");
@@ -95,70 +98,26 @@ export default function LoginScreen({ onLogin }) {
     }
   }
 
-  async function handleSetPassword(e) {
-    e.preventDefault();
-    setError("");
-    if (!password || password.length < 4) {
-      setError("Password must be at least 4 characters.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Passwords don't match.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/auth/set-password`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: userInfo.name, password }),
-      });
-      const data = await res.json();
-
-      if (data.ok) {
-        setToken(data.token);
-        onLogin(data.user);
-      } else {
-        setError(data.error || "Failed to set password.");
-      }
-    } catch {
-      setError("Cannot reach server.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   function handleBack() {
     setStep("name");
     setPassword("");
-    setConfirmPassword("");
     setError("");
     setUserInfo(null);
   }
 
-  const onSubmit =
-    step === "name" ? handleCheckUser :
-    step === "password" ? handleLogin :
-    handleSetPassword;
+  const onSubmit = step === "name" ? handleCheckUser : handleLogin;
 
   const subtitle =
-    step === "set_password"
-      ? `Welcome, ${userInfo?.display_name}! Create a password to get started.`
-      : step === "password"
+    step === "password"
       ? `Welcome back, ${userInfo?.display_name}!`
       : "Sign in to start chatting";
 
-  const buttonLabel =
-    step === "name" ? "Continue" :
-    step === "password" ? "Sign In" :
-    "Set Password & Continue";
+  const buttonLabel = step === "name" ? "Continue" : "Sign In";
 
   const buttonDisabled =
     loading ||
     (step === "name" && !username.trim()) ||
-    (step === "password" && !password) ||
-    (step === "set_password" && !password);
+    (step === "password" && !password);
 
   return (
     <div className="flex items-center justify-center h-full bg-slate-950">
@@ -189,7 +148,7 @@ export default function LoginScreen({ onLogin }) {
           />
         )}
 
-        {/* Step 2a: Enter existing password */}
+        {/* Step 2: Enter existing password */}
         {step === "password" && (
           <input
             ref={passwordRef}
@@ -200,29 +159,6 @@ export default function LoginScreen({ onLogin }) {
             autoComplete="current-password"
             className="w-full px-4 py-3 rounded-xl bg-slate-800 text-sm text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500/50"
           />
-        )}
-
-        {/* Step 2b: Set new password */}
-        {step === "set_password" && (
-          <>
-            <input
-              ref={passwordRef}
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Choose a password"
-              autoComplete="new-password"
-              className="w-full px-4 py-3 rounded-xl bg-slate-800 text-sm text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500/50"
-            />
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="Confirm password"
-              autoComplete="new-password"
-              className="w-full px-4 py-3 rounded-xl bg-slate-800 text-sm text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500/50"
-            />
-          </>
         )}
 
         {error && (

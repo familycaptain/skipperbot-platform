@@ -258,6 +258,7 @@ function CreatePrimaryUser({ onCreated, onBack }) {
   }, [detected]);
 
   const usernameOk = /^[a-z][a-z0-9_]{1,30}$/.test(username);
+  const passwordOk = password.length >= 8;
 
   const submit = async (e) => {
     e?.preventDefault();
@@ -266,8 +267,8 @@ function CreatePrimaryUser({ onCreated, onBack }) {
       setError("Username must be 2–31 lowercase letters / digits / underscores, starting with a letter.");
       return;
     }
-    if (password && password.length < 4) {
-      setError("Password must be at least 4 characters (or leave blank to set it later).");
+    if (!passwordOk) {
+      setError("A password is required and must be at least 8 characters.");
       return;
     }
     setSaving(true);
@@ -334,9 +335,11 @@ function CreatePrimaryUser({ onCreated, onBack }) {
             className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 text-sm"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            placeholder="(leave blank to set it later)"
+            required
+            minLength={8}
+            placeholder="at least 8 characters"
           />
-          <p className="mt-1 text-xs text-zinc-500">Used to sign in to the web UI. You can leave this blank and set it from the login screen later.</p>
+          <p className="mt-1 text-xs text-zinc-500">Used to sign in to the web UI. Minimum 8 characters — you can change it later from Settings.</p>
         </div>
         <div>
           <label className="text-sm text-zinc-300">Timezone</label>
@@ -364,7 +367,7 @@ function CreatePrimaryUser({ onCreated, onBack }) {
         <button
           type="submit"
           className="inline-flex items-center gap-2 rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:bg-zinc-700 disabled:cursor-not-allowed"
-          disabled={saving || !usernameOk}
+          disabled={saving || !usernameOk || !passwordOk}
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <UserIcon size={14} />}
           {saving ? "Creating…" : "Create account"}

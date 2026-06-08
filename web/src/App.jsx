@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { clearToken } from "./utils/api";
+import { clearToken, getToken } from "./utils/api";
 import Shell from "./components/Shell";
 import LoginScreen from "./components/LoginScreen";
 import ChatPanel from "./components/ChatPanel";
@@ -21,7 +21,18 @@ export default function App() {
       if (!stored) return null;
       const parsed = JSON.parse(stored);
       // Must have at least { name }
-      return parsed?.name ? parsed : null;
+      if (!parsed?.name) return null;
+      // A stored user with no bearer token is a broken/half-finished session:
+      // the token couldn't be minted (e.g. the auth signing key wasn't set on a
+      // first boot), it expired, or the key rotated. Without a token every API
+      // call 401s and the chat socket is rejected (403) — the desktop would
+      // still mount but sit forever on "Reconnecting". Treat it as logged-out so
+      // the login screen shows and a fresh token can be issued.
+      if (!getToken()) {
+        localStorage.removeItem("skipperbot_user");
+        return null;
+      }
+      return parsed;
     } catch {
       // Old format was a plain string — clear it
       localStorage.removeItem("skipperbot_user");

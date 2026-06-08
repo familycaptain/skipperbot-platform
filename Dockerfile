@@ -20,7 +20,8 @@ FROM python:3.12-slim-bookworm AS base
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_ROOT_USER_ACTION=ignore
 
 # OS deps:
 #   - postgresql-client       for pg_dump (used by the backups app)
@@ -64,7 +65,13 @@ COPY . .
 # Produces /app/web/dist with the required apps' UI components bundled.
 # At runtime the entrypoint will rebuild this in place if the host has
 # installed/removed optional apps since the last build.
-RUN cd web && npm run build && mkdir -p /app/web/dist && touch /app/web/dist/.last-build-stamp
+#
+# Baked-in apps (e.g. weather) may import npm packages that aren't in
+# web/package.json — they declare them in apps/<id>/ui/package.json instead.
+# Install that union into node_modules first (same step the entrypoint runs at
+# container start, see deploy/entrypoint.sh), otherwise the Vite build fails
+# with "Could not load .../node_modules/<pkg>" (e.g. leaflet for weather).
+RUN cd web && node packaged-app-deps.mjs --install && npm run build && mkdir -p /app/web/dist && touch /app/web/dist/.last-build-stamp
 
 # Health check — agent should respond on /api/health
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=5 \

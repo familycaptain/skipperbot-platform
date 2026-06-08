@@ -460,7 +460,7 @@ function MembersPanel({ userId }) {
   }
 
   async function resetPassword(name) {
-    const np = window.prompt(`New temporary password for ${name}.\nThey can change it after logging in (min 4 characters):`);
+    const np = window.prompt(`New temporary password for ${name}.\nThey can change it after logging in (min 8 characters):`);
     if (np == null) return;
     if (await call(`/api/users/${encodeURIComponent(name)}/reset-password`, json("POST", { actor: userId, new_password: np }))) {
       window.alert(`Temporary password set for ${name}.`);
@@ -605,10 +605,10 @@ function MembersPanel({ userId }) {
               </label>
             </div>
             <label className="block">
-              <span className="text-[11px] text-zinc-500">Temporary password</span>
-              <input className={inputCls} value={form.password} required minLength={4} type="text"
+              <span className="text-[11px] text-zinc-500">Temporary password (min 8 characters)</span>
+              <input className={inputCls} value={form.password} required minLength={8} type="text"
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
-                placeholder="they'll change it after first login" autoComplete="new-password" />
+                placeholder="at least 8 characters — they can change it later" autoComplete="new-password" />
             </label>
             <div className="flex items-center gap-2">
               <span className="text-[11px] text-zinc-500 mr-1">Roles:</span>
@@ -637,8 +637,8 @@ function MembersPanel({ userId }) {
             onChange={(e) => setPw({ ...pw, current: e.target.value })} />
         </label>
         <label className="block">
-          <span className="text-[11px] text-zinc-500">New password (min 4 characters)</span>
-          <input className={inputCls} type="password" value={pw.next} required minLength={4} autoComplete="new-password"
+          <span className="text-[11px] text-zinc-500">New password (min 8 characters)</span>
+          <input className={inputCls} type="password" value={pw.next} required minLength={8} autoComplete="new-password"
             onChange={(e) => setPw({ ...pw, next: e.target.value })} />
         </label>
         {pwMsg && <div className="text-xs text-zinc-400">{pwMsg}</div>}

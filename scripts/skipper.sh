@@ -5,8 +5,10 @@
 # After cloning the repo, run `./scripts/skipper.sh` (or install it onto your PATH
 # with `./scripts/skipper.sh install`, then just `skipper`). Behaviour:
 #
-#   * Every start/setup first ASKS how to run Skipper — Docker or native —
-#     and verifies that runtime's prerequisites before doing anything else.
+#   * First run ASKS how to run Skipper — Docker or native — and REMEMBERS the
+#     choice in .env (SKIPPER_RUNTIME); later runs reuse it without asking.
+#     Run 'skipper setup' to change it. Each run verifies that runtime's
+#     prerequisites before doing anything else.
 #       - Docker: bundles Postgres + Python + Node in containers (recommended).
 #       - Native: runs on the host; you must already have PostgreSQL 18 +
 #         pgvector, Python 3.12, and Node 24+ installed. The launcher then
@@ -14,7 +16,8 @@
 #   * First run (no usable .env): asks for your OpenAI key and a Postgres
 #     password, writes .env, offers to install the deploy-watcher service,
 #     then starts Skipper.
-#   * Later runs: just starts Skipper.
+#   * Later runs: start Skipper, wait until it has finished booting, then drop
+#     you into the live log (Ctrl+C stops watching; Skipper keeps running).
 #
 # Think `claude` / `openclaw`: one short command to bring Skipper up.
 #
@@ -85,12 +88,24 @@ needs_setup() {
 # skipper supports two runtimes:
 #   docker — bundles Postgres + Python + Node in containers (recommended)
 #   native — runs on the host; YOU must have Postgres/Python/Node installed
-# We always ASK which one to use, then verify that runtime's prerequisites
+# The choice is remembered in .env (SKIPPER_RUNTIME) so we only ASK once; later
+# runs reuse it silently. 'skipper setup' forces the question again (it sets
+# FORCE_ASK_RUNTIME=1). After resolving we verify that runtime's prerequisites
 # before doing anything else (so we never get half-way and then fail).
 RUNTIME=""
+FORCE_ASK_RUNTIME=0
 
 resolve_runtime() {
     [ -n "$RUNTIME" ] && return 0
+
+    # Reuse a previously-saved choice unless the user explicitly ran 'setup'.
+    if [ "$FORCE_ASK_RUNTIME" != "1" ]; then
+        local saved; saved="$(env_get SKIPPER_RUNTIME)"
+        case "$saved" in
+            docker|native) RUNTIME="$saved"; log "Using saved runtime: $saved (run 'skipper setup' to change)."; return 0 ;;
+        esac
+    fi
+
     echo
     log "How do you want to run Skipper?"
     echo "  [D] Docker — bundles Postgres 18 + pgvector, Python, and Node in containers."
@@ -109,6 +124,9 @@ resolve_runtime() {
         [Nn]*) RUNTIME="native" ;;
         *)     die "Unrecognized choice '$reply'. Run again and enter D (Docker) or N (native)." ;;
     esac
+    # Persist the choice so later runs don't re-ask. On a brand-new install .env
+    # doesn't exist yet (setup creates it and re-saves this too); guard for that.
+    [ -f "$ENV_FILE" ] && set_env SKIPPER_RUNTIME "$RUNTIME"
 }
 
 # Prerequisite checks come in two phases:
@@ -397,6 +415,8 @@ setup() {
 
     set_env OPENAI_API_KEY "$key"
     set_env POSTGRES_PASSWORD "$pw"
+    # Remember how to run Skipper so later starts don't re-ask Docker-vs-native.
+    set_env SKIPPER_RUNTIME "$RUNTIME"
 
     # For a native run, ask where Postgres lives and write it into .env so the
     # agent connects to your host DB (not the docker-compose 'db' service).
@@ -453,13 +473,38 @@ EOF
     ok "Deploy watcher installed and running."
 }
 
+# Poll the health endpoint until the agent has finished booting. The Docker
+# entrypoint does npm install + build + init_db BEFORE binding port 8000, so
+# 'docker compose up -d' returns long before the site is actually reachable —
+# without this, users browse to a dead page and think the install failed.
+# Returns 0 once HTTP responds, 1 if it never came up in time.
+wait_until_ready() {
+    local url="http://localhost:8000/api/onboarding/status"
+    local tries=120 i=0   # ~10 min at 5s; first build on a slow box can be minutes
+    log "Waiting for Skipper to finish booting (first build can take a few minutes)…"
+    while [ "$i" -lt "$tries" ]; do
+        if curl -fsS -o /dev/null --max-time 3 "$url" 2>/dev/null; then
+            echo
+            ok "Ready — open http://localhost:8000"
+            return 0
+        fi
+        printf '.'; sleep 5; i=$((i+1))
+    done
+    echo
+    warn "Skipper isn't responding yet. Watch the log below for build errors (Ctrl+C stops watching; Skipper keeps running)."
+    return 1
+}
+
 # --- start / stop ------------------------------------------------------------
 start() {
     resolve_runtime
     if [ "$RUNTIME" = "docker" ]; then
         log "Starting Skipper via Docker (docker compose up -d) — first boot builds the UI, can take a few minutes…"
         docker compose up -d
-        ok "Skipper is starting. Open http://localhost:8000   (follow logs: skipper.sh logs)"
+        wait_until_ready || true
+        echo
+        log "Showing the live log. Ctrl+C stops watching — Skipper keeps running in the background (skipper stop to halt it)."
+        docker compose logs -f agent
     else
         [ -x "$REPO/start_agent.sh" ] || die "start_agent.sh not found/executable. See README 'Path 2: Native install'."
         log "Starting Skipper natively via start_agent.sh (Ctrl-C to stop)…"
@@ -507,10 +552,13 @@ skipper — launch and manage the Skipperbot platform
 
 Usage: ./scripts/skipper.sh [command]   (or 'skipper' if installed)
 
-  (no command)   Ask Docker-vs-native, verify that runtime's prerequisites,
-                 run first-time setup if needed, then start Skipper.
-  setup          (Re)configure .env (OpenAI key + Postgres password).
-  start          Start Skipper (asks Docker or native first).
+  (no command)   Resolve runtime (asks once, then remembered), verify that
+                 runtime's prerequisites, run first-time setup if needed, then
+                 start Skipper and follow its log.
+  setup          (Re)configure .env (runtime choice + OpenAI key + Postgres
+                 password). Re-asks Docker-vs-native.
+  start          Start Skipper, wait until it has booted, then follow the log
+                 (Ctrl+C stops watching; Skipper keeps running).
   stop           Stop Skipper (Docker stack, or reminds you for native).
   restart        Restart (stop + start).
   update         git pull + recycle (scripts/update_server.sh).
@@ -549,7 +597,7 @@ banner
 cmd="${1:-}"
 case "$cmd" in
     ""|up|launch)   ensure_runtime_tooling; needs_setup && setup; ensure_runtime_database; start ;;
-    setup|config)   ensure_runtime_tooling; setup; ensure_runtime_database ;;
+    setup|config)   FORCE_ASK_RUNTIME=1; ensure_runtime_tooling; setup; ensure_runtime_database ;;
     start)          ensure_runtime_tooling; needs_setup && setup; ensure_runtime_database; start ;;
     stop|down)      stop ;;
     restart)        ensure_runtime_tooling; needs_setup && setup; ensure_runtime_database; stop; start ;;
