@@ -627,14 +627,20 @@ EOF
 
 # --- banner ------------------------------------------------------------------
 banner() {
+    # Prefer the shared logo.txt (same art the PowerShell launcher uses); fall
+    # back to inline art if it's missing (e.g. a partial checkout).
     printf '%s' "$_cyan"
-    cat <<'EOF'
+    if [ -f "$REPO/scripts/logo.txt" ]; then
+        cat "$REPO/scripts/logo.txt"
+    else
+        cat <<'EOF'
 ##### #   # ##### ##### ##### ##### ##### ####  ##### #####
 #     #  #    #   #   # #   # #     #   # #   # #   #   #
 ##### ###     #   ##### ##### ####  ##### ####  #   #   #
     # #  #    #   #     #     #     #  #  #   # #   #   #
 ##### #   # ##### #     #     ##### #   # ####  #####   #
 EOF
+    fi
     printf '%s' "$_rst"
     printf '%sAn agentic app platform for your family.%s\n\n' "$_dim" "$_rst"
 }

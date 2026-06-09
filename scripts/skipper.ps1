@@ -726,14 +726,22 @@ Note: To run from anywhere, create a batch file wrapper in your PATH.
 
 # --- banner ------------------------------------------------------------------
 function Show-Banner {
-    $banner = @"
+    # Prefer the shared logo.txt (same art the bash launcher uses); fall back to
+    # inline art if it's missing (e.g. a partial checkout).
+    $logo = Join-Path $REPO "scripts\logo.txt"
+    if (Test-Path $logo) {
+        Write-Host (Get-Content -Raw $logo) -ForegroundColor Cyan -NoNewline
+    }
+    else {
+        $banner = @"
 ##### #   # ##### ##### ##### ##### ##### ####  ##### #####
 #     #  #    #   #   # #   # #     #   # #   # #   #   #
 ##### ###     #   ##### ##### ####  ##### ####  #   #   #
     # #  #    #   #     #     #     #  #  #   # #   #   #
 ##### #   # ##### #     #     ##### #   # ####  #####   #
 "@
-    Write-Host $banner -ForegroundColor Cyan
+        Write-Host $banner -ForegroundColor Cyan
+    }
     Write-Host "An agentic app platform for your family." -ForegroundColor DarkGray
     Write-Host ""
 }
