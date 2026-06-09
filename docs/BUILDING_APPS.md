@@ -8,12 +8,14 @@ Three documents work together — know which is which:
 
 | Document | Role |
 |---|---|
-| **docs/BUILDING_APPS.md** (this file) | The step-by-step authoring workflow. |
-| [**specs/APP_PACKAGES.md**](../specs/APP_PACKAGES.md) | The **app contract** — the rules every app must satisfy (extension points, the `manifest.yaml` schema, memory digestion on every CRUD, notify via `create_notification`, recurring work via schedules, UI ↔ chat parity). It is the source of truth for *what an app must provide and how it must behave*, and the prompt guidance for AI-assisted development. |
+| **docs/BUILDING_APPS.md** (this file) | The step-by-step authoring workflow. **Start here — this is the doc for humans.** |
+| [**specs/APP_PACKAGES.md**](../specs/APP_PACKAGES.md) | The **app contract** — the rules every app must satisfy (extension points, the `manifest.yaml` schema, memory digestion on every CRUD, notify via `create_notification`, recurring work via schedules, UI ↔ chat parity). It's written as **prompt guidance for an AI assistant** — point your AI at it rather than reading it cover to cover yourself. |
 | [**docs/02-adding-apps.md**](02-adding-apps.md) | How to **install and test** an app (yours or someone else's) into a running platform. |
 
-If you only read one thing before writing code, read
-[specs/APP_PACKAGES.md](../specs/APP_PACKAGES.md).
+You're in the right place: **read this guide**, then follow the steps below.
+If you're building with an AI assistant, hand it
+[specs/APP_PACKAGES.md](../specs/APP_PACKAGES.md) as the contract to code
+against — it's the prompt guidance, not a human tutorial.
 
 ## Where apps live
 

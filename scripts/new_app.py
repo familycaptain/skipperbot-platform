@@ -500,9 +500,14 @@ registers the app's entity types, tools, routes, and UI.
 
 ## Build it out
 
-Read `specs/APP_PACKAGES.md` — it is the contract every app must satisfy
-(memory digestion on every CRUD, notify via `create_notification`, recurring
-work via schedules, UI <-> chat parity).
+Follow the authoring workflow in the platform repo's `docs/BUILDING_APPS.md` —
+that's the human guide.
+
+`specs/APP_PACKAGES.md` (shipped in this repo) is the **app contract**, written
+as prompt guidance for an AI assistant. If you're building with AI, point it at
+that file; you don't need to read it cover to cover. It defines the rules every
+app must satisfy: memory digestion on every CRUD, notify via
+`create_notification`, recurring work via schedules, UI <-> chat parity.
 """
 
 PYPROJECT = """[project]
@@ -612,7 +617,9 @@ def create_app_skeleton(app_name: str, folder_name: str) -> None:
     print(f"  entity     : prefix '{prefix}', table 'items'")
     print("Next steps:")
     print(f"  1. cd {app_dir}")
-    print("  2. Read specs/APP_PACKAGES.md — the app contract.")
+    print("  2. Read docs/BUILDING_APPS.md (in the platform repo) — the human")
+    print("     authoring guide. Building with AI? Point it at specs/APP_PACKAGES.md")
+    print("     (the contract), which is shipped in this app repo.")
     print("  3. Replace the 'items' placeholder entity with your real model")
     print("     (manifest entity_types, migrations, data.py, tools.py, UI).")
     print("  4. To test in a platform: clone/copy this folder into")
