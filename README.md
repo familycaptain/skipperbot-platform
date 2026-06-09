@@ -1,6 +1,6 @@
 # Skipperbot
 
-An agentic personal-assistant platform you run yourself. Self-hosted, modular,
+An agentic app platforrm for your family. Self-hosted, modular,
 hackable. Chat, voice, mobile, and a desktop UI all backed by the same agent
 and your own Postgres database.
 
@@ -12,7 +12,7 @@ and your own Postgres database.
 
 Skipperbot is a **platform** that loads **app packages**. The platform handles
 chat, memory, scheduling, notifications, the agent's reasoning loop, and the
-shared services every app uses. Apps add domain capabilities — recipes, meal
+shared services every app uses. Apps add structured data for domain capabilities — recipes, meal
 planning, vehicle maintenance, household chores, journaling, and more — each
 in its own folder, each adding tools the agent can call, each with its own UI.
 
