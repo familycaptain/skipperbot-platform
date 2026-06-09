@@ -44,11 +44,13 @@ For changes to the platform itself:
 
 1. Fork `skipperbot-platform`, create a feature branch.
 2. Make your change. Keep PRs focused — one logical change per PR.
-3. Run the test suite (when it exists; pytest target is `tests/`).
-4. Run the lint suite (`ruff check`, ESLint on the web side).
-5. Make sure CI passes — the name-scrubber, timezone-guard, gitleaks, bandit,
+3. Ensure the change does not break prior installations or existing data.
+4. If there are automated tests for the area you changed, run them. Otherwise,
+   verify the behavior manually.
+5. Run the lint suite (`ruff check`, ESLint on the web side).
+6. Make sure CI passes — the name-scrubber, timezone-guard, gitleaks, bandit,
    and other security checks must all be green.
-6. Open a PR. Reference any related issue.
+7. Open a PR. Reference any related issue.
 
 For changes to an app: if the app ships with the platform as one of the built-in apps,
 PR goes to this repo. If it's a separately distributed app, PR goes to that app's own repo.
