@@ -827,7 +827,7 @@ def run():
         title="Daily Chores Morning Push (9:00 AM)",
         created_by="system",
         category="general",
-        assigned_to="rodney",
+        assigned_to="john",
         description="Handler: apps/chores/handlers.py:handle_chores_morning.",
 
         # --- timing ---

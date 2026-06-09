@@ -8,9 +8,15 @@
 # sentinel and performs the actual pull + recycle. This is the fast, code-only
 # deploy path (no image rebuild); use 'skipper update' when dependencies change.
 #
-# Run it once on the Pi, e.g.:
-#   nohup scripts/deploy_watcher.sh >> /tmp/skipper-deploy-watcher.log 2>&1 &
-# or install the systemd unit: deploy/skipperbot-deploy-watcher.service
+# It only matters for DOCKER runs (native installs restart themselves). The
+# script itself is portable — bash + git + `docker compose` — so it runs on any
+# host (Linux, macOS, WSL, Git-Bash on Windows). How you keep it running differs
+# by OS; pick one:
+#   - any OS, quick:  nohup scripts/deploy_watcher.sh >> /tmp/skipper-deploy-watcher.log 2>&1 &
+#   - Linux/systemd:  deploy/skipperbot-deploy-watcher.service.example
+#                     (or let `skipper` install it for you)
+#   - macOS:          a launchd agent;  Windows: a Scheduled Task / NSSM
+# See docs/04-running-as-a-service.md.
 #
 # Security: keeps the container isolated — it never touches the docker socket.
 set -u

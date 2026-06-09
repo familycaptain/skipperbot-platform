@@ -1,0 +1,41 @@
+# Optional host-side deploy watcher for the UI/API "deploy + restart" action.
+#
+# What it's for: when you run Skipper via DOCKER, the in-app "deploy + restart"
+# button drains the agent and drops a .deploy_pending sentinel. The containerized
+# agent can't pull the host repo or recycle its own stack, so this host-side unit
+# runs scripts/deploy_watcher.sh to do the `git pull` + `docker compose` recycle.
+# Without it, the deploy button is just a plain container restart (no code
+# update). Native (non-Docker) installs don't need it — the agent restarts itself.
+#
+# Scope: this is a *systemd* unit, so it is LINUX-ONLY (a Linux host, or a native
+# WSL distro with systemd enabled). On macOS use a launchd agent; on Windows use
+# a Scheduled Task / NSSM; or on any OS just run the script under nohup. See
+# docs/04-running-as-a-service.md for the per-platform options.
+#
+# Easiest install: `./scripts/skipper.sh` (or `skipper`) offers to install this
+# automatically on a Docker-on-systemd host, filling in the user and path for you.
+# To install BY HAND, edit the CHANGE_ME lines below, then:
+#   sudo cp deploy/skipperbot-deploy-watcher.service.example \
+#           /etc/systemd/system/skipperbot-deploy-watcher.service
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now skipperbot-deploy-watcher
+#
+# Requires: the same user can run `git pull` in the repo and `docker compose`.
+
+[Unit]
+Description=Skipperbot deploy watcher (git pull + docker recycle on UI/API deploy)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=simple
+# Replace with the user that owns the skipperbot-platform checkout.
+User=CHANGE_ME
+# Replace both paths with the full path to your skipperbot-platform checkout.
+WorkingDirectory=/CHANGE_ME/skipperbot-platform
+ExecStart=/CHANGE_ME/skipperbot-platform/scripts/deploy_watcher.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -153,6 +153,30 @@ boot you also need:
 
 ---
 
+## Deploy watcher (Docker only)
+
+Separate from the agent service above. The in-app **"deploy + restart"** button
+does a fast, code-only update (`git pull` + recycle, no image rebuild). Under
+**Docker**, the container can't pull the host repo or recycle its own stack, so
+a small **host-side** watcher (`scripts/deploy_watcher.sh`) does it when the
+agent drops a `.deploy_pending` sentinel. **Native installs don't need it** — the
+agent restarts itself — and without it the deploy button is just a plain
+container restart.
+
+The watcher script is portable (bash + git + `docker compose`); only the way you
+keep it running is per-OS:
+
+| Host | How to run the watcher |
+|------|------------------------|
+| **Linux** | systemd unit — `skipper` offers to install it on a Docker host, or copy [`deploy/skipperbot-deploy-watcher.service.example`](../deploy/skipperbot-deploy-watcher.service.example) (edit the `CHANGE_ME` lines) to `/etc/systemd/system/`. |
+| **macOS** | No systemd. Use a launchd agent that runs `scripts/deploy_watcher.sh`, or just `nohup scripts/deploy_watcher.sh &`. |
+| **Windows** | No systemd/bash service. Run the script in Git-Bash/WSL via a Scheduled Task or NSSM. |
+| **WSL** | Native-WSL-with-systemd → same unit as Linux. Docker-Desktop-backed WSL → run it under nohup or a Windows Scheduled Task. |
+| **any** | Quick-and-dirty: `nohup scripts/deploy_watcher.sh >> /tmp/skipper-deploy-watcher.log 2>&1 &` |
+
+It never touches the Docker socket — it runs `docker compose` as your user, so
+that user just needs to be able to `git pull` the repo and run `docker compose`.
+
 ## Verifying
 
 ```
