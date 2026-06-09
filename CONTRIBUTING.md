@@ -33,10 +33,15 @@ one, open an issue tagged `app-proposal` with:
 If the proposal is accepted, the maintainers help bootstrap the repo and
 add it to the official optional-app catalog in `docs/02-adding-apps.md`.
 
-If you are building a new app, it usually will be a separate repo. Changes
-in this repo are mainly for fixing or enhancing the core platform or one of
-the core apps included here. If you want to add a new core app, please reach
-out first so we can discuss the design and ownership model.
+If you are building a new app, it usually will be a separate repo. Start
+with [docs/BUILDING_APPS.md](docs/BUILDING_APPS.md) and `scripts/new_app.py`.
+`specs/APP_PACKAGES.md` is the canonical prompt and app contract used for
+AI-assisted app authoring; it is not necessarily the step-by-step guide for
+human developers.
+
+Changes in this repo are mainly for fixing or enhancing the core platform or
+one of the built-in apps included here. If you want to add a new core app,
+please reach out first so we can discuss the design and ownership model.
 
 ## Pull requests
 

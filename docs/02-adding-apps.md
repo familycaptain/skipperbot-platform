@@ -196,13 +196,16 @@ loader picks up your version. See [docs/customizing.md](customizing.md).
 
 ## Writing your own app
 
-See [specs/APP_PACKAGES.md](../specs/APP_PACKAGES.md). To scaffold a new
-app repo from a template:
+See [docs/BUILDING_APPS.md](BUILDING_APPS.md) for the app authoring workflow.
+`specs/APP_PACKAGES.md` is the canonical prompt guidance and app contract for
+AI-assisted app creation; it is not the only human-facing authoring guide.
+
+To scaffold a new app repo from the platform root:
 
 ```bash
-python scripts/new_app.py my-app-name
+python scripts/new_app.py
 ```
 
-This creates a new `../skipperbot-app-my-app-name/` directory with the
-standard app skeleton (manifest, migrations/, data.py, tools.py, routes.py,
-guide.md, handlers.py, ui/, tests/, specs/, README, LICENSE).
+This creates a new `../skipperbot-app-<name>/` directory with the standard app
+skeleton (manifest, migrations/, data.py, tools.py, routes.py, guide.md,
+handlers.py, ui/, tests/, specs/, README, LICENSE).

@@ -23,13 +23,17 @@ contract is satisfied.
 
 ## Writing your own optional app
 
-See [specs/APP_PACKAGES.md](../specs/APP_PACKAGES.md). To scaffold:
+See [docs/BUILDING_APPS.md](BUILDING_APPS.md) for the authoring workflow.
+`specs/APP_PACKAGES.md` is the canonical prompt guidance and app contract for
+AI-assisted app generation; it is not the step-by-step guide for human authors.
+
+To scaffold a new app repo from the platform root:
 
 ```bash
-python scripts/new_app.py my-app-name
+python scripts/new_app.py
 ```
 
-This creates `../skipperbot-app-my-app-name/` with the standard skeleton.
+This creates `../skipperbot-app-<name>/` with the standard skeleton.
 
 ## Disabling a built-in feature
 

@@ -6,7 +6,13 @@
 > so each app repo is self-sufficient for AI-assisted development. The
 > platform repo's copy is the source of truth; an automated CI sync keeps
 > all copies aligned.
-
+>
+> **Note:** `APP_PACKAGES.md` is primarily the canonical prompt guidance and
+> app contract for AI-assisted app generation and review. Human authors should
+> treat it as the app design ruleset, not as the only step-by-step authoring
+> tutorial. For a more practical authoring workflow, see
+> `docs/BUILDING_APPS.md`.
+>
 > **Placeholder.** The full content lands in Chunk 2+, sourced from the
 > private repo's `specs/APP_PACKAGES.md` consolidated with the durable
 > principles from `APP_DECOUPLING.md`, `APP_MIGRATION.md`, `APP_VALIDATION.md`,

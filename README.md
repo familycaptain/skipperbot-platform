@@ -199,7 +199,9 @@ configuring `.env` by hand — see
 ### Path 3: Just exploring
 
 See [docs/architecture.md](docs/architecture.md) for the high-level design,
-and [specs/APP_PACKAGES.md](specs/APP_PACKAGES.md) for how apps are built.
+[docs/BUILDING_APPS.md](docs/BUILDING_APPS.md) for the app authoring workflow,
+and [specs/APP_PACKAGES.md](specs/APP_PACKAGES.md) for the AI prompt contract
+that defines app structure.
 
 ## What you get out of the box
 
