@@ -206,6 +206,9 @@ To scaffold a new app repo from the platform root:
 python scripts/new_app.py
 ```
 
-This creates a new `../skipperbot-app-<name>/` directory with the standard app
-skeleton (manifest, migrations/, data.py, tools.py, routes.py, guide.md,
-handlers.py, ui/, tests/, specs/, README, LICENSE).
+This creates a new `../skipperbot-app-<name>/` directory with a working,
+contract-compliant app skeleton (manifest, `__init__.py`, migrations/, data.py,
+tools.py, routes.py, guide.md, handlers.py, ui/, tests/, specs/, README,
+LICENSE). See [docs/BUILDING_APPS.md](BUILDING_APPS.md) for the full authoring
+workflow and [specs/APP_PACKAGES.md](../specs/APP_PACKAGES.md) for the contract
+every app must satisfy.

@@ -66,13 +66,15 @@ These are the boundaries that keep the system maintainable:
 
 1. **The platform must not depend on any specific app.** No
    `from apps.<name> import ...` anywhere in platform code.
-2. **Apps may depend on the platform** through `platform.*` services and the
-   event bus, but apps must not depend on each other.
+2. **Apps may depend on the platform** through `app_platform.*` services and
+   the event bus, but apps must not depend on each other. Cross-app reads go
+   through `app_platform.entities.query_entities`; cross-app effects go through
+   events.
 3. **Per-app schema isolation:** if an app owns data, it lives in
    `app_<id>` Postgres schema. Platform-owned cross-cutting tables live
    in `public.*` and apps may read/write via platform services.
 4. **No hardcoded family / personal names** in any source file.
-5. **No hardcoded timezones.** Use `platform.time.get_timezone()`.
+5. **No hardcoded timezones.** Use `app_platform.time.get_timezone()`.
 6. **No `cron` dependency.** Everything scheduled goes through the
    `schedules` app.
 7. **Cross-platform:** changes must work on Linux, macOS, and Windows.
@@ -85,5 +87,11 @@ This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md).
 
 ## License
 
-By contributing, you agree your contributions are licensed under the same
+By contributing code **into this platform repo** (or one of its built-in
+apps), you agree those contributions are licensed under the same
 [MIT License](LICENSE) the project uses.
+
+This applies only to code that lands in this repo. A **separately distributed
+app** (`skipperbot-app-<name>` in its own repo) is your own work and may use
+**any license you choose** — permissive, copyleft, or proprietary/commercial.
+You are free to build and sell a closed-source app on the platform.
