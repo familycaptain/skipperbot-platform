@@ -475,6 +475,15 @@ function EnvGet {
     return ""
 }
 
+# The web UI / API port (SKIPPERBOT_PORT in .env, default 8000). Used for the
+# readiness poll, status check, and the "open http://localhost:PORT" messages so
+# they all follow a custom port instead of assuming 8000.
+function Get-SkipperPort {
+    $p = EnvGet "SKIPPERBOT_PORT"
+    if ([string]::IsNullOrWhiteSpace($p)) { return "8000" }
+    return $p.Trim()
+}
+
 function SetEnv {
     param([string]$Key, [string]$Value)
     
@@ -544,6 +553,16 @@ function Setup {
     # Remember how to run Skipper so later starts don't re-ask Docker-vs-native.
     SetEnv "SKIPPER_RUNTIME" (Resolve-Runtime)
 
+    # Web server port (default 8000). Just press Enter unless 8000 is taken.
+    $port = ""
+    while ($true) {
+        $port = Read-Host "Web server port [8000]"
+        if ([string]::IsNullOrWhiteSpace($port)) { $port = "8000" }
+        if ($port -match "^[0-9]+$" -and [int]$port -ge 1 -and [int]$port -le 65535) { break }
+        Warn "Enter a port number between 1 and 65535 (or press Enter for 8000)."
+    }
+    SetEnv "SKIPPERBOT_PORT" $port
+
     # For a native run, ask where Postgres lives and write it into .env so the
     # agent connects to your host DB (not the docker-compose 'db' service).
     # Docker uses the bundled 'db' service automatically, so we don't ask.
@@ -567,14 +586,15 @@ function Setup {
 # without this, users browse to a dead page and think the install failed.
 # Returns $true once HTTP responds, $false if it never came up in time.
 function Wait-Until-Ready {
-    $url = "http://localhost:8000/api/onboarding/status"
+    $port = Get-SkipperPort
+    $url = "http://localhost:$port/api/onboarding/status"
     $tries = 120   # ~10 min at 5s; first build on a slow box can be minutes
     Log "Waiting for Skipper to finish booting (first build can take a few minutes)..."
     for ($i = 0; $i -lt $tries; $i++) {
         try {
             Invoke-WebRequest -Uri $url -TimeoutSec 3 -UseBasicParsing | Out-Null
             Write-Host ""
-            Ok "Ready - open http://localhost:8000"
+            Ok "Ready - open http://localhost:$port"
             return $true
         }
         catch { }
@@ -586,16 +606,22 @@ function Wait-Until-Ready {
     return $false
 }
 
+# Wait for readiness, then tail the agent log. Ctrl+C exits the tail but leaves
+# the daemon running. Shared by Start-Skipper and Show-Update so they can't drift.
+function Follow-Boot {
+    Wait-Until-Ready | Out-Null
+    Write-Host ""
+    Log "Showing the live log. Ctrl+C stops watching - Skipper keeps running in the background (skipper stop to halt it)."
+    docker compose logs -f agent
+}
+
 # --- start / stop -----------------------------------------------------------
 function Start-Skipper {
     $rt = Resolve-Runtime
     if ($rt -eq "docker") {
         Log "Starting Skipper via Docker (docker compose up -d) - first boot builds the UI, can take a few minutes..."
         docker compose up -d
-        Wait-Until-Ready | Out-Null
-        Write-Host ""
-        Log "Showing the live log. Ctrl+C stops watching - Skipper keeps running in the background (skipper stop to halt it)."
-        docker compose logs -f agent
+        Follow-Boot
     }
     else {
         $agentScript = "$REPO/start_agent.ps1"
@@ -634,9 +660,10 @@ function Show-Status {
     if ($rt -eq "docker") {
         docker compose ps
     }
-    Write-Host "Health: " -NoNewline
+    $port = Get-SkipperPort
+    Write-Host "Health (port $port): " -NoNewline
     try {
-        $response = Invoke-WebRequest -Uri "http://localhost:8000/api/onboarding/status" -TimeoutSec 5 -UseBasicParsing
+        $response = Invoke-WebRequest -Uri "http://localhost:$port/api/onboarding/status" -TimeoutSec 5 -UseBasicParsing
         Write-Host "HTTP 200"
     }
     catch {
@@ -644,8 +671,26 @@ function Show-Status {
     }
 }
 
+# Runtime-aware update. git pull is the shared first step (both runtimes); only
+# the recycle differs. Docker rebuilds the image (up -d --build) so changes to
+# requirements.txt / Dockerfile actually take effect, not just bind-mounted code.
 function Show-Update {
-    & "$REPO/scripts/update_server.ps1"
+    $rt = Resolve-Runtime
+    Log "Updating Skipper (git pull)..."
+    git pull
+    if ($rt -eq "docker") {
+        Log "Rebuilding and recycling the Docker stack (down; up -d --build) so dependency changes take effect..."
+        docker compose down
+        docker compose up -d --build
+        Follow-Boot
+    }
+    else {
+        Write-Host ""
+        Ok "Code updated (git pull complete)."
+        Warn "Native run: restart Skipper to apply the update:"
+        Write-Host "   - If it's running in a terminal: press Ctrl+C there, then run 'skipper'."
+        Write-Host "   - If you installed it as a service: 'skipper service restart' (once available)."
+    }
 }
 
 function Show-Usage {
@@ -663,7 +708,8 @@ Usage: powershell -ExecutionPolicy Bypass -File skipper.ps1 [command]
                  (Ctrl+C stops watching; Skipper keeps running).
   stop           Stop Skipper (Docker stack, or reminds you for native).
   restart        Restart (stop + start).
-  update         git pull + recycle.
+  update         git pull, then (Docker) rebuild + recycle so dependency
+                 changes apply; (native) pull and prompt you to restart.
   logs           Follow the agent logs (Docker).
   status         Show container + health status.
   help           Show this help.

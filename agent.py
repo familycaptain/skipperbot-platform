@@ -4663,4 +4663,13 @@ if _DIST.is_dir():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    # Listen port is configurable via SKIPPERBOT_PORT (default 8000). The same
+    # value is used for the Docker published port and the native bind, so it
+    # means the same thing on every runtime. Fall back to 8000 if it's unset or
+    # not a valid integer.
+    try:
+        _port = int(os.getenv("SKIPPERBOT_PORT", "8000"))
+    except ValueError:
+        logger.warning("SKIPPERBOT_PORT is not a valid integer; falling back to 8000")
+        _port = 8000
+    uvicorn.run(app, host="0.0.0.0", port=_port)

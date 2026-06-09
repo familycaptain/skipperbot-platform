@@ -54,7 +54,11 @@ services:
       db:
         condition: service_healthy
     ports:
-      - "8000:8000"
+      # Published port is configurable via SKIPPERBOT_PORT in .env (default
+      # 8000). The agent inside the container binds the SAME value (it reads
+      # SKIPPERBOT_PORT from env_file below), so host and container ports always
+      # match and the variable means the same thing for native and Docker.
+      - "${SKIPPERBOT_PORT:-8000}:${SKIPPERBOT_PORT:-8000}"
     environment:
       # The agent builds its DSN from POSTGRES_* (read from .env) + this host,
       # which is the compose service name of the database. Set SKIPPERBOT_DB_DSN

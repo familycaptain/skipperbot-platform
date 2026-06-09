@@ -76,6 +76,15 @@ p.write_text("\n".join(out) + "\n")
 PY
 }
 
+# The web UI / API port (SKIPPERBOT_PORT in .env, default 8000). Used for the
+# readiness poll, status check, and the "open http://localhost:PORT" messages so
+# they all follow a custom port instead of assuming 8000.
+skipper_port() {
+    local p; p="$(env_get SKIPPERBOT_PORT)"
+    [ -z "$p" ] && p="8000"
+    printf '%s' "$p"
+}
+
 needs_setup() {
     [ -f "$ENV_FILE" ] || return 0
     [ -z "$(env_get OPENAI_API_KEY)" ] && return 0
@@ -418,6 +427,16 @@ setup() {
     # Remember how to run Skipper so later starts don't re-ask Docker-vs-native.
     set_env SKIPPER_RUNTIME "$RUNTIME"
 
+    # Web server port (default 8000). Just press Enter unless 8000 is taken.
+    local port
+    while :; do
+        read -r -p "Web server port [8000]: " port
+        [ -z "$port" ] && port="8000"
+        if [[ "$port" =~ ^[0-9]+$ ]] && [ "$port" -ge 1 ] && [ "$port" -le 65535 ]; then break; fi
+        warn "Enter a port number between 1 and 65535 (or press Enter for 8000)."
+    done
+    set_env SKIPPERBOT_PORT "$port"
+
     # For a native run, ask where Postgres lives and write it into .env so the
     # agent connects to your host DB (not the docker-compose 'db' service).
     # Docker uses the bundled 'db' service automatically, so we don't ask.
@@ -479,13 +498,14 @@ EOF
 # without this, users browse to a dead page and think the install failed.
 # Returns 0 once HTTP responds, 1 if it never came up in time.
 wait_until_ready() {
-    local url="http://localhost:8000/api/onboarding/status"
+    local port; port="$(skipper_port)"
+    local url="http://localhost:$port/api/onboarding/status"
     local tries=120 i=0   # ~10 min at 5s; first build on a slow box can be minutes
     log "Waiting for Skipper to finish booting (first build can take a few minutes)…"
     while [ "$i" -lt "$tries" ]; do
         if curl -fsS -o /dev/null --max-time 3 "$url" 2>/dev/null; then
             echo
-            ok "Ready — open http://localhost:8000"
+            ok "Ready — open http://localhost:$port"
             return 0
         fi
         printf '.'; sleep 5; i=$((i+1))
@@ -495,16 +515,22 @@ wait_until_ready() {
     return 1
 }
 
+# Wait for readiness, then tail the agent log. Ctrl+C exits the tail but leaves
+# the daemon running. Shared by start() and update() so they can't drift.
+_follow_boot() {
+    wait_until_ready || true
+    echo
+    log "Showing the live log. Ctrl+C stops watching — Skipper keeps running in the background (skipper stop to halt it)."
+    docker compose logs -f agent
+}
+
 # --- start / stop ------------------------------------------------------------
 start() {
     resolve_runtime
     if [ "$RUNTIME" = "docker" ]; then
         log "Starting Skipper via Docker (docker compose up -d) — first boot builds the UI, can take a few minutes…"
         docker compose up -d
-        wait_until_ready || true
-        echo
-        log "Showing the live log. Ctrl+C stops watching — Skipper keeps running in the background (skipper stop to halt it)."
-        docker compose logs -f agent
+        _follow_boot
     else
         [ -x "$REPO/start_agent.sh" ] || die "start_agent.sh not found/executable. See README 'Path 2: Native install'."
         log "Starting Skipper natively via start_agent.sh (Ctrl-C to stop)…"
@@ -532,10 +558,30 @@ logs() {
 status() {
     resolve_runtime
     if [ "$RUNTIME" = "docker" ]; then docker compose ps; fi
-    printf '%sHealth:%s ' "$_dim" "$_rst"
-    curl -fsS -o /dev/null -w 'HTTP %{http_code}\n' --max-time 5 http://localhost:8000/api/onboarding/status 2>/dev/null || echo "not responding yet"
+    local port; port="$(skipper_port)"
+    printf '%sHealth (port %s):%s ' "$_dim" "$port" "$_rst"
+    curl -fsS -o /dev/null -w 'HTTP %{http_code}\n' --max-time 5 "http://localhost:$port/api/onboarding/status" 2>/dev/null || echo "not responding yet"
 }
-update() { exec "$REPO/scripts/update_server.sh"; }
+# Runtime-aware update. git pull is the shared first step (both runtimes); only
+# the recycle differs. Docker rebuilds the image (up -d --build) so changes to
+# requirements.txt / Dockerfile actually take effect, not just bind-mounted code.
+update() {
+    resolve_runtime
+    log "Updating Skipper (git pull)…"
+    git pull
+    if [ "$RUNTIME" = "docker" ]; then
+        log "Rebuilding and recycling the Docker stack (down; up -d --build) so dependency changes take effect…"
+        docker compose down
+        docker compose up -d --build
+        _follow_boot
+    else
+        echo
+        ok "Code updated (git pull complete)."
+        warn "Native run: restart Skipper to apply the update:"
+        printf "   - If it's running in a terminal: press Ctrl+C there, then run 'skipper'.\n"
+        printf "   - If you installed it as a service: 'skipper service restart' (once available).\n"
+    fi
+}
 
 # --- install onto PATH -------------------------------------------------------
 install_cli() {
@@ -561,7 +607,8 @@ Usage: ./scripts/skipper.sh [command]   (or 'skipper' if installed)
                  (Ctrl+C stops watching; Skipper keeps running).
   stop           Stop Skipper (Docker stack, or reminds you for native).
   restart        Restart (stop + start).
-  update         git pull + recycle (scripts/update_server.sh).
+  update         git pull, then (Docker) rebuild + recycle so dependency
+                 changes apply; (native) pull and prompt you to restart.
   logs           Follow the agent logs.
   status         Show container + health status.
   install        Symlink this script to /usr/local/bin/skipper.

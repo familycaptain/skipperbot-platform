@@ -88,7 +88,9 @@ while ($true) {
         }
     }
 
-    Log "starting agent on :8000"
+    $portLine = (Get-Content (Join-Path $AppRoot ".env") | Where-Object { $_ -match '^\s*SKIPPERBOT_PORT\s*=' } | Select-Object -First 1)
+    $port = if ($portLine) { ($portLine -split '=', 2)[1].Trim() } else { "8000" }
+    Log "starting agent on :$port"
     $startTime = Get-Date
     & $Python (Join-Path $AppRoot "agent.py")
     $exitCode = $LASTEXITCODE

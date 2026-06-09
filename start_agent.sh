@@ -117,5 +117,7 @@ fi
 
 export PYTHONUTF8=1
 
-log "starting agent on :8000 with $($PYTHON --version)"
+PORT="$(grep -E '^[[:space:]]*SKIPPERBOT_PORT[[:space:]]*=' "$APP_ROOT/.env" | head -1 | cut -d= -f2- | tr -d '[:space:]')"
+[ -z "$PORT" ] && PORT="8000"
+log "starting agent on :$PORT with $($PYTHON --version)"
 exec "$PYTHON" "$APP_ROOT/agent.py"

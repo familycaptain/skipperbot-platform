@@ -73,9 +73,10 @@ COPY . .
 # with "Could not load .../node_modules/<pkg>" (e.g. leaflet for weather).
 RUN cd web && node packaged-app-deps.mjs --install && npm run build && mkdir -p /app/web/dist && touch /app/web/dist/.last-build-stamp
 
-# Health check — agent should respond on /api/health
+# Health check — agent should respond on /api/health. Uses SKIPPERBOT_PORT
+# (default 8000); the shell form expands the env var at container runtime.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=5 \
-    CMD curl -fsS http://localhost:8000/api/health || exit 1
+    CMD curl -fsS "http://localhost:${SKIPPERBOT_PORT:-8000}/api/health" || exit 1
 
 EXPOSE 8000
 

@@ -338,7 +338,7 @@ If all four work, you're set up.
 | Native: `CREATE EXTENSION vector` returns `extension "vector" is not available` | pgvector not installed | Re-do Step 2 for your OS. |
 | Native: Agent fails at boot with `pgvector extension not installed in this database` | Connected to right DB but extension missing | `psql -d skipperbot -c 'CREATE EXTENSION vector;'` (as the postgres superuser). |
 | Agent boots but `OpenAI=OFF` in banner | Key missing or invalid | Re-check `OPENAI_API_KEY` in `.env`. Test with `curl` against `https://api.openai.com/v1/models` using your key. |
-| Port 8000 in use | Another service holds the port | Change the port in `.env` and (for Docker) in `docker-compose.yml`, restart. |
+| Port 8000 in use | Another service holds the port | Set `SKIPPERBOT_PORT` in `.env` (or re-run `skipper setup` and answer the port prompt), then restart. The launcher, Docker published port, and native bind all follow it — no `docker-compose.yml` edit needed. |
 | Native: `npm run build` fails with "node not found" | Node not installed or wrong version | Install Node 24+. |
 | Web UI loads but launcher is empty | Web bundle out of date | Native: `cd web && npm run build`, restart. Docker: `docker compose build agent && docker compose up -d`. |
 | Onboarding wizard can't write to `.env` (Docker) | `.env` not bind-mounted | Confirm `docker-compose.yml` has `./.env:/app/.env` in agent's volumes. |

@@ -5,7 +5,8 @@
 # on itself, so the "deploy + restart" button / API instead drains gracefully
 # and drops a `.deploy_pending` sentinel in the repo root (bind-mounted into the
 # container at /app). This script — running on the HOST — watches for that
-# sentinel and performs the actual pull + recycle (same as update_server.sh).
+# sentinel and performs the actual pull + recycle. This is the fast, code-only
+# deploy path (no image rebuild); use 'skipper update' when dependencies change.
 #
 # Run it once on the Pi, e.g.:
 #   nohup scripts/deploy_watcher.sh >> /tmp/skipper-deploy-watcher.log 2>&1 &
