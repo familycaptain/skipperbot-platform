@@ -579,7 +579,7 @@ update() {
         ok "Code updated (git pull complete)."
         warn "Native run: restart Skipper to apply the update:"
         printf "   - If it's running in a terminal: press Ctrl+C there, then run 'skipper'.\n"
-        printf "   - If you installed it as a service: 'skipper service restart' (once available).\n"
+        printf "   - If you installed it as a service: 'skipper service restart'.\n"
     fi
 }
 
@@ -609,6 +609,9 @@ Usage: ./scripts/skipper.sh [command]   (or 'skipper' if installed)
   restart        Restart (stop + start).
   update         git pull, then (Docker) rebuild + recycle so dependency
                  changes apply; (native) pull and prompt you to restart.
+  service <sub>  Auto-start on boot: install | uninstall | status | start |
+                 stop | restart. systemd (Linux/WSL) or launchd (macOS), chosen
+                 from your saved runtime. See docs/04-running-as-a-service.md.
   logs           Follow the agent logs.
   status         Show container + health status.
   install        Symlink this script to /usr/local/bin/skipper.
@@ -623,6 +626,201 @@ On start/setup you'll be asked how to run Skipper:
 Note: Run './scripts/skipper.sh install' to add 'skipper' to your PATH (Linux/Mac).
       On Windows, use scripts/skipper.bat or: powershell -ExecutionPolicy Bypass -File scripts/skipper.ps1
 EOF
+}
+
+# --- service (auto-start on boot) --------------------------------------------
+# 'skipper service install|uninstall|status|start|stop|restart' makes Skipper
+# come back on its own after a reboot. Mechanism depends on OS + saved runtime:
+#   Linux  -> systemd unit (docker: 'compose up -d' oneshot tied to docker.service;
+#             native: start_agent.sh with Restart=on-failure). Covers WSL too,
+#             with an extra note about launching WSL at Windows boot.
+#   macOS  -> launchd LaunchAgent at login (docker: waits for Docker then ups;
+#             native: start_agent.sh with KeepAlive).
+# Windows lives in skipper.ps1. Full picture: docs/04-running-as-a-service.md
+SVC_NAME="skipperbot"
+SYSTEMD_UNIT="/etc/systemd/system/${SVC_NAME}.service"
+LAUNCHD_LABEL="com.skipperbot.agent"
+LAUNCHD_PLIST="$HOME/Library/LaunchAgents/${LAUNCHD_LABEL}.plist"
+
+is_wsl() { grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; }
+
+service_usage() {
+    cat <<EOF
+skipper service — run Skipper automatically on boot/login.
+
+Usage: skipper service <install|uninstall|status|start|stop|restart>
+
+  install     Install + enable the OS service for your saved runtime
+              (systemd on Linux/WSL, launchd on macOS).
+  uninstall   Stop and remove it.
+  status      Show service + health status.
+  start/stop/restart   Control the installed service.
+
+The mechanism is chosen from SKIPPER_RUNTIME + your OS. On Windows, use
+skipper.ps1 (NSSM for native). Full details: docs/04-running-as-a-service.md
+EOF
+}
+
+service() {
+    local action="${1:-help}"
+    if [ "$action" = "help" ]; then service_usage; return 0; fi
+    case "$action" in
+        install|uninstall|status|start|stop|restart) ;;
+        *) warn "Unknown 'service' action: $action"; service_usage; exit 1 ;;
+    esac
+    resolve_runtime
+    local os; os="$(uname -s)"
+    case "$os" in
+        Linux)  service_systemd "$action" ;;   # covers WSL too
+        Darwin) service_launchd "$action" ;;
+        *)      die "'skipper service' isn't supported on this OS ($os). On Windows use scripts\\skipper.ps1." ;;
+    esac
+}
+
+# --- Linux: systemd ----------------------------------------------------------
+service_systemd() {
+    local action="$1"
+    command -v systemctl >/dev/null 2>&1 || die "systemd (systemctl) not found — 'skipper service' needs it on Linux. See docs/04-running-as-a-service.md for alternatives."
+    case "$action" in
+        install)   systemd_install ;;
+        uninstall) sudo systemctl disable --now "$SVC_NAME" >/dev/null 2>&1 || true
+                   sudo rm -f "$SYSTEMD_UNIT"
+                   sudo systemctl daemon-reload
+                   ok "Removed the '$SVC_NAME' service (the app itself is untouched)." ;;
+        status)    systemctl status "$SVC_NAME" --no-pager || true; status ;;
+        start)     sudo systemctl start "$SVC_NAME" && ok "Started." ;;
+        stop)      sudo systemctl stop "$SVC_NAME" && ok "Stopped." ;;
+        restart)   sudo systemctl restart "$SVC_NAME" && ok "Restarted." ;;
+    esac
+}
+
+systemd_install() {
+    local user docker_bin
+    user="$(id -un)"
+    docker_bin="$(command -v docker || echo /usr/bin/docker)"
+    log "Installing systemd service '$SVC_NAME' (needs sudo): $SYSTEMD_UNIT"
+    if [ "$RUNTIME" = "docker" ]; then
+        sudo tee "$SYSTEMD_UNIT" >/dev/null <<EOF
+[Unit]
+Description=Skipperbot (Docker Compose stack)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=$REPO
+ExecStart=$docker_bin compose up -d
+ExecStop=$docker_bin compose down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        sudo systemctl enable docker >/dev/null 2>&1 || true   # ensure Docker itself boots
+    else
+        sudo tee "$SYSTEMD_UNIT" >/dev/null <<EOF
+[Unit]
+Description=Skipperbot (native agent)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=$user
+WorkingDirectory=$REPO
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=$REPO/start_agent.sh
+Restart=on-failure
+RestartSec=5
+# start_agent.sh exits: 0 = clean stop (no restart); 42 = graceful restart
+# (treated as failure, so systemd restarts it); other = crash -> restart.
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    fi
+    sudo systemctl daemon-reload
+    sudo systemctl enable --now "$SVC_NAME"
+    ok "Service '$SVC_NAME' installed and started (auto-starts on boot)."
+    is_wsl && service_wsl_note
+    log "Check it with: skipper service status"
+}
+
+service_wsl_note() {
+    echo
+    warn "WSL detected: a systemd service inside WSL only runs while the WSL distro is up."
+    echo "   To start Skipper at WINDOWS boot you also need:"
+    echo "     1. systemd enabled in WSL  (/etc/wsl.conf -> [boot] / systemd=true), and"
+    echo "     2. Windows to launch WSL at logon (a Task Scheduler task running"
+    echo "        'wsl -d <distro> true'). See docs/04-running-as-a-service.md (WSL)."
+}
+
+# --- macOS: launchd ----------------------------------------------------------
+service_launchd() {
+    local action="$1"
+    case "$action" in
+        install)   launchd_install ;;
+        uninstall) launchctl unload "$LAUNCHD_PLIST" 2>/dev/null || true
+                   rm -f "$LAUNCHD_PLIST"
+                   ok "Removed the '$LAUNCHD_LABEL' LaunchAgent (the app itself is untouched)." ;;
+        status)    if launchctl list 2>/dev/null | grep -q "$LAUNCHD_LABEL"; then ok "LaunchAgent '$LAUNCHD_LABEL' is loaded."; else warn "LaunchAgent '$LAUNCHD_LABEL' is not loaded (run 'skipper service install')."; fi; status ;;
+        start)     launchctl start "$LAUNCHD_LABEL" && ok "Started." ;;
+        stop)      launchctl stop "$LAUNCHD_LABEL" && ok "Stopped." ;;
+        restart)   launchctl stop "$LAUNCHD_LABEL" 2>/dev/null || true; launchctl start "$LAUNCHD_LABEL" && ok "Restarted." ;;
+    esac
+}
+
+launchd_install() {
+    local docker_bin
+    docker_bin="$(command -v docker || echo /usr/local/bin/docker)"
+    mkdir -p "$HOME/Library/LaunchAgents" "$REPO/logs"
+    if [ "$RUNTIME" = "docker" ]; then
+        cat > "$LAUNCHD_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>$LAUNCHD_LABEL</string>
+  <key>WorkingDirectory</key><string>$REPO</string>
+  <key>RunAtLoad</key><true/>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>-c</string>
+    <string>until $docker_bin info >/dev/null 2>&1; do sleep 3; done; $docker_bin compose up -d</string>
+  </array>
+  <key>StandardOutPath</key><string>$REPO/logs/skipper-service.log</string>
+  <key>StandardErrorPath</key><string>$REPO/logs/skipper-service.log</string>
+</dict>
+</plist>
+EOF
+    else
+        cat > "$LAUNCHD_PLIST" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>$LAUNCHD_LABEL</string>
+  <key>WorkingDirectory</key><string>$REPO</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$REPO/start_agent.sh</string>
+  </array>
+  <key>StandardOutPath</key><string>$REPO/logs/skipper-service.log</string>
+  <key>StandardErrorPath</key><string>$REPO/logs/skipper-service.log</string>
+</dict>
+</plist>
+EOF
+    fi
+    launchctl unload "$LAUNCHD_PLIST" 2>/dev/null || true
+    launchctl load "$LAUNCHD_PLIST"
+    ok "LaunchAgent '$LAUNCHD_LABEL' installed (starts at login)."
+    warn "macOS LaunchAgents run at LOGIN. For a headless box, enable automatic login (System Settings -> Users & Groups -> Automatically log in as)."
+    log "Check it with: skipper service status"
 }
 
 # --- banner ------------------------------------------------------------------
@@ -655,6 +853,7 @@ case "$cmd" in
     stop|down)      stop ;;
     restart)        ensure_runtime_tooling; needs_setup && setup; ensure_runtime_database; stop; start ;;
     update)         update ;;
+    service)        service "${2:-help}" ;;
     logs)           logs ;;
     status|ps)      status ;;
     install)        install_cli ;;

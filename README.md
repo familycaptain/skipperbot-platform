@@ -325,6 +325,16 @@ seed is one-time and idempotent — it never duplicates on later restarts.
 
 ## Updating
 
+The simplest way is the launcher — it pulls and recycles for your runtime
+(Docker rebuilds the image so dependency changes take effect; native pulls and
+prompts you to restart):
+
+```bash
+skipper update        # or ./scripts/skipper.sh update  /  scripts\skipper.bat update
+```
+
+By hand (Docker):
+
 ```bash
 git pull
 docker compose build agent
@@ -333,6 +343,19 @@ docker compose up -d
 
 Migrations run automatically on next boot. Your data is preserved in the
 named Docker volumes.
+
+## Running as a service (auto-start on boot)
+
+For an always-on box, make Skipper come back on its own after a reboot:
+
+```bash
+skipper service install     # systemd / launchd / Scheduled Task / NSSM, picked for your OS + runtime
+skipper service status
+```
+
+See [**docs/04-running-as-a-service.md**](docs/04-running-as-a-service.md) for
+the per-platform details — including the **NSSM prerequisite** for a native
+Windows service and the extra steps for WSL.
 
 ## Privacy
 

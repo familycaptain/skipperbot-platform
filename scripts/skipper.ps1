@@ -21,7 +21,8 @@
 # =============================================================================
 
 param(
-    [string]$Command = ""
+    [string]$Command = "",
+    [string]$Action = ""   # sub-action for commands that take one, e.g. 'service install'
 )
 
 # --- locate the repo root ---------------------------------------------------
@@ -689,7 +690,7 @@ function Show-Update {
         Ok "Code updated (git pull complete)."
         Warn "Native run: restart Skipper to apply the update:"
         Write-Host "   - If it's running in a terminal: press Ctrl+C there, then run 'skipper'."
-        Write-Host "   - If you installed it as a service: 'skipper service restart' (once available)."
+        Write-Host "   - If you installed it as a service: 'skipper service restart'."
     }
 }
 
@@ -710,6 +711,9 @@ Usage: powershell -ExecutionPolicy Bypass -File skipper.ps1 [command]
   restart        Restart (stop + start).
   update         git pull, then (Docker) rebuild + recycle so dependency
                  changes apply; (native) pull and prompt you to restart.
+  service <sub>  Auto-start on boot: install | uninstall | status | start |
+                 stop | restart. Docker uses a logon Scheduled Task; native
+                 uses NSSM (install it first). See docs/04-running-as-a-service.md.
   logs           Follow the agent logs (Docker).
   status         Show container + health status.
   help           Show this help.
@@ -722,6 +726,133 @@ On start/setup you'll be asked how to run Skipper:
 Note: To run from anywhere, create a batch file wrapper in your PATH.
 "@
     Write-Host $usage
+}
+
+# --- service (auto-start on boot) -------------------------------------------
+# 'skipper service install|uninstall|status|start|stop|restart' makes Skipper
+# come back on its own after a reboot. Mechanism depends on the saved runtime:
+#   docker - a logon Scheduled Task runs 'docker compose up -d'; combined with
+#            the stack's restart:always + Docker Desktop autostart, that recovers
+#            the stack after a reboot. (No NSSM needed.)
+#   native - NSSM wraps start_agent.ps1 as a real Windows service. NSSM is a
+#            prerequisite the user installs first; we check for it and stop with
+#            install instructions if it's missing.
+# See docs/04-running-as-a-service.md for the full picture (incl. Linux/macOS,
+# which live in skipper.sh).
+$SvcName = "Skipperbot"
+$TaskName = "Skipperbot"
+
+function Service-Usage {
+    Write-Host @"
+skipper service - run Skipper automatically on boot/login (Windows).
+
+Usage: skipper service <install|uninstall|status|start|stop|restart>
+
+  install     Install + enable the service for your saved runtime:
+                docker -> logon Scheduled Task ('docker compose up -d')
+                native -> Windows service via NSSM (prerequisite; see below)
+  uninstall   Stop and remove it.
+  status      Show service + health status.
+  start/stop/restart   Control it.
+
+Native runs require NSSM (https://nssm.cc) on your PATH first:
+  choco install nssm   |   winget install NSSM.NSSM   |   manual unzip to PATH
+Docker runs don't need NSSM. Full details: docs/04-running-as-a-service.md
+"@
+}
+
+function Service-Cmd {
+    param([string]$Sub)
+    if ([string]::IsNullOrWhiteSpace($Sub) -or $Sub -eq "help") { Service-Usage; return }
+    if (@("install", "uninstall", "status", "start", "stop", "restart") -notcontains $Sub) {
+        Warn "Unknown 'service' action: $Sub"
+        Service-Usage
+        exit 1
+    }
+    $rt = Resolve-Runtime
+    if ($rt -eq "docker") { Service-Docker $Sub } else { Service-Native $Sub }
+}
+
+# Docker: a logon Scheduled Task that brings the stack up. restart:always +
+# Docker Desktop autostart do the heavy lifting; this just guarantees an 'up -d'
+# after login in case the stack was taken down.
+function Service-Docker {
+    param([string]$Sub)
+    switch ($Sub) {
+        "install" {
+            Log "Registering logon Scheduled Task '$TaskName' (docker compose up -d)..."
+            $inner = "Set-Location '$REPO'; docker compose up -d"
+            $taskAction = New-ScheduledTaskAction -Execute "powershell.exe" `
+                -Argument "-NoProfile -WindowStyle Hidden -Command `"$inner`""
+            $trigger = New-ScheduledTaskTrigger -AtLogOn
+            $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+            Register-ScheduledTask -TaskName $TaskName -Action $taskAction -Trigger $trigger -Settings $settings -Force | Out-Null
+            Ok "Scheduled Task '$TaskName' installed (runs at logon)."
+            Warn "Also enable Docker Desktop autostart so the task has Docker to talk to:"
+            Write-Host "   Docker Desktop -> Settings -> General -> 'Start Docker Desktop when you sign in'."
+            Write-Host "   The containers use restart:always, so once Docker is up they recover on their own."
+            docker compose up -d
+        }
+        "uninstall" {
+            Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
+            Ok "Removed Scheduled Task '$TaskName' (the running stack is untouched; 'skipper stop' to halt it)."
+        }
+        "status" {
+            $t = Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
+            if ($t) { Ok "Scheduled Task '$TaskName' is registered (state: $($t.State))." }
+            else { Warn "Scheduled Task '$TaskName' is not installed (run 'skipper service install')." }
+            Show-Status
+        }
+        "start"   { docker compose up -d; Ok "Started." }
+        "stop"    { docker compose down; Ok "Stopped." }
+        "restart" { docker compose down; docker compose up -d; Ok "Restarted." }
+    }
+}
+
+# Native: NSSM wraps start_agent.ps1 as a Windows service. NSSM is a prerequisite
+# - if it's missing we stop with install instructions rather than guessing.
+function Service-Native {
+    param([string]$Sub)
+    $nssm = Get-Command nssm -ErrorAction SilentlyContinue
+    if (-not $nssm) {
+        Write-Host ""
+        Warn "NSSM (the Non-Sucking Service Manager) is required for a NATIVE Windows service, but it isn't on your PATH."
+        Write-Host "   NSSM wraps start_agent.ps1 as a real Windows service (auto-start on boot,"
+        Write-Host "   restart on crash, visible in services.msc). Install it, then re-run"
+        Write-Host "   'skipper service $Sub':"
+        Write-Host "     - Chocolatey:  choco install nssm"
+        Write-Host "     - Winget:      winget install NSSM.NSSM"
+        Write-Host "     - Manual:      download https://nssm.cc/download, unzip, put nssm.exe on PATH"
+        Write-Host ""
+        Die "NSSM not found. Install it (above), then re-run. See docs/04-running-as-a-service.md."
+    }
+    $nssmExe = $nssm.Source
+    switch ($Sub) {
+        "install" {
+            New-Item -ItemType Directory -Force -Path "$REPO\logs" | Out-Null
+            $ps = (Get-Command powershell).Source
+            Log "Installing Windows service '$SvcName' via NSSM ($nssmExe)..."
+            & $nssmExe install $SvcName $ps | Out-Null
+            & $nssmExe set $SvcName AppParameters "-NoProfile -ExecutionPolicy Bypass -File `"$REPO\start_agent.ps1`"" | Out-Null
+            & $nssmExe set $SvcName AppDirectory $REPO | Out-Null
+            & $nssmExe set $SvcName Start SERVICE_AUTO_START | Out-Null
+            & $nssmExe set $SvcName AppStdout "$REPO\logs\skipper-service.log" | Out-Null
+            & $nssmExe set $SvcName AppStderr "$REPO\logs\skipper-service.log" | Out-Null
+            & $nssmExe set $SvcName AppExit Default Restart | Out-Null
+            & $nssmExe start $SvcName | Out-Null
+            Ok "Service '$SvcName' installed and started (auto-starts on boot)."
+            Warn "NSSM runs the service as LocalSystem. Node, npm, and Python 3.12 must be on the SYSTEM PATH (install them for all users), or set a service account in services.msc. See docs/04-running-as-a-service.md."
+        }
+        "uninstall" {
+            & $nssmExe stop $SvcName 2>$null | Out-Null
+            & $nssmExe remove $SvcName confirm | Out-Null
+            Ok "Removed service '$SvcName'."
+        }
+        "status"  { & $nssmExe status $SvcName; Show-Status }
+        "start"   { & $nssmExe start $SvcName | Out-Null; Ok "Started." }
+        "stop"    { & $nssmExe stop $SvcName | Out-Null; Ok "Stopped." }
+        "restart" { & $nssmExe restart $SvcName | Out-Null; Ok "Restarted." }
+    }
 }
 
 # --- banner ------------------------------------------------------------------
@@ -760,6 +891,7 @@ switch -Wildcard ($Command) {
     "stop" { Stop-Skipper }
     "restart" { Ensure-RuntimeTooling | Out-Null; if (NeedsSetup) { Setup }; Ensure-RuntimeDatabase; Stop-Skipper; Start-Skipper }
     "update" { Show-Update }
+    "service" { Service-Cmd $Action }
     "logs" { Show-Logs }
     "status" { Show-Status }
     "help" { Show-Usage }
