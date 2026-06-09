@@ -5,8 +5,7 @@ hackable. Chat, voice, mobile, and a desktop UI all backed by the same agent
 and your own Postgres database.
 
 > **Status:** pre-1.0 — actively under construction toward the first public release.
-> **License:** [Business Source License 1.1](LICENSE) — free for personal and internal
-> business use; auto-converts to Apache 2.0 four years after each release.
+> **License:** [MIT License](LICENSE)
 
 ## What Skipperbot is
 
@@ -378,7 +377,6 @@ features, and submit pull requests. Code of conduct in
 
 ## License
 
-[Business Source License 1.1](LICENSE). Free for personal and internal
-business use; offering Skipperbot as a competing commercial hosted service
-requires a separate commercial license from the licensor. Each release
-auto-converts to Apache 2.0 four years after its release date.
+[MIT License](LICENSE). The source is available for personal and internal
+business use, and the repo may be forked or modified under the terms of
+the MIT License.

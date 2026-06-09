@@ -5,13 +5,10 @@
 
 ### Is this open source?
 
-No — Skipperbot uses the **Business Source License 1.1**, which is
-*source-available* but not OSI-approved open source. The full source is
+Yes — Skipperbot is licensed under the **MIT License**. The full source is
 available; you can run it, modify it, and hack on it for personal and
-internal business use freely. Offering Skipperbot as a competing hosted
-commercial service requires a separate commercial license from the
-licensor. Each release auto-converts to Apache 2.0 four years after its
-release date.
+internal business use freely. The MIT License also allows for forking and
+modifying the repo to add support for other providers or local models.
 
 See [LICENSE](../LICENSE) for the full terms.
 
@@ -39,7 +36,7 @@ OpenAI is the supported configuration for v1. The agent uses both a
 "smart" model (current default `gpt-5.2`) for reasoning and a "dumb"
 model (`gpt-5-mini`) for cheap operations like memory digestion.
 Supporting other providers (Anthropic, local Ollama) is a possible
-v1.x+ extension; the BUSL license explicitly allows you to fork and add
+v1.x+ extension; the MIT License allows you to fork the project and add
 local LLM support yourself.
 
 ### Can a family share one Skipperbot install?
@@ -55,9 +52,8 @@ support isn't a v1 goal.
 
 ### Where's the LICENSE file?
 
-Coming in a later setup step — the maintainers have specific BUSL parameters
-to fill in. For now see the headline summary at the top of the README and
-above on this page.
+The LICENSE file is included in the repo and uses the MIT License.
+See the README and LICENSE file for the full terms.
 
 ### More questions?
 

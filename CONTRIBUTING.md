@@ -22,7 +22,7 @@ proposed solution second. We'd rather discuss the design before code lands.
 
 ## Proposing a new app
 
-Optional apps live in their own `skipperbot-app-<name>` repos. To propose
+Optional apps typically live in their own `skipperbot-app-<name>` repos. To propose
 one, open an issue tagged `app-proposal` with:
 
 - The app's purpose in one sentence.
@@ -33,7 +33,10 @@ one, open an issue tagged `app-proposal` with:
 If the proposal is accepted, the maintainers help bootstrap the repo and
 add it to the official optional-app catalog in `docs/02-adding-apps.md`.
 
-Of course, you are always welcome to build your own app!
+If you are building a new app, it usually will be a separate repo. Changes
+in this repo are mainly for fixing or enhancing the core platform or one of
+the core apps included here. If you want to add a new core app, please reach
+out first so we can discuss the design and ownership model.
 
 ## Pull requests
 
@@ -47,7 +50,7 @@ For changes to the platform itself:
    and other security checks must all be green.
 6. Open a PR. Reference any related issue.
 
-For changes to an app: if the app ships with the platform (one of the built-in apps),
+For changes to an app: if the app ships with the platform as one of the built-in apps,
 PR goes to this repo. If it's a separately distributed app, PR goes to that app's own repo.
 
 ## Architecture rules — non-negotiable
@@ -76,4 +79,4 @@ This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md).
 ## License
 
 By contributing, you agree your contributions are licensed under the same
-[Business Source License 1.1](LICENSE) the project uses.
+[MIT License](LICENSE) the project uses.
