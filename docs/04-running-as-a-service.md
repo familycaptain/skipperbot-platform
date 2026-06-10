@@ -155,13 +155,22 @@ boot you also need:
 
 ## Deploy watcher (Docker only)
 
-Separate from the agent service above. The in-app **"deploy + restart"** button
-does a fast, code-only update (`git pull` + recycle, no image rebuild). Under
-**Docker**, the container can't pull the host repo or recycle its own stack, so
-a small **host-side** watcher (`scripts/deploy_watcher.sh`) does it when the
-agent drops a `.deploy_pending` sentinel. **Native installs don't need it** — the
-agent restarts itself — and without it the deploy button is just a plain
-container restart.
+Separate from the agent service above, and separate from a **restart**. Know the
+difference:
+
+- **Restart** — the in-app restart button (and `POST /api/admin/restart`) drains
+  in-flight work and bounces the agent on the **current code**. No pull, no
+  rebuild. Fast. This is the everyday "kick it" action.
+- **Deploy** — pulls the latest code **and rebuilds** so dependency changes take
+  effect. Triggered deliberately: `skipper update` on the host, or
+  `POST /api/admin/deploy` (used by the `deploy_skipper` flow).
+
+The deploy watcher only matters for the **deploy** path under **Docker**: the
+container can't `git pull` the host repo or recycle its own stack, so a small
+**host-side** watcher (`scripts/deploy_watcher.sh`) does it when the agent drops
+a `.deploy_pending` sentinel — running `git pull` then `docker compose up -d
+--build` (same as `skipper update`). **Native installs don't need it**, and
+without it a deploy request is just a plain container restart (no code update).
 
 The watcher script is portable (bash + git + `docker compose`); only the way you
 keep it running is per-OS:

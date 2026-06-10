@@ -2,11 +2,16 @@
 # Host-side deploy watcher (option B).
 #
 # The containerized agent can't `git pull` the host repo or run `docker compose`
-# on itself, so the "deploy + restart" button / API instead drains gracefully
-# and drops a `.deploy_pending` sentinel in the repo root (bind-mounted into the
-# container at /app). This script — running on the HOST — watches for that
-# sentinel and performs the actual pull + recycle. This is the fast, code-only
-# deploy path (no image rebuild); use 'skipper update' when dependencies change.
+# on itself. A *deploy* (the deploy_skipper flow / POST /api/admin/deploy) drains
+# gracefully and drops a `.deploy_pending` sentinel in the repo root (bind-mounted
+# into the container at /app). This script — running on the HOST — watches for
+# that sentinel and performs the pull + rebuild + recycle. It mirrors
+# `skipper update`: `git pull` then `docker compose up -d --build`, so changes to
+# requirements.txt / Dockerfile take effect, not just bind-mounted code.
+#
+# Note: this is the *deploy* path, deliberately heavier than a restart. The UI
+# "restart" button hits /api/admin/restart, which just bounces the agent on the
+# current code (no sentinel, so this watcher does nothing).
 #
 # It only matters for DOCKER runs (native installs restart themselves). The
 # script itself is portable — bash + git + `docker compose` — so it runs on any
@@ -30,11 +35,11 @@ echo "[deploy_watcher] watching $SENTINEL (every ${INTERVAL}s)"
 
 while true; do
     if [ -f "$SENTINEL" ]; then
-        echo "[deploy_watcher] $(date '+%F %T') deploy requested — pulling + recycling"
+        echo "[deploy_watcher] $(date '+%F %T') deploy requested — pull + rebuild + recycle"
         rm -f "$SENTINEL"   # remove first so the recycled agent doesn't re-trigger
         git pull \
             && docker compose down \
-            && docker compose up -d \
+            && docker compose up -d --build \
             && echo "[deploy_watcher] $(date '+%F %T') deploy complete" \
             || echo "[deploy_watcher] $(date '+%F %T') deploy FAILED — see output above"
     fi

@@ -4484,8 +4484,10 @@ async def _drain_and_exit(max_wait: int = 30, deploy: bool = False):
 
     When *deploy* is True, a ``.deploy_pending`` sentinel is written just before
     exit so the host deploy watcher (scripts/deploy_watcher.sh) runs
-    ``git pull`` + a compose recycle. With no watcher installed it's a no-op and
-    ``restart: always`` just bounces the container (a plain restart).
+    ``git pull`` + a rebuild + recycle (``docker compose up -d --build``). With
+    no watcher installed it's a no-op and ``restart: always`` just bounces the
+    container (a plain restart). Deploy is the deliberate, heavier path; the UI
+    restart button uses ``/api/admin/restart`` (deploy=False) instead.
     """
     import threading
     from thinking_scheduler import get_dispatch_status
@@ -4578,11 +4580,13 @@ async def api_app_help(app_id: str):
 @app.post("/api/admin/deploy")
 async def api_admin_deploy(request: Request):
     """Graceful deploy: drain in-flight work, then signal the host deploy
-    watcher (option B) to `git pull` + recycle the stack. The agent never gets
-    host/docker control — it only writes a sentinel; scripts/deploy_watcher.sh
-    on the host does the pull + `docker compose down/up`. Same UI flow as a
-    restart. If no watcher is installed, `restart: always` just bounces the
-    container (equivalent to a plain restart, no code update)."""
+    watcher (option B) to `git pull` + rebuild + recycle the stack. The agent
+    never gets host/docker control — it only writes a sentinel;
+    scripts/deploy_watcher.sh on the host does the pull + `docker compose up -d
+    --build`. This is the deliberate update path (used by the deploy_skipper
+    flow); the UI restart button uses /api/admin/restart, not this. If no watcher
+    is installed, `restart: always` just bounces the container (a plain restart,
+    no code update)."""
     if not _is_admin_req(request):
         return JSONResponse({"ok": False, "error": "Admin access required."}, status_code=403)
     from thinking_scheduler import request_shutdown as thinking_shutdown, is_shutting_down
