@@ -208,8 +208,30 @@ def _load_app(manifest: AppManifest, fastapi_app=None, mcp=None):
 # ---------------------------------------------------------------------------
 
 def _register_entity_types(manifest: AppManifest):
-    """Register the app's entity types in public.entity_types."""
+    """Register the app's entity types in public.entity_types.
+
+    A prefix is globally unique (PK on ``entity_types.prefix``). If another
+    *active* app already owns this prefix, registering it would silently
+    clobber the incumbent's table mapping and break its entity resolution.
+    Detect that genuine cross-app collision, log it loudly, and skip — never
+    overwrite a different app's prefix. Re-registering the app's own prefix on
+    reboot is a harmless idempotent update.
+    """
     for et in manifest.entity_types:
+        owner = fetch_one(
+            "SELECT app_id FROM app_registry WHERE status = 'active' "
+            "AND app_id <> %s AND manifest->'entity_types' @> %s::jsonb",
+            (manifest.id, json.dumps([{"prefix": et.prefix}])),
+        )
+        if owner:
+            logger.error(
+                "APP LOADER: entity prefix '%s' from app '%s' is already owned "
+                "by active app '%s' — skipping to avoid clobbering it. Rename "
+                "the prefix in one of the two manifests.",
+                et.prefix, manifest.id, owner["app_id"],
+            )
+            continue
+
         with get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(

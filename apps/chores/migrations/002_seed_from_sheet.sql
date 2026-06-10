@@ -1,4 +1,4 @@
--- Chores App — Seed data from the Chore Manager Google Sheet
+-- Chores App — Seed example data
 -- Spreadsheet rotation anchor: 2022-07-18
 -- Kids in users table: kid1, kid2, kid3 (linked via kids.user_id)
 
@@ -7,9 +7,9 @@
 -- ============================================================================
 
 INSERT INTO kids (id, name, color, sort_order, user_id, notify_morning) VALUES
-  ('kid-jacob000',  'Kid One',   '#3b82f6', 0, 'kid1',  TRUE),
-  ('kid-elijah00',  'Kid Two',   '#10b981', 1, 'kid2', TRUE),
-  ('kid-caleb000',  'Kid Three', '#f59e0b', 2, 'kid3',  TRUE)
+  ('kid-one',    'Kid One',   '#3b82f6', 0, 'kid1', TRUE),
+  ('kid-two',    'Kid Two',   '#10b981', 1, 'kid2', TRUE),
+  ('kid-three',  'Kid Three', '#f59e0b', 2, 'kid3', TRUE)
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
@@ -17,9 +17,9 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO zones (id, name, rotation_start, sort_order, description) VALUES
-  ('cz-bathroom', 'Bathroom',         '2022-07-18', 0, 'Shared bathroom — rotates across all three boys.'),
-  ('cz-bedjacob', 'Bedroom - Kid One',  '2022-07-18', 1, 'Kid One''s bedroom.'),
-  ('cz-bedec',    'Bedroom - Shared',   '2022-07-18', 2, 'Kid Two & Kid Three''s shared bedroom.')
+  ('cz-bathroom',  'Bathroom',         '2022-07-18', 0, 'Shared bathroom — rotates across all three kids.'),
+  ('cz-bedone',    'Bedroom - Kid One',  '2022-07-18', 1, 'Kid One''s bedroom.'),
+  ('cz-bedshared', 'Bedroom - Shared',   '2022-07-18', 2, 'Kid Two & Kid Three''s shared bedroom.')
 ON CONFLICT (id) DO NOTHING;
 
 -- ============================================================================
@@ -27,12 +27,12 @@ ON CONFLICT (id) DO NOTHING;
 -- ============================================================================
 
 INSERT INTO zone_members (zone_id, kid_id, position) VALUES
-  ('cz-bathroom', 'kid-jacob000', 0),
-  ('cz-bathroom', 'kid-elijah00', 1),
-  ('cz-bathroom', 'kid-caleb000', 2),
-  ('cz-bedjacob', 'kid-jacob000', 0),
-  ('cz-bedec',    'kid-elijah00', 0),
-  ('cz-bedec',    'kid-caleb000', 1)
+  ('cz-bathroom',  'kid-one',   0),
+  ('cz-bathroom',  'kid-two',   1),
+  ('cz-bathroom',  'kid-three', 2),
+  ('cz-bedone',    'kid-one',   0),
+  ('cz-bedshared', 'kid-two',   0),
+  ('cz-bedshared', 'kid-three', 1)
 ON CONFLICT DO NOTHING;
 
 -- ============================================================================
@@ -51,17 +51,17 @@ ON CONFLICT (id) DO NOTHING;
 
 -- BEDROOM - Kid One
 INSERT INTO chores (id, zone_id, dow, position, name, note) VALUES
-  ('ch-bjmo0',  'cz-bedjacob', 1, 0, 'Laundry & Declutter',  ''),
-  ('ch-bjwe0',  'cz-bedjacob', 3, 0, 'Vacuum & Empty Trash', ''),
-  ('ch-bjth0',  'cz-bedjacob', 4, 0, 'Dust & Clean Desk',    '')
+  ('ch-b1mo0',  'cz-bedone', 1, 0, 'Laundry & Declutter',  ''),
+  ('ch-b1we0',  'cz-bedone', 3, 0, 'Vacuum & Empty Trash', ''),
+  ('ch-b1th0',  'cz-bedone', 4, 0, 'Dust & Clean Desk',    '')
 ON CONFLICT (id) DO NOTHING;
 
--- BEDROOM - E & C
+-- BEDROOM - Shared (Kid Two & Kid Three)
 INSERT INTO chores (id, zone_id, dow, position, name, note) VALUES
-  ('ch-becmo0', 'cz-bedec', 1, 0, 'Vacuum',      ''),
-  ('ch-becmo1', 'cz-bedec', 1, 1, 'Clean Desk',  ''),
-  ('ch-becwe0', 'cz-bedec', 3, 0, 'Laundry',     ''),
-  ('ch-becwe1', 'cz-bedec', 3, 1, 'Declutter',   ''),
-  ('ch-becth0', 'cz-bedec', 4, 0, 'Dust',        ''),
-  ('ch-becth1', 'cz-bedec', 4, 1, 'Empty Trash', '')
+  ('ch-bsmo0', 'cz-bedshared', 1, 0, 'Vacuum',      ''),
+  ('ch-bsmo1', 'cz-bedshared', 1, 1, 'Clean Desk',  ''),
+  ('ch-bswe0', 'cz-bedshared', 3, 0, 'Laundry',     ''),
+  ('ch-bswe1', 'cz-bedshared', 3, 1, 'Declutter',   ''),
+  ('ch-bsth0', 'cz-bedshared', 4, 0, 'Dust',        ''),
+  ('ch-bsth1', 'cz-bedshared', 4, 1, 'Empty Trash', '')
 ON CONFLICT (id) DO NOTHING;

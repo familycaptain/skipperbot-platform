@@ -37,10 +37,13 @@ The folder name must match the app's `id:` in its `manifest.yaml`.
 cd apps
 git clone https://github.com/CHANGE_ME/skipperbot-app-recipes.git recipes
 cd ..
-# Then rebuild the web bundle and restart — see docs/02-adding-apps.md.
+# Then restart the agent — this is required, not optional. See docs/02-adding-apps.md.
 ```
 
 The platform's loader discovers anything with a valid `manifest.yaml` in this
-directory and integrates it at boot. Anything else is ignored.
+directory and integrates it **at boot** — creating its Postgres schema, running
+its migrations, recording it in `public.app_registry`, and registering its tools,
+routes, and UI. **Cloning the folder alone does nothing until you restart the
+agent**; there is no hot-install. Anything else in this directory is ignored.
 
 See [docs/02-adding-apps.md](../docs/02-adding-apps.md) for the full step-by-step.

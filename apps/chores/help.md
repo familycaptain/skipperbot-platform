@@ -23,7 +23,7 @@ here.)
 
 **See today's chores**
 - *In the app:* open Chores → Today.
-- *Through chat:* "what chores does Caleb have today?", "what are my chores?"
+- *Through chat:* "what chores does Alice have today?", "what are my chores?"
 
 **Check one off**
 - *In the app:* tap the chore to mark it done.
@@ -42,7 +42,7 @@ here.)
 ## Your data
 
 Your kids, zones, chores, and completions are **saved in the database and pulled
-into Skipper's memory**, so you can ask "did Caleb do his chores today?" and
+into Skipper's memory**, so you can ask "did Alice do her chores today?" and
 Skipper knows. It stays within your household.
 
 > Note: the rotation/scheduling is currently modeled on our household's setup;

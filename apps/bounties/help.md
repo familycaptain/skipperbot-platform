@@ -30,7 +30,7 @@ balance. There's a leaderboard for a little friendly competition.
 
 **Approve + pay (parent)**
 - *Through chat:* "approve the lawn bounty" (credits the kid), then later
-  "I paid Caleb $20 in cash" (debits the balance).
+  "I paid Alice $20 in cash" (debits the balance).
 
 **Check standings**
 - *Through chat:* "what's my balance?", "who's leading the bounty board this month?"
@@ -44,5 +44,5 @@ balance. There's a leaderboard for a little friendly competition.
 ## Your data
 
 Bounties, submissions, approvals, balances, and payments are **saved in the
-database and pulled into Skipper's memory**, so you can ask "how much has Caleb
+database and pulled into Skipper's memory**, so you can ask "how much has Alice
 earned this month?" and Skipper knows. It stays within your household.

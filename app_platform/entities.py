@@ -18,7 +18,7 @@ import logging
 import re
 
 from data_layer.db import get_conn
-from data_layer.entity_types import get_all_entity_types
+from data_layer.entity_types import get_all as get_all_entity_types
 import psycopg2.extras
 
 logger = logging.getLogger("platform.entities")

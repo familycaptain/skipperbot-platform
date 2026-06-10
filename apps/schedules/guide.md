@@ -1,7 +1,11 @@
 # Schedules — Tool Guide
 
-> **Sub-chunk 8a placeholder.** Real content lands in sub-chunk 8e when
-> `prompts/guides/schedules.md` moves here.
+The Schedules app owns recurring intent and its completion log. It has **no
+chat tools of its own** — agents drive it indirectly through the Goals,
+Reminders, and Todo tools (which reference schedules via the
+`app_platform.schedules` service) and directly through the desktop
+SchedulesApp + REST API. This guide explains the boundary so you route the
+user to the right surface.
 
 ## What this app owns
 

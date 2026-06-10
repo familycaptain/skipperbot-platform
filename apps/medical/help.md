@@ -25,12 +25,12 @@ is tied to a family member and stays in your self-hosted database.
 ## Example workflows
 
 **Track a medication + refills**
-- *Through chat:* "Caleb started amoxicillin today, 10-day course" → tracks it;
-  Skipper nags when it's running low. Then "I ordered Caleb's refill" / "picked it
+- *Through chat:* "Alice started amoxicillin today, 10-day course" → tracks it;
+  Skipper nags when it's running low. Then "I ordered Alice's refill" / "picked it
   up" advances the cycle.
 
 **Log a visit or lab**
-- *Through chat:* "log Jess's annual physical on March 3", "record Bob's labs from
+- *Through chat:* "log Dave's annual physical on March 3", "record Bob's labs from
   yesterday: phosphorus 4.2, calcium 9.1" → stored with trend history.
 
 **Recurring treatment**
@@ -38,7 +38,7 @@ is tied to a family member and stays in your self-hosted database.
   today" → logs it and advances the next-due date.
 
 **Look things up**
-- *Through chat:* "when was Jess's last physical?", "show Caleb's medication
+- *Through chat:* "when was Dave's last physical?", "show Alice's medication
   history", "what labs were taken on 3/3?", "what refills are coming up?"
 
 ## Tips

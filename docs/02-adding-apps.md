@@ -63,6 +63,13 @@ architecture.
 Assumes you have the platform running from
 [docs/01-base-platform-setup.md](01-base-platform-setup.md).
 
+> **A restart is required — cloning the folder alone does nothing.**
+> The platform only discovers and wires up apps **at startup**. Until you
+> restart the agent (Step C), the cloned folder is inert: no Postgres schema
+> is created, no migrations run, the app isn't recorded in `public.app_registry`,
+> and its tools, routes, and UI don't load. There is no hot-install — Step A
+> drops the files in place, and Step C is what actually installs them.
+
 ### Step A — Clone the app into `apps/`
 
 ```bash
@@ -83,7 +90,10 @@ pip install -r apps/recipes/requirements.txt   # if the app ships one
 Most apps don't ship their own `requirements.txt` — they rely on the
 platform's. The app's README will say so if it doesn't.
 
-### Step C — Restart the platform (web bundle rebuilds automatically)
+### Step C — Restart the platform (required — web bundle rebuilds automatically)
+
+This step is mandatory, not a convenience. The restart is when the app is
+actually installed (schema created, migrations run, registry row written).
 
 ```bash
 # Native install:
@@ -104,15 +114,23 @@ boot log shows `[entrypoint] running 'npm run build' ...` when this happens.
 > `docker compose build agent && docker compose up -d` if something
 > seems out of sync.
 
-On boot the platform loader:
+On boot the platform loader does all of the following — **this is the install**,
+and none of it happens until you restart:
 
 1. Discovers the new `apps/recipes/` folder.
 2. Reads its `manifest.yaml`.
-3. Creates the `app_recipes` Postgres schema if it doesn't exist.
-4. Runs any unrun migrations under `apps/recipes/migrations/`.
-5. Registers the app's entity types, tools, routes, event subscriptions,
+3. Records the app in the `public.app_registry` table (status `active`). This
+   row is required — the app's migration tracking has a foreign key to it, and
+   cross-app entity lookups resolve the app's schema through it. It's written
+   first, before anything else.
+4. Creates the `app_recipes` Postgres schema if it doesn't exist.
+5. Runs any unrun migrations under `apps/recipes/migrations/`.
+6. Registers the app's entity types, tools, routes, event subscriptions,
    and (if any) thinking domain.
-6. Adds it to the in-memory app registry.
+
+If the app fails to load (e.g. a migration error), the loader records it in
+`public.app_registry` with status `error` and a message, and keeps running —
+check the boot log and the Settings/System app to see what failed.
 
 ### Step D — Verify the install
 

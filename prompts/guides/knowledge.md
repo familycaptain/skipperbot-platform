@@ -14,7 +14,7 @@ Use `learn_from_url` to ingest web content into the knowledge base. Each page be
 ## Workflows
 
 ### Ingest a website
-- "Learn about attunewiki.com" → learn_from_url(url) → creates k-* source, chunks content, embeds
+- "Learn about example.com" → learn_from_url(url) → creates k-* source, chunks content, embeds
 
 ### Re-ingest (refresh content)
 - Same URL re-ingested → old source removed, new k-* created

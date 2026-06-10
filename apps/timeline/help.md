@@ -22,7 +22,7 @@ going on" and "what changed in our Skipper lately," in a single feed.
 
 **Write a post**
 - *In the app:* create a post (title, body, photos, tags).
-- *Through chat:* "post to the timeline: Caleb scored his first goal today", "add
+- *Through chat:* "post to the timeline: Alice scored her first goal today", "add
   these photos to that post".
 
 **Browse history**

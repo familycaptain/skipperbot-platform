@@ -10,8 +10,8 @@ from apps.goals.store import (
     _is_task_blocked, _save_entity,
 )
 
-ATTUNE_GOAL = "g-eafd1d5a"
-ATTUNE_PROJECT = "p-d4569577"
+SAMPLE_GOAL = "g-eafd1d5a"
+SAMPLE_PROJECT = "p-d4569577"
 SEP = "=" * 72
 
 
@@ -22,7 +22,7 @@ def section(num, title):
 # ── 1. Tool output: just the task lines the LLM sees ───────────────────────
 def test_tool_output():
     section(1, "TOOL OUTPUT — task lines from get_goal_detail (what LLM sees)")
-    output = get_goal_detail(ATTUNE_GOAL)
+    output = get_goal_detail(SAMPLE_GOAL)
     for line in output.split("\n"):
         s = line.strip()
         if s.startswith("○") or s.startswith("↳") or s.startswith("►") or s.startswith("✓") or s.startswith("✕"):
@@ -32,7 +32,7 @@ def test_tool_output():
 # ── 2. Tree view with hierarchy + dependencies + blocked status ─────────────
 def test_tree():
     section(2, "TASK TREE — hierarchy, global ranks, deps, blocked status")
-    all_tasks = _get_tasks_for_project(ATTUNE_PROJECT)
+    all_tasks = _get_tasks_for_project(SAMPLE_PROJECT)
     task_map = {t["id"]: t for t in all_tasks}
     top = sorted([t for t in all_tasks if not t.get("parent_task_id")],
                  key=lambda t: t.get("stack_rank", 0))
@@ -64,7 +64,7 @@ def test_tree():
 # ── 3. Flat rank + auto-nag decision for each task ─────────────────────────
 def test_flat_autonag_view():
     section(3, "FLAT RANK — auto-nag decision for each task")
-    all_tasks = sorted(_get_tasks_for_project(ATTUNE_PROJECT),
+    all_tasks = sorted(_get_tasks_for_project(SAMPLE_PROJECT),
                        key=lambda t: t.get("stack_rank", 0))
     for t in all_tasks:
         rank = t.get("stack_rank", "?")
@@ -92,7 +92,7 @@ def test_flat_autonag_view():
 # ── 4. Rank uniqueness ─────────────────────────────────────────────────────
 def test_rank_uniqueness():
     section(4, "RANK UNIQUENESS CHECK")
-    all_tasks = _get_tasks_for_project(ATTUNE_PROJECT)
+    all_tasks = _get_tasks_for_project(SAMPLE_PROJECT)
     ranks = [t.get("stack_rank", 0) for t in all_tasks]
     print(f"  Tasks: {len(all_tasks)}  |  Unique ranks: {len(set(ranks))}  |  Range: {min(ranks)}-{max(ranks)}")
     if len(ranks) != len(set(ranks)):
@@ -108,7 +108,7 @@ def test_rank_uniqueness():
 # ── 5. Current auto-nag target ──────────────────────────────────────────────
 def test_autonag_now():
     section(5, "AUTO-NAG — current next naggable task")
-    nag = get_next_naggable_task(ATTUNE_PROJECT)
+    nag = get_next_naggable_task(SAMPLE_PROJECT)
     if nag:
         parent_id = nag.get("parent_task_id")
         parent_note = ""
@@ -125,11 +125,11 @@ def test_autonag_now():
 # ── 6. Auto-nag simulation: step through completions ───────────────────────
 def test_autonag_sim():
     section(6, "AUTO-NAG SIMULATION — step-by-step (dry run, changes reverted)")
-    all_tasks = _get_tasks_for_project(ATTUNE_PROJECT)
+    all_tasks = _get_tasks_for_project(SAMPLE_PROJECT)
     originals = {t["id"]: t.get("status") for t in all_tasks}
 
     for step in range(1, 16):  # up to 15 steps
-        nag = get_next_naggable_task(ATTUNE_PROJECT)
+        nag = get_next_naggable_task(SAMPLE_PROJECT)
         if not nag:
             print(f"\n  Step {step}: ✗ No more actionable tasks!")
             break
@@ -158,7 +158,7 @@ def test_autonag_sim():
                     print(f"           → all subs of #{p.get('stack_rank','?')} done, parent now actionable")
 
     # Restore
-    for t in _get_tasks_for_project(ATTUNE_PROJECT):
+    for t in _get_tasks_for_project(SAMPLE_PROJECT):
         if t["id"] in originals:
             t["status"] = originals[t["id"]]
             _save_entity(t)
