@@ -4,6 +4,8 @@ An agentic app platforrm for your family. Self-hosted, modular,
 hackable. Chat, voice, mobile, and a desktop UI all backed by the same agent
 and your own Postgres database.
 
+For more information about Skipperbot see [https://skipperbot.com](https://skipperbot.com)
+
 > **Status:** pre-1.0 — actively under construction toward the first public release.
 > **License:** [MIT License](LICENSE)
 
