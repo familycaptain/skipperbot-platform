@@ -86,7 +86,7 @@ The Docker path bundles **everything** — Postgres 18, the pgvector extension, 
 2. **Clone + configure:**
 
    ```bash
-   git clone https://github.com/CHANGE_ME/skipperbot-platform.git
+   git clone https://github.com/familycaptain/skipperbot-platform.git
    cd skipperbot-platform
    cp .env.example .env
    ```
@@ -250,7 +250,7 @@ brew install python@3.12 node@24
 ### Step 5 — Clone, set up venv, build web UI
 
 ```bash
-git clone https://github.com/CHANGE_ME/skipperbot-platform.git
+git clone https://github.com/familycaptain/skipperbot-platform.git
 cd skipperbot-platform
 
 # Python virtual environment

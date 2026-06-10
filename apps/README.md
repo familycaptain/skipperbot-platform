@@ -35,7 +35,7 @@ The folder name must match the app's `id:` in its `manifest.yaml`.
 
 ```bash
 cd apps
-git clone https://github.com/CHANGE_ME/skipperbot-app-recipes.git recipes
+git clone https://github.com/familycaptain/skipperbot-app-recipes.git recipes
 cd ..
 # Then restart the agent — this is required, not optional. See docs/02-adding-apps.md.
 ```

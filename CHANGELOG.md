@@ -11,4 +11,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial public-release scaffolding.
 
-[Unreleased]: https://github.com/CHANGE_ME/skipperbot-platform/commits/main
+[Unreleased]: https://github.com/familycaptain/skipperbot-platform/commits/main

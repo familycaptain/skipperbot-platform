@@ -6,9 +6,9 @@ If you believe you've found a security vulnerability in Skipperbot, please
 report it privately rather than opening a public GitHub issue.
 
 **Preferred channel:** GitHub Security Advisories — open a private advisory
-at `https://github.com/CHANGE_ME/skipperbot-platform/security/advisories/new`.
+at `https://github.com/familycaptain/skipperbot-platform/security/advisories/new`.
 
-**Alternative channel:** email `security@CHANGE_ME` with details.
+**Alternative channel:** email `contact@familycaptain.com` with details.
 
 Please include:
 

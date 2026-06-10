@@ -27,9 +27,15 @@ import sys
 from pathlib import Path
 
 
-# Forbidden strings. Lowercase comparison; whole-word matches only.
-FORBIDDEN_NAMES = [
-    # Real-household identifiers — must never appear in public source.
+# Forbidden strings. Lowercase comparison. Two tiers, because a single
+# word-boundary check used to miss names fused into identifiers/URLs/ids
+# (`kid-jacob000`, `ATTUNE_GOAL`, `attunewiki.com`) — that gap let real leaks
+# ship. Use `# noqa: family-name` on a line for an intentional exception.
+
+# Real-household identifiers — matched ANYWHERE, including as a substring of a
+# larger token (ids, slugs, URLs, snake_case/CamelCase identifiers). These
+# strings essentially never occur legitimately in public source.
+FORBIDDEN_NAMES_SUBSTRING = [
     "rodney",
     "jessica",
     "jacob",
@@ -38,9 +44,13 @@ FORBIDDEN_NAMES = [
     "attune",
     "burton",
     "burtonhome",
-    # Legacy obfuscated placeholders — leftover from a previous incomplete
-    # scrub; clean these up and replace with generic placeholders
-    # (alice, bob, user1, kid1).
+]
+
+# Legacy obfuscated placeholders — matched on whole-word boundaries only,
+# because they collide with real words and Bible book names (Micah, Joel) and
+# would false-positive under substring matching. Clean these up and replace
+# with generic placeholders (alice, bob, user1, kid1).
+FORBIDDEN_NAMES_WORD = [
     "janelle",
     "maggie",
     "micah",
@@ -86,11 +96,18 @@ def _word_pattern(words: list[str]) -> re.Pattern[str]:
     return re.compile(r"\b(" + "|".join(escaped) + r")\b", re.IGNORECASE)
 
 
+def _substring_pattern(words: list[str]) -> re.Pattern[str]:
+    escaped = [re.escape(w) for w in words]
+    return re.compile("(" + "|".join(escaped) + ")", re.IGNORECASE)
+
+
 def scan_path(root: Path) -> list[tuple[Path, int, str, str]]:
     findings: list[tuple[Path, int, str, str]] = []
-    name_pattern = _word_pattern(FORBIDDEN_NAMES)
-    # Timezone strings also use word boundaries to avoid false positives
-    # like "CST" matching inside "DOCSTRING".
+    # Real names: match anywhere (catches `kid-jacob000`, `ATTUNE_GOAL`, …).
+    substring_pattern = _substring_pattern(FORBIDDEN_NAMES_SUBSTRING)
+    # Collision-prone placeholders + timezone strings: whole-word only, to
+    # avoid false positives like "CST" inside "DOCSTRING" or "Micah" the book.
+    word_pattern = _word_pattern(FORBIDDEN_NAMES_WORD)
     tz_pattern = _word_pattern(FORBIDDEN_TIMEZONES)
 
     for path in root.rglob("*"):
@@ -112,7 +129,9 @@ def scan_path(root: Path) -> list[tuple[Path, int, str, str]]:
         for lineno, line in enumerate(text.splitlines(), start=1):
             if "noqa: family-name" in line:
                 continue
-            for match in name_pattern.finditer(line):
+            for match in substring_pattern.finditer(line):
+                findings.append((rel, lineno, match.group(0), line.strip()))
+            for match in word_pattern.finditer(line):
                 findings.append((rel, lineno, match.group(0), line.strip()))
             for match in tz_pattern.finditer(line):
                 findings.append((rel, lineno, match.group(0), line.strip()))

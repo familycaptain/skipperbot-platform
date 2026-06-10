@@ -271,7 +271,7 @@ headless app (no UI — just MCP tools the agent calls).
 
 **Setup:**
 
-1. Install the optional app: `cd apps && git clone https://github.com/CHANGE_ME/skipperbot-app-weather.git weather && cd ..`
+1. Install the optional app: `cd apps && git clone https://github.com/familycaptain/skipperbot-app-weather.git weather && cd ..`
 2. Sign up at your weather provider and get an API key.
 3. Add to `.env`:
    ```

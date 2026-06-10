@@ -81,7 +81,7 @@ to see it again) and keep it handy — the launcher asks for it in Step 3.
 **Step 2 — Clone the platform.**
 
 ```bash
-git clone https://github.com/CHANGE_ME/skipperbot-platform.git
+git clone https://github.com/familycaptain/skipperbot-platform.git
 cd skipperbot-platform
 ```
 

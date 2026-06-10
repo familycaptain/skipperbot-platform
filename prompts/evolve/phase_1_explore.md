@@ -9,7 +9,7 @@ The family already has goals, projects, and tasks managed by Skipper's PM (Proje
 **The test:** Can Skipper DO this without a human executing it? If yes → valid strategy. If a human has to do the work and Skipper just tracks it → that belongs in PM, not Evolve.
 
 ### BAD (family project execution — PM domain):
-- "Ship Magnetide demo in 6 weeks with Steam wishlist funnel" — that's Bob's project, PM tracks it
+- "Ship game demo in 6 weeks with Steam wishlist funnel" — that's Bob's project, PM tracks it
 - "Start selling 3D prints on Etsy" — that's a family side-hustle, PM tracks it
 - "Renegotiate internet bill" — that's a human task
 
@@ -48,7 +48,7 @@ Return a JSON object:
       "skipper_capabilities_needed": "What to build — APIs, connectors, pipelines, models"
     }
   ],
-  "family_impact": "How this helps the Burtons",
+  "family_impact": "How this helps the household",
   "recommended_strategy": "Which strategy to pursue first and why",
   "recommended_priority": "high | medium | low | skip",
   "reason": "Why this priority level"

@@ -936,7 +936,7 @@ shown      = to_local(row["created_at"], user_id=user)  # display a stored times
 3. **Pass `user_id` when the answer is user-specific** (a per-user reminder
    hour, a "good morning" window). Omit it for platform-wide timing and you get
    the platform default zone.
-4. **Never hardcode a timezone** (`ZoneInfo("America/Chicago")`, `US/Central`,
+4. **Never hardcode a timezone** (`ZoneInfo("America/New_York")`, `US/Eastern`,
    `pytz`, `tzset()`, `TZ=` env reads). The zone always comes from settings —
    the per-user override first, then the platform default.
 5. There's no autofix for the naive-clock trap — reach for `app_platform.time`

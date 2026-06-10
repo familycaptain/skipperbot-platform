@@ -78,7 +78,7 @@ that's the doc to follow. In short:
 ```bash
 # install
 cd /path/to/skipperbot-platform/apps
-git clone https://github.com/CHANGE_ME/skipperbot-app-recipes.git recipes
+git clone https://github.com/familycaptain/skipperbot-app-recipes.git recipes
 cd .. && <restart>
 
 # uninstall (data in app_recipes is preserved by default)

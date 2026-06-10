@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = "==3.12.*"
 license = { file = "LICENSE" }
 authors = [
-    { name = "Skipperbot Contributors" }
+    { name = "Family Captain Foundation", email = "contact@familycaptain.com" }
 ]
 keywords = ["agent", "ai", "assistant", "self-hosted", "mcp"]
 classifiers = [
@@ -19,14 +19,14 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
-    "License :: Other/Proprietary License",
+    "License :: OSI Approved :: MIT License",
 ]
 
 [project.urls]
-Homepage = "https://github.com/CHANGE_ME/skipperbot-platform"
-Documentation = "https://github.com/CHANGE_ME/skipperbot-platform/tree/main/docs"
-Repository = "https://github.com/CHANGE_ME/skipperbot-platform"
-Issues = "https://github.com/CHANGE_ME/skipperbot-platform/issues"
+Homepage = "https://github.com/familycaptain/skipperbot-platform"
+Documentation = "https://github.com/familycaptain/skipperbot-platform/tree/main/docs"
+Repository = "https://github.com/familycaptain/skipperbot-platform"
+Issues = "https://github.com/familycaptain/skipperbot-platform/issues"
 
 [tool.ruff]
 line-length = 120
