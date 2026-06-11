@@ -527,7 +527,11 @@ def _recall_memories(goal_id: str, goal_snapshot: dict) -> list[dict]:
 # =========================================================================
 
 def _load_prompt() -> str:
-    path = os.path.join(PROMPTS_DIR, "GOAL_THINK.md")
+    # The goal-worker prompt lives in THIS app's prompts/ dir
+    # (apps/goals/prompts/goals_think.md) — it was moved there during packaging.
+    # The old path (platform PROMPTS_DIR/GOAL_THINK.md) no longer exists, which
+    # silently made every goal-thinking cycle a no-op.
+    path = os.path.join(os.path.dirname(__file__), "prompts", "goals_think.md")
     try:
         with open(path, "r", encoding="utf-8") as f:
             return f.read()

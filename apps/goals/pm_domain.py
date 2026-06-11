@@ -748,8 +748,13 @@ def _record_project_review(project_id: str):
 # ---------------------------------------------------------------------------
 
 def _load_pm_think_prompt() -> str:
-    """Load the PM_THINK.md system prompt."""
-    path = os.path.join(PROMPTS_DIR, "PM_THINK.md")
+    """Load the PM thinking system prompt (apps/goals/prompts/pm_think.md).
+
+    Moved into this app's prompts/ dir during packaging; the old path
+    (platform PROMPTS_DIR/PM_THINK.md) no longer exists, which silently made
+    every PM cycle a no-op.
+    """
+    path = os.path.join(os.path.dirname(__file__), "prompts", "pm_think.md")
     try:
         with open(path, "r", encoding="utf-8") as f:
             return f.read()

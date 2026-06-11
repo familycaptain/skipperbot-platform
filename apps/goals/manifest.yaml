@@ -125,7 +125,7 @@ thinking:
     schedule: "0 9 * * *"        # 9 AM daily by default; user-overridable
     prompt_file: prompts/pm_think.md
     model: smart
-    enabled_by_default: false
+    enabled_by_default: true     # on out of the box — see migrations/003
     tools:
       - list_open_goals
       - list_at_risk_projects
