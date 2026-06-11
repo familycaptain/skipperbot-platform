@@ -2,7 +2,7 @@
 # =============================================================================
 # skipper — thin shim that forwards to skipper.sh (the real launcher).
 # =============================================================================
-# This file exists only so `./scripts/skipper` (no extension, like `claude`)
+# This file exists only so `./skipper` (no extension, like `claude`)
 # keeps working. ALL logic lives in skipper.sh — edit that, never this — so the
 # two can never drift. On Windows use skipper.bat / skipper.ps1 instead.
 # =============================================================================

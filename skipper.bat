@@ -7,9 +7,9 @@ REM You can add this directory to your PATH to run 'skipper' from anywhere.
 REM =============================================================================
 
 setlocal enabledelayedexpansion
-cd /d "%~dp0\.."
+cd /d "%~dp0"
 
-REM Get the directory where this batch file is located (should be scripts/)
+REM This batch file lives at the repo root; %~dp0 is the repo root.
 set SCRIPT_DIR=%~dp0
 
 REM Call the PowerShell script with the provided arguments

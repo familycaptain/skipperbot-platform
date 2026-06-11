@@ -30,10 +30,10 @@ Companion services run alongside the platform when you want them:
 
 > **Quickest start (the `skipper` command).** After cloning, run the appropriate
 > launcher for your OS:
-> - **Linux/macOS:** `./scripts/skipper.sh` 
-> - **Windows:** `scripts\skipper.bat` or `powershell -ExecutionPolicy Bypass -File scripts\skipper.ps1`
+> - **Linux/macOS:** `./skipper.sh` 
+> - **Windows:** `skipper.bat` or `powershell -ExecutionPolicy Bypass -File skipper.ps1`
 > - **Windows + WSL:** you're in a Linux shell inside WSL, so use the Linux
->   command — `./scripts/skipper.sh` — for both Docker and native runs.
+>   command — `./skipper.sh` — for both Docker and native runs.
 >
 > The launcher first **asks how you want to run Skipper — Docker or native** — and
 > verifies that runtime's prerequisites before doing anything else:
@@ -43,7 +43,7 @@ Companion services run alongside the platform when you want them:
 >   installed PostgreSQL 18 + pgvector, Python 3.12, and Node 24+ (see Path 2).
 >
 > It then asks for your OpenAI key and a Postgres password, writes `.env`,
-> and starts Skipper. Later, just run the command again to start it. (Optional: on Linux/Mac, `./scripts/skipper.sh install`
+> and starts Skipper. Later, just run the command again to start it. (Optional: on Linux/Mac, `./skipper.sh install`
 > adds `skipper` to your `PATH` so you can type just `skipper` from anywhere.
 > On first run, you'll also be offered the chance to set up an automatic updater —
 > a lightweight background service that lets you update Skipper from within the app
@@ -94,16 +94,16 @@ launcher does that for you in the next step.
 
 **Linux/macOS:**
 ```bash
-./scripts/skipper.sh
+./skipper.sh
 ```
 
 **Windows:**
 ```cmd
-scripts\skipper.bat
+skipper.bat
 ```
 Or in PowerShell:
 ```powershell
-powershell -ExecutionPolicy Bypass -File scripts\skipper.ps1
+powershell -ExecutionPolicy Bypass -File skipper.ps1
 ```
 
 On first run the launcher asks how you want to run Skipper — **choose Docker** —
@@ -116,15 +116,15 @@ First boot takes a few minutes: Docker downloads the Postgres image, builds the
 agent image, installs Python dependencies, and builds the web UI. On a Pi 5 with
 an SSD, plan for around 5–10 minutes. Subsequent boots take seconds.
 
-Follow the boot with `scripts\skipper.bat logs` (or `./scripts/skipper.sh logs`).
+Follow the boot with `skipper.bat logs` (or `./skipper.sh logs`).
 When you see `HTTP server listening on http://localhost:8000`, the agent is ready.
 
 **Step 4 — Open the onboarding wizard** at
 <http://localhost:8000>. It walks you through your name, timezone,
 and a final OpenAI-key check, then drops you into the desktop.
 
-(To stop Skipper later, run `scripts\skipper.bat stop` — or
-`./scripts/skipper.sh stop` on Linux/macOS. To start it again, just run the
+(To stop Skipper later, run `skipper.bat stop` — or
+`./skipper.sh stop` on Linux/macOS. To start it again, just run the
 launcher again.)
 
 ### Path 2: Native install (for developers and hackers)
@@ -140,7 +140,7 @@ launcher again.)
 > - **Next best: WSL2 (Linux on Windows).** Run `wsl --install` (installs Ubuntu),
 >   open the Ubuntu shell, and follow the **Linux** native steps below *inside* WSL,
 >   where pgvector installs in one line (`sudo apt install postgresql-18-pgvector`).
->   Run `./scripts/skipper.sh` from the WSL shell.
+>   Run `./skipper.sh` from the WSL shell.
 > - **Or point at a remote Postgres** that already has pgvector — the launcher asks
 >   for the host, so a Postgres on your network or in Docker works fine.
 >
@@ -188,7 +188,7 @@ launcher and choosing the *native* option, make sure you have:
 
 - **Git**.
 
-When you pick *native*, the `scripts\skipper` launcher checks these **runtimes**
+When you pick *native*, the `skipper` launcher checks these **runtimes**
 and tells you exactly what's missing — but it does **not** install Postgres,
 Python, or Node for you (those are yours to install). Once they're present it
 handles the rest automatically: creates the Python venv, installs the Python
@@ -333,7 +333,7 @@ The simplest way is the launcher — it pulls and recycles for your runtime
 prompts you to restart):
 
 ```bash
-skipper update        # or ./scripts/skipper.sh update  /  scripts\skipper.bat update
+skipper update        # or ./skipper.sh update  /  skipper.bat update
 ```
 
 By hand (Docker):

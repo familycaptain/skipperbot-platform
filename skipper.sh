@@ -2,8 +2,8 @@
 # =============================================================================
 # skipper.sh — one-command launcher + first-run setup for the Skipperbot platform
 # =============================================================================
-# After cloning the repo, run `./scripts/skipper.sh` (or install it onto your PATH
-# with `./scripts/skipper.sh install`, then just `skipper`). Behaviour:
+# After cloning the repo, run `./skipper.sh` (or install it onto your PATH
+# with `./skipper.sh install`, then just `skipper`). Behaviour:
 #
 #   * First run ASKS how to run Skipper — Docker or native — and REMEMBERS the
 #     choice in .env (SKIPPER_RUNTIME); later runs reuse it without asking.
@@ -28,9 +28,10 @@
 set -euo pipefail
 
 # --- locate the repo root (works whether run directly or via a PATH symlink) -
+# This launcher lives at the repo root, so the repo root is its own directory.
 _src="${BASH_SOURCE[0]}"
 _real="$(readlink -f "$_src" 2>/dev/null || echo "$_src")"
-REPO="$(cd "$(dirname "$_real")/.." && pwd)"
+REPO="$(cd "$(dirname "$_real")" && pwd)"
 cd "$REPO"
 
 ENV_FILE="$REPO/.env"
@@ -588,8 +589,8 @@ update() {
 # --- install onto PATH -------------------------------------------------------
 install_cli() {
     local target=/usr/local/bin/skipper
-    log "Linking $target -> $REPO/scripts/skipper.sh (needs sudo)"
-    sudo ln -sf "$REPO/scripts/skipper.sh" "$target"
+    log "Linking $target -> $REPO/skipper.sh (needs sudo)"
+    sudo ln -sf "$REPO/skipper.sh" "$target"
     ok "Installed. You can now run 'skipper' from anywhere."
 }
 uninstall_cli() { sudo rm -f /usr/local/bin/skipper && ok "Removed /usr/local/bin/skipper."; }
@@ -598,7 +599,7 @@ usage() {
     cat <<EOF
 skipper — launch and manage the Skipperbot platform
 
-Usage: ./scripts/skipper.sh [command]   (or 'skipper' if installed)
+Usage: ./skipper.sh [command]   (or 'skipper' if installed)
 
   (no command)   Resolve runtime (asks once, then remembered), verify that
                  runtime's prerequisites, run first-time setup if needed, then
@@ -625,8 +626,8 @@ On start/setup you'll be asked how to run Skipper:
   Native — runs on the host; you must have PostgreSQL 18 + pgvector,
            Python 3.12, and Node 24+ installed (see docs/01-base-platform-setup.md).
 
-Note: Run './scripts/skipper.sh install' to add 'skipper' to your PATH (Linux/Mac).
-      On Windows, use scripts/skipper.bat or: powershell -ExecutionPolicy Bypass -File scripts/skipper.ps1
+Note: Run './skipper.sh install' to add 'skipper' to your PATH (Linux/Mac).
+      On Windows, use skipper.bat or: powershell -ExecutionPolicy Bypass -File skipper.ps1
 EOF
 }
 

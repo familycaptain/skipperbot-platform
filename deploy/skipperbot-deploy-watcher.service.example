@@ -12,7 +12,7 @@
 # a Scheduled Task / NSSM; or on any OS just run the script under nohup. See
 # docs/04-running-as-a-service.md for the per-platform options.
 #
-# Easiest install: `./scripts/skipper.sh` (or `skipper`) offers to install this
+# Easiest install: `./skipper.sh` (or `skipper`) offers to install this
 # automatically on a Docker-on-systemd host, filling in the user and path for you.
 # To install BY HAND, edit the CHANGE_ME lines below, then:
 #   sudo cp deploy/skipperbot-deploy-watcher.service.example \

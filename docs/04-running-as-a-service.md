@@ -17,10 +17,10 @@ skipper service uninstall    # remove it (your data and .env are untouched)
 ```
 
 On Windows run it through the PowerShell launcher
-(`scripts\skipper.bat service install` or
-`powershell -ExecutionPolicy Bypass -File scripts\skipper.ps1 service install`).
-On Linux/macOS use `./scripts/skipper.sh service install` (or just `skipper …`
-if you ran `./scripts/skipper.sh install` to put it on your PATH).
+(`skipper.bat service install` or
+`powershell -ExecutionPolicy Bypass -File skipper.ps1 service install`).
+On Linux/macOS use `./skipper.sh service install` (or just `skipper …`
+if you ran `./skipper.sh install` to put it on your PATH).
 
 The launcher picks the right mechanism automatically from **your saved runtime**
 (`SKIPPER_RUNTIME` in `.env`, set during `skipper setup`) and your OS:

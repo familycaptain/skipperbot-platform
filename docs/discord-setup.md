@@ -89,7 +89,7 @@ The token lives in Skipper's encrypted settings, **not** in `.env`.
    ```bash
    skipper restart
    ```
-   If `skipper` isn't on your `PATH` yet, use `scripts/skipper.sh restart`
+   If `skipper` isn't on your `PATH` yet, use `./skipper.sh restart`
    (Linux/macOS) or `skipper.bat restart` (Windows). The launcher handles both
    Docker and native installs — you don't need to know which is running.
 

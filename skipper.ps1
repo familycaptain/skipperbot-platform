@@ -28,7 +28,8 @@ param(
 # --- locate the repo root ---------------------------------------------------
 $ScriptPath = $MyInvocation.MyCommand.Path
 if ($null -eq $ScriptPath) { $ScriptPath = $MyInvocation.MyCommand.Definition }
-$REPO = (Resolve-Path (Join-Path (Split-Path -Parent $ScriptPath) "..")).Path
+# This launcher lives at the repo root, so the repo root is its own directory.
+$REPO = (Resolve-Path (Split-Path -Parent $ScriptPath)).Path
 Set-Location $REPO
 
 $ENV_FILE = "$REPO\.env"
