@@ -39,19 +39,22 @@ is the only chat surface.
 
 **Cost:** Free.
 
-**Setup:**
+**Setup (short version):**
 
-1. Go to <https://discord.com/developers/applications> and create a new application.
-2. In the application's "Bot" section, click "Reset Token" and copy the token.
-3. Invite the bot to your server with the appropriate permissions.
-4. Add to `.env`:
-   ```
-   DISCORD_TOKEN=<your bot token>
-   ```
-5. Configure your Discord server ID and allowed channels through the Settings app (or via the onboarding wizard's Discord step).
-6. Restart.
+1. Create an application + bot at <https://discord.com/developers/applications>.
+2. On the **Bot** page, enable the **Message Content Intent** (required — the
+   bot can't read messages without it).
+3. Copy the bot token and invite the bot to your server (OAuth2 URL Generator,
+   `bot` scope, Send Messages + Read Message History).
+4. Paste the token into **Settings → Integrations → Discord token** in the
+   Skipper web UI, then restart the agent. (The token lives in Skipper's
+   encrypted settings — **not** in `.env`.)
+5. Link your Discord account to your Skipper user (so the bot knows it's you).
 
-**Verify:** Mention the bot in an allowed channel — it should respond.
+**Verify:** DM the bot — it should reply within a few seconds.
+
+👉 **Full step-by-step walkthrough, including how to find your Discord user ID
+and the most common "bot ignores me" fixes: [docs/discord-setup.md](discord-setup.md).**
 
 ---
 
