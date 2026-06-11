@@ -12,7 +12,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Settings as Cog, Loader2, Save, Check, X, Eye, EyeOff, AlertCircle, LayoutGrid,
-  Users, UserPlus, Trash2, KeyRound, ShieldCheck, RotateCcw, Star,
+  Users, UserPlus, Trash2, KeyRound, ShieldCheck, RotateCcw, Star, MessageCircle,
 } from "lucide-react";
 import { getManageableApps } from "../../../web/src/apps/registry";
 
@@ -399,6 +399,12 @@ function MembersPanel({ userId }) {
   const [form, setForm] = useState({ username: "", display_name: "", roles: ["member"], password: "" });
   const [pw, setPw] = useState({ current: "", next: "" });
   const [pwMsg, setPwMsg] = useState("");
+  // My Discord link (self-service). `discord` is the saved value ("" = unlinked,
+  // null = still loading); `discordDraft` is the editable field.
+  const [discord, setDiscord] = useState(null);
+  const [discordDraft, setDiscordDraft] = useState("");
+  const [discordMsg, setDiscordMsg] = useState("");
+  const [discordBusy, setDiscordBusy] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -409,6 +415,18 @@ function MembersPanel({ userId }) {
     }
   }, []);
   useEffect(() => { load(); }, [load]);
+
+  // Load my own Discord link.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API}/account`);
+        const j = res.ok ? await res.json() : {};
+        setDiscord(j.discord_id || "");
+        setDiscordDraft(j.discord_id || "");
+      } catch { setDiscord(""); }
+    })();
+  }, []);
 
   const me = (users || []).find((u) => u.name === userId);
   const isAdmin = !!me && hasRole(me.role, "admin");
@@ -479,6 +497,24 @@ function MembersPanel({ userId }) {
       if (j.ok) { setPwMsg("Password changed."); setPw({ current: "", next: "" }); }
       else setPwMsg(j.error || "Could not change password.");
     } catch { setPwMsg("Network error."); }
+  }
+
+  async function saveDiscord(e) {
+    e.preventDefault();
+    setDiscordMsg("");
+    setDiscordBusy(true);
+    try {
+      const res = await fetch(`${API}/account`, json("PATCH", { discord_id: discordDraft.trim() }));
+      const j = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setDiscord(j.discord_id || "");
+        setDiscordDraft(j.discord_id || "");
+        setDiscordMsg(j.discord_id ? "Discord linked." : "Discord unlinked.");
+      } else {
+        setDiscordMsg(j.detail || `Could not save (${res.status}).`);
+      }
+    } catch { setDiscordMsg("Network error."); }
+    finally { setDiscordBusy(false); }
   }
 
   const toggleFormRole = (role) =>
@@ -645,6 +681,31 @@ function MembersPanel({ userId }) {
         <button type="submit"
           className="rounded bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 text-sm font-medium text-white inline-flex items-center gap-1.5">
           <Save size={14} /> Update password
+        </button>
+      </form>
+
+      {/* My Discord link — everyone (self-service) */}
+      <form onSubmit={saveDiscord} className="rounded-lg border border-zinc-800 p-4 space-y-3">
+        <h3 className="text-sm font-medium text-zinc-300 inline-flex items-center gap-2"><MessageCircle size={14} /> My Discord</h3>
+        <p className="text-[11px] text-zinc-500 -mt-1">
+          Link your Discord account so Skipper recognises you on Discord and can DM you.
+          In Discord, turn on <span className="text-zinc-400">Developer Mode</span> (User
+          Settings → Advanced), then right-click your name → <span className="text-zinc-400">Copy
+          User ID</span> and paste it here. Leave blank and save to unlink.
+        </p>
+        <label className="block">
+          <span className="text-[11px] text-zinc-500">Discord user ID</span>
+          <input className={`${inputCls} font-mono`} value={discordDraft} inputMode="numeric"
+            disabled={discord === null}
+            onChange={(e) => setDiscordDraft(e.target.value)}
+            placeholder="e.g. 123456789012345678" autoComplete="off" />
+        </label>
+        {discordMsg && <div className="text-xs text-zinc-400">{discordMsg}</div>}
+        <button type="submit"
+          disabled={discord === null || discordBusy || discordDraft.trim() === (discord ?? "")}
+          className="rounded bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 text-sm font-medium text-white inline-flex items-center gap-1.5 disabled:opacity-50">
+          {discordBusy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          {discordDraft.trim() ? (discord ? "Update Discord ID" : "Link Discord") : "Unlink Discord"}
         </button>
       </form>
     </div>

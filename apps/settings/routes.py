@@ -24,7 +24,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
-from app_platform.auth import enforce_admin
+from app_platform.auth import enforce_admin, require_user
 from app_platform import config as platform_config
 from app_platform import settings as platform_settings
 from app_platform import secrets as platform_secrets
@@ -426,3 +426,66 @@ async def api_patch_panel(panel_id: str, req: PlatformSettingsPatch, request: Re
         return await asyncio.to_thread(_do)
     except platform_secrets.SecretKeyMissing as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# My account — self-service per-user fields (NOT admin-gated; every signed-in
+# user edits their OWN record). Currently: the Discord ID that links a Discord
+# account to this Skipper user so the bot recognises them and can DM them.
+# ---------------------------------------------------------------------------
+
+class AccountPatch(BaseModel):
+    discord_id: str | None = None
+
+
+def _account_payload(name: str) -> dict:
+    from data_layer.users import get_user
+    u = get_user(name)
+    if not u:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "name": u["name"],
+        "display_name": u.get("display_name") or u["name"],
+        "discord_id": u.get("discord_id") or "",
+    }
+
+
+@router.get("/account")
+async def api_get_account(request: Request):
+    """The signed-in user's own editable account fields."""
+    name = require_user(request)["name"]
+    return await asyncio.to_thread(_account_payload, name)
+
+
+@router.patch("/account")
+async def api_patch_account(req: AccountPatch, request: Request):
+    """Update the signed-in user's own account fields (self-service).
+
+    Discord ID: a numeric snowflake (17–20 digits), or blank to unlink. A given
+    Discord ID maps to exactly one Skipper user, so linking one already claimed
+    by someone else is rejected.
+    """
+    name = require_user(request)["name"]
+    raw = (req.discord_id or "").strip()
+    if raw and (not raw.isdigit() or not (17 <= len(raw) <= 20)):
+        raise HTTPException(
+            status_code=400,
+            detail=("Discord ID must be the numeric user ID (17–20 digits). In "
+                    "Discord enable Developer Mode (User Settings → Advanced), "
+                    "then right-click your name → Copy User ID."),
+        )
+
+    def _do():
+        from data_layer.users import get_user_by_discord_id, update_discord_id
+        if raw:
+            other = get_user_by_discord_id(raw)
+            if other and other["name"] != name:
+                raise HTTPException(
+                    status_code=409,
+                    detail=f"That Discord ID is already linked to another user (@{other['name']}).",
+                )
+        if not update_discord_id(name, raw or None):
+            raise HTTPException(status_code=404, detail="User not found")
+        return _account_payload(name)
+
+    return await asyncio.to_thread(_do)
