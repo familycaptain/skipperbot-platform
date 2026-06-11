@@ -262,45 +262,6 @@
       "compose email"
     ]
   },
-  "timers": {
-    "guide": "timers.md",
-    "description": "Start, list, and cancel short in-memory countdown timers that fire a notification when they expire",
-    "tools": [
-      "start_timer",
-      "list_timers",
-      "cancel_timer"
-    ],
-    "ack": {
-      "start_timer": "Starting {name} timer...",
-      "list_timers": "Checking active timers...",
-      "cancel_timer": "Cancelling timer {timer_id}..."
-    },
-    "keywords": [
-      "timer",
-      "timers",
-      "set a timer",
-      "set timer",
-      "start a timer",
-      "start timer",
-      "countdown",
-      "count down",
-      "second timer",
-      "seconds timer",
-      "minute timer",
-      "minutes timer",
-      "egg timer",
-      "kitchen timer",
-      "stopwatch",
-      "time me",
-      "cancel timer",
-      "stop timer",
-      "stop the timer",
-      "cancel the timer",
-      "my timers",
-      "active timers",
-      "running timers"
-    ]
-  },
   "artifacts": {
     "guide": "artifacts.md",
     "description": "Attach files and documents to any entity, read artifact content",
@@ -511,34 +472,6 @@
       "restructure",
       "improve this",
       "make it better"
-    ]
-  },
-  "scrum": {
-    "description": "Daily scrum check-in — record responses to PM daily update items",
-    "tools": [
-      "respond_to_scrum_item",
-      "get_pending_scrum_items"
-    ],
-    "ack": {
-      "respond_to_scrum_item": "Recording scrum response...",
-      "get_pending_scrum_items": "Checking scrum items..."
-    },
-    "keywords": [
-      "scrum",
-      "daily update",
-      "check-in",
-      "check in",
-      "pm update",
-      "daily scrum",
-      "morning update",
-      "standup",
-      "stand-up",
-      "stand up",
-      "what did you do",
-      "what are you working on",
-      "any blockers",
-      "scrum item",
-      "scrum response"
     ]
   },
   "evolve": {

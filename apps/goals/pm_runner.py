@@ -65,6 +65,16 @@ async def check_and_run_pm(force: bool = False):
     to prevent duplicate scrum DMs when multiple triggers fire on the same day.
     Use run_pm_now() to truly bypass the guard (it clears last_run_date first).
     """
+    # The daily standup IS the Scrum app's feature (skipperbot-app-scrum):
+    # without it there's nowhere to persist items or track replies, so we send
+    # NO standup DMs at all. The PM and Goals *thinking domains* are separate
+    # (run by thinking_scheduler) and review goals/projects + nudge owners
+    # regardless of whether scrum is installed.
+    try:
+        import apps.scrum.data  # noqa: F401
+    except ImportError:
+        return
+
     now = datetime.now(get_timezone())
 
     if not force and now.hour < PM_RUN_HOUR:
@@ -124,6 +134,12 @@ async def run_pm_check():
     Does NOT do a full project scan or LLM evaluation.
     Logs to thinking_log for auditability.
     """
+    # Part of the scrum/standup cadence — no-op without the Scrum app installed.
+    try:
+        import apps.scrum.data  # noqa: F401
+    except ImportError:
+        return
+
     logger.info("PM_CHECK: Starting lighter PM check-in...")
     pm_audit_logger.info("--- PM CHECK-IN (light) ---")
 
@@ -281,7 +297,12 @@ def _get_yesterday_commitments() -> dict[str, list[dict]]:
     (what Skipper suggested but got no reply to).
     Skips items whose source task/project is now done or deferred.
     """
-    from data_layer.scrum import get_scrum_items
+    # Scrum is an optional app (skipperbot-app-scrum). Without it there are no
+    # persisted scrum items to review yesterday's commitments from.
+    try:
+        from apps.scrum.data import get_scrum_items
+    except ImportError:
+        return {}
     from apps.goals.data import load_entity
 
     yesterday = date.today() - timedelta(days=1)
@@ -678,7 +699,14 @@ def _persist_scrum_items(actions: list[dict]):
 
     Called once per PM cycle. Skips if items already exist for today.
     """
-    from data_layer.scrum import save_scrum_items_bulk, items_exist_for_date
+    # Scrum is an optional app (skipperbot-app-scrum). If it isn't installed,
+    # the standup still runs and DMs still go out — they just aren't persisted
+    # as respondable scrum items.
+    try:
+        from apps.scrum.data import save_scrum_items_bulk, items_exist_for_date
+    except ImportError:
+        logger.debug("PM: scrum app not installed — skipping scrum-item persistence")
+        return
 
     today = date.today()
     if items_exist_for_date(today):

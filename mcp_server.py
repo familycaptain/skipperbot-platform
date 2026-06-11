@@ -48,7 +48,8 @@ from tools.yaml_validate_tool import yaml_validate_file
 from tools.pushover_tool import send_pushover_notification
 # reminders tools moved to apps/reminders/tools.py (app package).
 # The platform loader auto-discovers them at startup.
-from tools.timer_tool import start_timer, list_timers, cancel_timer
+# timers tools live in the bundled apps/timers/tools.py package (ships with the
+# platform); the platform loader auto-discovers them at startup.
 from tools.link_tool import link_entities, get_entity_links, unlink_entities
 # notifications tools moved to apps/notifications/tools.py (app package).
 # The platform loader auto-discovers them at startup.
@@ -66,7 +67,7 @@ from tools.research_tool import start_research, check_research, cancel_research,
 from tools.print_tool import print_doc
 # Prioritize tools moved to apps/prioritize/tools.py (app package)
 from tools.brainstorming_tool import create_idea, list_ideas, search_ideas, get_idea, update_idea, delete_idea, graduate_idea, update_idea_document, append_to_idea_document, read_idea_document, revise_idea_document
-from tools.scrum_tool import respond_to_scrum_item, get_pending_scrum_items
+# scrum tools moved to the optional skipperbot-app-scrum package (loader-discovered)
 from tools.skipper_email_tool import check_skipper_inbox, read_skipper_email, send_skipper_email, search_skipper_email
 # Folder tools moved to apps/folders/tools.py (app package)
 # Behavior tools moved to apps/behaviors/tools.py (app package)
@@ -120,9 +121,8 @@ mcp.tool()(send_pushover_notification)
 # reminders tools (set_reminder, get_reminders, cancel_reminder_by_id,
 # modify_reminder_by_id, set_nag, snooze_reminder) are now registered by
 # the platform loader from apps/reminders/tools.py.
-mcp.tool()(start_timer)
-mcp.tool()(list_timers)
-mcp.tool()(cancel_timer)
+# timers tools (start_timer, list_timers, cancel_timer) are now registered by
+# the platform loader from apps/timers/tools.py.
 # Lists / Trello / Todo tools are now registered by the platform loader
 # from apps/lists/tools.py (app package). No static mcp.tool() lines needed.
 mcp.tool()(link_entities)
@@ -162,8 +162,6 @@ mcp.tool()(update_idea_document)
 mcp.tool()(append_to_idea_document)
 mcp.tool()(read_idea_document)
 mcp.tool()(revise_idea_document)
-mcp.tool()(respond_to_scrum_item)
-mcp.tool()(get_pending_scrum_items)
 mcp.tool()(check_skipper_inbox)
 mcp.tool()(read_skipper_email)
 mcp.tool()(send_skipper_email)
