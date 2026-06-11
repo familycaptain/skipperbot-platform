@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "skipperbot-platform"
 version = "0.1.0-dev"
-description = "An agentic personal-assistant platform with a modular app architecture."
+description = "An agentic app platform for your family — self-hosted, modular, hackable."
 readme = "README.md"
 requires-python = "==3.12.*"
 license = { file = "LICENSE" }

@@ -1,6 +1,6 @@
 # Skipperbot
 
-An agentic app platforrm for your family. Self-hosted, modular,
+An agentic app platform for your family. Self-hosted, modular,
 hackable. Chat, voice, mobile, and a desktop UI all backed by the same agent
 and your own Postgres database.
 

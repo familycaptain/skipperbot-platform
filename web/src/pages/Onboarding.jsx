@@ -92,7 +92,7 @@ function Welcome({ onNext }) {
         index={1}
         total={4}
         title="Welcome to Skipperbot"
-        blurb="A self-hosted agentic personal assistant. Your data stays on your machine."
+        blurb="An agentic app platform for your family."
       />
       <ul className="space-y-3 text-sm text-zinc-300">
         <li className="flex items-start gap-3">

@@ -215,7 +215,9 @@ async def health():
 async def root():
     index = Path(__file__).resolve().parent / "web" / "dist" / "index.html"
     if index.is_file():
-        return FileResponse(index)
+        # no-cache: always revalidate the entry point so a new build is picked
+        # up without a manual hard refresh (see the SPA serving block below).
+        return FileResponse(index, headers={"Cache-Control": "no-cache"})
     return {"status": "ok", "agent": "SkipperBot", "version": "0.1.0"}
 
 
@@ -4646,8 +4648,24 @@ async def serve_anime_player_page():
 # ── Serve built frontend (SPA) ──
 _DIST = Path(__file__).resolve().parent / "web" / "dist"
 if _DIST.is_dir():
-    # Mount static assets (JS, CSS, images)
-    app.mount("/assets", StaticFiles(directory=_DIST / "assets"), name="static-assets")
+    # Asset filenames are content-hashed by Vite (e.g. index-a1b2c3.js), so they
+    # change whenever the content does and are safe to cache forever. This also
+    # makes loads faster.
+    class _ImmutableStatic(StaticFiles):
+        async def get_response(self, path, scope):
+            resp = await super().get_response(path, scope)
+            resp.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+            return resp
+
+    # Mount static assets (JS, CSS, images) — immutable (hashed filenames).
+    app.mount("/assets", _ImmutableStatic(directory=_DIST / "assets"), name="static-assets")
+
+    # The entry point and the service-worker files must NOT be cached. If they
+    # are, the browser keeps serving an old build (and an old service worker)
+    # until a manual hard refresh — which defeats the PWA's autoUpdate. Serving
+    # them no-cache makes the browser revalidate on every load, so a new build
+    # (and the new SW) is picked up and auto-reloaded with no hard refresh.
+    _NO_CACHE = {"index.html", "sw.js", "registerSW.js", "manifest.webmanifest"}
 
     # Serve root-level static files (manifest, SW, icons)
     @app.get("/{filename:path}")
@@ -4660,9 +4678,11 @@ if _DIST.is_dir():
         if filename:
             candidate = (dist_root / filename).resolve()
             if (candidate == dist_root or dist_root in candidate.parents) and candidate.is_file():
+                if candidate.name in _NO_CACHE:
+                    return FileResponse(candidate, headers={"Cache-Control": "no-cache"})
                 return FileResponse(candidate)
-        # Otherwise serve index.html (SPA client-side routing)
-        return FileResponse(dist_root / "index.html")
+        # Otherwise serve index.html (SPA client-side routing) — always revalidated.
+        return FileResponse(dist_root / "index.html", headers={"Cache-Control": "no-cache"})
 
 
 if __name__ == "__main__":
