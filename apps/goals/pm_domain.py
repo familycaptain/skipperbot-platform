@@ -34,7 +34,7 @@ SEND_DM_TOOL = {
         "parameters": {
             "type": "object",
             "properties": {
-                "to_user": {"type": "string", "description": "Person's name (e.g. 'bob', 'alice', 'carol')"},
+                "to_user": {"type": "string", "description": "The recipient's REAL username — an actual household user from your context (usually the primary user). Do NOT invent or use placeholder/example names."},
                 "message": {"type": "string", "description": "The message text to send"},
                 "subject_id": {"type": "string", "description": "Entity ID this DM is about (e.g. 't-xxx', 'p-xxx')"},
             },
@@ -807,6 +807,19 @@ def _build_user_prompt(ctx: dict) -> str:
     overdue_ids = ctx.get("overdue_ids", set())
     parts = [f"**Current time:** {now}\n"]
 
+    # Real household roster — so DMs address actual users by name (never a
+    # placeholder). Always use a real username; default to the primary user.
+    try:
+        from data_layer.users import get_human_users, get_primary_user
+        _humans = [u["name"] for u in get_human_users() if u.get("name") != "skipper"]
+        _primary = (get_primary_user() or "").strip().lower()
+        if _humans:
+            _roster = ", ".join(f"{h} (primary)" if h == _primary else h for h in _humans)
+            parts.append(f"**Household users (DM only these real usernames):** {_roster}")
+            parts.append("When you DM, use one of these exact usernames — default to the primary user. Never invent or use placeholder/example names.\n")
+    except Exception:
+        pass
+
     # Project under review (deep analysis target)
     snap = ctx.get("project_snapshot")
     if snap:
@@ -972,25 +985,41 @@ def _build_thinking_tools(context_text: str) -> tuple[list[dict], set[str]]:
 
 
 async def _send_thinking_dm(person: str, text: str, subject_id: str = ""):
-    """Send a DM from the thinking loop, respecting quiet mode."""
-    pm_audit_logger.info("PM_THINK DM → %s (re: %s): %s", person, subject_id, text[:200])
+    """DM a real household user from the PM thinking loop (multi-surface).
 
+    Validates the recipient — an unknown/placeholder name is redirected to the
+    primary user so the nudge reaches a real person (never a phantom). Delivers
+    via the platform notification path (web UI, Discord, push, chat log), not a
+    channel-specific sender. Respects quiet mode.
+    """
     if PM_QUIET_MODE:
         pm_audit_logger.info("  → Skipped (quiet mode)")
         logger.info("PM_THINK: DM to %s suppressed (quiet mode)", person)
         return
 
-    try:
-        from discord_bot import send_dm
-        from chatlog_store import save_notification
-        result = await send_dm(person, text)
-        logger.info("PM_THINK: DM sent to %s: %s", person, result)
-        pm_audit_logger.info("  → Sent OK")
+    from apps.goals.data import resolve_dm_recipient
+    recipient = resolve_dm_recipient(person)
+    if not recipient:
+        logger.warning("PM_THINK: DM dropped — '%s' is not a real user and no primary user is set", person)
+        return
+    if recipient != (person or "").strip().lower():
+        logger.warning("PM_THINK: recipient '%s' is not a real user — redirecting to primary user '%s'", person, recipient)
 
-        # Log to chat history for context
-        save_notification(person, text, context="pm_thinking")
+    pm_audit_logger.info("PM_THINK DM → %s (re: %s): %s", recipient, subject_id, text[:200])
+    try:
+        from app_platform.notifications import create_notification
+        await asyncio.to_thread(
+            create_notification,
+            recipient=recipient,
+            message=text,
+            source_type="pm_thinking",
+            source_id=subject_id or "",
+            channel="all",
+            delivered=False,
+        )
+        pm_audit_logger.info("  → Sent OK to %s", recipient)
     except Exception as e:
-        logger.error("PM_THINK: Failed to DM %s: %s", person, e)
+        logger.error("PM_THINK: Failed to notify %s: %s", recipient, e)
         pm_audit_logger.info("  → FAILED: %s", str(e))
 
 

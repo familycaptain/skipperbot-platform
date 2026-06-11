@@ -13,6 +13,7 @@ Idempotent: guarded by a `config` flag so re-running init_db never duplicates it
 """
 
 import logging
+from datetime import date, timedelta
 from pathlib import Path
 
 from app_platform import config as platform_config
@@ -112,6 +113,8 @@ def ensure_onboarding(apps_info: list[dict] | None = None) -> str:
             "what they need, and has tried each installed app at least once."
         ),
         owners=[SKIPPER_USER],
+        # 1-month onboarding window — the goal-worker auto-closes it as-is after this.
+        target_date=(date.today() + timedelta(days=30)).isoformat(),
     )
     goal_id = goal["id"]
 

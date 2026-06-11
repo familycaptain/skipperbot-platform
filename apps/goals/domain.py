@@ -41,7 +41,7 @@ SEND_DM_TOOL = {
         "parameters": {
             "type": "object",
             "properties": {
-                "to_user": {"type": "string", "description": "Person's name (e.g. 'bob', 'alice')"},
+                "to_user": {"type": "string", "description": "The recipient's REAL username — an actual household user from your context (usually the primary user). Do NOT invent or use placeholder/example names."},
                 "message": {"type": "string", "description": "The message text to send"},
                 "subject_id": {"type": "string", "description": "Entity ID this DM is about (e.g. 't-xxx', 'p-xxx')"},
             },
@@ -101,6 +101,50 @@ UPDATE_WORKING_MEMORY_TOOL = {
 # Handler entry point
 # =========================================================================
 
+# The onboarding goal gets special "live agent" treatment (real-time cadence,
+# one item at a time, 1-month auto-close). Identified by its fixed seed name.
+ONBOARDING_GOAL_NAME = "Get started with Skipper"
+
+
+def _user_recently_active(username: str, within_minutes: int = 15) -> bool:
+    """True if the user has chatted within the last ``within_minutes``.
+
+    Drives the onboarding "live agent" cadence: when the primary user is around,
+    Skipper comes back in seconds for real-time back-and-forth; when they go
+    quiet, it backs off.
+    """
+    name = (username or "").strip().lower()
+    if not name:
+        return False
+    try:
+        from data_layer.chatlogs import get_recent_turns
+        from datetime import datetime, timezone
+        turns = get_recent_turns(name, limit=1)
+        if not turns:
+            return False
+        ts = turns[-1].get("created_at")
+        if not ts:
+            return False
+        dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00")) if isinstance(ts, str) else ts
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return (datetime.now(timezone.utc) - dt).total_seconds() < within_minutes * 60
+    except Exception:
+        return False
+
+
+def _past_target_date(goal_snap: dict) -> bool:
+    """True if the goal's target date is in the past (onboarding 1-month window)."""
+    td = (goal_snap or {}).get("goal_target_date") or ""
+    if not td:
+        return False
+    try:
+        from datetime import date
+        return date.fromisoformat(str(td)[:10]) < date.today()
+    except Exception:
+        return False
+
+
 async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
     """Run one thinking cycle for a goal domain.
 
@@ -130,6 +174,22 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
         except Exception:
             pass
         return _skip_result(f"Goal is {goal_status} — disabling domain.", next_check=86400)
+
+    # Onboarding goal: auto-close after its 1-month window elapses (close out
+    # as-is regardless of completion), which also disables this domain.
+    is_onboarding = bool(goal_snap and goal_snap.get("goal_name") == ONBOARDING_GOAL_NAME)
+    if is_onboarding and _past_target_date(goal_snap):
+        try:
+            from apps.goals.store import update_item
+            await asyncio.to_thread(
+                update_item, goal_id, updated_by="skipper", status="done",
+                history_note="Onboarding window (1 month) elapsed — closing out as-is.",
+            )
+            from goal_domain_lifecycle import sync_goal_domain
+            await asyncio.to_thread(sync_goal_domain, goal_id)
+        except Exception as e:
+            logger.warning("GOAL_THINK[%s]: onboarding auto-close failed: %s", goal_id, e)
+        return _skip_result("Onboarding window elapsed — closed out.", next_check=86400)
 
     # Ownership gate: only think if Skipper actually owns something under this goal
     if goal_snap and not _skipper_owns_anything(goal_snap):
@@ -308,7 +368,14 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
 
     # ---------- DYNAMIC RHYTHM ----------
     dm_sent = sum(1 for a in actions_taken if a.get("type") == "dm_sent")
-    if dm_sent > 0:
+    if is_onboarding:
+        # Live-agent feel: when the primary user is around, come back in ~45s for
+        # real-time back-and-forth; when they go quiet, back off hard so we don't
+        # hound them (the prompt keeps it to ~one gentle check-in per day).
+        from data_layer.users import get_primary_user
+        _primary = (get_primary_user() or "").strip().lower()
+        next_check = 45 if _user_recently_active(_primary) else 3600
+    elif dm_sent > 0:
         next_check = 900       # 15 min — waiting for replies
     elif total_items > 5:
         next_check = 600       # 10 min
@@ -543,6 +610,20 @@ def _load_prompt() -> str:
 def _build_user_prompt(ctx: dict) -> str:
     """Assemble the user prompt from goal snapshot + state."""
     parts = [f"**Current time:** {ctx['now']}\n"]
+
+    # Real household roster — so DMs address actual users by name (never a
+    # placeholder). Always use a real username; default to the primary user.
+    try:
+        from data_layer.users import get_human_users, get_primary_user
+        _humans = [u["name"] for u in get_human_users() if u.get("name") != "skipper"]
+        _primary = (get_primary_user() or "").strip().lower()
+        if _humans:
+            _roster = ", ".join(f"{h} (primary)" if h == _primary else h for h in _humans)
+            parts.append(f"**Household users (DM only these real usernames):** {_roster}")
+            parts.append("When you DM, use one of these exact usernames — default to the primary user. Never invent or use placeholder/example names.\n")
+    except Exception:
+        pass
+
     overdue_ids = ctx.get("overdue_ids", set())
     snap = ctx.get("goal_snapshot")
 
@@ -718,22 +799,41 @@ def _build_tools(context_text: str) -> tuple[list[dict], set[str]]:
 # =========================================================================
 
 async def _send_dm(person: str, text: str, subject_id: str = ""):
-    """Send a DM from the goal thinking loop."""
-    from config import PM_QUIET_MODE
-    logger.info("GOAL_THINK DM → %s (re: %s): %s", person, subject_id, text[:200])
+    """DM a real household user from the goal thinking loop.
 
+    Delivers through the platform's multi-surface notification path (web UI,
+    Discord, push, chat log) via create_notification — never a channel-specific
+    sender directly. The recipient is validated: an unknown/placeholder name is
+    redirected to the primary user so the nudge still reaches a real person
+    (never a phantom like an example name the LLM might invent).
+    """
+    from config import PM_QUIET_MODE
     if PM_QUIET_MODE:
         logger.info("GOAL_THINK: DM to %s suppressed (quiet mode)", person)
         return
 
+    from apps.goals.data import resolve_dm_recipient
+    recipient = resolve_dm_recipient(person)
+    if not recipient:
+        logger.warning("GOAL_THINK: DM dropped — '%s' is not a real user and no primary user is set", person)
+        return
+    if recipient != (person or "").strip().lower():
+        logger.warning("GOAL_THINK: recipient '%s' is not a real user — redirecting to primary user '%s'", person, recipient)
+
+    logger.info("GOAL_THINK DM → %s (re: %s): %s", recipient, subject_id, text[:200])
     try:
-        from discord_bot import send_dm
-        from chatlog_store import save_notification
-        result = await send_dm(person, text)
-        logger.info("GOAL_THINK: DM sent to %s: %s", person, result)
-        save_notification(person, text, context="goal_thinking")
+        from app_platform.notifications import create_notification
+        await asyncio.to_thread(
+            create_notification,
+            recipient=recipient,
+            message=text,
+            source_type="goal_thinking",
+            source_id=subject_id or "",
+            channel="all",
+            delivered=False,
+        )
     except Exception as e:
-        logger.error("GOAL_THINK: Failed to DM %s: %s", person, e)
+        logger.error("GOAL_THINK: Failed to notify %s: %s", recipient, e)
 
 
 # =========================================================================

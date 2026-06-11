@@ -36,6 +36,26 @@ logger = logging.getLogger(__name__)
 SCHEMA = "app_goals"
 
 
+def resolve_dm_recipient(person: str) -> str:
+    """Map an LLM-chosen DM recipient name to a REAL household user.
+
+    Thinking-domain handlers let the LLM pick the ``to_user`` name, and it can
+    hallucinate a placeholder (e.g. an example name baked into a tool schema —
+    this is how onboarding DMs were going to a phantom "alice"). Returns the
+    validated username if it's a real user, otherwise the primary user (so
+    onboarding/PM nudges still reach a real person), or '' if neither resolves
+    (caller must then skip — never DM a phantom).
+    """
+    from data_layer.users import get_user, get_primary_user
+    name = (person or "").strip().lower()
+    if name and name != "skipper" and get_user(name):
+        return name
+    primary = (get_primary_user() or "").strip().lower()
+    if primary and primary != "skipper":
+        return primary
+    return ""
+
+
 # ---------------------------------------------------------------------------
 # Memory-digestion hints — what the dumb-model fact extractor should focus on
 # when ingesting a goal/project/task record into searchable memories.
