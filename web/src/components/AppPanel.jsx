@@ -1,7 +1,7 @@
-import { Suspense, useRef, useState, useEffect, useCallback } from "react";
-import { X, Compass, Loader2, Home, ChevronLeft, ChevronRight, HelpCircle } from "lucide-react";
+import { Suspense, useRef, useState, useEffect, useReducer, useCallback } from "react";
+import { X, Compass, Loader2, Home, ChevronLeft, ChevronRight, HelpCircle, EyeOff } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { getAppManifest, getAppsForPage } from "../apps/registry";
+import { getAppManifest, getAppsForPage, subscribeAppVisibility, getHiddenApps, setHiddenApps } from "../apps/registry";
 
 /**
  * Left-side application panel with a taskbar at the top.
@@ -270,6 +270,25 @@ function HomeScreen({ onOpenApp }) {
   const [currentPage, setCurrentPage] = useState(0);
   const touchStartX = useRef(null);
 
+  // Re-render the launcher when a tile is hidden/shown (here or from Settings).
+  const [, _bumpVis] = useReducer((x) => x + 1, 0);
+  useEffect(() => subscribeAppVisibility(_bumpVis), []);
+  // Right-click "hide" context menu: { app, x, y } or null.
+  const [tileMenu, setTileMenu] = useState(null);
+
+  async function hideTile(app) {
+    setTileMenu(null);
+    const next = Array.from(new Set([...getHiddenApps(), app.id]));
+    try {
+      await fetch("/api/apps/hidden", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hidden: next }),
+      });
+    } catch { /* still hide locally */ }
+    setHiddenApps(next);   // notifies subscribers → launcher updates immediately
+  }
+
   const page1Apps = getAppsForPage(1);
   const page2Apps = getAppsForPage(2);
   const page3Apps = getAppsForPage(3);
@@ -324,6 +343,8 @@ function HomeScreen({ onOpenApp }) {
               <button
                 key={app.id}
                 onClick={() => onOpenApp(app.id)}
+                onContextMenu={(e) => { e.preventDefault(); setTileMenu({ app, x: e.clientX, y: e.clientY }); }}
+                title="Right-click to hide from your desktop"
                 className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl transition-colors min-w-[80px] ${
                   isPkg
                     ? "bg-teal-900/30 hover:bg-teal-900/50 border border-teal-700/40 hover:border-teal-600/60"
@@ -358,6 +379,28 @@ function HomeScreen({ onOpenApp }) {
         className={`flex-1 h-full ${currentPage < pages.length - 1 ? "cursor-pointer hover:bg-slate-700/10" : "cursor-default"}`}
         onClick={() => currentPage < pages.length - 1 && setCurrentPage(p => p + 1)}
       />
+
+      {/* Right-click → hide this tile from MY desktop (restore in Settings → Apps). */}
+      {tileMenu && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={() => setTileMenu(null)}
+            onContextMenu={(e) => { e.preventDefault(); setTileMenu(null); }}
+          />
+          <div
+            className="fixed z-50 min-w-[200px] rounded-lg border border-slate-700 bg-slate-800 shadow-xl py-1 text-sm"
+            style={{ left: Math.min(tileMenu.x, window.innerWidth - 230), top: Math.min(tileMenu.y, window.innerHeight - 60) }}
+          >
+            <button
+              onClick={() => hideTile(tileMenu.app)}
+              className="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 inline-flex items-center gap-2"
+            >
+              <EyeOff size={14} className="text-slate-400" /> Hide {tileMenu.app.name} from my desktop
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }

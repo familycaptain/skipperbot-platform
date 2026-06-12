@@ -6,7 +6,7 @@ import ChatPanel from "./components/ChatPanel";
 import AppPanel from "./components/AppPanel";
 import Onboarding from "./pages/Onboarding";
 import useSkipperSocket from "./hooks/useSkipperSocket";
-import { getAppManifest, newInstanceId, setDisabledApps } from "./apps/registry";
+import { getAppManifest, newInstanceId, setDisabledApps, setHiddenApps } from "./apps/registry";
 
 /**
  * Root application component.
@@ -76,12 +76,14 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/apps/disabled");
-        if (res.ok) {
-          const data = await res.json();
-          setDisabledApps(data.disabled || []);
-        }
-      } catch { /* leave the set empty — show all icons */ }
+        // Platform-disabled apps (admin) + this user's hidden tiles (per-user).
+        const [dRes, hRes] = await Promise.all([
+          fetch("/api/apps/disabled"),
+          fetch("/api/apps/hidden"),
+        ]);
+        if (dRes.ok) setDisabledApps((await dRes.json()).disabled || []);
+        if (hRes.ok) setHiddenApps((await hRes.json()).hidden || []);
+      } catch { /* leave the sets empty — show all icons */ }
       finally { if (!cancelled) setDisabledReady(true); }
     })();
     return () => { cancelled = true; };

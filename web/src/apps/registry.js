@@ -59,31 +59,62 @@ export function getAppManifest(appType) {
   return APP_MANIFESTS[appType] || null;
 }
 
-/** Get all registered app manifests (for launcher UI). Excludes utility apps. */
-const LAUNCHER_HIDDEN = new Set(["chart", "document", "recipe", "image", "locator-item", "auto-vehicle", "brainstorm", "calendar-day", "folder", "anime-player"]);
+// A "sub-view" (registration flag `subview: true`) is a detail/viewer app-type
+// that opens contextually — a chart, a document, a recipe detail, the anime
+// player, a folder view — and never gets a launcher tile. It's not a togglable
+// app, so it's excluded from every launcher + management list below.
 
-// Runtime set of app ids the operator has disabled (hidden from the
-// desktop). Populated from GET /api/apps/disabled at startup via
-// setDisabledApps(). Disabling only hides the launcher icon — the app's
-// backend (routes, tools, jobs) stays loaded.
+// Runtime set of app ids the operator has DISABLED (platform level). Populated
+// from GET /api/apps/disabled at startup via setDisabledApps(). A disabled app
+// is fully off: its backend doesn't load (see app_platform/loader.py) and it's
+// removed from the launcher here. (Distinct from a user HIDING a tile.)
 let _disabledApps = new Set();
 export function setDisabledApps(ids) { _disabledApps = new Set(ids || []); }
 export function getDisabledApps() { return [..._disabledApps]; }
 export function isAppDisabled(id) { return _disabledApps.has(id); }
 
-function _launcherVisible(a) {
-  return !LAUNCHER_HIDDEN.has(a.id) && !a.hidden && !_disabledApps.has(a.id);
+// Per-user HIDDEN tiles (each user curates their own desktop). This is an
+// OPT-OUT list: an app NOT in the set is shown — so a newly installed app is
+// visible by default (it's in nobody's hidden list). Loaded from
+// GET /api/apps/hidden. Hiding affects only this user's launcher and never
+// unloads the app (that's "disabled", which is platform-wide).
+let _hiddenApps = new Set();
+const _visibilityListeners = new Set();
+export function setHiddenApps(ids) {
+  _hiddenApps = new Set(ids || []);
+  _visibilityListeners.forEach((fn) => fn());   // re-render the launcher live
+}
+export function getHiddenApps() { return [..._hiddenApps]; }
+export function isAppHidden(id) { return _hiddenApps.has(id); }
+/** Subscribe to launcher-visibility changes (hide/show). Returns an unsubscribe fn. */
+export function subscribeAppVisibility(fn) {
+  _visibilityListeners.add(fn);
+  return () => _visibilityListeners.delete(fn);
 }
 
+function _launcherVisible(a) {
+  return !a.subview && !_disabledApps.has(a.id) && !_hiddenApps.has(a.id);
+}
+
+/** Get all registered app manifests for the launcher UI. Excludes sub-views. */
 export function getAllApps() {
   return Object.values(APP_MANIFESTS).filter(_launcherVisible).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Launcher apps for the management UI — includes disabled ones (so they
- *  can be re-enabled), excludes utility/detail views. */
+/** Apps for the management UI — every real (non-sub-view) app, including disabled
+ *  ones so they can be re-enabled. */
 export function getManageableApps() {
   return Object.values(APP_MANIFESTS)
-    .filter(a => !LAUNCHER_HIDDEN.has(a.id) && !a.hidden)
+    .filter(a => !a.subview)
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Real tile apps that are currently loaded (non-sub-view, not disabled) — the
+ *  source for the per-user "My desktop" show/hide picker. Includes apps the
+ *  user has hidden, so they can un-hide them. */
+export function getTileApps() {
+  return Object.values(APP_MANIFESTS)
+    .filter(a => !a.subview && !_disabledApps.has(a.id))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 

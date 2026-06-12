@@ -26,6 +26,6 @@ export default [
     icon: FileText,
     component: lazy(() => import("./DocumentEditor")),
     singleton: false,
-    hidden: true,
+    subview: true,
   },
 ];

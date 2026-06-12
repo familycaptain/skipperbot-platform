@@ -13,79 +13,189 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Settings as Cog, Loader2, Save, Check, X, Eye, EyeOff, AlertCircle, LayoutGrid,
   Users, UserPlus, Trash2, KeyRound, ShieldCheck, RotateCcw, Star, MessageCircle,
+  Power, Lock,
 } from "lucide-react";
-import { getManageableApps } from "../../../web/src/apps/registry";
+import { getManageableApps, getTileApps, setHiddenApps } from "../../../web/src/apps/registry";
 
 const API = "/api/apps/settings";
 
 // ---------------------------------------------------------------------------
-// Desktop visibility — show/hide launcher icons (writes /api/apps/disabled)
+// My desktop — per-user: which app TILES this user sees on their launcher.
+// Writes /api/apps/hidden (per-user, opt-out). Does NOT unload the app.
 // ---------------------------------------------------------------------------
 
 function DesktopVisibilityPanel() {
-  const launcherApps = useMemo(() => getManageableApps(), []);
-  const [disabled, setDisabled] = useState(null); // Set of hidden ids
+  const tileApps = useMemo(() => getTileApps(), []);
+  const [hidden, setHidden] = useState(null); // Set of ids THIS user hides
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/apps/disabled");
-        const data = res.ok ? await res.json() : { disabled: [] };
-        setDisabled(new Set(data.disabled || []));
-      } catch { setDisabled(new Set()); }
+        const res = await fetch("/api/apps/hidden");
+        const data = res.ok ? await res.json() : { hidden: [] };
+        setHidden(new Set(data.hidden || []));
+      } catch { setHidden(new Set()); }
     })();
   }, []);
 
   const toggle = async (id) => {
-    const next = new Set(disabled);
+    const next = new Set(hidden);
     next.has(id) ? next.delete(id) : next.add(id);
-    setDisabled(next);
+    setHidden(next);
+    setHiddenApps([...next]);   // live-update the desktop launcher immediately
     setSaving(true);
     try {
-      await fetch("/api/apps/disabled", {
+      await fetch("/api/apps/hidden", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ disabled: [...next] }),
+        body: JSON.stringify({ hidden: [...next] }),
       });
     } finally { setSaving(false); }
   };
 
-  if (disabled === null) {
+  if (hidden === null) {
     return <div className="flex items-center gap-2 p-6 text-zinc-500"><Loader2 className="animate-spin" size={14} /> Loading…</div>;
   }
 
   return (
     <div className="p-6 max-w-2xl">
       <h2 className="text-xl font-medium text-zinc-100 mb-1 inline-flex items-center gap-2">
-        <LayoutGrid size={18} /> Desktop apps
+        <LayoutGrid size={18} /> My desktop
       </h2>
       <p className="text-sm text-zinc-500 mb-5">
-        Hide an app's icon from the desktop launcher. Hiding only removes the
-        icon — the app keeps running and its chat tools stay available. Reload
-        the desktop to see changes.
+        Choose which app tiles appear on <strong>your</strong> launcher. Hiding a
+        tile only affects your desktop — the app keeps running for everyone else,
+        and new apps show up automatically. Tip: you can also right-click a tile on
+        the desktop to hide it.
       </p>
       <ul className="divide-y divide-zinc-800 border border-zinc-800 rounded">
-        {launcherApps.map((a) => {
+        {tileApps.map((a) => {
           const Icon = a.icon;
-          const hidden = disabled.has(a.id);
+          const isHidden = hidden.has(a.id);
           return (
             <li key={a.id} className="flex items-center justify-between px-4 py-2.5">
               <span className="inline-flex items-center gap-2.5 text-sm text-zinc-300">
-                {Icon && <Icon size={15} className={hidden ? "text-zinc-600" : "text-zinc-400"} />}
-                <span className={hidden ? "text-zinc-500" : ""}>{a.name}</span>
+                {Icon && <Icon size={15} className={isHidden ? "text-zinc-600" : "text-zinc-400"} />}
+                <span className={isHidden ? "text-zinc-500" : ""}>{a.name}</span>
               </span>
               <button
                 onClick={() => toggle(a.id)}
                 disabled={saving}
                 className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded transition-colors ${
-                  hidden
+                  isHidden
                     ? "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
                     : "bg-emerald-900/30 text-emerald-300 hover:bg-emerald-900/50"
                 }`}
               >
-                {hidden ? <><EyeOff size={12} /> Hidden</> : <><Eye size={12} /> Shown</>}
+                {isHidden ? <><EyeOff size={12} /> Hidden</> : <><Eye size={12} /> Shown</>}
               </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Apps (admin) — enable/disable an app PLATFORM-WIDE. A disabled app does not
+// load at all (no tools/routes/jobs/thinking). Writes /api/apps/disabled.
+// ---------------------------------------------------------------------------
+function AppManagementPanel({ userId }) {
+  const apps = useMemo(() => getManageableApps(), []);
+  const [required, setRequired] = useState(null);
+  const [disabled, setDisabled] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [rRes, dRes, uRes] = await Promise.all([
+          fetch("/api/apps/required"),
+          fetch("/api/apps/disabled"),
+          fetch("/api/users"),
+        ]);
+        setRequired(new Set(rRes.ok ? (await rRes.json()).required || [] : []));
+        setDisabled(new Set(dRes.ok ? (await dRes.json()).disabled || [] : []));
+        const users = uRes.ok ? await uRes.json() : [];
+        const me = users.find((u) => u.name === userId);
+        setIsAdmin(!!me && (me.role || "").split(",").map((r) => r.trim()).includes("admin"));
+      } catch { setRequired(new Set()); setDisabled(new Set()); }
+    })();
+  }, [userId]);
+
+  const toggle = async (id) => {
+    const next = new Set(disabled);
+    next.has(id) ? next.delete(id) : next.add(id);
+    setSaving(true); setErr("");
+    try {
+      const res = await fetch("/api/apps/disabled", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ disabled: [...next] }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!j.ok) { setErr(j.error || `Failed (${res.status}).`); return; }
+      setDisabled(next);
+    } finally { setSaving(false); }
+  };
+
+  if (required === null || disabled === null) {
+    return <div className="flex items-center gap-2 p-6 text-zinc-500"><Loader2 className="animate-spin" size={14} /> Loading…</div>;
+  }
+
+  return (
+    <div className="p-6 max-w-2xl">
+      <h2 className="text-xl font-medium text-zinc-100 mb-1 inline-flex items-center gap-2">
+        <Power size={18} /> Apps
+      </h2>
+      <p className="text-sm text-zinc-500 mb-4">
+        Turn apps on or off for the whole household. A disabled app doesn't load at
+        all — no tools, routes, or background work. Required apps are always on.
+        Changes take effect after a restart.
+      </p>
+      {!isAdmin && (
+        <div className="mb-4 flex items-center gap-2 rounded bg-zinc-900 border border-zinc-800 px-3 py-2 text-sm text-zinc-400">
+          <Lock size={14} /> Only admins can enable or disable apps.
+        </div>
+      )}
+      {err && (
+        <div className="mb-4 flex items-center gap-2 rounded bg-red-950/50 border border-red-900 px-3 py-2 text-sm text-red-300">
+          <AlertCircle size={14} /> {err}
+        </div>
+      )}
+      <ul className="divide-y divide-zinc-800 border border-zinc-800 rounded">
+        {apps.map((a) => {
+          const Icon = a.icon;
+          const isReq = required.has(a.id);
+          const isOff = disabled.has(a.id);
+          return (
+            <li key={a.id} className="flex items-center justify-between px-4 py-2.5">
+              <span className="inline-flex items-center gap-2.5 text-sm text-zinc-300">
+                {Icon && <Icon size={15} className={isOff ? "text-zinc-600" : "text-zinc-400"} />}
+                <span className={isOff ? "text-zinc-500" : ""}>{a.name}</span>
+              </span>
+              {isReq ? (
+                <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded bg-zinc-800 text-zinc-500" title="Required app — always on">
+                  <Lock size={12} /> Required
+                </span>
+              ) : (
+                <button
+                  onClick={() => toggle(a.id)}
+                  disabled={saving || !isAdmin}
+                  className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                    isOff
+                      ? "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                      : "bg-emerald-900/30 text-emerald-300 hover:bg-emerald-900/50"
+                  }`}
+                  title={isAdmin ? (isOff ? "Enable" : "Disable") : "Admin only"}
+                >
+                  <Power size={12} /> {isOff ? "Disabled" : "Enabled"}
+                </button>
+              )}
             </li>
           );
         })}
@@ -879,6 +989,16 @@ export default function SettingsApp({ userId }) {
               <Users size={14} /> Members
             </button>
           </li>
+          <li>
+            <button
+              className={`w-full text-left px-4 py-2 text-sm transition-colors inline-flex items-center gap-2 ${
+                selected === "__apps__" ? "bg-zinc-800 text-zinc-100" : "text-zinc-300 hover:bg-zinc-900"
+              }`}
+              onClick={() => setSelected("__apps__")}
+            >
+              <Power size={14} /> Apps
+            </button>
+          </li>
           {panels.map((p) => (
             <li key={p.id}>
               <button
@@ -926,6 +1046,8 @@ export default function SettingsApp({ userId }) {
       <main className="flex-1 overflow-y-auto">
         {selected === "__desktop__" ? (
           <DesktopVisibilityPanel />
+        ) : selected === "__apps__" ? (
+          <AppManagementPanel userId={userId} />
         ) : selected === "__members__" ? (
           <MembersPanel userId={userId} />
         ) : current ? (

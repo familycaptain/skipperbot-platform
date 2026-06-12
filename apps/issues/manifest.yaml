@@ -5,6 +5,10 @@ description: >
   Bug and feature request tracker. Family members report issues,
   developer triages and resolves them, reporters validate fixes.
 
+# Required core app — the platform refuses to start without it (the Evolve
+# workflow depends on it). Listed in app_platform/loader.py REQUIRED_APPS.
+core: true
+
 platform_deps:
   - images
 

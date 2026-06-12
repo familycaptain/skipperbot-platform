@@ -13,52 +13,78 @@ If you haven't done the base setup yet, start with
 
 Skipperbot apps are self-contained packages that add domain capability:
 recipes, meals, vehicle maintenance, household chores, journaling, etc.
-Each app is its own folder with its own data layer, MCP tools, REST routes,
-React UI components, and migrations. The platform discovers apps at startup
+Each app is its own folder under `apps/` with its own data layer, MCP tools,
+REST routes, React UI, and migrations. The platform discovers apps at startup
 by reading each app's `manifest.yaml`.
 
-Two flavors exist:
+There are three kinds:
 
-- **Required apps** — bundled inside `skipperbot-platform` itself. Always
-  installed. Cannot be uninstalled without breaking the platform.
-- **Optional apps** — each lives in its own GitHub repo (`skipperbot-app-<name>`).
-  You clone the ones you want into the platform's `apps/` directory.
+- **Required (core) apps** — bundled in `skipperbot-platform` and always on.
+  They can't be disabled or removed; the platform refuses to boot without them.
+  (They're listed in `REQUIRED_APPS` in `app_platform/loader.py` and carry
+  `core: true` in their manifest.) Examples: goals, reminders, settings, jobs,
+  notifications, lists, todo.
+- **Bundled optional apps** — also ship inside `apps/`, enabled by default, but
+  you can turn them off. **Nothing to install** — enable/disable them in
+  **Settings → Apps**. A disabled app is fully off: its launcher icon disappears
+  *and* its backend (tools, routes, jobs, thinking) doesn't load. This is most
+  optional capability.
+- **Separate-repo apps** — a few apps live in their own `skipperbot-app-<name>`
+  repo and are installed by **cloning** into `apps/`. Reserved for niche,
+  potentially-controversial, or private apps that shouldn't ship to everyone.
 
-See [specs/APP_PACKAGES.md](../specs/APP_PACKAGES.md) for the full app
-architecture.
+For how an app's tile actually shows up (the three independent layers: required vs
+optional, enabled vs disabled, hidden vs shown), see
+[docs/app-visibility.md](app-visibility.md). For the full app architecture, see
+[specs/APP_PACKAGES.md](../specs/APP_PACKAGES.md).
 
 ---
 
-## The official optional app catalog
+## Bundled optional apps — manage in Settings (nothing to install)
+
+These ship with the platform and are on by default. Disable any you don't want
+in **Settings → Apps** (the icon disappears and the app stops loading); re-enable
+the same way. A toggle takes effect on the next restart.
+
+| App | What it does |
+|---|---|
+| Recipes | Family recipe collection — ingredients, steps, categories, scaling |
+| Meals | Meal planning + history |
+| Home maintenance | Household items, warranties, maintenance schedules |
+| Auto maintenance | Vehicle service records, issues, valuations |
+| Medical | Personal/family medical tracker — medications, events |
+| Chores | Household chore rotation + completions |
+| Bounties | Reward-based chores for kids |
+| Automation | Trigger-action automations + Home Assistant device control |
+| Email | Inbound email rules + email-related apps |
+| Locator | "Where did I put my X?" item locator |
+| Brainstorming | Idea capture + flowcharting |
+| Images | Image gallery viewer over the platform image store |
+| Thinking | Inspector/debugger for the agent's thinking loop |
+| Timers | Cooking timers, pomodoros, etc. |
+| Weather | Local weather dashboard + chat lookups (keyless, via open-meteo) |
+| Calculators | Scientific calculator + compound-interest and other calculators |
+| Arcade | A small arcade of self-contained games |
+
+---
+
+## Separate-repo apps — install by cloning
+
+These are **not** bundled. Install the ones you want by cloning into `apps/`
+(see [Installing a separate-repo app](#installing-a-separate-repo-app--step-by-step) below).
 
 | App | Repo | What it does |
 |---|---|---|
-| Recipes | `skipperbot-app-recipes` | Family recipe collection with ingredients, steps, categories, scaling |
-| Meals | `skipperbot-app-meals` | Meal planning + history |
-| Home maintenance | `skipperbot-app-home` | Household items, warranties, maintenance schedules |
-| Auto maintenance | `skipperbot-app-auto` | Vehicle service records, issues, valuations |
-| Medical | `skipperbot-app-medical` | Personal/family medical tracker — medications, events |
-| Homeopathy | `skipperbot-app-homeopathy` | Homeopathy inventory + dose log |
-| Issues | `skipperbot-app-issues` | Lightweight bug/feature tracker |
-| Newsletter | `skipperbot-app-newsletter` | Generate and send a family newsletter |
-| Chores | `skipperbot-app-chores` | Household chore rotation + completions |
-| Bounties | `skipperbot-app-bounties` | Reward-based chores for kids |
-| Automation | `skipperbot-app-automation` | Trigger-action automations |
-| Email | `skipperbot-app-email` | Inbound email rules + email-related apps |
-| Anime | `skipperbot-app-anime` | Anime search + watch history (built on the public allanime.day catalog) |
+| Anime | `skipperbot-app-anime` | Anime search + streaming + watch history (allanime.day) |
 | Scriptures | `skipperbot-app-scriptures` | Bible reader with daily passages |
-| Locator | `skipperbot-app-locator` | "Where did I put my X?" item locator |
-| Brainstorming | `skipperbot-app-brainstorming` | Idea capture + flowcharting |
-| Scrum | `skipperbot-app-scrum` | Daily PM digest |
+| Homeopathy | `skipperbot-app-homeopathy` | Homeopathy inventory + dose log |
+| Scrum | `skipperbot-app-scrum` | Daily standup / PM digest tracker |
 | Evolve | `skipperbot-app-evolve` | Autonomous self-improvement loop (requires the Issues app) |
-| Images | `skipperbot-app-images` | Image gallery viewer over the platform image store |
-| Thinking | `skipperbot-app-thinking` | Inspector/debugger for the agent's thinking loop |
-| Timers | `skipperbot-app-timers` | Cooking timers, pomodoros, etc. |
-| Weather | `skipperbot-app-weather` | Weather lookups (headless — no UI, just MCP tools) |
+| Newsletter | `skipperbot-app-newsletter` | Generate + send a family newsletter (private/owner repo) |
 
 ---
 
-## Installing an app — step by step
+## Installing a separate-repo app — step by step
 
 Assumes you have the platform running from
 [docs/01-base-platform-setup.md](01-base-platform-setup.md).
@@ -168,7 +194,13 @@ data in `app_<id>` is preserved.
 
 ---
 
-## Uninstalling an optional app
+## Removing or disabling an optional app
+
+**Bundled optional app?** Don't delete the folder — **disable it in
+Settings → Apps** (it stops loading on the next restart). Deleting is pointless:
+it ships with the platform and would return on the next update.
+
+**Separate-repo app?** Remove the cloned folder:
 
 ```bash
 rm -rf apps/<id>/
@@ -177,8 +209,8 @@ rm -rf apps/<id>/
 # Docker: docker compose restart agent
 ```
 
-The app's data remains in its `app_<id>` Postgres schema by default — data
-safety first. To fully purge:
+Either way, the app's data remains in its `app_<id>` Postgres schema by default
+— data safety first. To fully purge:
 
 ```sql
 DROP SCHEMA app_<id> CASCADE;
@@ -187,12 +219,14 @@ DELETE FROM public.app_config WHERE scope='app:<id>';
 
 ---
 
-## Why can't I uninstall the required apps?
+## Why can't I disable or remove the required apps?
 
-Required apps (`core: true` in their manifest) are part of the platform's
-contract — other apps and the platform itself depend on them. Removing one
-would break things in non-obvious ways. The loader refuses to start if a
-required app is missing.
+Required (core) apps are part of the platform's contract — other apps and the
+platform itself depend on them. The loader enforces this from a fixed list
+(`REQUIRED_APPS` in `app_platform/loader.py`; those apps also carry `core: true`
+in their manifest): it **refuses to boot if one is missing**, won't let you
+disable one in Settings, and `uninstall_app()` rejects them. Removing one would
+break things in non-obvious ways.
 
 If you really want to replace a required app with a fork (you're hacking
 on the platform), just drop your fork's folder into `apps/<id>/` so the

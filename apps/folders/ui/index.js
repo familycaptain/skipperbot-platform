@@ -27,5 +27,6 @@ export default [
     icon: FolderOpen,
     component: lazy(() => import("./FolderDetailApp")),
     singleton: false,
+    subview: true,
   },
 ];

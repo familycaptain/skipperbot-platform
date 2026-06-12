@@ -19,6 +19,6 @@ export default [
     icon: Lightbulb,
     component: lazy(() => import("./BrainstormDetailApp")),
     singleton: false,
-    hidden: true,
+    subview: true,
   },
 ];

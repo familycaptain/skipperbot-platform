@@ -10,7 +10,7 @@
 #   - LLM + MCP
 #   - HTTP + scraping
 #   - Optional integration adapters (Discord, Gmail/Drive, Resend, FCM)
-#   - Bundled-app extras (anime, automation, scriptures)
+#   - Bundled-app extras (automation)
 #   - Misc utilities
 # =============================================================================
 
@@ -20,6 +20,7 @@ uvicorn>=0.27.0
 pydantic>=2.0.0
 python-multipart>=0.0.6
 bcrypt>=4.0.0
+cryptography>=42.0.0        # AES-GCM secret encryption (app_platform.secrets/auth)
 python-dotenv>=1.0.0
 
 # ---- Postgres (driver + cert wrangling) ----
@@ -49,9 +50,7 @@ google-api-python-client>=2.100.0
 # ---- Bundled-app extras ----
 # These power specific bundled apps. If you disable the app (hide it in
 # Settings) you can drop the matching line to slim the image.
-cryptography>=42.0.0        # anime — AllAnime source decryption
 websockets>=12.0            # automation — local smart-home device control
-pymupdf>=1.24.0             # scriptures — one-time Bible PDF import
 
 # ---- System + scheduling ----
 psutil>=5.9.0

@@ -989,8 +989,15 @@ def _handle_meals_dinner_check(job: dict, ctx: JobContext) -> str:
 # ---------------------------------------------------------------------------
 
 def _handle_scripture_prefetch(job: dict, ctx: JobContext) -> str:
-    """Pre-generate summary, people, and places for bookmarked chapters + 3 ahead."""
-    from apps.scriptures.prefetch import prefetch_scripture_summaries
+    """Pre-generate summary, people, and places for bookmarked chapters + 3 ahead.
+
+    Scriptures is an OPTIONAL app — guard the import so the platform job system
+    keeps working when it isn't installed (the job is only ever queued BY the app).
+    """
+    try:
+        from apps.scriptures.prefetch import prefetch_scripture_summaries
+    except ImportError:
+        return "Scriptures app not installed — nothing to prefetch."
     return prefetch_scripture_summaries()
 
 

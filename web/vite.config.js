@@ -56,7 +56,7 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         cleanupOutdatedCaches: true,
-        navigateFallbackDenylist: [/^\/api\//, /^\/capture/, /^\/meal-menu/, /^\/anime-player/, /^\/info/, /^\/info-shots\//],
+        navigateFallbackDenylist: [/^\/api\//, /^\/capture/, /^\/meal-menu/, /^\/info/, /^\/info-shots\//],
       },
       manifest: {
         name: "SkipperBot",

@@ -71,7 +71,8 @@ from tools.brainstorming_tool import create_idea, list_ideas, search_ideas, get_
 from tools.skipper_email_tool import check_skipper_inbox, read_skipper_email, send_skipper_email, search_skipper_email
 # Folder tools moved to apps/folders/tools.py (app package)
 # Behavior tools moved to apps/behaviors/tools.py (app package)
-# Homeopathy tools moved to apps/homeopathy/tools.py (app package)
+# Homeopathy is now a separate optional app (skipperbot-app-homeopathy); its
+# tools auto-register from apps/homeopathy/tools.py when it's installed.
 
 mcp = FastMCP("SkipperBot Tools")
 
@@ -149,7 +150,7 @@ mcp.tool()(cancel_research)
 mcp.tool()(list_research_jobs)
 mcp.tool()(refine_research)
 mcp.tool()(print_doc)
-# Homeopathy tools auto-registered from apps/homeopathy/tools.py
+# Homeopathy tools auto-register from apps/homeopathy/tools.py (optional app)
 # Prioritize tools auto-registered via the app-package discovery below.
 mcp.tool()(create_idea)
 mcp.tool()(list_ideas)

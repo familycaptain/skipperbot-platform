@@ -19,6 +19,6 @@ export default [
     icon: ImageIcon,
     component: lazy(() => import("./ImageViewer")),
     singleton: false,
-    hidden: true,
+    subview: true,
   },
 ];

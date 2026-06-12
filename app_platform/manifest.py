@@ -40,6 +40,11 @@ class UIAppDef:
     icon: str = ""
     component: str = ""
     singleton: bool = True
+    # subview: a detail/viewer app-type that opens contextually (chart, document,
+    # recipe detail, …) and NEVER gets a launcher tile — not a togglable app.
+    subview: bool = False
+    # hidden: reserved for per-user launcher tile visibility (a user hiding a tile
+    # from their own desktop), tracked per-user, not a platform-wide manifest flag.
     hidden: bool = False
 
 
@@ -199,6 +204,7 @@ def parse_manifest(app_dir: Path) -> AppManifest:
             icon=app_def.get("icon", ""),
             component=app_def.get("component", ""),
             singleton=app_def.get("singleton", True),
+            subview=app_def.get("subview", False),
             hidden=app_def.get("hidden", False),
         ))
 

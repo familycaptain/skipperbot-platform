@@ -338,10 +338,11 @@ class DisabledAppsRequest(BaseModel):
 
 @app.get("/api/apps/disabled")
 async def api_get_disabled_apps():
-    """Return the list of app ids the operator has hidden from the desktop.
+    """Return the list of app ids the operator has disabled.
 
-    Disabling only hides the launcher icon — the app's backend (routes,
-    tools, jobs) stays loaded. Stored in app_config(scope='platform').
+    A disabled app is fully off: hidden from the desktop AND not loaded by the
+    backend (no routes, tools, jobs, or thinking handler) on the next start.
+    Stored in app_config(scope='platform'). Takes effect after a restart.
     """
     def _do():
         from app_platform import config as platform_config
@@ -351,14 +352,63 @@ async def api_get_disabled_apps():
 
 @app.post("/api/apps/disabled")
 async def api_set_disabled_apps(request: DisabledAppsRequest, http_request: Request):
-    """Replace the set of desktop-hidden app ids (admin action)."""
+    """Replace the set of disabled app ids (admin action).
+
+    Required (core) apps can't be disabled — the platform won't boot without them.
+    A full disable (backend not loaded) takes effect on the next restart.
+    """
     if not _is_admin_req(http_request):
         return JSONResponse({"ok": False, "error": "Admin access required."}, status_code=403)
     def _do():
         from app_platform import config as platform_config
+        from app_platform.loader import REQUIRED_APPS
         ids = sorted({str(x).strip() for x in request.disabled if str(x).strip()})
+        blocked = sorted(set(ids) & set(REQUIRED_APPS))
+        if blocked:
+            return {"ok": False, "error": f"These are required apps and cannot be disabled: {', '.join(blocked)}"}
         platform_config.set("disabled_apps", ids, scope="platform", by="settings-ui")
-        return {"disabled": ids}
+        return {"ok": True, "disabled": ids, "restart_required": True}
+    return await asyncio.to_thread(_do)
+
+
+class HiddenAppsRequest(BaseModel):
+    hidden: list[str]
+
+
+@app.get("/api/apps/required")
+async def api_get_required_apps():
+    """App ids that are required (core) and can't be disabled — for the admin Apps UI."""
+    from app_platform.loader import REQUIRED_APPS
+    return {"required": list(REQUIRED_APPS)}
+
+
+@app.get("/api/apps/hidden")
+async def api_get_hidden_apps(request: Request):
+    """The CURRENT user's hidden launcher tiles (per-user, opt-out list).
+
+    Empty = show everything — a newly installed app is shown by default because
+    it's in nobody's hidden list. Identity is the verified principal.
+    """
+    user = require_user(request)["name"]
+    def _do():
+        from app_platform import config as platform_config
+        return {"hidden": platform_config.get("hidden_apps", [], scope=f"user:{user}") or []}
+    return await asyncio.to_thread(_do)
+
+
+@app.post("/api/apps/hidden")
+async def api_set_hidden_apps(req: HiddenAppsRequest, request: Request):
+    """Replace the current user's hidden launcher tiles (per-user, self-only).
+
+    Hiding only affects THIS user's desktop — it doesn't unload the app and
+    doesn't touch anyone else. Takes effect immediately (no restart).
+    """
+    user = require_user(request)["name"]
+    def _do():
+        from app_platform import config as platform_config
+        ids = sorted({str(x).strip() for x in req.hidden if str(x).strip()})
+        platform_config.set("hidden_apps", ids, scope=f"user:{user}", by=user)
+        return {"ok": True, "hidden": ids}
     return await asyncio.to_thread(_do)
 
 
@@ -4561,18 +4611,6 @@ async def serve_meal_menu_page():
     if _MEAL_MENU_HTML.is_file():
         return FileResponse(_MEAL_MENU_HTML, media_type="text/html")
     return {"error": "Meal menu page not found"}, 404
-
-
-# ── Anime player pop-out page ──
-_ANIME_PLAYER_HTML = Path(__file__).resolve().parent / "web" / "anime-player.html"
-
-@app.get("/anime-player")
-@app.get("/anime-player.html")
-async def serve_anime_player_page():
-    """Standalone HLS video player (pop-out from the Anime app)."""
-    if _ANIME_PLAYER_HTML.is_file():
-        return FileResponse(_ANIME_PLAYER_HTML, media_type="text/html")
-    return {"error": "Anime player page not found"}, 404
 
 
 # ── Serve built frontend (SPA) ──

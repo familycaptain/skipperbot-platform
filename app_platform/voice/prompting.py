@@ -773,7 +773,7 @@ def switch_voice_app_schema() -> dict:
                 "app_name": {
                     "type": "string",
                     "description": (
-                        "The app to switch to, for example 'automation', 'homeopathy', "
+                        "The app to switch to, for example 'automation', 'lists', "
                         "'goals', 'reminders', 'home', or 'base'."
                     ),
                 }

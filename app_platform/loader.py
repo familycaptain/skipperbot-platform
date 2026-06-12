@@ -97,6 +97,19 @@ def get_app_tool_routes() -> dict[str, dict]:
 # Full load cycle
 # ---------------------------------------------------------------------------
 
+def _disabled_app_ids() -> set[str]:
+    """App ids the operator has disabled (Settings → platform config). A disabled
+    app is skipped entirely at load — no tools, routes, jobs, or thinking handler.
+    Required (core) apps can never be disabled, so they're not consulted here."""
+    try:
+        from app_platform import config as platform_config
+        ids = platform_config.get("disabled_apps", [], scope="platform") or []
+        return {str(x).strip() for x in ids if str(x).strip()}
+    except Exception as e:
+        logger.warning("APP LOADER: Could not read disabled_apps (%s) — loading all", e)
+        return set()
+
+
 def load_all_apps(apps_dir: Path, fastapi_app=None, mcp=None):
     """Discover and load all app packages.
 
@@ -113,7 +126,15 @@ def load_all_apps(apps_dir: Path, fastapi_app=None, mcp=None):
 
     logger.info("APP LOADER: Found %d app package(s)", len(manifests))
 
+    # True disable: a disabled app is not loaded at all (its backend stays dark).
+    # REQUIRED_APPS are never disablable, so they always load regardless.
+    disabled = _disabled_app_ids() - set(REQUIRED_APPS)
+
     for manifest in manifests:
+        if manifest.id in disabled:
+            logger.info("APP LOADER: Skipping disabled app '%s' (not loaded)", manifest.id)
+            _mark_app_status(manifest.id, "disabled", "", manifest)
+            continue
         try:
             _load_app(manifest, fastapi_app=fastapi_app, mcp=mcp)
         except Exception as e:

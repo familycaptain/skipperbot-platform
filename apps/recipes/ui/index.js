@@ -18,5 +18,6 @@ export default [
     icon: UtensilsCrossed,
     component: lazy(() => import("./RecipeDetailApp")),
     singleton: true,
+    subview: true,
   },
 ];
