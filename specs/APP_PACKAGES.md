@@ -482,13 +482,21 @@ def on_recipe_created(event):
 ```
 
 **Event bus characteristics:**
-- **In-process** — not a separate service. Simple async pub/sub.
-- **Fire-and-forget** — emitters don't wait for subscribers.
-- **Fault-isolated** — a subscriber exception is logged, not propagated.
+- **In-process, synchronous** — not a separate service. `emit()` persists the
+  event to `app_events` and runs subscribers **inline, in the same call** (a slow
+  handler blocks the emitter — keep handlers light or hand off to a job).
+- **Best-effort delivery** — a subscriber exception is logged and isolated (not
+  propagated), and is **not automatically retried**. The delivery-tracking +
+  `retry_failed_deliveries()` in `events.py` are scaffolding that is **not wired
+  to a scheduler**, so there is **no at-least-once guarantee** today. See
+  [specs/EVENTS.md](EVENTS.md) for the full state.
+- **No subscribers yet** — currently only `bounties`/`chores` *emit*; nothing
+  subscribes, so the bus is effectively a write-only event log for now.
 - **Typed events** — event names follow `<domain>.<action>` convention.
 
-**Standard platform events** (emitted by platform services, available to all
-apps):
+**Standard platform events** — the intended catalog and naming convention.
+*(Aspirational: today only `bounties`/`chores` emit any events; the rows below are
+the convention to follow, not a guarantee that each is currently emitted.)*
 
 | Event | Payload | When |
 |-------|---------|------|
@@ -1104,11 +1112,16 @@ style. You don't set this flag yourself — it's injected automatically.
 
 ---
 
-## Event Bus: At-Least-Once Delivery
+## Event Bus: delivery model (synchronous best-effort today)
 
-The event bus guarantees **at-least-once delivery**. Events are persisted to a
-`public.app_events` table before dispatch, and subscribers acknowledge
-processing.
+> **Reality:** the bus is **synchronous best-effort**, NOT at-least-once. The
+> durable tables and retry function below are **scaffolding for a future**
+> at-least-once mode that is **not wired up**, and **no app subscribes yet** (only
+> `bounties`/`chores` emit) — so the delivery/retry path is dormant. See
+> `specs/EVENTS.md` for the full state and the gaps to close.
+
+Events are persisted to `public.app_events` before dispatch, giving a durable
+audit trail (and a basis for a future retry).
 
 ```
 app_events
@@ -1131,17 +1144,23 @@ app_event_deliveries
   PRIMARY KEY (event_id, subscriber)
 ```
 
-**Delivery flow:**
-1. App calls `emit("recipe.created", {...})` → row inserted into `app_events`
-2. Event dispatcher (async loop) picks up pending events, resolves subscribers
-   from manifest declarations, creates delivery rows
-3. Each subscriber's handler is called; on success → `delivered`; on
-   exception → `failed`, retried up to 3 times
-4. Once all deliveries are resolved → event status = `completed`
+**Delivery flow (as implemented):**
+1. App calls `emit("recipe.created", {...})` → a row is inserted into
+   `app_events` (status `dispatched`), plus one `app_event_deliveries` row per
+   subscriber (status `pending`), in one transaction.
+2. **Dispatch is synchronous, in the same call** — there is no async dispatcher
+   loop. Each subscriber's handler runs inline; success → `delivered`, an
+   exception is caught/logged/isolated → `failed` (`attempts += 1`). The emitter
+   never sees the failure.
+3. If every delivery succeeded (or there were no subscribers) → event
+   `completed`.
 
-This is not a full message queue (no partitions, no ordering guarantees across
-event types), but it ensures no events are silently dropped — important for
-inter-app coordination.
+**Not yet wired:** `retry_failed_deliveries()` (re-runs `failed` deliveries under
+`MAX_ATTEMPTS = 3`) exists but has **no scheduled caller**, and it does not cover
+deliveries left `pending` by a restart. So a failed/orphaned delivery is **not**
+automatically retried — there is no "events are never dropped" guarantee. This is
+fine today because nothing subscribes; revisit when a subscriber needs durability
+(see `specs/EVENTS.md`).
 
 ---
 

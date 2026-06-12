@@ -1,6 +1,10 @@
 """Platform Event Bus
 =====================
-At-least-once pub/sub event system backed by Postgres.
+Synchronous, best-effort pub/sub event system backed by Postgres. ``emit()``
+persists the event and runs subscribers INLINE in the same call. Delivery rows +
+``retry_failed_deliveries()`` are scaffolding for a future at-least-once mode, but
+the retry is NOT scheduled and nothing subscribes today — so there is no
+at-least-once guarantee yet. See ``specs/EVENTS.md``.
 
 Emitting:
     from app_platform.events import emit

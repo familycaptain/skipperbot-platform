@@ -180,7 +180,14 @@ react to platform activity uniformly:
 
 ---
 
-## Delivery: persisted, at-least-once-oriented
+## Delivery: persisted, synchronous, best-effort (at-least-once is aspirational)
+
+> **Status today (reconciled 2026-06-12): the delivery/retry machinery is
+> dormant.** No app subscribes (zero `@subscribe` handlers), and only
+> `bounties`/`chores` *emit*. So `emit()` writes an `app_events` row, finds no
+> subscribers, creates **zero** delivery rows, and marks the event `completed`
+> immediately. Everything below describes how delivery *would* work once apps
+> subscribe — it is not exercised in practice yet.
 
 The bus is **not** purely in-process. Events are persisted to Postgres before
 and during dispatch, so there is a durable audit trail and a basis for
@@ -238,6 +245,14 @@ does not stop the others and does not raise back into the emitter.
 > therefore *designed-for* but only as strong as the (not-yet-scheduled)
 > retry pass. Document this as the reality: persistence + fault isolation are
 > live; automatic retry is dormant.
+>
+> **Two gaps to close before relying on it:** (1) `retry_failed_deliveries()`
+> only looks at `status = 'failed'`, so a delivery left `pending` by a restart
+> mid-dispatch (the deploy case) would never be recovered — a real recovery pass
+> must also re-dispatch orphaned `pending` rows. (2) To stop a *poison* event from
+> re-firing on every restart, recovery must increment `attempts` **before**
+> dispatch and abandon a delivery once `attempts >= MAX_ATTEMPTS` (a terminal
+> state). Re-delivery also requires **idempotent** handlers.
 
 ---
 
