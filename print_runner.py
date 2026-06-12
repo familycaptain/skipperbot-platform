@@ -224,27 +224,40 @@ def _html_to_pdf(html_path: str, pdf_path: str) -> tuple[bool, str]:
     except Exception as e:
         logger.warning("PRINT: weasyprint failed: %s", e)
 
-    # Method 2: Chrome/Chromium headless
-    for chrome_path in [
+    # Method 2: Chrome / Chromium / Edge headless (cross-platform). On Windows,
+    # Microsoft Edge is always installed and is Chromium-based, so this path needs
+    # no extra software there.
+    from pathlib import Path
+    _pf = os.environ.get("PROGRAMFILES", r"C:\Program Files")
+    _pf86 = os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")
+    chrome_candidates = [
+        # macOS
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         "/Applications/Chromium.app/Contents/MacOS/Chromium",
+        "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+        # Windows
+        rf"{_pf}\Google\Chrome\Application\chrome.exe",
+        rf"{_pf86}\Google\Chrome\Application\chrome.exe",
+        rf"{_pf86}\Microsoft\Edge\Application\msedge.exe",
+        rf"{_pf}\Microsoft\Edge\Application\msedge.exe",
+        # Linux / anything on PATH
         shutil.which("google-chrome"),
+        shutil.which("google-chrome-stable"),
         shutil.which("chromium"),
-    ]:
+        shutil.which("chromium-browser"),
+        shutil.which("microsoft-edge"),
+        shutil.which("msedge"),
+    ]
+    # Path.as_uri() yields a correct file:// URL on every OS (handles Windows
+    # drive letters and spaces — plain "file://{path}" breaks on Windows).
+    file_url = Path(html_path).as_uri()
+    for chrome_path in chrome_candidates:
         if chrome_path and os.path.exists(chrome_path):
             try:
-                result = subprocess.run(
-                    [
-                        chrome_path,
-                        "--headless",
-                        "--disable-gpu",
-                        "--no-sandbox",
-                        f"--print-to-pdf={pdf_path}",
-                        f"file://{html_path}",
-                    ],
-                    capture_output=True,
-                    text=True,
-                    timeout=30,
+                subprocess.run(
+                    [chrome_path, "--headless", "--disable-gpu", "--no-sandbox",
+                     f"--print-to-pdf={pdf_path}", file_url],
+                    capture_output=True, text=True, timeout=30,
                 )
                 if os.path.exists(pdf_path) and os.path.getsize(pdf_path) > 0:
                     return True, f"chrome-headless ({os.path.basename(chrome_path)})"
@@ -292,70 +305,33 @@ def _html_to_pdf(html_path: str, pdf_path: str) -> tuple[bool, str]:
 # Print via lpr
 # ---------------------------------------------------------------------------
 
-def _get_available_printers() -> list[str]:
-    """Discover available printers via lpstat."""
+def _default_printer() -> str:
+    """The configured printer from Settings → Integrations → "Default printer".
+
+    Either an ``ipp://``/``ipps://`` network-printer URL (used on any OS, headless)
+    or a CUPS queue name. Blank = the host's default CUPS queue.
+    """
     try:
-        result = subprocess.run(
-            ["lpstat", "-p"], capture_output=True, text=True, timeout=5,
-        )
-        printers = []
-        for line in result.stdout.splitlines():
-            # Lines look like: "printer _192_168_50_200 is idle. ..."
-            if line.startswith("printer "):
-                parts = line.split()
-                if len(parts) >= 2:
-                    printers.append(parts[1])
-        return printers
+        from app_platform import settings as _settings
+        return (_settings.get("default_printer", scope="platform", default="") or "").strip()
     except Exception:
-        return []
+        return ""
+
+
+def _get_available_printers() -> list[str]:
+    """Discover available CUPS queues (IPP printers are addressed by URL)."""
+    import print_backends
+    return print_backends.list_printers()
 
 
 def _print_pdf(pdf_path: str, copies: int = 1) -> tuple[bool, str]:
-    """Send a PDF to the default printer via lpr.
+    """Send a PDF to the configured printer via the pluggable backend.
 
-    If the default printer fails, auto-discovers available printers
-    via lpstat and retries with an explicit -P <printer> flag.
+    IPP (network, OS-independent, headless) when a ``ipp://`` URL is configured;
+    CUPS/``lpr`` otherwise. See print_backends.py.
     """
-    lpr = shutil.which("lpr")
-    if not lpr:
-        return False, "lpr not found — CUPS printing not available on this system"
-
-    def _try_lpr(printer_name: str = "") -> tuple[bool, str]:
-        cmd = [lpr]
-        if printer_name:
-            cmd.extend(["-P", printer_name])
-        if copies > 1:
-            cmd.extend(["-#", str(copies)])
-        cmd.append(pdf_path)
-        try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
-            if result.returncode == 0:
-                dest = printer_name or "default printer"
-                return True, f"Sent to {dest} ({copies} {'copy' if copies == 1 else 'copies'})"
-            else:
-                err = result.stderr.strip() or result.stdout.strip() or "unknown error"
-                return False, err
-        except Exception as e:
-            return False, str(e)
-
-    # Try default printer first
-    ok, msg = _try_lpr()
-    if ok:
-        return True, msg
-
-    logger.warning("PRINT: Default lpr failed: %s — trying discovered printers", msg)
-
-    # Fallback: discover and try each available printer
-    printers = _get_available_printers()
-    if not printers:
-        return False, f"lpr failed: {msg} (no alternative printers found)"
-
-    for printer in printers:
-        ok, retry_msg = _try_lpr(printer)
-        if ok:
-            return True, retry_msg
-
-    return False, f"lpr failed: {msg} (also tried: {', '.join(printers)})"
+    import print_backends
+    return print_backends.print_pdf(pdf_path, copies=copies, printer=_default_printer())
 
 
 # ---------------------------------------------------------------------------
