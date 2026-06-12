@@ -495,36 +495,62 @@ EOF
     ok "Deploy watcher installed and running."
 }
 
-# Poll the health endpoint until the agent has finished booting. The Docker
-# entrypoint does npm install + build + init_db BEFORE binding port 8000, so
-# 'docker compose up -d' returns long before the site is actually reachable —
-# without this, users browse to a dead page and think the install failed.
-# Returns 0 once HTTP responds, 1 if it never came up in time.
-wait_until_ready() {
-    local port; port="$(skipper_port)"
+# Announce readiness from the BACKGROUND while the boot log streams in the
+# foreground. The Docker entrypoint does npm install + build + init_db BEFORE
+# binding port 8000, so 'docker compose up -d' returns long before the site is
+# reachable. We poll health quietly (no dots spinner hiding the boot) and print a
+# banner the moment it answers — interleaved into the live log. Returns 0 once
+# HTTP responds, 1 if it never came up in time.
+# $1 = port, $2 = mode ('docker' default, or 'native'). The footer differs: under
+# Docker the tail is detached so Ctrl+C just stops watching; natively the agent
+# runs in THIS terminal, so we drop the Ctrl+C wording (there it would stop it).
+_announce_when_ready() {
+    local port="$1"
+    local mode="${2:-docker}"
     local url="http://localhost:$port/api/onboarding/status"
+    local open="http://localhost:$port"
+    local foot=""
+    [ "$mode" = "docker" ] && \
+        foot=$'\n  (boot log continues below; Ctrl+C stops watching, Skipper keeps running)'
     local tries=120 i=0   # ~10 min at 5s; first build on a slow box can be minutes
-    log "Waiting for Skipper to finish booting (first build can take a few minutes)…"
     while [ "$i" -lt "$tries" ]; do
         if curl -fsS -o /dev/null --max-time 3 "$url" 2>/dev/null; then
-            echo
-            ok "Ready — open http://localhost:$port"
+            # Repeat the READY banner every 10s for the first minute. The agent
+            # logs scroll fast once it boots, so a single line vanishes — a
+            # first-time user needs to keep seeing exactly which page to open.
+            local rule="════════════════════════════════════════════════════════════"
+            local r
+            for r in 1 2 3 4 5 6; do
+                printf '\n%s%s\n  ✓  Skipper is READY  —  open this page in your browser:\n\n        %s\n%s\n%s%s\n' \
+                    "$_green" "$rule" "$open" "$foot" "$rule" "$_rst"
+                [ "$r" -lt 6 ] && sleep 10
+            done
             return 0
         fi
-        printf '.'; sleep 5; i=$((i+1))
+        sleep 5; i=$((i+1))
     done
     echo
-    warn "Skipper isn't responding yet. Watch the log below for build errors (Ctrl+C stops watching; Skipper keeps running)."
+    warn "Skipper still isn't responding after ~10 min — scroll up for build errors. Skipper keeps running in the background."
     return 1
 }
 
-# Wait for readiness, then tail the agent log. Ctrl+C exits the tail but leaves
-# the daemon running. Shared by start() and update() so they can't drift.
+# Stream the agent log IMMEDIATELY (so the whole boot sequence + any errors are
+# visible in real time), and announce the URL from the background once health
+# responds. Ctrl+C stops the tail but leaves the daemon running. Shared by
+# start() and update() so they can't drift.
 _follow_boot() {
-    wait_until_ready || true
+    local port; port="$(skipper_port)"
     echo
-    log "Showing the live log. Ctrl+C stops watching — Skipper keeps running in the background (skipper stop to halt it)."
-    docker compose logs -f agent
+    log "Streaming the live boot log — watch the build here and catch any errors as they happen."
+    log "Ctrl+C stops watching; Skipper keeps running in the background ('skipper logs' to re-attach, 'skipper stop' to halt)."
+    echo
+    _announce_when_ready "$port" docker &
+    local _watcher=$!
+    # Reap the background watcher when the user Ctrl+C's out of the tail.
+    trap 'kill "$_watcher" 2>/dev/null' INT
+    docker compose logs -f agent || true
+    kill "$_watcher" 2>/dev/null || true
+    trap - INT
 }
 
 # --- start / stop ------------------------------------------------------------
@@ -537,7 +563,16 @@ start() {
     else
         [ -x "$REPO/start_agent.sh" ] || die "start_agent.sh not found/executable. See README 'Path 2: Native install'."
         log "Starting Skipper natively via start_agent.sh (Ctrl-C to stop)…"
-        exec "$REPO/start_agent.sh"
+        # Announce the URL (repeating for the first minute) from the background
+        # while the agent runs in the foreground here. No exec, so we can reap the
+        # watcher when the agent exits or the user Ctrl+C's.
+        local port; port="$(skipper_port)"
+        _announce_when_ready "$port" native &
+        local _watcher=$!
+        trap 'kill "$_watcher" 2>/dev/null' INT
+        "$REPO/start_agent.sh"
+        kill "$_watcher" 2>/dev/null || true
+        trap - INT
     fi
 }
 

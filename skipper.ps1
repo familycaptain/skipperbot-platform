@@ -582,38 +582,20 @@ function Setup {
     Ok ".env written (the secret-encryption key is auto-generated on first boot)."
 }
 
-# Poll the health endpoint until the agent has finished booting. The Docker
+# Stream the agent log IMMEDIATELY (so the whole boot sequence + any errors are
+# visible in real time, instead of a dots spinner hiding the boot). The Docker
 # entrypoint does npm install + build + init_db BEFORE binding port 8000, so
-# 'docker compose up -d' returns long before the site is actually reachable -
-# without this, users browse to a dead page and think the install failed.
-# Returns $true once HTTP responds, $false if it never came up in time.
-function Wait-Until-Ready {
-    $port = Get-SkipperPort
-    $url = "http://localhost:$port/api/onboarding/status"
-    $tries = 120   # ~10 min at 5s; first build on a slow box can be minutes
-    Log "Waiting for Skipper to finish booting (first build can take a few minutes)..."
-    for ($i = 0; $i -lt $tries; $i++) {
-        try {
-            Invoke-WebRequest -Uri $url -TimeoutSec 3 -UseBasicParsing | Out-Null
-            Write-Host ""
-            Ok "Ready - open http://localhost:$port"
-            return $true
-        }
-        catch { }
-        Write-Host "." -NoNewline
-        Start-Sleep -Seconds 5
-    }
-    Write-Host ""
-    Warn "Skipper isn't responding yet. Watch the log below for build errors (Ctrl+C stops watching; Skipper keeps running)."
-    return $false
-}
-
-# Wait for readiness, then tail the agent log. Ctrl+C exits the tail but leaves
-# the daemon running. Shared by Start-Skipper and Show-Update so they can't drift.
+# 'docker compose up -d' returns long before the site is reachable — you'll see
+# it become reachable in the log ('Application startup complete' / 'Uvicorn
+# running'). Ctrl+C stops the tail but leaves the daemon running. Shared by
+# Start-Skipper and Show-Update so they can't drift.
 function Follow-Boot {
-    Wait-Until-Ready | Out-Null
+    $port = Get-SkipperPort
     Write-Host ""
-    Log "Showing the live log. Ctrl+C stops watching - Skipper keeps running in the background (skipper stop to halt it)."
+    Log "Streaming the live boot log - watch the build here and catch any errors as they happen."
+    Log "When you see 'Application startup complete' / 'Uvicorn running', open http://localhost:$port"
+    Log "Ctrl+C stops watching; Skipper keeps running in the background ('skipper logs' to re-attach, 'skipper stop' to halt)."
+    Write-Host ""
     docker compose logs -f agent
 }
 
