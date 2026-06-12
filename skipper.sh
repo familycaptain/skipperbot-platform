@@ -136,7 +136,10 @@ resolve_runtime() {
     esac
     # Persist the choice so later runs don't re-ask. On a brand-new install .env
     # doesn't exist yet (setup creates it and re-saves this too); guard for that.
-    [ -f "$ENV_FILE" ] && set_env SKIPPER_RUNTIME "$RUNTIME"
+    # NB: must be an `if`, not `[ -f ] && set_env` — when .env is absent the `&&`
+    # returns 1, and as the function's last command that propagates out and trips
+    # `set -e`, silently killing the script on first run (the no-.env case).
+    if [ -f "$ENV_FILE" ]; then set_env SKIPPER_RUNTIME "$RUNTIME"; fi
 }
 
 # Prerequisite checks come in two phases:
