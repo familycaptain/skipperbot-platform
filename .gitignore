@@ -134,6 +134,7 @@ apps/*
 !apps/system/
 !apps/tools/
 !apps/settings/
+!apps/timers/
 # --- bundled optional apps (hideable from the desktop in Settings) ---
 !apps/anime/
 !apps/arcade/

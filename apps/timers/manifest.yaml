@@ -1,0 +1,43 @@
+id: timers
+name: Timers
+version: "1.0.0"
+description: >
+  Short in-memory countdown timers that fire a notification when they expire —
+  for cooking timers, pomodoros, and other sub-30-minute countdowns.
+
+# Timers are in-memory and ephemeral: there is no database table, so this app
+# has NO migrations and owns NO entity types. Each timer is an asyncio task; the
+# notification that fires when it expires is the only persisted artifact.
+# Headless — no UI. Ships bundled with the platform (in apps/timers/), like the
+# other built-in apps. Not core, so the platform still boots if the folder is
+# deleted — but it is shipped as standard platform functionality.
+
+platform_deps:
+  - notifications
+
+# Chat/voice routing. Replaces the old tool_routes.json "timers" category.
+tool_category:
+  description: "Start, list, and cancel short in-memory countdown timers that fire a notification when they expire"
+  keywords:
+    - timer
+    - timers
+    - set a timer
+    - set timer
+    - start a timer
+    - start timer
+    - countdown
+    - count down
+    - second timer
+    - seconds timer
+    - minute timer
+    - minutes timer
+    - egg timer
+    - kitchen timer
+    - stopwatch
+    - time me
+    - cancel timer
+    - stop timer
+    - stop the timer
+    - cancel the timer
+    - my timers
+    - active timers
