@@ -503,6 +503,7 @@ def _run_print_pipeline(job: dict) -> dict:
             return result
 
         result["success"] = True
+        result["print_msg"] = print_msg   # where/how it was actually sent (backend message)
         update_job_progress(
             job_id,
             f"Printed! {print_msg} (PDF via {pdf_method})",
@@ -543,7 +544,10 @@ async def _deliver_print_notification(job: dict, result: dict):
     job_id = job["id"]
 
     if result.get("success"):
-        msg = f"🖨️ {entity_type} {entity_id} sent to printer ({result.get('method', '?')})"
+        # Report the actual destination/backend ("Sent to … via IPP/lpr"), not the
+        # PDF engine — so "it said it printed" is debuggable when nothing comes out.
+        dest = result.get("print_msg") or "sent to printer"
+        msg = f"🖨️ {entity_type} {entity_id}: {dest} (PDF via {result.get('method', '?')})"
     elif result.get("error") == "Cancelled":
         msg = f"🚫 Print job cancelled for {entity_id}"
     else:

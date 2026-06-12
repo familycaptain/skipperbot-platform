@@ -127,7 +127,10 @@ def _ipp_print_job(printer_uri: str, pdf_path: str, copies: int = 1,
                 pass
         resp = requests.post(
             url, data=bytes(req),
-            headers={"Content-Type": "application/ipp"},
+            # Force identity encoding: many printers' embedded HTTP servers reject
+            # the default "Accept-Encoding: gzip, deflate, br" with HTTP 406, since
+            # IPP bodies are never compressed. Without this, real printers 406 us.
+            headers={"Content-Type": "application/ipp", "Accept-Encoding": "identity"},
             timeout=60, **kwargs,
         )
     except Exception as e:

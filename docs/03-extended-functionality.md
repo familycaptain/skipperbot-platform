@@ -24,6 +24,7 @@ Each section follows the same shape: **what it enables**, **cost**, **setup**,
 | [Voice](#voice) | Wake-word voice via `skipperbot-voice` | Picovoice free tier |
 | [Google Drive Backups](#google-drive-backups) | Off-machine backups to Drive | Free tier |
 | [Weather](#weather) | Weather lookups via `skipperbot-app-weather` | Free tier from provider |
+| [Printing](#printing) | Print documents & recipes to a real printer | Free (printer needed) |
 | [Going External](#going-external) | Access Skipperbot from outside your LAN | Varies |
 
 After every change to `.env`, restart the agent. The startup banner will
@@ -283,6 +284,32 @@ headless app (no UI — just MCP tools the agent calls).
 4. Restart the platform.
 
 **Verify:** Ask Skipperbot "what's the weather?" — it should respond.
+
+---
+
+## Printing
+
+**What it enables:** Skipper prints your documents and recipes to a real printer —
+headless, straight from a chat message ("print that document", "print 3 copies of
+the recipe"). Without it, you read on screen only.
+
+**Cost:** Free (you supply the printer).
+
+**Setup (short version):**
+
+1. Find your printer's IPP URL — usually `ipp://<printer-ip>:631/ipp/print`.
+2. Paste it into **Settings → Integrations → Default printer** in the web UI.
+   (No `.env`, no restart.)
+
+That covers a network printer on **any** OS, native or Docker. Printers physically
+plugged into the host use CUPS (macOS/Linux) or Ghostscript (native Windows)
+instead — see the full guide.
+
+**Verify:** Ask Skipper to "print that document" — a Jobs entry appears and the
+page comes out of your printer.
+
+👉 **Full guide — finding your IPP URL, the CUPS and Windows/Ghostscript paths,
+PDF rendering, and troubleshooting: [docs/printing.md](printing.md).**
 
 ---
 
