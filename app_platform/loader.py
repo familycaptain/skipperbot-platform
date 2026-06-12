@@ -80,10 +80,11 @@ REQUIRED_APPS = (
     "todo", "tools",
 )
 # Note: "issues" is required because the Evolve workflow depends on it; "images"
-# because Issues (and chart/image generation) depend on it and it owns the public
-# images tables; "thinking" because the thinking-domain viewer is a core operator
-# surface. All ship in the public platform repo. Being in REQUIRED_APPS makes an
-# app boot-mandatory AND blocks uninstall_app() below.
+# because it registers the platform `image` entity type (table public.images is in
+# the baseline — the app is the viewer, not the table owner) that Issues +
+# chart/image generation depend on; "thinking" because the thinking-domain viewer
+# is a core operator surface. All ship in the public platform repo. Being in
+# REQUIRED_APPS makes an app boot-mandatory AND blocks uninstall_app() below.
 
 
 def get_app_tools() -> dict[str, list[callable]]:

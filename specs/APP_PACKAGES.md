@@ -588,8 +588,8 @@ These are capabilities provided by the platform that any app can use. They are
 | `app_platform.db` | `execute_in_schema`, `execute_returning_in_schema`, `fetch_one`, `fetch_all` | Database access |
 | `app_platform.events` | `emit`, `subscribe` | Event bus |
 | `app_platform.memory` | `digest_record` | **Semantic memory ingestion (required on every CRUD — see below)** |
-| `app_platform.links` | `create_link`, `ensure_edge`, `get_links`, `get_blast_radius` | Entity linking |
-| `app_platform.images` | `store_image`, `get_image` | Image storage |
+| `app_platform.links` | `create_link`, `ensure_edge`, `get_links`, `get_blast_radius`, `delete_link`, `delete_links_for_entity` | Entity linking — the platform `link` entity type (soft references in `public.links`) |
+| `app_platform.images` | `save_image`, `get_image`, `get_all_images`, `update_image_title`, `delete_image` | The platform `image` entity type (`public.images`); the Images app is just its viewer |
 | `app_platform.notifications` | `create_notification` | Multi-surface user notifications (see below — **never call channel-specific senders directly**) |
 | `app_platform.documents` | `create_doc`, `get_doc`, `update_doc` | Document store |
 | `app_platform.auth` | `current_principal`, `scope_user` | Authentication |
