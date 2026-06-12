@@ -59,8 +59,6 @@ the same way. A toggle takes effect on the next restart.
 | Email | Inbound email rules + email-related apps |
 | Locator | "Where did I put my X?" item locator |
 | Brainstorming | Idea capture + flowcharting |
-| Images | Image gallery viewer over the platform image store |
-| Thinking | Inspector/debugger for the agent's thinking loop |
 | Timers | Cooking timers, pomodoros, etc. |
 | Weather | Local weather dashboard + chat lookups (keyless, via open-meteo) |
 | Calculators | Scientific calculator + compound-interest and other calculators |

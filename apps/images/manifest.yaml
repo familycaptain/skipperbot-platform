@@ -4,6 +4,10 @@ version: 1.0.0
 description: Photo gallery — browse, view, and manage saved images and generated charts.
 onboarding_tour: true  # included in the first-run onboarding tour
 
+# Required core app (REQUIRED_APPS in app_platform/loader.py) — Issues and
+# chart/image generation depend on it, and it owns the public images tables.
+core: true
+
 # Tables (public.images) live in the public baseline.
 # Backend routes are served by agent.py at /api/apps/images*; this package only
 # provides the desktop icon and UI. The loader still creates an empty

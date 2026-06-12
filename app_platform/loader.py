@@ -75,12 +75,15 @@ def require_apps(*app_ids: str) -> None:
 # to load, boot aborts with a clear message rather than silently degrading.
 REQUIRED_APPS = (
     "backups", "behaviors", "documents", "finder", "folders", "goals",
-    "issues", "jobs", "lists", "notifications", "prioritize", "reminders",
-    "schedules", "settings", "system", "timeline", "todo", "tools",
+    "images", "issues", "jobs", "lists", "notifications", "prioritize",
+    "reminders", "schedules", "settings", "system", "thinking", "timeline",
+    "todo", "tools",
 )
-# Note: "issues" is required because the Evolve workflow depends on it
-# (see require_apps usage) and it ships in the public platform repo. Being in
-# REQUIRED_APPS makes it boot-mandatory AND blocks uninstall_app() below.
+# Note: "issues" is required because the Evolve workflow depends on it; "images"
+# because Issues (and chart/image generation) depend on it and it owns the public
+# images tables; "thinking" because the thinking-domain viewer is a core operator
+# surface. All ship in the public platform repo. Being in REQUIRED_APPS makes an
+# app boot-mandatory AND blocks uninstall_app() below.
 
 
 def get_app_tools() -> dict[str, list[callable]]:

@@ -3,6 +3,10 @@ name: Thinking
 version: 1.0.0
 description: Thinking-domain viewer — inspect Skipper's working memory, reasoning log, token budget, and cognitive domains.
 
+# Required core app (REQUIRED_APPS in app_platform/loader.py) — a core operator
+# surface for inspecting the agent's thinking.
+core: true
+
 # Tables (public.thinking_log, public.thinking_domains) live in the public baseline.
 # Backend routes are served by agent.py at /api/apps/thinking/*; this package only
 # provides the desktop icon and UI.
