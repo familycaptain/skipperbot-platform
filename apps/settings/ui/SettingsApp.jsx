@@ -405,6 +405,12 @@ function MembersPanel({ userId }) {
   const [discordDraft, setDiscordDraft] = useState("");
   const [discordMsg, setDiscordMsg] = useState("");
   const [discordBusy, setDiscordBusy] = useState(false);
+  // Admin inline editor for linking a member's Discord ID (see openDiscordEditor).
+  const [editingDiscord, setEditingDiscord] = useState(null);
+  const [discordEditDraft, setDiscordEditDraft] = useState("");
+  // Admin inline editor for setting a member's temporary password.
+  const [resettingPw, setResettingPw] = useState(null);
+  const [pwResetDraft, setPwResetDraft] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -477,24 +483,39 @@ function MembersPanel({ userId }) {
     if (await call(`/api/users/${encodeURIComponent(name)}/role`, json("PATCH", { actor: userId, role: roleStr }))) load();
   }
 
-  async function resetPassword(name) {
-    const np = window.prompt(`New temporary password for ${name}.\nThey can change it after logging in (min 8 characters):`);
-    if (np == null) return;
-    if (await call(`/api/users/${encodeURIComponent(name)}/reset-password`, json("POST", { actor: userId, new_password: np }))) {
-      window.alert(`Temporary password set for ${name}.`);
+  // Admin: inline temporary-password reset (`resettingPw` is the open member).
+  function openPwReset(u) {
+    setResettingPw(u.name);
+    setPwResetDraft("");
+    setEditingDiscord(null); // one inline editor per row at a time
+  }
+  function closePwReset() {
+    setResettingPw(null);
+    setPwResetDraft("");
+  }
+  async function saveMemberPassword(name) {
+    if (await call(`/api/users/${encodeURIComponent(name)}/reset-password`,
+                   json("POST", { actor: userId, new_password: pwResetDraft }))) {
+      closePwReset();
       load();
     }
   }
 
-  async function setMemberDiscord(name, current) {
-    const next = window.prompt(
-      `Discord user ID for ${name} (17–20 digits).\n` +
-      `In Discord: User Settings → Advanced → Developer Mode, then right-click their name → Copy User ID.\n` +
-      `Leave blank to unlink.`,
-      current || "",
-    );
-    if (next == null) return; // cancelled
-    if (await call(`/api/users/${encodeURIComponent(name)}/discord-id`, json("PATCH", { actor: userId, discord_id: next.trim() }))) {
+  // Admin: inline per-member Discord linking. `editingDiscord` is the member
+  // name whose editor is open (null = none); `discordEditDraft` is its field.
+  function openDiscordEditor(u) {
+    setEditingDiscord(u.name);
+    setDiscordEditDraft(u.discord_id || "");
+    setResettingPw(null); // one inline editor per row at a time
+  }
+  function closeDiscordEditor() {
+    setEditingDiscord(null);
+    setDiscordEditDraft("");
+  }
+  async function saveMemberDiscord(name) {
+    if (await call(`/api/users/${encodeURIComponent(name)}/discord-id`,
+                   json("PATCH", { actor: userId, discord_id: discordEditDraft.trim() }))) {
+      closeDiscordEditor();
       load();
     }
   }
@@ -564,7 +585,8 @@ function MembersPanel({ userId }) {
           {/* Roster */}
           <div className="rounded-lg border border-zinc-800 divide-y divide-zinc-800">
             {users.map((u) => (
-              <div key={u.name} className="flex items-center gap-3 px-3 py-2.5">
+              <div key={u.name}>
+              <div className="flex items-center gap-3 px-3 py-2.5">
                 <div className="min-w-0 flex-1">
                   <div className="text-sm text-zinc-200 truncate">
                     {u.display_name || u.name}
@@ -572,6 +594,7 @@ function MembersPanel({ userId }) {
                   </div>
                   <div className="text-[11px] text-zinc-500 truncate">
                     @{u.name}{!u.has_password && " · no password set"}
+                    {u.discord_id && <span className="ml-1.5 inline-flex items-center gap-0.5 text-indigo-400"><MessageCircle size={10} className="-mt-0.5" /> linked</span>}
                   </div>
                 </div>
                 {/* Role pickers */}
@@ -616,13 +639,14 @@ function MembersPanel({ userId }) {
                     );
                   })}
                 </div>
-                <button onClick={() => setMemberDiscord(u.name, u.discord_id)} disabled={busy}
-                  title={u.discord_id ? `Discord linked (${u.discord_id}) — click to change or unlink` : "Link a Discord account for this member"}
-                  className={`p-1 ${u.discord_id ? "text-indigo-400 hover:text-indigo-300" : "text-zinc-500 hover:text-indigo-400"}`}>
+                <button onClick={() => editingDiscord === u.name ? closeDiscordEditor() : openDiscordEditor(u)} disabled={busy}
+                  title={u.discord_id ? `Discord linked (${u.discord_id}) — edit or unlink` : "Link a Discord account for this member"}
+                  className={`p-1 ${editingDiscord === u.name ? "text-indigo-300" : u.discord_id ? "text-indigo-400 hover:text-indigo-300" : "text-zinc-500 hover:text-indigo-400"}`}>
                   <MessageCircle size={14} />
                 </button>
-                <button onClick={() => resetPassword(u.name)} disabled={busy}
-                  title="Set a temporary password" className="text-zinc-500 hover:text-amber-400 p-1">
+                <button onClick={() => resettingPw === u.name ? closePwReset() : openPwReset(u)} disabled={busy}
+                  title="Set a temporary password"
+                  className={`p-1 ${resettingPw === u.name ? "text-amber-300" : "text-zinc-500 hover:text-amber-400"}`}>
                   <KeyRound size={14} />
                 </button>
                 <button onClick={() => removeMember(u.name)}
@@ -637,6 +661,59 @@ function MembersPanel({ userId }) {
                   className="text-zinc-500 hover:text-red-400 p-1 disabled:opacity-30 disabled:hover:text-zinc-500">
                   <Trash2 size={14} />
                 </button>
+              </div>
+
+              {/* Inline Discord editor — opens under the member when the Discord
+                  icon is clicked. Matches the self-service "My Discord" form. */}
+              {editingDiscord === u.name && (
+                <div className="px-3 pb-3 pt-1 space-y-2 bg-zinc-900/40">
+                  <label className="block">
+                    <span className="text-[11px] text-zinc-500">Discord user ID for @{u.name} (17–20 digits)</span>
+                    <input className={`${inputCls} font-mono`} value={discordEditDraft} inputMode="numeric" autoFocus
+                      onChange={(e) => setDiscordEditDraft(e.target.value)}
+                      placeholder="e.g. 123456789012345678" autoComplete="off" />
+                  </label>
+                  <p className="text-[11px] text-zinc-500">
+                    In Discord: <span className="text-zinc-400">Developer Mode</span> (User Settings → Advanced),
+                    then right-click their name → <span className="text-zinc-400">Copy User ID</span>. Leave blank to unlink.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => saveMemberDiscord(u.name)}
+                      disabled={busy || discordEditDraft.trim() === (u.discord_id || "")}
+                      className="rounded bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white inline-flex items-center gap-1.5 disabled:opacity-50">
+                      <Save size={14} /> {discordEditDraft.trim() ? "Save" : "Unlink"}
+                    </button>
+                    <button onClick={closeDiscordEditor} disabled={busy}
+                      className="rounded border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Inline temporary-password editor — opens under the member when
+                  the key icon is clicked. The member changes it after logging in. */}
+              {resettingPw === u.name && (
+                <div className="px-3 pb-3 pt-1 space-y-2 bg-zinc-900/40">
+                  <label className="block">
+                    <span className="text-[11px] text-zinc-500">New temporary password for @{u.name} (min 8 characters)</span>
+                    <input className={inputCls} value={pwResetDraft} type="text" minLength={8} autoFocus
+                      onChange={(e) => setPwResetDraft(e.target.value)}
+                      placeholder="they can change it after logging in" autoComplete="new-password" />
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => saveMemberPassword(u.name)}
+                      disabled={busy || pwResetDraft.length < 8}
+                      className="rounded bg-amber-600 hover:bg-amber-500 px-3 py-1.5 text-sm font-medium text-white inline-flex items-center gap-1.5 disabled:opacity-50">
+                      <KeyRound size={14} /> Set password
+                    </button>
+                    <button onClick={closePwReset} disabled={busy}
+                      className="rounded border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
               </div>
             ))}
           </div>
