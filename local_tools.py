@@ -107,68 +107,102 @@ REQUEST_TOOLS_TOOL = {
     }
 }
 
+# NOTE: open_app's app list is DYNAMIC — never hardcode an enum of app types.
+# `build_open_app_tool()` (below) appends the CURRENTLY available apps (installed
+# + enabled, reported by the web client) to this description at tool-build time.
+# This static dict is the schema/fallback; `app_type` is a free-form string so any
+# installed third-party app can be opened. See specs + the memory note.
 OPEN_APP_TOOL = {
     "type": "function",
     "function": {
         "name": "open_app",
-        "description": "Open a visual app on the user's web desktop. ALWAYS prefer this over printing text when the user says 'show me', 'let me see', 'view', 'browse', 'open', or 'pull up' goals, projects, tasks, notes, documents, recipes, investments/portfolio, reminders, home maintenance/issues, automation, or charts/images. App types: 'goals' (goal/project/task browser), 'documents' (doc list), 'document' (open specific doc by docId), 'recipes' (recipe list/browser), 'recipe' (open specific recipe by recipeId), 'investment' (portfolio dashboard), 'reminders' (reminder manager), 'home' (home hub - maintenance, issues, appliances, insurance, contractors, locator), 'automation' (Home Assistant automation placeholder), 'images' (image gallery list), 'image' (open specific image by imageId - use this IMMEDIATELY after generate_chart with the returned image_id). For 'document', pass docId. For 'recipe', pass recipeId. For 'goals', pass goalId or projectId. For 'image', pass imageId. For 'home', pass tab.",
+        "description": (
+            "Open a visual app on the user's web desktop. Prefer this over printing "
+            "text when the user says 'show me', 'open', 'view', 'pull up', 'let me "
+            "see', or 'browse'. Pass the app's `app_type` (an id from the list this "
+            "tool provides below), optionally a `tab` to land on a specific view, and "
+            "for an item-specific view the entity id (`entity_id`, or a legacy "
+            "per-type id like `recipeId`/`docId`)."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
                 "app_type": {
                     "type": "string",
-                    "enum": ["goals", "documents", "document", "recipes", "recipe", "investment", "reminders", "home", "automation", "locator", "locator-item", "auto", "auto-vehicle", "folders", "folder", "images", "image"],
-                    "description": "The app to open. Use 'recipes' for the recipe list, 'recipe' (singular) to open a specific recipe by recipeId. Use 'home' for the home hub (pass tab='issues', 'maintenance', 'appliances', 'insurance', 'contractors', or 'locator'). Use 'automation' for the Home Assistant automation app. Use 'locator' for the item locator list, 'locator-item' to open a specific item by locatorItemId. Use 'auto' for the vehicle list, 'auto-vehicle' to open a specific vehicle by autoVehicleId. Use 'folders' for the folder list, 'folder' to open a specific folder by folderId. Use 'images' for the image gallery list, 'image' to open a specific image by imageId (e.g. after generate_chart)."
+                    "description": "The app id to open — use one of the ids from 'Currently available apps' in this tool's description. Don't invent ids."
                 },
                 "tab": {
                     "type": "string",
-                    "description": "Which tab to open. For investment: 'portfolio', 'rebalance', 'history', 'dashboard'. For home: 'issues' (home issues/problems), 'maintenance' (tasks/reminders), 'appliances', 'insurance', 'contractors', 'locator'."
+                    "description": "Optional. Which tab/view to open within the app, when it lists tabs (see the per-app tabs in this tool's description)."
                 },
-                "recipeId": {
+                "entity_id": {
                     "type": "string",
-                    "description": "For app_type='recipe': the recipe ID to open (e.g. 're-abc12345')."
+                    "description": "Optional. The id of a specific item to open in an item view (e.g. a recipe/document/vehicle/image id)."
                 },
-                "docId": {
-                    "type": "string",
-                    "description": "For app_type='document': the document ID to open (e.g. 'd-abc12345')."
-                },
-                "locatorItemId": {
-                    "type": "string",
-                    "description": "For app_type='locator-item': the located item ID to open (e.g. 'loc-abc12345')."
-                },
-                "autoVehicleId": {
-                    "type": "string",
-                    "description": "For app_type='auto-vehicle': the vehicle ID to open (e.g. 'veh-abc12345')."
-                },
-                "folderId": {
-                    "type": "string",
-                    "description": "For app_type='folder': the folder ID to open (e.g. 'fld-abc12345')."
-                },
-                "imageId": {
-                    "type": "string",
-                    "description": "For app_type='image': the image ID to open (e.g. 'i-abc12345'). Use the image_id returned by generate_chart."
-                },
-                "goalId": {
-                    "type": "string",
-                    "description": "For app_type='goals': the goal ID to deep-link to (e.g. 'g-abc12345')."
-                },
-                "projectId": {
-                    "type": "string",
-                    "description": "For app_type='goals': the project ID to deep-link to (e.g. 'p-abc12345')."
-                },
-                "taskId": {
-                    "type": "string",
-                    "description": "For app_type='goals': the task ID to deep-link to (e.g. 't-abc12345')."
-                },
-                "context": {
-                    "type": "object",
-                    "description": "Additional context. Usually not needed — use the dedicated params above instead."
-                }
+                "recipeId": {"type": "string", "description": "Legacy deep-link: app_type='recipe', the recipe id (e.g. 're-abc12345')."},
+                "docId": {"type": "string", "description": "Legacy deep-link: app_type='document', the document id (e.g. 'd-abc12345')."},
+                "locatorItemId": {"type": "string", "description": "Legacy deep-link: app_type='locator-item', the item id (e.g. 'loc-abc12345')."},
+                "autoVehicleId": {"type": "string", "description": "Legacy deep-link: app_type='auto-vehicle', the vehicle id (e.g. 'veh-abc12345')."},
+                "folderId": {"type": "string", "description": "Legacy deep-link: app_type='folder', the folder id (e.g. 'fld-abc12345')."},
+                "imageId": {"type": "string", "description": "Legacy deep-link: app_type='image', the image id (e.g. 'i-abc12345')."},
+                "goalId": {"type": "string", "description": "Legacy deep-link: app_type='goals', a goal id (e.g. 'g-abc12345')."},
+                "projectId": {"type": "string", "description": "Legacy deep-link: app_type='goals', a project id (e.g. 'p-abc12345')."},
+                "taskId": {"type": "string", "description": "Legacy deep-link: app_type='goals', a task id (e.g. 't-abc12345')."},
+                "context": {"type": "object", "description": "Optional extra context; usually unnecessary."}
             },
             "required": ["app_type"]
         }
     }
 }
+
+
+# --- Dynamic open_app app catalog (reported by the web client) ----------------
+import copy as _copy
+
+_openable_apps_cache: list = []
+
+
+def set_openable_apps(apps) -> None:
+    """Cache the web client's list of openable app-types — dicts of
+    {id, name, subview, tabs}. Global: installed+enabled apps are platform-wide,
+    and this list intentionally INCLUDES hidden tiles and sub-views (visible only
+    means "shows on the desktop"; open_app can still open them)."""
+    global _openable_apps_cache
+    _openable_apps_cache = [a for a in (apps or []) if isinstance(a, dict) and a.get("id")]
+
+
+def get_openable_apps() -> list:
+    return list(_openable_apps_cache)
+
+
+def _openable_apps_listing() -> list:
+    """Prefer the client-reported registry; before any client reports, fall back
+    to the backend's loaded+enabled app ids (so open_app still works at all)."""
+    if _openable_apps_cache:
+        return _openable_apps_cache
+    try:
+        from app_platform.loader import get_loaded_apps
+        return [{"id": aid, "name": getattr(m, "name", aid), "subview": False, "tabs": []}
+                for aid, m in get_loaded_apps().items()]
+    except Exception:
+        return []
+
+
+def build_open_app_tool() -> dict:
+    """Return OPEN_APP_TOOL with the CURRENTLY available apps appended to its
+    description. The list is dynamic (installed + enabled apps) — never hardcoded."""
+    primary, subviews = [], []
+    for a in sorted(_openable_apps_listing(), key=lambda x: str(x.get("id", ""))):
+        tabs = a.get("tabs") or []
+        tail = f" (tabs: {', '.join(tabs)})" if tabs else ""
+        line = f"  - {a['id']}: {a.get('name', a['id'])}{tail}"
+        (subviews if a.get("subview") else primary).append(line)
+    listing = "Currently available apps:\n" + ("\n".join(primary) or "  (none reported yet)")
+    if subviews:
+        listing += "\n  Item views (pass entity_id):\n" + "\n".join(subviews)
+    tool = _copy.deepcopy(OPEN_APP_TOOL)
+    tool["function"]["description"] = tool["function"]["description"] + "\n\n" + listing
+    return tool
 
 READ_FEATURE_SPEC_TOOL = {
     "type": "function",
@@ -401,6 +435,9 @@ async def handle_local_tool(tool_name: str, tool_args: dict, from_user: str) -> 
         task_id = tool_args.get("taskId", "")
         if task_id:
             context["taskId"] = task_id
+        entity_id = tool_args.get("entity_id", "")
+        if entity_id:
+            context["entity_id"] = entity_id
         sent = await manager.send_to_user(from_user, {
             "type": "open_app",
             "app_type": app_type,

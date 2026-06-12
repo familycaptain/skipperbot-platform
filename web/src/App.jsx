@@ -6,7 +6,7 @@ import ChatPanel from "./components/ChatPanel";
 import AppPanel from "./components/AppPanel";
 import Onboarding from "./pages/Onboarding";
 import useSkipperSocket from "./hooks/useSkipperSocket";
-import { getAppManifest, newInstanceId, setDisabledApps, setHiddenApps } from "./apps/registry";
+import { getAppManifest, newInstanceId, setDisabledApps, setHiddenApps, getOpenableApps } from "./apps/registry";
 
 /**
  * Root application component.
@@ -83,6 +83,13 @@ export default function App() {
         ]);
         if (dRes.ok) setDisabledApps((await dRes.json()).disabled || []);
         if (hRes.ok) setHiddenApps((await hRes.json()).hidden || []);
+        // Report the openable app registry so open_app's app list is dynamic
+        // (built from installed+enabled apps) rather than a hardcoded enum.
+        fetch("/api/apps/openable", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ apps: getOpenableApps() }),
+        }).catch(() => {});
       } catch { /* leave the sets empty — show all icons */ }
       finally { if (!cancelled) setDisabledReady(true); }
     })();

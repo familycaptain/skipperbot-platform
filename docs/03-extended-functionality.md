@@ -23,7 +23,7 @@ Each section follows the same shape: **what it enables**, **cost**, **setup**,
 | [Home Assistant](#home-assistant) | Smart-home tools | Free if you already run HA |
 | [Voice](#voice) | Wake-word voice via `skipperbot-voice` | Picovoice free tier |
 | [Google Drive Backups](#google-drive-backups) | Off-machine backups to Drive | Free tier |
-| [Weather](#weather) | Weather lookups via `skipperbot-app-weather` | Free tier from provider |
+| [Weather](#weather) | Built-in weather app — current, forecast, radar + chat lookups | Free — keyless |
 | [Printing](#printing) | Print documents & recipes to a real printer | Free (printer needed) |
 | [Going External](#going-external) | Access Skipperbot from outside your LAN | Varies |
 
@@ -268,22 +268,21 @@ local DB backups. Without it, backups stay local.
 
 ## Weather
 
-**What it enables:** Weather lookups via the `skipperbot-app-weather`
-headless app (no UI — just MCP tools the agent calls).
+**What it enables:** A built-in **Weather** app — a dashboard with three tabs
+(**Current**; **Forecast** = 12-hour hourly + 10-day; **Radar** = a ~100-mile
+NEXRAD radar + severe-weather map) plus chat lookups ("what's the weather?",
+"show me the radar"). It's bundled at `apps/weather/`, **not** a separate download.
 
-**Cost:** Free tier from your chosen provider (OpenWeatherMap, etc.).
+**Cost:** Free — **keyless**. Forecasts come from [open-meteo](https://open-meteo.com),
+radar from IEM NEXRAD, and severe-weather alerts from the NWS. There is no API key,
+no provider signup, and nothing in `.env`.
 
-**Setup:**
+**Setup:** Nothing to install — it ships with the platform. For local results, set
+your **home ZIP** in Settings (the default location); you can also type a ZIP in the
+app's search box. Like any optional app, you can turn it off in Settings → Apps.
 
-1. Install the optional app: `cd apps && git clone https://github.com/familycaptain/skipperbot-app-weather.git weather && cd ..`
-2. Sign up at your weather provider and get an API key.
-3. Add to `.env`:
-   ```
-   WEATHER_API_KEY=<your key>
-   ```
-4. Restart the platform.
-
-**Verify:** Ask Skipperbot "what's the weather?" — it should respond.
+**Verify:** Ask Skipper "what's the weather?" or "show me the radar" — the Weather
+app opens (a radar request lands directly on the Radar tab).
 
 ---
 

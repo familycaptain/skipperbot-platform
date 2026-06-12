@@ -1,16 +1,23 @@
 // =============================================================================
-// Weather — local forecast dashboard
+// Weather — local forecast dashboard, three tabs
 // =============================================================================
-// Current conditions + 12-hour hourly + 10-day daily for a US ZIP (defaults to
-// the configured home ZIP). One fetch to GET /api/apps/weather/summary.
-// (A ~100-mile radar/alerts map is a planned follow-up — see the issue.)
+// Current | Forecast (12-hour hourly + 10-day daily) | Radar (~100-mi map) for a
+// US ZIP (defaults to the configured home ZIP). One fetch to
+// GET /api/apps/weather/summary. The agent can deep-link to a tab via
+// open_app(app_type="weather", tab="radar") — see ui/index.js `tabs`.
 // =============================================================================
 
 import { useState, useEffect, useCallback, lazy, Suspense } from "react";
-import { CloudSun, Loader2, Search, Wind, Droplets, Sun, RefreshCw } from "lucide-react";
+import { CloudSun, Loader2, Search, Wind, Droplets, Sun, RefreshCw, CalendarDays, Radar } from "lucide-react";
 
 const API = "/api/apps/weather";
 const WeatherMap = lazy(() => import("./WeatherMap"));
+
+const TABS = [
+  { id: "current", label: "Current", icon: CloudSun },
+  { id: "forecast", label: "Forecast", icon: CalendarDays },
+  { id: "radar", label: "Radar", icon: Radar },
+];
 
 // WMO weather code -> emoji.
 const ICON = (code) => {
@@ -52,7 +59,12 @@ const uvLabel = (uv) => {
   return `${v} ${band}`;
 };
 
-export default function WeatherApp() {
+export default function WeatherApp({ context = {} }) {
+  const validTab = (t) => TABS.some((x) => x.id === t);
+  const [tab, setTab] = useState(validTab(context.tab) ? context.tab : "current");
+  // React to deep-link re-opens (weather is a singleton — context updates in place).
+  useEffect(() => { if (validTab(context.tab)) setTab(context.tab); }, [context.tab]);
+
   const [zip, setZip] = useState("");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -102,64 +114,89 @@ export default function WeatherApp() {
           </form>
         </div>
 
+        {/* tabs: Current | Forecast | Radar */}
+        <div className="flex items-center gap-1 mb-4 border-b border-slate-800">
+          {TABS.map((t) => {
+            const Icon = t.icon;
+            const active = tab === t.id;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setTab(t.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
+                  active ? "border-sky-400 text-sky-300" : "border-transparent text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <Icon size={14} /> {t.label}
+              </button>
+            );
+          })}
+        </div>
+
         {loading ? (
           <div className="flex items-center gap-2 text-slate-400 py-16 justify-center"><Loader2 className="animate-spin" size={16} /> Loading forecast…</div>
         ) : err ? (
           <div className="rounded-lg border border-amber-800/50 bg-amber-950/40 text-amber-300 px-4 py-3 text-sm">{err}</div>
         ) : !data ? null : (
           <>
-            {/* current conditions */}
-            <div className="rounded-2xl border border-sky-800/40 bg-sky-900/20 p-5 mb-5">
-              <div className="text-sm text-slate-400">{data.place.city}, {data.place.region} · {data.place.zip}</div>
-              <div className="flex items-center gap-4 mt-2">
-                <div className="text-6xl leading-none">{ICON(data.current.code)}</div>
-                <div>
-                  <div className="text-5xl font-bold">{round(data.current.temp)}°</div>
-                  <div className="text-slate-300">{data.current.desc}</div>
-                </div>
-                <div className="ml-auto text-right text-sm text-slate-300 space-y-1">
-                  <div>Feels like {round(data.current.feels)}°</div>
-                  <div className="flex items-center justify-end gap-1.5"><Droplets size={13} className="text-sky-400" /> {round(data.current.humidity)}%</div>
-                  <div className="flex items-center justify-end gap-1.5"><Wind size={13} className="text-slate-400" /> {round(data.current.wind)} mph</div>
-                  {data.current.uv !== null && data.current.uv !== undefined && (
-                    <div className="flex items-center justify-end gap-1.5"><Sun size={13} className="text-amber-400" /> UV {uvLabel(data.current.uv)}</div>
-                  )}
+            {/* ── Current ── */}
+            {tab === "current" && (
+              <div className="rounded-2xl border border-sky-800/40 bg-sky-900/20 p-5 mb-5">
+                <div className="text-sm text-slate-400">{data.place.city}, {data.place.region} · {data.place.zip}</div>
+                <div className="flex items-center gap-4 mt-2">
+                  <div className="text-6xl leading-none">{ICON(data.current.code)}</div>
+                  <div>
+                    <div className="text-5xl font-bold">{round(data.current.temp)}°</div>
+                    <div className="text-slate-300">{data.current.desc}</div>
+                  </div>
+                  <div className="ml-auto text-right text-sm text-slate-300 space-y-1">
+                    <div>Feels like {round(data.current.feels)}°</div>
+                    <div className="flex items-center justify-end gap-1.5"><Droplets size={13} className="text-sky-400" /> {round(data.current.humidity)}%</div>
+                    <div className="flex items-center justify-end gap-1.5"><Wind size={13} className="text-slate-400" /> {round(data.current.wind)} mph</div>
+                    {data.current.uv !== null && data.current.uv !== undefined && (
+                      <div className="flex items-center justify-end gap-1.5"><Sun size={13} className="text-amber-400" /> UV {uvLabel(data.current.uv)}</div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
-            {/* hourly */}
-            <h2 className="text-sm font-semibold text-slate-300 mb-2">Next 12 hours</h2>
-            <div className="flex gap-2 overflow-x-auto pb-2 mb-5">
-              {data.hourly.map((h) => (
-                <div key={h.time} className="shrink-0 w-16 rounded-lg border border-slate-700/50 bg-slate-900/40 p-2 text-center">
-                  <div className="text-[11px] text-slate-400">{hourLabel(h.time)}</div>
-                  <div className="text-xl my-1">{ICON(h.code)}</div>
-                  <div className="text-sm font-medium">{round(h.temp)}°</div>
-                  <div className="text-[10px] text-sky-400 h-3">{h.pop ? `${h.pop}%` : ""}</div>
+            {/* ── Forecast: hourly + 10-day ── */}
+            {tab === "forecast" && (
+              <>
+                <h2 className="text-sm font-semibold text-slate-300 mb-2">Next 12 hours</h2>
+                <div className="flex gap-2 overflow-x-auto pb-2 mb-5">
+                  {data.hourly.map((h) => (
+                    <div key={h.time} className="shrink-0 w-16 rounded-lg border border-slate-700/50 bg-slate-900/40 p-2 text-center">
+                      <div className="text-[11px] text-slate-400">{hourLabel(h.time)}</div>
+                      <div className="text-xl my-1">{ICON(h.code)}</div>
+                      <div className="text-sm font-medium">{round(h.temp)}°</div>
+                      <div className="text-[10px] text-sky-400 h-3">{h.pop ? `${h.pop}%` : ""}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            {/* daily */}
-            <h2 className="text-sm font-semibold text-slate-300 mb-2">10-day forecast</h2>
-            <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 divide-y divide-slate-800">
-              {data.daily.map((d, i) => (
-                <div key={d.date} className="flex items-center gap-3 px-3 py-2.5 text-sm">
-                  <span className="w-12 text-slate-300">{dayLabel(d.date, i)}</span>
-                  <span className="text-lg w-7 text-center">{ICON(d.code)}</span>
-                  <span className="flex-1 text-slate-400 truncate">{d.desc}</span>
-                  <span className="text-sky-400 w-12 text-right text-xs">{d.pop ? `${d.pop}%` : ""}</span>
-                  <span className="w-16 text-right"><span className="font-semibold">{round(d.hi)}°</span> <span className="text-slate-500">{round(d.lo)}°</span></span>
+                <h2 className="text-sm font-semibold text-slate-300 mb-2">10-day forecast</h2>
+                <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 divide-y divide-slate-800">
+                  {data.daily.map((d, i) => (
+                    <div key={d.date} className="flex items-center gap-3 px-3 py-2.5 text-sm">
+                      <span className="w-12 text-slate-300">{dayLabel(d.date, i)}</span>
+                      <span className="text-lg w-7 text-center">{ICON(d.code)}</span>
+                      <span className="flex-1 text-slate-400 truncate">{d.desc}</span>
+                      <span className="text-sky-400 w-12 text-right text-xs">{d.pop ? `${d.pop}%` : ""}</span>
+                      <span className="w-16 text-right"><span className="font-semibold">{round(d.hi)}°</span> <span className="text-slate-500">{round(d.lo)}°</span></span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
 
-            {/* radar + severe-weather map (~100 mi) */}
-            <h2 className="text-sm font-semibold text-slate-300 mt-5 mb-2">Radar &amp; severe-weather (~100 mi)</h2>
-            <Suspense fallback={<div className="text-slate-500 text-sm py-6 text-center">Loading map…</div>}>
-              <WeatherMap place={data.place} />
-            </Suspense>
+            {/* ── Radar: ~100-mile NEXRAD + severe-weather map ── */}
+            {tab === "radar" && (
+              <Suspense fallback={<div className="text-slate-500 text-sm py-6 text-center">Loading map…</div>}>
+                <WeatherMap place={data.place} />
+              </Suspense>
+            )}
 
             <p className="text-[11px] text-slate-600 mt-4">
               Keyless data via open-meteo; base map © OpenStreetMap, radar © IEM NEXRAD, severe-weather alerts © NWS.

@@ -237,6 +237,12 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
 
         # Filter LOCAL tools to only those in allowed set or meta-tools
         local_tools = [t for t in LOCAL_TOOLS if t["function"]["name"] in allowed]
+        # open_app's app catalog is DYNAMIC (installed+enabled apps reported by the
+        # web client) — swap the static schema for one with the live list appended.
+        if any(t["function"]["name"] == "open_app" for t in local_tools):
+            from local_tools import build_open_app_tool
+            local_tools = [build_open_app_tool() if t["function"]["name"] == "open_app" else t
+                           for t in local_tools]
 
         combined = mcp_tools + local_tools
 

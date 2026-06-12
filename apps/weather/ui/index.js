@@ -11,5 +11,7 @@ export default [
     component: lazy(() => import("./WeatherApp")),
     singleton: true,
     page: 1,
+    // Tabs reported to open_app so the agent can deep-link (e.g. "show me the radar").
+    tabs: ["current", "forecast", "radar"],
   },
 ];

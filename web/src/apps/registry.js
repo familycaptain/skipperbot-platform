@@ -118,6 +118,17 @@ export function getTileApps() {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+/** App-types the LLM may open via `open_app`. Built dynamically from every
+ *  installed + ENABLED app — and intentionally INCLUDES sub-views and
+ *  per-user-hidden tiles (visible only means "shows on the desktop"; open_app can
+ *  still open them). Reported to the backend so the open_app tool's app list is
+ *  never hardcoded. Each app may declare a `tabs: [...]` array in its ui/index.js. */
+export function getOpenableApps() {
+  return Object.values(APP_MANIFESTS)
+    .filter(a => !_disabledApps.has(a.id))
+    .map(a => ({ id: a.id, name: a.name, subview: !!a.subview, tabs: a.tabs || [] }));
+}
+
 /** Get launcher apps for a specific page (1, 2, or 3). Page 1 = everyday, page 2 = tools, page 3 = system. */
 export function getAppsForPage(page) {
   return Object.values(APP_MANIFESTS)

@@ -412,6 +412,23 @@ async def api_set_hidden_apps(req: HiddenAppsRequest, request: Request):
     return await asyncio.to_thread(_do)
 
 
+class OpenableAppsRequest(BaseModel):
+    apps: list
+
+
+@app.post("/api/apps/openable")
+async def api_set_openable_apps(req: OpenableAppsRequest, request: Request):
+    """The web client reports its app-type registry (id, name, subview, tabs) so
+    the ``open_app`` tool's app list is built **dynamically** from installed +
+    enabled apps — never a hardcoded enum. Cache is global (enabled apps are
+    platform-wide) and intentionally includes hidden/sub-view apps (still openable).
+    """
+    require_user(request)
+    from local_tools import set_openable_apps
+    set_openable_apps(req.apps)
+    return {"ok": True, "count": len(req.apps or [])}
+
+
 @app.post("/api/onboarding/check-openai")
 async def onboarding_check_openai():
     """Verify the current OPENAI_API_KEY against the OpenAI API.
