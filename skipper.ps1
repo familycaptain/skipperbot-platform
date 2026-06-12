@@ -582,21 +582,89 @@ function Setup {
     Ok ".env written (the secret-encryption key is auto-generated on first boot)."
 }
 
+# Background readiness announcer (runs on its own runspace thread in THIS process).
+# Polls the health endpoint quietly, then prints the READY banner every 10s for the
+# first minute - writing straight to the console via [Console]::WriteLine so it
+# interleaves with the foreground output (agent console or docker tail), exactly
+# like the bash launcher. $Mode 'docker' adds the Ctrl+C footer; 'native' omits it
+# (there Ctrl+C stops the agent running in this window). Returns the PowerShell
+# handle; pass it to Stop-ReadyAnnouncer to tear it down.
+#
+# The runspace body uses ONLY .NET types (no cmdlets): a bare [PowerShell]::Create()
+# runspace may not load Microsoft.PowerShell.Utility, so Invoke-WebRequest/Start-Sleep
+# can be missing - but System.Net / System.Threading / System.Console are always there.
+function Start-ReadyAnnouncer {
+    param([int]$Port, [string]$Mode = "native")
+    $ps = [PowerShell]::Create()
+    $null = $ps.AddScript({
+        param($port, $mode)
+        $url  = "http://localhost:$port/api/onboarding/status"
+        $open = "http://localhost:$port"
+        $rule = "=" * 60
+        for ($i = 0; $i -lt 120; $i++) {   # ~10 min at 5s
+            $ready = $false
+            try {
+                $req = [System.Net.HttpWebRequest]::Create($url)
+                $req.Timeout = 3000
+                $req.Method = "GET"
+                $resp = $req.GetResponse()
+                $resp.Close()
+                $ready = $true
+            }
+            catch { }
+            if ($ready) {
+                # Repeat the banner every 10s for the first minute so a first-time
+                # user can't miss the URL as logs scroll past.
+                for ($r = 1; $r -le 6; $r++) {
+                    [Console]::WriteLine("")
+                    [Console]::WriteLine($rule)
+                    [Console]::WriteLine("  [OK] Skipper is READY  -  open this page in your browser:")
+                    [Console]::WriteLine("")
+                    [Console]::WriteLine("        $open")
+                    [Console]::WriteLine("")
+                    if ($mode -eq "docker") {
+                        [Console]::WriteLine("  (log continues below; Ctrl+C stops watching, Skipper keeps running)")
+                    }
+                    [Console]::WriteLine($rule)
+                    if ($r -lt 6) { [System.Threading.Thread]::Sleep(10000) }
+                }
+                return
+            }
+            [System.Threading.Thread]::Sleep(5000)
+        }
+    }).AddArgument($Port).AddArgument($Mode)
+    $null = $ps.BeginInvoke()
+    return $ps
+}
+
+function Stop-ReadyAnnouncer {
+    param($Announcer)
+    if ($Announcer) {
+        try { $Announcer.Stop() } catch { }
+        try { $Announcer.Dispose() } catch { }
+    }
+}
+
 # Stream the agent log IMMEDIATELY (so the whole boot sequence + any errors are
 # visible in real time, instead of a dots spinner hiding the boot). The Docker
 # entrypoint does npm install + build + init_db BEFORE binding port 8000, so
-# 'docker compose up -d' returns long before the site is reachable — you'll see
-# it become reachable in the log ('Application startup complete' / 'Uvicorn
-# running'). Ctrl+C stops the tail but leaves the daemon running. Shared by
-# Start-Skipper and Show-Update so they can't drift.
+# 'docker compose up -d' returns long before the site is reachable. A background
+# announcer surfaces the URL (repeating for the first minute) once health responds.
+# Ctrl+C stops the tail but leaves the daemon running. Shared by Start-Skipper and
+# Show-Update so they can't drift.
 function Follow-Boot {
     $port = Get-SkipperPort
     Write-Host ""
     Log "Streaming the live boot log - watch the build here and catch any errors as they happen."
-    Log "When you see 'Application startup complete' / 'Uvicorn running', open http://localhost:$port"
     Log "Ctrl+C stops watching; Skipper keeps running in the background ('skipper logs' to re-attach, 'skipper stop' to halt)."
     Write-Host ""
-    docker compose logs -f agent
+    $announcer = Start-ReadyAnnouncer -Port $port -Mode "docker"
+    try {
+        docker compose logs -f agent
+    }
+    finally {
+        Stop-ReadyAnnouncer $announcer
+    }
 }
 
 # --- start / stop -----------------------------------------------------------
@@ -612,8 +680,17 @@ function Start-Skipper {
         if (-not (Test-Path $agentScript)) {
             Die "start_agent.ps1 not found. See README 'Path 2: Native install'."
         }
-        Log "Starting Skipper natively via start_agent.ps1..."
-        & $agentScript
+        Log "Starting Skipper natively via start_agent.ps1 (Ctrl-C to stop)..."
+        # Announce the URL (repeating for the first minute) from a background
+        # runspace while the agent runs in the foreground here.
+        $port = Get-SkipperPort
+        $announcer = Start-ReadyAnnouncer -Port $port -Mode "native"
+        try {
+            & $agentScript
+        }
+        finally {
+            Stop-ReadyAnnouncer $announcer
+        }
     }
 }
 
