@@ -186,12 +186,21 @@ async def process_chat(
     # Fire-and-forget: persist turn + digest in background (don't block response)
     async def _post_turn():
         try:
+            # Persist the tools the model actually CALLED this turn (name/args/
+            # result), so the web UI can replay them on session resume and for
+            # diagnostics. Results truncated to keep rows reasonable.
+            _tool_calls = [
+                {"name": tc.name, "args": tc.args,
+                 "result": (tc.result or "")[:4000], "id": tc.tool_call_id}
+                for tc in (getattr(result, "tool_calls_made", None) or [])
+            ]
             await asyncio.to_thread(
                 save_turn, user_id=user_id, user_message=user_message,
                 assistant_message=response_text or "", turn_id=current_turn_id,
                 system_prompt=getattr(result, "system_prompt", "") or None,
                 selected_tools=getattr(result, "selected_tools", None) or None,
                 matched_guides=getattr(result, "matched_guides", None) or None,
+                tool_calls=_tool_calls or None,
             )
         except Exception as e:
             logger.error("CHATLOG: Failed to save turn for '%s': %s", user_id, str(e))

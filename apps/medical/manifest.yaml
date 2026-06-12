@@ -5,6 +5,7 @@ description: >
   Family medical tracker — medications with refill nag reminders, recurring
   treatments (injections, infusions), medical event journal (visits, surgeries,
   labs, notes), and lab result tracking with trend history.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 platform_deps: []
 

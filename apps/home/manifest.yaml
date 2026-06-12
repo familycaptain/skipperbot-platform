@@ -4,6 +4,7 @@ version: "1.0.0"
 description: >
   Home management hub — maintenance tasks, appliances, insurance, and home issues.
   Tracks recurring maintenance, repairs, and problems around the household.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 platform_deps:
   - images          # home_issue_images references public.images

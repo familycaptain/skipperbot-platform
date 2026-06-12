@@ -4,6 +4,7 @@ version: "1.0.0"
 description: >
   Meal idea generator and decision assistant. Filter a curated library of meals
   by cuisine, effort, tags, and components to decide what to eat.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 entity_types:
   - prefix: "ml"

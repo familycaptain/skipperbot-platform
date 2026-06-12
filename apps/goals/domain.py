@@ -133,6 +133,72 @@ def _user_recently_active(username: str, within_minutes: int = 15) -> bool:
         return False
 
 
+def _dm_on_hold(recipient: str, domain_name: str, subject_id: str = "") -> bool:
+    """True if the most recent proactive DM to ``recipient`` is still UNANSWERED
+    and less than 24h old — enforce one-at-a-time pacing.
+
+    Scope matters so independent threads don't block each other:
+      * Each goal worker has its OWN domain (the goal id), so this query never
+        sees another goal's pending DMs — different goals are isolated for free.
+      * The PM domain is a SINGLE domain spanning many projects/goals, so it
+        passes ``subject_id`` to scope the hold to just that thread — a held
+        nudge about one project won't silence a different one to the same person.
+
+    Send one, then wait for a reply. Exception: once 24h passes with no reply, a
+    single check-in is allowed (the caller's per-cycle cap still applies).
+    Conservative on error — never blocks indefinitely.
+    """
+    recip = (recipient or "").strip().lower()
+    if not recip:
+        return False
+    subj = (subject_id or "").strip()
+    subj_filter = subj if subj and subj != "unknown" else ""
+    try:
+        import json
+        from datetime import datetime, timezone, timedelta
+        from data_layer.skipper_state import list_states
+        from data_layer.chatlogs import get_turns_since
+
+        rows = list_states(domain=domain_name, state_type="pending_action",
+                           status="active", limit=50)
+        latest = ""
+        for r in rows:
+            # Per-subject scoping (PM): only this thread's pending DMs hold it.
+            if subj_filter and (r.get("subject_id") or "") != subj_filter:
+                continue
+            raw = r.get("content", "")
+            try:
+                c = json.loads(raw) if isinstance(raw, str) else (raw or {})
+            except (json.JSONDecodeError, TypeError):
+                continue
+            if not isinstance(c, dict):
+                continue
+            if (c.get("dm_to", "") or "").strip().lower() != recip:
+                continue
+            sent = c.get("sent_at") or r.get("created_at") or ""
+            if sent and sent > latest:
+                latest = sent
+        if not latest:
+            return False  # no prior DM to this person/thread — fine to send
+
+        sent_dt = datetime.fromisoformat(str(latest).replace("Z", "+00:00"))
+        if sent_dt.tzinfo is None:
+            sent_dt = sent_dt.replace(tzinfo=timezone.utc)
+        if (datetime.now(timezone.utc) - sent_dt) >= timedelta(hours=24):
+            return False  # daily floor reached — a check-in is allowed
+
+        # Replied since? A real (non-marker) user turn after the DM = engaged.
+        turns = get_turns_since(recip, latest, limit=5)
+        replied = any(
+            (t.get("user_message", "") or "").strip()
+            and not (t.get("user_message", "") or "").startswith("[")
+            for t in turns
+        )
+        return not replied  # hold only if unanswered and < 24h old
+    except Exception:
+        return False
+
+
 def _past_target_date(goal_snap: dict) -> bool:
     """True if the goal's target date is in the past (onboarding 1-month window)."""
     td = (goal_snap or {}).get("goal_target_date") or ""
@@ -287,10 +353,20 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
                 return "Error: to_user and message are required"
             if dm_to == "skipper":
                 return "You cannot DM yourself. DM not sent."
-            if dm_count >= 3:
-                return "DM limit reached (max 3 per cycle). DM not sent."
+            # Onboarding is a live, one-at-a-time conversation — a single DM per
+            # cycle. Other goals keep the looser cap.
+            _cap = 1 if is_onboarding else 3
+            if dm_count >= _cap:
+                return f"DM limit reached (max {_cap} per cycle). DM not sent."
             if dm_to in dm_recipients:
                 return f"Already sent a DM to {dm_to} this cycle. DM not sent."
+            # One-at-a-time pacing: if the prior DM to this person is still
+            # unanswered and < 24h old, hold and wait for their reply.
+            if await asyncio.to_thread(_dm_on_hold, dm_to, domain_name):
+                return (
+                    f"Your previous message to {dm_to} is unanswered and less than "
+                    "24h old. Wait for their reply before sending another — DM not sent."
+                )
 
             await _send_dm(dm_to, dm_text, subject_id)
             dm_count += 1

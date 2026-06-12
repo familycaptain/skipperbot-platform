@@ -2,6 +2,7 @@ id: brainstorming
 name: Brainstorming
 version: 1.0.0
 description: Idea capture and development — create, browse, and search ideas with structured documents, flowcharts, statuses, priorities, and tags.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 # The data layer (data_layer/brainstorming.py) uses UNQUALIFIED table names,
 # so ideas + idea_parts live in the public schema (the agent DB pool's default

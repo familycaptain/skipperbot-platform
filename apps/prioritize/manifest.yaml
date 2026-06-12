@@ -5,6 +5,7 @@ description: >
   Per-user focus slots (max 3 active priorities) plus a backlog
   aggregator that combines goals, reminders, schedules, to-do items,
   and any other app-package provider into a single ranked list.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 # Required core app — chat surfaces "show my priorities" and the
 # UI's launcher tile both depend on it. Other apps register backlog

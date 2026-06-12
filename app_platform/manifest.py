@@ -107,6 +107,10 @@ class AppManifest:
     subscribes: list[str] = field(default_factory=list)
 
     schema: str = ""  # "public" = tables in public schema, skip app_<id> creation
+    # Opt-in flag: when true, this app gets a "try this app" project in the
+    # first-run onboarding tour. Defaults False so private / separate-repo apps
+    # are never toured unless they explicitly ask to be.
+    onboarding_tour: bool = False
     tool_category: ToolCategoryDef | None = None
     ui: list[UIAppDef] = field(default_factory=list)
     job_types: list[JobTypeDef] = field(default_factory=list)
@@ -166,6 +170,7 @@ def parse_manifest(app_dir: Path) -> AppManifest:
         emits=raw.get("emits", []),
         subscribes=raw.get("subscribes", []),
         schema=raw.get("schema", ""),
+        onboarding_tour=bool(raw.get("onboarding_tour", False)),
     )
 
     # Entity types

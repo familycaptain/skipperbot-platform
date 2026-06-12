@@ -51,6 +51,7 @@ def _enumerate_apps() -> list[dict]:
                 "name": getattr(m, "name", "") or app_id,
                 "description": getattr(m, "description", "") or "",
                 "has_ui": (app_dir / "ui").is_dir(),
+                "onboarding_tour": bool(getattr(m, "onboarding_tour", False)),
             })
         except Exception:
             continue
@@ -145,6 +146,12 @@ def ensure_onboarding(apps_info: list[dict] | None = None) -> str:
 
     n_apps = 0
     for app in sorted(apps_info, key=lambda a: (a.get("name") or a.get("id") or "").lower()):
+        # OPT-IN: only apps that explicitly declare `onboarding_tour: true` in
+        # their manifest get a tour project — AND they must still be a real,
+        # non-infra UI app. This keeps private / separate-repo apps (e.g.
+        # investment) out of the first-run tour unless they ask to be in it.
+        if not app.get("onboarding_tour"):
+            continue
         if not app.get("has_ui") or app.get("id") in _INFRA_APPS:
             continue
         name = app.get("name") or app["id"]

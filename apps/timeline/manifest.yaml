@@ -7,6 +7,7 @@ description: >
   writes personal posts here whenever any other app fires
   digest_record on a non-read CRUD, so every action is also a
   timeline entry by default.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 # Required core app — the auto-activity feed in
 # app_platform/activity.py writes here whenever any app fires

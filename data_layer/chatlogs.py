@@ -17,6 +17,15 @@ logger = logging.getLogger(__name__)
 EMBEDDING_DIM = 1536
 
 
+def ensure_chatlog_schema() -> None:
+    """Idempotently add chat_turns columns that post-date the baseline (safe to
+    call on every boot). Lets existing deployments pick up ``tool_calls``
+    without a baseline re-run; fresh installs get it from 000_baseline.sql too.
+    """
+    from data_layer.db import execute
+    execute("ALTER TABLE public.chat_turns ADD COLUMN IF NOT EXISTS tool_calls jsonb")
+
+
 def save_turn(
     user_id: str,
     user_message: str,
@@ -26,12 +35,15 @@ def save_turn(
     system_prompt: Optional[str] = None,
     selected_tools: Optional[list[Any]] = None,
     matched_guides: Optional[list[Any]] = None,
+    tool_calls: Optional[list[Any]] = None,
 ) -> dict:
     """Save a chat turn to Postgres.
 
     Optional debug capture (``system_prompt``, ``selected_tools``,
     ``matched_guides``) lets us audit exactly what the LLM saw on this turn
-    and which tool guides got injected via keyword routing.
+    and which tool guides got injected via keyword routing. ``tool_calls`` is
+    the list of tools the model actually invoked this turn (name/args/result) —
+    persisted so the web UI can replay them on session resume and for diagnostics.
     """
     record = {
         "id": turn_id or f"c-{uuid.uuid4().hex[:8]}",
@@ -43,20 +55,23 @@ def save_turn(
     emb_str = _vec(embedding) if embedding else None
     selected_tools_json = Json(selected_tools) if selected_tools is not None else None
     matched_guides_json = Json(matched_guides) if matched_guides is not None else None
+    tool_calls_json = Json(tool_calls) if tool_calls is not None else None
 
     with get_conn() as conn:
         with conn.cursor() as cur:
             cur.execute("""
                 INSERT INTO chat_turns (id, user_id, user_message, assistant_message,
                                         embedding, created_at,
-                                        system_prompt, selected_tools, matched_guides)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                        system_prompt, selected_tools, matched_guides,
+                                        tool_calls)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (id) DO NOTHING
             """, (
                 record["id"], record["user_id"],
                 record["user_message"], record["assistant_message"],
                 emb_str, record["created_at"],
                 system_prompt, selected_tools_json, matched_guides_json,
+                tool_calls_json,
             ))
         conn.commit()
     return record
@@ -128,4 +143,6 @@ def _row(row: dict) -> dict:
         "timestamp": row["created_at"].isoformat() if row.get("created_at") else "",
         "user_message": row.get("user_message") or "",
         "assistant_message": row.get("assistant_message") or "",
+        # jsonb auto-decoded by psycopg2 → list of {name, args, result, id} (or None)
+        "tool_calls": row.get("tool_calls") or [],
     }

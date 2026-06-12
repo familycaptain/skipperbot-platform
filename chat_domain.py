@@ -141,6 +141,11 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     # when it lands as a separate package in Phase 1c.
     dynamic_context = await _inject_skipper_work_context(dynamic_context)
 
+    # Reply-to-proactive-DM continuity: if a thinking domain DM'd this user and
+    # it's still unresolved, flag it so a reply gets the sender's intent/cadence.
+    dynamic_context, _has_pending_dm = await _inject_proactive_dm_context(
+        dynamic_context, req.user_id)
+
     # Memory + knowledge retrieval
     t_retrieval = time.monotonic()
     dynamic_context = await _retrieve_context(
@@ -160,6 +165,10 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
         m["content"] for m in context_window if m.get("content")
     )
     routed_tool_names = get_tools_for_message(context_text)
+
+    # Deterministically expose the reply-guide tool when a proactive DM is pending.
+    if _has_pending_dm:
+        routed_tool_names.add("get_proactive_reply_guide")
 
     # Force-include tools for active app context
     if req.channel == "web" and req.app_context:
@@ -828,6 +837,49 @@ async def _inject_skipper_work_context(system_prompt: str) -> str:
         logger.debug("SKIPPER_WORK: Could not load active work: %s", e)
 
     return system_prompt
+
+
+async def _inject_proactive_dm_context(system_prompt: str, user_id: str) -> tuple[str, bool]:
+    """Flag when the user may be replying to a proactive DM Skipper sent.
+
+    Thinking domains (PM/goals) send proactive DMs and record a pending_action.
+    When that user later chats, the normal agent loop has none of the sender's
+    context — so a reply like "not yet" or "stop" lands cold. This injects a
+    COMPACT block naming the pending message + its kind, and tells the model to
+    pull full guidance via get_proactive_reply_guide() if the turn is a reply.
+    Returns (system_prompt, has_pending); has_pending force-includes the tool.
+    See specs/PROACTIVE_MESSAGING.md.
+    """
+    try:
+        import apps.goals.data as _dl_goals
+        pending = await asyncio.to_thread(_dl_goals.pending_dms_for_user, user_id)
+    except Exception as e:
+        logger.debug("PROACTIVE_REPLY: Could not load pending DMs: %s", e)
+        return system_prompt, False
+
+    if not pending:
+        return system_prompt, False
+
+    top = pending[0]
+    kind = top.get("kind", "goal")
+    sent_at = (top.get("sent_at", "") or "")[:16].replace("T", " ")
+    dm_text = (top.get("dm_text", "") or "").strip()
+    extra = ""
+    if len(pending) > 1:
+        extra = f" (and {len(pending) - 1} other pending message(s))"
+
+    system_prompt += (
+        "\n\n## ⚠ Possible reply to a proactive message\n"
+        "You (Skipper) recently reached out to this user on your own initiative; "
+        "they have not clearly resolved it, so their next message MAY be a reply"
+        f"{extra}. Most recent — kind \"{kind}\", sent {sent_at}:\n"
+        f"  “{dm_text}”\n"
+        "If the user's message reads as a response to that outreach, you are "
+        "CONTINUING that thread: do not restart or re-introduce yourself. Call "
+        f"get_proactive_reply_guide(kind=\"{kind}\") for the full guidance before replying. "
+        "If the message is clearly unrelated, ignore this and answer normally."
+    )
+    return system_prompt, True
 
 # NOTE: Scrum-item injection used to live here. It was a tight coupling
 # between this platform-layer chat_domain and the optional scrum app —

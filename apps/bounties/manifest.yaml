@@ -4,6 +4,7 @@ version: "1.0.0"
 description: >
   Family chore-and-reward system. Parents post tasks with dollar values,
   kids complete them for balance credits, parents record external payments.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 entity_types:
   - prefix: "bt"

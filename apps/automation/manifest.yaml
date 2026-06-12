@@ -4,6 +4,7 @@ version: "1.0.0"
 description: >
   Home Assistant automation bridge for checking sensors, controlling smart
   home devices, listing services, and finding low batteries.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 platform_deps: []
 

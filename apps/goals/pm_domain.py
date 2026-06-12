@@ -232,6 +232,15 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
                 return "DM limit reached (max 3 per cycle). DM not sent."
             if dm_to in dm_recipients:
                 return f"Already sent a DM to {dm_to} this cycle. DM not sent."
+            # One-at-a-time pacing: don't re-nudge if the prior DM to this person
+            # ABOUT THIS SAME SUBJECT is still unanswered and < 24h old. Scoped by
+            # subject so PM stays independent per project/goal (shared helper).
+            from apps.goals.domain import _dm_on_hold
+            if await asyncio.to_thread(_dm_on_hold, dm_to, "pm", subject_id):
+                return (
+                    f"Your previous message to {dm_to} is unanswered and less than "
+                    "24h old. Wait for their reply before sending another — DM not sent."
+                )
 
             await _send_thinking_dm(dm_to, dm_text, subject_id)
             dm_count += 1

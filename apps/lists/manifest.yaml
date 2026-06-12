@@ -6,6 +6,7 @@ description: >
   order, optionally linked to Trello boards. Foundation for the Todo app
   (which is built as a thin lens over a single "Todo" list per user) and
   any other "ordered items" use case.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 # Required core app — platform refuses to start without it.
 core: true

@@ -4,6 +4,7 @@ version: "1.0.0"
 description: >
   Bible reading app. Browse, search, bookmark, highlight, and take study notes
   on scripture. Supports multiple Bible versions loaded from MySword modules.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 platform_deps: []
 

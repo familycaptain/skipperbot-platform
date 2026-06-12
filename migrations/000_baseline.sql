@@ -138,7 +138,8 @@ CREATE TABLE IF NOT EXISTS public.chat_turns (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     system_prompt text,
     selected_tools jsonb,
-    matched_guides jsonb
+    matched_guides jsonb,
+    tool_calls jsonb
 );
 
 

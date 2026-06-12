@@ -4,6 +4,7 @@ version: "1.0.0"
 description: >
   Item locator — track where physical items are stored around the household.
   Find things by location, category, tags, or search, and attach photos to items.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 platform_deps:
   - images          # locator_images references public.images

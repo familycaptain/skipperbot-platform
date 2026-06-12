@@ -6,6 +6,7 @@ description: >
   unconditionally injected into every chat system prompt — reliable
   for automation-style rules ("when I say I started my truck, mark
   the matching auto maintenance item done").
+onboarding_tour: true  # included in the first-run onboarding tour
 
 # Required core app — chat won't have rules to inject without it, and
 # the agent's "teaching moment" tool calls (add_behavior) would

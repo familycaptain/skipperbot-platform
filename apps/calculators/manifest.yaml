@@ -6,6 +6,7 @@ description: >
   compound-interest calculator and a loan-amortization calculator. The finance
   calculators solve for whichever value you leave blank and show a full payoff
   schedule. Runs entirely in the browser; no data is stored.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 platform_min_version: "1.0.0"
 

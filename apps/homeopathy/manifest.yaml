@@ -5,6 +5,7 @@ description: >
   Track the family's homeopathic remedy inventory — medicines, remedies,
   bottle sizes, storage locations, sources/suppliers, and physical bottles
   with fullness tracking and reorder lists.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 platform_deps: []
 

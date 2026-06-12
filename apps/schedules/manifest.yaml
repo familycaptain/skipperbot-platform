@@ -6,6 +6,7 @@ description: >
   RRULE, cron-style, and friendly recurrence types (daily, weekly,
   monthly, yearly, interval) plus usage-based intervals (every 5000
   miles). Owns "next due" computation and a completion log.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 # Required core app — platform refuses to start without it.
 core: true

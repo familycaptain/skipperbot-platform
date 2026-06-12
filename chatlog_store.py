@@ -52,6 +52,7 @@ def save_turn(
     system_prompt: Optional[str] = None,
     selected_tools: Optional[list] = None,
     matched_guides: Optional[list] = None,
+    tool_calls: Optional[list] = None,
 ) -> dict:
     """
     Save a conversation turn (user + assistant) with an embedding.
@@ -81,6 +82,7 @@ def save_turn(
         system_prompt=system_prompt,
         selected_tools=selected_tools,
         matched_guides=matched_guides,
+        tool_calls=tool_calls,
     )
 
     return {

@@ -62,6 +62,13 @@ async def lifespan(app: FastAPI):
         await asyncio.to_thread(ensure_auth_schema)
     except Exception as e:
         logger.error("STARTUP: ensure_auth_schema failed: %s", e)
+    # chat_turns.tool_calls — added after the baseline; idempotent backfill so
+    # existing installs persist tool calls without wiping the DB.
+    try:
+        from data_layer.chatlogs import ensure_chatlog_schema
+        await asyncio.to_thread(ensure_chatlog_schema)
+    except Exception as e:
+        logger.error("STARTUP: ensure_chatlog_schema failed: %s", e)
     # One-time migrations: backfill memory embeddings + migrate knowledge to binary
     await asyncio.to_thread(backfill_embeddings)
     await asyncio.to_thread(migrate_chunk_embeddings)
@@ -746,6 +753,52 @@ async def chat(request: ChatRequest):
         return ChatResponse(response=response_text, user_id=request.user_id)
     except Exception as e:
         return ChatResponse(response=f"Error: {str(e)}", user_id=request.user_id)
+
+
+@app.get("/api/chat/history")
+async def chat_history(request: Request, limit: int = 20):
+    """Recent conversation turns for the authed user — lets the web client
+    resume a session on page load instead of starting cold.
+
+    Identity is the verified principal (never a client-supplied id), so a user
+    only ever gets their own history. Returns a flat, render-ready message list
+    ordered oldest→newest: each turn expands to the user message, any tool calls
+    the model made that turn, then the assistant reply. Bot-initiated turns
+    (proactive DMs / fired notifications, stored with a ``[marker]`` pseudo
+    user_message) render as notifications so they don't look like the user typed.
+    """
+    principal = require_user(request)
+    user_id = (principal["name"] or "").lower().strip()
+    limit = max(1, min(limit, 50))
+
+    def _load():
+        from data_layer.chatlogs import get_recent_turns
+        return get_recent_turns(user_id, limit=limit)
+
+    turns = await asyncio.to_thread(_load)
+
+    messages: list[dict] = []
+    for t in turns:
+        um = (t.get("user_message") or "").strip()
+        am = t.get("assistant_message") or ""
+        # Bot-initiated turn: user_message is a "[reminder_notification]"-style marker.
+        if um.startswith("[") and um.endswith("]"):
+            if am:
+                messages.append({"role": "notification", "content": am,
+                                 "source": um.strip("[]")})
+            continue
+        if um:
+            messages.append({"role": "user", "content": um})
+        for tc in (t.get("tool_calls") or []):
+            messages.append({
+                "role": "tool_call",
+                "toolName": tc.get("name"),
+                "toolArgs": tc.get("args") or {},
+            })
+        if am:
+            messages.append({"role": "bot", "content": am})
+
+    return {"messages": messages}
 
 
 # ---------------------------------------------------------------------------

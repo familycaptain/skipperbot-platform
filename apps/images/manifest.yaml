@@ -2,6 +2,7 @@ id: images
 name: Images
 version: 1.0.0
 description: Photo gallery — browse, view, and manage saved images and generated charts.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 # Tables (public.images) live in the public baseline.
 # Backend routes are served by agent.py at /api/apps/images*; this package only

@@ -2,6 +2,7 @@ id: recipes
 name: Recipes
 version: 1.0.0
 description: Family recipe collection — create, browse, search, and manage recipes with structured ingredients, steps, categories, and images.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 # Tables originally created in public schema by migration 011.
 # Migration 001 copies data into the app_recipes schema.

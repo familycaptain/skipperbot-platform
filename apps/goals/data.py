@@ -57,6 +57,119 @@ def resolve_dm_recipient(person: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Proactive-DM continuity — shared between the thinking domains that SEND the
+# DMs and the chat agent loop that handles the user's REPLY, so a reply gets the
+# same intent/cadence the sender was operating under. See specs/PROACTIVE_MESSAGING.md.
+# ---------------------------------------------------------------------------
+
+import os  # noqa: E402 — module-local helpers below
+
+_REPLY_GUIDE_PATH = os.path.join(os.path.dirname(__file__), "prompts",
+                                 "proactive_reply_guide.md")
+
+
+def domain_to_reply_kind(domain: str) -> str:
+    """Classify a skipper_state pending_action ``domain`` into a guide kind.
+
+    PM nudges use domain 'pm'; goal-worker DMs use the goal id ('g-...') or
+    'goal'. Returns 'pm' or 'goal'.
+    """
+    d = (domain or "").strip().lower()
+    if d == "pm":
+        return "pm"
+    return "goal"
+
+
+def load_proactive_reply_guide(kind: str = "") -> str:
+    """Return continuity guidance for replying to a proactive DM.
+
+    Reads ``prompts/proactive_reply_guide.md`` and returns the SHARED block plus
+    the section matching ``kind`` ('goal'/'goal_thinking'/'onboarding' →
+    KIND: goal; 'pm'/'pm_thinking' → KIND: pm). Unknown kind returns SHARED plus
+    every KIND section. Empty string if the file is unreadable.
+    """
+    try:
+        with open(_REPLY_GUIDE_PATH, "r", encoding="utf-8") as f:
+            raw = f.read()
+    except OSError:
+        return ""
+
+    sections: dict[str, str] = {}
+    order: list[str] = []
+    current: str | None = None
+    buf: list[str] = []
+    for line in raw.splitlines():
+        if line.startswith("## "):
+            if current is not None:
+                sections[current] = "\n".join(buf).strip()
+            current = line[3:].strip()
+            order.append(current)
+            buf = []
+        elif current is not None:
+            buf.append(line)
+    if current is not None:
+        sections[current] = "\n".join(buf).strip()
+
+    k = (kind or "").strip().lower()
+    if k in ("goal", "goal_thinking", "onboarding", "g"):
+        want = "KIND: goal"
+    elif k in ("pm", "pm_thinking"):
+        want = "KIND: pm"
+    else:
+        want = None
+
+    out: list[str] = []
+    if sections.get("SHARED"):
+        out.append(sections["SHARED"])
+    if want and want in sections:
+        out.append(sections[want])
+    elif want is None:
+        out.extend(sections[key] for key in order if key.startswith("KIND:"))
+    return "\n\n".join(out).strip()
+
+
+def pending_dms_for_user(username: str) -> list[dict]:
+    """Active proactive DMs Skipper sent to ``username`` that await a reply.
+
+    Walks active ``pending_action`` skipper_state rows (across all domains) and
+    keeps those whose recorded recipient (``content.dm_to``) is this user.
+    Returns dicts: {state_id, domain, kind, subject_id, dm_text, sent_at},
+    most-recently-sent first. Empty list on any error (purely additive context).
+    """
+    import json
+    user = (username or "").strip().lower()
+    if not user:
+        return []
+    try:
+        from data_layer.skipper_state import list_states
+        rows = list_states(state_type="pending_action", status="active", limit=50)
+    except Exception:
+        return []
+
+    out: list[dict] = []
+    for r in rows:
+        raw = r.get("content", "")
+        try:
+            content = json.loads(raw) if isinstance(raw, str) else (raw or {})
+        except (json.JSONDecodeError, TypeError):
+            continue
+        if not isinstance(content, dict):
+            continue
+        if (content.get("dm_to", "") or "").strip().lower() != user:
+            continue
+        out.append({
+            "state_id": r.get("id", ""),
+            "domain": r.get("domain", ""),
+            "kind": domain_to_reply_kind(r.get("domain", "")),
+            "subject_id": r.get("subject_id", ""),
+            "dm_text": content.get("dm_text", ""),
+            "sent_at": content.get("sent_at", "") or r.get("created_at", ""),
+        })
+    out.sort(key=lambda d: d.get("sent_at", ""), reverse=True)
+    return out
+
+
+# ---------------------------------------------------------------------------
 # Memory-digestion hints — what the dumb-model fact extractor should focus on
 # when ingesting a goal/project/task record into searchable memories.
 # See specs/MEMORY.md.

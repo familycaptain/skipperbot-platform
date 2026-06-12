@@ -15,9 +15,8 @@ const PING_INTERVAL = 30000;
 
 export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDocsUpdated, onRemindersUpdated, onRecipesUpdated, onBrainstormUpdated, onEditProposal, onTodoUpdated) {
   const [connected, setConnected] = useState(false);
-  const [messages, setMessages] = useState([
-    { id: "welcome", role: "bot", content: "Hello! I'm Skipper, your AI assistant. How can I help you today?" },
-  ]);
+  // Starts empty; the history effect below populates prior turns then a greeting.
+  const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const [progress, setProgress] = useState(null);
   const [sending, setSending] = useState(false);
@@ -48,6 +47,40 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
   useEffect(() => { onTodoUpdatedRef.current = onTodoUpdated; }, [onTodoUpdated]);
 
   const nextId = () => `msg-${++msgIdRef.current}-${Date.now()}`;
+
+  // Resume the session on load: pull recent turns (incl. tool calls) from the
+  // server, then post a fresh greeting at the end. A brand-new user with no
+  // history just gets the greeting. Runs once per userId.
+  const historyLoadedRef = useRef(false);
+  useEffect(() => {
+    if (!userId || historyLoadedRef.current) return;
+    historyLoadedRef.current = true;
+    let cancelled = false;
+    (async () => {
+      let hist = [];
+      try {
+        const res = await fetch("/api/chat/history?limit=20");
+        if (res.ok) {
+          const data = await res.json();
+          hist = (data.messages || []).map((m) => ({ ...m, id: nextId() }));
+        }
+      } catch {
+        // Offline or fresh session — fall through to a plain greeting.
+      }
+      if (cancelled) return;
+      const greeting = {
+        id: nextId(),
+        role: "bot",
+        content: hist.length
+          ? "Welcome back! Here's where we left off — what can I help you with?"
+          : "Hello! I'm Skipper, your AI assistant. How can I help you today?",
+      };
+      // Prepend history ahead of anything that arrived while loading (e.g. a
+      // proactive notification), then the greeting closes out the resume.
+      setMessages((prev) => [...hist, greeting, ...prev]);
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
 
   // Build WebSocket URL — use Vite proxy in dev, direct in prod
   const getWsUrl = useCallback(() => {

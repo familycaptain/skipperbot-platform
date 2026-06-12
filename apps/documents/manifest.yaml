@@ -7,6 +7,7 @@ description: >
   accumulated memories into a navigable doc tree. Used by research,
   refine, print, brainstorming, and any app that wants to store
   long-form structured text.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 # Required core app — platform refuses to start without it.
 core: true

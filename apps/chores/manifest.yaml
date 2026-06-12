@@ -5,6 +5,7 @@ description: >
   Recurring household chores rotated across the kids. Replaces the family
   Chore Manager spreadsheet. Daily 9:00 AM push to each kid with their
   chores, kid-driven check-off, full chore/zone/kid CRUD via UI and chat.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 entity_types:
   - prefix: "kid"

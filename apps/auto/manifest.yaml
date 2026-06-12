@@ -4,6 +4,7 @@ version: "1.0.0"
 description: >
   Track household vehicles, service history, issues, valuations,
   and periodic condition reports.
+onboarding_tour: true  # included in the first-run onboarding tour
 
 platform_deps:
   - images          # vehicle_images references public.images
