@@ -136,7 +136,10 @@ apps/*
 !apps/settings/
 !apps/timers/
 # --- bundled optional apps (hideable from the desktop in Settings) ---
-!apps/anime/
+# NOTE: anime, homeopathy, scriptures, newsletter, scrum are EXTERNAL apps —
+# each lives in its own skipperbot-app-<name> repo, cloned per-install into
+# apps/<name> as a nested independent git repo. They are ignored by `apps/*`
+# above, so do NOT allow-list them here (that would pull a clone into platform).
 !apps/arcade/
 !apps/brainstorming/
 !apps/images/
@@ -149,10 +152,8 @@ apps/*
 !apps/email/
 !apps/calculators/
 !apps/home/
-!apps/homeopathy/
 !apps/issues/
 !apps/meals/
 !apps/medical/
 !apps/recipes/
-!apps/scriptures/
 !apps/weather/
