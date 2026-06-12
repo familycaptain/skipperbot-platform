@@ -17,13 +17,6 @@ Please include:
 - The affected version (`git rev-parse HEAD` for clones; release tag for releases).
 - Any relevant logs or supporting evidence.
 
-## Response
-
-Maintainers will acknowledge receipt within **72 hours**. For confirmed
-Critical or High severity issues, we target a patch within **30 days** of
-acknowledgement. We'll keep you posted on progress and credit you in the
-release notes if you'd like (or keep your report anonymous if you prefer).
-
 ## Severity definitions
 
 - **Critical** — pre-auth remote code execution, secret exfiltration, full
