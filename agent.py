@@ -1353,6 +1353,7 @@ async def list_users(include_bots: bool = False):
             "role": u.get("role", "member"),
             "sort_order": u.get("sort_order", 99),
             "has_password": bool(u.get("password_hash")),
+            "discord_id": u.get("discord_id") or "",
         } for u in users]
     return await asyncio.to_thread(_fetch)
 
@@ -1436,6 +1437,11 @@ class ResetPasswordRequest(BaseModel):
     new_password: str
 
 
+class UpdateDiscordIdRequest(BaseModel):
+    actor: str = ""
+    discord_id: str | None = None
+
+
 class ChangePasswordRequest(BaseModel):
     username: str
     current_password: str
@@ -1509,6 +1515,38 @@ async def api_reset_user_password(name: str, req: ResetPasswordRequest, request:
             return {"ok": False, "error": f"Password must be at least {MIN_PASSWORD_LEN} characters."}
         update_password(target, req.new_password)
         return {"ok": True}
+    return await asyncio.to_thread(_do)
+
+
+@app.patch("/api/users/{name}/discord-id")
+async def api_update_user_discord_id(name: str, req: UpdateDiscordIdRequest, request: Request):
+    """Admin-only: link/unlink ANOTHER member's Discord account.
+
+    Members can self-link via Settings → Members ("My Discord link"); this lets an
+    admin set it for someone else (e.g. a kid who won't do it themselves). Same
+    rules as self-service: a Discord ID is a 17–20 digit numeric snowflake and maps
+    to exactly one Skipper user. Blank unlinks.
+    """
+    def _do():
+        if not _is_admin_req(request, req.actor):
+            return {"ok": False, "error": "Admin access required."}
+        target = (name or "").lower().strip()
+        if not get_user(target):
+            return {"ok": False, "error": f"User '{target}' not found."}
+        raw = (req.discord_id or "").strip()
+        if raw and (not raw.isdigit() or not (17 <= len(raw) <= 20)):
+            return {"ok": False, "error": (
+                "Discord ID must be the numeric user ID (17–20 digits). In Discord: "
+                "User Settings → Advanced → Developer Mode, then right-click a name → "
+                "Copy User ID.")}
+        from data_layer.users import get_user_by_discord_id, update_discord_id
+        if raw:
+            other = get_user_by_discord_id(raw)
+            if other and other["name"] != target:
+                return {"ok": False, "error": f"That Discord ID is already linked to @{other['name']}."}
+        if not update_discord_id(target, raw or None):
+            return {"ok": False, "error": f"Could not update '{target}'."}
+        return {"ok": True, "discord_id": raw}
     return await asyncio.to_thread(_do)
 
 

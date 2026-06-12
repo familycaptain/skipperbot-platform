@@ -486,6 +486,19 @@ function MembersPanel({ userId }) {
     }
   }
 
+  async function setMemberDiscord(name, current) {
+    const next = window.prompt(
+      `Discord user ID for ${name} (17–20 digits).\n` +
+      `In Discord: User Settings → Advanced → Developer Mode, then right-click their name → Copy User ID.\n` +
+      `Leave blank to unlink.`,
+      current || "",
+    );
+    if (next == null) return; // cancelled
+    if (await call(`/api/users/${encodeURIComponent(name)}/discord-id`, json("PATCH", { actor: userId, discord_id: next.trim() }))) {
+      load();
+    }
+  }
+
   async function changeMyPassword(e) {
     e.preventDefault();
     setPwMsg("");
@@ -603,6 +616,11 @@ function MembersPanel({ userId }) {
                     );
                   })}
                 </div>
+                <button onClick={() => setMemberDiscord(u.name, u.discord_id)} disabled={busy}
+                  title={u.discord_id ? `Discord linked (${u.discord_id}) — click to change or unlink` : "Link a Discord account for this member"}
+                  className={`p-1 ${u.discord_id ? "text-indigo-400 hover:text-indigo-300" : "text-zinc-500 hover:text-indigo-400"}`}>
+                  <MessageCircle size={14} />
+                </button>
                 <button onClick={() => resetPassword(u.name)} disabled={busy}
                   title="Set a temporary password" className="text-zinc-500 hover:text-amber-400 p-1">
                   <KeyRound size={14} />

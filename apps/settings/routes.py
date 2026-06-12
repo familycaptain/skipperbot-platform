@@ -81,6 +81,11 @@ PLATFORM_PANELS: dict[str, dict] = {
             {"key": "discord_token", "type": "string", "secret": True, "label": "Discord bot token",
              "description": "From the Discord developer portal.", "default": "",
              "requires_restart": True},
+            {"key": "discord_allowed_channels", "type": "string", "label": "Discord allowed channels",
+             "description": "Optional. Channel IDs (comma- or space-separated) where Skipper replies "
+                            "WITHOUT being mentioned. Leave blank for DM-only — direct messages always "
+                            "work. Map each person's Discord ID under Members.", "default": "",
+             "requires_restart": True},
             {"key": "brave_api_key", "type": "string", "secret": True, "label": "Brave Search API key",
              "description": "Powers web search / research.", "default": ""},
             {"key": "openai_admin_key", "type": "string", "secret": True, "label": "OpenAI admin key",
