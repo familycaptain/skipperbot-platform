@@ -219,14 +219,15 @@ def list_docs(
 
 
 def search_docs(query: str, tag: str = "") -> list[dict]:
-    """Full-text search across all documents (title, tags, and content).
+    """Hybrid search across all documents (semantic + keyword).
 
-    Returns documents where ALL query words appear in the combined text of
-    title + tags + content. Results are ranked by match density.
+    Blends pgvector cosine similarity with keyword token overlap by the
+    Settings → Documents `search_hybrid_weight` (1.0 semantic … 0.0 keyword).
+    A query embedding is only computed when the weight needs it.
 
     Args:
         query: Search query (space-separated words, case-insensitive).
-        tag: Optional tag filter to narrow scope before searching.
+        tag: Optional tag filter to narrow scope.
 
     Returns:
         List of metadata dicts (no content) with a 'match_score' field,
@@ -235,40 +236,21 @@ def search_docs(query: str, tag: str = "") -> list[dict]:
     if not query or not query.strip():
         return list_docs(tag=tag)
 
-    query_tokens = _tokenize(query)
-    if not query_tokens:
-        return list_docs(tag=tag)
+    weight = _dl_doc._hybrid_weight()
+    embedding = None
+    if weight > 0:
+        try:
+            from memory_store import get_embedding
+            embedding = get_embedding(query[:4000])
+        except Exception as e:
+            logger.warning("DOC_SEARCH: embedding failed, falling back to keyword: %s", e)
 
-    # Use data layer ILIKE search + local token scoring for ranking
-    all_docs = _dl_doc.search_documents(query)
-    results = []
-    for doc in all_docs:
-        meta = {k: v for k, v in doc.items() if k != "content"}
-        content = doc.get("content", "")
-
-        if tag and tag.lower() not in [t.lower() for t in meta.get("tags", [])]:
-            continue
-
-        # Build searchable text: title + tags + content
-        search_text = " ".join([
-            meta.get("title", ""),
-            " ".join(meta.get("tags", [])),
-            content,
-        ])
-        doc_tokens = _tokenize(search_text)
-
-        # All query tokens must be present
-        if not query_tokens.issubset(doc_tokens):
-            continue
-
-        match_count = sum(1 for t in doc_tokens if t in query_tokens)
-        score = match_count / max(len(doc_tokens), 1)
-
-        meta["match_score"] = round(score, 6)
-        results.append(meta)
-
-    results.sort(key=lambda d: d.get("match_score", 0), reverse=True)
-    return results
+    return _dl_doc.search_documents_hybrid(
+        query_text=query,
+        query_embedding=embedding,
+        tag_filter=tag or "",
+        max_results=30,
+    )
 
 
 # ---------------------------------------------------------------------------

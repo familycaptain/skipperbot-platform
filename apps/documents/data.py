@@ -19,6 +19,7 @@ index).
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime, timezone
 
 from app_platform.db import (
@@ -151,19 +152,46 @@ def search_documents(query: str) -> list[dict]:
     return [_row(r) for r in rows]
 
 
+def _hybrid_weight() -> float:
+    """Semantic share for hybrid search (Settings → Documents: search_hybrid_weight).
+    1.0 = pure semantic, 0.0 = pure keyword. Clamped to [0, 1]."""
+    try:
+        from app_platform import settings as _settings
+        w = float(_settings.get("search_hybrid_weight", scope="app:documents", default="0.5") or 0.5)
+    except (TypeError, ValueError):
+        w = 0.5
+    return max(0.0, min(1.0, w))
+
+
+def _kw_tokens(text: str) -> set[str]:
+    """Lowercase alphanumeric tokens (len >= 2) for keyword overlap scoring."""
+    return {t for t in re.split(r"[^a-z0-9]+", (text or "").lower()) if len(t) >= 2}
+
+
 def search_documents_hybrid(
+    query_text: str | None = None,
     query_embedding: list[float] | None = None,
     query_tags: list[str] | None = None,
+    tag_filter: str = "",
     max_results: int = 15,
+    weight: float | None = None,
 ) -> list[dict]:
-    """Hybrid semantic + tag search for documents.
+    """Hybrid document search blending semantic + keyword by ``weight``.
 
-    Uses pgvector cosine similarity as the primary signal, with tag
-    overlap as an additive boost — same pattern as memory search.
-
-    Returns document metadata (no content) sorted by relevance.
+    weight (Settings → Documents: search_hybrid_weight): 1.0 = pure semantic
+    (pgvector cosine), 0.0 = pure keyword (token overlap on title+tags+content).
+    query_tags add a small overlap boost; tag_filter restricts to docs carrying
+    that tag. Returns metadata (no content) with a ``match_score``, ranked.
     """
-    if query_embedding:
+    if weight is None:
+        weight = _hybrid_weight()
+
+    candidates: dict[str, dict] = {}
+    sem: dict[str, float] = {}   # doc_id -> cosine 0..1
+    kw: dict[str, float] = {}    # doc_id -> keyword coverage 0..1
+
+    # --- semantic arm ---
+    if weight > 0 and query_embedding:
         emb_str = _vec_to_pgvector(query_embedding)
         rows = fetch_all_vector_in_schema(
             SCHEMA,
@@ -176,28 +204,49 @@ def search_documents_hybrid(
             """,
             (emb_str, emb_str, max_results * 3),
         )
-    else:
-        # No embedding — fall back to recent docs
+        for r in rows:
+            candidates[r["id"]] = r
+            sem[r["id"]] = max(0.0, float(r.get("cosine_sim", 0.0)))
+
+    # --- keyword arm ---
+    if weight < 1 and query_text and query_text.strip():
+        q_tokens = _kw_tokens(query_text)
+        if q_tokens:
+            for r in search_documents(query_text):
+                text = " ".join([
+                    r.get("title", ""),
+                    " ".join(r.get("tags") or []),
+                    r.get("content", ""),
+                ])
+                matched = len(q_tokens & _kw_tokens(text))
+                if matched:
+                    candidates[r["id"]] = r
+                    kw[r["id"]] = matched / len(q_tokens)
+
+    # No usable signal → recent docs (preserves the old fallback behavior).
+    if not candidates:
         rows = fetch_all_in_schema(
             SCHEMA,
-            "SELECT *, 0.0 AS cosine_sim FROM documents ORDER BY updated_at DESC LIMIT %s",
+            "SELECT * FROM documents ORDER BY updated_at DESC LIMIT %s",
             (max_results * 3,),
         )
+        for r in rows:
+            candidates[r["id"]] = r
 
     normed_tags = [t.lower().strip() for t in (query_tags or []) if t.strip()]
+    tag_f = (tag_filter or "").lower().strip()
 
     scored = []
-    for row in rows:
-        score = float(row.get("cosine_sim", 0)) * 10  # scale 0–1 → 0–10
-
-        # Tag overlap boost
+    for did, row in candidates.items():
+        doc_tags = set(t.lower() for t in (row.get("tags") or []))
+        if tag_f and tag_f not in doc_tags:
+            continue
+        score = weight * sem.get(did, 0.0) + (1 - weight) * kw.get(did, 0.0)
         if normed_tags:
-            doc_tags = set(t.lower() for t in (row.get("tags") or []))
-            overlap = len(set(normed_tags) & doc_tags)
-            score += overlap * 2
-
-        if score > 0.5:
-            scored.append((score, _row_no_content(row)))
+            score += 0.1 * len(set(normed_tags) & doc_tags)  # small tag boost
+        meta = _row_no_content(row)
+        meta["match_score"] = round(score, 6)
+        scored.append((score, meta))
 
     scored.sort(key=lambda x: x[0], reverse=True)
     return [doc for _score, doc in scored[:max_results]]

@@ -586,6 +586,7 @@ def _observe() -> dict:
 
     # Hybrid search: semantic + tag
     relevant_docs = dl_docs.search_documents_hybrid(
+        query_text=query_text,
         query_embedding=query_embedding,
         query_tags=list(batch_tags)[:30],
         max_results=20,
