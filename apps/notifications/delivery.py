@@ -17,11 +17,62 @@ from config import logger
 
 from apps.notifications import data as _dl_notif
 
+_CHANNEL_ALIASES = {"app": "discord", "push": "pushover"}
+
+
+def _parse_channels(raw: str) -> set[str]:
+    """Turn a channel spec ('discord,pushover' / 'both' / 'all' / 'mobile') into
+    the concrete set of external targets {discord, pushover, mobile}."""
+    out: set[str] = set()
+    for tok in str(raw or "").replace(";", ",").split(","):
+        t = _CHANNEL_ALIASES.get(tok.strip().lower(), tok.strip().lower())
+        if t in ("discord", "pushover", "mobile"):
+            out.add(t)
+        elif t == "both":
+            out |= {"discord", "pushover"}
+        elif t == "all":
+            out |= {"discord", "pushover", "mobile"}
+        # "none" / unknown → contributes nothing
+    return out
+
+
+def _default_channels() -> set[str]:
+    try:
+        from app_platform import settings as _settings
+        raw = _settings.get("default_channels", scope="app:notifications",
+                            default="discord,pushover") or "discord,pushover"
+    except Exception:
+        raw = "discord,pushover"
+    return _parse_channels(raw) or {"discord", "pushover"}
+
+
+def _resolve_external_channels(channel: str) -> set[str]:
+    """Concrete external targets for a notification's channel value.
+
+    Empty/unset → the Settings → Notifications `default_channels`. 'none' → none.
+    """
+    c = (channel or "").strip().lower()
+    if not c:
+        return _default_channels()
+    if c == "none":
+        return set()
+    return _parse_channels(c)
+
+
+def _max_delivery_age_minutes() -> int:
+    try:
+        from app_platform import settings as _settings
+        return int(_settings.get("max_delivery_age_minutes", scope="app:notifications",
+                                 default=5) or 5)
+    except (TypeError, ValueError):
+        return 5
+
 
 async def deliver_pending_notifications():
     """Query all undelivered notifications and deliver them."""
     try:
-        pending = await asyncio.to_thread(_dl_notif.get_all_undelivered, 50)
+        pending = await asyncio.to_thread(
+            _dl_notif.get_all_undelivered, 50, _max_delivery_age_minutes())
     except Exception as e:
         logger.error("NOTIF_DELIVERY: Failed to query pending notifications: %s", e)
         return
@@ -46,7 +97,8 @@ async def _deliver_one(notif: dict):
     notif_id = notif["id"]
     recipient = notif["recipient"]
     message = notif["message"]
-    channel = notif.get("channel", "both")
+    # Resolve external targets; empty channel falls back to default_channels.
+    targets = _resolve_external_channels(notif.get("channel", ""))
 
     if not recipient or not message:
         logger.warning("NOTIF_DELIVERY: Skipping %s — missing recipient or message", notif_id)
@@ -56,7 +108,7 @@ async def _deliver_one(notif: dict):
     delivery_results = []
 
     # --- Discord DM ---
-    if channel in ("discord", "app", "both", "all"):
+    if "discord" in targets:
         try:
             from discord_bot import send_dm
             result = await send_dm(recipient, message)
@@ -66,7 +118,7 @@ async def _deliver_one(notif: dict):
             logger.error("NOTIF_DELIVERY: Discord DM failed for %s: %s", recipient, e)
 
     # --- Pushover ---
-    if channel in ("push", "both", "all"):
+    if "pushover" in targets:
         try:
             from tools.pushover_tool import is_pushover_user, send_pushover_notification
             if is_pushover_user(recipient):
@@ -82,7 +134,7 @@ async def _deliver_one(notif: dict):
             logger.error("NOTIF_DELIVERY: Pushover failed for %s: %s", recipient, e)
 
     # --- FCM Mobile Push ---
-    if channel in ("mobile", "all"):
+    if "mobile" in targets:
         try:
             from fcm_sender import is_enabled as fcm_enabled, send_push_to_user
             if fcm_enabled():
