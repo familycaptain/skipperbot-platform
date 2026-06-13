@@ -34,6 +34,17 @@ EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIM = 1536
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
+
+
+def _extraction_model() -> str:
+    """Model the folder-intelligence fact extractor uses
+    (Settings → Folders: intelligence_extraction_model)."""
+    try:
+        from app_platform import settings as _settings
+        return (_settings.get("intelligence_extraction_model", scope="app:folders",
+                              default=DUMB_MODEL) or DUMB_MODEL)
+    except Exception:
+        return DUMB_MODEL
 CHARS_PER_TOKEN = 4
 
 FOLDER_DIGEST_PROMPT = """\
@@ -185,7 +196,7 @@ def _extract_facts(content: str, title: str) -> list[dict]:
 
     try:
         completion = openai_client.chat.completions.create(
-            model=DUMB_MODEL,
+            model=_extraction_model(),
             messages=[
                 {"role": "system", "content": FOLDER_DIGEST_PROMPT},
                 {"role": "user", "content": user_content},
