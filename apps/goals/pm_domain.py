@@ -22,6 +22,20 @@ from app_platform.time import get_timezone
 import agent_loop
 DUMB_MODEL = os.getenv("DUMB_MODEL", "gpt-5-mini")
 
+def _default_cadence_minutes() -> int:
+    """Global anti-spam window (Settings → Goals: pm_cadence_hours), in minutes.
+
+    The PM domain runs throughout the day, but won't re-engage the SAME project
+    within this window unless there's new activity. Used as the default when a
+    project has no explicit pm_cadence_minutes override.
+    """
+    try:
+        from app_platform import settings as _settings
+        return int(_settings.get("pm_cadence_hours", scope="app:goals", default=24) or 24) * 60
+    except (TypeError, ValueError):
+        return 24 * 60
+
+
 # Max items before we escalate from cheap to standard model
 CHEAP_MODEL_THRESHOLD = 5
 
@@ -635,9 +649,13 @@ def _pick_next_project(observations: list[dict]) -> str | None:
         if pid in wm_project_ids:
             score += 3
 
-        # Cadence gate: if project has a cadence and was reviewed within that window,
-        # suppress it heavily (but still allow if there's urgent activity like observations)
+        # Cadence gate: if the project was reviewed within its cadence window,
+        # suppress it heavily (but still allow if there's urgent activity like
+        # observations). Per-project pm_cadence_minutes overrides the global
+        # default (Settings → Goals: pm_cadence_hours).
         cadence = meta.get("pm_cadence_minutes")
+        if not cadence or cadence <= 0:
+            cadence = _default_cadence_minutes()
         if cadence and cadence > 0 and pid in last_reviewed:
             cadence_hours = cadence / 60.0
             if hours_ago < cadence_hours and not has_activity:
