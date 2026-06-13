@@ -148,6 +148,11 @@ def discord_enabled() -> bool:
 SHOW_ENTITY_IDS = _platform_setting("show_entity_ids", True, cast=_as_bool)
 # App-owned tuning: configured in Settings → Reminders / Settings → Goals.
 REMINDER_LEAD_MINUTES = _platform_setting("reminder_lead_minutes", 120, cast=int, scope="app:reminders")
+# Concrete times the agent uses to resolve fuzzy reminder phrasing ("tomorrow
+# morning" → REMINDER_MORNING_SLOT). Surfaced into the system prompt below.
+REMINDER_MORNING_SLOT = _platform_setting("default_morning_slot", "08:00", scope="app:reminders")
+REMINDER_AFTERNOON_SLOT = _platform_setting("default_afternoon_slot", "13:00", scope="app:reminders")
+REMINDER_EVENING_SLOT = _platform_setting("default_evening_slot", "19:00", scope="app:reminders")
 PM_QUIET_MODE = _platform_setting("pm_quiet_mode", False, cast=_as_bool, scope="app:goals")
 
 
@@ -327,6 +332,12 @@ def load_system_prompt(user_id: str = "") -> str:
                 with open(filepath, "r", encoding="utf-8") as f:
                     parts.append(f.read().strip())
         parts.append(f"REMINDER_LEAD_MINUTES: {REMINDER_LEAD_MINUTES}")
+        parts.append(
+            "REMINDER_TIME_SLOTS (use these concrete local times when a reminder "
+            "request gives only a vague time of day): "
+            f"morning={REMINDER_MORNING_SLOT}, afternoon={REMINDER_AFTERNOON_SLOT}, "
+            f"evening={REMINDER_EVENING_SLOT} (night → evening)."
+        )
         raw = "\n\n".join(parts)
         _BASE_SYSTEM_PROMPT = apply_prompt_templates(raw)
     return _BASE_SYSTEM_PROMPT

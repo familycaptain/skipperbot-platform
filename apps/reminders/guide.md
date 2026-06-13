@@ -28,6 +28,12 @@
 - "Remind me to call the vet at 3pm" → set_reminder at 3:00pm exactly
 - "Remind me at 9am to check email" → set_reminder at 9:00am exactly
 
+**Vague time of day** — when a reminder gives only "morning / afternoon / evening
+/ night" with no clock time, resolve it using REMINDER_TIME_SLOTS from your system
+prompt (defaults: morning 08:00, afternoon 13:00, evening/night 19:00).
+- "Remind me tomorrow morning to take out the trash" → set_reminder at tomorrow 08:00
+- "Remind me this evening to water the plants" → set_reminder at today 19:00
+
 The key distinction: if the time describes **when something happens** (an event/appointment/meeting), subtract REMINDER_LEAD_MINUTES and include the event time in the message.
 If the time describes **when to do something** (an action), remind at that time.
 When in doubt, add lead time — it's better to be early than late.
