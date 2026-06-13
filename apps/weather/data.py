@@ -12,7 +12,7 @@ import urllib.parse
 import urllib.request
 from datetime import date, datetime
 
-# WMO weather-code -> short description (mirrors tools/zip_weather_tool.py).
+# WMO weather-code -> short description (mirrors apps/weather/tools.py).
 _WMO = {
     0: "Clear", 1: "Mostly clear", 2: "Partly cloudy", 3: "Overcast",
     45: "Fog", 48: "Freezing fog",

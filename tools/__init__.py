@@ -9,12 +9,6 @@ from tools.echo_tool import echo
 from tools.tool_creator import create_tool, update_tool, list_tool_files, read_tool, delete_tool
 from tools.tool_registry import register_tool, unregister_tool
 from tools.mcp_control import restart_mcp_server, start_mcp_server, stop_mcp_server, mcp_server_status
-from tools.zip_weather_tool import (
-    get_current_weather_by_zip,
-    get_rain_chance_by_zip,
-    get_hourly_forecast_by_zip,
-    get_daily_forecast_by_zip,
-)
 from tools.app_help_tool import list_installed_apps, get_app_help
 from tools.glob_search_tool import glob_search
 from tools.tool_guide_tool import get_tool_creation_guide
@@ -72,10 +66,6 @@ __all__ = [
     "start_mcp_server",
     "stop_mcp_server",
     "mcp_server_status",
-    "get_current_weather_by_zip",
-    "get_rain_chance_by_zip",
-    "get_hourly_forecast_by_zip",
-    "get_daily_forecast_by_zip",
     "glob_search",
     "get_tool_creation_guide",
     "remember",

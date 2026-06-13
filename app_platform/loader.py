@@ -409,7 +409,7 @@ def _build_tool_route(manifest: AppManifest):
     entry = {
         "description": tc.description,
         "tools": tool_names,
-        "ack": {},
+        "ack": tc.ack,
         "keywords": tc.keywords,
     }
 

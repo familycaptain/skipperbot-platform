@@ -15,9 +15,68 @@ entity_types: []
 emits: []
 subscribes: []
 
-# Chat weather tools live at the platform level (the "weather" tool category);
-# this app is the UI. No app-level tool_category to avoid an empty app:weather one.
-tool_category: null
+# Chat weather tools (apps/weather/tools.py) are owned by this app. The category
+# below routes them and loads guide.md; per-tool acks shown while a tool runs.
+tool_category:
+  description: >
+    Current conditions, hourly forecast, and rain chance for a US ZIP code
+    (keyless NOAA / open-meteo data — no API key required).
+  keywords:
+    - weather
+    - forecast
+    - temperature
+    - temp outside
+    - how hot is it
+    - how cold is it
+    - how warm
+    - rain
+    - raining
+    - chance of rain
+    - will it rain
+    - is it going to rain
+    - precipitation
+    - humidity
+    - wind
+    - windy
+    - sunny
+    - cloudy
+    - snow
+    - snowing
+    - storm
+    - hot today
+    - cold today
+    - degrees outside
+    - conditions outside
+    - whats it like outside
+    - what's it like outside
+    - hourly forecast
+    - todays forecast
+    - today's forecast
+    - tomorrows forecast
+    - tomorrow's forecast
+    - weather today
+    - weather tomorrow
+    - uv index
+    - daily forecast
+    - 10 day forecast
+    - 10-day forecast
+    - ten day forecast
+    - 7 day forecast
+    - 7-day forecast
+    - extended forecast
+    - this week's weather
+    - weather this week
+    - highs and lows
+    - high and low
+    - forecast this week
+    - next few days
+    - multi day forecast
+    - week forecast
+  ack:
+    get_current_weather_by_zip: "Checking the current weather..."
+    get_hourly_forecast_by_zip: "Pulling the hourly forecast..."
+    get_rain_chance_by_zip: "Checking the chance of rain..."
+    get_daily_forecast_by_zip: "Pulling the daily forecast..."
 
 config: []
 thinking: []

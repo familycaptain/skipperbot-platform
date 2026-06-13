@@ -30,6 +30,9 @@ class ToolCategoryDef:
     """Tool routing category declared by an app."""
     description: str = ""
     keywords: list[str] = field(default_factory=list)
+    # Optional per-tool acknowledgement strings ({tool_name: "Doing X..."}),
+    # shown while the tool runs. Mirrors the legacy tool_routes.json `ack` field.
+    ack: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -193,6 +196,7 @@ def parse_manifest(app_dir: Path) -> AppManifest:
         manifest.tool_category = ToolCategoryDef(
             description=tc.get("description", ""),
             keywords=tc.get("keywords", []),
+            ack=tc.get("ack", {}) or {},
         )
 
     # UI apps
