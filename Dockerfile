@@ -56,7 +56,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# ----- Python dependencies -----
+# ----- Python dependencies (incl. resemblyzer for voice speaker-ID) -----
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 

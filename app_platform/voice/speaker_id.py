@@ -5,9 +5,10 @@ the right identity to a voice turn (permissions, personal data, "remind *me*").
 The relay (app_platform/voice/relay.py) buffers each turn's user audio and calls
 identify(); enrollment is voice-driven ("Skipper, this is <name>").
 
-Uses resemblyzer voice embeddings (256-d). It's an OPTIONAL extra
-(requirements-voice-speaker.txt) — if it isn't installed, available() is False
-and enroll/identify are no-ops, so voice keeps working without speaker-ID.
+Uses resemblyzer voice embeddings (256-d). resemblyzer ships in the base
+requirements, so this is on for everyone. available() still guards every call
+defensively — if the import ever fails, enroll/identify degrade to no-ops and
+voice keeps working without speaker-ID.
 
 Scope: per-TURN attribution (each VAD-segmented turn → one speaker). It does NOT
 separate two people talking simultaneously in the same segment ("cocktail party"

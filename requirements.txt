@@ -58,6 +58,13 @@ croniter>=1.3.0
 python-dateutil>=2.8.0
 tzdata>=2024.1
 
+# ---- Voice speaker identification ----
+# resemblyzer (pulls torch, CPU-only is fine) produces the voice embeddings the
+# host relay uses to attribute each turn to an enrolled household member. Shipped
+# for everyone so multi-speaker voice works out of the box. See
+# app_platform/voice/speaker_id.py.
+resemblyzer>=0.1.4
+
 # ---- Print / PDF pipeline ----
 # weasyprint pulls in cairo/pango wheels for ARM and amd64.
 weasyprint>=60.0

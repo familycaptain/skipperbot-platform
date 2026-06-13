@@ -1,6 +1,0 @@
-# Optional host-side speaker identification for voice.
-# Install on the PLATFORM host only if you want per-speaker voice attribution
-# (enroll via "Skipper, this is <name>"). Pulls torch — CPU is fine for the
-# short clips we embed. If absent, speaker-ID degrades gracefully (off) and
-# voice works exactly as before.
-resemblyzer>=0.1.4
