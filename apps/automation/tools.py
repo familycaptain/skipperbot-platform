@@ -12,8 +12,14 @@ import urllib.parse
 import urllib.request
 
 from config import logger
+from app_platform.db import fetch_all_in_schema, scoped_conn
 
-ALIASES_PATH = Path(__file__).with_name("aliases.json")
+SCHEMA = "app_automation"
+
+# Legacy on-disk alias cache, pre-DB. Imported once into app_automation.ha_aliases
+# on an upgraded install, then ignored. New installs never create it.
+_LEGACY_ALIASES_PATH = Path(__file__).with_name("aliases.json")
+_aliases_legacy_imported = False
 
 
 def _ha_base_url() -> str:
@@ -103,21 +109,72 @@ def _ha_states() -> list[dict]:
     return states if isinstance(states, list) else []
 
 
-def _load_aliases() -> dict[str, dict]:
+def _import_legacy_aliases_once() -> None:
+    """One-time: seed ha_aliases from a pre-DB aliases.json if the table is
+    empty, so upgraded installs keep trained aliases without committing them."""
+    global _aliases_legacy_imported
+    if _aliases_legacy_imported:
+        return
+    _aliases_legacy_imported = True
     try:
-        with open(ALIASES_PATH, encoding="utf-8") as f:
-            aliases = json.load(f)
-            return aliases if isinstance(aliases, dict) else {}
-    except FileNotFoundError:
+        if not _LEGACY_ALIASES_PATH.is_file():
+            return
+        data = json.loads(_LEGACY_ALIASES_PATH.read_text(encoding="utf-8"))
+        if not isinstance(data, dict) or not data:
+            return
+        if fetch_all_in_schema(SCHEMA, "SELECT 1 FROM ha_aliases LIMIT 1"):
+            return  # already have DB state — don't clobber it
+        with scoped_conn(SCHEMA) as conn:
+            with conn.cursor() as cur:
+                for alias, d in data.items():
+                    if not isinstance(d, dict):
+                        continue
+                    entity_id = str(d.get("entity_id") or "").strip()
+                    if not alias or not entity_id:
+                        continue
+                    cur.execute(
+                        "INSERT INTO ha_aliases (alias, entity_id, notes) VALUES (%s, %s, %s) "
+                        "ON CONFLICT (alias) DO NOTHING",
+                        (alias, entity_id, str(d.get("notes") or "")),
+                    )
+            conn.commit()
+        logger.info("AUTOMATION: imported %d alias(es) from legacy aliases.json into ha_aliases", len(data))
+    except Exception as exc:
+        logger.warning("AUTOMATION: legacy aliases import skipped: %s", exc)
+
+
+def _load_aliases() -> dict[str, dict]:
+    _import_legacy_aliases_once()
+    try:
+        rows = fetch_all_in_schema(SCHEMA, "SELECT alias, entity_id, notes FROM ha_aliases")
+    except Exception as exc:
+        logger.warning("AUTOMATION: could not load ha_aliases: %s", exc)
         return {}
-    except json.JSONDecodeError:
-        return {}
+    return {
+        r["alias"]: {"entity_id": r.get("entity_id") or "", "notes": r.get("notes") or ""}
+        for r in rows
+    }
 
 
 def _save_aliases(aliases: dict[str, dict]) -> None:
-    with open(ALIASES_PATH, "w", encoding="utf-8") as f:
-        json.dump(aliases, f, indent=2, sort_keys=True)
-        f.write("\n")
+    """Replace ha_aliases with the given {alias: {entity_id, notes}} map.
+
+    Callers load-modify-save the whole dict, so we rewrite the table atomically.
+    """
+    with scoped_conn(SCHEMA) as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM ha_aliases")
+            for alias, d in aliases.items():
+                entity_id = str((d or {}).get("entity_id") or "").strip()
+                if not alias or not entity_id:
+                    continue
+                cur.execute(
+                    "INSERT INTO ha_aliases (alias, entity_id, notes) VALUES (%s, %s, %s) "
+                    "ON CONFLICT (alias) DO UPDATE SET "
+                    "  entity_id = EXCLUDED.entity_id, notes = EXCLUDED.notes, updated_at = now()",
+                    (alias, entity_id, str((d or {}).get("notes") or "")),
+                )
+        conn.commit()
 
 
 def _normalize_name(value: str) -> str:
@@ -419,8 +476,9 @@ def find_home_device(name: str) -> str:
         if not match:
             return (
                 f"No device found matching '{name}'. "
-                "Try a different alias, or list devices in apps/automation/devices.json. "
-                "If the device is new, the alias may need to be added by hand."
+                "Try a different alias, or call list_home_assistant_aliases to see known "
+                "names. If it's a real entity, you can teach the name with "
+                "add_home_assistant_alias(alias, entity_id)."
             )
         device_id, device = match
         entities = _dev.get_entities_for_device(device_id)

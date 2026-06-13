@@ -30,9 +30,17 @@ from threading import Lock
 
 import websockets
 
+from app_platform.db import fetch_all_in_schema, scoped_conn
+
 logger = logging.getLogger(__name__)
 
-DEVICES_PATH = Path(__file__).with_name("devices.json")
+SCHEMA = "app_automation"
+
+# Legacy on-disk cache, pre-DB. If present on an upgraded install we import it
+# once into app_automation.ha_devices (preserving hand-curated aliases), then
+# ignore it. New installs never create it.
+_LEGACY_DEVICES_PATH = Path(__file__).with_name("devices.json")
+_legacy_imported = False
 
 # In-memory mapping: device_id -> [{entity_id, name, device_class, domain, ...}]
 # Populated by fetch_and_save(); read by find_device / get_entities_for_device.
@@ -191,23 +199,93 @@ def fetch_and_save() -> dict:
         _entities_by_device.clear()
         _entities_by_device.update(new_entities_map)
 
-    # Merge into devices.json, preserving any hand-edited aliases
+    # Merge, preserving any hand-edited aliases, then persist to ha_devices.
     existing = load_cached()
     entity_owners = set(new_entities_map.keys())
     aliases = _build_device_aliases(devices, existing, entity_owners)
-    DEVICES_PATH.write_text(
-        json.dumps(aliases, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    _save_devices(aliases)
     return aliases
 
 
-def load_cached() -> dict:
-    """Return the slim devices.json contents, or empty dict if missing."""
+def _save_devices(devices: dict) -> None:
+    """Replace ha_devices with the given {device_id: {name, ..., aliases}} map.
+
+    Upserts every current device (preserving its aliases as built by the
+    caller) and drops any device no longer present — matching the old
+    whole-file rewrite semantics.
+    """
+    keep = list(devices.keys())
+    with scoped_conn(SCHEMA) as conn:
+        with conn.cursor() as cur:
+            for did, d in devices.items():
+                cur.execute(
+                    "INSERT INTO ha_devices (device_id, name, manufacturer, model, aliases, updated_at) "
+                    "VALUES (%s, %s, %s, %s, %s, now()) "
+                    "ON CONFLICT (device_id) DO UPDATE SET "
+                    "  name = EXCLUDED.name, manufacturer = EXCLUDED.manufacturer, "
+                    "  model = EXCLUDED.model, aliases = EXCLUDED.aliases, updated_at = now()",
+                    (did, d.get("name", ""), d.get("manufacturer", ""),
+                     d.get("model", ""), json.dumps(d.get("aliases") or [])),
+                )
+            if keep:
+                cur.execute("DELETE FROM ha_devices WHERE device_id <> ALL(%s)", (keep,))
+            else:
+                cur.execute("DELETE FROM ha_devices")
+        conn.commit()
+
+
+def _import_legacy_devices_once() -> None:
+    """One-time: seed ha_devices from a pre-DB devices.json if the table is
+    empty. Lets upgraded installs keep their hand-curated aliases without ever
+    committing home data to git."""
+    global _legacy_imported
+    if _legacy_imported:
+        return
+    _legacy_imported = True
     try:
-        return json.loads(DEVICES_PATH.read_text(encoding="utf-8"))
-    except (FileNotFoundError, json.JSONDecodeError):
+        if not _LEGACY_DEVICES_PATH.is_file():
+            return
+        data = json.loads(_LEGACY_DEVICES_PATH.read_text(encoding="utf-8"))
+        if not isinstance(data, dict) or not data:
+            return
+        if fetch_all_in_schema(SCHEMA, "SELECT 1 FROM ha_devices LIMIT 1"):
+            return  # already have DB state — don't clobber it
+        with scoped_conn(SCHEMA) as conn:
+            with conn.cursor() as cur:
+                for did, d in data.items():
+                    if not isinstance(d, dict):
+                        continue
+                    cur.execute(
+                        "INSERT INTO ha_devices (device_id, name, manufacturer, model, aliases) "
+                        "VALUES (%s, %s, %s, %s, %s) ON CONFLICT (device_id) DO NOTHING",
+                        (did, d.get("name", ""), d.get("manufacturer", ""),
+                         d.get("model", ""), json.dumps(d.get("aliases") or [])),
+                    )
+            conn.commit()
+        logger.info("AUTOMATION: imported %d device(s) from legacy devices.json into ha_devices", len(data))
+    except Exception as exc:
+        logger.warning("AUTOMATION: legacy devices import skipped: %s", exc)
+
+
+def load_cached() -> dict:
+    """Return {device_id: {name, manufacturer, model, aliases}} from ha_devices."""
+    _import_legacy_devices_once()
+    try:
+        rows = fetch_all_in_schema(
+            SCHEMA, "SELECT device_id, name, manufacturer, model, aliases FROM ha_devices"
+        )
+    except Exception as exc:
+        logger.warning("AUTOMATION: could not load ha_devices: %s", exc)
         return {}
+    return {
+        r["device_id"]: {
+            "name": r.get("name") or "",
+            "manufacturer": r.get("manufacturer") or "",
+            "model": r.get("model") or "",
+            "aliases": r.get("aliases") or [],
+        }
+        for r in rows
+    }
 
 
 def build_voice_alias_block() -> str:

@@ -1,10 +1,10 @@
 """Automation App — Platform Hooks.
 
 Spawns a background thread that keeps the Home Assistant device + entity
-registry snapshot at apps/automation/devices.json fresh:
+registry snapshot in the app_automation.ha_devices table fresh:
   - immediate fetch on startup (non-blocking — runs in its own thread)
   - re-fetch every REFRESH_INTERVAL_SECONDS thereafter
-  - on failure, logs and falls back to the previous cached file; tries again
+  - on failure, logs and falls back to the previous cached rows; tries again
     on the next tick (so HA being down at boot doesn't kill the cache)
 """
 

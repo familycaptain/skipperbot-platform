@@ -28,6 +28,12 @@ data/pm_state.json
 data/*.json
 !data/*.example.json
 
+# Per-install Home Assistant data — now stored in the app_automation DB schema
+# (ha_devices / ha_aliases). Any legacy on-disk copy is imported once, then
+# ignored; never commit a home's device/alias list.
+apps/automation/devices.json
+apps/automation/aliases.json
+
 # ----- private migration / conversion scripts (per-installation, not public) -----
 private/
 
