@@ -30,7 +30,8 @@ import app_platform.documents as _dl_doc
 
 logger = logging.getLogger(__name__)
 
-EMBEDDING_MODEL = "text-embedding-3-small"
+# Embedding model is platform-wide (Settings → System → Embedding model),
+# resolved in memory_store; _get_embedding defers to it.
 EMBEDDING_DIM = 1536
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
@@ -86,12 +87,14 @@ _ENTITY_RE = re.compile(
 # ---------------------------------------------------------------------------
 
 def _get_embedding(text: str) -> list[float]:
-    """Get an embedding vector from OpenAI for a piece of text."""
-    response = openai_client.embeddings.create(
-        model=EMBEDDING_MODEL,
-        input=text,
-    )
-    return response.data[0].embedding
+    """Embed text with the platform-wide embedding model.
+
+    Folder-knowledge vectors must share the same model + dimension as the rest
+    of the platform's vector space, so this defers to memory_store (driven by
+    Settings → System → Embedding model) rather than a per-app model.
+    """
+    from memory_store import get_embedding
+    return get_embedding(text)
 
 
 # ---------------------------------------------------------------------------

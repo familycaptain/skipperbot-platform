@@ -79,11 +79,9 @@ tool_category:
     - breadcrumb
 
 config:
-  - key: intelligence_embedding_model
-    type: string
-    default: "text-embedding-3-small"
-    label: "Knowledge embedding model"
-    description: "OpenAI embedding model used by the folder intelligence pipeline (1536 dims)."
+  # NOTE: the embedding model is platform-wide (Settings → System → "Embedding
+  # model") — folder-knowledge vectors share the platform vector space, so there
+  # is no folders-scope embedding model.
   - key: intelligence_extraction_model
     type: string
     default: "gpt-5-mini"
