@@ -77,6 +77,12 @@ def _session_update(instructions: str, tools: list[dict], voice: str) -> dict:
                         "threshold": float(os.getenv("VOICE_VAD_THRESHOLD", "0.5")),
                         "prefix_padding_ms": int(os.getenv("VOICE_VAD_PREFIX_PADDING_MS", "300")),
                         "silence_duration_ms": int(os.getenv("VOICE_VAD_SILENCE_MS", "500")),
+                        # The relay drives responses itself (see _on_user_turn) so it
+                        # can resolve speaker-ID and inject the speaker before the model
+                        # answers. interrupt_response stays on so hardware-AEC barge-in
+                        # still truncates in-progress speech.
+                        "create_response": False,
+                        "interrupt_response": True,
                     },
                 },
                 "output": {
@@ -85,6 +91,36 @@ def _session_update(instructions: str, tools: list[dict], voice: str) -> dict:
                 },
             },
             "tools": tools,
+        },
+    }
+
+
+# Appended to the model's instructions so it knows the speaker-note convention.
+_SPEAKER_AWARENESS = (
+    "\n\nMultiple household members may speak through this device. Before each user "
+    "turn you may receive a 'System note' identifying who is speaking, recognized by "
+    "their voice. Trust it: attribute the turn to that person and you may greet them "
+    "by name. If a note says the speaker is not recognized and they tell you their "
+    "name or ask you to remember their voice (e.g. \"this is <name>\"), call enroll_voice."
+)
+
+
+def _speaker_context_item(name: str | None) -> dict:
+    """A conversation item telling the model who is speaking this turn."""
+    if name:
+        text = (f"System note: The person now speaking has been recognized by voice as "
+                f"{name.title()}. Treat this and the following turns as {name.title()} "
+                f"until a different speaker is announced.")
+    else:
+        text = ("System note: The current speaker's voice is not recognized as an enrolled "
+                "household member. Do not assume who they are. If they tell you their name "
+                "and ask to be remembered, call enroll_voice.")
+    return {
+        "type": "conversation.item.create",
+        "item": {
+            "type": "message",
+            "role": "system",
+            "content": [{"type": "input_text", "text": text}],
         },
     }
 
@@ -143,7 +179,7 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
     except Exception:  # chatlog is best-effort
         record_voice_transcript = None
 
-    instructions = session.get("base_instructions", "")
+    instructions = (session.get("base_instructions", "") or "") + _SPEAKER_AWARENESS
     tools = session.get("base_tools", []) or []
     voice = session.get("voice", REALTIME_VOICE)
     user_id = session.get("user_id", "")
@@ -170,24 +206,42 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         cap = {"on": False}
         utterance = bytearray()
         last_utterance = {"pcm": b""}
+        announced = {"id": None}  # last speaker identity surfaced to the model
 
-        async def _identify_and_set(pcm: bytes) -> None:
-            if not pcm or not speaker_id.available():
-                return
+        async def _on_user_turn(pcm: bytes) -> None:
+            """Resolve the speaker, tell the model if it changed, then drive the reply.
+
+            Because server-VAD create_response is off, WE issue response.create — and
+            only after speaker-ID resolves — so the right identity is set before the
+            model answers or runs a tool. Always ends with response.create (even when
+            speaker-ID is unavailable or errors) so the turn never stalls.
+            """
+            name, score = None, 0.0
             try:
-                name, score = await asyncio.to_thread(speaker_id.identify, pcm, _SR)
+                if pcm and speaker_id.available():
+                    name, score = await asyncio.to_thread(speaker_id.identify, pcm, _SR)
             except Exception as exc:
                 logger.warning("VOICE-RELAY: identify failed: %s", exc)
-                return
-            if name and name != session.get("user_id"):
-                logger.info("VOICE-RELAY: speaker -> %s (%.2f) [session %s]",
-                            name, score, session_id[:12])
-                session["user_id"] = name  # tools/data/permissions follow the speaker
-                try:
-                    await satellite_ws.send_text(json.dumps(
-                        {"type": "speaker", "name": name, "score": round(score, 2)}))
-                except Exception:
-                    pass
+                name = None
+            try:
+                ident = name or "__unknown__"
+                if ident != announced["id"]:
+                    announced["id"] = ident
+                    if name:
+                        session["user_id"] = name  # tools/data/permissions follow the speaker
+                        logger.info("VOICE-RELAY: speaker -> %s (%.2f) [session %s]",
+                                    name, score, session_id[:12])
+                    else:
+                        logger.info("VOICE-RELAY: speaker unrecognized (best %.2f) [session %s]",
+                                    score, session_id[:12])
+                    try:
+                        await satellite_ws.send_text(json.dumps(
+                            {"type": "speaker", "name": name or "", "score": round(score, 2)}))
+                    except Exception:
+                        pass
+                    await _send_oai(oai, _speaker_context_item(name))
+            finally:
+                await _send_oai(oai, {"type": "response.create"})
 
         async def pump_satellite_to_openai():
             """Mic PCM (binary) → OpenAI input_audio_buffer.append; text = control."""
@@ -238,8 +292,10 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                         cap["on"] = False
                         last_utterance["pcm"] = bytes(utterance)
                         await satellite_ws.send_text(json.dumps({"type": "status", "status": "speech_stopped"}))
-                        # identify off the event loop so we don't stall the pumps
-                        asyncio.create_task(_identify_and_set(last_utterance["pcm"]))
+                        # Resolve the speaker, then drive the reply (response.create is
+                        # issued in here, not by server-VAD). Off the event loop so the
+                        # identify/embed work doesn't stall the OpenAI receive pump.
+                        asyncio.create_task(_on_user_turn(last_utterance["pcm"]))
 
                     elif et == "conversation.item.input_audio_transcription.completed":
                         text = event.get("transcript", "")
