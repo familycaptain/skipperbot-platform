@@ -32,8 +32,25 @@ from config import logger
 # Helpers
 # ---------------------------------------------------------------------------
 
+def _goals_trello_enabled() -> bool:
+    """Master Trello-sync switch for goals/projects (Settings → Goals:
+    trello_sync_enabled, default on). When off, all project/task Trello sync is
+    suppressed at this chokepoint."""
+    try:
+        from app_platform import settings as _settings
+        return bool(_settings.get("trello_sync_enabled", scope="app:goals", default=True))
+    except Exception:
+        return True
+
+
 def get_project_trello_config(project: dict) -> dict | None:
-    """Get Trello config for a project, or None if not linked."""
+    """Get Trello config for a project, or None if not linked / sync disabled.
+
+    Every project/task sync path funnels through here, so this is also the
+    master gate for the trello_sync_enabled kill-switch.
+    """
+    if not _goals_trello_enabled():
+        return None
     trello = project.get("trello")
     if not trello or not trello.get("board"):
         return None

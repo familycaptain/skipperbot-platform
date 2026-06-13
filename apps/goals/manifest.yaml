@@ -114,9 +114,9 @@ config:
     label: "Default priority for new projects + tasks"
   - key: trello_sync_enabled
     type: boolean
-    default: false
+    default: true
     label: "Sync tasks to Trello"
-    description: "Requires Trello integration configured in .env. See docs/03-extended-functionality.md."
+    description: "Master switch for project/task↔Trello sync. When off, no Trello sync happens even for Trello-linked projects. Requires Trello integration configured (see docs/03-extended-functionality.md)."
 
 # The PM thinking domain — autonomous review of goals/projects/tasks.
 # Disabled by default; user enables in Settings or via onboarding.
