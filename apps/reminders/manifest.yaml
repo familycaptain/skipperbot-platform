@@ -106,11 +106,12 @@ config:
     default: 30
     label: "Scheduler tick (seconds)"
     description: "How often the scheduler loop checks for due reminders. Lower = lower latency, higher = less DB load."
+    requires_restart: true
   - key: reminder_lead_minutes
     type: integer
     default: 120
     label: "Reminder lead time (minutes)"
-    description: "How far ahead of a due time the platform fires the reminder."
+    description: "How far ahead of an event/appointment the reminder fires. Surfaced to the agent (via the system prompt) which sets event reminders this many minutes early."
     requires_restart: true
 
 # No thinking domain — reminders is passive infrastructure (the

@@ -25,8 +25,18 @@ from apps.reminders.store import get_due_reminders, mark_delivered, assign_nag_t
 from app_platform.notifications import create_notification
 
 
-# How often to check for due reminders (seconds)
+# How often to check for due reminders (seconds). Fallback default; the actual
+# cadence is read from Settings → Reminders (scheduler_tick_seconds) at startup.
 CHECK_INTERVAL = 30
+
+
+def _tick_seconds() -> int:
+    try:
+        from app_platform import settings as _settings
+        return int(_settings.get(
+            "scheduler_tick_seconds", scope="app:reminders", default=CHECK_INTERVAL) or CHECK_INTERVAL)
+    except (TypeError, ValueError):
+        return CHECK_INTERVAL
 
 # Graceful shutdown flag
 _shutting_down = False
@@ -131,10 +141,11 @@ async def check_and_deliver():
 
 async def start_reminder_scheduler():
     """Run the reminder check loop forever. Start as an asyncio task."""
-    logger.info("REMINDER: Scheduler started (checking every %ds)", CHECK_INTERVAL)
+    tick = _tick_seconds()
+    logger.info("REMINDER: Scheduler started (checking every %ds)", tick)
     while True:
         if _shutting_down:
             logger.info("REMINDER: Scheduler exiting — shutdown requested")
             return
         await check_and_deliver()
-        await asyncio.sleep(CHECK_INTERVAL)
+        await asyncio.sleep(tick)
