@@ -87,11 +87,11 @@ config:
     default: "gpt-5-mini"
     label: "Knowledge extraction model"
     description: "Model the folder intelligence pipeline uses to pull facts from each folder item."
-  - key: max_knowledge_chunks_per_item
+  - key: facts_per_chunk
     type: integer
-    default: 12
-    label: "Max knowledge chunks per item"
-    description: "Caps how many fact + content chunks the pipeline writes per folder item."
+    default: 4
+    label: "Fact extraction density (facts per chunk)"
+    description: "How many facts to extract per ~500-token chunk of a document (chunk count is a rough length proxy). 1 = sparse, higher = denser. Facts still flex with the document's actual information density."
 
 # Folders has no thinking domain of its own — the Documents thinking
 # domain does the cross-folder reorganization. Folders only owns the

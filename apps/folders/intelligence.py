@@ -58,13 +58,11 @@ Rules:
 - Include WHO/WHAT/WHEN/WHERE details when present.
 - Include specific names, dates, numbers, measurements, medical details, \
   financial figures, decisions, preferences, and any other concrete data.
-- The number of facts MUST be proportional to the document size:
-  * Very short (< 200 tokens): 1-3 facts
-  * Short (200-500 tokens): 3-8 facts
-  * Medium (500-2000 tokens): 8-20 facts
-  * Long (2000-5000 tokens): 20-40 facts
-  * Very long (5000+ tokens): 40+ facts — extract exhaustively
-- Do NOT summarize or compress. Extract EVERY distinct piece of information. \
+- Each request includes a target number of facts based on the document's
+  length and the configured extraction density. Aim for roughly that many,
+  but adjust to the document's ACTUAL information density — extract more if
+  it's packed with distinct facts, fewer if it's sparse or repetitive.
+- Do NOT summarize or compress. Extract distinct pieces of information. \
   A long document with many details should yield many facts.
 - Each fact should be self-contained (understandable without the source doc).
 - Include the document title context in facts when it adds clarity.
@@ -184,18 +182,41 @@ def _content_hash(content: str) -> str:
 # Fact extraction via LLM
 # ---------------------------------------------------------------------------
 
+def _facts_per_chunk() -> float:
+    """Extraction density (Settings → Folders: facts_per_chunk).
+
+    Target facts ≈ this × chunk_count, where chunk_count ≈ document length.
+    1 = sparse (~1 fact per chunk), higher = denser. Clamped to a sane range."""
+    try:
+        from app_platform import settings as _settings
+        v = float(_settings.get("facts_per_chunk", scope="app:folders", default=4) or 4)
+    except (TypeError, ValueError):
+        v = 4.0
+    return max(0.25, min(v, 20.0))
+
+
 def _extract_facts(content: str, title: str) -> list[dict]:
-    """Use LLM to extract structured facts from content."""
+    """Use LLM to extract structured facts from content.
+
+    The target fact count scales with document length (chunk_count) × the
+    configured extraction density (facts_per_chunk).
+    """
     if not content or len(content.strip()) < 20:
         return []
 
     est_tokens = len(content) // CHARS_PER_TOKEN
-    estimated_facts = max(3, est_tokens // 100)
-    visible_tokens = 400 + estimated_facts * 150
+    chunk_count = max(1, est_tokens // CHUNK_SIZE)        # rough document-length proxy
+    target_facts = max(1, round(_facts_per_chunk() * chunk_count))
+    visible_tokens = 400 + target_facts * 150
     reasoning_overhead = 4000
     max_tokens = min(visible_tokens + reasoning_overhead, 16000)
 
-    user_content = f"Document title: {title}\n\nApproximate length: ~{est_tokens} tokens\n\n---\n\n{content}"
+    user_content = (
+        f"Document title: {title}\n\n"
+        f"Approximate length: ~{est_tokens} tokens (~{chunk_count} chunk(s)).\n"
+        f"Target: roughly {target_facts} fact(s) — scale to the document's actual "
+        f"information density.\n\n---\n\n{content}"
+    )
 
     try:
         completion = openai_client.chat.completions.create(
