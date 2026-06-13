@@ -24,7 +24,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_ROOT_USER_ACTION=ignore
 
 # OS deps:
-#   - postgresql-client       for pg_dump (used by the backups app)
+#   - postgresql-client-18    for pg_dump (used by the backups app). Pinned to 18
+#                             from the PGDG repo: bookworm's default client is 15,
+#                             and pg_dump refuses to dump a NEWER server, so a v15
+#                             client cannot back up the bundled PG18 database.
 #   - weasyprint deps         for PDF rendering in the print pipeline
 #   - curl, ca-certificates   for HTTPS fetch tools + healthcheck
 #   - Node 24 LTS             for the web UI build (build-time + runtime via entrypoint)
@@ -32,15 +35,23 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         ca-certificates \
         curl \
         gnupg \
-        postgresql-client \
+    # PGDG apt repo (for postgresql-client-18 — see note above)
+    && install -d /usr/share/postgresql-common/pgdg \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+        -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list \
+    # Node 24 LTS apt repo
+    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get update && apt-get install -y --no-install-recommends \
+        postgresql-client-18 \
+        nodejs \
         libpango-1.0-0 \
         libpangoft2-1.0-0 \
         libcairo2 \
         libffi-dev \
         libgdk-pixbuf2.0-0 \
         shared-mime-info \
-    && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
