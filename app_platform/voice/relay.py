@@ -31,6 +31,7 @@ import logging
 import os
 
 import websockets
+from websockets.exceptions import ConnectionClosed
 
 from config import logger
 
@@ -56,7 +57,7 @@ OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime"
 # else (background voices, adjacent rooms) is ignored until "goodbye". Same
 # speaker on the same mic typically scores well above this; a different person
 # falls below. Tunable via env.
-_LOCK_THRESHOLD = float(os.getenv("VOICE_SPEAKER_LOCK_THRESHOLD", "0.70"))
+_LOCK_THRESHOLD = float(os.getenv("VOICE_SPEAKER_LOCK_THRESHOLD", "0.65"))
 
 _AUDIO_DELTA_TYPES = {"response.audio.delta", "response.output_audio.delta"}
 _ASSISTANT_TRANSCRIPT_TYPES = {
@@ -214,7 +215,10 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         cap = {"on": False}
         utterance = bytearray()
         last_utterance = {"pcm": b""}      # most recent ACCEPTED (locked-speaker) turn
-        lock = {"vec": None, "name": None}  # the session's locked voiceprint + identity
+        # The session voice-lock: the reference voiceprint (adapted toward the speaker
+        # as accepted turns come in, so it stabilizes), the resolved identity, and the
+        # number of turns blended into the reference.
+        lock = {"vec": None, "name": None, "n": 0}
         last_item = {"id": None}            # id of the latest committed user item (for delete)
         # item_id -> Future[transcript]. The user transcript arrives on its own event,
         # but we only persist it once the turn is ACCEPTED — so the transcription
@@ -230,6 +234,18 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                 transcript_futs[item_id] = fut
             return fut
 
+        def _spawn(coro):
+            """Run a fire-and-forget coro without leaking 'task exception never
+            retrieved' noise when the session socket closes mid-flight."""
+            async def _runner():
+                try:
+                    await coro
+                except (ConnectionClosed, asyncio.CancelledError):
+                    pass
+                except Exception as exc:
+                    logger.warning("VOICE-RELAY: background task error: %s", exc)
+            return asyncio.create_task(_runner())
+
         async def _embed(pcm: bytes):
             if not pcm:
                 return None
@@ -238,6 +254,38 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             except Exception as exc:
                 logger.warning("VOICE-RELAY: embed failed: %s", exc)
                 return None
+
+        async def _set_locked_identity(name: str | None, score: float, *, relock: bool) -> None:
+            """Record the locked speaker's name, tell the model + satellite, attribute turns."""
+            lock["name"] = name
+            if name:
+                session["user_id"] = name  # tools/data/permissions follow the locked speaker
+                logger.info("VOICE-RELAY: %s user_id=%s by voice (sim %.2f) [session %s]",
+                            "locked to" if relock else "speaker identified as",
+                            name, score, session_id[:12])
+            else:
+                logger.info("VOICE-RELAY: locked to unidentified voice; user_id=%s (no enrolled "
+                            "profile matched) [session %s]", session.get("user_id", ""), session_id[:12])
+            try:
+                await satellite_ws.send_text(json.dumps(
+                    {"type": "speaker", "name": name or "", "locked": True}))
+            except Exception:
+                pass
+            await _send_oai(oai, _speaker_context_item(name))
+
+        async def _adopt_name_if_unidentified(vec) -> None:
+            """Still unnamed but a turn was accepted → re-check enrolled profiles.
+
+            Catches the speaker enrolling mid-session, or a profile that only matches
+            once the lock has adapted. Only fills in a missing name; never reassigns."""
+            if lock["name"] is not None:
+                return
+            try:
+                name, score = await asyncio.to_thread(speaker_id.identify_vec, vec)
+            except Exception:
+                return
+            if name and lock["name"] is None:
+                await _set_locked_identity(name, score, relock=False)
 
         async def _finalize_user_transcript(item_id: str) -> None:
             """For an ACCEPTED turn: wait for its transcript, then persist + display it."""
@@ -265,7 +313,7 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             last_utterance["pcm"] = pcm
             item_id = last_item.get("id")
             await _send_oai(oai, {"type": "response.create"})
-            asyncio.create_task(_finalize_user_transcript(item_id))
+            _spawn(_finalize_user_transcript(item_id))
 
         async def _on_user_turn(pcm: bytes) -> None:
             """Drive the turn's reply (server-VAD create_response is off, so we own it).
@@ -285,24 +333,12 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                 vec = await _embed(pcm)
                 if vec is not None:
                     lock["vec"] = vec
+                    lock["n"] = 1
                     try:
-                        name, score = await asyncio.to_thread(speaker_id.identify, pcm, _SR)
+                        name, score = await asyncio.to_thread(speaker_id.identify_vec, vec)
                     except Exception:
                         name, score = None, 0.0
-                    lock["name"] = name
-                    if name:
-                        session["user_id"] = name  # tools/data/permissions follow the locked speaker
-                        logger.info("VOICE-RELAY: locked to user_id=%s by voice (sim %.2f) [session %s]",
-                                    name, score, session_id[:12])
-                    else:
-                        logger.info("VOICE-RELAY: locked to unidentified voice; user_id=%s (no enrolled "
-                                    "profile matched) [session %s]", session.get("user_id", ""), session_id[:12])
-                    try:
-                        await satellite_ws.send_text(json.dumps(
-                            {"type": "speaker", "name": name or "", "locked": True}))
-                    except Exception:
-                        pass
-                    await _send_oai(oai, _speaker_context_item(name))
+                    await _set_locked_identity(name, score, relock=True)
                 else:
                     logger.info("VOICE-RELAY: first utterance too short to lock; "
                                 "retrying next turn [session %s]", session_id[:12])
@@ -314,9 +350,17 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             vec = await _embed(pcm)
             sim = speaker_id.cosine(vec, lock["vec"]) if vec is not None else 0.0
             if vec is not None and sim >= _LOCK_THRESHOLD:
+                # Adapt the reference toward the speaker (running average — cosine is
+                # scale-invariant, so no renormalize needed). Stabilizes the lock and
+                # pulls the speaker's own future sims up.
+                n = lock["n"]
+                lock["vec"] = [(o * n + x) / (n + 1) for o, x in zip(lock["vec"], vec)]
+                lock["n"] = n + 1
                 logger.info("VOICE-RELAY: turn accepted, user_id=%s (sim %.2f) [session %s]",
                             locked_user, sim, session_id[:12])
                 await _accept_and_reply(pcm)
+                if lock["name"] is None:
+                    _spawn(_adopt_name_if_unidentified(vec))
             else:
                 logger.info("VOICE-RELAY: ignoring off-target voice (sim %.2f < %.2f); "
                             "session locked to user_id=%s [session %s]",
@@ -381,7 +425,7 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                         # Voice-lock check + drive the reply (response.create is issued in
                         # there, not by server-VAD). Snapshot the turn's PCM and run off
                         # the event loop so embed work doesn't stall the receive pump.
-                        asyncio.create_task(_on_user_turn(bytes(utterance)))
+                        _spawn(_on_user_turn(bytes(utterance)))
 
                     elif et == "input_audio_buffer.committed":
                         # Remember the user item id so an off-target turn can be deleted.

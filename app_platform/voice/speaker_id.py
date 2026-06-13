@@ -142,16 +142,14 @@ def enroll(name: str, pcm16: bytes, sample_rate: int = 24000) -> bool:
     return True
 
 
-def identify(pcm16: bytes, sample_rate: int = 24000) -> tuple[str | None, float]:
-    """Return (best-matching name, score) for an audio sample.
+def identify_vec(vec: list[float] | None) -> tuple[str | None, float]:
+    """Match an already-computed voiceprint against enrolled profiles.
 
-    (None, score) if no enrolled profile clears MATCH_THRESHOLD, or if speaker-ID
-    is unavailable.
+    (None, best_score) if nothing clears MATCH_THRESHOLD. Lets callers that
+    already embedded an utterance (e.g. the relay's voice-lock) name the speaker
+    without embedding a second time.
     """
-    if not available():
-        return (None, 0.0)
-    vec = embed(pcm16, sample_rate)
-    if vec is None:
+    if not vec:
         return (None, 0.0)
     _ensure_schema()
     rows = fetch_all("SELECT name, embedding FROM voice_speaker_profiles")
@@ -166,6 +164,17 @@ def identify(pcm16: bytes, sample_rate: int = 24000) -> tuple[str | None, float]
     if best_score >= MATCH_THRESHOLD:
         return (best_name, best_score)
     return (None, best_score)
+
+
+def identify(pcm16: bytes, sample_rate: int = 24000) -> tuple[str | None, float]:
+    """Return (best-matching name, score) for an audio sample.
+
+    (None, score) if no enrolled profile clears MATCH_THRESHOLD, or if speaker-ID
+    is unavailable.
+    """
+    if not available():
+        return (None, 0.0)
+    return identify_vec(embed(pcm16, sample_rate))
 
 
 def list_profiles() -> list[dict]:
