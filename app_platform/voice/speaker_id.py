@@ -102,6 +102,13 @@ def _cosine(a: list[float], b: list[float]) -> float:
     return float(np.dot(va, vb) / (na * nb))
 
 
+def cosine(a: list[float], b: list[float]) -> float:
+    """Public cosine similarity of two voiceprints (e.g. for session voice-lock)."""
+    if not a or not b:
+        return 0.0
+    return _cosine(a, b)
+
+
 def enroll(name: str, pcm16: bytes, sample_rate: int = 24000) -> bool:
     """Enroll/update a voiceprint for `name` from an audio sample.
 
