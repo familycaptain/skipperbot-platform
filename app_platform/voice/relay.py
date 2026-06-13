@@ -216,6 +216,19 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         last_utterance = {"pcm": b""}      # most recent ACCEPTED (locked-speaker) turn
         lock = {"vec": None, "name": None}  # the session's locked voiceprint + identity
         last_item = {"id": None}            # id of the latest committed user item (for delete)
+        # item_id -> Future[transcript]. The user transcript arrives on its own event,
+        # but we only persist it once the turn is ACCEPTED — so the transcription
+        # handler resolves the future and the accept path consumes it. Off-target
+        # turns drop the future, so background voices never reach chat history/memory.
+        transcript_futs: dict[str, asyncio.Future] = {}
+        dropped_items: set[str] = set()  # item_ids ignored before their transcript arrived
+
+        def _transcript_fut(item_id: str) -> asyncio.Future:
+            fut = transcript_futs.get(item_id)
+            if fut is None:
+                fut = asyncio.get_running_loop().create_future()
+                transcript_futs[item_id] = fut
+            return fut
 
         async def _embed(pcm: bytes):
             if not pcm:
@@ -226,17 +239,45 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                 logger.warning("VOICE-RELAY: embed failed: %s", exc)
                 return None
 
+        async def _finalize_user_transcript(item_id: str) -> None:
+            """For an ACCEPTED turn: wait for its transcript, then persist + display it."""
+            if not item_id:
+                return
+            fut = _transcript_fut(item_id)
+            try:
+                text = await asyncio.wait_for(fut, timeout=8.0)
+            except (asyncio.TimeoutError, asyncio.CancelledError):
+                text = ""
+            finally:
+                transcript_futs.pop(item_id, None)
+            text = (text or "").strip()
+            if not text:
+                return
+            if record_voice_transcript:
+                await record_voice_transcript(session_id, "user", text, user_id=session.get("user_id", ""))
+            try:
+                await satellite_ws.send_text(json.dumps({"type": "transcript", "role": "user", "text": text}))
+            except Exception:
+                pass
+
+        async def _accept_and_reply(pcm: bytes) -> None:
+            """Accept this turn: it's the locked speaker. Reply now; persist transcript."""
+            last_utterance["pcm"] = pcm
+            item_id = last_item.get("id")
+            await _send_oai(oai, {"type": "response.create"})
+            asyncio.create_task(_finalize_user_transcript(item_id))
+
         async def _on_user_turn(pcm: bytes) -> None:
             """Drive the turn's reply (server-VAD create_response is off, so we own it).
 
             First utterance establishes the session voice-lock and replies. Later turns
             reply ONLY if their voiceprint matches the lock; any other voice (background,
             adjacent rooms, other people) is ignored and its stray turn is deleted from
-            the model's context. The lock holds until the session ends ("goodbye").
+            the model's context (and never written to chat history). The lock holds until
+            the session ends ("goodbye").
             """
             if not speaker_id.available():
-                last_utterance["pcm"] = pcm
-                await _send_oai(oai, {"type": "response.create"})
+                await _accept_and_reply(pcm)
                 return
 
             # Not locked yet → this utterance becomes the lock, then we reply.
@@ -265,8 +306,7 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                 else:
                     logger.info("VOICE-RELAY: first utterance too short to lock; "
                                 "retrying next turn [session %s]", session_id[:12])
-                last_utterance["pcm"] = pcm
-                await _send_oai(oai, {"type": "response.create"})
+                await _accept_and_reply(pcm)
                 return
 
             # Locked → only answer if this turn is the same voice; else ignore + delete it.
@@ -274,18 +314,21 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             vec = await _embed(pcm)
             sim = speaker_id.cosine(vec, lock["vec"]) if vec is not None else 0.0
             if vec is not None and sim >= _LOCK_THRESHOLD:
-                last_utterance["pcm"] = pcm
                 logger.info("VOICE-RELAY: turn accepted, user_id=%s (sim %.2f) [session %s]",
                             locked_user, sim, session_id[:12])
-                await _send_oai(oai, {"type": "response.create"})
+                await _accept_and_reply(pcm)
             else:
                 logger.info("VOICE-RELAY: ignoring off-target voice (sim %.2f < %.2f); "
                             "session locked to user_id=%s [session %s]",
                             sim, _LOCK_THRESHOLD, locked_user, session_id[:12])
                 item_id = last_item.get("id")
                 if item_id:
-                    # Drop the stray turn so it can't pollute the locked conversation.
+                    # Drop the stray turn so it never reaches the model OR chat history.
                     await _send_oai(oai, {"type": "conversation.item.delete", "item_id": item_id})
+                    dropped_items.add(item_id)  # its transcript may still be in flight
+                    fut = transcript_futs.pop(item_id, None)
+                    if fut and not fut.done():
+                        fut.cancel()
 
         async def pump_satellite_to_openai():
             """Mic PCM (binary) → OpenAI input_audio_buffer.append; text = control."""
@@ -345,10 +388,16 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                         last_item["id"] = event.get("item_id")
 
                     elif et == "conversation.item.input_audio_transcription.completed":
-                        text = event.get("transcript", "")
-                        if record_voice_transcript:
-                            await record_voice_transcript(session_id, "user", text, user_id=session.get("user_id", ""))
-                        await satellite_ws.send_text(json.dumps({"type": "transcript", "role": "user", "text": text}))
+                        # Hand the text to the turn's future; the accept path persists +
+                        # displays it (off-target turns drop the future, so they're never
+                        # recorded). Keyed by item_id so it pairs with the right turn.
+                        item_id = event.get("item_id")
+                        if item_id and item_id in dropped_items:
+                            dropped_items.discard(item_id)  # ignored turn — never record it
+                        elif item_id:
+                            fut = _transcript_fut(item_id)
+                            if not fut.done():
+                                fut.set_result(event.get("transcript", ""))
 
                     elif et in _ASSISTANT_TRANSCRIPT_TYPES:
                         text = event.get("transcript", "")
