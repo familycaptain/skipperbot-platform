@@ -27,11 +27,21 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
+import logging
 import os
 
 import websockets
 
 from config import logger
+
+# SECURITY: the websockets client logs the full WS handshake — including the
+# "Authorization: Bearer <OPENAI_API_KEY>" header — at DEBUG level. If the app
+# runs at DEBUG, that leaks the key into the logs. Cap the library's own loggers
+# to WARNING so the handshake (and the per-frame audio spam) never log, no
+# matter what the platform's root log level is.
+for _noisy in ("websockets", "websockets.client", "websockets.server", "websockets.protocol"):
+    logging.getLogger(_noisy).setLevel(logging.WARNING)
+logging.getLogger("websockets").propagate = False
 from app_platform.voice.session import (
     OPENAI_API_KEY,
     REALTIME_AUDIO_RATE,
