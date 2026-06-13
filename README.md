@@ -112,9 +112,12 @@ choosing, writes `.env` for you, and brings the stack up with `docker compose`
 (detached). No file editing. (Everything else in `.env` is optional — integrations
 you can add later.)
 
-First boot takes a few minutes: Docker downloads the Postgres image, builds the
-agent image, installs Python dependencies, and builds the web UI. On a Pi 5 with
-an SSD, plan for around 5–10 minutes. Subsequent boots take seconds.
+**First boot takes a while — be patient.** Docker downloads the Postgres image,
+builds the agent image, installs all the Python dependencies (including the
+voice/speaker-ID stack, which compiles some native code), and builds the web UI.
+You're effectively installing a small operating system with a lot of components,
+so plan for **around 10 minutes** (longer on a Pi or slower disk) — it is not
+hung, just working. Subsequent boots take seconds, since everything is cached.
 
 Follow the boot with `skipper.bat logs` (or `./skipper.sh logs`).
 When you see `HTTP server listening on http://localhost:8000`, the agent is ready.
