@@ -91,9 +91,9 @@ config:
     description: "Include archived items in the default list view."
   - key: trello_sync_enabled
     type: boolean
-    default: false
+    default: true
     label: "Sync lists to Trello"
-    description: "Requires a Trello account configured below. See docs/03-extended-functionality.md."
+    description: "Master switch for list↔Trello sync. When off, no list sync happens even for Trello-linked lists. Requires a Trello account configured below (see docs/03-extended-functionality.md)."
   - key: trello_sync_interval_seconds
     type: integer
     default: 300

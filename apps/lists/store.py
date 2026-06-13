@@ -35,6 +35,16 @@ def _new_id(prefix: str) -> str:
 # Persistence — Postgres via apps.lists.data
 # ---------------------------------------------------------------------------
 
+def _trello_enabled() -> bool:
+    """Master Trello-sync switch for lists (Settings → Lists: trello_sync_enabled,
+    default on). When off, no list↔Trello read/write happens."""
+    try:
+        from app_platform import settings as _settings
+        return bool(_settings.get("trello_sync_enabled", scope="app:lists", default=True))
+    except Exception:
+        return True
+
+
 def _load_list(list_id: str) -> dict | None:
     return _dl_lists.get_list(list_id)
 
@@ -296,7 +306,7 @@ def add_item(
     _save_list(lst)
 
     # Write-through to Trello if linked
-    if lst.get("trello"):
+    if lst.get("trello") and _trello_enabled():
         try:
             from trello_client import add_card
             board = lst["trello"]["board"]
@@ -332,7 +342,7 @@ def update_item_text(list_id: str, item_id: str, new_text: str) -> str:
             _save_list(lst)
 
             # Write-through to Trello if linked
-            if lst.get("trello") and item.get("trello_card_id"):
+            if lst.get("trello") and item.get("trello_card_id") and _trello_enabled():
                 try:
                     from trello_client import _board_request
                     board = lst["trello"]["board"]
@@ -369,7 +379,7 @@ def remove_item(list_id: str, item_id: str) -> str:
             item["archived_at"] = datetime.now(timezone.utc).isoformat()
 
             # Write-through to Trello if linked
-            if lst.get("trello") and item.get("trello_card_id"):
+            if lst.get("trello") and item.get("trello_card_id") and _trello_enabled():
                 try:
                     from trello_client import _board_request
                     board = lst["trello"]["board"]
@@ -430,7 +440,8 @@ def move_item(
     # Trello write-through for moves is complex (different boards possible).
     # Handle Trello move if both lists are on the same board.
     if (
-        from_lst.get("trello") and to_lst.get("trello")
+        _trello_enabled()
+        and from_lst.get("trello") and to_lst.get("trello")
         and from_lst["trello"]["board"] == to_lst["trello"]["board"]
         and item.get("trello_card_id")
     ):
@@ -483,7 +494,7 @@ def reorder_item(list_id: str, item_id: str, new_position: int) -> str:
     _save_list(lst)
 
     # Write-through to Trello if linked
-    if lst.get("trello") and item.get("trello_card_id"):
+    if lst.get("trello") and item.get("trello_card_id") and _trello_enabled():
         try:
             from trello_client import _board_request, get_cards
             board = lst["trello"]["board"]
@@ -652,6 +663,8 @@ def sync_from_trello(list_id: str) -> str:
     Returns:
         Summary of sync results.
     """
+    if not _trello_enabled():
+        return "Trello sync is disabled (Settings → Lists → Sync lists to Trello)."
     lst = _load_list(list_id)
     if not lst:
         return f"Error: List '{list_id}' not found."
@@ -721,6 +734,8 @@ def sync_all_trello_lists() -> str:
     Returns:
         Summary of all syncs.
     """
+    if not _trello_enabled():
+        return "Trello list sync is disabled (Settings → Lists)."
     lists = _load_all_lists()
     linked = [lst for lst in lists if lst.get("trello")]
 
