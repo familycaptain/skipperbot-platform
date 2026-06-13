@@ -28,6 +28,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 #                             from the PGDG repo: bookworm's default client is 15,
 #                             and pg_dump refuses to dump a NEWER server, so a v15
 #                             client cannot back up the bundled PG18 database.
+#   - build-essential         compiler toolchain — resemblyzer's webrtcvad dep
+#                             has no prebuilt aarch64 wheel and builds from C
+#                             source. Kept in this (rarely-changing) layer so
+#                             dep-only rebuilds don't re-install it.
 #   - weasyprint deps         for PDF rendering in the print pipeline
 #   - curl, ca-certificates   for HTTPS fetch tools + healthcheck
 #   - Node 24 LTS             for the web UI build (build-time + runtime via entrypoint)
@@ -44,6 +48,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     # Node 24 LTS apt repo
     && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
     && apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
         postgresql-client-18 \
         nodejs \
         libpango-1.0-0 \
@@ -57,6 +62,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # ----- Python dependencies (incl. resemblyzer for voice speaker-ID) -----
+# build-essential (installed above) is needed here to compile resemblyzer's
+# webrtcvad dep from source on aarch64.
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
