@@ -180,14 +180,8 @@ CAPABILITIES: tuple[Capability, ...] = (
         docs_anchor="03-extended-functionality.md",
         not_configured_message="OpenAI budget dashboard is not configured. Add an admin key in Settings → Integrations.",
     ),
-    Capability(
-        name="weather",
-        label="Weather lookups",
-        env_vars=("WEATHER_API_KEY",),
-        settings_keys=(("weather_api_key", "platform"),),
-        docs_anchor="03-extended-functionality.md#weather",
-        not_configured_message="Weather is not configured. Add a key in Settings → Integrations.",
-    ),
+    # Note: there is no `weather` capability — the Weather app is fully keyless
+    # (open-meteo / zippopotam / weather.gov), so no API key is required.
 )
 
 

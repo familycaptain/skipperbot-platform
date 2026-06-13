@@ -90,8 +90,6 @@ PLATFORM_PANELS: dict[str, dict] = {
              "description": "Powers web search / research.", "default": ""},
             {"key": "openai_admin_key", "type": "string", "secret": True, "label": "OpenAI admin key",
              "description": "Optional — enables the OpenAI cost dashboard.", "default": ""},
-            {"key": "weather_api_key", "type": "string", "secret": True, "label": "Weather API key",
-             "description": "Optional — for weather lookups (until the Weather app ships).", "default": ""},
             {"key": "default_printer", "type": "string", "label": "Default printer",
              "description": "Where Skipper prints. For a network printer use its IPP URL "
                             "(e.g. ipp://printer.local:631/ipp/print) — works on any OS, no setup. "
