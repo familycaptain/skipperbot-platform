@@ -30,7 +30,7 @@ from threading import Lock
 
 import websockets
 
-from app_platform.db import fetch_all_in_schema, scoped_conn
+from app_platform.db import execute_in_schema, fetch_all_in_schema, scoped_conn
 
 logger = logging.getLogger(__name__)
 
@@ -265,6 +265,29 @@ def _import_legacy_devices_once() -> None:
         logger.info("AUTOMATION: imported %d device(s) from legacy devices.json into ha_devices", len(data))
     except Exception as exc:
         logger.warning("AUTOMATION: legacy devices import skipped: %s", exc)
+
+
+def set_device_aliases(device_id: str, aliases: list[str]) -> bool:
+    """Replace the hand-curated aliases for one device (normalized + deduped).
+
+    Used by the management UI; chat edits go through the entity-alias tools.
+    Returns True if a row was updated.
+    """
+    if not device_id:
+        return False
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for a in aliases or []:
+        n = _normalize(str(a))
+        if n and n not in seen:
+            seen.add(n)
+            cleaned.append(n)
+    rc = execute_in_schema(
+        SCHEMA,
+        "UPDATE ha_devices SET aliases = %s, updated_at = now() WHERE device_id = %s",
+        (json.dumps(cleaned), device_id),
+    )
+    return rc > 0
 
 
 def load_cached() -> dict:

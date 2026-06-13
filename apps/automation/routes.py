@@ -13,6 +13,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from . import tools as _t
+from . import devices as _dev
 
 router = APIRouter()
 
@@ -126,3 +127,88 @@ async def api_control(body: ControlIn):
         return {"ok": True, "entity": entity}
     except Exception as exc:  # noqa: BLE001
         return {"ok": False, "error": str(exc)}
+
+
+# ===========================================================================
+# Names management — devices + aliases (the "Names" tab; mirrors the chat tools)
+# ===========================================================================
+
+@router.get("/all-entities")
+async def api_all_entities():
+    """Lightweight {entity_id, name} list across all domains, for the alias picker."""
+    if _t._ha_setup_error():
+        return {"entities": []}
+
+    def _load():
+        out = []
+        for e in _t._ha_states():
+            eid = e.get("entity_id", "")
+            if not eid:
+                continue
+            attrs = e.get("attributes") or {}
+            out.append({"entity_id": eid, "name": attrs.get("friendly_name") or eid})
+        out.sort(key=lambda x: x["entity_id"])
+        return out
+
+    try:
+        return {"entities": await asyncio.to_thread(_load)}
+    except Exception as exc:  # noqa: BLE001
+        return {"entities": [], "message": str(exc)}
+
+
+@router.get("/aliases")
+async def api_list_aliases():
+    """Trained entity aliases (was aliases.json; now app_automation.ha_aliases)."""
+    aliases = await asyncio.to_thread(_t._load_aliases)
+    return {"aliases": [
+        {"alias": a, "entity_id": d.get("entity_id", ""), "notes": d.get("notes", "")}
+        for a, d in sorted(aliases.items())
+    ]}
+
+
+class AliasIn(BaseModel):
+    alias: str
+    entity_id: str
+    notes: str = ""
+
+
+@router.post("/aliases")
+async def api_add_alias(body: AliasIn):
+    """Add/update an alias. Reuses the same validation as the chat tool."""
+    msg = await asyncio.to_thread(
+        _t.add_home_assistant_alias, body.alias, body.entity_id, body.notes
+    )
+    return {"ok": not msg.lower().startswith("error"), "message": msg}
+
+
+@router.delete("/aliases/{alias}")
+async def api_delete_alias(alias: str):
+    msg = await asyncio.to_thread(_t.delete_home_assistant_alias, alias)
+    return {"ok": True, "message": msg}
+
+
+@router.get("/devices")
+async def api_list_devices():
+    """Cached HA device registry (app_automation.ha_devices) with their aliases."""
+    devices = await asyncio.to_thread(_dev.load_cached)
+    return {"devices": [
+        {
+            "device_id": did,
+            "name": d.get("name", ""),
+            "manufacturer": d.get("manufacturer", ""),
+            "model": d.get("model", ""),
+            "aliases": d.get("aliases") or [],
+        }
+        for did, d in sorted(devices.items(), key=lambda kv: (kv[1].get("name") or "").lower())
+    ]}
+
+
+class DeviceAliasesIn(BaseModel):
+    aliases: list[str]
+
+
+@router.put("/devices/{device_id}/aliases")
+async def api_set_device_aliases(device_id: str, body: DeviceAliasesIn):
+    """Replace one device's hand-curated aliases."""
+    ok = await asyncio.to_thread(_dev.set_device_aliases, device_id, body.aliases)
+    return {"ok": bool(ok)}
