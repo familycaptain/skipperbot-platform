@@ -29,6 +29,16 @@ TERMINAL_STATUSES = {"done", "cancelled", "deferred"}
 VALID_PRIORITIES = {"low", "medium", "high"}
 
 
+def _default_priority() -> str:
+    """Default priority for new projects/tasks (Settings → Goals: default_priority)."""
+    try:
+        from app_platform import settings as _settings
+        p = (_settings.get("default_priority", scope="app:goals", default="medium") or "medium").lower()
+        return p if p in VALID_PRIORITIES else "medium"
+    except Exception:
+        return "medium"
+
+
 # ---------------------------------------------------------------------------
 # Persistence — Postgres via data_layer
 # ---------------------------------------------------------------------------
@@ -588,7 +598,7 @@ def create_project(
         return f"Error: Goal '{goal_id}' not found."
 
     if priority.lower() not in VALID_PRIORITIES:
-        priority = "medium"
+        priority = _default_priority()
 
     project = {
         "id": _new_id("p"),
@@ -671,7 +681,7 @@ def create_task(
         return f"Error: Project '{project_id}' not found."
 
     if priority.lower() not in VALID_PRIORITIES:
-        priority = "medium"
+        priority = _default_priority()
 
     # Auto-assign stack_rank — project-global (not per-sibling-group)
     all_project_tasks = _get_tasks_for_project(project_id)
