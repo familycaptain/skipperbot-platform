@@ -11,7 +11,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Lightbulb, Power, RefreshCw, Loader2, AlertCircle, Plug, Fan, ToggleRight,
   Thermometer, Activity, Lock, Blinds, MonitorPlay, LayoutGrid, Tag, Cpu,
-  Plus, Trash2, X,
+  Plus, Trash2, X, Pencil, Check,
 } from "lucide-react";
 
 const API = "/api/apps/automation";
@@ -232,6 +232,8 @@ function NamesManager() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(null);
   const [form, setForm] = useState({ alias: "", entity_id: "", notes: "" });
+  const [editing, setEditing] = useState(null);  // original alias key being edited
+  const [editForm, setEditForm] = useState({ alias: "", entity_id: "", notes: "" });
 
   const load = useCallback(async () => {
     setLoading(true); setError("");
@@ -270,6 +272,27 @@ function NamesManager() {
     await fetch(`${API}/aliases/${encodeURIComponent(alias)}`, { method: "DELETE" });
     setAliases((prev) => prev.filter((a) => a.alias !== alias));
   }, []);
+
+  const startEdit = useCallback((a) => {
+    setError("");
+    setEditing(a.alias);
+    setEditForm({ alias: a.alias, entity_id: a.entity_id, notes: a.notes || "" });
+  }, []);
+
+  const cancelEdit = useCallback(() => { setEditing(null); }, []);
+
+  const saveEdit = useCallback(async (originalAlias) => {
+    if (!editForm.alias.trim() || !editForm.entity_id.trim()) { setError("Alias and entity are required."); return; }
+    setError("");
+    const res = await fetch(`${API}/aliases/${encodeURIComponent(originalAlias)}`, {
+      method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(editForm),
+    });
+    const data = await res.json();
+    if (!data.ok) { setError(data.message || "Could not update alias."); return; }
+    setEditing(null);
+    const al = await fetch(`${API}/aliases`).then((r) => r.json());
+    setAliases(al.aliases || []);
+  }, [editForm]);
 
   const saveDeviceAliases = useCallback(async (device, nextAliases) => {
     setBusy(device.device_id);
@@ -338,7 +361,32 @@ function NamesManager() {
       </div>
       <div className="space-y-1.5 mb-6">
         {aliases.length === 0 && <p className="text-sm text-slate-500">No aliases yet.</p>}
-        {aliases.map((a) => (
+        {aliases.map((a) => editing === a.alias ? (
+          <div key={a.alias} className="flex flex-wrap items-end gap-2 px-3 py-2 rounded-lg bg-slate-800/60 border border-amber-700/40">
+            <div className="flex flex-col">
+              <label className="text-[10px] text-slate-500 mb-0.5">Name</label>
+              <input value={editForm.alias} onChange={(e) => setEditForm({ ...editForm, alias: e.target.value })}
+                className="w-36 px-2 py-1 text-xs rounded bg-slate-900 border border-slate-700 text-slate-200" />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-[10px] text-slate-500 mb-0.5">Entity</label>
+              <input value={editForm.entity_id} onChange={(e) => setEditForm({ ...editForm, entity_id: e.target.value })}
+                list="ha-entities"
+                className="w-64 px-2 py-1 text-xs rounded bg-slate-900 border border-slate-700 text-slate-200 font-mono" />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-[10px] text-slate-500 mb-0.5">Notes</label>
+              <input value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                className="w-36 px-2 py-1 text-xs rounded bg-slate-900 border border-slate-700 text-slate-200" />
+            </div>
+            <button onClick={() => saveEdit(a.alias)} className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs rounded bg-emerald-600/80 hover:bg-emerald-600 text-white" title="Save">
+              <Check size={13} /> Save
+            </button>
+            <button onClick={cancelEdit} className="inline-flex items-center gap-1 px-2 py-1.5 text-xs rounded bg-slate-700 hover:bg-slate-600 text-slate-200" title="Cancel">
+              <X size={13} />
+            </button>
+          </div>
+        ) : (
           <div key={a.alias} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-slate-800/40 border border-slate-700/50">
             <div className="min-w-0 flex-1">
               <div className="text-sm text-slate-200">
@@ -348,6 +396,9 @@ function NamesManager() {
               </div>
               {a.notes && <div className="text-[11px] text-slate-500 truncate">{a.notes}</div>}
             </div>
+            <button onClick={() => startEdit(a)} className="shrink-0 text-slate-500 hover:text-amber-300" title="Edit alias">
+              <Pencil size={14} />
+            </button>
             <button onClick={() => deleteAlias(a.alias)} className="shrink-0 text-slate-500 hover:text-rose-300" title="Delete alias">
               <Trash2 size={14} />
             </button>

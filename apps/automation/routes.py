@@ -187,6 +187,35 @@ async def api_delete_alias(alias: str):
     return {"ok": True, "message": msg}
 
 
+class AliasEditIn(BaseModel):
+    alias: str
+    entity_id: str
+    notes: str = ""
+
+
+@router.put("/aliases/{old_alias}")
+async def api_edit_alias(old_alias: str, body: AliasEditIn):
+    """Edit an existing alias — including renaming it. Atomic: if the alias key
+    changes, the old key is dropped and the new one written in one save."""
+    def _do():
+        old_key = _t._normalize_name(old_alias)
+        new_key = _t._normalize_name(body.alias)
+        entity = (body.entity_id or "").strip()
+        if not new_key:
+            return False, "Error: alias is required."
+        if "." not in entity:
+            return False, "Error: entity_id must be a full Home Assistant entity ID."
+        aliases = _t._load_aliases()
+        if old_key != new_key:
+            aliases.pop(old_key, None)
+        aliases[new_key] = {"entity_id": entity, "notes": (body.notes or "").strip()}
+        _t._save_aliases(aliases)
+        return True, f"Updated alias '{new_key}' -> {entity}."
+
+    ok, msg = await asyncio.to_thread(_do)
+    return {"ok": ok, "message": msg}
+
+
 @router.get("/devices")
 async def api_list_devices():
     """Cached HA device registry (app_automation.ha_devices) with their aliases."""
