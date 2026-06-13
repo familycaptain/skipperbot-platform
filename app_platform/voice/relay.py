@@ -208,40 +208,54 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         last_utterance = {"pcm": b""}
         announced = {"id": None}  # last speaker identity surfaced to the model
 
-        async def _on_user_turn(pcm: bytes) -> None:
-            """Resolve the speaker, tell the model if it changed, then drive the reply.
+        async def _identify_and_announce(pcm: bytes) -> None:
+            """Resolve the speaker; if it changed, update attribution + tell the model.
 
-            Because server-VAD create_response is off, WE issue response.create — and
-            only after speaker-ID resolves — so the right identity is set before the
-            model answers or runs a tool. Always ends with response.create (even when
-            speaker-ID is unavailable or errors) so the turn never stalls.
+            Does NOT drive the reply — callers decide whether to wait for this
+            (first turn) or run it in the background (later turns).
             """
             name, score = None, 0.0
             try:
-                if pcm and speaker_id.available():
+                if pcm:
                     name, score = await asyncio.to_thread(speaker_id.identify, pcm, _SR)
             except Exception as exc:
                 logger.warning("VOICE-RELAY: identify failed: %s", exc)
                 name = None
+            ident = name or "__unknown__"
+            if ident == announced["id"]:
+                return  # same speaker as last announced — nothing to update
+            announced["id"] = ident
+            if name:
+                session["user_id"] = name  # tools/data/permissions follow the speaker
+                logger.info("VOICE-RELAY: speaker -> %s (%.2f) [session %s]",
+                            name, score, session_id[:12])
+            else:
+                logger.info("VOICE-RELAY: speaker unrecognized (best %.2f) [session %s]",
+                            score, session_id[:12])
             try:
-                ident = name or "__unknown__"
-                if ident != announced["id"]:
-                    announced["id"] = ident
-                    if name:
-                        session["user_id"] = name  # tools/data/permissions follow the speaker
-                        logger.info("VOICE-RELAY: speaker -> %s (%.2f) [session %s]",
-                                    name, score, session_id[:12])
-                    else:
-                        logger.info("VOICE-RELAY: speaker unrecognized (best %.2f) [session %s]",
-                                    score, session_id[:12])
-                    try:
-                        await satellite_ws.send_text(json.dumps(
-                            {"type": "speaker", "name": name or "", "score": round(score, 2)}))
-                    except Exception:
-                        pass
-                    await _send_oai(oai, _speaker_context_item(name))
-            finally:
+                await satellite_ws.send_text(json.dumps(
+                    {"type": "speaker", "name": name or "", "score": round(score, 2)}))
+            except Exception:
+                pass
+            await _send_oai(oai, _speaker_context_item(name))
+
+        async def _on_user_turn(pcm: bytes) -> None:
+            """Drive the turn's reply (server-VAD create_response is off, so we own it).
+
+            Gate ONLY the first turn on speaker-ID, so the conversation opens with the
+            right identity and 'who am I' works. Every later turn replies immediately
+            and re-identifies in the BACKGROUND — a speaker change is picked up for the
+            next turn without adding latency to any turn.
+            """
+            if not speaker_id.available():
                 await _send_oai(oai, {"type": "response.create"})
+                return
+            if announced["id"] is None:
+                await _identify_and_announce(pcm)          # first turn: wait
+                await _send_oai(oai, {"type": "response.create"})
+            else:
+                await _send_oai(oai, {"type": "response.create"})  # reply now
+                asyncio.create_task(_identify_and_announce(pcm))   # re-check off-loop
 
         async def pump_satellite_to_openai():
             """Mic PCM (binary) → OpenAI input_audio_buffer.append; text = control."""
