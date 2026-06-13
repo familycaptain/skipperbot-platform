@@ -22,8 +22,15 @@ from app_platform.time import get_timezone
 import agent_loop
 DUMB_MODEL = os.getenv("DUMB_MODEL", "gpt-5-mini")
 
-# How many useful memories to feed per cycle (after noise filtering)
-MEMORIES_PER_CYCLE = 75
+# How many useful memories to feed per cycle (after noise filtering).
+# Configurable via Settings → Documents (domain_memories_per_cycle).
+def _memories_per_cycle() -> int:
+    try:
+        from app_platform import settings as _settings
+        return int(_settings.get(
+            "domain_memories_per_cycle", scope="app:documents", default=75) or 75)
+    except (TypeError, ValueError):
+        return 75
 
 # During initial catchup (>500 unprocessed), use a shorter interval
 CATCHUP_INTERVAL_SECONDS = 600   # 10 min
@@ -507,7 +514,7 @@ def _observe() -> dict:
             unprocessed = all_memories[found_idx + 1:]
         else:
             # Cursor not found — take recent memories
-            unprocessed = all_memories[-MEMORIES_PER_CYCLE:]
+            unprocessed = all_memories[-_memories_per_cycle():]
     else:
         # First run — start from the beginning to process everything
         unprocessed = all_memories
@@ -527,7 +534,7 @@ def _observe() -> dict:
             continue
         useful.append(m)
         last_examined_idx = idx
-        if len(useful) >= MEMORIES_PER_CYCLE:
+        if len(useful) >= _memories_per_cycle():
             break
 
     raw_last_id = unprocessed[last_examined_idx]["id"] if last_examined_idx >= 0 else ""
@@ -599,7 +606,7 @@ def _observe() -> dict:
         })
 
     # Track total unprocessed (before filter+cap) for catchup mode detection
-    total_unprocessed_before_filter = len(all_memories) - (found_idx + 1 if last_processed_id and found_idx >= 0 else max(len(all_memories) - MEMORIES_PER_CYCLE, 0))
+    total_unprocessed_before_filter = len(all_memories) - (found_idx + 1 if last_processed_id and found_idx >= 0 else max(len(all_memories) - _memories_per_cycle(), 0))
 
     return {
         "unprocessed_memories": unprocessed,

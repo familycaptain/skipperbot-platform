@@ -31,6 +31,16 @@ from apps.documents.store import (
 )
 
 
+def _enhance_model() -> str:
+    """Model used by the enhance_doc tool (Settings → Documents: enhance_model)."""
+    try:
+        from app_platform import settings as _settings
+        return (_settings.get("enhance_model", scope="app:documents",
+                              default=DUMB_MODEL) or DUMB_MODEL)
+    except Exception:
+        return DUMB_MODEL
+
+
 def create_doc(
     title: str,
     created_by: str,
@@ -427,7 +437,7 @@ def _plan_enhancements(sections: list[dict], instructions: str) -> dict:
 
     try:
         resp = openai_client.chat.completions.create(
-            model=DUMB_MODEL,
+            model=_enhance_model(),
             messages=[
                 {
                     "role": "system",
@@ -480,7 +490,7 @@ def _enhance_section(section_body: str, section_heading: str, instructions: str,
     """Enhance a single section using LLM. The rest of the doc is provided as read-only context."""
     try:
         resp = openai_client.chat.completions.create(
-            model=DUMB_MODEL,
+            model=_enhance_model(),
             messages=[
                 {
                     "role": "system",
@@ -519,7 +529,7 @@ def _generate_new_section(heading: str, instructions: str, full_doc_context: str
     """Generate a brand-new section to insert into the document."""
     try:
         resp = openai_client.chat.completions.create(
-            model=DUMB_MODEL,
+            model=_enhance_model(),
             messages=[
                 {
                     "role": "system",
