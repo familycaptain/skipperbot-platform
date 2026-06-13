@@ -84,13 +84,29 @@ logging.getLogger().addHandler(_job_log_handler)
 POLL_INTERVAL = 10
 
 
-def _tick_seconds() -> int:
+def _job_setting(key: str, default: int) -> int:
     try:
         from app_platform import settings as _settings
-        return int(_settings.get(
-            "dispatcher_tick_seconds", scope="app:jobs", default=POLL_INTERVAL) or POLL_INTERVAL)
+        return int(_settings.get(key, scope="app:jobs", default=default) or default)
     except (TypeError, ValueError):
-        return POLL_INTERVAL
+        return default
+
+
+def _tick_seconds() -> int:
+    return _job_setting("dispatcher_tick_seconds", POLL_INTERVAL)
+
+
+def _max_concurrent_cap() -> int:
+    # Global ceiling across all job types; 0 = no cap (defer to each handler's own).
+    return _job_setting("max_concurrent_per_type", 0)
+
+
+def _stale_minutes() -> int:
+    return _job_setting("stale_running_minutes", 60)
+
+
+def _log_retention_days() -> int:
+    return _job_setting("log_retention_days", 30)
 
 
 # ---------------------------------------------------------------------------
@@ -355,10 +371,15 @@ async def _dispatch_cycle():
 
     from apps.jobs.data import claim_queued_jobs, count_running
 
+    # Global per-type concurrency ceiling (Settings → Jobs). 0 = no cap.
+    cap = _max_concurrent_cap()
+
     # For each registered handler type, claim and execute up to max_concurrent
     for job_type, info in _handlers.items():
         try:
             max_c = info["max_concurrent"]
+            if cap > 0:
+                max_c = min(max_c, cap)
             running = count_running(job_type)
             slots = max_c - running
             if slots <= 0:
@@ -372,17 +393,35 @@ async def _dispatch_cycle():
         except Exception as e:
             logger.error("JOB_DISPATCH: Error claiming %s jobs: %s", job_type, e)
 
+    # Hung-job guard: fail ORPHANED running rows (not running in this process)
+    # whose heartbeat is older than stale_running_minutes. Excludes live tasks,
+    # so a slow-but-alive job is never touched.
+    try:
+        mins = _stale_minutes()
+        if mins > 0:
+            from apps.jobs.data import fail_hung_jobs
+            active = [jid for jid, t in _active_tasks.items() if not t.done()]
+            await asyncio.to_thread(fail_hung_jobs, mins, active)
+    except Exception as e:
+        logger.error("JOB_DISPATCH: hung-job guard error: %s", e)
+
 
 async def start_dispatcher():
     """Start the job dispatcher loop. Call once at application startup."""
     # Clean up jobs that were running when the agent last shut down
-    from apps.jobs.data import fail_stale_running
+    from apps.jobs.data import fail_stale_running, prune_job_logs
     stale = await asyncio.to_thread(fail_stale_running)
     if stale:
         logger.info(
             "JOB_DISPATCH: Cleaned up %d stale running jobs from previous session",
             stale,
         )
+
+    # Prune old job-log rows (Settings → Jobs: log_retention_days).
+    try:
+        await asyncio.to_thread(prune_job_logs, _log_retention_days())
+    except Exception as e:
+        logger.error("JOB_DISPATCH: job-log prune error: %s", e)
 
     tick = _tick_seconds()
     logger.info(

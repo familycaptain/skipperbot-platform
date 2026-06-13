@@ -83,24 +83,25 @@ tool_category:
 config:
   - key: dispatcher_tick_seconds
     type: integer
-    default: 5
+    default: 10
     label: "Dispatcher tick (seconds)"
     description: "How often the dispatcher checks the queue for newly queued jobs."
+    requires_restart: true
   - key: max_concurrent_per_type
     type: integer
-    default: 1
+    default: 0
     label: "Max concurrent jobs per type"
-    description: "Caps how many jobs of the same job_type can run simultaneously. 0 = unlimited."
+    description: "Global ceiling on how many jobs of the same type run at once. 0 = no global cap (each handler keeps its own built-in limit)."
   - key: stale_running_minutes
     type: integer
     default: 60
     label: "Stale-running window (minutes)"
-    description: "Jobs marked running but with no progress in this many minutes are auto-failed at dispatcher start."
+    description: "Orphaned 'running' jobs with no progress for this long are auto-failed by the dispatcher (jobs actively running in the current process are never touched). 0 = disabled."
   - key: log_retention_days
     type: integer
     default: 30
     label: "Job-log retention (days)"
-    description: "Job log rows older than this can be pruned. Manual prune; the app doesn't auto-delete."
+    description: "Job-log rows older than this are pruned automatically at dispatcher start. 0 = keep forever."
 
 # No thinking domain — jobs is passive infrastructure. The dispatcher
 # is a runtime loop driven by the platform startup hook, not a

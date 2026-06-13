@@ -148,6 +148,7 @@ def claim_queued_jobs(
                 UPDATE jobs SET
                     status = 'running',
                     started_at = now(),
+                    last_progress_at = now(),
                     claimed_by = %s,
                     progress = 'Starting...',
                     progress_pct = 0
@@ -200,7 +201,7 @@ def update_progress(job_id: str, progress_pct: int, message: str = "") -> bool:
     pct = max(0, min(100, progress_pct))
     n = execute_in_schema(
         SCHEMA,
-        "UPDATE jobs SET progress_pct = %s, progress = %s "
+        "UPDATE jobs SET progress_pct = %s, progress = %s, last_progress_at = now() "
         "WHERE id = %s AND status = 'running'",
         (pct, message or f"{pct}% complete", job_id),
     )
@@ -355,6 +356,56 @@ def fail_stale_running() -> int:
                 ids = [r[0] if isinstance(r, tuple) else r.get("id", r) for r in rows]
                 logger.info("JOB_QUEUE: Marked %d stale running jobs as failed: %s", count, ids)
         conn.commit()
+    return count
+
+
+def fail_hung_jobs(minutes: int, exclude_ids: list[str] | None = None) -> list[str]:
+    """Fail 'running' jobs with no progress in `minutes`, excluding the given ids.
+
+    The dispatcher passes the ids it is actively running, so this only ever
+    touches ORPHANED running rows (e.g. claimed by a worker that vanished) —
+    never a live, slow-but-alive job in this process. Heartbeat is
+    last_progress_at, falling back to started_at. Returns the failed ids.
+    """
+    if minutes is None or minutes <= 0:
+        return []
+    exclude = list(exclude_ids or [])
+    with scoped_conn(SCHEMA) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE jobs
+                SET status = 'failed',
+                    error = %s,
+                    completed_at = now()
+                WHERE status = 'running'
+                  AND COALESCE(last_progress_at, started_at) < now() - make_interval(mins => %s)
+                  AND NOT (id = ANY(%s))
+                RETURNING id
+                """,
+                (f"No progress for over {minutes} minutes (auto-failed as hung)", minutes, exclude),
+            )
+            ids = [r[0] if isinstance(r, tuple) else r.get("id", r) for r in cur.fetchall()]
+        conn.commit()
+    if ids:
+        logger.info("JOB_QUEUE: Auto-failed %d hung job(s): %s", len(ids), ids)
+    return ids
+
+
+def prune_job_logs(days: int) -> int:
+    """Delete job_logs rows older than `days`. Returns the number deleted."""
+    if days is None or days <= 0:
+        return 0
+    with scoped_conn(SCHEMA) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM job_logs WHERE created_at < now() - make_interval(days => %s)",
+                (days,),
+            )
+            count = cur.rowcount
+        conn.commit()
+    if count:
+        logger.info("JOB_QUEUE: Pruned %d job_log row(s) older than %dd", count, days)
     return count
 
 
