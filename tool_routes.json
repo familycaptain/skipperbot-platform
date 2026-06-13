@@ -293,7 +293,6 @@
     ]
   },
   "printing": {
-    "guide": "docs.md",
     "description": "Print documents to the default physical printer with rendered markdown formatting",
     "tools": [
       "print_doc"
