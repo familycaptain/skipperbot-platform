@@ -1215,7 +1215,8 @@ INSERT INTO public.app_config (scope, key, value, updated_by) VALUES
     ('platform', 'nag_afternoon_end',       '17'::jsonb,               'baseline'),
     ('platform', 'nag_evening_start',       '17'::jsonb,               'baseline'),
     ('platform', 'nag_evening_end',         '21'::jsonb,               'baseline'),
-    ('platform', 'show_entity_ids',         'false'::jsonb,            'baseline'),
+    ('platform', 'show_entity_ids',         'true'::jsonb,             'baseline'),
+    ('platform', 'debug_tokens',            'true'::jsonb,             'baseline'),
     ('platform', 'pm_quiet_mode',           'false'::jsonb,            'baseline'),
     ('platform', 'onboarding_complete',     'false'::jsonb,            'baseline')
 ON CONFLICT (scope, key) DO NOTHING;

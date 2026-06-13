@@ -112,7 +112,7 @@ def _platform_setting(key: str, default, cast=None, scope: str = "platform"):
 SMART_MODEL = _platform_setting("smart_model", "gpt-5.2")
 DUMB_MODEL = _platform_setting("dumb_model", "gpt-5-mini")
 OPENAI_MODEL = SMART_MODEL  # backward compat alias
-DEBUG_TOKENS = _platform_setting("debug_tokens", False, cast=_as_bool)
+DEBUG_TOKENS = _platform_setting("debug_tokens", True, cast=_as_bool)
 # Nag timing — configured in Settings → Notifications (scope=app:notifications),
 # resolved at import (restart to change). Guarded fall-back to the defaults.
 _nag = lambda key, default: _platform_setting(key, default, cast=int, scope="app:notifications")
@@ -142,7 +142,7 @@ def discord_enabled() -> bool:
         return True
     # Enabled implicitly if a token has been saved.
     return _settings.is_configured("discord_token", scope="platform")
-SHOW_ENTITY_IDS = _platform_setting("show_entity_ids", False, cast=_as_bool)
+SHOW_ENTITY_IDS = _platform_setting("show_entity_ids", True, cast=_as_bool)
 # App-owned tuning: configured in Settings → Reminders / Settings → Goals.
 REMINDER_LEAD_MINUTES = _platform_setting("reminder_lead_minutes", 120, cast=int, scope="app:reminders")
 PM_QUIET_MODE = _platform_setting("pm_quiet_mode", False, cast=_as_bool, scope="app:goals")
