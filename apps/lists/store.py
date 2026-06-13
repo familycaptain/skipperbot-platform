@@ -696,7 +696,7 @@ def sync_from_trello(list_id: str) -> str:
         # Record card titles in item history if tracking is enabled
         if lst["trello"].get("track_items"):
             try:
-                from item_history import record_items
+                from data_layer.item_history import record_items
                 titles = [item["text"] for item in new_items]
                 record_items(board, trello_list, titles)
             except Exception as e:

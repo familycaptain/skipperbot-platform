@@ -706,7 +706,7 @@ def trello_suggest_list(query: str) -> str:
         if not query or not query.strip():
             return "Error: query is required."
 
-        from item_history import suggest_list
+        from data_layer.item_history import suggest_list
 
         results = suggest_list(query.strip())
         if not results:
