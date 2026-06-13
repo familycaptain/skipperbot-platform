@@ -79,8 +79,18 @@ _job_log_handler.setLevel(logging.INFO)
 _job_log_handler.setFormatter(logging.Formatter("%(message)s"))
 logging.getLogger().addHandler(_job_log_handler)
 
-# Check interval (seconds)
+# Check interval (seconds). Fallback default; the actual cadence is read from
+# Settings → Jobs (dispatcher_tick_seconds) at dispatcher start.
 POLL_INTERVAL = 10
+
+
+def _tick_seconds() -> int:
+    try:
+        from app_platform import settings as _settings
+        return int(_settings.get(
+            "dispatcher_tick_seconds", scope="app:jobs", default=POLL_INTERVAL) or POLL_INTERVAL)
+    except (TypeError, ValueError):
+        return POLL_INTERVAL
 
 
 # ---------------------------------------------------------------------------
@@ -374,9 +384,10 @@ async def start_dispatcher():
             stale,
         )
 
+    tick = _tick_seconds()
     logger.info(
         "JOB_DISPATCH: Started (polling every %ds, %d handler types registered)",
-        POLL_INTERVAL, len(_handlers),
+        tick, len(_handlers),
     )
     for jtype, info in _handlers.items():
         logger.info("JOB_DISPATCH:   %s (max_concurrent=%d)", jtype, info["max_concurrent"])
@@ -389,4 +400,4 @@ async def start_dispatcher():
             await _dispatch_cycle()
         except Exception as e:
             logger.error("JOB_DISPATCH: Cycle error: %s", e, exc_info=True)
-        await asyncio.sleep(POLL_INTERVAL)
+        await asyncio.sleep(tick)
