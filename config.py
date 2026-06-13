@@ -14,12 +14,15 @@ from openai import OpenAI
 
 load_dotenv()
 
-# Console logging (existing behavior)
-logging.basicConfig(level=logging.DEBUG, format="%(asctime)s [%(levelname)s] %(message)s")
+# Console logging. INFO by default; set LOG_LEVEL=DEBUG in .env for verbose output.
+_LOG_LEVEL = getattr(logging, os.getenv("LOG_LEVEL", "INFO").upper(), logging.INFO)
+logging.basicConfig(level=_LOG_LEVEL, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("skipperbot")
 
-# Quiet noisy third-party loggers
-for _noisy in ("discord", "fakeredis", "mcp", "docket", "httpx", "httpcore", "openai"):
+# Quiet noisy third-party loggers. websockets is capped because at DEBUG it logs
+# the full WS handshake — including the 'Authorization: Bearer <key>' header.
+for _noisy in ("discord", "fakeredis", "mcp", "docket", "httpx", "httpcore", "openai",
+               "websockets", "websockets.client", "websockets.server"):
     logging.getLogger(_noisy).setLevel(logging.WARNING)
 
 # Windows-safe rotating handler: falls back to copy+truncate when os.rename is blocked
@@ -57,7 +60,7 @@ _file_handler = _WinSafeRotatingHandler(
     delay=True,
 )
 _file_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
-_file_handler.setLevel(logging.DEBUG)
+_file_handler.setLevel(_LOG_LEVEL)
 logging.getLogger().addHandler(_file_handler)
 
 # PM audit logger — separate file for daily review of PM actions
