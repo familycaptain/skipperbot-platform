@@ -362,6 +362,13 @@ populated — `docker compose exec agent du -sh /app/uploads`.)
 
 ## Notes
 
+- **WARNING — never `docker compose down -v`.** The `-v` flag deletes the named
+  volumes, which on this stack means **your uploads AND your entire database**.
+  Use `docker compose down` (no `-v`), `skipper stop`, or `skipper restart`; a
+  plain `down`/`up` keeps the volumes.
+- Compose **prefixes volume names with the project**, so the uploads volume is
+  `skipperbot-platform_skipper-uploads` (not `skipper-uploads`) when you
+  `docker volume inspect`/`ls` it.
 - **Docker keeps data in named volumes** (`skipper-db`, `skipper-uploads`), NOT in
   the repo — that is why the DB and uploads are restored *into the stack*
   (`pg_restore` / `docker compose cp`), not by unzipping over the project folder.
