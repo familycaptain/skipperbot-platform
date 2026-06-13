@@ -269,6 +269,7 @@ function NamesManager() {
   }, [form]);
 
   const deleteAlias = useCallback(async (alias) => {
+    if (!confirm(`Delete alias "${alias}"?`)) return;
     await fetch(`${API}/aliases/${encodeURIComponent(alias)}`, { method: "DELETE" });
     setAliases((prev) => prev.filter((a) => a.alias !== alias));
   }, []);
@@ -309,7 +310,10 @@ function NamesManager() {
   }, []);
 
   const addDeviceAlias = (d, alias) => saveDeviceAliases(d, [...(d.aliases || []), alias]);
-  const removeDeviceAlias = (d, alias) => saveDeviceAliases(d, (d.aliases || []).filter((a) => a !== alias));
+  const removeDeviceAlias = (d, alias) => {
+    if (!confirm(`Remove alias "${alias}" from ${d.name || "this device"}?`)) return;
+    saveDeviceAliases(d, (d.aliases || []).filter((a) => a !== alias));
+  };
 
   if (loading) {
     return <div className="flex justify-center py-12 text-slate-500"><Loader2 className="animate-spin" /></div>;
