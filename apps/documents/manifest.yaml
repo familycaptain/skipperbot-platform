@@ -78,11 +78,9 @@ tool_category:
     - research doc
 
 config:
-  - key: embedding_model
-    type: string
-    default: "text-embedding-3-small"
-    label: "Embedding model"
-    description: "OpenAI embedding model used for semantic search (1536 dims)."
+  # NOTE: the embedding model is platform-wide (Settings → System →
+  # "Embedding model"), not per-app — all semantic vectors must share one model
+  # + dimension. It is not a documents-scope setting.
   - key: enhance_model
     type: string
     default: "gpt-5-mini"

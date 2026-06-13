@@ -17,7 +17,21 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-EMBEDDING_MODEL = "text-embedding-3-small"
+def _resolve_embedding_model() -> str:
+    """Platform-wide embedding model (Settings → System: embedding_model).
+
+    Read once at import; changing it requires a restart AND re-embedding existing
+    content (the vector column dimension is fixed). Falls back to the 1536-dim
+    default if settings aren't available yet.
+    """
+    try:
+        from app_platform import settings as _settings
+        return _settings.get("embedding_model", scope="platform", default="") or "text-embedding-3-small"
+    except Exception:
+        return "text-embedding-3-small"
+
+
+EMBEDDING_MODEL = _resolve_embedding_model()
 EMBEDDING_DIM = 1536
 
 _openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
