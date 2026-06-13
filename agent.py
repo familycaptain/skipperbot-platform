@@ -726,6 +726,44 @@ async def voice_tool_relay(websocket: WebSocket, session_id: str):
         logger.info("VOICE: Sideband WS disconnected for session %s", session_id)
 
 
+@app.websocket("/ws/voice/audio/{session_id}")
+async def voice_audio_relay(websocket: WebSocket, session_id: str):
+    """Audio relay: bridge a voice satellite's 2-way PCM to a server-side OpenAI
+    Realtime session (the platform holds the model session + runs tools). The
+    satellite streams mic PCM (binary) and plays returned PCM (binary); see
+    app_platform/voice/relay.py for the protocol. Mint the session first via
+    POST /api/voice/session, then connect here with the same session_id.
+    """
+    from app_platform.voice.session import get_session
+    from app_platform.voice.relay import relay_session
+
+    session = get_session(session_id)
+    if not session:
+        await websocket.close(code=4001, reason="Unknown session")
+        return
+
+    principal = principal_from_ws(websocket)
+    if not principal:
+        await websocket.close(code=4401, reason="Authentication required")
+        return
+    # A service token (voice satellite), the session's own user, or an admin may connect.
+    if (not principal.get("is_service")
+            and principal.get("name") != session.get("user_id")
+            and not has_role(principal, "admin")):
+        await websocket.close(code=4403, reason="Forbidden")
+        return
+
+    await websocket.accept()
+    logger.info("VOICE: Audio relay connected for session %s (user=%s)",
+                session_id, session.get("user_id"))
+    try:
+        await relay_session(websocket, session_id, session)
+    except WebSocketDisconnect:
+        logger.info("VOICE: Audio relay disconnected for session %s", session_id)
+    except Exception as exc:
+        logger.error("VOICE: Audio relay error for session %s: %s", session_id, exc, exc_info=True)
+
+
 @app.post("/tools/refresh")
 async def refresh_tools():
     """Refresh the tools list from MCP server (call after creating new tools)."""
