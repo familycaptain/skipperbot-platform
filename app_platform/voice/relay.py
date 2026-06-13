@@ -251,11 +251,11 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                     lock["name"] = name
                     if name:
                         session["user_id"] = name  # tools/data/permissions follow the locked speaker
-                        logger.info("VOICE-RELAY: locked to %s (%.2f) [session %s]",
+                        logger.info("VOICE-RELAY: locked to user_id=%s by voice (sim %.2f) [session %s]",
                                     name, score, session_id[:12])
                     else:
-                        logger.info("VOICE-RELAY: locked to unrecognized speaker [session %s]",
-                                    session_id[:12])
+                        logger.info("VOICE-RELAY: locked to unidentified voice; user_id=%s (no enrolled "
+                                    "profile matched) [session %s]", session.get("user_id", ""), session_id[:12])
                     try:
                         await satellite_ws.send_text(json.dumps(
                             {"type": "speaker", "name": name or "", "locked": True}))
@@ -270,14 +270,18 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                 return
 
             # Locked → only answer if this turn is the same voice; else ignore + delete it.
+            locked_user = lock["name"] or "unidentified"
             vec = await _embed(pcm)
             sim = speaker_id.cosine(vec, lock["vec"]) if vec is not None else 0.0
             if vec is not None and sim >= _LOCK_THRESHOLD:
                 last_utterance["pcm"] = pcm
+                logger.info("VOICE-RELAY: turn accepted, user_id=%s (sim %.2f) [session %s]",
+                            locked_user, sim, session_id[:12])
                 await _send_oai(oai, {"type": "response.create"})
             else:
-                logger.info("VOICE-RELAY: ignoring off-target voice (sim %.2f < %.2f) [session %s]",
-                            sim, _LOCK_THRESHOLD, session_id[:12])
+                logger.info("VOICE-RELAY: ignoring off-target voice (sim %.2f < %.2f); "
+                            "session locked to user_id=%s [session %s]",
+                            sim, _LOCK_THRESHOLD, locked_user, session_id[:12])
                 item_id = last_item.get("id")
                 if item_id:
                     # Drop the stray turn so it can't pollute the locked conversation.
