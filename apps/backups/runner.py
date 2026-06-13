@@ -232,69 +232,146 @@ def _generate_restore_md(
 
 ## Files in This Backup
 
-| File | Size |
-|------|------|
-| `skipperbot_db.dump` | {dump_size / 1048576:.1f} MB |
-| `skipperbot_files.zip` | {zip_size / 1048576:.1f} MB |
-| `RESTORE.md` | this file |
+| File | Size | Contents |
+|------|------|----------|
+| `skipperbot_db.dump` | {dump_size / 1048576:.1f} MB | PostgreSQL dump (`pg_dump -F c`) |
+| `skipperbot_files.zip` | {zip_size / 1048576:.1f} MB | Project files: `.env`, `uploads/`, `tmp/`, code |
+| `RESTORE.md` | this file | these instructions |
 
-## Prerequisites
+## Choose your restore path — the two models are DIFFERENT
 
-- **PostgreSQL 18.x** with **pgvector 0.8.x** extension
-- **Python 3.14+**
-- Access to the `.env` file (included in `skipperbot_files.zip`)
+Restore the way the instance runs:
 
-## Step 1: Restore the Database
+- **A. Docker** (the default/recommended install). Data lives in Docker **named
+  volumes** (`skipper-db`, `skipper-uploads`), NOT in the project folder. The DB
+  and uploaded files must be restored *into the running stack* — unzipping the
+  archive over the repo will NOT work for them, because the `skipper-uploads`
+  volume shadows the repo's `uploads/` folder.
+- **B. Native** (PostgreSQL/Python/Node installed directly on the host). Data
+  lives in the project folder, so a plain unzip puts files in place.
 
-```powershell
-# Create the database (if needed)
-$env:PGPASSWORD='<password>'
+Commands note **Windows** vs **macOS/Linux** where they differ. The database
+password is `POSTGRES_PASSWORD` in the `.env` (inside `skipperbot_files.zip`).
+
+---
+
+## A. Docker restore (recommended)
+
+**Prerequisites:** Docker Engine + Docker Compose. PostgreSQL 18 + pgvector,
+Python, and Node are bundled in the images — you do not install them.
+
+### A1 — Get the code and your `.env`
+```
+git clone <your-repo-url> skipperbot-platform
+cd skipperbot-platform
+```
+Extract just `.env` from the archive into the project root:
+- macOS/Linux: `unzip -j skipperbot_files.zip .env -d .`
+- Windows (PowerShell): `Expand-Archive skipperbot_files.zip _z; Move-Item _z\\.env .; Remove-Item -Recurse _z`
+
+### A2 — Bring up the stack (creates the volumes + database)
+```
+skipper            # choose D (Docker); let it come up once
+```
+
+### A3 — Restore the database into the `db` container (OS-agnostic)
+```
+docker compose cp skipperbot_db.dump db:/tmp/skipperbot_db.dump
+docker compose exec db pg_restore -U {dsn['user']} -d {dsn['dbname']} --clean --if-exists --no-owner --no-privileges /tmp/skipperbot_db.dump
+```
+(The in-container local socket connection is trusted, so no password is needed.)
+
+### A4 — Restore uploaded files INTO the uploads volume (not onto the repo)
+Uploads live in the `skipper-uploads` named volume, which **shadows** the repo's
+`uploads/` folder — so they must be copied into the running container:
+- macOS/Linux:
+  ```
+  mkdir -p _restore && unzip -q skipperbot_files.zip 'uploads/*' -d _restore
+  docker compose cp _restore/uploads/. agent:/app/uploads/
+  ```
+- Windows (PowerShell):
+  ```
+  Expand-Archive skipperbot_files.zip _restore -Force
+  docker compose cp _restore/uploads/. agent:/app/uploads/
+  ```
+
+### A5 — (Optional) Restore `tmp/` debug files
+`tmp/` is bind-mounted (part of the repo), so it extracts into the project root —
+no `docker cp` needed:
+- macOS/Linux: `unzip -qo skipperbot_files.zip 'tmp/*' -d .`
+- Windows (PowerShell): `Expand-Archive skipperbot_files.zip _restore -Force; Move-Item _restore\\tmp .`
+
+### A6 — Restart, then verify
+```
+skipper restart
+```
+Delete the temporary `_restore/` folder, then run the **Verify** section below.
+
+---
+
+## B. Native restore
+
+**Prerequisites:** PostgreSQL **18.x** + **pgvector 0.8.x**, Python **3.12**,
+Node **24+** (the launcher installs the project's own Python/Node deps for you).
+
+### B1 — Code and files
+```
+git clone <your-repo-url> skipperbot-platform
+cd skipperbot-platform
+```
+Native reads files straight from the project folder, so unzip the **whole**
+archive over the repo (`.env`, `uploads/`, `tmp/` all land in place):
+- macOS/Linux: `unzip -o skipperbot_files.zip -d .`
+- Windows (PowerShell): `Expand-Archive skipperbot_files.zip -DestinationPath . -Force`
+
+### B2 — Create the database, extension, and restore
+Set the password first:
+- macOS/Linux: `export PGPASSWORD='<POSTGRES_PASSWORD from .env>'`
+- Windows (PowerShell): `$env:PGPASSWORD='<POSTGRES_PASSWORD from .env>'`
+```
 createdb -h localhost -U {dsn['user']} {dsn['dbname']}
 psql -h localhost -U {dsn['user']} -d {dsn['dbname']} -c "CREATE EXTENSION IF NOT EXISTS vector;"
-
-# Restore from backup (clean restore into existing DB)
-$env:PGPASSWORD='<password>'
 pg_restore -h localhost -U {dsn['user']} -d {dsn['dbname']} --clean --if-exists --no-owner --no-privileges skipperbot_db.dump
 ```
 
-## Step 2: Restore Project Files
-
-```powershell
-Expand-Archive -Path skipperbot_files.zip -DestinationPath C:\\Users\\Alice\\repos\\skipperbot -Force
+### B3 — Start
+```
+skipper            # choose N (Native) — installs deps on first run
 ```
 
-## Step 3: Verify `.env`
+---
 
-The `.env` file is included in the zip. Ensure it is in the project root directory with correct API keys.
+## Verify (either path)
 
-## Step 4: Verify Restore
+Run these against the restored DB. **Docker:** prefix each with
+`docker compose exec db `. **Native:** `psql -h localhost -U {dsn['user']} -d {dsn['dbname']} -c "..."`.
 
-```powershell
-$env:PGPASSWORD='<password>'
-psql -h localhost -U {dsn['user']} -d {dsn['dbname']} -c "SELECT count(*) FROM chat_turns;"
-psql -h localhost -U {dsn['user']} -d {dsn['dbname']} -c "SELECT count(*) FROM memories;"
-psql -h localhost -U {dsn['user']} -d {dsn['dbname']} -c "SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';"
-
-# Verify app schemas were restored
-psql -h localhost -U {dsn['user']} -d {dsn['dbname']} -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE 'app\\_%';"
+```
+SELECT count(*) FROM chat_turns;
+SELECT count(*) FROM memories;
+SELECT extname, extversion FROM pg_extension WHERE extname = 'vector';
+SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE 'app\\_%';
 ```
 
-### Expected Table Counts
+### Expected table counts (at backup time)
 
 {counts_lines}
 
-## Step 5: Start the Agent
-
-```powershell
-cd C:\\Users\\Alice\\repos\\skipperbot
-python agent.py
-```
+Then confirm uploaded images render in the UI. (Docker: check the volume is
+populated — `docker compose exec agent du -sh /app/uploads`.)
 
 ## Notes
 
-- The pgvector extension must be installed on the target PostgreSQL instance before restoring.
-- Backups use `pg_dump -F c` custom format (compressed, supports selective restore).
-- To restore only specific tables, use `pg_restore -l <dumpfile>` to list contents.
+- **Docker keeps data in named volumes** (`skipper-db`, `skipper-uploads`), NOT in
+  the repo — that is why the DB and uploads are restored *into the stack*
+  (`pg_restore` / `docker compose cp`), not by unzipping over the project folder.
+  `tmp/` is the exception: it is bind-mounted, so it extracts normally.
+- `skipperbot_files.zip` contains your **`.env`, which holds secrets** — keep the
+  backup location private.
+- Backups use `pg_dump -F c` (compressed custom format). `pg_restore -l <dump>`
+  lists contents for a selective restore.
+- pgvector must be available before restoring (Docker: bundled; Native: install
+  PostgreSQL 18 + the `pgvector` extension first).
 """
 
     with open(restore_file, "w", encoding="utf-8") as f:
