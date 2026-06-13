@@ -15,9 +15,11 @@ What this script does, in order:
   3. Verifies the ``vector`` extension is installed (warns otherwise —
      ``CREATE EXTENSION vector`` needs superuser and is the operator's
      job; see ``docs/01-base-platform-setup.md``).
-  4. Runs ``migrations/000_baseline.sql`` exactly once (tracked via a
-     ``public.platform_migrations`` row, *not* ``app_migrations`` —
-     baseline is platform-scoped, not app-scoped).
+  4. Applies pending public-schema migrations from ``migrations/*.sql`` in
+     order, tracked in ``public.platform_migrations`` (*not* ``app_migrations``
+     — these are platform-scoped, not app-scoped). ``000_baseline.sql`` is just
+     the first file; later files (``001_*.sql`` ...) deploy on upgrade. Runs on
+     every start, so platform schema changes actually reach existing installs.
   5. Walks ``apps/<id>/migrations/`` for every required app bundled in
      the repo and applies each unrun SQL file through the same code
      path the agent uses at boot
@@ -175,54 +177,70 @@ def _ensure_platform_migrations_table(conn) -> None:
     conn.commit()
 
 
-def _baseline_already_applied(conn) -> bool:
+def _applied_platform_migrations(conn) -> set[str]:
     with conn.cursor() as cur:
-        cur.execute(
-            f"SELECT 1 FROM {PLATFORM_MIGRATIONS_TABLE} WHERE filename = %s",
-            ("000_baseline.sql",),
-        )
-        return cur.fetchone() is not None
+        cur.execute(f"SELECT filename FROM {PLATFORM_MIGRATIONS_TABLE}")
+        return {row[0] for row in cur.fetchall()}
 
 
-def _run_baseline(conn, *, check_only: bool, verbose: bool) -> bool:
-    """Returns True if baseline was applied (or already present)."""
+def _run_platform_migrations(conn, *, check_only: bool, verbose: bool) -> None:
+    """Apply pending public-schema migrations in order, tracked in
+    ``public.platform_migrations``.
+
+    ``migrations/*.sql`` are applied alphabetically; ``000_baseline.sql`` is
+    simply the first file. Any file not yet recorded is applied (each in its own
+    transaction) and recorded. Existing installs already have 000 recorded, so
+    only genuinely new files (``001_*.sql``, ``002_*.sql``, ...) run on an
+    upgrade — which is what makes platform schema changes actually deploy, the
+    same way ``run_app_migrations`` deploys per-app changes.
+
+    Convention: platform migration files must NOT contain their own
+    BEGIN/COMMIT — the runner wraps each file in one transaction so the whole
+    file is atomic. Use idempotent DDL (``CREATE TABLE IF NOT EXISTS``, guarded
+    ``ALTER``) so a re-run before the tracking row commits is safe.
+    """
     if not BASELINE_SQL.is_file():
         err(f"Baseline migration missing: {BASELINE_SQL}")
         sys.exit(2)
 
     _ensure_platform_migrations_table(conn)
+    applied = _applied_platform_migrations(conn)
 
-    if _baseline_already_applied(conn):
-        ok("Baseline (000_baseline.sql) already applied.")
-        return True
+    sql_files = sorted((PROJECT_ROOT / "migrations").glob("*.sql"))
+    pending = [p for p in sql_files if p.name not in applied]
 
     if check_only:
-        info("Baseline (000_baseline.sql) is NOT applied — would apply it now.")
-        return False
+        if pending:
+            info(f"Platform: {len(pending)} pending — {[p.name for p in pending]}")
+        else:
+            ok(f"Platform: all {len(sql_files)} migration(s) applied.")
+        return
 
-    info("Applying 000_baseline.sql ...")
-    sql = BASELINE_SQL.read_text(encoding="utf-8")
-    started = time.monotonic()
+    if not pending:
+        ok(f"Platform: all {len(sql_files)} migration(s) already applied.")
+        return
 
-    try:
-        with conn.cursor() as cur:
-            cur.execute(sql)
-            cur.execute(
-                f"INSERT INTO {PLATFORM_MIGRATIONS_TABLE} (filename, checksum) "
-                f"VALUES (%s, %s) ON CONFLICT (filename) DO NOTHING",
-                ("000_baseline.sql", _file_sha(BASELINE_SQL)),
-            )
-        conn.commit()
-    except Exception as e:
-        conn.rollback()
-        err(f"Baseline migration FAILED: {e}")
-        sys.exit(3)
-
-    if verbose:
-        ok(f"Baseline applied in {time.monotonic() - started:.1f}s.")
-    else:
-        ok("Baseline applied.")
-    return True
+    for path in pending:
+        info(f"Applying {path.name} ...")
+        sql = path.read_text(encoding="utf-8")
+        started = time.monotonic()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(sql)
+                cur.execute(
+                    f"INSERT INTO {PLATFORM_MIGRATIONS_TABLE} (filename, checksum) "
+                    f"VALUES (%s, %s) ON CONFLICT (filename) DO NOTHING",
+                    (path.name, _file_sha(path)),
+                )
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            err(f"Platform migration FAILED ({path.name}): {e}")
+            sys.exit(3)
+        if verbose:
+            ok(f"  applied {path.name} in {time.monotonic() - started:.1f}s.")
+        else:
+            ok(f"  applied {path.name}.")
 
 
 def _file_sha(path: Path) -> str:
@@ -415,7 +433,7 @@ def main() -> int:
     conn = _connect(dsn)
     try:
         _ensure_or_warn_pgvector(conn)
-        _run_baseline(conn, check_only=args.check, verbose=args.verbose)
+        _run_platform_migrations(conn, check_only=args.check, verbose=args.verbose)
     finally:
         conn.close()
 
