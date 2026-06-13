@@ -117,8 +117,17 @@ def set_focus(user_id: str, slot_number: int, source_type: str, source_id: str) 
             "source_type": source_type, "source_id": source_id}
 
 
+def _max_focus_slots() -> int:
+    """Hard cap on focus slots per user (Settings → Prioritize: max_focus_slots)."""
+    try:
+        from app_platform import settings as _settings
+        return max(1, int(_settings.get("max_focus_slots", scope="app:prioritize", default=3) or 3))
+    except (TypeError, ValueError):
+        return 3
+
+
 def promote_to_focus(user_id: str, source_type: str, source_id: str) -> dict | None:
-    """Promote an item to the next available focus slot (1, 2, or 3).
+    """Promote an item to the next available focus slot.
     Returns the new focus row or None if all slots are full.
     """
     slots = get_focus_slots(user_id)
@@ -126,7 +135,7 @@ def promote_to_focus(user_id: str, source_type: str, source_id: str) -> dict | N
     for s in slots:
         if s["source_id"] == source_id:
             return s  # already in a slot
-    for n in (1, 2, 3):
+    for n in range(1, _max_focus_slots() + 1):
         if n not in used:
             return set_focus(user_id, n, source_type, source_id)
     return None  # all slots full

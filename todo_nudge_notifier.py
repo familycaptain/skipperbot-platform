@@ -24,6 +24,17 @@ def _now():
     return datetime.now(get_timezone())
 
 
+# App-wide defaults (Settings → Todo) used when a user hasn't set their own
+# per-user nudge_enabled / nudge_day / nudge_time.
+def _wn_default(key: str, default):
+    try:
+        from app_platform import settings as _settings
+        val = _settings.get(key, scope="app:todo", default=default)
+        return default if val in (None, "") else val
+    except Exception:
+        return default
+
+
 def _has_nudge_today(user_id: str) -> bool:
     """Check if a to-do nudge was already created for this user today."""
     today_start = _now().replace(hour=0, minute=0, second=0, microsecond=0)
@@ -67,15 +78,19 @@ async def check_todo_nudges():
     for cfg in configs:
         user_id = cfg["user_id"]
 
-        if not cfg.get("nudge_enabled", True):
+        nudge_enabled = cfg.get("nudge_enabled")
+        if nudge_enabled is None:
+            nudge_enabled = bool(_wn_default("weekly_nudge_enabled", True))
+        if not nudge_enabled:
             continue
-        if cfg.get("nudge_day", "saturday").lower() != today_name:
+        nudge_day = cfg.get("nudge_day") or _wn_default("weekly_nudge_day", "saturday")
+        if str(nudge_day).lower() != today_name:
             continue
         if not cfg.get("default_list_id"):
             continue
 
         # Check nudge_time — only fire at or after the configured time
-        nudge_time_str = cfg.get("nudge_time", "07:00")
+        nudge_time_str = cfg.get("nudge_time") or _wn_default("weekly_nudge_time", "07:00")
         try:
             parts = nudge_time_str.split(":")
             nudge_hour, nudge_minute = int(parts[0]), int(parts[1])
