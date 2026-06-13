@@ -660,6 +660,7 @@ def build_voice_tools(category_names: Iterable[str] = ()) -> list[dict]:
 
     add_schema(schemas, seen, end_voice_session_schema())
     add_schema(schemas, seen, switch_voice_app_schema())
+    add_schema(schemas, seen, enroll_voice_schema())
     return schemas
 
 
@@ -751,6 +752,29 @@ def end_voice_session_schema() -> dict:
         "parameters": {
             "type": "object",
             "properties": {},
+        },
+    }
+
+
+def enroll_voice_schema() -> dict:
+    return {
+        "type": "function",
+        "name": "enroll_voice",
+        "description": (
+            "Register the current speaker's voice so Skipper recognizes who is "
+            "talking in future turns. Call this when someone says 'this is <name>', "
+            "'I'm <name>', 'learn my voice', or 'remember my voice'. The person's "
+            "just-spoken audio is used as the sample — briefly confirm by name."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "description": "The speaker's name (a household member).",
+                },
+            },
+            "required": ["name"],
         },
     }
 

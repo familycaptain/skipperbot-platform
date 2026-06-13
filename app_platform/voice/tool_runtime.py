@@ -40,6 +40,13 @@ async def handle_voice_tool_call(
             logger.info("VOICE: end_voice_session requested for %s", session_id)
             return [{"type": "end_session"}]
 
+        if tool_name == "enroll_voice":
+            # The host audio relay intercepts this (it has the live audio buffer).
+            # Reaching here means a direct-to-OpenAI client called it — no audio
+            # to enroll from on this side.
+            return [tool_result(call_id, "Voice enrollment is only available when "
+                                         "using the host audio relay.")]
+
         if tool_name == "switch_voice_app":
             app_name = str(arguments.get("app_name", "base")).lower().strip()
             if is_exit_app_name(app_name):

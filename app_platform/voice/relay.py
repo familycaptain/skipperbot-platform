@@ -163,6 +163,32 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
     try:
         await _send_oai(oai, _session_update(instructions, tools, voice))
 
+        # --- per-turn audio capture for speaker identification ---
+        from app_platform.voice import speaker_id
+        _SR = REALTIME_AUDIO_RATE
+        _MAX_UTTERANCE = _SR * 2 * 15  # ~15s of int16 mono — cap the buffer
+        cap = {"on": False}
+        utterance = bytearray()
+        last_utterance = {"pcm": b""}
+
+        async def _identify_and_set(pcm: bytes) -> None:
+            if not pcm or not speaker_id.available():
+                return
+            try:
+                name, score = await asyncio.to_thread(speaker_id.identify, pcm, _SR)
+            except Exception as exc:
+                logger.warning("VOICE-RELAY: identify failed: %s", exc)
+                return
+            if name and name != session.get("user_id"):
+                logger.info("VOICE-RELAY: speaker -> %s (%.2f) [session %s]",
+                            name, score, session_id[:12])
+                session["user_id"] = name  # tools/data/permissions follow the speaker
+                try:
+                    await satellite_ws.send_text(json.dumps(
+                        {"type": "speaker", "name": name, "score": round(score, 2)}))
+                except Exception:
+                    pass
+
         async def pump_satellite_to_openai():
             """Mic PCM (binary) → OpenAI input_audio_buffer.append; text = control."""
             try:
@@ -176,6 +202,8 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                             "type": "input_audio_buffer.append",
                             "audio": base64.b64encode(chunk).decode("ascii"),
                         })
+                        if cap["on"] and len(utterance) < _MAX_UTTERANCE:
+                            utterance.extend(chunk)
                         continue
                     text = msg.get("text")
                     if text:
@@ -203,20 +231,26 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                             await satellite_ws.send_bytes(base64.b64decode(delta))
 
                     elif et == "input_audio_buffer.speech_started":
+                        cap["on"] = True
+                        utterance.clear()
                         await satellite_ws.send_text(json.dumps({"type": "status", "status": "speech_started"}))
                     elif et == "input_audio_buffer.speech_stopped":
+                        cap["on"] = False
+                        last_utterance["pcm"] = bytes(utterance)
                         await satellite_ws.send_text(json.dumps({"type": "status", "status": "speech_stopped"}))
+                        # identify off the event loop so we don't stall the pumps
+                        asyncio.create_task(_identify_and_set(last_utterance["pcm"]))
 
                     elif et == "conversation.item.input_audio_transcription.completed":
                         text = event.get("transcript", "")
                         if record_voice_transcript:
-                            await record_voice_transcript(session_id, "user", text, user_id=user_id)
+                            await record_voice_transcript(session_id, "user", text, user_id=session.get("user_id", ""))
                         await satellite_ws.send_text(json.dumps({"type": "transcript", "role": "user", "text": text}))
 
                     elif et in _ASSISTANT_TRANSCRIPT_TYPES:
                         text = event.get("transcript", "")
                         if record_voice_transcript:
-                            await record_voice_transcript(session_id, "assistant", text, user_id=user_id)
+                            await record_voice_transcript(session_id, "assistant", text, user_id=session.get("user_id", ""))
                         await satellite_ws.send_text(json.dumps({"type": "transcript", "role": "assistant", "text": text}))
 
                     elif et == "response.function_call_arguments.done":
@@ -228,11 +262,26 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                         except json.JSONDecodeError:
                             args = {}
                         logger.info("VOICE-RELAY: tool %s(%s) [session %s]", name, list(args.keys()), session_id[:12])
-                        events = await handle_voice_tool_call(
-                            session_id=session_id, call_id=call_id, tool_name=name, arguments=args,
-                        )
-                        if await _apply_tool_events(oai, events):
-                            break
+                        if name == "enroll_voice":
+                            # Enrollment needs the audio, which only the relay has —
+                            # use the just-spoken utterance. Handled here, not tool_runtime.
+                            person = (args.get("name") or "").strip()
+                            ok = False
+                            if person and last_utterance["pcm"] and speaker_id.available():
+                                ok = await asyncio.to_thread(
+                                    speaker_id.enroll, person, last_utterance["pcm"], _SR)
+                            out = (f"Got it — I'll recognize {person}'s voice from now on."
+                                   if ok else
+                                   "I couldn't capture a clear voice sample. Make sure voice "
+                                   "recognition is set up, then say a full sentence and try again.")
+                            await _apply_tool_events(oai, [
+                                {"type": "tool_result", "call_id": call_id, "output": out}])
+                        else:
+                            events = await handle_voice_tool_call(
+                                session_id=session_id, call_id=call_id, tool_name=name, arguments=args,
+                            )
+                            if await _apply_tool_events(oai, events):
+                                break
 
                     elif et == "error":
                         logger.error("VOICE-RELAY: OpenAI error [session %s]: %s", session_id[:12], event.get("error"))
