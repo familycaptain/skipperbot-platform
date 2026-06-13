@@ -101,10 +101,9 @@ these routes.
 
 ## UI
 
-- **`ListsApp`** — grid of all lists OR a single sequential view, depending
-  on the `default_view` per-app config. Drag-to-reorder items. Shows
-  archived items toggle (default off; configurable via
-  `show_archived_by_default`). Add / archive / cross-off inline.
+- **`ListsApp`** — lists with their items. Drag-to-reorder items. Each list's
+  detail has a collapsible "Archived (N)" section (removed items, hidden by
+  default — expand to review/recover). Add / archive / cross-off inline.
 
 Lives under `apps/lists/ui/`.
 
@@ -133,7 +132,7 @@ None in v1. Lists is foundational; it doesn't react to other apps' events.
 - `platform.links` — `ensure_edge` between item and parent list; `delete_links_for_entity` on item delete
 - `platform.events.emit` — fires the events listed above
 - `platform.time.now()` — for `archived_at` timestamps
-- `platform.config.get(key)` — reads this app's settings (`default_view`, `show_archived_by_default`, `trello_sync_enabled`)
+- `platform.config.get(key)` — reads this app's settings (`trello_sync_enabled`, `trello_sync_interval_seconds`)
 
 ## Thinking Domains
 
