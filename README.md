@@ -17,7 +17,7 @@ shared services every app uses. Apps add structured data for domain capabilities
 planning, vehicle maintenance, household chores, journaling, and more — each
 in its own folder, each adding tools the agent can call, each with its own UI.
 
-The platform ships with **17 required apps** built in. You install **optional
+The platform ships with **20 required apps** built in. You install **optional
 apps** by cloning their repos into the platform's `apps/` directory. You can
 write your own — same simple structure as the bundled ones.
 
@@ -216,6 +216,9 @@ After install, the platform has these required apps built in:
 |---|---|
 | Notifications | Multi-channel notification fanout (web, Discord, mobile, Pushover) |
 | Timeline | Cross-app activity feed — see everything that's changed in one place |
+| Images | Photo gallery — browse and manage saved images and generated charts |
+| Issues | Bug/feature tracker — report, triage, and validate fixes (drives the Evolve loop) |
+| Thinking | Thinking-domain viewer — inspect Skipper's working memory, reasoning log, and token budget |
 | Goals | Goals, projects, and tasks |
 | Reminders | One-shot and recurring reminders |
 | Schedules | Recurring schedules + calendar |

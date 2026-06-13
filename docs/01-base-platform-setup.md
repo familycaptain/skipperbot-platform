@@ -312,7 +312,7 @@ Whichever path you took, the same wizard runs at <http://localhost:8000>.
 7. **Done.**
 
 The wizard writes your settings into `.env` and restarts the agent. After
-the restart you land on the desktop with all 17 required apps available.
+the restart you land on the desktop with all 20 required apps available.
 
 ---
 
