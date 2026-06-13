@@ -3937,7 +3937,7 @@ class CreateScheduleRequest(BaseModel):
     usage_interval: int | None = None
     linked_entity_id: str | None = None
     linked_entity_type: str | None = None
-    reminder_mins: int = 60
+    reminder_mins: int | None = None   # None → use Settings → Schedules default_reminder_minutes
     notify_channel: str = "both"
 
 

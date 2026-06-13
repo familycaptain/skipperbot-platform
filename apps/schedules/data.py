@@ -507,7 +507,7 @@ def create_schedule(
     usage_interval: int | None = None,
     linked_entity_id: str | None = None,
     linked_entity_type: str | None = None,
-    reminder_mins: int = 60,
+    reminder_mins: int | None = None,
     notify_channel: str = "both",
     start_date: str | None = None,
     job_config: dict | None = None,
@@ -516,7 +516,18 @@ def create_schedule(
 
     If start_date is provided (YYYY-MM-DD), use it as the first next_due
     instead of computing from recurrence rules.
+
+    reminder_mins=None means "use the app default" — the Settings → Schedules
+    `default_reminder_minutes` value (falling back to 60). Pass an explicit int
+    to override per-schedule.
     """
+    if reminder_mins is None:
+        try:
+            from app_platform import settings as _settings
+            reminder_mins = int(_settings.get(
+                "default_reminder_minutes", scope="app:schedules", default=60) or 60)
+        except (TypeError, ValueError):
+            reminder_mins = 60
     sch_id = _new_id()
     rule = recurrence_rule or {}
     effective_recurrence_type = recurrence_type if recurrence_type in VALID_RECURRENCE_TYPES else "weekly"
