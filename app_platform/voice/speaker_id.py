@@ -83,6 +83,10 @@ def embed(pcm16: bytes, sample_rate: int = 24000) -> list[float] | None:
         from resemblyzer import preprocess_wav
 
         samples = np.frombuffer(pcm16, dtype=np.int16).astype(np.float32) / 32768.0
+        # Silence (e.g. an AEC-muted or noise-only segment) → skip. Avoids feeding
+        # all-zeros to resemblyzer (which warns "divide by zero in log10").
+        if samples.size == 0 or float(np.max(np.abs(samples))) < 1e-3:
+            return None
         wav = preprocess_wav(samples, source_sr=sample_rate)
         if wav.size < sample_rate // 2:  # < ~0.5s of voiced audio — too short to trust
             return None

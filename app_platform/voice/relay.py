@@ -211,10 +211,20 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         # --- per-turn audio capture for speaker identification ---
         from app_platform.voice import speaker_id
         _SR = REALTIME_AUDIO_RATE
-        _MAX_UTTERANCE = _SR * 2 * 15  # ~15s of int16 mono — cap the buffer
-        cap = {"on": False}
-        utterance = bytearray()
+        # Rolling buffer of the most recent mic audio. We DON'T gate capture on the
+        # OpenAI VAD events (they arrive over the network lagged vs the live mic
+        # stream, so an event-gated window grabs mostly trailing silence). Instead we
+        # always keep the last ~8s and snapshot it on speech_stopped; resemblyzer
+        # trims the silence and embeds the voiced part.
+        _ROLL_MAX = _SR * 2 * 8  # ~8s of int16 mono
+        mic_roll = bytearray()
         last_utterance = {"pcm": b""}      # most recent ACCEPTED (locked-speaker) turn
+        # Response lifecycle: we own response.create (server-VAD create_response is
+        # off), so track whether one is generating and serialize turns, to never hit
+        # conversation_already_has_active_response.
+        resp_idle = asyncio.Event()
+        resp_idle.set()
+        turn_lock = asyncio.Lock()
         # The session voice-lock: the reference voiceprint (adapted toward the speaker
         # as accepted turns come in, so it stabilizes), the resolved identity, and the
         # number of turns blended into the reference.
@@ -308,11 +318,22 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             except Exception:
                 pass
 
+        async def _create_response() -> None:
+            """Ask the model to reply. Cancel any in-flight response first and wait for
+            it to end, so we never hit conversation_already_has_active_response."""
+            if not resp_idle.is_set():
+                await _send_oai(oai, {"type": "response.cancel"})
+                try:
+                    await asyncio.wait_for(resp_idle.wait(), timeout=2.0)
+                except asyncio.TimeoutError:
+                    pass
+            await _send_oai(oai, {"type": "response.create"})
+
         async def _accept_and_reply(pcm: bytes) -> None:
             """Accept this turn: it's the locked speaker. Reply now; persist transcript."""
             last_utterance["pcm"] = pcm
             item_id = last_item.get("id")
-            await _send_oai(oai, {"type": "response.create"})
+            await _create_response()
             _spawn(_finalize_user_transcript(item_id))
 
         async def _on_user_turn(pcm: bytes) -> None:
@@ -323,7 +344,14 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             adjacent rooms, other people) is ignored and its stray turn is deleted from
             the model's context (and never written to chat history). The lock holds until
             the session ends ("goodbye").
+
+            Serialized via turn_lock so rapid/overlapping turns (e.g. the wake-word
+            pre-roll burst) can't race response.create against each other.
             """
+            async with turn_lock:
+                await _handle_turn(pcm)
+
+        async def _handle_turn(pcm: bytes) -> None:
             if not speaker_id.available():
                 await _accept_and_reply(pcm)
                 return
@@ -387,8 +415,10 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                             "type": "input_audio_buffer.append",
                             "audio": base64.b64encode(chunk).decode("ascii"),
                         })
-                        if cap["on"] and len(utterance) < _MAX_UTTERANCE:
-                            utterance.extend(chunk)
+                        # Always roll the recent mic audio (independent of VAD events).
+                        mic_roll.extend(chunk)
+                        if len(mic_roll) > _ROLL_MAX:
+                            del mic_roll[:len(mic_roll) - _ROLL_MAX]
                         continue
                     text = msg.get("text")
                     if text:
@@ -415,17 +445,19 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                         if delta:
                             await satellite_ws.send_bytes(base64.b64decode(delta))
 
+                    elif et == "response.created":
+                        resp_idle.clear()
+                    elif et in ("response.done", "response.cancelled"):
+                        resp_idle.set()
+
                     elif et == "input_audio_buffer.speech_started":
-                        cap["on"] = True
-                        utterance.clear()
                         await satellite_ws.send_text(json.dumps({"type": "status", "status": "speech_started"}))
                     elif et == "input_audio_buffer.speech_stopped":
-                        cap["on"] = False
                         await satellite_ws.send_text(json.dumps({"type": "status", "status": "speech_stopped"}))
                         # Voice-lock check + drive the reply (response.create is issued in
-                        # there, not by server-VAD). Snapshot the turn's PCM and run off
-                        # the event loop so embed work doesn't stall the receive pump.
-                        _spawn(_on_user_turn(bytes(utterance)))
+                        # there, not by server-VAD). Snapshot the last ~8s of mic audio and
+                        # run off the event loop so embed work doesn't stall the receive pump.
+                        _spawn(_on_user_turn(bytes(mic_roll)))
 
                     elif et == "input_audio_buffer.committed":
                         # Remember the user item id so an off-target turn can be deleted.
