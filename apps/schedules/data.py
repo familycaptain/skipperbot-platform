@@ -777,11 +777,32 @@ def complete_schedule(
     return get_schedule(schedule_id)
 
 
-def get_completions(schedule_id: str, limit: int = 20) -> list[dict]:
+def get_completions(schedule_id: str, limit: int = 20,
+                    window_days: int | None = None) -> list[dict]:
+    """Recent completions for a schedule (newest first).
+
+    window_days=None uses the Settings → Schedules `completion_window_days`
+    (default 30): older completions are kept in the DB but excluded from this
+    feed. Pass 0 (or a negative) to disable the window and return everything.
+    """
+    if window_days is None:
+        try:
+            from app_platform import settings as _settings
+            window_days = int(_settings.get(
+                "completion_window_days", scope="app:schedules", default=30) or 30)
+        except (TypeError, ValueError):
+            window_days = 30
+
+    where = "WHERE schedule_id = %s"
+    params: list = [schedule_id]
+    if window_days and window_days > 0:
+        where += " AND completed_at >= now() - make_interval(days => %s)"
+        params.append(window_days)
+    params.append(limit)
     rows = fetch_all_in_schema(
         SCHEMA,
-        "SELECT * FROM schedule_completions WHERE schedule_id = %s ORDER BY completed_at DESC LIMIT %s",
-        (schedule_id, limit),
+        f"SELECT * FROM schedule_completions {where} ORDER BY completed_at DESC LIMIT %s",
+        tuple(params),
     )
     result = []
     for r in rows:

@@ -87,12 +87,33 @@ def _has_overdue_notification_today(schedule_id: str) -> bool:
     return created >= today_start
 
 
+_last_run = {"ts": None}
+
+
+def _notifier_tick_seconds() -> int:
+    try:
+        from app_platform import settings as _settings
+        return int(_settings.get(
+            "notifier_tick_seconds", scope="app:schedules", default=30) or 30)
+    except (TypeError, ValueError):
+        return 30
+
+
 async def check_schedule_notifications():
     """Check all active schedules and create notifications as needed.
 
-    Called every ~30 seconds from the reminder scheduler loop.
-    Creates notification records; delivery is handled separately.
+    Driven by the reminder scheduler loop (~30s), but self-throttled to the
+    Settings → Schedules `notifier_tick_seconds` so that setting actually
+    governs how often the notifier does work (it can't run faster than the
+    driving loop, only slower).
     """
+    tick = _notifier_tick_seconds()
+    last = _last_run["ts"]
+    now0 = _now()
+    if last is not None and (now0 - last).total_seconds() < tick:
+        return
+    _last_run["ts"] = now0
+
     try:
         from apps.schedules.data import get_due_schedules
         # Get schedules due within 7 days (covers upcoming + overdue)
