@@ -171,7 +171,29 @@ def reset_stale_processing(stale_minutes: int = 10) -> int:
 
     Guards against items frozen in 'processing' after a server restart
     mid-cycle. Called once at the start of each domain cycle.
+
+    The partial unique index ``idx_miq_entity_key`` allows only ONE 'pending' row
+    per entity_key. So a stale 'processing' row whose entity already has a fresh
+    'pending' row (or a newer stale 'processing' row) cannot simply be flipped to
+    'pending' — that would violate the index and crash the whole cycle. Drop those
+    superseded rows first (the surviving row already represents the work), then
+    reset the rest. Rows with a NULL entity_key are exempt from the index and
+    always reset safely.
     """
+    # Remove stale 'processing' rows superseded by a same-entity 'pending' row or
+    # a newer same-entity 'processing' row, so the reset below cannot collide.
+    execute(
+        "DELETE FROM memory_ingestion_queue mq "
+        "WHERE mq.status = 'processing' "
+        "  AND mq.created_at < now() - make_interval(mins => %s) "
+        "  AND mq.entity_key IS NOT NULL "
+        "  AND EXISTS (SELECT 1 FROM memory_ingestion_queue o "
+        "              WHERE o.entity_key = mq.entity_key AND o.id <> mq.id "
+        "                AND (o.status = 'pending' "
+        "                     OR (o.status = 'processing' AND o.created_at > mq.created_at)))",
+        (stale_minutes,),
+    )
+    # Reset the remaining (now collision-free) stale 'processing' rows.
     return execute(
         "UPDATE memory_ingestion_queue "
         "SET status = 'pending' "
