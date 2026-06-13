@@ -123,7 +123,9 @@ config:
 thinking:
   - domain: pm
     description: "Project Manager — review at-risk items, nudge owners, surface what to work on."
-    schedule: "0 9 * * *"        # 9 AM daily by default; user-overridable
+    # Runs continuously on an interval during waking hours (not cron — the
+    # thinking scheduler is interval/active-hours based). Cadence is set in the
+    # domain seed (migrations); the pm_cadence_hours setting gates re-engagement.
     prompt_file: prompts/pm_think.md
     model: smart
     enabled_by_default: true     # on out of the box — see migrations/003
@@ -134,7 +136,8 @@ thinking:
       - send_notification
   - domain: goals
     description: "Goal-level reasoning — long-horizon planning, gap detection."
-    schedule: "0 6 * * 0"        # weekly Sunday morning
+    # Long-horizon: ticks infrequently on an interval during waking hours
+    # (cadence in the domain seed). Not cron.
     prompt_file: prompts/goals_think.md
     model: smart
     enabled_by_default: false

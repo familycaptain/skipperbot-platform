@@ -103,7 +103,9 @@ thinking:
     description: >
       Reads accumulated memories, decides what topics deserve their
       own document, and creates / updates / files docs into folders.
-    schedule: "*/30 * * * *"   # cron — every 30 minutes by default
+    # Interval-based during waking hours (NOT cron — the thinking scheduler is
+    # interval/active-hours based). Cadence is managed at runtime by
+    # apps/documents/domain.py (catchup vs steady interval).
     # catchup_threshold + catchup_interval_seconds are honored at
     # runtime by apps/documents/domain.py (not yet first-class manifest
     # fields — TODO when the loader grows them).

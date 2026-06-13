@@ -16,6 +16,7 @@ parent goal automatically.  Both are idempotent.
 
 import logging
 
+from config import NAG_WAKE_HOUR, NAG_SLEEP_HOUR
 from data_layer.thinking_domains import get_domain, create_domain, update_domain
 from apps.goals.data import load_entity, get_top_level_tasks, get_subtasks
 
@@ -24,9 +25,10 @@ logger = logging.getLogger(__name__)
 # Statuses that mean the goal is "finished" (no thinking needed)
 _INACTIVE_STATUSES = {"done", "deferred", "archived", "cancelled"}
 
-# Default cadence for goal thinking domains
+# Default cadence for goal thinking domains. Active hours track the household's
+# notification waking window so goal work doesn't run/reach out overnight.
 _DEFAULT_CADENCE = {
-    "active_hours": [8, 22],
+    "active_hours": [NAG_WAKE_HOUR, NAG_SLEEP_HOUR],
     "interval_minutes": 30,
 }
 

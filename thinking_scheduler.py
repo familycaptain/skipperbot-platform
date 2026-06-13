@@ -19,7 +19,7 @@ import asyncio
 import json
 import time
 from datetime import datetime, timedelta
-from config import logger
+from config import logger, NAG_WAKE_HOUR, NAG_SLEEP_HOUR
 from app_platform.time import get_timezone
 
 # How often the supervisor checks for domain config changes (enable/disable)
@@ -238,7 +238,9 @@ async def _domain_loop(domain_name: str, domain_config: dict):
     """Run one domain's thinking loop forever. Each domain is independent."""
     cadence = domain_config.get("cadence") or {}
     default_interval = cadence.get("interval_minutes", 5) * 60  # convert to seconds
-    active_hours = cadence.get("active_hours", [8, 22])
+    # Default to the household's notification waking hours so domains don't
+    # reach out (or burn budget) overnight — overridable per-domain via cadence.
+    active_hours = cadence.get("active_hours") or [NAG_WAKE_HOUR, NAG_SLEEP_HOUR]
     priority = domain_config.get("budget_priority", "standard")
 
     logger.info("THINKING[%s]: Loop started (default interval=%ds, hours=%s)",
