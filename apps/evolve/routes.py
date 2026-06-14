@@ -25,6 +25,10 @@ class DecisionReq(BaseModel):
     decision: str
 
 
+class ResolveReq(BaseModel):
+    status: str
+
+
 def _principal(request: Request) -> dict:
     p = current_principal(request)
     if not p:
@@ -74,3 +78,15 @@ async def api_decide_gate(instance_id: str, req: DecisionReq, request: Request):
     if not n:
         raise HTTPException(status_code=404, detail="no such gate")
     return {"ok": True, "decision": req.decision}
+
+
+@router.post("/gates/{instance_id}/resolve")
+async def api_resolve_gate(instance_id: str, req: ResolveReq, request: Request):
+    """The engine marks a gate's terminal outcome after resuming it (service or admin)."""
+    p = _principal(request)
+    if not (p.get("is_service") or _has_role(p, "admin")):
+        raise HTTPException(status_code=403, detail="admin or service principal only")
+    n = await asyncio.to_thread(gate_queue.resolve_gate, instance_id, req.status)
+    if not n:
+        raise HTTPException(status_code=404, detail="no such gate")
+    return {"ok": True, "status": req.status}

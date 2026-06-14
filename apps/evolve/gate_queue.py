@@ -53,3 +53,13 @@ def record_decision(instance_id: str, decision: str, by: str) -> int:
                decided_at = now()
         WHERE instance_id = %s
     """, (decision, by, instance_id))
+
+
+def resolve_gate(instance_id: str, status: str) -> int:
+    """The engine marks a decided gate's terminal outcome after it resumed the work-item
+    (e.g. 'merged' | 'rejected' | 'orphan'). Moves it out of the 'decided' set so the
+    poller won't act on it again. (When a work-item advances to a NEXT gate, the engine
+    instead re-pushes it via upsert_gate, which flips it back to 'waiting'.)"""
+    return execute_in_schema(SCHEMA,
+                             "UPDATE gate_queue SET status = %s WHERE instance_id = %s",
+                             (status, instance_id))

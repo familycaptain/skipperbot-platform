@@ -73,3 +73,9 @@ def list_decided(token: str | None = None) -> list[dict]:
     """Gates the operator has decided in the UI (for the resume poller)."""
     token = token or auth()
     return _get("/api/apps/evolve/gates?status=decided", token).get("gates", [])
+
+
+def resolve(instance_id: str, status: str, token: str | None = None) -> dict:
+    """Mark a decided gate's terminal outcome after the engine resumed it."""
+    token = token or auth()
+    return _post(f"/api/apps/evolve/gates/{instance_id}/resolve", {"status": status}, token)

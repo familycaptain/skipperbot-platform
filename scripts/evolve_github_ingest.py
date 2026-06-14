@@ -35,7 +35,7 @@ from apps.evolve.cost import CostLedger
 from apps.evolve import github_connector as gh
 from apps.evolve import platform_bridge as bridge
 
-STATE_DB = os.path.expanduser("~/.evolve/github.sqlite")
+STATE_DB = os.path.expanduser("~/.evolve/instances.sqlite")  # ONE store for all intake (unified)
 SEEN = os.path.expanduser("~/.evolve/github_ingested.json")
 DEEP = os.getenv("EVOLVE_MODEL_DEEP", "claude-opus-4-8")
 CAP = float(os.getenv("EVOLVE_MONTHLY_CAP", "500"))
@@ -53,17 +53,34 @@ def _pushover(title, message, priority=1):
         print("  pushover failed:", e)
 
 
-def on_gate(packet):
-    """Surface a parked gate in the UI + ping the operator."""
-    try:
-        bridge.push_gate(packet)
-        print(f"  -> pushed {packet.get('gate')} to the Evolve UI work queue")
-    except Exception as e:
-        print("  -> push_gate FAILED:", e)
-    rec = packet.get("recommendation") or {}
-    wi = packet.get("work_item") or {}
-    label = {"gate1": "Gate 1 · approve intent", "gate2": "Gate 2 · approve result"}.get(packet.get("gate"), packet.get("gate"))
-    _pushover(f"Evolve · {label}", f"{wi.get('title','(work item)')}\nRecommend: {rec.get('action','?')} — {rec.get('why','')}")
+def _make_on_gate(pipe):
+    """on_gate hook: enrich the packet with the feature diff (if implement has run),
+    push it to the operator work queue (the Pi), and Pushover. Closes over `pipe` so it
+    can load the instance + compute the diff for the gate the engine just parked at."""
+    from apps.evolve.workspace import git
+
+    def hook(packet):
+        inst = pipe.store.load(packet.get("instance"))
+        feat = (inst.context.get("feature") if inst else None) or {}
+        if feat:
+            packet["feature"] = feat
+            try:
+                packet["diff"] = git(pipe.wm.repo, "diff", "release...{}".format(feat["branch"]))
+            except Exception:
+                packet["diff"] = ""
+        try:
+            bridge.push_gate(packet)
+            print(f"  -> pushed {packet.get('gate')} to the operator work queue")
+        except Exception as e:
+            print("  -> push_gate FAILED:", e)
+        rec = packet.get("recommendation") or {}
+        wi = packet.get("work_item") or {}
+        label = {"gate1": "Gate 1 · approve intent", "gate2": "Gate 2 · approve result"}.get(
+            packet.get("gate"), packet.get("gate"))
+        _pushover(f"Evolve · {label}", f"{wi.get('title', '(work item)')}\n"
+                  f"Recommend: {rec.get('action', '?')} — {rec.get('why', '')}")
+
+    return hook
 
 
 def build_pipeline():
@@ -91,8 +108,10 @@ def build_pipeline():
                 return {"ok": ok, "output": getattr(impl, "output", None) or {}}
             return super()._code_acting(agent, inst)
 
-    return RealPipeline(model, runner=runner, wm=wm, implement_fn=lambda f: None,
-                        validate_fn=validate_fn, store=store, log=print, on_gate=on_gate), runner, ledger
+    pipe = RealPipeline(model, runner=runner, wm=wm, implement_fn=lambda f: None,
+                        validate_fn=validate_fn, store=store, log=print, on_gate=None)
+    pipe.on_gate = _make_on_gate(pipe)
+    return pipe, runner, ledger
 
 
 def _seen():
@@ -130,15 +149,33 @@ def main():
         print(f"\nthis-run reasoning spend: ${runner.spent_usd:.4f}  month-to-date: ${ledger.month_to_date():.4f}")
 
     elif args.cmd == "poll":
+        from apps.evolve.engine.instance import DONE, REJECTED
         decided = bridge.list_decided()
-        print(f"{len(decided)} decided gate(s) in the UI")
+        print(f"{len(decided)} decided gate(s) on the platform")
         for g in decided:
             iid, decision = g["instance_id"], g["decision"]
+            inst = pipe.store.load(iid)
+            if inst is None:
+                bridge.resolve(iid, "orphan")
+                print(f"  {iid}: not in this brain's store -> marked orphan")
+                continue
+            print(f"  {iid}: operator said '{decision}' — resuming the engine...")
             try:
+                # Resumes the walk. If it parks at a NEXT gate, the pipeline's on_gate
+                # re-pushes that gate to the queue (flipping the row back to 'waiting').
                 inst = pipe.approve(iid, decision)
-                print(f"  {iid}: {decision} -> status={inst.status} gate={pipe.gate_waiting(inst)}")
             except Exception as e:
-                print(f"  {iid}: resume failed: {e}")
+                print(f"    resume FAILED: {type(e).__name__}: {e}")
+                continue
+            if inst.status == DONE:
+                bridge.resolve(iid, "merged")
+                print(f"    -> DONE — merged to release @ {(inst.context.get('release_sha') or '')[:8]}")
+            elif inst.status == REJECTED:
+                bridge.resolve(iid, "rejected")
+                print(f"    -> rejected")
+            else:
+                print(f"    -> advanced to {pipe.gate_waiting(inst)} (re-pushed to the queue)")
+        print(f"this-run reasoning spend: ${runner.spent_usd:.4f}")
 
 
 if __name__ == "__main__":
