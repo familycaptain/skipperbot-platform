@@ -1,0 +1,14 @@
+kind: specification
+id: evolve.promotion.merge-to-release
+title: Gate-2 approval merges feature into release
+state: live
+autonomy: hands-on
+behavior: Approving a built change at Gate 2 merges its feature branch into `release` (carrying
+  spec + code + tests atomically); the per-change cycle ends here, NOT at main.
+implements:
+- apps/evolve/workspace.py
+tests:
+- type: unit
+  path: tests/evolve/test_workspace.py
+links: {}
+notes: ''

@@ -1,0 +1,11 @@
+kind: specification
+id: evolve.build-validate.fix-retest-loop
+title: Loop fix->retest within a budget, or escalate
+state: proposed
+autonomy: hands-on
+behavior: On a failing validation the cycle loops implement->retest within a token/iteration
+  budget, and escalates to the human when stuck (the gw_tests gateway).
+implements: []
+tests: []
+links: {}
+notes: The gw_tests loop exists in the model/walker; wiring it into build_loop is TODO.

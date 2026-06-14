@@ -1,0 +1,12 @@
+kind: specification
+id: evolve.build-validate.validate-on-box2
+title: Validate the bound tests on a running box 2
+state: proposed
+autonomy: hands-on
+behavior: Box 2 runs the spec's bound tests against the live app — deterministic Playwright/unit
+  plus any agentic rubrics — and reports pass/fail with screenshots for the Gate-2 packet.
+implements: []
+tests: []
+links: {}
+notes: Needs the real box-2 instance (running app + browser). The deterministic test-run seed
+  is build_loop.validate_with_tests.

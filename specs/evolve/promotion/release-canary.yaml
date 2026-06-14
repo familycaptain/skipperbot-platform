@@ -1,0 +1,11 @@
+kind: specification
+id: evolve.promotion.release-canary
+title: Operator canaries release on the Pi
+state: proposed
+autonomy: hands-on
+behavior: The operator upgrades the Pi to the `release` branch to canary accumulated approved
+  work on real hardware + data before publishing. Evolve never pushes here.
+implements: []
+tests: []
+links: {}
+notes: ''

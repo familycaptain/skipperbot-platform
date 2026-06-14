@@ -22,13 +22,13 @@ class TestBootSync(unittest.TestCase):
     def test_projects_real_tree_inmemory(self):
         s, rep = self._boot(store.InMemoryBackend())
         self.assertTrue(rep.ok, str(rep))
-        self.assertEqual(len(s.all()), 17)
+        self.assertEqual(len(s.all()), len(schema.scan_paths(SPECS)))
         self.assertEqual(len(s.by_kind("capability")), 1)
 
     def test_projects_real_tree_sqlite(self):
         s, rep = self._boot(store.SqliteBackend(":memory:"))
         self.assertTrue(rep.ok, str(rep))
-        self.assertEqual(len(s.all()), 17)
+        self.assertEqual(len(s.all()), len(schema.scan_paths(SPECS)))
         rec = s.get("evolve.cfs-store.boot-sync")
         self.assertIsNotNone(rec)
         self.assertEqual(rec["kind"], "specification")

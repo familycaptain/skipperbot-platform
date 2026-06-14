@@ -1,11 +1,7 @@
 kind: feature
 id: evolve.promotion
-title: Promotion — feature → release → main
-state: proposed
+title: Promotion — feature -> release -> main
+state: live
 links: {}
-notes: >
-  Implements EVOLVE.md §5. Planned specs: merge-to-release (Gate-2 approval merges the
-  feature branch to `release`; per-change cycle ends here), release-canary (operator
-  upgrades the Pi to `release`), publish-release-to-main (operator release gate →
-  push GitHub), brain-readopt (box-1 brain + Pi adopt the new `main`; rollback floor =
-  prior release tag). To be expanded.
+notes: 'Implements EVOLVE.md §5. BUILT: merge-to-release (Gate-2 merges feature->release).
+  PROPOSED (operator/box-2): release-canary, publish-release-to-main, brain-readopt.'

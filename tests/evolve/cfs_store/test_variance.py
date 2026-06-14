@@ -24,11 +24,15 @@ class TestRealTreeVariance(unittest.TestCase):
         missing = [v for v in vs if v.reason == variance.MISSING_IMPL]
         self.assertEqual(missing, [], f"unexpected missing-impl: {[str(v) for v in missing]}")
 
-    def test_all_real_specs_have_tests_or_are_flagged(self):
+    def test_live_specs_are_tested_drafts_may_be_untested(self):
+        # Invariant: a `live` spec must have bound tests; only non-live (proposed)
+        # specs may be UNTESTED. (Proposed build-validate/promotion specs are drafts.)
         recs = _records(SPECS, REPO)
+        state = {r.id: r.state for r in recs}
         vs = variance.detect(recs, repo_root=REPO)
-        # the seed specs all declare tests, so no UNTESTED variances expected
-        self.assertFalse([v for v in vs if v.reason == variance.UNTESTED])
+        untested_live = [v.spec_id for v in vs
+                         if v.reason == variance.UNTESTED and state.get(v.spec_id) == "live"]
+        self.assertEqual(untested_live, [], f"live specs must be tested: {untested_live}")
 
 
 class TestSyntheticVariance(unittest.TestCase):
