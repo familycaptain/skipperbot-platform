@@ -102,11 +102,12 @@ class TestAnthropicLive(unittest.TestCase):
     def test_triage_real_call(self):
         # load .env for the key without printing it
         if os.path.exists(".env"):
-            for line in open(".env"):
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    k, v = line.split("=", 1)
-                    os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+            with open(".env") as fh:
+                for line in fh:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
         r = Runner(AnthropicBackend(), dict(registry.ROSTER))
         res = r.run("triage", {"title": "After saving an auto issue you can't edit it",
                                "body": "There should be an Edit button."})
