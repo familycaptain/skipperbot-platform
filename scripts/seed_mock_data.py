@@ -118,11 +118,15 @@ def _id(rec):
 
 def seed_chores():
     from apps.chores import data as chores
+    existing = {k.get("name"): k for k in chores.list_kids(active_only=False)}
     kids = []
     for name, color in [("Tyler", "#3b82f6"), ("Katie", "#ec4899")]:
-        kids.append(chores.create_kid(name, color=color))
-        _bump("chore_kids")
-    start = _id(kids[0]) if kids else ""
+        if name in existing:                       # idempotent: reuse, don't duplicate
+            kids.append(existing[name])
+        else:
+            kids.append(chores.create_kid(name, color=color))
+            _bump("chore_kids")
+    start = datetime.now(timezone.utc).date().isoformat()   # rotation_start is a DATE
     for zone_name in ["Kitchen", "Bathrooms", "Living Room"]:
         z = chores.create_zone(zone_name, start, description=f"{zone_name} weekly cleanup")
         _bump("chore_zones")
