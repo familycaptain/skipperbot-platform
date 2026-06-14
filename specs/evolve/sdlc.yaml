@@ -1,0 +1,123 @@
+# Evolve — SDLC process model (the source of truth the engine walks)
+# =============================================================================
+# First BPM-for-SDLC flow for Evolve (see specs/EVOLVE.md). The engine is our own
+# lightweight graph-walker over THIS file. specs/evolve/sdlc.md holds the Mermaid
+# view generated from it (open that in GitHub to see the graph).
+#
+# node.type:
+#   event    - start / end
+#   agent    - a specialized agent (service task); one responsibility each
+#   system   - deterministic automation (no LLM): serialize / deploy / merge / resync
+#   gate     - a human approval (user task)
+#   gateway  - a branch/merge;  kind: exclusive (one path) | parallel (fan-out/join)
+# lane: intake | agents | system | human | box2
+# edge.when: the condition/label on a branch (omitted = unconditional)
+
+id: evolve-sdlc
+version: 0.1.0
+
+nodes:
+  # ---- intake (three sources) ----
+  - { id: s_issue,   type: event,   lane: intake, label: "Issue (Issues app / GitHub)" }
+  - { id: s_pr,      type: event,   lane: intake, label: "PR (community contribution)" }
+  - { id: s_design,  type: event,   lane: intake, label: "Design proposal (proactive)" }
+
+  # ---- triage & vision ----
+  - { id: triage,    type: agent,   agent: triage,       lane: agents, label: "Triage: bug/feature, dedup, link to C/F/S" }
+  - { id: gw_kind,   type: gateway, kind: exclusive,     lane: agents, label: "bug or feature?" }
+  - { id: vision,    type: agent,   agent: vision-fit,   lane: agents, label: "Vision-fit vs charter" }
+  - { id: gw_vision, type: gateway, kind: exclusive,     lane: agents, label: "fits vision?" }
+
+  # ---- spec authoring (convergence point for all three sources) ----
+  - { id: spec,      type: agent,   agent: spec-author,  lane: agents, label: "Spec-author: draft/update C/F/S + bound tests" }
+
+  # ---- prioritization ----
+  - { id: prio,      type: agent,   agent: prioritize,   lane: agents, label: "Prioritize (backlog-PM): score + rank" }
+  - { id: gw_prio,   type: gateway, kind: exclusive,     lane: agents, label: "surface or park?" }
+
+  # ---- review fan-out (parallel) ----
+  - { id: gw_rev,    type: gateway, kind: parallel,      lane: agents, label: "review fan-out" }
+  - { id: sec,       type: agent,   agent: security,     lane: agents, label: "Security review" }
+  - { id: arch,      type: agent,   agent: architecture, lane: agents, label: "Architecture review" }
+  - { id: interop,   type: agent,   agent: interop,      lane: agents, label: "Interop / conflict check" }
+  - { id: ux,        type: agent,   agent: ux,           lane: agents, label: "UX/UI review" }
+  - { id: gw_revj,   type: gateway, kind: parallel,      lane: agents, label: "join" }
+  - { id: gw_conf,   type: gateway, kind: exclusive,     lane: agents, label: "conflict?" }
+
+  # ---- gate 1 ----
+  - { id: gate1,     type: gate,    lane: human, label: "GATE 1 - approve intent" }
+
+  # ---- implement & validate ----
+  - { id: serialize, type: system,  lane: system, label: "Serialize spec to file (feature branch)" }
+  - { id: impl,      type: agent,   agent: implement,    lane: agents, label: "Implement code (or canonicalize PR)" }
+  - { id: tests,     type: agent,   agent: test-author,  lane: agents, label: "Author/update acceptance tests" }
+  - { id: deploy,    type: system,  lane: system, label: "Box 2: pull branch + restart" }
+  - { id: validate,  type: agent,   agent: validate,     lane: box2,   label: "Validate on box 2 (Playwright + agentic rubrics)" }
+  - { id: gw_tests,  type: gateway, kind: exclusive,     lane: box2,   label: "tests green?" }
+
+  # ---- gate 2 & merge ----
+  - { id: packet,    type: agent,   agent: review-packet, lane: agents, label: "Build review packet (diff + spec + results + screenshots)" }
+  - { id: gate2,     type: gate,    lane: human, label: "GATE 2 - approve result" }
+  - { id: merge,     type: system,  lane: system, label: "Auto-merge spec+code+tests to main" }
+  - { id: resync,    type: system,  lane: system, label: "Re-sync files to DB" }
+
+  # ---- end events ----
+  - { id: e_done,     type: event, lane: system, label: "Merged" }
+  - { id: e_parked,   type: event, lane: agents, label: "Parked / declined (recorded)" }
+  - { id: e_rejected, type: event, lane: human,  label: "Rejected" }
+
+edges:
+  # intake -> pipeline
+  - { from: s_issue,   to: triage }
+  - { from: s_pr,      to: triage }
+  - { from: s_design,  to: spec }                       # design proposals are already vision-aligned
+
+  # triage / vision
+  - { from: triage,    to: gw_kind }
+  - { from: gw_kind,   to: spec,       when: "bug" }
+  - { from: gw_kind,   to: vision,     when: "feature" }
+  - { from: vision,    to: gw_vision }
+  - { from: gw_vision, to: spec,       when: "fits" }
+  - { from: gw_vision, to: e_rejected, when: "off-vision" }
+
+  # prioritize
+  - { from: spec,      to: prio }
+  - { from: prio,      to: gw_prio }
+  - { from: gw_prio,   to: e_parked,   when: "low-priority tail" }
+  - { from: gw_prio,   to: gw_rev,     when: "top-N or safety-critical" }
+
+  # review fan-out / join / conflict
+  - { from: gw_rev,    to: sec }
+  - { from: gw_rev,    to: arch }
+  - { from: gw_rev,    to: interop }
+  - { from: gw_rev,    to: ux }
+  - { from: sec,       to: gw_revj }
+  - { from: arch,      to: gw_revj }
+  - { from: interop,   to: gw_revj }
+  - { from: ux,        to: gw_revj }
+  - { from: gw_revj,   to: gw_conf }
+  - { from: gw_conf,   to: spec,       when: "conflict - rework" }
+  - { from: gw_conf,   to: gate1,      when: "clear" }
+
+  # gate 1
+  - { from: gate1,     to: spec,       when: "change this" }
+  - { from: gate1,     to: e_rejected, when: "reject" }
+  - { from: gate1,     to: serialize,  when: "approve" }
+
+  # implement & validate
+  - { from: serialize, to: impl }
+  - { from: impl,      to: tests }
+  - { from: tests,     to: deploy }
+  - { from: deploy,    to: validate }
+  - { from: validate,  to: gw_tests }
+  - { from: gw_tests,  to: impl,       when: "failing - retry within budget" }
+  - { from: gw_tests,  to: gate2,      when: "stuck - escalate" }
+  - { from: gw_tests,  to: packet,     when: "green" }
+
+  # gate 2 & merge
+  - { from: packet,    to: gate2 }
+  - { from: gate2,     to: impl,       when: "change this" }
+  - { from: gate2,     to: e_rejected, when: "reject" }
+  - { from: gate2,     to: merge,      when: "approve" }
+  - { from: merge,     to: resync }
+  - { from: resync,    to: e_done }

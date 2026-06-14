@@ -645,10 +645,12 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   format can carry weight.
 - **Define the charter** (`what Skipper is / isn't`) — the triage/vision agents and
   the Evolve-core guardrail all depend on it.
-- **The first SDLC process flow** — author the actual Evolve BPM graph in the
-  decided format (own minimal JSON/YAML model + generated Mermaid; see §6 "Process
-  file format + visualization"): nodes (agents) + gateways + the two human gates,
-  the C/F/S state at each step, and which agent owns each transition.
+- **The first SDLC process flow — DRAFTED.** v0.1 in the decided format:
+  `specs/evolve/sdlc.yaml` (model = truth) + `specs/evolve/sdlc.md` (generated
+  Mermaid view — open in GitHub to see the graph). 31 nodes / 41 edges; the three
+  intake sources → triage/vision → spec-author → prioritize → review fan-out →
+  Gate 1 → implement+test on box 2 → Gate 2 → merge → re-sync. Next: refine it,
+  then attach C/F/S state to each step + name which agent owns each transition.
 - **Spec-file schema** — finalize fields, ID scheme, and the file layout under
   `specs/`.
 - **Git topology box1↔box2** — local remote vs GitHub branches; box-2 reset.
