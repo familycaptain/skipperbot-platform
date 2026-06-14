@@ -34,13 +34,14 @@ except ImportError:
 
 # Standard test-box logins: password = username + "1234" (these are NON-SECRET
 # throwaway creds for disposable test machines, by convention — never use on prod).
-# `admin` is the operator login (admin + primary); the rest are the mock family
-# that owns the seeded data.
+# Every HUMAN carries the `member` role (the human designator); only the bot user
+# `skipper` (created by init_db) is `bot` and never `member`. `admin` is the
+# operator/owner; the rest are the mock family that owns the seeded data.
 MEMBERS = [
-    ("admin", "Admin", "admin,primary"),       # operator / household owner
-    ("david", "David", "member,parent"),        # parents
+    ("admin", "Admin", "member,admin,primary"),   # operator / household owner (human)
+    ("david", "David", "member,parent"),           # parents
     ("maria", "Maria", "member,parent"),
-    ("tyler", "Tyler", "member"),               # kids
+    ("tyler", "Tyler", "member"),                  # kids
     ("katie", "Katie", "member"),
 ]
 
