@@ -86,6 +86,13 @@ conformance" in the general case.
 
 Regression = run every test under a Capability/Feature.
 
+**Caveat — reconciliation only guards behavior you've *declared*.** A spec is
+satisfied by its tests, but nothing here judges whether the *spec itself* is sound:
+a wrong or naive spec (e.g. "ZIP → city" assuming 1:1) reconciles perfectly while
+shipping the wrong thing. Declarations are pressure-tested by the **spec-audit
+agent** (§6), not by the test binding — the binding answers "does the code match the
+spec?", spec-audit answers "is the spec right?"
+
 ---
 
 ## 4. Storage — files are truth, the DB is a projection
@@ -340,6 +347,20 @@ more — cheap. Think in **small, decomposable pieces of agentic functionality.*
   downstream impacts, the one-directional dependency rule.
 - **Interoperability / consistency agent** — spec-vs-spec conflict detection — "is
   the desired state *satisfiable*?" (detailed below).
+- **Spec-audit (specification-critic) agent** — the **soundness** complement to
+  interop's **consistency**: critique a *single* spec (or Feature) for **gaps,
+  holes, naive assumptions, and missing edge cases** — independent of any other
+  spec. Its curated prompt primes it to hunt the failure modes that bite
+  requirements: **cardinality/relationship assumptions** (a spec that treats a
+  many-to-many as 1:1 — e.g. "ZIP → city" when one ZIP holds several towns),
+  **missing states** (empty/error/loading/permission-denied), **ambiguous
+  resolution** ("the latest," "the default," "the city" when there can be several),
+  **untestable claims** (no oracle to assert), and **unstated preconditions**
+  (assumes data exists / a single home / one timezone). Runs in **two places, one
+  agent**: in the review fan-out at proposal time (`crit`), and as a **proactive
+  corpus sweep** over the existing C/F/S (`qa_spec`, the spec-side detector in the
+  QA sweep). This is also the **ratification engine for reverse-engineered specs**
+  (§11) — it's what stops the bootstrap from blessing existing bugs as intent.
 - **UX/UI agent** — good UX/UI design and consistency across apps.
 
 **Prioritization**
@@ -363,9 +384,9 @@ more — cheap. Think in **small, decomposable pieces of agentic functionality.*
 - **Variance / drift detector** — find specs whose tests fail or whose code has
   drifted from the spec; queue reconciliation. (Mostly **mechanical** — tests +
   checksums — with an agentic fallback.) Also the first of the **proactive QA
-  sweep's** three detectors; *pure* drift takes the fast-path past Gate 1.
-- **Code-audit agent** — the proactive QA sweep's third detector (alongside the
-  variance detector and the deterministic regression run): read code for **logic
+  sweep's** four detectors; *pure* drift takes the fast-path past Gate 1.
+- **Code-audit agent** — a proactive QA sweep detector (alongside the variance
+  detector, the deterministic regression run, and spec-audit): read code for **logic
   bugs, edge cases, security smells, and dead code** that no existing test or spec
   would catch, and emit them as bug work items. (Finds defects in shipped behavior —
   complementary to the design agent, which proposes behavior we don't have yet.)
@@ -686,9 +707,9 @@ same Gate 1. Sources plural, pipeline singular.
      silently expands what Skipper is.
 4. **Proactive — QA / bug-discovery (a separate system).** Distinct from the design
    lane: the design lane invents *new behavior we don't have yet*; this lane finds
-   *defects in the behavior we already shipped*. It runs on a cadence (`qa_sweep`)
-   and fans out three blind detectors in parallel, each finding what the others
-   can't:
+   *defects in what we already have* — in both the **code** and the **specs**. It
+   runs on a cadence (`qa_sweep`) and fans out four blind detectors in parallel,
+   each finding what the others can't:
    - **Variance / drift detector** — reconciles the **code against its approved
      C/F/S.** Pure drift (code stopped matching an already-approved spec) is a
      special case: it takes the **fast-path** (skips Spec-author *and* Gate 1 — the
@@ -699,8 +720,14 @@ same Gate 1. Sources plural, pipeline singular.
      tests across the C/F/S so a newly-red test surfaces as a bug.
    - **Code-audit agent** (`qa_audit`) — reads code for logic bugs, edge cases,
      security smells, and dead code that no test or spec would catch.
-   Their findings join (`qa_join`) into **bug** work items that enter the same
-   pipeline at Triage. Same one-pipeline-one-gate discipline; just a fourth feeder.
+   - **Spec-audit agent** (`qa_spec`) — the spec-side complement: reads the **C/F/S
+     itself** for gaps, holes, and naive assumptions (the "ZIP → city is many-to-one"
+     class). The others ask "does the code match the spec?"; this one asks "**is the
+     spec even right?**" — essential because reverse-engineered specs (§11) codify
+     whatever the code does, bugs included.
+   Their findings join (`qa_join`) into **bug or spec-gap** work items that enter the
+   same pipeline at Triage. Same one-pipeline-one-gate discipline; just a fourth
+   feeder.
 
 ### Prioritization — turning the flood into a ranked queue
 
@@ -777,9 +804,9 @@ and an explicit **give-up-and-escalate** path so autonomous loops can't thrash.
 
 ```
 issue / PR / proactive design proposal / QA bug-finding   (four intake sources)
-  ( QA sweep = variance-detect ∥ regression ∥ code-audit → join → bug item;
-    pure variance takes the fast-path straight to prioritize )
-  → triage + vision-fit + security/arch + interop conflict-check + author spec change
+  ( QA sweep = variance-detect ∥ regression ∥ code-audit ∥ spec-audit → join
+    → bug/spec-gap item;  pure variance takes the fast-path straight to prioritize )
+  → triage + vision-fit + security/arch + interop conflict-check + spec-audit (gaps) + author spec change
   → prioritize (backlog PM): rank across all lanes → top-N reach the human
   → GATE 1 (human approves intent)
   → serialize spec → file  +  implement code  +  write/adjust tests   (feature branch, box-1 workspace)
@@ -850,6 +877,18 @@ aside — it does three things at once:
    (spec-first, the clean way, since Evolve doesn't exist yet) — build Evolve
    against them, and then **Evolve reverse-engineers the legacy apps' specs as its
    job, not the human's.** The recursion *is* the bootstrap plan.
+
+   **But reverse-engineered specs are unratified by default.** A spec extracted from
+   existing code captures what the code *does*, **not** what it *should* do — so it
+   faithfully records latent bugs as if they were intent (a Weather spec would bless
+   "ZIP → city" and its wrong-town output). Therefore:
+   - Reverse-engineered specs enter as **`proposed` / needs-review, never `live`**
+     (a spec only reaches `live` by ratification, never by extraction).
+   - The **spec-audit agent** (§6) processes that needs-review queue as a proactive
+     sweep — flagging gaps/holes/naive assumptions — and routes each to spec-author
+     + the human for ratification. Without this skeptic, the bootstrap merely
+     **launders existing bugs into "approved requirements."** Spec-audit is what
+     makes "reverse-engineer the initial specs" *safe*.
 3. **Self-hosting compounds.** Like a compiler that compiles itself or Claude Code
    used to build Claude Code — the tool that builds the tool sharpens with every
    improvement, because each improvement makes the next cheaper. Evolve improving
@@ -911,14 +950,15 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   format can carry weight.
 - **Define the charter** (`what Skipper is / isn't`) — the triage/vision agents and
   the Evolve-core guardrail all depend on it.
-- **The first SDLC process flow — DRAFTED.** v0.2 in the decided format:
+- **The first SDLC process flow — DRAFTED.** v0.3 in the decided format:
   `specs/evolve/sdlc.yaml` (model = truth) + `specs/evolve/sdlc.md` (generated
-  Mermaid view — open in GitHub to see the graph). 37 nodes / 50 edges; the **four
+  Mermaid view — open in GitHub to see the graph). 39 nodes / 54 edges; the **four
   intake lanes** (issues, PRs, the proactive Design agent, and the proactive QA
-  sweep = variance ∥ regression ∥ code-audit) → triage/vision → spec-author →
-  prioritize → review fan-out → Gate 1 → implement+test on box 2 → Gate 2 → merge →
-  re-sync, plus the variance fast-path. Next: refine it, then attach C/F/S state to
-  each step + name which agent owns each transition.
+  sweep = variance ∥ regression ∥ code-audit ∥ spec-audit) → triage/vision →
+  spec-author → prioritize → review fan-out (security/arch/interop/**spec-audit**/ux)
+  → Gate 1 → implement+test on box 2 → Gate 2 → merge → re-sync, plus the variance
+  fast-path. Next: refine it, then attach C/F/S state to each step + name which agent
+  owns each transition.
 - **Spec-file schema — FINALIZED** (§4): the three `kind:` records, dotted
   hierarchy-encoding readable IDs, the `specs/<cap>/<feat>/<spec>.yaml` layout, the
   `main`-only-holds-`live`/`deprecated` invariant, and loader validation. Remaining:
@@ -947,6 +987,10 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   and the second authority (with the charter) the vision-fit agent checks.
 - **Interoperability agent** — detects spec-vs-spec conflicts (two specs that can't
   both be true / can't coexist); the "is the desired state satisfiable?" guard.
+- **Spec-audit (specification-critic) agent** — critiques a *single* spec for
+  internal gaps, holes, and naive assumptions (e.g. a 1:1 spec over a many-to-many
+  relationship); the soundness complement to interop's consistency. Runs at proposal
+  time and as a proactive corpus sweep; ratifies reverse-engineered specs.
 - **Backlog-PM agent** — the prioritizer: ranks all proposals onto one queue and
   cuts the long tail so only the top-N reach the human.
 - **Evolve-core orchestrator** — the in-process, deterministic control-plane

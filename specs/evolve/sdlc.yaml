@@ -14,7 +14,7 @@
 # edge.when: the condition/label on a branch (omitted = unconditional)
 
 id: evolve-sdlc
-version: 0.2.0
+version: 0.3.0
 
 nodes:
   # ---- intake — FOUR lanes: two reactive, two proactive ----
@@ -23,13 +23,14 @@ nodes:
   - { id: s_pr,      type: event,   lane: intake, label: "PR (community contribution)" }
   # proactive lane A — Design (new features)
   - { id: gen_design,type: agent,   agent: design, lane: agents, label: "Design agent (cadence): propose features from charter + request clusters + coverage gaps" }
-  # proactive lane B — QA / bug-discovery (defects in our own code)
+  # proactive lane B — QA / bug-discovery (defects in our own code AND specs)
   - { id: qa_sweep,  type: event,   lane: intake, label: "QA sweep (cadence)" }
   - { id: qa_var,    type: agent,   agent: variance-detect, lane: agents, label: "Variance/drift detector: code vs approved C/F/S" }
   - { id: qa_reg,    type: system,  lane: system, label: "Run regression suite (bound tests)" }
   - { id: qa_audit,  type: agent,   agent: code-audit, lane: agents, label: "Code-audit: logic bugs, edge cases, security smells, dead code" }
+  - { id: qa_spec,   type: agent,   agent: spec-audit, lane: agents, label: "Spec-audit (corpus sweep): gaps, holes, naive assumptions in existing C/F/S" }
   - { id: qa_join,   type: gateway, kind: parallel, lane: agents, label: "join findings" }
-  - { id: s_bug,     type: event,   lane: intake, label: "Bug finding (proactive)" }
+  - { id: s_bug,     type: event,   lane: intake, label: "QA finding (bug or spec-gap)" }
 
   # ---- triage & vision ----
   - { id: triage,    type: agent,   agent: triage,       lane: agents, label: "Triage: bug/feature, dedup, link to C/F/S" }
@@ -48,7 +49,8 @@ nodes:
   - { id: gw_rev,    type: gateway, kind: parallel,      lane: agents, label: "review fan-out" }
   - { id: sec,       type: agent,   agent: security,     lane: agents, label: "Security review" }
   - { id: arch,      type: agent,   agent: architecture, lane: agents, label: "Architecture review" }
-  - { id: interop,   type: agent,   agent: interop,      lane: agents, label: "Interop / conflict check" }
+  - { id: interop,   type: agent,   agent: interop,      lane: agents, label: "Interop / conflict check (spec-vs-spec)" }
+  - { id: crit,      type: agent,   agent: spec-audit,   lane: agents, label: "Spec-audit (proposal): gaps, holes, naive assumptions in THIS spec" }
   - { id: ux,        type: agent,   agent: ux,           lane: agents, label: "UX/UI review" }
   - { id: gw_revj,   type: gateway, kind: parallel,      lane: agents, label: "join" }
   - { id: gw_conf,   type: gateway, kind: exclusive,     lane: agents, label: "conflict?" }
@@ -84,9 +86,11 @@ edges:
   - { from: qa_sweep,   to: qa_var }
   - { from: qa_sweep,   to: qa_reg }
   - { from: qa_sweep,   to: qa_audit }
+  - { from: qa_sweep,   to: qa_spec }
   - { from: qa_var,     to: qa_join }
   - { from: qa_reg,     to: qa_join }
   - { from: qa_audit,   to: qa_join }
+  - { from: qa_spec,    to: qa_join }
   - { from: qa_join,    to: s_bug }
   - { from: s_bug,      to: triage }
   # variance fast-path: pure code-vs-approved-spec drift skips spec-author + Gate 1
@@ -111,10 +115,12 @@ edges:
   - { from: gw_rev,    to: sec }
   - { from: gw_rev,    to: arch }
   - { from: gw_rev,    to: interop }
+  - { from: gw_rev,    to: crit }
   - { from: gw_rev,    to: ux }
   - { from: sec,       to: gw_revj }
   - { from: arch,      to: gw_revj }
   - { from: interop,   to: gw_revj }
+  - { from: crit,      to: gw_revj }
   - { from: ux,        to: gw_revj }
   - { from: gw_revj,   to: gw_conf }
   - { from: gw_conf,   to: spec,       when: "conflict - rework" }

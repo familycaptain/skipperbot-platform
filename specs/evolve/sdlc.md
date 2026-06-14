@@ -1,4 +1,4 @@
-# Evolve — SDLC process flow (v0.2)
+# Evolve — SDLC process flow (v0.3)
 
 > **Generated view.** The source of truth is [`sdlc.yaml`](./sdlc.yaml); this
 > Mermaid is the picture of it. Open this file in GitHub (or VS Code preview /
@@ -17,14 +17,16 @@ flowchart TD
   %% intake: proactive A — Design (new features)
   gen_design["Design agent (cadence): propose features"]:::agent --> spec
 
-  %% intake: proactive B — QA / bug-discovery
+  %% intake: proactive B — QA / bug-discovery (code AND spec defects)
   qa_sweep(["QA sweep (cadence)"]):::event --> qa_var["Variance/drift detector — code vs approved spec"]:::agent
   qa_sweep --> qa_reg[["Run regression suite"]]:::sys
   qa_sweep --> qa_audit["Code-audit — bugs, edge cases, security"]:::agent
+  qa_sweep --> qa_spec["Spec-audit — gaps/holes/naive assumptions in existing C/F/S"]:::agent
   qa_var --> qa_join{{"join findings"}}:::gw
   qa_reg --> qa_join
   qa_audit --> qa_join
-  qa_join --> s_bug(["Bug finding"]):::event
+  qa_spec --> qa_join
+  qa_join --> s_bug(["QA finding (bug or spec-gap)"]):::event
   s_bug --> triage
   qa_var -. "fast-path: pure variance" .-> prio
 
@@ -43,11 +45,13 @@ flowchart TD
 
   gw_rev --> sec["Security review"]:::agent
   gw_rev --> arch["Architecture review"]:::agent
-  gw_rev --> interop["Interop / conflict check"]:::agent
+  gw_rev --> interop["Interop / conflict check (spec-vs-spec)"]:::agent
+  gw_rev --> crit["Spec-audit — gaps/holes in THIS spec"]:::agent
   gw_rev --> ux["UX/UI review"]:::agent
   sec --> gw_revj{{"join"}}:::gw
   arch --> gw_revj
   interop --> gw_revj
+  crit --> gw_revj
   ux --> gw_revj
   gw_revj --> gw_conf{"conflict?"}:::gw
   gw_conf -->|"conflict, rework"| spec
@@ -90,10 +94,11 @@ flowchart TD
   - **Proactive A — Design agent (cadence):** generates new-feature proposals from
     the charter + request clusters + C/F/S coverage gaps → enters at **Spec-author**
     (already vision-aligned).
-  - **Proactive B — QA / bug-discovery (cadence):** a *separate* system running three
+  - **Proactive B — QA / bug-discovery (cadence):** a *separate* system running four
     detectors in parallel — **variance/drift** (code vs. approved spec), the
-    **regression suite**, and a **code-audit** agent — whose findings become **bug**
-    work items → **Triage**.
+    **regression suite**, a **code-audit** agent (defects in the *code*), and a
+    **spec-audit** agent (gaps/holes/naive assumptions in the *C/F/S* itself) —
+    whose findings become **bug or spec-gap** work items → **Triage**.
 - **Variance fast-path** (dashed): a *pure* code-vs-approved-spec drift skips
   Spec-author **and** Gate 1 (the intent was approved when the spec was) → straight
   to **Prioritize**, then implement → validate → Gate 2.
@@ -101,8 +106,10 @@ flowchart TD
   scope** (help.md/guide.md are inputs, not the authority).
 - **Prioritize** is the attention valve: long tail *parked/declined* (recorded);
   only **top-N or safety-critical** continue.
-- **Review fan-out** runs Security / Architecture / Interop / UX in parallel, joins;
-  an **interop conflict** routes back to Spec-author.
+- **Review fan-out** runs Security / Architecture / Interop / **Spec-audit** / UX in
+  parallel, joins; an **interop conflict** routes back to Spec-author. Interop and
+  spec-audit are a pair: interop checks specs *against each other*, spec-audit
+  checks *this* spec for internal gaps/holes.
 - **Gate 1** (approve intent) → autonomous **implement + author tests** on the box-1
   branch → **box 2** validates with Playwright → loop **failing→retry** / **stuck→
   escalate** / **green→packet** → **Gate 2** → **auto-merge** → **re-sync**. Both
