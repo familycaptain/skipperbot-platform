@@ -84,6 +84,19 @@ PACKET_OUT = _obj({
     "test_summary": _STR,
 }, ["summary", "risk"])
 
+# --- code-acting agents (run on the Agent SDK tool-use path; execute skills) ---
+IMPLEMENT_OUT = _obj({
+    "summary": _STR, "files_changed": _arr(_STR), "ok": _BOOL,
+}, ["summary", "ok"])
+
+TEST_AUTHOR_OUT = _obj({
+    "tests_written": _arr(_STR), "summary": _STR,
+}, ["tests_written", "summary"])
+
+VALIDATE_OUT = _obj({
+    "passed": _BOOL, "failures": _arr(_STR), "notes": _STR,
+}, ["passed"])
+
 
 # --------------------------------------------------------------------------- #
 # The roster
@@ -130,6 +143,22 @@ ROSTER: dict[str, AgentSpec] = {
     "review-packet": AgentSpec(
         "review-packet", "Assemble the pre-digested Gate-2 review packet.",
         PACKET_OUT, tier="fast"),
+
+    # --- code-acting agents: execute Claude Skills + tools on the Agent SDK path ---
+    # (requires_tools=True => the Messages backend refuses them; they need the SDK
+    #  backend, which is the documented next build. They carry skills today.)
+    "implement": AgentSpec(
+        "implement", "Write the code that converges the codebase to an approved spec.",
+        IMPLEMENT_OUT, prompt_file="implement.md", tier="deep", requires_tools=True,
+        charter_keys=["surfaces"], skills=["cfs-validate", "run-evolve-tests"]),
+    "test-author": AgentSpec(
+        "test-author", "Write/update a spec's bound acceptance tests.",
+        TEST_AUTHOR_OUT, prompt_file="test-author.md", tier="smart", requires_tools=True,
+        skills=["run-evolve-tests"]),
+    "validate": AgentSpec(
+        "validate", "Run a spec's bound tests on box 2 and judge the result.",
+        VALIDATE_OUT, prompt_file="validate.md", tier="smart", requires_tools=True,
+        skills=["run-evolve-tests"]),
 }
 
 

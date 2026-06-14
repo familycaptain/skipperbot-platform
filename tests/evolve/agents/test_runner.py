@@ -134,6 +134,31 @@ class TestCharterGrounding(unittest.TestCase):
         self.assertFalse(over, f"over budget ({SYSTEM_PROMPT_TOKEN_BUDGET}): {over} — trim or split")
 
 
+class TestSkills(unittest.TestCase):
+    SKILLS_DIR = os.path.join(REPO, ".claude", "skills")
+
+    def test_referenced_skills_exist_on_disk(self):
+        for name, spec in registry.ROSTER.items():
+            for skill in spec.skills:
+                path = os.path.join(self.SKILLS_DIR, skill, "SKILL.md")
+                self.assertTrue(os.path.exists(path),
+                                f"agent '{name}' references missing skill '{skill}' ({path})")
+
+    def test_only_tool_agents_carry_skills(self):
+        # skills are executed on the SDK tool-use path; reasoning agents shouldn't list any
+        for name, spec in registry.ROSTER.items():
+            if spec.skills:
+                self.assertTrue(spec.requires_tools,
+                                f"'{name}' lists skills but isn't requires_tools")
+
+    def test_messages_backend_refuses_tool_agents(self):
+        # offline: the requires_tools guard fires before any network call
+        spec = registry.ROSTER["implement"]
+        res = AnthropicBackend().run(spec, {}, None, "claude-x", system="")
+        self.assertFalse(res.ok)
+        self.assertIn("Agent SDK", res.error)
+
+
 @unittest.skipUnless(os.getenv("EVOLVE_LIVE_TESTS") == "1",
                      "live Anthropic test (set EVOLVE_LIVE_TESTS=1 once credits are funded)")
 class TestAnthropicLive(unittest.TestCase):

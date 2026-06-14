@@ -31,6 +31,8 @@ class AgentSpec:
     max_tokens: int = 2048
     max_cost_usd: float = 0.50                 # per-run guardrail (budget, §7)
     charter_keys: list[str] = field(default_factory=list)  # charter sections this agent is grounded with
+    skills: list[str] = field(default_factory=list)        # Claude Skills (.claude/skills/<name>) it may invoke
+    requires_tools: bool = False               # True => needs the Agent SDK tool-use backend, not Messages
 
     def resolved_prompt(self) -> str:
         if self.system_prompt:

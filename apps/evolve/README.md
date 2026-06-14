@@ -17,6 +17,23 @@ verified live end-to-end.**
 
 **45 unit tests pass with zero installs** (stdlib `unittest`); 1 live test is gated.
 
+## Where prompts & skills live
+
+- **Agent system prompts** → `apps/evolve/agents/prompts/<agent>.md` (referenced by
+  `AgentSpec.prompt_file`). At call time the Runner composes the effective system
+  prompt = the role prompt **+ only the curated charter sections the agent declares**
+  (`charter_keys`, assembled by `agents/charter.py` from `specs/CHARTER.md`). Budget:
+  `SYSTEM_PROMPT_TOKEN_BUDGET` (1600 est. tokens) — over it = trim grounding or split
+  the agent. *Gap: the reviewer agents (security/architecture/ux/code-audit/
+  review-packet) still use a generated fallback prompt — curated files TODO.*
+- **Claude Skills** → `.claude/skills/<name>/SKILL.md` (clone-portable; see that
+  dir's README). Executable capability packages for the **code-acting agents**
+  (`implement`/`test-author`/`validate`, `requires_tools=True`) on the Agent SDK
+  path — NOT the reasoning agents (Messages API, structured output only, which the
+  Messages backend now explicitly refuses to run for `requires_tools` agents).
+  Shipped: `cfs-validate`, `run-evolve-tests`. *Gap: the SDK tool-use backend that
+  actually executes skills is the next build.*
+
 ## What's stubbed / needs you (gaps to fill)
 
 - **Code-acting agents** — `implement`, `test-author`, `validate` need box-2 + tool

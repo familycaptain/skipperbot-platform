@@ -98,6 +98,11 @@ class AnthropicBackend:
 
     def run(self, spec: AgentSpec, payload: dict, context: dict | None, model: str,
             system: str = "") -> AgentResult:
+        if spec.requires_tools:
+            return AgentResult(spec.name, ok=False, model=model,
+                               error="requires the Agent SDK tool-use backend (executes "
+                                     "skills/tools); the Messages backend can't run it. "
+                                     "See .claude/skills/ + apps/evolve/README.md.")
         try:
             client = self._get_client()
             emit_tool = {"name": "emit",
