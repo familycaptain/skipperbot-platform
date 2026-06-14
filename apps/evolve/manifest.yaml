@@ -73,6 +73,8 @@ config:
 # interval tick or a dedicated runner). Not a prompt_file domain.
 thinking: []
 
-# Each agent invocation is a bounded job (heartbeat/kill/retry reuse, EVOLVE.md §7).
-job_types:
-  - evolve_agent
+# Each agent invocation will run as a bounded job (heartbeat/kill/retry reuse,
+# EVOLVE.md §7) once the orchestrator-as-jobs loop is wired. Declare the evolve_agent
+# job type here THEN, as a dict with its handler:  - {type: evolve_agent, handler: ...}.
+# (A bare string, or a type with no real handler, breaks manifest parse / the loader.)
+job_types: []
