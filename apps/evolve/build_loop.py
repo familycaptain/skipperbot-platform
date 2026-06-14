@@ -82,7 +82,7 @@ def implement_with_agent(work_item: dict, spec_record: dict, *, model: str,
 
     def _impl(feature: Feature):
         tb = ToolUseBackend(repo_root=feature.path, skills_dir=skills_dir,
-                            allow_writes=True, max_turns=20)
+                            allow_writes=True, max_turns=40)
         runner = Runner(FakeBackend({}), dict(ROSTER), tool_backend=tb,
                         tiers={"fast": model, "smart": model, "deep": model},
                         ledger=ledger, monthly_limit_usd=monthly_limit_usd)
