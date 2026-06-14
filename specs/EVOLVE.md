@@ -1211,10 +1211,14 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   `release` on the Pi then publishes `release → main`. Remaining: the concrete git
   worktree layout + the box-2-exercises-an-Evolve-cycle harness for engine changes.
 - **Issues app — DECIDED: removed** (§8). No in-app issue tracker; GitHub is the
-  sole tracker. Remaining: build the **GitHub connector** (pull issues + PRs into
-  Evolve work-items with an external link back) and **remove the existing
-  `apps/issues`** app (it's `core: true` + in `REQUIRED_APPS` — needs a reference
-  scan, loader change, and entity-prefix cleanup).
+  sole tracker. **Sequence the removal — don't delete yet:** the *current* v0 Evolve
+  domain (`domain_evolve.py`) is load-bearing on it (`require_apps("issues")` +
+  reads `apps.issues.store.list_issues`). So: (1) build the **GitHub connector**
+  (pull issues + PRs into work-items with an external link back); (2) migrate
+  `domain_evolve.py`'s intake to it; (3) only *then* remove `apps/issues` +
+  `data_layer/issues.py`, drop the `iss-` prefix (`config.py`), and pull it from
+  `REQUIRED_APPS`/docstrings in `loader.py`. (The `issues` references in
+  `apps/auto` + `apps/home` are vehicle/household "issues" — unrelated.)
 
 ---
 
