@@ -280,6 +280,43 @@ pipeline singular.
      *propose* charter changes, but **the human owns the vision** — it never
      silently expands what Skipper is.
 
+### Prioritization — turning the flood into a ranked queue
+
+Prioritization is the half that makes "scale the gate" actually work. A good gate
+judges the *quality* of one item; **prioritization decides which items reach the
+human at all, and in what order.** Without it, even a perfect gate is swamped by
+volume (the design lane especially). So a dedicated **backlog-PM agent** scores
+every proposed C/F/S change.
+
+- **One ranked queue across all three lanes.** A critical security PR, a
+  broken-code-path bug, a high-demand feature, and a design "what if" all compete
+  for the same scarce resource — the human's attention — so they're scored on **one
+  scale** and surfaced as **one priority-ordered list.** ("Three sources → one
+  pipeline → one gate" becomes "→ one *ranked* queue.")
+- **Scoring** ≈ criticality + reach + demand + vision-fit, weighed against
+  effort/risk:
+  - **Criticality pre-empts** — a security vuln or broken/data-losing code path
+    jumps the queue (possibly an expedited track with a tighter gate), not waiting
+    behind feature ideas.
+  - **Reach/demand** — for the canonical repo, how many users affected / how many
+    asked (the request clusters the design lane surfaces).
+  - **Effort/risk** — a small safe fix outranks a big risky rewrite of equal value.
+- **It must *cut*, not just *order*.** Ordering alone still grows the backlog
+  forever. The prioritizer surfaces the **top-N to the human** and **parks or
+  auto-declines the long tail with a recorded reason** — nothing is lost (it can be
+  fished back out), but it never costs attention. **Floor: safety-critical items
+  are never auto-cut** — always surfaced (a misjudged auto-decline of a real vuln
+  is the failure mode to avoid).
+- **It learns the maintainer's taste.** Every reorder/rejection is signal; over
+  time it converges on *what the human would have prioritized*, making the gate
+  cheaper the longer it runs — the same self-hosting compounding as everywhere
+  else.
+
+Precedent to reuse, not reinvent: the **PM thinking domain** already scores
+projects by staleness/risk, and the **Prioritize app** is a backlog aggregator
+(`register_backlog_provider` + focus slots). The C/F/S proposal queue can plug into
+that machinery.
+
 ### The Issues app
 
 Keep it for the family, but **make the boundary unmissable in the UI**: the in-app
