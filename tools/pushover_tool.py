@@ -1,13 +1,14 @@
 import os
+import sys
 import time
 from datetime import datetime
-import requests
 
-import sys
+# `requests` and app_platform.time (which pulls in the DB stack) are imported LAZILY
+# inside send_pushover_notification — so send_pushover_direct() and this module stay
+# importable in a minimal venv (box 1 / dev-mint, no psycopg2, no requests).
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _BASE_DIR not in sys.path:
     sys.path.insert(0, _BASE_DIR)
-from app_platform.time import get_timezone
 
 # Module-level cooldown tracking (per process)
 _last_sent = {}
@@ -44,6 +45,8 @@ def send_pushover_notification(user_id: str, message: str, cooldown_seconds: int
         A formatted status string indicating success, skip (cooldown), or error details.
     """
     try:
+        import requests
+        from app_platform.time import get_timezone
         global _last_sent
 
         msg = (message or "").strip()
