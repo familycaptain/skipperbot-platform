@@ -61,7 +61,8 @@ def output_driven_decider(node, inst, outs):
     elif node.id == "gw_conf":
         pref = "conflict" if out_of("interop").get("conflicts") else "clear"
     elif node.id == "gw_tests":
-        pref = "green"                                            # validate stubbed -> assume green
+        # route on the validate agent's result; default green when no signal yet
+        pref = "green" if out_of("validate").get("passed", True) else "stuck"
     return _match(outs, pref) or happy_decider(node, inst, outs)
 
 
