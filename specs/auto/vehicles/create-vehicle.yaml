@@ -1,0 +1,13 @@
+kind: specification
+id: auto.vehicles.create-vehicle
+title: Create a vehicle
+state: proposed
+autonomy: gated
+behavior: Adding a vehicle records its year, make, model, trim, and color, derives a display
+  name, assigns a veh- id, and lists it among the household vehicles.
+implements:
+- apps/auto/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

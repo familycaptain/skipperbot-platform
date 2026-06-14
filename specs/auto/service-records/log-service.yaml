@@ -1,0 +1,13 @@
+kind: specification
+id: auto.service-records.log-service
+title: Log a service record
+state: proposed
+autonomy: gated
+behavior: A service record (date, mileage, type, cost, notes) is logged against a vehicle
+  and appears in that vehicle's history; it gets a svc- id.
+implements:
+- apps/auto/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

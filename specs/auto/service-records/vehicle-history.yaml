@@ -1,0 +1,12 @@
+kind: specification
+id: auto.service-records.vehicle-history
+title: View vehicle service history
+state: proposed
+autonomy: gated
+behavior: A vehicle's full service history is retrievable, ordered chronologically by date/mileage.
+implements:
+- apps/auto/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

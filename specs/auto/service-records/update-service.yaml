@@ -1,0 +1,13 @@
+kind: specification
+id: auto.service-records.update-service
+title: Correct a service record
+state: proposed
+autonomy: gated
+behavior: An existing service record can be updated to fix a wrong date, mileage, cost, or
+  note.
+implements:
+- apps/auto/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

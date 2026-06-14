@@ -1,0 +1,14 @@
+kind: specification
+id: auto.issues.update-issue
+title: Edit a vehicle issue
+state: proposed
+autonomy: gated
+behavior: An existing vehicle issue can be updated — its status, description, and resolution
+  changed after it was first saved.
+implements:
+- apps/auto/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (§12). NOTE: the backend update_vehicle_issue() ALREADY supports
+  editing a saved issue — the reported gap (''no Edit button after saving'') is a UI affordance
+  gap, not a missing capability. Good worked example for Evolve triage.'
