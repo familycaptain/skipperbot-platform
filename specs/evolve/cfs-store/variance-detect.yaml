@@ -1,0 +1,17 @@
+kind: specification
+id: evolve.cfs-store.variance-detect
+title: A spec is in variance when its tests fail, are missing, or its code drifted
+state: proposed
+behavior: >
+  Evolve computes, per spec, whether it is satisfied. A spec is in variance if any
+  bound test is failing, if it has no test yet (`untested`), or if one of its
+  `implements` files changed since the spec's recorded checksum without a
+  corresponding spec update. Variance is the mechanical work signal the process engine
+  queues for reconciliation — no agent has to "judge conformance" in the general case.
+implements:
+  - apps/evolve/variance.py
+tests:
+  - { type: unit, path: tests/evolve/cfs-store/test_variance_detect.py }
+autonomy: hands-on
+links: { related: [evolve.process-engine.instance-state] }
+notes: "Mostly mechanical (tests + checksums); the agentic fallback is the variance-detect / spec-audit agents."

@@ -1,0 +1,11 @@
+kind: feature
+id: evolve.agents
+title: Agents — the specialized roster + the runner framework
+state: proposed
+links: {}
+notes: >
+  Implements EVOLVE.md §6/§7 (data plane). Planned specs: agent-runner (bounded Claude
+  Agent SDK subprocess, typed I/O, token/time budget, run-as-job), then one spec per
+  agent — triage, vision-fit, spec-author, spec-audit, interop, security, architecture,
+  ux, prioritize, implement, test-author, validate, review-packet, design,
+  variance-detect, code-audit. To be expanded.

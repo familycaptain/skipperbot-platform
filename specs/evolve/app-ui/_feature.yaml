@@ -1,0 +1,11 @@
+kind: feature
+id: evolve.app-ui
+title: The Evolve app — work queue + observability
+state: proposed
+links: {}
+notes: >
+  Implements EVOLVE.md §10. Planned specs: queue (ranked decision inbox: gate/steer/
+  escalate items, Change + Settle controls), cfs-explorer (Capability→Feature→Spec tree
+  + conformance health), activity (live BPM instances on the highlighted graph + agent
+  run log + self-correction feed), charter-view (platform charter + per-Capability
+  scope). To be expanded.

@@ -1,0 +1,8 @@
+kind: feature
+id: evolve.process-engine
+title: Process engine — the graph-walker over the BPM model
+state: proposed
+links: {}
+notes: >
+  Implements EVOLVE.md §7 (runtime control plane) over specs/evolve/sdlc.yaml.
+  Deterministic, no LLM — the second substrate to build (with cfs-store).

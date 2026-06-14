@@ -1,0 +1,9 @@
+kind: feature
+id: evolve.intake
+title: Intake — getting work into the pipeline
+state: proposed
+links: {}
+notes: >
+  Implements EVOLVE.md §8. Planned specs: github-pull-issues, github-pull-prs (the
+  connector — GitHub is the only tracker), qa-sweep (variance ∥ regression ∥ code-audit
+  ∥ spec-audit), design-lane (proactive feature proposals). To be expanded.

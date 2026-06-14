@@ -1,0 +1,17 @@
+kind: specification
+id: evolve.process-engine.load-model
+title: Load and validate the SDLC process model
+state: proposed
+behavior: >
+  The engine loads specs/evolve/sdlc.yaml and validates it before running: every edge
+  endpoint is a declared node; each node.type is one of event|agent|system|gate|gateway;
+  there is at least one start event (no inbound) and one end event (no outbound); no
+  edge dangles. A malformed model is refused, not run. The model is versioned data, not
+  code — the engine walks it.
+implements:
+  - apps/evolve/engine/model.py
+tests:
+  - { type: unit, path: tests/evolve/process-engine/test_load_model.py }
+autonomy: hands-on
+links: {}
+notes: "The model already exists at specs/evolve/sdlc.yaml (v0.3.2, 39 nodes / 54 edges)."

@@ -1,0 +1,18 @@
+kind: specification
+id: evolve.cfs-store.edit-serialize
+title: A DB edit serializes back to its YAML file on the same branch
+state: proposed
+behavior: >
+  When an agent or the human changes a C/F/S record, Evolve writes the DB row AND
+  serializes it back to its YAML file in the box-1 workspace checkout, committing it
+  on the SAME feature branch as the code + tests that satisfy it — so a spec change,
+  its implementation, and its tests merge as one atomic unit, and main is never
+  code-without-spec or spec-without-code. After a merge the brain re-runs files→DB so
+  the DB equals merged truth again.
+implements:
+  - apps/evolve/store.py
+tests:
+  - { type: unit, path: tests/evolve/cfs-store/test_edit_serialize.py }
+autonomy: hands-on
+links: { related: [evolve.cfs-store.boot-sync] }
+notes: ""
