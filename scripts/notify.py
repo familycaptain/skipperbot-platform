@@ -21,7 +21,13 @@ for line in open(os.path.join(ROOT, ".env")) if os.path.exists(os.path.join(ROOT
         k, v = line.split("=", 1)
         os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
-from tools.pushover_tool import send_pushover_direct
+# Load pushover_tool.py DIRECTLY (not `from tools...`): the tools package __init__
+# eagerly imports every tool, which pulls in the DB stack (psycopg2) we don't have here.
+import importlib.util as _ilu
+_spec = _ilu.spec_from_file_location("_pushover_direct", os.path.join(ROOT, "tools", "pushover_tool.py"))
+_pd = _ilu.module_from_spec(_spec)
+_spec.loader.exec_module(_pd)
+send_pushover_direct = _pd.send_pushover_direct
 
 
 def main():

@@ -67,10 +67,19 @@ WORK_ITEM = {
 }
 
 
+def _send_pushover(*a, **k):
+    # Load pushover_tool.py directly — the tools package __init__ pulls in the DB stack.
+    import importlib.util as ilu
+    spec = ilu.spec_from_file_location("_pushover_direct", os.path.join(ROOT, "tools", "pushover_tool.py"))
+    mod = ilu.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.send_pushover_direct(*a, **k)
+
+
 def gate_notify(pkt):
     """Pushover the operator when a work-item parks at a human gate (EVOLVE.md §9 work
     queue, MVP path: direct from box 1). Leads with the recommendation, never a bare ask."""
-    from tools.pushover_tool import send_pushover_direct
+    send_pushover_direct = _send_pushover
     gate = pkt.get("gate")
     rec = pkt.get("recommendation") or {}
     wi = pkt.get("work_item") or {}
