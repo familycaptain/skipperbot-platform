@@ -1036,6 +1036,15 @@ Every item is built for a **30-second decision**. Two affordances are universal:
 - **"Settle"** — the anti-thrash pin (§2). Marks a question decided-for-now so the
   continuous audit stops re-opening it for a cooldown. Not "ratified forever" — just
   "leave this alone." The counterpart to "Change…": one redirects, one freezes.
+- **"Discuss" — the Concierge** (`apps/evolve/concierge.py`). A conversational
+  liaison (chief-of-staff) you chat with about any item before deciding. It reads the
+  BPM/C/F/S/cost state through tools, **leads with the swarm's recommendation and
+  explains *why***, answers your deeper questions (pulls up the conflicting spec, the
+  spec-audit findings, the tradeoffs), and — when you've decided — **relays your
+  answer back to unblock the instance** (`decide`: approve / reject / change, your
+  constraint carried in the note so it flows to the right agent). It recommends; you
+  decide; it never decides for you. This is how you "ask deeper questions and
+  ultimately give an answer so the agent can proceed" without leaving the app.
 
 You work primarily *here*; the other three surfaces are for when you want to look.
 
