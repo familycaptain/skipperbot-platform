@@ -39,7 +39,7 @@ def spec_record_from(spec_out: dict, work_item: dict) -> dict:
 
 class Pipeline:
     def __init__(self, model, *, runner, wm, implement_fn, validate_fn,
-                 store=None, cfs_store=None, log=lambda *a: None):
+                 store=None, cfs_store=None, log=lambda *a: None, on_gate=None):
         self.model = model
         self.runner = runner               # reasoning agents (shares the cost ledger)
         self.wm = wm                        # WorkspaceManager (box 1)
@@ -48,13 +48,25 @@ class Pipeline:
         self.cfs_store = cfs_store          # apps.evolve.store.Store: triage checks specs against the report
         self.store = store or InMemoryInstanceStore()
         self.log = log
+        self.on_gate = on_gate              # callback(packet) fired when an instance BLOCKS at a human gate
         self.walker = Walker(model, system_handler=self._system, agent_handler=self._agent,
                              exclusive_decider=output_driven_decider)
+
+    def _maybe_notify_gate(self, inst: Instance) -> None:
+        """When the walk parks at a human gate, fire the on_gate hook (e.g. Pushover).
+        Best-effort: a notification failure never breaks the pipeline."""
+        if self.on_gate is None or inst.status != BLOCKED or self.gate_waiting(inst) is None:
+            return
+        try:
+            self.on_gate(self.packet(inst))
+        except Exception as e:
+            self.log(f"  on_gate hook failed: {type(e).__name__}: {e}")
 
     # public API ------------------------------------------------------------
     def submit(self, work_item: dict, at: str = "s_issue") -> Instance:
         inst = self.walker.start(context={"work_item": work_item}, at=at)
         self.store.save(inst)
+        self._maybe_notify_gate(inst)
         return inst
 
     def approve(self, instance_id: str, decision: str) -> Instance:
@@ -63,6 +75,7 @@ class Pipeline:
             raise ValueError(f"no such instance {instance_id}")
         self.walker.resume_gate(inst, decision)
         self.store.save(inst)
+        self._maybe_notify_gate(inst)
         return inst
 
     def gate_waiting(self, inst: Instance) -> str | None:

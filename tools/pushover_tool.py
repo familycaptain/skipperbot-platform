@@ -117,3 +117,54 @@ def send_pushover_notification(user_id: str, message: str, cooldown_seconds: int
 
     except Exception as e:
         return f"Error in send_pushover_notification: {str(e)}"
+
+
+def send_pushover_direct(message, *, title=None, priority=0, url=None, url_title=None,
+                         token=None, user=None, device=None, timeout=15):
+    """Send a Pushover push using credentials from the ENVIRONMENT (or explicit args).
+
+    Standalone — no platform DB, no per-user opt-in. This is the primitive the
+    Evolve engine (box 1) and Claude Code dev sessions (dev-mint) use, where the
+    Pi's notifications app isn't reachable. Reads from .env:
+
+        PUSHOVER_TOKEN   — the Pushover application/API token
+        PUSHOVER_USER    — your Pushover user key
+        PUSHOVER_DEVICE  — (optional) a specific device name
+
+    stdlib-only (urllib) so it works in a minimal venv with no `requests`.
+    Returns a status string; never raises.
+    """
+    import urllib.parse
+    import urllib.request
+
+    token = token or os.getenv("PUSHOVER_TOKEN") or os.getenv("PUSHOVER_APP_TOKEN")
+    user = user or os.getenv("PUSHOVER_USER") or os.getenv("PUSHOVER_USER_KEY")
+    device = device if device is not None else os.getenv("PUSHOVER_DEVICE")
+    msg = (message or "").strip()
+    if not msg:
+        return "Error: message is required."
+    if not token or not user:
+        return ("Pushover not configured: set PUSHOVER_TOKEN and PUSHOVER_USER in .env "
+                "(PUSHOVER_DEVICE optional).")
+
+    data = {"token": token, "user": user, "message": msg, "priority": int(priority)}
+    if title:
+        data["title"] = title
+    if device:
+        data["device"] = device
+    if url:
+        data["url"] = url
+    if url_title:
+        data["url_title"] = url_title
+    # priority 2 (emergency) requires retry/expire
+    if int(priority) >= 2:
+        data.setdefault("retry", 60)
+        data.setdefault("expire", 3600)
+    try:
+        req = urllib.request.Request(
+            "https://api.pushover.net/1/messages.json",
+            data=urllib.parse.urlencode(data).encode(), method="POST")
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return f"Pushover sent to {device or 'all devices'} (HTTP {resp.status})"
+    except Exception as e:
+        return f"Pushover error: {type(e).__name__}: {e}"
