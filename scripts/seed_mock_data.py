@@ -283,35 +283,42 @@ def seed_bounties():
 
 def seed_medical():
     from apps.medical import data as med
-    # patients (best-effort dict shapes; per-call wrapped)
+    # Every medical record requires a caller-supplied `id` (uuid) + exact field names.
+    mid = lambda: uuid.uuid4().hex[:12]
     pats = {}
-    for name, dob in [("David", "1985-03-12"), ("Maria", "1987-07-08"),
-                      ("Tyler", "2012-01-22"), ("Katie", "2015-09-30")]:
-        try:
-            m = med.create_member({"name": name, "display_name": name, "dob": dob})
-            pats[name] = _id(m); _bump("med_members")
-        except Exception as e:
-            print(f"    med_members {name}: {type(e).__name__}: {str(e)[:60]}")
-    mids = list(pats.values()) or [None]
+    for name, notes in [("David", "Adult"), ("Maria", "Adult"),
+                        ("Tyler", "Penicillin allergy"), ("Katie", "Asthma")]:
+        rec = med.create_member({"id": mid(), "name": name, "notes": notes, "created_by": "admin"})
+        if rec:
+            pats[name] = rec["id"]; _bump("med_members")
+    ids = list(pats.values()) or [mid()]
+    docs = ["Dr. Patel", "Dr. Nguyen", "Dr. Garcia", "Dr. Smith"]
     meds = ["Amoxicillin", "Ibuprofen", "Lisinopril", "Albuterol", "Metformin", "Vitamin D",
-            "Loratadine", "Omeprazole", "Atorvastatin", "Cetirizine", "Melatonin", "Fluoxetine"]
-    for i, name in enumerate(meds):
-        _try("med_medications", lambda m=mids[i % len(mids)], n=name:
-             med.create_medication({"member_id": m, "name": n, "dosage": "1 tablet", "frequency": "daily"}))
+            "Loratadine", "Omeprazole", "Atorvastatin", "Cetirizine", "Melatonin", "Fluoxetine",
+            "Amlodipine", "Levothyroxine", "Sertraline"]
+    for i, n in enumerate(meds):
+        _try("med_medications", lambda m=ids[i % len(ids)], n=n, i=i:
+             med.create_medication({"id": mid(), "member_id": m, "name": n,
+                                    "dosage_notes": "1 tablet daily", "prescriber": docs[i % len(docs)],
+                                    "pharmacy": "Corner Pharmacy", "start_date": _ds(-30), "created_by": "admin"}))
     appts = ["Annual physical", "Dental cleaning", "Eye exam", "Dermatology", "Pediatric checkup",
-             "Flu shot", "Allergy follow-up", "Orthodontist", "Cardiology", "Lab work",
-             "Therapy session", "Vaccination", "Sports physical", "Skin check", "Wellness visit"]
+             "Flu shot", "Allergy follow-up", "Orthodontist", "Cardiology consult", "Lab work",
+             "Therapy session", "Vaccination", "Sports physical", "Skin check", "Wellness visit",
+             "Bloodwork", "Vision screening", "Hearing test", "Nutrition consult", "Physical therapy"]
     for i, t in enumerate(appts):
-        _try("med_appointments", lambda m=mids[i % len(mids)], t=t:
-             med.create_appointment({"member_id": m, "title": t, "appointment_date": _ds(7 + i),
-                                     "provider": "Dr. Smith"}))
+        _try("med_appointments", lambda m=ids[i % len(ids)], t=t, i=i:
+             med.create_appointment({"id": mid(), "member_id": m, "title": t,
+                                     "appointment_at": _dt(3 + i), "provider": docs[i % len(docs)],
+                                     "location": "Family Clinic", "appointment_type": "visit", "created_by": "admin"}))
     events = ["Broke arm (skateboard)", "Strep throat", "Allergy flare", "Routine bloodwork",
               "Stitches on chin", "Ear infection", "Sprained ankle", "Annual checkup",
-              "Migraine", "Cold/flu", "Wisdom teeth removed", "Eye exam - new glasses"]
+              "Migraine", "Cold/flu", "Wisdom teeth removed", "Eye exam - new glasses",
+              "Tetanus booster", "Sports injury", "Dental filling", "Vision check"]
     for i, t in enumerate(events):
-        _try("med_events", lambda m=mids[i % len(mids)], t=t:
-             med.create_event({"member_id": m, "event_type": "visit", "title": t,
-                               "event_date": _ds(-14 * (i + 1)), "provider": "Dr. Smith", "summary": t}))
+        _try("med_events", lambda m=ids[i % len(ids)], t=t, i=i:
+             med.create_event({"id": mid(), "member_id": m, "event_type": "visit", "title": t,
+                               "event_date": _ds(-14 * (i + 1)), "provider": docs[i % len(docs)],
+                               "summary": t, "created_by": "admin"}))
 
 
 SEEDERS = {
