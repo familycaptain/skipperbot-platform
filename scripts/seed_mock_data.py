@@ -237,6 +237,7 @@ def seed_chores():
         kids.append(existing.get(name) or chores.create_kid(name, color=color))
         if name not in existing:
             _bump("chore_kids")
+    kid_ids = [k["id"] for k in kids]   # rotation pool: each zone's chores rotate among these
     start = _ds(0)
     zone_chores = {
         "Kitchen": ["Wipe counters", "Load dishwasher", "Sweep floor", "Take out trash"],
@@ -248,6 +249,7 @@ def seed_chores():
     }
     for zone, names in zone_chores.items():
         z = chores.create_zone(zone, start, description=f"{zone} weekly cleanup"); _bump("chore_zones")
+        chores.set_zone_members(_id(z), kid_ids)   # WITHOUT members a zone yields no assignments
         for dow in range(7):   # every day covered, so the "Today" view is never empty
             chores.create_chore(_id(z), dow, names[dow % len(names)]); _bump("chores")
 
