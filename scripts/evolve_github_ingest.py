@@ -43,6 +43,15 @@ BOX2_HOST = os.getenv("EVOLVE_BOX2_HOST", "evolve-test.local")
 BOX2_REPO = os.getenv("EVOLVE_BOX2_REPO", "/home/skipper/repos/skipperbot-platform")
 
 
+def _safe_resolve(iid, status):
+    """Mark a gate's terminal outcome — best-effort (the platform may not have the
+    resolve route yet if it hasn't been updated; the resume itself still succeeded)."""
+    try:
+        bridge.resolve(iid, status)
+    except Exception as e:
+        print(f"    (resolve '{status}' not recorded — platform may need `skipper update`: {type(e).__name__})")
+
+
 def _pushover(title, message, priority=1):
     try:
         import importlib.util as ilu
@@ -156,7 +165,7 @@ def main():
             iid, decision = g["instance_id"], g["decision"]
             inst = pipe.store.load(iid)
             if inst is None:
-                bridge.resolve(iid, "orphan")
+                _safe_resolve(iid, "orphan")
                 print(f"  {iid}: not in this brain's store -> marked orphan")
                 continue
             print(f"  {iid}: operator said '{decision}' — resuming the engine...")
@@ -168,10 +177,10 @@ def main():
                 print(f"    resume FAILED: {type(e).__name__}: {e}")
                 continue
             if inst.status == DONE:
-                bridge.resolve(iid, "merged")
+                _safe_resolve(iid, "merged")
                 print(f"    -> DONE — merged to release @ {(inst.context.get('release_sha') or '')[:8]}")
             elif inst.status == REJECTED:
-                bridge.resolve(iid, "rejected")
+                _safe_resolve(iid, "rejected")
                 print(f"    -> rejected")
             else:
                 print(f"    -> advanced to {pipe.gate_waiting(inst)} (re-pushed to the queue)")
