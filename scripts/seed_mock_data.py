@@ -328,11 +328,146 @@ def seed_medical():
                                "summary": t, "created_by": "admin"}))
 
 
+# --------------------------------------------------------------------------- #
+# Fill-the-empty-tabs seeders (run additively via --only; they reuse existing
+# members/vehicles rather than recreating them, so they won't duplicate base data).
+# --------------------------------------------------------------------------- #
+def _ids(schema, table):
+    from app_platform.db import fetch_all_in_schema
+    try:
+        return [r["id"] for r in fetch_all_in_schema(schema, f"SELECT id FROM {table}")]
+    except Exception as e:
+        print(f"    (could not read {schema}.{table}: {type(e).__name__})")
+        return []
+
+
+def seed_home():
+    from apps.home import data as home
+    hid = lambda p: f"{p}-{uuid.uuid4().hex[:8]}"
+    tasks = [("HVAC filter change", "HVAC", 90), ("Gutter cleaning", "Exterior", 180),
+             ("Smoke detector test", "Safety", 30), ("Water heater flush", "Plumbing", 365),
+             ("Dryer vent cleaning", "Safety", 180), ("Refrigerator coils", "Appliances", 180),
+             ("Septic inspection", "Plumbing", 365), ("Lawn fertilizing", "Yard", 60),
+             ("Pressure-wash deck", "Exterior", 365), ("Replace AC filter", "HVAC", 60),
+             ("Chimney sweep", "Safety", 365), ("Test sump pump", "Plumbing", 90),
+             ("Garage door service", "Garage", 365), ("Reseal grout", "Bathroom", 365),
+             ("Clean range hood", "Kitchen", 90), ("Inspect roof", "Exterior", 365),
+             ("Drain water softener", "Plumbing", 180), ("Touch up exterior paint", "Exterior", 365),
+             ("Service generator", "Safety", 180), ("Flush dishwasher", "Kitchen", 90)]
+    for i, (name, cat, iv) in enumerate(tasks):
+        _try("home_tasks", lambda n=name, c=cat, iv=iv, i=i: home.create_task({
+            "id": hid("hmt"), "name": n, "category": c, "task_type": "recurring",
+            "interval_days": iv, "next_due_at": _ds(iv - (i % 30)), "created_by": "admin"}))
+    issues = [("Water stain on ceiling", "Upstairs bedroom", "moderate"),
+              ("Squeaky front door", "Entryway", "minor"), ("Cracked driveway", "Driveway", "minor"),
+              ("Leaky faucet", "Kitchen", "moderate"), ("Loose deck board", "Deck", "moderate"),
+              ("Flickering hallway light", "Hallway", "minor"), ("Slow shower drain", "Bathroom", "moderate"),
+              ("Peeling garage paint", "Garage", "minor"), ("Window won't latch", "Living room", "minor"),
+              ("Running toilet", "Half bath", "moderate"), ("Gutter sagging", "Exterior", "major"),
+              ("AC not cooling well", "Whole house", "major"), ("Noisy garage door", "Garage", "minor"),
+              ("Crack in stairwell wall", "Stairwell", "moderate"), ("Wobbly ceiling fan", "Bedroom", "minor"),
+              ("Fence post leaning", "Backyard", "moderate"), ("Doorbell not working", "Entryway", "minor"),
+              ("Low water pressure", "Master bath", "moderate"), ("Dead outlet", "Office", "major"),
+              ("Damaged mailbox", "Curb", "minor")]
+    for i, (title, loc, sev) in enumerate(issues):
+        _try("home_issues", lambda t=title, l=loc, s=sev, i=i: home.create_issue({
+            "id": hid("hi"), "title": t, "location": l, "severity": s,
+            "date_noticed": _ds(-(i + 1) * 3), "created_by": "admin"}))
+
+
+def seed_medical_extra():
+    from apps.medical import data as med
+    mid = lambda p: f"{p}-{uuid.uuid4().hex[:8]}"
+    members = _ids("app_medical", "medical_members") or [None]
+    treats = ["Physical therapy", "Allergy shots", "Inhaler routine", "Stretching regimen",
+              "Wound dressing", "Eye drops", "Vitamin regimen", "Nebulizer treatment",
+              "Compression therapy", "Heat therapy", "Massage therapy", "Breathing exercises"]
+    for i, n in enumerate(treats):
+        _try("med_treatments", lambda m=members[i % len(members)], n=n, i=i: med.create_treatment({
+            "id": mid("mtr"), "member_id": m, "name": n, "interval_days": 7,
+            "next_due_at": _ds(2 + i), "created_by": "admin"}))
+    tests = [("Total Cholesterol", "mg/dL", None, 200), ("Glucose", "mg/dL", 70, 100),
+             ("Hemoglobin A1C", "%", None, 5.7), ("Vitamin D", "ng/mL", 30, 100),
+             ("TSH", "mIU/L", 0.4, 4.0), ("Iron", "ug/dL", 60, 170),
+             ("HDL", "mg/dL", 40, None), ("Triglycerides", "mg/dL", None, 150)]
+    test_ids = []
+    for name, unit, lo, hi in tests:
+        tid = mid("mlt")
+        _try("med_lab_tests", lambda t=tid, n=name, u=unit, lo=lo, hi=hi: med.create_lab_test({
+            "id": t, "name": n, "unit": u, "normal_min": lo, "normal_max": hi}))
+        test_ids.append((tid, hi or 100))
+    for i in range(20):
+        tid, hi = test_ids[i % len(test_ids)]
+        _try("med_lab_results", lambda m=members[i % len(members)], t=tid, v=round(hi * 0.8 + (i % 5) * 2, 1), i=i:
+             med.create_lab_result({"id": mid("mlr"), "member_id": m, "lab_test_id": t,
+                                    "result_date": _ds(-30 * (i % 6)), "value": v, "created_by": "admin"}))
+    equips = [("Blood Pressure Monitor", "Omron"), ("Glucose Meter", "Accu-Chek"),
+              ("CPAP Machine", "ResMed"), ("Nebulizer", "Philips"), ("Pulse Oximeter", "Zacurate"),
+              ("Wheelchair", "Drive"), ("Hearing Aid", "Phonak"), ("Digital Thermometer", "Braun")]
+    for i, (name, brand) in enumerate(equips):
+        eid = mid("meq")
+        _try("med_equipment", lambda e=eid, m=members[i % len(members)], n=name, b=brand:
+             med.create_equipment({"id": e, "member_id": m, "name": n, "brand": b, "created_by": "admin"}))
+        _try("med_equip_tasks", lambda e=eid, n=name: med.create_equip_task({
+            "id": mid("meqt"), "equipment_id": e, "name": f"Calibrate {n}",
+            "interval_days": 365, "next_due_at": _ds(180), "created_by": "admin"}))
+
+
+def seed_auto_extra():
+    from apps.auto import data as auto
+    aid = lambda p: f"{p}-{uuid.uuid4().hex[:8]}"
+    vids = _ids("app_auto", "vehicles")
+    cond = ["good", "fair", "worn"]
+    for i, v in enumerate(vids):
+        for k in range(2):
+            _try("auto_conditions", lambda v=v, k=k, i=i: auto.save_condition({
+                "id": aid("vcon"), "vehicle_id": v, "date_recorded": _ds(-90 * k),
+                "brakes": cond[(i + k) % 3], "tires": cond[(i + k + 1) % 3], "oil_life_pct": 80 - 20 * k,
+                "battery": "good", "mileage_at_report": 60000 + 5000 * i + 1000 * k, "created_by": "admin"}, by="admin"))
+        for k in range(2):
+            _try("auto_valuations", lambda v=v, k=k, i=i: auto.save_valuation({
+                "id": aid("vval"), "vehicle_id": v, "date_recorded": _ds(-180 * k),
+                "private_party_value": round(20000 - 1500 * i - 1000 * k, 2),
+                "trade_in_value": round(18000 - 1500 * i - 1000 * k, 2),
+                "condition": "good", "source": "kbb", "created_by": "admin"}, by="admin"))
+
+
+def seed_bounties_extra():
+    from apps.bounties import data as bd
+    # Credit balances so the Leaderboard + My Balance tabs populate.
+    for name, cents in [("tyler", 4250), ("katie", 3175), ("david", 1500), ("maria", 900)]:
+        for amt, note in [(cents, "Chores bonus"), (500, "Extra help"), (250, "Good grades")]:
+            _try("bounty_credits", lambda u=name, a=amt, n=note: bd.credit_balance(u, a, note=n, created_by="admin"))
+
+
+def seed_meals_extra():
+    from apps.meals import data as meals
+    comps = [("Grilled Chicken", "protein"), ("Brown Rice", "starch"), ("Broccoli", "vegetable"),
+             ("Marinara Sauce", "sauce"), ("Ground Beef", "protein"), ("Mashed Potatoes", "starch"),
+             ("Green Beans", "vegetable"), ("Caesar Dressing", "sauce"), ("Baked Salmon", "protein"),
+             ("Quinoa", "starch"), ("Roasted Carrots", "vegetable"), ("Pesto", "sauce"),
+             ("Black Beans", "protein"), ("Dinner Rolls", "starch"), ("Side Salad", "vegetable")]
+    for name, ctype in comps:
+        _try("meal_components", lambda n=name, c=ctype:
+             meals.create_component("mcp-" + uuid.uuid4().hex[:8], n, comp_type=c, by="admin"))
+    logs = ["Spaghetti Bolognese", "Sheet-pan Chicken", "Taco Tuesday", "Grilled Salmon",
+            "Homemade Pizza", "Chicken Curry", "Beef Stew", "Turkey Burgers", "Fried Rice",
+            "Pot Roast", "Quesadillas", "Baked Ziti", "Shrimp Scampi", "Meatloaf", "Pork Chops",
+            "Soup & Grilled Cheese", "Breakfast for Dinner", "Veggie Chili", "Caesar Wraps", "BBQ Ribs"]
+    types = ["dinner", "lunch", "breakfast"]
+    for i, desc in enumerate(logs):
+        _try("meal_logs", lambda d=desc, i=i: meals.create_meal_log(
+            "mlog-" + uuid.uuid4().hex[:8], _ds(-(i + 1)), d, logged_by="admin", meal_type=types[i % 3]))
+
+
 SEEDERS = {
     "weather": seed_weather, "lists": seed_lists, "todo": seed_todo, "auto": seed_auto,
     "recipes": seed_recipes, "meals": seed_meals, "reminders": seed_reminders,
     "schedules": seed_schedules, "chores": seed_chores, "goals": seed_goals,
     "bounties": seed_bounties, "medical": seed_medical,
+    # fill-empty-tabs (additive; safe to run alone via --only)
+    "home": seed_home, "medical_extra": seed_medical_extra, "auto_extra": seed_auto_extra,
+    "bounties_extra": seed_bounties_extra, "meals_extra": seed_meals_extra,
 }
 
 
