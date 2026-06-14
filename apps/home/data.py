@@ -514,6 +514,19 @@ def get_issue_locations() -> list[str]:
     return [r["location"] for r in rows if r.get("location")]
 
 
+def get_all_locations_merged() -> list[dict]:
+    """Every distinct location across issues (both `location` and `sub_location`), as
+    {name} dicts — used to populate the location filter in the Issues UI. The route
+    references this; its absence 500'd GET /issues."""
+    rows = fetch_all_in_schema(SCHEMA, "SELECT location, sub_location FROM home_issues")
+    names = set()
+    for r in rows:
+        for v in (r.get("location"), r.get("sub_location")):
+            if v and v.strip():
+                names.add(v.strip())
+    return [{"name": n} for n in sorted(names)]
+
+
 # ---------------------------------------------------------------------------
 # Home Issue Images (soft FK to public.images)
 # ---------------------------------------------------------------------------
