@@ -108,6 +108,28 @@ def write_file(path: str, content: str, *, cwd: str) -> str:
     return f"wrote {path} ({len(content)} bytes)"
 
 
+def edit_file(path: str, old_string: str, new_string: str, *, cwd: str) -> str:
+    """Surgical edit: replace a unique `old_string` with `new_string` in an existing
+    file. Bounded to cwd (the feature worktree). This is how a code-acting agent
+    changes a LARGE file without re-emitting the whole thing (write_file is
+    overwrite-only and would blow the token budget on a 500-line module)."""
+    full = os.path.realpath(os.path.join(cwd, path))
+    if not full.startswith(os.path.realpath(cwd)):
+        return "DENIED: path escapes the workspace."
+    if not os.path.exists(full):
+        return f"NOT FOUND: {path} (use write_file to create it)"
+    with open(full, encoding="utf-8") as fh:
+        content = fh.read()
+    n = content.count(old_string)
+    if n == 0:
+        return "NO MATCH: old_string not found (it must match the file exactly)."
+    if n > 1:
+        return f"AMBIGUOUS: old_string appears {n} times; add surrounding context to make it unique."
+    with open(full, "w", encoding="utf-8") as fh:
+        fh.write(content.replace(old_string, new_string, 1))
+    return f"edited {path}"
+
+
 # --------------------------------------------------------------------------- #
 # The backend
 # --------------------------------------------------------------------------- #
@@ -141,10 +163,19 @@ class ToolUseBackend:
         ]
         if self.allow_writes:
             tools.insert(2, {"name": "write_file",
-                             "description": "Create/overwrite a file in the workspace.",
+                             "description": "Create or fully overwrite a file. Prefer edit_file for "
+                             "changing an existing file — overwriting a large file is token-expensive.",
                              "input_schema": {"type": "object", "properties": {
                                  "path": {"type": "string"}, "content": {"type": "string"}},
                                  "required": ["path", "content"], "additionalProperties": False}})
+            tools.insert(3, {"name": "edit_file",
+                             "description": "Surgically change an existing file: replace a unique "
+                             "old_string with new_string. Use this for edits to large files.",
+                             "input_schema": {"type": "object", "properties": {
+                                 "path": {"type": "string"}, "old_string": {"type": "string"},
+                                 "new_string": {"type": "string"}},
+                                 "required": ["path", "old_string", "new_string"],
+                                 "additionalProperties": False}})
         return tools
 
     def run(self, spec: AgentSpec, payload: dict, context: dict | None, model: str,
@@ -193,6 +224,10 @@ class ToolUseBackend:
                 elif b.name == "write_file" and self.allow_writes:
                     res = write_file(b.input.get("path", ""), b.input.get("content", ""),
                                      cwd=self.repo_root)
+                    transcript.append(res)
+                elif b.name == "edit_file" and self.allow_writes:
+                    res = edit_file(b.input.get("path", ""), b.input.get("old_string", ""),
+                                    b.input.get("new_string", ""), cwd=self.repo_root)
                     transcript.append(res)
                 else:
                     res = f"unknown tool {b.name}"

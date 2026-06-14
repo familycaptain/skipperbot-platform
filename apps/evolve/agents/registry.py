@@ -159,11 +159,11 @@ ROSTER: dict[str, AgentSpec] = {
     "implement": AgentSpec(
         "implement", "Write the code that converges the codebase to an approved spec.",
         IMPLEMENT_OUT, prompt_file="implement.md", tier="deep", requires_tools=True,
-        charter_keys=["surfaces"], skills=["cfs-validate", "run-evolve-tests"]),
+        charter_keys=["surfaces"], skills=["cfs-validate", "run-evolve-tests"], max_tokens=8192),
     "test-author": AgentSpec(
         "test-author", "Write/update a spec's bound acceptance tests.",
         TEST_AUTHOR_OUT, prompt_file="test-author.md", tier="deep", requires_tools=True,
-        skills=["run-evolve-tests"]),
+        skills=["run-evolve-tests"], max_tokens=8192),
     "validate": AgentSpec(
         "validate", "Run a spec's bound tests on box 2 and judge the result.",
         VALIDATE_OUT, prompt_file="validate.md", tier="deep", requires_tools=True,
