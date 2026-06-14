@@ -32,13 +32,21 @@ try:
 except ImportError:
     pass
 
-# a mock family (NOT a real household)
+# Standard test-box logins: password = username + "1234" (these are NON-SECRET
+# throwaway creds for disposable test machines, by convention — never use on prod).
+# `admin` is the operator login (admin + primary); the rest are the mock family
+# that owns the seeded data.
 MEMBERS = [
+    ("admin", "Admin", "admin,primary"),
     ("david", "David", "member"),
     ("maria", "Maria", "member"),
     ("tyler", "Tyler", "member"),
     ("katie", "Katie", "member"),
 ]
+
+
+def _pw(name: str) -> str:
+    return name + "1234"
 _counts: dict[str, int] = {}
 
 
@@ -47,10 +55,13 @@ def _bump(app: str, n: int = 1):
 
 
 def seed_members():
-    from data_layer.users import create_user, get_user
+    from data_layer.users import create_user, get_user, update_password
     for name, display, role in MEMBERS:
-        if not get_user(name):
-            create_user(name, display, role=role)
+        if get_user(name):
+            update_password(name, _pw(name))      # ensure the standard password (idempotent)
+            _bump("members_pw_set")
+        else:
+            create_user(name, display, password=_pw(name), role=role)
             _bump("members")
 
 
