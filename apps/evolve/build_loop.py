@@ -12,6 +12,8 @@ a box-2 test run — ready to use once box 2 exists.
 """
 from __future__ import annotations
 
+import shlex
+import subprocess
 from dataclasses import dataclass
 from typing import Callable
 
@@ -19,8 +21,8 @@ from apps.evolve.workspace import WorkspaceManager, Feature
 
 # implement_fn(feature) -> object with .ok (writes code into feature.path)
 ImplementFn = Callable[[Feature], object]
-# validate_fn(box2_dir) -> bool (True = all bound tests green)
-ValidateFn = Callable[[str], bool]
+# validate_fn(feature) -> bool (deploy to box 2 + run bound tests; True = all green)
+ValidateFn = Callable[[Feature], bool]
 
 
 @dataclass
@@ -33,7 +35,9 @@ class BuildResult:
 
 
 def run_build(wm: WorkspaceManager, spec_record: dict, *, implement_fn: ImplementFn,
-              validate_fn: ValidateFn, box2_dir: str, log=lambda *a: None) -> BuildResult:
+              validate_fn: ValidateFn, log=lambda *a: None) -> BuildResult:
+    """validate_fn(feature) -> bool encapsulates deploy-to-box-2 + run the bound tests
+    there (local stand-in or a real remote box 2 — see local_validate / remote_validate)."""
     f = wm.start_feature(spec_record["id"])
     try:
         # serialize the approved spec into the branch (the `serialize` node)
@@ -49,9 +53,8 @@ def run_build(wm: WorkspaceManager, spec_record: dict, *, implement_fn: Implemen
             wm.commit(f, f"implement {spec_record['id']}")
         log("  implemented + committed")
 
-        # deploy to box 2 and validate the bound tests there
-        wm.box2_deploy(f, box2_dir)
-        if not validate_fn(box2_dir):
+        # deploy to box 2 + validate the bound tests there (box 1 never validates itself)
+        if not validate_fn(f):
             return BuildResult(False, "failed:validate", f, detail="bound tests not green")
         log("  validated on box 2")
 
@@ -83,13 +86,54 @@ def implement_with_agent(work_item: dict, spec_record: dict, *, model: str,
     return _impl
 
 
-def validate_with_tests(test_path: str = "tests/evolve") -> ValidateFn:
-    """Return a validate_fn that runs the bound unit tests on box 2 (deterministic
-    half). Full Playwright/agentic validation is added once box 2 runs the app."""
-    import subprocess
-
-    def _val(box2_dir: str) -> bool:
+def local_validate(wm: WorkspaceManager, box2_dir: str,
+                   test_path: str = "tests/evolve") -> ValidateFn:
+    """Stage-1 stand-in: deploy to a LOCAL box-2 clone on this machine and run the
+    bound unit tests there."""
+    def _val(feature: Feature) -> bool:
+        wm.box2_deploy(feature, box2_dir)
         r = subprocess.run(["python3", "-m", "unittest", "discover", "-s", test_path],
                            cwd=box2_dir, capture_output=True, text=True, timeout=300)
         return r.returncode == 0
+    return _val
+
+
+class RemoteBox2:
+    """Drive a real box-2 host over ssh (box 1 -> box 2). Box 2's git origin is box 1,
+    so it fetches feature/`release` branches straight from the brain."""
+
+    def __init__(self, host: str, repo_path: str, *, python: str = ".venv/bin/python"):
+        self.host, self.repo, self.python = host, repo_path, python
+
+    def _ssh(self, remote_cmd: str):
+        return subprocess.run(
+            ["ssh", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new",
+             self.host, f"cd {shlex.quote(self.repo)} && {remote_cmd}"],
+            capture_output=True, text=True, timeout=600)
+
+    def deploy(self, branch: str) -> None:
+        b = shlex.quote(branch)
+        r = self._ssh(f"git fetch -q origin && git checkout -q -B {b} origin/{b}")
+        if r.returncode:
+            raise RuntimeError(f"box2 deploy failed: {r.stderr.strip()}")
+
+    def reset(self, release: str = "release") -> None:
+        self._ssh(f"git fetch -q origin && git checkout -q -B {release} origin/{release} "
+                  f"&& git reset -q --hard origin/{release} && git clean -fdq")
+
+    def run_tests(self, test_path: str = "tests/evolve") -> tuple[bool, str]:
+        r = self._ssh(f"{self.python} -m unittest discover -s {shlex.quote(test_path)}")
+        return r.returncode == 0, (r.stdout + r.stderr)[-2000:]
+
+
+def remote_validate(box2: RemoteBox2, *, release: str = "release",
+                    test_path: str = "tests/evolve", log=lambda *a: None) -> ValidateFn:
+    """The real validate: deploy the feature branch to box 2, run its bound tests
+    there, then reset box 2 to a clean `release` baseline."""
+    def _val(feature: Feature) -> bool:
+        box2.deploy(feature.branch)
+        ok, out = box2.run_tests(test_path)
+        log(f"  box2 tests {'green' if ok else 'RED'}: {out.strip().splitlines()[-1] if out.strip() else ''}")
+        box2.reset(release)
+        return ok
     return _val

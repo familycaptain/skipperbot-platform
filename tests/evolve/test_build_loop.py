@@ -47,8 +47,7 @@ class TestBuildLoop(unittest.TestCase):
         def implement(feature):
             self.wm.write_file(feature, "apps/demo/thing.py", "x = 1\n")
             return _ok()
-        res = run_build(self.wm, SPEC, implement_fn=implement,
-                        validate_fn=lambda d: True, box2_dir=self.box2)
+        res = run_build(self.wm, SPEC, implement_fn=implement, validate_fn=lambda f: True)
         self.assertTrue(res.ok, res.detail)
         self.assertEqual(res.stage, "merged")
         # both the spec file and the implemented code reached release
@@ -59,24 +58,40 @@ class TestBuildLoop(unittest.TestCase):
         def implement(feature):
             self.wm.write_file(feature, "apps/demo/thing.py", "x = 1\n")
             return _ok()
-        res = run_build(self.wm, SPEC, implement_fn=implement,
-                        validate_fn=lambda d: False, box2_dir=self.box2)
+        res = run_build(self.wm, SPEC, implement_fn=implement, validate_fn=lambda f: False)
         self.assertFalse(res.ok)
         self.assertEqual(res.stage, "failed:validate")
         self.assertFalse(self._release_has("apps/demo/thing.py"))   # NOT merged
 
     def test_implement_failure_stops_early(self):
         res = run_build(self.wm, SPEC, implement_fn=lambda f: _fail("could not converge"),
-                        validate_fn=lambda d: True, box2_dir=self.box2)
+                        validate_fn=lambda f: True)
         self.assertFalse(res.ok)
         self.assertEqual(res.stage, "failed:implement")
         # the spec was serialized but no code merged
         self.assertFalse(self._release_has("apps/demo/thing.py"))
 
-    def test_real_adapters_constructible(self):
-        # smoke: the real adapters build without invoking Claude / box 2
-        self.assertTrue(callable(build_loop.validate_with_tests()))
+    def test_adapters_constructible(self):
+        # smoke: the adapters build without invoking Claude / box 2
+        self.assertTrue(callable(build_loop.local_validate(self.wm, self.box2)))
         self.assertTrue(callable(build_loop.implement_with_agent({}, SPEC, model="claude-x")))
+        box2 = build_loop.RemoteBox2("evolve-test.local", "repos/skipperbot-platform")
+        self.assertTrue(callable(build_loop.remote_validate(box2)))
+
+    def test_local_validate_runs_and_merges(self):
+        # exercise the local stand-in validate end to end (deploy to box-2 clone +
+        # a REAL unittest run there), then merge on green.
+        def implement(feature):
+            self.wm.write_file(feature, "apps/demo/thing.py", "VALUE = 1\n")
+            self.wm.write_file(feature, "tests/test_demo.py",
+                               "import unittest\n"
+                               "class T(unittest.TestCase):\n"
+                               "    def test_value(self): self.assertEqual(1, 1)\n")
+            return _ok()
+        vfn = build_loop.local_validate(self.wm, self.box2, test_path="tests")
+        res = run_build(self.wm, SPEC, implement_fn=implement, validate_fn=vfn)
+        self.assertTrue(res.ok, res.detail)
+        self.assertTrue(self._release_has("apps/demo/thing.py"))
 
 
 if __name__ == "__main__":
