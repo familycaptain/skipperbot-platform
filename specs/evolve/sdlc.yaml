@@ -14,13 +14,14 @@
 # edge.when: the condition/label on a branch (omitted = unconditional)
 
 id: evolve-sdlc
-version: 0.3.1
+version: 0.3.2
 
 nodes:
   # ---- intake — FOUR lanes: two reactive, two proactive ----
   # reactive
-  - { id: s_issue,   type: event,   lane: intake, label: "Issue (Issues app / GitHub)" }
-  - { id: s_pr,      type: event,   lane: intake, label: "PR (community contribution)" }
+  # Both reactive lanes are pulled from GitHub by one connector (no in-app issues app).
+  - { id: s_issue,   type: event,   lane: intake, label: "GitHub issue (pulled by connector)" }
+  - { id: s_pr,      type: event,   lane: intake, label: "GitHub PR (community contribution)" }
   # proactive lane A — Design (new features)
   - { id: gen_design,type: agent,   agent: design, lane: agents, label: "Design agent (cadence): propose features from charter + request clusters + coverage gaps" }
   # proactive lane B — QA / bug-discovery (defects in our own code AND specs)

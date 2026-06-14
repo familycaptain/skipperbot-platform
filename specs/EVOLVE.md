@@ -197,7 +197,7 @@ tests:                  # ≥1 expected; a spec with none is an "untested" varia
   - { type: playwright, path: tests/recipes/recipe-detail/edit-button.spec.ts }
   - { type: agentic,    rubric: "Edit form is prefilled and visually matches the create form" }
 autonomy: gated         # optional; inherits the capability default
-links: { issue: ISS-123, pr: PR-45, supersedes: [], related: [] }
+links: { issue: "gh#123", pr: "gh#45", supersedes: [], related: [] }   # GitHub issue/PR refs
 notes: ""
 ```
 
@@ -755,13 +755,14 @@ the maintainer's canonical specs.
 gate**: they all converge on the same artifact (proposed C/F/S changes) and the
 same Gate 1. Sources plural, pipeline singular.
 
-1. **Reactive — requests (issues).** An agent uses the existing C/F/S (= current
-   known/desirable state) to decide: is this a *bug* we should fix, or actually a
-   *new feature request*? If a feature, a **vision-fit agent** decides whether it
-   fits Skipper's vision (see the charter, §11) — with **guardrails for how far it
-   can go without human intervention.** (Example: "after entering an auto issue you
-   can't edit it — there should be an Edit button" → agent agrees, good UX →
-   proposes a spec.)
+1. **Reactive — requests (GitHub issues).** **GitHub is the only issue tracker** —
+   there is *no* in-app Issues app (see "Issue intake" below). A connector pulls
+   GitHub issues in; an agent uses the existing C/F/S (= current known/desirable
+   state) to decide: is this a *bug* we should fix, or actually a *new feature
+   request*? If a feature, a **vision-fit agent** decides whether it fits Skipper's
+   vision (see the charter, §11) — with **guardrails for how far it can go without
+   human intervention.** (Example: "after entering an auto issue you can't edit it —
+   there should be an Edit button" → agent agrees, good UX → proposes a spec.)
 2. **Reactive — contributions (PRs).** Treat an incoming PR as a **high-signal
    feature request that happens to ship a reference implementation — not code to
    merge verbatim.** Security/arch agents evaluate intent + blast radius against
@@ -855,14 +856,31 @@ projects by staleness/risk, and the **Prioritize app** is a backlog aggregator
 (`register_backlog_provider` + focus slots). The C/F/S proposal queue can plug into
 that machinery.
 
-### The Issues app
+### Issue intake — GitHub is the only tracker (no in-app Issues app)
 
-Keep it for the family, but **make the boundary unmissable in the UI**: the in-app
-Issues app = **"improve *my* Skipper"** (feeds *this instance's* Evolve). "Report a
-bug to the Skipper *project*" is a separate action that goes to the project's
-GitHub. If those blur, the maintainer drowns — and a family member may think they
-filed with the project when they only filed locally. On the canonical instance,
-the GitHub issues are where the project's intake syncs in.
+**Decision: there is no in-app Issues app.** The existing `apps/issues` is removed;
+GitHub is the single issue tracker for everyone. Reporters either tell the operator
+directly or file a GitHub issue "like everyone else." Why this beats a built-in app:
+
+- **It goes nowhere for self-hosters.** A self-hoster's family member filing an
+  in-app issue hits a tracker connected to nothing, and that admin has no workflow
+  for it — a broken promise. GitHub gives every install a real, shared destination.
+- **App→GitHub needs an integration we don't want.** Pushing a local issue upstream
+  would require per-install GitHub account/token plumbing; not worth it.
+- **It collapses the local-vs-project boundary entirely.** With one tracker there's
+  no "did I file with the project or just locally?" confusion, and **one ingestion
+  path** instead of two.
+
+What replaces it — minimal:
+
+- **A GitHub connector** (a system step / small service) pulls issues *and* PRs from
+  a **configured source repo** (default: the project repo; an advanced self-hoster
+  can point it at their own fork) into Evolve as work-items. Both reactive lanes now
+  share this single integration point.
+- **Each work-item carries an external link back to its GitHub issue/PR** (the
+  `links.issue` / `links.pr` field, surfaced in the Evolve queue + C/F/S explorer).
+  GitHub stays the system of record; Evolve mirrors only what triage needs and links
+  out for the rest (comments, status, the human conversation).
 
 ---
 
@@ -1192,8 +1210,11 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   features from box 1 over ssh + resets to `release` + fixture, operator canaries
   `release` on the Pi then publishes `release → main`. Remaining: the concrete git
   worktree layout + the box-2-exercises-an-Evolve-cycle harness for engine changes.
-- **Issues app** — final UI/designation, and GitHub-issue sync on the canonical
-  instance.
+- **Issues app — DECIDED: removed** (§8). No in-app issue tracker; GitHub is the
+  sole tracker. Remaining: build the **GitHub connector** (pull issues + PRs into
+  Evolve work-items with an external link back) and **remove the existing
+  `apps/issues`** app (it's `core: true` + in `REQUIRED_APPS` — needs a reference
+  scan, loader change, and entity-prefix cleanup).
 
 ---
 

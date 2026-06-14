@@ -1,4 +1,4 @@
-# Evolve — SDLC process flow (v0.3.1)
+# Evolve — SDLC process flow (v0.3.2)
 
 > **Generated view.** The source of truth is [`sdlc.yaml`](./sdlc.yaml); this
 > Mermaid is the picture of it. Open this file in GitHub (or VS Code preview /
@@ -10,9 +10,9 @@ each) · 🟪 system (deterministic automation, no LLM) · 🟨 human gate · �
 
 ```mermaid
 flowchart TD
-  %% intake: two reactive
-  s_issue(["Issue — reactive"]):::event --> triage
-  s_pr(["PR — reactive"]):::event --> triage
+  %% intake: two reactive (both pulled from GitHub by one connector)
+  s_issue(["GitHub issue — reactive"]):::event --> triage
+  s_pr(["GitHub PR — reactive"]):::event --> triage
 
   %% intake: proactive A — Design (new features)
   gen_design["Design agent (cadence): propose features"]:::agent --> spec
@@ -90,7 +90,7 @@ flowchart TD
 ### Reading it
 
 - **Four intake lanes — two reactive, two proactive:**
-  - **Reactive:** *Issues* and *PRs* → **Triage**.
+  - **Reactive:** *GitHub issues* and *PRs* (one connector, no in-app tracker) → **Triage**.
   - **Proactive A — Design agent (cadence):** generates new-feature proposals from
     the charter + request clusters + C/F/S coverage gaps → enters at **Spec-author**
     (already vision-aligned).
