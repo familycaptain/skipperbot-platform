@@ -1180,17 +1180,25 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
 
 ## 14. Open questions / next steps
 
-- **The first C/F/S tree: `Capability: evolve` — STARTED** (`specs/evolve/`). The
-  hand-authored bootstrap seed (greenfield, spec-first, §12): 1 capability + 8
-  features (cfs-store, process-engine, intake, agents, gates, build-validate,
-  promotion, app-ui), with the two deterministic substrate features (cfs-store,
-  process-engine) fleshed out to 4 specs each; the other six are roadmap stubs with
-  planned-spec lists. Validates clean against the §4 loader rules (id↔kind↔path,
-  parents/links resolve, `sdlc.yaml` ignored by the `kind` contract) — proving the
-  format carries weight. All specs are `state: proposed` until built. **Build order:
-  cfs-store + process-engine first (no LLM), then agents/intake/gates to run a first
-  work-item end-to-end.** Remaining: flesh out the six stub features; author the
-  JSON-Schema validator (`apps/evolve/schema.py`) the tree already references.
+- **Evolve v0.1 — PARTLY BUILT & RUNNING** (`apps/evolve/`, see its README). The
+  hand-authored C/F/S bootstrap seed (§12) drove a first build:
+  - **cfs-store** (`schema/store/variance.py`) and **process-engine**
+    (`engine/{model,instance,walker,mermaid}.py`) are **built, unit-tested, and
+    reconciled to `live`** — the deterministic, no-LLM substrate. The walker drives
+    the real `sdlc.yaml` start→`e_done` through the parallel review fan-out, both
+    gates, rejection, and a serialize/reload/resume (durability).
+  - **The agent swarm runs on Claude and is verified LIVE end-to-end**
+    (`agents/` + `orchestrator.py`): a work-item walks the pipeline with real
+    triage/spec-author/review/spec-audit/prioritize agents driving the gateways, for
+    ~$0.023 on Haiku. spec-audit caught ~7 real soundness gaps on the demo issue.
+  - **45 unit tests pass with zero installs**; the C/F/S tree validates with zero
+    warnings (full reconciliation: 10 missing-impl → 0). Tree state: 8 specs + 2
+    features `live`, capability + 6 feature stubs `proposed` (the roadmap).
+  - **Gaps (need you / box-1 / box-2):** the code-acting agents (implement/test-author/
+    validate) are stubbed pending the Claude Agent SDK tool-use path; box-1/box-2 +
+    git promotion, the GitHub connector (intake), the Evolve app UI, and platform
+    integration (`PostgresBackend`, the orchestrator loop) are TODO. See
+    `apps/evolve/README.md` for status + how-to-run.
 - **Define the charter** (`what Skipper is / isn't`) — the triage/vision agents and
   the Evolve-core guardrail all depend on it.
 - **The first SDLC process flow — DRAFTED.** v0.3 in the decided format:
