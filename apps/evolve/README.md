@@ -13,11 +13,12 @@ verified live end-to-end.**
 | **process-engine** | `engine/{model,instance,walker,mermaid}.py` | ✅ built, 6 tests, **live** specs |
 | **agent framework** | `agents/{base,runner,registry}.py` + `prompts/` (15 curated) | ✅ built, **live-verified** |
 | **charter grounding** | `agents/charter.py` + `specs/CHARTER.md` | ✅ curated per-agent, budgeted, **live-verified** |
-| **tool-use backend** | `agents/tooluse.py` (code-acting agents run skills) | ✅ built, sandboxed, **live-verified** |
+| **tool-use backend** | `agents/tooluse.py` (code-acting agents run skills + write_file) | ✅ built, sandboxed, **live-verified** |
+| **box-1/box-2 mechanics** | `workspace.py` + `build_loop.py` (feature→release loop) | ✅ Stage 1 built + tested on one machine |
 | **orchestrator** | `orchestrator.py` (engine ⟷ swarm) | ✅ built, **live-verified** |
 | package glue | `manifest.yaml`, `migrations/*.sql` | ✅ written (runs when the platform hosts it) |
 
-**63 unit tests pass with zero installs** (stdlib `unittest`); 2 live tests are gated
+**77 unit tests pass with zero installs** (stdlib `unittest`); 2 live tests are gated
 (`EVOLVE_LIVE_TESTS=1`) and both have been run green against Claude.
 
 ## Where prompts & skills live
@@ -48,9 +49,15 @@ verified live end-to-end.**
   safely mutate code — the full pipeline keeps these stubbed (`orchestrator.py`
   `CODE_ACTING`) until box 2 exists. Wiring `tool_backend` into the live pipeline is
   the box-2 step.
-- **box-1 / box-2 + git promotion** — none of the dev environment exists yet, so
-  `system` nodes (serialize/deploy/merge/resync) are stubs. The branch topology is
-  designed (EVOLVE.md §5); wiring it needs the VMs.
+- **box-1 / box-2 + git promotion — Stage 1 BUILT** (`workspace.py` + `build_loop.py`):
+  the feature→release loop (cut an isolated worktree, write code in it, commit, deploy
+  to a box-2 clone, validate, merge to release) runs + is unit-tested on **one
+  machine**. **Stage 2 (what you provision):** a real box-2 VM (full Skipper + its own
+  Postgres + ssh + a browser) for live Playwright validation + the Pi canary. The
+  real adapters (`implement_with_agent`, `validate_with_tests`) are wired; graduating
+  box 2 to an ssh remote needs no logic change. Still pending: `implement` with writes
+  ON against a real spec (safe in the worktree, but exercised once box 2 is up), and
+  `fix-retest-loop`.
 - **Platform integration** — `manifest.yaml` + `migrations/` are written but not
   loaded; `PostgresBackend` (store.py) is a stub; the orchestrator isn't yet wired as
   a background loop. Marked `TODO(integration)`.
@@ -93,10 +100,25 @@ a charter), prioritize scored 72/surface, the 5-way review fan-out ran, and
 states, ambiguous resolution, lifecycle preconditions) — the "think outside the box"
 behavior working. Reviews → Gate 1 → (stubbed build) → Gate 2 → merge → done.
 
+## Graduating Stage 1 → box 2 (when the VMs are ready)
+
+The mechanics are done; standing up real box 2 is a swap, not a rewrite:
+
+1. **box 1** holds the repo with `main` + a `release` branch (cut `release` off `main`
+   once). The brain runs `main`; `WorkspaceManager` cuts feature worktrees off `release`.
+2. **box 2** = a VM with a full Skipper install + its own Postgres + ssh from box 1 +
+   a headless browser. Point `box2_deploy`/`box2_reset` at it (clone over ssh instead
+   of a local path — same git commands).
+3. Flip `implement` to run for real: `build_loop.implement_with_agent(...)` with the
+   feature worktree as `cwd` and writes ON (already safe — the worktree is isolated).
+4. Replace `validate_with_tests` (deterministic unit run) with a box-2 run that also
+   drives **Playwright** against the live app for UI specs.
+5. Add the `fix-retest-loop` (gw_tests retry within budget) and wire the orchestrator's
+   `system` nodes to `WorkspaceManager` so a gated work-item flows end to end.
+
 ## Next build steps (in order)
 
-1. The code-acting agents on the Claude Agent SDK (tool use) → real `implement`/`validate`.
+1. **box 2 graduation** (above) → real `implement`/`validate` on a gated work-item.
 2. The GitHub connector (intake) so real issues/PRs flow in.
 3. Platform integration: load the app, wire `PostgresBackend` + the orchestrator loop.
 4. The Evolve app UI (work queue) so gates surface to you.
-5. box-1/box-2 + the release-branch promotion.
