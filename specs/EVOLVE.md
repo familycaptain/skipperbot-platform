@@ -386,7 +386,7 @@ flowchart TD
 ```
 
 These are separate functions needing very specific prompt guidance. (The agent
-swarm itself is later C/F/S that a thin Evolve helps build — see §10.)
+swarm itself is later C/F/S that a thin Evolve helps build — see §11.)
 
 How Python/tools actually run: Claude doesn't "call functions" natively — it runs
 scripts via the Bash/Agent-SDK tools. So the pattern is **commands as the human
@@ -407,7 +407,106 @@ low-risk.)
 
 ---
 
-## 7. Intake — per-instance, with a canonical authority
+## 7. Runtime — how the agents actually run
+
+The agent *roster* (§6) says **which** agents exist; this says **what runs them**.
+The governing decision: Evolve agents are **not** the main Skipper agent, and are
+**not** built into it. They're a different *kind* of thing with a different
+lifecycle, running as a **subsystem on the same platform** (sharing db, events,
+jobs, capabilities, settings — never a fork).
+
+- **Main Skipper agent** — long-lived, family-facing, conversational, real-time.
+  One process, always up.
+- **Evolve agents** — task-scoped workers. Spawned for *one* responsibility (triage
+  this issue, review this PR, implement this spec), run to completion, return typed
+  output, and die. Lifecycle is seconds-to-minutes, not "always on."
+
+The main agent may *surface* Evolve to the human (notify that a gate is waiting,
+let you approve from chat) but it never *runs* the agents.
+
+### Control plane vs. data plane
+
+The architecture splits cleanly in two:
+
+- **Control plane — in-process, deterministic, cheap.** The BPM **graph-walker**
+  over `sdlc.yaml`. This is **not an LLM.** It holds the process-instances and, each
+  tick, finds instances sitting at a node, dispatches the node's work, applies the
+  gateway logic on completion (exclusive branch / parallel fan-out + join), and
+  advances. This is the **Evolve-core orchestrator**, and it runs as a platform
+  **thinking domain** — exactly the PM/document-domain pattern: a domain that ticks
+  on the scheduler and advances ready work.
+- **Data plane — out-of-process, expensive, bounded.** The actual agents. Each is a
+  **subprocess** (Claude Agent SDK / headless `claude -p`), handed the node's
+  curated prompt + the work-item context + a typed output schema + a **hard
+  token/time budget**, returning structured output the orchestrator parses to
+  advance the instance.
+
+**Why subprocesses, not the main interpreter** — three reasons, all non-negotiable:
+1. **Isolation** — a hung or crashed Evolve agent can't take down family-facing
+   Skipper.
+2. **Bounds** — token/time budgets are enforceable with process limits + kill.
+3. **The workspace** — box-1 code agents operate on a **git worktree on a feature
+   branch** (filesystem-scoped), and validation runs on **box 2** (a separate
+   instance, §5). The runtime inherently spans two boxes, coordinated through git +
+   the orchestrator.
+
+### Mapping node types onto the jobs app
+
+Reuse the existing **jobs app** as the worker substrate — it already has the right
+shape: `last_progress_at` heartbeat, hung-orphan guard, timeout/kill, retry, and
+log prune. One node-execution = one background job.
+
+| `sdlc.yaml` node type | Runtime |
+|---|---|
+| `agent` | A job that spawns the SDK **subprocess** (curated prompt + context + budget → typed output). |
+| `system` (serialize / deploy / merge / resync / regression) | A plain **deterministic** job — no LLM. |
+| `gate` | **Block** the instance, emit an approval request to the human, **resume** on response. |
+| `event` (start / cadence / end) | Cadence events tick the orchestrator (issue/PR webhooks, the QA sweep, the design cadence); end events close the instance. |
+| `gateway` | Pure control-plane logic in the walker — no job. |
+
+### State, supervision, observability
+
+- **Process-instance state** lives in the DB (the BPM "instance" = a C/F/S
+  work-item's position in the graph), with a transition log. It is **durable and
+  resumable** — critical, because an SDLC instance lives hours-to-days across two
+  human gates and must survive a restart of either box.
+- **Per-agent telemetry** comes from the jobs app for free: logs, duration,
+  token/cost, status, last heartbeat.
+- **Live graph view** — because the model *is* `sdlc.yaml` and the Mermaid is
+  generated from it, each instance can render with its **current node highlighted**
+  ("where is this work item right now").
+- **Supervision** — the orchestrator tick is itself the supervisor (advances or
+  restarts stalled instances), backstopped by the jobs app's **hung-orphan guard**
+  for runaway workers, with the **thinking scheduler** ensuring the orchestrator
+  domain keeps ticking.
+
+### What is genuinely new vs. reused
+
+**New (the four pieces to build):**
+1. The **graph-walker engine** over `sdlc.yaml` (gateway semantics).
+2. The **process-instance state table** + transition log (durable, resumable).
+3. The **agent-worker wrapper** — spawn the SDK subprocess, inject prompt + context,
+   enforce the budget, parse typed output back.
+4. **Gate plumbing** — block / emit-approval / resume.
+
+**Reused (everything else):** the thinking scheduler (orchestrator cadence), the
+jobs app (dispatch, heartbeat, kill, retry, logs, cost), events, settings, and
+capabilities. Evolve rides the platform; it does not reinvent a parallel runtime.
+
+### Open runtime decision
+
+Whether the orchestrator runs on the **thinking scheduler's waking-hours cadence**
+(consistent with PM/document domains — Evolve as a "continuous employee") or as a
+**dedicated always-on loop**. Recommendation: **start it as a thinking domain**
+(cheapest, reuses everything, and the human gates only matter during waking hours
+anyway); only break it out if instance throughput demands tighter ticking than the
+scheduler provides. The other open call — whether to ride the jobs app as-is or
+grow a **dedicated dispatcher** for agent workers — is parked until the jobs app's
+heartbeat/kill semantics are proven against real subprocess agents.
+
+---
+
+## 8. Intake — per-instance, with a canonical authority
 
 **Model: per-instance C/F/S.** Skipper is meant to be **hackable**. If someone
 wants their Skipper to do something weird/custom, that's *not* a spec they'd share.
@@ -430,7 +529,7 @@ same Gate 1. Sources plural, pipeline singular.
 1. **Reactive — requests (issues).** An agent uses the existing C/F/S (= current
    known/desirable state) to decide: is this a *bug* we should fix, or actually a
    *new feature request*? If a feature, a **vision-fit agent** decides whether it
-   fits Skipper's vision (see the charter, §9) — with **guardrails for how far it
+   fits Skipper's vision (see the charter, §10) — with **guardrails for how far it
    can go without human intervention.** (Example: "after entering an auto issue you
    can't edit it — there should be an Edit button" → agent agrees, good UX →
    proposes a spec.)
@@ -532,7 +631,7 @@ the GitHub issues are where the project's intake syncs in.
 
 ---
 
-## 8. The approval flow — two gates, then auto-merge
+## 9. The approval flow — two gates, then auto-merge
 
 Two human gates, both *review* (not labor):
 
@@ -576,7 +675,7 @@ human reading raw code.
 
 ---
 
-## 9. Charter (vision-fit) + guardrails
+## 10. Charter (vision-fit) + guardrails
 
 The "does this fit Skipper's vision" agent needs a curated **charter** — a
 *"what Skipper is and isn't"* document — to judge requests against. It's one of the
@@ -619,7 +718,7 @@ to make any further change. So:
 
 ---
 
-## 10. The recursive bootstrap (and why it's the unlock)
+## 11. The recursive bootstrap (and why it's the unlock)
 
 **The first C/F/S tree we write describes Evolve itself.** This is not a cute
 aside — it does three things at once:
@@ -646,11 +745,11 @@ Two honest constraints:
   two gates, one implement path, one validate path. The agent swarm
   (security/arch/UX) is later C/F/S the thin Evolve helps build. It bootstraps
   skinny, then thickens itself.
-- **Evolve-core is the dangerous self-mod** (see §9).
+- **Evolve-core is the dangerous self-mod** (see §10).
 
 ---
 
-## 11. Dev / demo data
+## 12. Dev / demo data
 
 A manually-run Python script seeds a database full of realistic mock data — fake
 family members, recipes, automobiles, home issues, to-do lists, chores, etc. — AI
@@ -683,7 +782,7 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
 
 ---
 
-## 12. Open questions / next steps
+## 13. Open questions / next steps
 
 - **Write the first C/F/S tree: `Capability: Evolve`** → Features (intake, triage,
   spec-sync, implement, validate, gates, charter) → Specifications (the behaviors
@@ -729,3 +828,10 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   both be true / can't coexist); the "is the desired state satisfiable?" guard.
 - **Backlog-PM agent** — the prioritizer: ranks all proposals onto one queue and
   cuts the long tail so only the top-N reach the human.
+- **Evolve-core orchestrator** — the in-process, deterministic control-plane
+  graph-walker over `sdlc.yaml`; runs as a thinking domain, advances process-
+  instances, and dispatches agent/system/gate work. Not an LLM.
+- **Control plane / data plane** — the deterministic orchestrator (control) vs. the
+  expensive LLM agents that run as bounded subprocesses (data).
+- **Process-instance** — one C/F/S work-item's durable, resumable position in the
+  SDLC graph (with a transition log); the BPM "instance."
