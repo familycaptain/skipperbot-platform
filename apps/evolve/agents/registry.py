@@ -94,34 +94,39 @@ ROSTER: dict[str, AgentSpec] = {
         TRIAGE_OUT, prompt_file="triage.md", tier="fast"),
     "vision-fit": AgentSpec(
         "vision-fit", "Judge a feature against the charter + Capability scope.",
-        VISION_OUT, prompt_file="vision-fit.md", tier="smart"),
+        VISION_OUT, prompt_file="vision-fit.md", tier="smart",
+        charter_keys=["thesis", "non-goals", "scope"]),
     "spec-author": AgentSpec(
         "spec-author", "Turn accepted intent into a C/F/S record + bound tests.",
-        SPEC_AUTHOR_OUT, prompt_file="spec-author.md", tier="smart"),
+        SPEC_AUTHOR_OUT, prompt_file="spec-author.md", tier="smart",
+        charter_keys=["thesis", "surfaces"]),
     "spec-audit": AgentSpec(
         "spec-audit", "Critique a single spec for gaps/holes/naive assumptions.",
-        SPEC_AUDIT_OUT, prompt_file="spec-audit.md", tier="smart"),
+        SPEC_AUDIT_OUT, prompt_file="spec-audit.md", tier="smart",
+        charter_keys=["surfaces"]),
     "interop": AgentSpec(
         "interop", "Detect spec-vs-spec conflicts (is the desired state satisfiable?).",
         INTEROP_OUT, prompt_file="interop.md", tier="smart"),
     "security": AgentSpec(
         "security", "Review a change for vulnerabilities + supply-chain risk.",
-        REVIEW_OUT, tier="smart"),
+        REVIEW_OUT, tier="smart", charter_keys=["non-goals"]),
     "architecture": AgentSpec(
         "architecture", "Review system fit: boundaries, the one-directional dep rule.",
-        REVIEW_OUT, tier="smart"),
+        REVIEW_OUT, tier="smart", charter_keys=["is", "surfaces"]),
     "ux": AgentSpec(
         "ux", "Review UX/UI quality + cross-app consistency.",
-        REVIEW_OUT, tier="smart"),
+        REVIEW_OUT, tier="smart", charter_keys=["surfaces"]),
     "prioritize": AgentSpec(
         "prioritize", "Score a proposal onto one ranked queue; surface or park.",
-        PRIORITIZE_OUT, prompt_file="prioritize.md", tier="fast"),
+        PRIORITIZE_OUT, prompt_file="prioritize.md", tier="fast",
+        charter_keys=["thesis"]),
     "design": AgentSpec(
         "design", "Propose new Capabilities/Features grounded in charter + gaps.",
-        DESIGN_OUT, prompt_file="design.md", tier="smart"),
+        DESIGN_OUT, prompt_file="design.md", tier="smart",
+        charter_keys=["thesis", "scope", "surfaces", "non-goals"]),
     "code-audit": AgentSpec(
         "code-audit", "Read code for logic bugs, edge cases, security smells, dead code.",
-        SPEC_AUDIT_OUT, tier="smart"),
+        SPEC_AUDIT_OUT, tier="smart", charter_keys=["non-goals"]),
     "review-packet": AgentSpec(
         "review-packet", "Assemble the pre-digested Gate-2 review packet.",
         PACKET_OUT, tier="fast"),

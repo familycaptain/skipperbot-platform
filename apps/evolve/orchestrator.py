@@ -72,8 +72,9 @@ def make_agent_handler(runner: Runner, log=lambda *a: None):
         if agent in CODE_ACTING or agent not in runner.registry:
             log(f"      · {agent}: stubbed (needs box-2 + tools)")
             return {"_stub": True, "agent": agent}
+        # charter is NOT in the payload — each agent is grounded with only the charter
+        # sections it needs, via the Runner's composed system prompt (agents/charter.py).
         payload = {"work_item": inst.context.get("work_item", {}),
-                   "charter": inst.context.get("charter"),
                    "proposal": inst.context.get("proposal")}
         res = runner.run(agent, payload)
         if res.ok and agent == "spec-author":
@@ -91,16 +92,16 @@ def system_handler(node, inst):
     return f"[stub] {node.label}"
 
 
-def run_work_item(model, runner: Runner, work_item: dict, *, charter=None,
+def run_work_item(model, runner: Runner, work_item: dict, *,
                   decider=output_driven_decider, auto_approve=True, log=print) -> Instance:
     """Walk one work-item from s_issue through the pipeline. Exclusive gateways route
-    on agent output (decider). In demo mode gates auto-approve; in production they
-    block for the human work-queue (resume_gate)."""
+    on agent output (decider). Agents are charter-grounded via the Runner. In demo
+    mode gates auto-approve; in production they block for the human work-queue."""
     walker = Walker(model,
                     system_handler=system_handler,
                     agent_handler=make_agent_handler(runner, log),
                     exclusive_decider=decider)
-    inst = walker.start(context={"work_item": work_item, "charter": charter}, at="s_issue")
+    inst = walker.start(context={"work_item": work_item}, at="s_issue")
     while inst.status == "blocked" and auto_approve:
         gate = next(n for n in inst.tokens if model.node(n).type == "gate")
         log(f"  >> {model.node(gate).label}: auto-approve (demo)")
@@ -138,13 +139,12 @@ if __name__ == "__main__":
     runner = Runner(AnthropicBackend(), dict(ROSTER), budget_usd=1.0,
                     tiers={"fast": haiku, "smart": haiku, "deep": haiku})
 
-    charter = load_charter() or "Skipper is a self-hosted household assistant."
     issue = {"title": "After saving an auto issue you can't edit it",
              "body": "Once an auto (vehicle) issue is saved there's no way to change it. "
                      "There should be an Edit button on the issue detail."}
     print(f"\n=== Walking a work-item through Evolve (model {model.id} v{model.version}) ===")
-    print(f"ISSUE: {issue['title']}\n")
-    inst = run_work_item(model, runner, issue, charter=charter)
+    print(f"ISSUE: {issue['title']}  (agents charter-grounded from {runner.charter_path})\n")
+    inst = run_work_item(model, runner, issue)
     print(f"\n=== RESULT: status={inst.status}  ended_at={inst.context.get('ended_at')} ===")
     print(f"steps: {len(inst.history)}  |  total spend: ${runner.spent_usd:.4f}")
     path = " -> ".join(t.dst for t in inst.history)

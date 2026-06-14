@@ -16,6 +16,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Callable, Protocol
 
+from apps.evolve.agents import charter
 from apps.evolve.agents.base import AgentSpec, AgentResult, validate_against_schema
 
 # Tier -> Anthropic model id. Evolve runs on Claude (separate from the platform's
@@ -49,7 +50,8 @@ def render_input(payload: dict, context: dict | None) -> str:
 
 
 class Backend(Protocol):
-    def run(self, spec: AgentSpec, payload: dict, context: dict | None, model: str) -> AgentResult: ...
+    def run(self, spec: AgentSpec, payload: dict, context: dict | None, model: str,
+            system: str) -> AgentResult: ...
 
 
 # --------------------------------------------------------------------------- #
@@ -63,7 +65,8 @@ class FakeBackend:
         self.responder = responder
         self.calls: list[tuple[str, dict]] = []
 
-    def run(self, spec: AgentSpec, payload: dict, context: dict | None, model: str) -> AgentResult:
+    def run(self, spec: AgentSpec, payload: dict, context: dict | None, model: str,
+            system: str = "") -> AgentResult:
         self.calls.append((spec.name, payload))
         if callable(self.responder):
             out = self.responder(spec, payload, context)
@@ -93,7 +96,8 @@ class AnthropicBackend:
             self._client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY
         return self._client
 
-    def run(self, spec: AgentSpec, payload: dict, context: dict | None, model: str) -> AgentResult:
+    def run(self, spec: AgentSpec, payload: dict, context: dict | None, model: str,
+            system: str = "") -> AgentResult:
         try:
             client = self._get_client()
             emit_tool = {"name": "emit",
@@ -101,7 +105,7 @@ class AnthropicBackend:
                          "input_schema": spec.output_schema}
             msg = client.messages.create(
                 model=model, max_tokens=spec.max_tokens,
-                system=spec.resolved_prompt(),
+                system=system or spec.resolved_prompt(),
                 tools=[emit_tool], tool_choice={"type": "tool", "name": "emit"},
                 messages=[{"role": "user", "content": render_input(payload, context)}])
             out = next((b.input for b in msg.content if getattr(b, "type", None) == "tool_use"), None)
@@ -125,6 +129,13 @@ class Runner:
     budget_usd: float | None = None            # cumulative cap across runs (None = unbounded)
     spent_usd: float = 0.0
     tiers: dict = field(default_factory=lambda: dict(MODEL_TIERS))
+    charter_path: str = charter.DEFAULT_PATH   # source for per-agent charter grounding
+
+    def composed_system(self, spec: AgentSpec) -> str:
+        """Role prompt + only the curated charter sections this agent declares."""
+        ground = charter.grounding(spec.charter_keys, self.charter_path)
+        base = spec.resolved_prompt()
+        return base + ("\n\n" + ground if ground else "")
 
     def run(self, agent_name: str, payload: dict, context: dict | None = None) -> AgentResult:
         spec = self.registry.get(agent_name)
@@ -134,7 +145,7 @@ class Runner:
             return AgentResult(agent_name, ok=False,
                                error=f"budget exhausted (${self.spent_usd:.4f} >= ${self.budget_usd:.2f})")
         model = self.tiers.get(spec.tier, self.tiers["smart"])
-        res = self.backend.run(spec, payload, context, model)
+        res = self.backend.run(spec, payload, context, model, self.composed_system(spec))
         self.spent_usd += res.cost_usd
         # validate the structured output against the agent's schema
         if res.ok and res.output is not None:

@@ -13,6 +13,11 @@ from dataclasses import dataclass, field
 # model tiers -> resolved at the runner; agents pick a tier, not a model id.
 TIERS = ("fast", "smart", "deep")
 
+# Hermes-style budget for an agent's COMPOSED system prompt (role + curated charter
+# grounding), in estimated tokens. Exceeding it is the signal to trim the agent's
+# charter_keys or SPLIT the agent — a bloated prompt means it's doing too much.
+SYSTEM_PROMPT_TOKEN_BUDGET = 1600
+
 
 @dataclass
 class AgentSpec:
@@ -25,6 +30,7 @@ class AgentSpec:
     tier: str = "smart"
     max_tokens: int = 2048
     max_cost_usd: float = 0.50                 # per-run guardrail (budget, §7)
+    charter_keys: list[str] = field(default_factory=list)  # charter sections this agent is grounded with
 
     def resolved_prompt(self) -> str:
         if self.system_prompt:
