@@ -16,8 +16,10 @@ v1 covers: members, lists, auto (vehicles + service + issues), chores, meals. Mo
 apps get added as the schema/APIs are confirmed against a live DB.
 """
 import argparse
+import json
 import sys
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -110,40 +112,90 @@ def seed_auto():
             _bump("vehicle_issues")
 
 
+def _id(rec):
+    return rec.get("id") if isinstance(rec, dict) else rec
+
+
 def seed_chores():
-    from apps.chores import store
+    from apps.chores import data as chores
     kids = []
     for name, color in [("Tyler", "#3b82f6"), ("Katie", "#ec4899")]:
-        kids.append(store.create_kid(name, color=color))
+        kids.append(chores.create_kid(name, color=color))
         _bump("chore_kids")
-    # zones + chores are best-effort (rotation semantics vary); wrap each
-    for zone_name in ["Kitchen", "Bathroom", "Living Room"]:
-        try:
-            z = store.create_zone(zone_name, rotation_start=(kids[0].get("id") if kids else ""),
-                                  description=f"{zone_name} cleanup")
-            _bump("chore_zones")
-            zid = z.get("id") if isinstance(z, dict) else z
-            for dow, cname in [(0, "Wipe surfaces"), (3, "Sweep / vacuum"), (6, "Take out trash")]:
-                store.create_chore(zid, dow, cname)
-                _bump("chores")
-        except Exception as e:
-            print(f"    chores zone '{zone_name}': skipped ({type(e).__name__})")
+    start = _id(kids[0]) if kids else ""
+    for zone_name in ["Kitchen", "Bathrooms", "Living Room"]:
+        z = chores.create_zone(zone_name, start, description=f"{zone_name} weekly cleanup")
+        _bump("chore_zones")
+        for dow, cname in [(0, "Wipe down surfaces"), (3, "Sweep & vacuum"), (6, "Take out trash")]:
+            chores.create_chore(_id(z), dow, cname)
+            _bump("chores")
 
 
 def seed_meals():
-    from apps.meals import store
-    for name, by in [("Spaghetti Bolognese", "maria"), ("Sheet-pan chicken & veggies", "david"),
-                     ("Taco Tuesday", "maria"), ("Veggie stir-fry", "tyler"),
-                     ("Grilled salmon & rice", "david")]:
-        try:
-            store.create_meal("meal-" + uuid.uuid4().hex[:8], name, by)
-            _bump("meals")
-        except Exception as e:
-            print(f"    meal '{name}': skipped ({type(e).__name__})")
+    from apps.meals import data as meals
+    rows = [("Spaghetti Bolognese", "maria", "medium", ["pasta", "italian"], 15, 40),
+            ("Sheet-pan chicken & veggies", "david", "easy", ["chicken", "weeknight"], 10, 35),
+            ("Taco Tuesday", "maria", "easy", ["mexican", "kids"], 20, 20),
+            ("Veggie stir-fry", "tyler", "easy", ["vegetarian", "quick"], 15, 12),
+            ("Grilled salmon & rice", "david", "medium", ["fish", "healthy"], 10, 20),
+            ("Homemade pizza night", "maria", "medium", ["italian", "weekend"], 30, 15)]
+    for name, by, effort, tags, prep, cook in rows:
+        meals.create_meal("meal-" + uuid.uuid4().hex[:8], name, by, effort=effort,
+                          tags=tags, prep_time_min=prep, cook_time_min=cook)
+        _bump("meals")
+
+
+def seed_recipes():
+    from apps.recipes import tools as recipes
+    rows = [
+        ("Weeknight Salsa", "maria", [("tomatoes", "4", "whole"), ("onion", "1/2", "cup"),
+         ("cilantro", "1/4", "cup"), ("lime", "1", "whole")],
+         ["Dice everything", "Combine", "Salt to taste, chill"], ["sauces"], 10, 0, 6),
+        ("Banana Bread", "david", [("ripe bananas", "3", "whole"), ("flour", "2", "cups"),
+         ("sugar", "3/4", "cup"), ("butter", "1/2", "cup")],
+         ["Mash bananas", "Mix wet + dry", "Bake 60 min at 350F"], ["baking"], 15, 60, 8),
+        ("Chicken Tikka Masala", "maria", [("chicken", "1.5", "lb"), ("yogurt", "1", "cup"),
+         ("tomato sauce", "2", "cups"), ("garam masala", "2", "tbsp")],
+         ["Marinate chicken", "Sear", "Simmer in sauce 25 min"], ["indian", "dinner"], 30, 40, 4),
+    ]
+    for title, by, ings, steps, cats, prep, cook, serv in rows:
+        recipes.create_recipe(
+            title, by,
+            ingredients=json.dumps([{"item": i, "quantity": q, "unit": u} for i, q, u in ings]),
+            steps=json.dumps(steps), categories=json.dumps(cats),
+            prep_time_min=prep, cook_time_min=cook, servings=serv)
+        _bump("recipes")
+
+
+def seed_reminders():
+    from apps.reminders.store import create_reminder
+    now = datetime.now(timezone.utc)
+    rows = [("maria", "Dentist appointment for Katie", 2),
+            ("david", "Renew car registration", 9),
+            ("maria", "Parent-teacher conference", 5),
+            ("david", "Change HVAC filter", 14),
+            ("tyler", "Return library books", 3)]
+    for user, msg, days in rows:
+        create_reminder(user, msg, (now + timedelta(days=days)).isoformat())
+        _bump("reminders")
+
+
+def seed_schedules():
+    from apps.schedules import data as schedules
+    today = datetime.now(timezone.utc).date().isoformat()
+    rows = [("Trash & recycling", "david", "home", "weekly", "07:00"),
+            ("Mow the lawn", "tyler", "home", "weekly", "09:00"),
+            ("Water the plants", "katie", "home", "weekly", "18:00"),
+            ("Family game night", "maria", "family", "weekly", "19:00")]
+    for title, by, cat, rec, tod in rows:
+        schedules.create_schedule(title, by, category=cat, assigned_to=by,
+                                  recurrence_type=rec, time_of_day=tod, start_date=today)
+        _bump("schedules")
 
 
 SEEDERS = {"members": seed_members, "lists": seed_lists, "auto": seed_auto,
-           "chores": seed_chores, "meals": seed_meals}
+           "chores": seed_chores, "meals": seed_meals, "recipes": seed_recipes,
+           "reminders": seed_reminders, "schedules": seed_schedules}
 
 
 def main() -> int:
