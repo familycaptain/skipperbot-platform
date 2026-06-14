@@ -1,19 +1,17 @@
 #!/usr/bin/env python
 """Seed realistic MOCK data for box-2 / demos (EVOLVE.md §13).
 
-Run inside the platform container (so the app stores + DB are importable):
+Run inside the platform container:
 
     docker compose exec agent python scripts/seed_mock_data.py
+    docker compose exec agent python scripts/seed_mock_data.py --only lists,auto
     docker compose exec agent python scripts/seed_mock_data.py --members-only
 
-Deterministic (hardcoded data — no AI at runtime), and resilient: each app is
-seeded in its own try/except so one app's failure doesn't abort the rest, and it
-prints a per-app summary. It calls the apps' real store functions, so entity ids,
-FKs, and events are generated correctly. This is a MOCK family for a throwaway box —
-not anyone's real household.
-
-v1 covers: members, lists, auto (vehicles + service + issues), chores, meals. More
-apps get added as the schema/APIs are confirmed against a live DB.
+Goal: ~20 records per section across the apps, so a fresh box looks fully lived-in.
+Deterministic-ish (hardcoded pools + index variation, no AI at runtime) and resilient:
+each app is seeded in its own try/except with a per-app summary, so one app's failure
+doesn't abort the rest. Calls the apps' real store functions, so ids/FKs/events are
+correct. This is a MOCK family for a throwaway box — not anyone's real household.
 """
 import argparse
 import json
@@ -32,101 +30,199 @@ try:
 except ImportError:
     pass
 
-# Standard test-box logins: password = username + "1234" (these are NON-SECRET
-# throwaway creds for disposable test machines, by convention — never use on prod).
-# Every HUMAN carries the `member` role (the human designator); only the bot user
-# `skipper` (created by init_db) is `bot` and never `member`. `admin` is the
-# operator/owner; the rest are the mock family that owns the seeded data.
+NOW = datetime.now(timezone.utc)
+ADULTS = ["david", "maria"]
+KIDS = ["tyler", "katie"]
+FAMILY = ADULTS + KIDS
+
+# Standard test-box logins: password = username + "1234" (NON-SECRET throwaway creds
+# for disposable test machines). Every HUMAN carries `member`; only the bot user
+# `skipper` (init_db) is `bot`. `admin` is the operator/owner.
 MEMBERS = [
-    ("admin", "Admin", "member,admin,primary"),   # operator / household owner (human)
-    ("david", "David", "member,parent"),           # parents
+    ("admin", "Admin", "member,admin,primary"),
+    ("david", "David", "member,parent"),
     ("maria", "Maria", "member,parent"),
-    ("tyler", "Tyler", "member"),                  # kids
+    ("tyler", "Tyler", "member"),
     ("katie", "Katie", "member"),
 ]
-
-
-def _pw(name: str) -> str:
-    return name + "1234"
 _counts: dict[str, int] = {}
 
 
-def _bump(app: str, n: int = 1):
-    _counts[app] = _counts.get(app, 0) + n
+def _pw(name):
+    return name + "1234"
 
 
-def seed_members():
-    from data_layer.users import create_user, get_user, update_password, update_role
-    for name, display, role in MEMBERS:
-        if get_user(name):
-            update_password(name, _pw(name))      # keep standard password + role in sync (idempotent)
-            update_role(name, role)
-            _bump("members_synced")
-        else:
-            create_user(name, display, password=_pw(name), role=role)
-            _bump("members")
+def _bump(k, n=1):
+    _counts[k] = _counts.get(k, 0) + n
 
 
-def seed_lists():
-    from apps.lists import store
-    data = {
-        ("Groceries", "maria"): ["Milk", "Eggs", "Sourdough bread", "Bananas", "Chicken thighs",
-                                  "Coffee", "Paper towels", "Spinach", "Greek yogurt", "Olive oil"],
-        ("Hardware Store", "david"): ["3in deck screws", "Wood glue", "120-grit sandpaper",
-                                      "Exterior paint - white", "Furnace filter 16x25", "Caulk"],
-        ("Beach Trip - Packing", "maria"): ["Sunscreen", "Beach towels", "Swimsuits", "Cooler",
-                                            "Phone chargers", "First-aid kit", "Snacks"],
-        ("Weekend Projects", "david"): ["Fix gate latch", "Mulch front beds", "Clean gutters",
-                                        "Replace porch bulb"],
-        ("Costco Run", "maria"): ["Rotisserie chicken", "Paper plates", "Laundry pods",
-                                  "Frozen berries", "Trash bags"],
-    }
-    for (name, by), items in data.items():
-        lst = store.create_list(name, by)
-        _bump("lists")
-        for text in items:
-            store.add_item(lst["id"], text, by)
-            _bump("list_items")
+def _ds(days):
+    return (NOW + timedelta(days=days)).date().isoformat()
 
 
-def seed_auto():
-    from apps.auto import tools
-    vehicles = [
-        dict(created_by="david", make="Honda", model="Odyssey", year=2019, color="Silver",
-             odometer=68000, license_plate="ABC-1234"),
-        dict(created_by="maria", make="Toyota", model="RAV4", year=2021, color="Blue",
-             odometer=31000, license_plate="XYZ-7788"),
-        dict(created_by="tyler", make="Subaru", model="Outback", year=2015, color="Green",
-             odometer=121000, license_plate="OLD-2015"),
-    ]
-    svc = [("Oil Change", "2026-01-12", 64000, 72.50, "QuickLube"),
-           ("Tire Rotation", "2026-02-20", 65200, 35.00, "Discount Tire"),
-           ("Brake Pads (front)", "2026-04-03", 66800, 285.00, "Midas"),
-           ("State Inspection", "2026-05-10", 67500, 25.00, "Local Garage")]
-    for v in vehicles:
-        vid = tools.create_vehicle(**v)
-        _bump("vehicles")
-        for stype, date, odo, cost, shop in svc:
-            tools.log_service(vid, stype, v["created_by"], date_performed=date,
-                              odometer_at_service=odo, cost=cost, shop_name=shop)
-            _bump("service_records")
-    # a couple of open issues on the first vehicle
-    vid0 = tools.create_vehicle(created_by="david", make="Ford", model="F-150", year=2018,
-                                color="Black", odometer=89000, license_plate="TRK-0418")
-    _bump("vehicles")
-    for title, sev in [("Check-engine light flickers on cold starts", "minor"),
-                       ("Passenger window slow to roll up", "minor"),
-                       ("Brake squeal when stopping", "moderate")]:
-        try:
-            tools.report_vehicle_issue(vid0, title, "david", severity=sev)
-            _bump("vehicle_issues")
-        except Exception:
-            tools.report_vehicle_issue(vid0, title, "david")
-            _bump("vehicle_issues")
+def _dt(days):
+    return (NOW + timedelta(days=days)).isoformat()
 
 
 def _id(rec):
     return rec.get("id") if isinstance(rec, dict) else rec
+
+
+def _try(label, fn):
+    try:
+        fn(); _bump(label)
+    except Exception as e:
+        print(f"    {label}: {type(e).__name__}: {str(e)[:70]}")
+
+
+# --------------------------------------------------------------------------- #
+def seed_members():
+    from data_layer.users import create_user, get_user, update_password, update_role
+    for name, display, role in MEMBERS:
+        if get_user(name):
+            update_password(name, _pw(name)); update_role(name, role); _bump("members_synced")
+        else:
+            create_user(name, display, password=_pw(name), role=role); _bump("members")
+
+
+def cleanup_stale():
+    """Hide the placeholder kid1/2/3 shipped by the chores seed migration."""
+    from app_platform.db import execute_in_schema
+    try:
+        n = execute_in_schema("app_chores", "UPDATE kids SET active=FALSE WHERE user_id IN ('kid1','kid2','kid3')")
+        _bump("stale_kids_hidden", n or 0)
+    except Exception as e:
+        print(f"    cleanup: {type(e).__name__}: {e}")
+
+
+def seed_weather():
+    from app_platform import settings
+    settings.set("default_zip", "78704", scope="platform")   # so weather renders out of the box
+    _bump("weather_zip")
+
+
+def seed_lists():
+    from apps.lists import store
+    pool = {
+        "Groceries": ["Milk", "Eggs", "Sourdough", "Bananas", "Chicken thighs", "Coffee",
+                      "Spinach", "Greek yogurt", "Olive oil", "Cheddar", "Apples", "Pasta"],
+        "Costco Run": ["Rotisserie chicken", "Paper plates", "Laundry pods", "Trash bags",
+                       "Frozen berries", "Paper towels", "Batteries", "Granola bars"],
+        "Hardware Store": ["Deck screws", "Wood glue", "Sandpaper", "White paint", "Furnace filter", "Caulk"],
+        "Beach Trip Packing": ["Sunscreen", "Beach towels", "Swimsuits", "Cooler", "Chargers", "First-aid kit", "Snacks"],
+        "Weekend Projects": ["Fix gate latch", "Mulch beds", "Clean gutters", "Porch bulb", "Touch-up paint"],
+        "Birthday Party": ["Balloons", "Cake", "Candles", "Goodie bags", "Plates", "Pizza", "Juice boxes"],
+        "Camping Gear": ["Tent", "Sleeping bags", "Lantern", "Bug spray", "Marshmallows", "Firewood"],
+        "Back to School": ["Backpacks", "Notebooks", "Pencils", "Lunchboxes", "Sneakers", "Folders"],
+        "Pharmacy": ["Allergy meds", "Band-aids", "Toothpaste", "Vitamins", "Sunscreen"],
+        "Pet Supplies": ["Dog food", "Treats", "Poop bags", "Flea meds", "Chew toy"],
+        "Holiday Shopping": ["Gift for Grandma", "Wrapping paper", "Stocking stuffers", "Cards", "Lights"],
+        "Garden": ["Tomato seedlings", "Potting soil", "Mulch", "Fertilizer", "Gloves"],
+        "Car Maintenance": ["Wiper blades", "Air filter", "Coolant", "Wax", "Tire gauge"],
+        "Date Night Ideas": ["Italian downtown", "Live music", "Mini golf", "New bistro", "Drive-in movie"],
+        "Home Repairs": ["Leaky faucet", "Squeaky door", "Loose tile", "Replace smoke detector"],
+        "Meal Prep": ["Overnight oats", "Chicken bowls", "Cut veggies", "Boil eggs", "Cook rice"],
+    }
+    members = FAMILY
+    for i, (name, items) in enumerate(pool.items()):
+        lst = store.create_list(name, members[i % len(members)]); _bump("lists")
+        for text in items:
+            store.add_item(lst["id"], text, members[i % len(members)]); _bump("list_items")
+
+
+def seed_todo():
+    from apps.todo.tools import add_todo_item
+    items = ["Call the dentist", "Reply to teacher email", "Pay water bill", "Schedule oil change",
+             "RSVP to wedding", "Renew library card", "Book flights", "Update resume",
+             "Fix bike tire", "Order printer ink", "Return Amazon package", "Clean garage",
+             "Water plants", "Walk the dog", "Meal plan for week", "Charge camera battery",
+             "Back up photos", "Cancel free trial", "Mail birthday card", "Defrost chicken"]
+    for i, text in enumerate(items):
+        add_todo_item(FAMILY[i % len(FAMILY)], text); _bump("todo_items")
+
+
+def seed_auto():
+    from apps.auto import tools
+    specs = [("david", "Honda", "Odyssey", 2019, "Silver", 68000), ("maria", "Toyota", "RAV4", 2021, "Blue", 31000),
+             ("tyler", "Subaru", "Outback", 2015, "Green", 121000), ("david", "Ford", "F-150", 2018, "Black", 89000),
+             ("maria", "Tesla", "Model 3", 2022, "White", 24000), ("david", "Jeep", "Wrangler", 2016, "Red", 78000)]
+    svc_types = ["Oil Change", "Tire Rotation", "Brake Pads", "State Inspection", "Air Filter",
+                 "Coolant Flush", "Battery Replacement", "Wiper Blades"]
+    shops = ["QuickLube", "Discount Tire", "Midas", "Local Garage", "Dealership"]
+    issues = ["Check-engine light on cold start", "Window slow to roll up", "Brake squeal",
+              "AC not cold", "Rattle over bumps", "Tire pressure warning", "Wiper streaking"]
+    for vi, (by, mk, md, yr, col, odo) in enumerate(specs):
+        vid = tools.create_vehicle(created_by=by, make=mk, model=md, year=yr, color=col,
+                                   odometer=odo, license_plate=f"MOCK-{1000 + vi}"); _bump("vehicles")
+        for s in range(4):                       # ~24 service records total
+            tools.log_service(vid, svc_types[(vi + s) % len(svc_types)], by,
+                              date_performed=_ds(-30 * (s + 1)), odometer_at_service=odo - 1500 * (s + 1),
+                              cost=round(35 + 60 * s + 12.5, 2), shop_name=shops[(vi + s) % len(shops)])
+            _bump("service_records")
+        for s in range(2):                       # ~12 issues
+            _try("vehicle_issues", lambda v=vid, b=by, t=issues[(vi + s) % len(issues)]:
+                 tools.report_vehicle_issue(v, t, b))
+
+
+def seed_recipes():
+    from apps.recipes import tools
+    names = ["Weeknight Salsa", "Banana Bread", "Chicken Tikka Masala", "Margherita Pizza",
+             "Beef Tacos", "Veggie Stir-Fry", "Spaghetti Carbonara", "Grilled Salmon",
+             "Caesar Salad", "Pancakes", "Chili con Carne", "Lemon Chicken", "Pad Thai",
+             "Mushroom Risotto", "BBQ Pulled Pork", "Greek Gyros", "Shepherd's Pie",
+             "Fish Tacos", "Caprese Salad", "Apple Crisp", "French Toast", "Minestrone Soup"]
+    cats = [["dinner"], ["baking"], ["indian"], ["italian"], ["mexican"], ["vegetarian"]]
+    for i, title in enumerate(names):
+        by = FAMILY[i % len(FAMILY)]
+        ings = json.dumps([{"item": x, "quantity": str(q + 1), "unit": u}
+                           for q, (x, u) in enumerate([("main ingredient", "lb"), ("onion", "cup"),
+                                                       ("garlic", "clove"), ("seasoning", "tbsp")])])
+        steps = json.dumps(["Prep ingredients", "Cook per method", "Season to taste", "Serve"])
+        tools.create_recipe(title, by, ingredients=ings, steps=steps,
+                            categories=json.dumps(cats[i % len(cats)]),
+                            prep_time_min=10 + i % 20, cook_time_min=15 + i % 40, servings=2 + i % 6)
+        _bump("recipes")
+
+
+def seed_meals():
+    from apps.meals import data as meals
+    names = ["Spaghetti Bolognese", "Sheet-pan Chicken", "Taco Tuesday", "Veggie Stir-Fry",
+             "Grilled Salmon", "Homemade Pizza", "Chicken Curry", "Beef Stew", "Breakfast for Dinner",
+             "Turkey Burgers", "Fried Rice", "Pot Roast", "Quesadillas", "Baked Ziti", "Chicken Caesar Wraps",
+             "Shrimp Scampi", "Meatloaf", "Veggie Chili", "Pork Chops", "Soup & Grilled Cheese"]
+    efforts = ["easy", "medium", "hard"]
+    for i, name in enumerate(names):
+        meals.create_meal("meal-" + uuid.uuid4().hex[:8], name, FAMILY[i % len(FAMILY)],
+                         effort=efforts[i % 3], tags=[["weeknight"], ["family"], ["quick"]][i % 3],
+                         prep_time_min=10 + i % 25, cook_time_min=15 + i % 35)
+        _bump("meals")
+
+
+def seed_reminders():
+    from apps.reminders.store import create_reminder
+    msgs = ["Dentist appointment", "Renew car registration", "Parent-teacher conference",
+            "Change HVAC filter", "Return library books", "Pay credit card", "Call grandma",
+            "Pick up dry cleaning", "Vet appointment for the dog", "Submit expense report",
+            "Order birthday cake", "Schedule physical", "Water the plants", "Take out recycling",
+            "Renew passport", "Book summer camp", "Refill prescription", "Oil change due",
+            "Send thank-you notes", "Update car insurance"]
+    for i, m in enumerate(msgs):
+        create_reminder(FAMILY[i % len(FAMILY)], m, _dt(1 + i)); _bump("reminders")
+
+
+def seed_schedules():
+    from apps.schedules import data as schedules
+    rows = [("Trash & recycling", "home"), ("Mow the lawn", "home"), ("Water plants", "home"),
+            ("Family game night", "family"), ("Date night", "family"), ("Soccer practice", "kids"),
+            ("Piano lessons", "kids"), ("Book club", "personal"), ("Gym", "personal"),
+            ("Change air filter", "home"), ("Pay rent", "home"), ("Grocery shopping", "home"),
+            ("Car wash", "home"), ("Clean fish tank", "home"), ("Vacuum house", "home"), ("Laundry day", "home")]
+    times = ["07:00", "09:00", "18:00", "19:30", "12:00"]
+    for i, (title, cat) in enumerate(rows):
+        by = FAMILY[i % len(FAMILY)]
+        schedules.create_schedule(title, by, category=cat, assigned_to=by,
+                                 recurrence_type="weekly", time_of_day=times[i % len(times)], start_date=_ds(0))
+        _bump("schedules")
 
 
 def seed_chores():
@@ -134,109 +230,120 @@ def seed_chores():
     existing = {k.get("name"): k for k in chores.list_kids(active_only=False)}
     kids = []
     for name, color in [("Tyler", "#3b82f6"), ("Katie", "#ec4899")]:
-        if name in existing:                       # idempotent: reuse, don't duplicate
-            kids.append(existing[name])
-        else:
-            kids.append(chores.create_kid(name, color=color))
+        kids.append(existing.get(name) or chores.create_kid(name, color=color))
+        if name not in existing:
             _bump("chore_kids")
-    start = datetime.now(timezone.utc).date().isoformat()   # rotation_start is a DATE
-    for zone_name in ["Kitchen", "Bathrooms", "Living Room"]:
-        z = chores.create_zone(zone_name, start, description=f"{zone_name} weekly cleanup")
-        _bump("chore_zones")
-        for dow, cname in [(0, "Wipe down surfaces"), (3, "Sweep & vacuum"), (6, "Take out trash")]:
-            chores.create_chore(_id(z), dow, cname)
-            _bump("chores")
+    start = _ds(0)
+    zone_chores = {
+        "Kitchen": ["Wipe counters", "Load dishwasher", "Sweep floor", "Take out trash"],
+        "Bathrooms": ["Clean sink", "Scrub toilet", "Wipe mirror", "Restock TP"],
+        "Living Room": ["Vacuum", "Dust shelves", "Tidy toys", "Fluff cushions"],
+        "Bedrooms": ["Make beds", "Put away laundry", "Vacuum", "Clear surfaces"],
+        "Yard": ["Water plants", "Pull weeds", "Sweep porch", "Feed the dog"],
+        "Garage": ["Sweep", "Organize tools", "Take out recycling"],
+    }
+    for zone, names in zone_chores.items():
+        z = chores.create_zone(zone, start, description=f"{zone} weekly cleanup"); _bump("chore_zones")
+        for dow, cname in enumerate(names):
+            chores.create_chore(_id(z), dow % 7, cname); _bump("chores")
 
 
-def seed_meals():
-    from apps.meals import data as meals
-    rows = [("Spaghetti Bolognese", "maria", "medium", ["pasta", "italian"], 15, 40),
-            ("Sheet-pan chicken & veggies", "david", "easy", ["chicken", "weeknight"], 10, 35),
-            ("Taco Tuesday", "maria", "easy", ["mexican", "kids"], 20, 20),
-            ("Veggie stir-fry", "tyler", "easy", ["vegetarian", "quick"], 15, 12),
-            ("Grilled salmon & rice", "david", "medium", ["fish", "healthy"], 10, 20),
-            ("Homemade pizza night", "maria", "medium", ["italian", "weekend"], 30, 15)]
-    for name, by, effort, tags, prep, cook in rows:
-        meals.create_meal("meal-" + uuid.uuid4().hex[:8], name, by, effort=effort,
-                          tags=tags, prep_time_min=prep, cook_time_min=cook)
-        _bump("meals")
+def seed_goals():
+    from apps.goals import store
+    goals = [("Get fit by summer", "maria"), ("Renovate the kitchen", "david"),
+             ("Plan family vacation", "maria"), ("Build emergency fund", "david"),
+             ("Learn Spanish", "tyler"), ("Declutter the house", "maria"),
+             ("Start a garden", "david"), ("Read 12 books", "katie")]
+    proj_names = ["Phase 1: Planning", "Phase 2: Execution", "Wrap-up"]
+    task_names = ["Research options", "Set a budget", "Make a timeline", "Do the work", "Review progress"]
+    for gname, by in goals:
+        g = store.create_goal(gname, by, description=f"Goal: {gname}", target_date=_ds(90)); _bump("goals")
+        gid = _id(g)
+        for p in range(2):
+            pr = store.create_project(gid, proj_names[p], by, due_date=_ds(30 * (p + 1))); _bump("projects")
+            pid = _id(pr)
+            for t in range(3):                  # ~ 8*2*3 = 48 tasks
+                _try("tasks", lambda pi=pid, n=task_names[t % len(task_names)], b=by:
+                     store.create_task(pi, n, b, assigned_to=[b], due_date=_ds(7 * (t + 1))))
 
 
-def seed_recipes():
-    from apps.recipes import tools as recipes
-    rows = [
-        ("Weeknight Salsa", "maria", [("tomatoes", "4", "whole"), ("onion", "1/2", "cup"),
-         ("cilantro", "1/4", "cup"), ("lime", "1", "whole")],
-         ["Dice everything", "Combine", "Salt to taste, chill"], ["sauces"], 10, 0, 6),
-        ("Banana Bread", "david", [("ripe bananas", "3", "whole"), ("flour", "2", "cups"),
-         ("sugar", "3/4", "cup"), ("butter", "1/2", "cup")],
-         ["Mash bananas", "Mix wet + dry", "Bake 60 min at 350F"], ["baking"], 15, 60, 8),
-        ("Chicken Tikka Masala", "maria", [("chicken", "1.5", "lb"), ("yogurt", "1", "cup"),
-         ("tomato sauce", "2", "cups"), ("garam masala", "2", "tbsp")],
-         ["Marinate chicken", "Sear", "Simmer in sauce 25 min"], ["indian", "dinner"], 30, 40, 4),
-    ]
-    for title, by, ings, steps, cats, prep, cook, serv in rows:
-        recipes.create_recipe(
-            title, by,
-            ingredients=json.dumps([{"item": i, "quantity": q, "unit": u} for i, q, u in ings]),
-            steps=json.dumps(steps), categories=json.dumps(cats),
-            prep_time_min=prep, cook_time_min=cook, servings=serv)
-        _bump("recipes")
+def seed_bounties():
+    from apps.bounties.tools import create_bounty
+    rows = [("Mow the lawn", 1500, "Yard"), ("Wash the car", 1000, "Yard"), ("Clean the garage", 2000, "Garage"),
+            ("Fold all laundry", 500, "Indoor"), ("Vacuum whole house", 800, "Indoor"), ("Weed the garden", 1200, "Yard"),
+            ("Wash all windows", 1500, "Indoor"), ("Organize the pantry", 700, "Kitchen"), ("Rake the leaves", 1000, "Yard"),
+            ("Deep-clean a bathroom", 1000, "Indoor"), ("Walk the dog 7 days", 1400, "Pets"), ("Sweep the patio", 400, "Yard"),
+            ("Clean out the fridge", 600, "Kitchen"), ("Dust the whole house", 800, "Indoor"), ("Shovel snow", 1500, "Yard"),
+            ("Wash the dishes a week", 1200, "Kitchen"), ("Help with groceries", 500, "Errands"), ("Clean baseboards", 700, "Indoor"),
+            ("Wash the dog", 800, "Pets"), ("Tidy the playroom", 500, "Indoor")]
+    for title, cents, cat in rows:
+        create_bounty(title, cents, "david", category=cat, description=f"{title} — earn ${cents/100:.2f}")
+        _bump("bounties")
 
 
-def seed_reminders():
-    from apps.reminders.store import create_reminder
-    now = datetime.now(timezone.utc)
-    rows = [("maria", "Dentist appointment for Katie", 2),
-            ("david", "Renew car registration", 9),
-            ("maria", "Parent-teacher conference", 5),
-            ("david", "Change HVAC filter", 14),
-            ("tyler", "Return library books", 3)]
-    for user, msg, days in rows:
-        create_reminder(user, msg, (now + timedelta(days=days)).isoformat())
-        _bump("reminders")
+def seed_medical():
+    from apps.medical import data as med
+    # patients (best-effort dict shapes; per-call wrapped)
+    pats = {}
+    for name, dob in [("David", "1985-03-12"), ("Maria", "1987-07-08"),
+                      ("Tyler", "2012-01-22"), ("Katie", "2015-09-30")]:
+        try:
+            m = med.create_member({"name": name, "display_name": name, "dob": dob})
+            pats[name] = _id(m); _bump("med_members")
+        except Exception as e:
+            print(f"    med_members {name}: {type(e).__name__}: {str(e)[:60]}")
+    mids = list(pats.values()) or [None]
+    meds = ["Amoxicillin", "Ibuprofen", "Lisinopril", "Albuterol", "Metformin", "Vitamin D",
+            "Loratadine", "Omeprazole", "Atorvastatin", "Cetirizine", "Melatonin", "Fluoxetine"]
+    for i, name in enumerate(meds):
+        _try("med_medications", lambda m=mids[i % len(mids)], n=name:
+             med.create_medication({"member_id": m, "name": n, "dosage": "1 tablet", "frequency": "daily"}))
+    appts = ["Annual physical", "Dental cleaning", "Eye exam", "Dermatology", "Pediatric checkup",
+             "Flu shot", "Allergy follow-up", "Orthodontist", "Cardiology", "Lab work",
+             "Therapy session", "Vaccination", "Sports physical", "Skin check", "Wellness visit"]
+    for i, t in enumerate(appts):
+        _try("med_appointments", lambda m=mids[i % len(mids)], t=t:
+             med.create_appointment({"member_id": m, "title": t, "appointment_date": _ds(7 + i),
+                                     "provider": "Dr. Smith"}))
+    events = ["Broke arm (skateboard)", "Strep throat", "Allergy flare", "Routine bloodwork",
+              "Stitches on chin", "Ear infection", "Sprained ankle", "Annual checkup",
+              "Migraine", "Cold/flu", "Wisdom teeth removed", "Eye exam - new glasses"]
+    for i, t in enumerate(events):
+        _try("med_events", lambda m=mids[i % len(mids)], t=t:
+             med.create_event({"member_id": m, "event_type": "visit", "title": t,
+                               "event_date": _ds(-14 * (i + 1)), "provider": "Dr. Smith", "summary": t}))
 
 
-def seed_schedules():
-    from apps.schedules import data as schedules
-    today = datetime.now(timezone.utc).date().isoformat()
-    rows = [("Trash & recycling", "david", "home", "weekly", "07:00"),
-            ("Mow the lawn", "tyler", "home", "weekly", "09:00"),
-            ("Water the plants", "katie", "home", "weekly", "18:00"),
-            ("Family game night", "maria", "family", "weekly", "19:00")]
-    for title, by, cat, rec, tod in rows:
-        schedules.create_schedule(title, by, category=cat, assigned_to=by,
-                                  recurrence_type=rec, time_of_day=tod, start_date=today)
-        _bump("schedules")
-
-
-SEEDERS = {"members": seed_members, "lists": seed_lists, "auto": seed_auto,
-           "chores": seed_chores, "meals": seed_meals, "recipes": seed_recipes,
-           "reminders": seed_reminders, "schedules": seed_schedules}
+SEEDERS = {
+    "weather": seed_weather, "lists": seed_lists, "todo": seed_todo, "auto": seed_auto,
+    "recipes": seed_recipes, "meals": seed_meals, "reminders": seed_reminders,
+    "schedules": seed_schedules, "chores": seed_chores, "goals": seed_goals,
+    "bounties": seed_bounties, "medical": seed_medical,
+}
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Seed mock data for a box-2/demo install.")
+    ap = argparse.ArgumentParser(description="Seed ~20 mock records/section for a box-2/demo install.")
     ap.add_argument("--members-only", action="store_true")
-    ap.add_argument("--only", help="comma-separated app subset (e.g. lists,auto)")
+    ap.add_argument("--only", help="comma-separated app subset (e.g. goals,bounties)")
     args = ap.parse_args()
 
     seed_members()
+    cleanup_stale()
     if args.members_only:
-        print(f"members: {_counts.get('members', 0)} created"); return 0
-    todo = (args.only.split(",") if args.only else [k for k in SEEDERS if k != "members"])
+        print("members synced."); return 0
+    todo = (args.only.split(",") if args.only else list(SEEDERS))
     for app in todo:
         fn = SEEDERS.get(app.strip())
         if not fn:
             continue
         try:
-            fn()
-            print(f"  ✓ {app}")
+            fn(); print(f"  ✓ {app}")
         except Exception as e:
             print(f"  ✗ {app}: {type(e).__name__}: {e}")
     print("\n=== seeded ===")
     for k, v in sorted(_counts.items()):
-        print(f"  {k:16} {v}")
+        print(f"  {k:18} {v}")
     return 0
 
 
