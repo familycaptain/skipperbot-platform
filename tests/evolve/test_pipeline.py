@@ -22,7 +22,7 @@ SDLC = os.path.join(REPO, "specs", "evolve", "sdlc.yaml")
 
 # canned reasoning outputs keyed by AGENT name (happy path: feature, fits, surface, clean)
 FAKE = {
-    "triage": {"kind": "feature", "rationale": "new behavior"},
+    "triage": {"kind": "feature", "spec_status": "no-spec", "rationale": "new behavior, new scope"},
     "vision-fit": {"verdict": "fits", "rationale": "in charter"},
     "spec-author": {"spec_id": "demo.area.thing", "title": "Thing", "behavior": "adds a thing",
                     "implements": [], "tests": []},
@@ -32,7 +32,8 @@ FAKE = {
     "spec-audit": {"sound": True, "findings": []},
     "ux": {"approve": True, "concerns": []},
     "prioritize": {"score": 80, "decision": "surface", "rationale": "high value"},
-    "review-packet": {"summary": "added a thing", "risk": "low"},
+    "review-packet": {"summary": "added a thing", "risk": "low",
+                      "recommendation": "approve", "recommendation_why": "built + validated, low risk"},
 }
 
 
@@ -85,12 +86,53 @@ class TestGatedPipeline(unittest.TestCase):
         self.assertTrue(self._release_has("specs/demo/area/thing.yaml"))   # spec merged
         self.assertTrue(self._release_has("apps/demo/thing.py"))           # code merged
 
+    def test_packet_always_carries_a_recommendation(self):
+        inst = self.pipe.submit({"title": "add a thing"})
+        rec1 = self.pipe.packet(inst)["recommendation"]      # gate 1
+        self.assertIn("action", rec1)
+        self.assertTrue(rec1.get("why"))                      # never a blank choice
+        self.assertEqual(rec1["action"], "approve")           # clean reviews + surfaced
+        inst = self.pipe.approve(inst.id, "approve")
+        rec2 = self.pipe.packet(inst)["recommendation"]      # gate 2
+        self.assertEqual(rec2["action"], "approve")
+        self.assertTrue(rec2.get("why"))
+
     def test_reject_at_gate1_ends_rejected_no_code(self):
         inst = self.pipe.submit({"title": "add a thing"})
         inst = self.pipe.approve(inst.id, "reject")
         self.assertEqual(inst.status, REJECTED)
         self.assertFalse(self.implemented.get("did"))          # never implemented
         self.assertFalse(self._release_has("apps/demo/thing.py"))
+
+
+class TestSpecAwareTriage(unittest.TestCase):
+    def test_triage_receives_candidate_specs(self):
+        tmp = tempfile.mkdtemp()
+        try:
+            repo = init_box1(tmp)
+            wm = WorkspaceManager(repo, worktrees_dir=os.path.join(tmp, "wt"))
+            from apps.evolve import store as cfsstore
+            cfs = cfsstore.Store(cfsstore.InMemoryBackend())
+            cfs.boot_sync(os.path.join(REPO, "specs", "evolve"), repo_root=REPO,
+                          capability="evolve", on_main=True, bootstrap=True)
+            captured = {}
+
+            def responder(spec, payload, ctx):
+                if spec.name == "triage":
+                    captured["payload"] = dict(payload)
+                return FAKE.get(spec.name)
+
+            pipe = Pipeline(M.load(SDLC), runner=Runner(FakeBackend(responder), dict(registry.ROSTER)),
+                            wm=wm, implement_fn=lambda f: types.SimpleNamespace(ok=True),
+                            validate_fn=lambda f: True, cfs_store=cfs)
+            pipe.submit({"title": "weather shows the wrong city for my ZIP"})
+            specs = captured.get("payload", {}).get("existing_specs")
+            self.assertIsNotNone(specs, "triage must receive the existing specs")
+            self.assertGreaterEqual(len(specs), 8)
+            self.assertIn("id", specs[0])
+            self.assertIn("behavior", specs[0])
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
 
 class TestOffVisionShortCircuit(unittest.TestCase):

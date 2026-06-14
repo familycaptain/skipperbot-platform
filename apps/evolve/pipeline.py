@@ -39,12 +39,13 @@ def spec_record_from(spec_out: dict, work_item: dict) -> dict:
 
 class Pipeline:
     def __init__(self, model, *, runner, wm, implement_fn, validate_fn,
-                 store=None, log=lambda *a: None):
+                 store=None, cfs_store=None, log=lambda *a: None):
         self.model = model
         self.runner = runner               # reasoning agents (shares the cost ledger)
         self.wm = wm                        # WorkspaceManager (box 1)
         self.implement_fn = implement_fn    # (feature) -> result with .ok (writes the worktree)
         self.validate_fn = validate_fn      # (feature) -> bool (deploy to box 2 + run bound tests)
+        self.cfs_store = cfs_store          # apps.evolve.store.Store: triage checks specs against the report
         self.store = store or InMemoryInstanceStore()
         self.log = log
         self.walker = Walker(model, system_handler=self._system, agent_handler=self._agent,
@@ -69,19 +70,57 @@ class Pipeline:
         return gates[0] if gates else None
 
     def packet(self, inst: Instance) -> dict:
-        """The pre-digested review packet the human reads at a gate (§8/§10)."""
+        """The pre-digested review packet the human reads at a gate (§8/§10). ALWAYS
+        leads with a `recommendation` — nothing reaches the human as a blank choice."""
         ao = {k: (v or {}).get("output") for k, v in inst.context.get("agent_outputs", {}).items()}
         gate = self.gate_waiting(inst)
         return {
             "instance": inst.id, "status": inst.status, "gate": gate,
+            "recommendation": self._recommendation(inst, gate, ao),
             "work_item": inst.context.get("work_item"),
             "proposal": inst.context.get("proposal"),          # the spec-author C/F/S
+            "triage": ao.get("triage"),                        # incl. spec_status (violates/no-spec/conflicts)
             "reviews": {k: ao.get(k) for k in ("security", "architecture", "interop", "crit", "ux")},
             "prioritize": ao.get("prio"),
             "validation": inst.context.get("validation"),
             "review_packet": ao.get("packet"),
             "release_sha": inst.context.get("release_sha"),
         }
+
+    def _recommendation(self, inst, gate, ao) -> dict:
+        """Synthesize a recommended action so the human never faces a bare decision.
+        Even when uncertain, return the best call + why (+ what's unresolved)."""
+        if gate == "gate1":
+            concerns = []
+            for k in ("security", "architecture", "ux"):
+                r = ao.get(k) or {}
+                if r.get("approve") is False:
+                    concerns.append({k: r.get("concerns")})
+            crit = ao.get("crit") or {}
+            if crit.get("sound") is False:
+                concerns.append({"spec-audit": crit.get("findings")})
+            interop = ao.get("interop") or {}
+            if interop.get("conflicts"):
+                concerns.append({"interop": interop["conflicts"]})
+            triage = ao.get("triage") or {}
+            if triage.get("spec_status") == "conflicts-spec":
+                return {"action": "decide-spec-change", "why":
+                        f"report conflicts with live spec {triage.get('conflicting_spec','?')}; "
+                        "amend the spec or reject the report as intended", "concerns": concerns}
+            if concerns:
+                return {"action": "change", "why": f"{len(concerns)} review concern(s) to resolve first",
+                        "concerns": concerns[:3]}
+            prio = ao.get("prio") or {}
+            return {"action": "approve", "why":
+                    f"reviews clean; prioritized {prio.get('decision','')} (score {prio.get('score','?')})"}
+        if gate == "gate2":
+            val = inst.context.get("validation") or {}
+            pkt = ao.get("packet") or {}
+            if val.get("passed") is False:
+                return {"action": "change", "why": "bound tests did not pass on box 2 — send back to implement"}
+            return {"action": "approve", "why": pkt.get("summary", "built + validated on box 2"),
+                    "risk": pkt.get("risk", "low")}
+        return {"action": "review", "why": "no gate is waiting"}
 
     # handlers --------------------------------------------------------------
     def _agent(self, node, inst) -> dict:
@@ -90,6 +129,12 @@ class Pipeline:
             return self._code_acting(agent, inst)
         payload = {"work_item": inst.context.get("work_item", {}),
                    "proposal": inst.context.get("proposal")}
+        if agent == "triage" and self.cfs_store is not None:
+            # give triage the existing specs so it can tell violates-spec / no-spec /
+            # conflicts-spec apart (the §8 three-way classification)
+            payload["existing_specs"] = [
+                {"id": r["id"], "behavior": r.get("behavior", "")}
+                for r in self.cfs_store.by_kind("specification")]
         res = self.runner.run(agent, payload, instance_id=inst.id)
         out = res.output or {}
         if agent == "spec-author" and res.ok:

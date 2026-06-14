@@ -914,6 +914,17 @@ What replaces it — minimal:
 
 ## 9. The approval flow — two gates, then auto-merge
 
+**Nothing reaches the human without a recommendation.** Every touchpoint — a gate, a
+steer, an escalation, a spec-conflict adjudication — leads with the agent's
+**recommended action + why** (approve / reject / change / "amend spec X to Y" /
+"reject the report as intended"). The human reviews a *recommendation*, never a blank
+"you decide." This is the whole "scale the gate" bet: the packet's recommendation is
+what makes it a 30-second review. When the agent genuinely *can't* tell what should
+happen, that uncertainty is itself surfaced **as** the recommendation — its best call,
+why it's unsure, and the concrete options — not punted as a naked choice. (The
+pipeline enforces this: `Pipeline.packet()` always carries a `recommendation`, and the
+review-packet agent's schema *requires* one.)
+
 Two human gates, both *review* (not labor):
 
 1. **Gate 1 — approve the intent/spec.** After agents evaluate an issue/PR, judge

@@ -27,11 +27,14 @@ def _arr(items: dict) -> dict:
 # Output schemas
 # --------------------------------------------------------------------------- #
 TRIAGE_OUT = _obj({
-    "kind": {"type": "string", "enum": ["bug", "feature"]},
+    "kind": {"type": "string", "enum": ["bug", "feature"]},  # drives routing (bug->spec, feature->vision)
+    "spec_status": {"type": "string",
+                    "enum": ["violates-spec", "no-spec", "conflicts-spec", "unclear"]},
+    "conflicting_spec": _STR,                     # spec id when spec_status == conflicts-spec, else ""
     "duplicate_of": _STR,                         # "" if none
     "touches_cfs": _arr(_STR),                    # candidate C/F/S ids
     "rationale": _STR,
-}, ["kind", "rationale"])
+}, ["kind", "rationale"])                          # spec_status prompt-mandated; optional in schema
 
 VISION_OUT = _obj({
     "verdict": {"type": "string", "enum": ["fits", "off-vision", "needs-charter-change"]},
@@ -82,7 +85,9 @@ DESIGN_OUT = _obj({
 PACKET_OUT = _obj({
     "summary": _STR, "risk": {"type": "string", "enum": ["low", "med", "high"]},
     "test_summary": _STR,
-}, ["summary", "risk"])
+    "recommendation": {"type": "string", "enum": ["approve", "reject", "change"]},
+    "recommendation_why": _STR,
+}, ["summary", "risk", "recommendation", "recommendation_why"])
 
 # --- code-acting agents (run on the Agent SDK tool-use path; execute skills) ---
 IMPLEMENT_OUT = _obj({

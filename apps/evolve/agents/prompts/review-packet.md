@@ -15,3 +15,8 @@ validation results), produce:
 Be honest and concise. If validation didn't pass or a reviewer raised a high-severity
 concern, say so plainly and set `risk` accordingly — the packet's value is that the
 human can trust it.
+
+**Always make a recommendation.** The human must never face a blank choice — lead with
+`recommendation` (approve | reject | change) and a one-line `recommendation_why`. Even
+when it's a close or uncertain call, give your best recommendation and say what makes
+it uncertain. "You decide" is never an acceptable output.
