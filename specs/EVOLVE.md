@@ -382,6 +382,27 @@ the `main` worktree the brain runs, plus a worktree per in-flight feature — ch
 parallel branches without extra clones. Box 2, being a different host, is its own
 clone.
 
+**GitHub access — the brain is read-only; no write key for the merge.** `release`
+lives **only on box 1** (a local branch, never pushed), so the Gate-2
+`feature → release` merge (step 3) is a plain **local `git merge` on box 1 — it
+touches GitHub zero times.** The brain's GitHub credential is a **read-only deploy
+key** (it only ever *pulls* `main`). The single GitHub *write* is **publish**
+(`release → main`, step 5), and that is done with the **operator's own credentials**,
+never a key held by the autonomous brain. This is deliberate least-privilege: an
+autonomous agent system must not hold a GitHub write key (a buggy/compromised brain
+could force-push or delete branches), and publish-to-the-world is exactly the
+high-stakes step that should stay human-gated *and* human-credentialed. (Note:
+GitHub deploy keys can't be scoped per-branch anyway — they're repo-level read or
+read-write — so "write `release` but not `main`" would otherwise require a write key
++ a `main` branch-protection rule. We avoid all of that by keeping `release` local.)
+box 2 fetches `feature`/`release` **from box 1 over ssh**, not from GitHub, so it
+needs no GitHub access either; the Pi canaries `release` by pulling it from box 1.
+
+**Durability caveat:** a box-1-local `release` is **not backed up** — if box 1 dies,
+accumulated-but-unpublished work is lost. Mitigation is a private box-1 repo backup
+(or mirroring `release` to a private remote), kept **separate from the publish path**
+so it doesn't reintroduce a brain-held GitHub write key.
+
 **The cost to name (box 2's bigger job on engine changes).** Because the brain won't
 *dogfood* unpublished Evolve-core changes (it runs `main`), **validating a change to
 Evolve itself falls entirely on box 2** — which must then actually *exercise an
