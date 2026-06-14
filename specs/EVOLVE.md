@@ -1202,8 +1202,12 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   - **45 unit tests pass with zero installs**; the C/F/S tree validates with zero
     warnings (full reconciliation: 10 missing-impl → 0). Tree state: 8 specs + 2
     features `live`, capability + 6 feature stubs `proposed` (the roadmap).
-  - **Gaps (need you / box-1 / box-2):** the code-acting agents (implement/test-author/
-    validate) are stubbed pending the Claude Agent SDK tool-use path; box-1/box-2 +
+  - **All 15 agents have curated prompts**, each grounded with only the charter
+    sections it needs (`charter_keys`), under a 1600-token budget; and the **tool-use
+    backend** (`agents/tooluse.py`) that lets code-acting agents execute Claude Skills
+    (`.claude/skills/`) is **built + live-verified** (sandboxed bash). 63 tests.
+  - **Gaps (need you / box-1 / box-2):** real mutation needs box 2 (writes are off),
+    so the full pipeline still stubs implement/test-author/validate; box-1/box-2 +
     git promotion, the GitHub connector (intake), the Evolve app UI, and platform
     integration (`PostgresBackend`, the orchestrator loop) are TODO. See
     `apps/evolve/README.md` for status + how-to-run.

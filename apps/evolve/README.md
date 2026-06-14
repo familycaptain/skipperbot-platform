@@ -11,11 +11,14 @@ verified live end-to-end.**
 |---|---|---|
 | **cfs-store** | `schema.py`, `store.py`, `variance.py` | ✅ built, 23 tests, **live** specs |
 | **process-engine** | `engine/{model,instance,walker,mermaid}.py` | ✅ built, 6 tests, **live** specs |
-| **agent framework** | `agents/{base,runner,registry}.py` + `prompts/` | ✅ built, 12 tests + **live-verified** |
-| **orchestrator** | `orchestrator.py` (engine ⟷ swarm) | ✅ built, 4 tests + **live-verified** |
+| **agent framework** | `agents/{base,runner,registry}.py` + `prompts/` (15 curated) | ✅ built, **live-verified** |
+| **charter grounding** | `agents/charter.py` + `specs/CHARTER.md` | ✅ curated per-agent, budgeted, **live-verified** |
+| **tool-use backend** | `agents/tooluse.py` (code-acting agents run skills) | ✅ built, sandboxed, **live-verified** |
+| **orchestrator** | `orchestrator.py` (engine ⟷ swarm) | ✅ built, **live-verified** |
 | package glue | `manifest.yaml`, `migrations/*.sql` | ✅ written (runs when the platform hosts it) |
 
-**45 unit tests pass with zero installs** (stdlib `unittest`); 1 live test is gated.
+**63 unit tests pass with zero installs** (stdlib `unittest`); 2 live tests are gated
+(`EVOLVE_LIVE_TESTS=1`) and both have been run green against Claude.
 
 ## Where prompts & skills live
 
@@ -24,22 +27,27 @@ verified live end-to-end.**
   prompt = the role prompt **+ only the curated charter sections the agent declares**
   (`charter_keys`, assembled by `agents/charter.py` from `specs/CHARTER.md`). Budget:
   `SYSTEM_PROMPT_TOKEN_BUDGET` (1600 est. tokens) — over it = trim grounding or split
-  the agent. *Gap: the reviewer agents (security/architecture/ux/code-audit/
-  review-packet) still use a generated fallback prompt — curated files TODO.*
+  the agent. **All 15 agents now have curated prompt files**, each within budget
+  (design=1474 is the ceiling).
 - **Claude Skills** → `.claude/skills/<name>/SKILL.md` (clone-portable; see that
   dir's README). Executable capability packages for the **code-acting agents**
   (`implement`/`test-author`/`validate`, `requires_tools=True`) on the Agent SDK
   path — NOT the reasoning agents (Messages API, structured output only, which the
-  Messages backend now explicitly refuses to run for `requires_tools` agents).
-  Shipped: `cfs-validate`, `run-evolve-tests`. *Gap: the SDK tool-use backend that
-  actually executes skills is the next build.*
+  Messages backend explicitly refuses to run for `requires_tools` agents). Shipped:
+  `cfs-validate`, `run-evolve-tests`. The **tool-use backend** (`agents/tooluse.py`)
+  that executes them is **built + live-verified** (sandboxed bash: allowlist from the
+  skill's `allowed-tools`, no shell metacharacters, writes off by default). Mutation
+  (implement writing code) still belongs on box 2, so the full pipeline keeps those
+  agents stubbed until box 2 exists.
 
 ## What's stubbed / needs you (gaps to fill)
 
-- **Code-acting agents** — `implement`, `test-author`, `validate` need box-2 + tool
-  use (file edits, running tests). They're stubbed in `orchestrator.py` (`CODE_ACTING`).
-  This is the Claude Agent SDK / tool-using path (vs. the structured-output path that
-  works now) — the next real build.
+- **Code-acting agents** — the tool-use backend (`agents/tooluse.py`) that runs them
+  is **built + live-verified** (e.g. `validate` really runs the test suite). What's
+  still gated: **writes are off** and there's **no box 2**, so `implement` can't yet
+  safely mutate code — the full pipeline keeps these stubbed (`orchestrator.py`
+  `CODE_ACTING`) until box 2 exists. Wiring `tool_backend` into the live pipeline is
+  the box-2 step.
 - **box-1 / box-2 + git promotion** — none of the dev environment exists yet, so
   `system` nodes (serialize/deploy/merge/resync) are stubs. The branch topology is
   designed (EVOLVE.md §5); wiring it needs the VMs.
