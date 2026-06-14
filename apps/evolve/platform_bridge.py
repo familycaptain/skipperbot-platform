@@ -35,9 +35,17 @@ def _get(path: str, token: str) -> dict:
         return json.loads(r.read().decode())
 
 
-def login() -> str:
+def auth() -> str:
+    """The brain authenticates to the operator platform with a long-lived SERVICE
+    token (EVOLVE_PLATFORM_TOKEN) — minted on the Pi via scripts/service_token.py.
+    Its is_service flag permits POSTing gates but NOT deciding them (least privilege).
+    Falls back to an admin login only for local dev (box 2)."""
     if _token_cache["tok"]:
         return _token_cache["tok"]
+    svc = os.getenv("EVOLVE_PLATFORM_TOKEN")
+    if svc:
+        _token_cache["tok"] = svc
+        return svc
     user = os.getenv("EVOLVE_PLATFORM_USER", "admin")
     pw = os.getenv("EVOLVE_PLATFORM_PASS", "admin1234")
     try:
@@ -46,14 +54,14 @@ def login() -> str:
         pass
     res = _post("/auth/login", {"username": user, "password": pw})
     if not res.get("token"):
-        raise RuntimeError(f"platform login failed: {res}")
+        raise RuntimeError(f"platform login failed (no EVOLVE_PLATFORM_TOKEN set): {res}")
     _token_cache["tok"] = res["token"]
     return res["token"]
 
 
 def push_gate(packet: dict, token: str | None = None) -> dict:
-    """Surface a parked gate in the platform work queue."""
-    token = token or login()
+    """Surface a parked gate in the operator's work queue (on the Pi)."""
+    token = token or auth()
     return _post("/api/apps/evolve/gates", {
         "instance_id": packet.get("instance"),
         "gate": packet.get("gate"),
@@ -63,5 +71,5 @@ def push_gate(packet: dict, token: str | None = None) -> dict:
 
 def list_decided(token: str | None = None) -> list[dict]:
     """Gates the operator has decided in the UI (for the resume poller)."""
-    token = token or login()
+    token = token or auth()
     return _get("/api/apps/evolve/gates?status=decided", token).get("gates", [])
