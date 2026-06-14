@@ -92,6 +92,11 @@ def read_file(path: str, *, cwd: str) -> str:
         return "DENIED: path escapes the repository."
     if not os.path.exists(full):
         return f"NOT FOUND: {path}"
+    if os.path.isdir(full):
+        try:
+            return f"{path} is a DIRECTORY. Contents:\n" + "\n".join(sorted(os.listdir(full)))
+        except OSError as e:
+            return f"{path} is a directory ({e})"
     with open(full, encoding="utf-8", errors="replace") as fh:
         return fh.read()[:8000]
 
@@ -214,23 +219,29 @@ class ToolUseBackend:
                     return AgentResult(spec.name, ok=True, output=b.input, model=model,
                                        input_tokens=in_tok, output_tokens=out_tok,
                                        cost_usd=cost, raw_text="\n".join(transcript))
-                if b.name == "bash":
-                    cmd = b.input.get("command", "")
-                    res = run_bash(cmd, allow, cwd=self.repo_root)
-                    transcript.append(f"$ {cmd}\n{res[:500]}")
-                elif b.name == "read_file":
-                    res = read_file(b.input.get("path", ""), cwd=self.repo_root)
-                    transcript.append(f"read {b.input.get('path','')}")
-                elif b.name == "write_file" and self.allow_writes:
-                    res = write_file(b.input.get("path", ""), b.input.get("content", ""),
-                                     cwd=self.repo_root)
+                try:
+                    if b.name == "bash":
+                        cmd = b.input.get("command", "")
+                        res = run_bash(cmd, allow, cwd=self.repo_root)
+                        transcript.append(f"$ {cmd}\n{res[:500]}")
+                    elif b.name == "read_file":
+                        res = read_file(b.input.get("path", ""), cwd=self.repo_root)
+                        transcript.append(f"read {b.input.get('path','')}")
+                    elif b.name == "write_file" and self.allow_writes:
+                        res = write_file(b.input.get("path", ""), b.input.get("content", ""),
+                                         cwd=self.repo_root)
+                        transcript.append(res)
+                    elif b.name == "edit_file" and self.allow_writes:
+                        res = edit_file(b.input.get("path", ""), b.input.get("old_string", ""),
+                                        b.input.get("new_string", ""), cwd=self.repo_root)
+                        transcript.append(res)
+                    else:
+                        res = f"unknown tool {b.name}"
+                except Exception as e:
+                    # A tool error must NOT crash the agent loop — hand it back so the
+                    # model can recover (e.g. it read_file'd a directory).
+                    res = f"ERROR running {b.name}: {type(e).__name__}: {e}"
                     transcript.append(res)
-                elif b.name == "edit_file" and self.allow_writes:
-                    res = edit_file(b.input.get("path", ""), b.input.get("old_string", ""),
-                                    b.input.get("new_string", ""), cwd=self.repo_root)
-                    transcript.append(res)
-                else:
-                    res = f"unknown tool {b.name}"
                 results.append({"type": "tool_result", "tool_use_id": b.id, "content": res})
             messages.append({"role": "user", "content": results})
 

@@ -140,7 +140,8 @@ def send_pushover_direct(message, *, title=None, priority=0, url=None, url_title
     import urllib.parse
     import urllib.request
 
-    token = token or os.getenv("PUSHOVER_TOKEN") or os.getenv("PUSHOVER_APP_TOKEN")
+    token = (token or os.getenv("PUSHOVER_TOKEN") or os.getenv("PUSHOVER_API_KEY")
+             or os.getenv("PUSHOVER_APP_TOKEN"))
     user = user or os.getenv("PUSHOVER_USER") or os.getenv("PUSHOVER_USER_KEY")
     device = device if device is not None else os.getenv("PUSHOVER_DEVICE")
     msg = (message or "").strip()
