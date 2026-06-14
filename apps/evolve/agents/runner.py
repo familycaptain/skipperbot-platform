@@ -135,6 +135,7 @@ class Runner:
     spent_usd: float = 0.0
     tiers: dict = field(default_factory=lambda: dict(MODEL_TIERS))
     charter_path: str = charter.DEFAULT_PATH   # source for per-agent charter grounding
+    tool_backend: Backend | None = None        # for requires_tools agents (executes skills)
 
     def composed_system(self, spec: AgentSpec) -> str:
         """Role prompt + only the curated charter sections this agent declares."""
@@ -150,7 +151,8 @@ class Runner:
             return AgentResult(agent_name, ok=False,
                                error=f"budget exhausted (${self.spent_usd:.4f} >= ${self.budget_usd:.2f})")
         model = self.tiers.get(spec.tier, self.tiers["smart"])
-        res = self.backend.run(spec, payload, context, model, self.composed_system(spec))
+        backend = self.tool_backend if (spec.requires_tools and self.tool_backend) else self.backend
+        res = backend.run(spec, payload, context, model, self.composed_system(spec))
         self.spent_usd += res.cost_usd
         # validate the structured output against the agent's schema
         if res.ok and res.output is not None:

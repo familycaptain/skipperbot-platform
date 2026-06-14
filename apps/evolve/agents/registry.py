@@ -122,13 +122,13 @@ ROSTER: dict[str, AgentSpec] = {
         INTEROP_OUT, prompt_file="interop.md", tier="smart"),
     "security": AgentSpec(
         "security", "Review a change for vulnerabilities + supply-chain risk.",
-        REVIEW_OUT, tier="smart", charter_keys=["non-goals"]),
+        REVIEW_OUT, prompt_file="security.md", tier="smart", charter_keys=["non-goals"]),
     "architecture": AgentSpec(
         "architecture", "Review system fit: boundaries, the one-directional dep rule.",
-        REVIEW_OUT, tier="smart", charter_keys=["is", "surfaces"]),
+        REVIEW_OUT, prompt_file="architecture.md", tier="smart", charter_keys=["is", "surfaces"]),
     "ux": AgentSpec(
         "ux", "Review UX/UI quality + cross-app consistency.",
-        REVIEW_OUT, tier="smart", charter_keys=["surfaces"]),
+        REVIEW_OUT, prompt_file="ux.md", tier="smart", charter_keys=["surfaces"]),
     "prioritize": AgentSpec(
         "prioritize", "Score a proposal onto one ranked queue; surface or park.",
         PRIORITIZE_OUT, prompt_file="prioritize.md", tier="fast",
@@ -139,10 +139,10 @@ ROSTER: dict[str, AgentSpec] = {
         charter_keys=["thesis", "scope", "surfaces", "non-goals"]),
     "code-audit": AgentSpec(
         "code-audit", "Read code for logic bugs, edge cases, security smells, dead code.",
-        SPEC_AUDIT_OUT, tier="smart", charter_keys=["non-goals"]),
+        SPEC_AUDIT_OUT, prompt_file="code-audit.md", tier="smart", charter_keys=["non-goals"]),
     "review-packet": AgentSpec(
         "review-packet", "Assemble the pre-digested Gate-2 review packet.",
-        PACKET_OUT, tier="fast"),
+        PACKET_OUT, prompt_file="review-packet.md", tier="fast"),
 
     # --- code-acting agents: execute Claude Skills + tools on the Agent SDK path ---
     # (requires_tools=True => the Messages backend refuses them; they need the SDK
