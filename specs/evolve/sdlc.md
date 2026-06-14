@@ -1,4 +1,4 @@
-# Evolve — SDLC process flow (v0.3)
+# Evolve — SDLC process flow (v0.3.1)
 
 > **Generated view.** The source of truth is [`sdlc.yaml`](./sdlc.yaml); this
 > Mermaid is the picture of it. Open this file in GitHub (or VS Code preview /
@@ -75,9 +75,9 @@ flowchart TD
   gate2[/"GATE 2 — approve result"/]:::gate
   gate2 -->|"change this"| impl
   gate2 -->|reject| e_rejected
-  gate2 -->|approve| merge[["Auto-merge to main"]]:::sys
+  gate2 -->|approve| merge[["Auto-merge to release branch"]]:::sys
   merge --> resync[["Re-sync files to DB"]]:::sys
-  resync --> e_done(["Merged"]):::event
+  resync --> e_done(["Merged to release — awaiting operator publish"]):::event
 
   classDef event fill:#e8eef7,stroke:#5b7aa7,color:#1b2b44;
   classDef agent fill:#eaf6ec,stroke:#4c9a5a,color:#16331e;
@@ -112,5 +112,9 @@ flowchart TD
   checks *this* spec for internal gaps/holes.
 - **Gate 1** (approve intent) → autonomous **implement + author tests** on the box-1
   branch → **box 2** validates with Playwright → loop **failing→retry** / **stuck→
-  escalate** / **green→packet** → **Gate 2** → **auto-merge** → **re-sync**. Both
-  gates can **bounce back** ("change this").
+  escalate** / **green→packet** → **Gate 2** → **auto-merge to the `release` branch**
+  → **re-sync**. Both gates can **bounce back** ("change this").
+- **The per-change process ends at `release`, not `main`.** Promotion `release →
+  main` (publish to the world) is a separate, operator-owned **release gate** —
+  batched over many completed instances and canaried on the Pi — so it lives outside
+  this per-change graph (EVOLVE.md §5/§9).

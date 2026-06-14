@@ -14,7 +14,7 @@
 # edge.when: the condition/label on a branch (omitted = unconditional)
 
 id: evolve-sdlc
-version: 0.3.0
+version: 0.3.1
 
 nodes:
   # ---- intake — FOUR lanes: two reactive, two proactive ----
@@ -69,11 +69,14 @@ nodes:
   # ---- gate 2 & merge ----
   - { id: packet,    type: agent,   agent: review-packet, lane: agents, label: "Build review packet (diff + spec + results + screenshots)" }
   - { id: gate2,     type: gate,    lane: human, label: "GATE 2 - approve result" }
-  - { id: merge,     type: system,  lane: system, label: "Auto-merge spec+code+tests to main" }
+  # Per-change cycle ends at the `release` branch, NOT `main`. Promotion
+  # release->main is a separate operator-owned release process (see EVOLVE.md §5/§9),
+  # batched over many completed instances — deliberately outside this per-change model.
+  - { id: merge,     type: system,  lane: system, label: "Auto-merge spec+code+tests to `release` branch" }
   - { id: resync,    type: system,  lane: system, label: "Re-sync files to DB" }
 
   # ---- end events ----
-  - { id: e_done,     type: event, lane: system, label: "Merged" }
+  - { id: e_done,     type: event, lane: system, label: "Merged to release (awaiting operator publish)" }
   - { id: e_parked,   type: event, lane: agents, label: "Parked / declined (recorded)" }
   - { id: e_rejected, type: event, lane: human,  label: "Rejected" }
 

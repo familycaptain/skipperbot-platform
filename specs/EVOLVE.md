@@ -319,10 +319,75 @@ Consequence worth naming: with box 2 + Playwright, **Evolve can self-validate th
 UI** — so the human moves from "hands-on tester of every change" to "reviewer of
 the diff + the agent's test report/screenshots." That's the much smaller gate.
 
-Mechanics to pin down later: the git path box1→box2 (push branch via GitHub vs.
-box 1 as a local git remote for box 2); resetting box 2's DB to a known seed
-between runs for reproducibility; and a known test user / service token so
-Playwright can get through box 2's auth gate.
+### Git topology — a three-tier promotion pipeline
+
+Approved work does **not** go straight to `main`. There's a staging tier between
+"Evolve approved it" and "the world gets it," so the operator can pre-test on real
+hardware before publishing.
+
+**Branches:**
+
+- **`main`** — published. What the world and fresh self-hosters get; the most-
+  validated line. The two things that *run for real* — the box-1 brain and the Pi —
+  both run `main`, and only ever `main`.
+- **`release`** — branched off `main`; **accumulates every Gate-2-approved change**.
+  The operator's private staging line (host it on box 1, so nothing unpublished hits
+  GitHub; `main` is the first thing GitHub ever sees).
+- **`feature/<id>`** — one per work item, **cut from `release`** so successive
+  approved changes compose and box 2 validates them together.
+
+**The "runs" vs. "operates on" split (the crux).** The box-1 brain *runs* `main`
+(its engine is always stable, world-released code) but *operates on* the `release`
+line — it edits and validates work in the box-1 **workspace** (feature branches cut
+from `release`), never in its own running checkout. So the engine manipulates
+release-line code without *executing* it. This is what makes **Evolve evolving
+itself stable**: an Evolve-core change can't touch the running brain until it has
+cleared box 2 → operator canary → publish to `main`. The engine only ever adopts a
+*released* version of itself; its rollback floor is the **prior release tag** on
+`main`.
+
+**The flow of one change through the tiers:**
+
+1. Brain authors spec+code+tests on `feature/<id>` in the box-1 **workspace** (cut
+   from `release`); commits.
+2. **Box 2** (a separate clone on its own VM) pulls the feature branch **directly
+   from box 1 over ssh** (box 1 is box 2's git remote — no public round-trip),
+   restarts on it, and validates (Playwright + agentic rubrics). Reset between runs
+   = `git reset --hard release` + `git clean` + reload the frozen fixture DB (§13);
+   code-reset and data-reset are two separate operations. A known test user / service
+   token gets Playwright through box 2's auth.
+3. **Gate 2** → auto-merge `feature → release`. Per-change cycle done; brain
+   re-syncs files→DB.
+4. **Operator, batched/async** → upgrade the **Pi** to `release` to canary on real
+   data + hardware. (Evolve never pushes here — *you* point the Pi at `release`. The
+   "Evolve never touches prod" rule is intact; the Pi just doubles as your real-
+   hardware pre-publish canary.)
+5. **Release gate** (operator) → merge `release → main`, push `main` to GitHub
+   (**released**), and update the **box-1 brain + Pi** to the new `main` together —
+   one symmetric "adopt the new release" step.
+
+Three escalating confidence tiers: **box 2** (synthetic fixture data, automated) →
+**`release` + Pi-canary** (real data, the operator's eyes) → **`main`** (published).
+Nothing reaches the world without clearing all three.
+
+**On box 1, use `git worktree`** (one shared object store, multiple working dirs):
+the `main` worktree the brain runs, plus a worktree per in-flight feature — cheap
+parallel branches without extra clones. Box 2, being a different host, is its own
+clone.
+
+**The cost to name (box 2's bigger job on engine changes).** Because the brain won't
+*dogfood* unpublished Evolve-core changes (it runs `main`), **validating a change to
+Evolve itself falls entirely on box 2** — which must then actually *exercise an
+Evolve cycle* (not just Playwright-click the UI) to prove an orchestrator/agent
+change works before it's published. That's the price of keeping the running engine
+stable, and it's the right trade for "the dangerous self-mod" (§11) — but box 2's
+responsibility for Evolve-core changes is correspondingly larger.
+
+**Self-hoster degradation.** A self-hoster improving *their own* Skipper may have no
+second VM and no Pi: collapse to a single box, make `release` their personal staging
+branch they manually adopt, and treat their `main` as terminal (they publish nothing
+upstream unless they open a PR). The three-tier shape degrades to whatever boxes
+they actually have.
 
 ---
 
@@ -818,11 +883,20 @@ Two human gates, both *review* (not labor):
    "here's a passing change, approve?" and "I couldn't converge, here's where I'm
    stuck." Like Gate 1, it can bounce back ("change this"), not just
    approve/reject.
-4. On approval → **automatically push/merge the feature branch to `main`**
-   (carrying spec + code + tests as one atomic unit). Cycle done; brain re-syncs.
+4. On approval → **automatically merge the feature branch to the `release` branch**
+   (carrying spec + code + tests as one atomic unit). The per-change cycle ends
+   *here*, not at `main` (see the promotion model, §5). Brain re-syncs.
 
 Budget/iteration bounds: hard caps per task (token budget, max fix-test cycles)
 and an explicit **give-up-and-escalate** path so autonomous loops can't thrash.
+
+**A third, human-owned checkpoint — but not a per-change gate.** Gates 1 and 2 are
+*per-change* (does this one item have good intent / a good result?). Promoting
+`release → main` — actually publishing to the world — is a separate **release
+gate** the operator owns, over a *batch* of approved changes: canary `release` on
+the Pi, and if it holds up, publish (§5). It lives **outside** the per-change BPM
+instance (which completes at the `release` merge), so the operator can let several
+approved changes accumulate and ship them as one release on their own cadence.
 
 ### Full cycle, end to end
 
@@ -836,8 +910,12 @@ issue / PR / proactive design proposal / QA bug-finding   (four intake sources)
   → serialize spec → file  +  implement code  +  write/adjust tests   (feature branch, box-1 workspace)
   → box 2 pulls/restarts → run the spec's tests (loop-to-green or escalate)
   → GATE 2 (human approves the review packet)
-  → auto-merge spec + code + tests → main
+  → auto-merge spec + code + tests → `release` branch     ← per-change BPM ends here
   → brain re-syncs (files → DB)
+  · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · · ·
+  ⇢ [operator, batched, async] canary `release` on the Pi
+  ⇢ RELEASE GATE (operator): looks good → merge `release` → `main` → push GitHub
+  ⇢ box-1 brain + Pi adopt the new `main`   (published to the world)
 ```
 
 Every box is either deterministic machinery or a fast human review — never the
@@ -988,9 +1066,17 @@ to make any further change. So:
 
 - App changes can run more autonomously; **Evolve-core changes stay hands-on**,
   with the strictest gate and a thorough box-2 run before box-1 adopts them.
+- **Box 2 carries the full weight for engine changes.** Because the brain runs
+  `main` and won't *dogfood* an unpublished Evolve-core change (§5), box 2 is the
+  *only* place it runs pre-publish — so for these changes box 2 must **actually
+  exercise an Evolve cycle** (orchestrator walks the graph, an agent runs, a gate
+  fires), not just Playwright-click the UI. Validating the engine ≠ validating an
+  app screen.
 - **Always keep a known-good Evolve to roll back to** (source control is exactly
-  this safety net — adopting a new Evolve-core means restarting box 1 on new code;
-  if it's broken, revert).
+  this safety net — the brain only ever adopts a *published* `main`, so its rollback
+  floor is the **prior release tag**; adopting a new Evolve-core means restarting
+  box 1 on the new `main`, and if it's broken, reset to the prior release and
+  restart).
 
 ---
 
@@ -1101,7 +1187,11 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   explorer / activity / charter), the queue item types + Change/Settle controls, and
   three-layer self-correction. Remaining: lay out `apps/evolve/` (routes, ui/,
   entity prefix) and wire the queue to the BPM gate nodes + backlog-PM ranking.
-- **Git topology box1↔box2** — local remote vs GitHub branches; box-2 reset.
+- **Git topology — DECIDED** (§5): three-tier promotion (`feature` → `release` →
+  `main`), box-1 brain runs `main` while operating on the `release` line, box 2 pulls
+  features from box 1 over ssh + resets to `release` + fixture, operator canaries
+  `release` on the Pi then publishes `release → main`. Remaining: the concrete git
+  worktree layout + the box-2-exercises-an-Evolve-cycle harness for engine changes.
 - **Issues app** — final UI/designation, and GitHub-issue sync on the canonical
   instance.
 
@@ -1115,6 +1205,14 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   Evolve converges.
 - **Box 1 / Box 2** — the brain (+ workspace checkout) / the disposable instance
   under test.
+- **`release` branch** — the staging line off `main` that accumulates every
+  Gate-2-approved change; the per-change pipeline ends here. The operator canaries it
+  on the Pi, then promotes `release → main` to publish (§5).
+- **Release gate** — the operator-owned, *batched* checkpoint that promotes
+  `release → main` (publishes to the world); distinct from the per-change Gates 1/2.
+- **Runs vs. operates-on** — the box-1 brain *runs* `main` (stable, released engine)
+  but *operates on* the `release` line in its workspace; what keeps "Evolve evolving
+  itself" stable (§5).
 - **Gate 1 / Gate 2** — approve the intent/spec / approve the built-and-tested
   result.
 - **Charter** — the top-level, human-owned "what Skipper is and isn't" doc the
