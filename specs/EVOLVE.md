@@ -329,6 +329,56 @@ What the substrate must provide so the Nth agent drops in trivially:
   is a versioned file in the repo. Recursively, the agent definitions are
   themselves C/F/S-managed — Evolve improves its own agents.
 
+### Process file format + visualization (DECIDED — own the model + Mermaid)
+
+We **own the model and build our own process-flow code**; we do **not** bundle a
+third-party BPM application into the repo. Three pieces:
+
+- **Canonical format: our own minimal JSON/YAML process model** — the source of
+  truth the engine executes and Evolve edits. `nodes` (`type: agent | gate |
+  gateway`, with the agent ref / condition / lane), `edges` (`from`, `to`, `when`),
+  lanes. Small, diffable, agent-editable. **BPMN-XML is *not* canonical** (verbose,
+  ugly to diff, heavy for agents) — at most an optional one-way export if we ever
+  want to open it in a BPMN tool.
+- **Engine: ours.** A lightweight graph-walker over that model — total control,
+  zero runtime dependency, no heavyweight BPM engine bundled. ("Build it ourselves,
+  which may be better" — here it genuinely is.)
+- **Visualization now: generate Mermaid from the model.** Mermaid is text, so the
+  diagram lives in the repo and renders for free in **GitHub, VS Code preview, and
+  mermaid.live — nothing installed, nothing embedded.** One-way: model → generated
+  `.mmd`/markdown view, openable in another program without baking that program into
+  the build.
+- **Visualization later (in-app drag-edit): react-flow or mermaid.js** — an MIT
+  *library* (a normal dependency, like the platform's leaflet / react-markdown —
+  **not** a bundled application) — for editing the flow inside Skipper's own UI,
+  round-tripping to the model. Deferred; the Mermaid-from-model path covers
+  authoring until then.
+
+Data flow: **JSON/YAML model = truth → tiny generator emits Mermaid → view/diff
+anywhere.** Example:
+
+```yaml
+# evolve/process/sdlc.yaml  (the truth)
+nodes:
+  - { id: triage,    type: agent,   agent: triage }
+  - { id: kind,      type: gateway, kind: exclusive }     # bug or feature?
+  - { id: visionfit, type: agent,   agent: vision-fit }
+  - { id: gate1,     type: gate,    label: "Approve intent" }
+edges:
+  - { from: triage,    to: kind }
+  - { from: kind,      to: fix,       when: bug }
+  - { from: kind,      to: visionfit, when: feature }
+  - { from: visionfit, to: gate1 }
+```
+```mermaid
+%% generated from sdlc.yaml — view in GitHub / VS Code / mermaid.live
+flowchart TD
+  triage[Triage] --> kind{bug or feature?}
+  kind -->|bug| fix[Fix path]
+  kind -->|feature| visionfit[Vision-fit]
+  visionfit --> gate1[/"Gate 1: approve intent"/]
+```
+
 These are separate functions needing very specific prompt guidance. (The agent
 swarm itself is later C/F/S that a thin Evolve helps build — see §10.)
 
@@ -595,10 +645,10 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   format can carry weight.
 - **Define the charter** (`what Skipper is / isn't`) — the triage/vision agents and
   the Evolve-core guardrail all depend on it.
-- **The BPM process definition** — the SDLC flow graph: nodes (agents) + gateways +
-  the two human gates, the C/F/S state at each step, and which agent owns each
-  transition. (This is the "state machine" — modeled as a BPM process; see §6
-  "Agent framework.")
+- **The first SDLC process flow** — author the actual Evolve BPM graph in the
+  decided format (own minimal JSON/YAML model + generated Mermaid; see §6 "Process
+  file format + visualization"): nodes (agents) + gateways + the two human gates,
+  the C/F/S state at each step, and which agent owns each transition.
 - **Spec-file schema** — finalize fields, ID scheme, and the file layout under
   `specs/`.
 - **Git topology box1↔box2** — local remote vs GitHub branches; box-2 reset.
