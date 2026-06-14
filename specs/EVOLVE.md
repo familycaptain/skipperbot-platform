@@ -119,24 +119,143 @@ state; a merge promotes a proposal into the files. You get a git-like staging ar
 for *requirements* — and history/diff/blame come **free** because the specs live in
 the repo (`git log specs/recipes/` = "how Recipes' behavior changed over time").
 
-### Example spec file
+### The record schema (finalized)
+
+One YAML file per record. A C/F/S file is identified by a top-level **`kind:`** of
+`capability | feature | specification` — that is the loader's contract; anything
+else under `specs/` (this design doc, the `evolve/sdlc.*` process model) has no
+`kind:` and is ignored. The three kinds share a common envelope and add their own
+fields.
+
+**Common to every kind:** `kind`, `id`, `title`, `state`, `links`, `notes`.
+
+**Capability** — a whole app/area:
+
+```yaml
+# specs/recipes/_capability.yaml
+kind: capability
+id: recipes
+title: Recipes
+app: recipes            # app id this maps to (omit for cross-cutting capabilities)
+scope: >                # the §10 boundary field — what this is for and where it stops
+  Meal planning and the family's recipe collection: storing recipes, the
+  recipe-detail/edit flow, the weekly meal-plan view. NOT grocery-delivery
+  integrations or nutrition tracking (separate capabilities if ever).
+autonomy: gated         # default autonomy for specs under this capability (see below)
+state: live
+links: {}
+notes: ""
+```
+
+**Feature** — a screen or sub-area:
+
+```yaml
+# specs/recipes/recipe-detail/_feature.yaml
+kind: feature
+id: recipes.recipe-detail
+title: Recipe detail screen
+state: live
+links: {}
+notes: ""
+```
+
+**Specification** — one atomic behavior, bound to its tests:
 
 ```yaml
 # specs/recipes/recipe-detail/edit-button.yaml
-id: spec-recipes-recipe-detail-edit-button
-capability: recipes
-feature: recipe-detail
-state: live            # proposed → approved → implementing → in-review → live → deprecated
+kind: specification
+id: recipes.recipe-detail.edit-button
+title: Edit button on recipe detail
+state: live             # proposed → approved → implementing → in-review → live → deprecated
 behavior: >
-  Recipe detail shows an Edit button; clicking opens the edit form prefilled
-  with current values; Save validates a non-empty title.
-implements: [apps/recipes/ui/RecipeDetail.jsx, apps/recipes/routes.py]
-tests:
+  Recipe detail shows an Edit button; clicking opens the edit form prefilled with
+  current values; Save validates a non-empty title and shows an inline error when
+  empty.
+implements:             # the code this spec governs — scopes variance + interop locality
+  - apps/recipes/ui/RecipeDetail.jsx
+  - apps/recipes/routes.py
+tests:                  # ≥1 expected; a spec with none is an "untested" variance, not an error
   - { type: playwright, path: tests/recipes/recipe-detail/edit-button.spec.ts }
-  - { type: agentic, rubric: "Edit form prefilled and visually matches the create form" }
-notes: "..."
-links: { issue: ISS-123, pr: PR-45 }
+  - { type: agentic,    rubric: "Edit form is prefilled and visually matches the create form" }
+autonomy: gated         # optional; inherits the capability default
+links: { issue: ISS-123, pr: PR-45, supersedes: [], related: [] }
+notes: ""
 ```
+
+### ID scheme — readable, dotted, hierarchy-encoding
+
+The `id` is the **authoritative identity** (the file path is organizational; if they
+diverge, `id` wins). It is a **dotted slug** whose depth equals the kind:
+capability = `recipes` (1 segment), feature = `recipes.recipe-detail` (2), spec =
+`recipes.recipe-detail.edit-button` (3). The **parent is the id with its last
+segment removed** — so no separate `capability:`/`feature:` fields to keep in sync.
+Type comes from `kind`, never from a prefix.
+
+Readable slugs beat opaque IDs here because these files are **human-reviewed in
+git** — the tradeoff is that a rename/move changes the id and its references. That's
+acceptable precisely because **Evolve maintains its own specs**: a rename is a
+mechanical, atomic refactor it performs in one commit (re-id the moved subtree +
+update every `links`/`related`/test reference). Renames are rare; the maintainer
+isn't doing them by hand.
+
+### File layout under `specs/`
+
+```
+specs/
+  <capability>/
+    _capability.yaml                # the Capability record
+    <feature>/
+      _feature.yaml                 # the Feature record
+      <spec>.yaml                   # one Specification each
+```
+
+The marker files (`_capability.yaml` / `_feature.yaml`) sort first and hold the
+parent records; every other `*.yaml` in a feature dir is a spec. A spec that belongs
+to no particular screen lives under a catch-all feature (e.g. `recipes/core/`).
+Evolve is itself a capability (`specs/evolve/…`, the recursive bootstrap, §11) and
+coexists with the design docs in the same tree — the `kind:` contract disambiguates.
+
+### Lifecycle & the `main` invariant
+
+```
+proposed → approved → implementing → in-review → live → deprecated
+   │           │                         │
+ (draft)   (Gate 1)                   (Gate 2)
+```
+
+`proposed → approved` is **Gate 1** (intent); `in-review → live` is **Gate 2**
+(result). The variance fast-path (§8) jumps `approved → implementing` without
+re-drafting. Two terminal off-ramps — `rejected` and `parked` — exist **only in the
+DB**, never as committed files.
+
+**Invariant: `main` only ever holds `state: live` or `deprecated`.** All the
+in-flight states exist only on feature branches and in the DB projection — because a
+spec, its code, and its tests **merge as one atomic unit** (§4), so by the time a
+spec reaches `main` it is satisfied (`live`) or intentionally retired
+(`deprecated`). This makes "is the repo self-consistent?" a one-line check.
+
+### What is deliberately NOT in the file
+
+Files carry **intent**; the DB and git carry **runtime + history**. So a spec file
+has **no** `created`/`updated` timestamps (git is the history — `git log specs/recipes/`),
+**no** per-test pass/fail status (runtime state, a DB projection), and **no** content
+checksum (the loader computes it at boot for variance tracking). This keeps the
+file a clean declaration that diffs cleanly.
+
+### Loader validation (boot, files → DB)
+
+The files→DB scan (§4) rejects a malformed corpus rather than projecting it:
+
+- **id ↔ kind ↔ path** agree (depth matches kind; id mirrors the path slugs).
+- **parent exists** — a feature's capability and a spec's feature resolve.
+- **ids are unique** across the corpus.
+- **`main` carries only `live`/`deprecated`** (the invariant above).
+- **`implements` paths exist** (a dangling path is flagged drift, not a hard fail).
+- **specs have ≥1 test** — zero is allowed but recorded as an `untested` variance
+  (per §3, a spec with no test yet *is* a variance signal).
+- **structural interop** — no two `live` specs claim contradictory behavior on the
+  same route / entity prefix / `implements` target (the §6 interop agent's
+  deterministic layer; semantic conflicts are flagged, not blocked).
 
 ---
 
@@ -800,8 +919,10 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   prioritize → review fan-out → Gate 1 → implement+test on box 2 → Gate 2 → merge →
   re-sync, plus the variance fast-path. Next: refine it, then attach C/F/S state to
   each step + name which agent owns each transition.
-- **Spec-file schema** — finalize fields, ID scheme, and the file layout under
-  `specs/`.
+- **Spec-file schema — FINALIZED** (§4): the three `kind:` records, dotted
+  hierarchy-encoding readable IDs, the `specs/<cap>/<feat>/<spec>.yaml` layout, the
+  `main`-only-holds-`live`/`deprecated` invariant, and loader validation. Remaining:
+  author a JSON-Schema/validator and wire it into the boot files→DB scan.
 - **Git topology box1↔box2** — local remote vs GitHub branches; box-2 reset.
 - **Issues app** — final UI/designation, and GitHub-issue sync on the canonical
   instance.
@@ -835,3 +956,10 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   expensive LLM agents that run as bounded subprocesses (data).
 - **Process-instance** — one C/F/S work-item's durable, resumable position in the
   SDLC graph (with a transition log); the BPM "instance."
+- **`kind`** — the top-level field (`capability` | `feature` | `specification`)
+  that marks a YAML file as a C/F/S record; the loader's contract for what to
+  ingest under `specs/`.
+- **`implements`** — the list of code paths a Specification governs; scopes both
+  variance detection and interop locality.
+- **`main` invariant** — committed `main` only ever holds `live` or `deprecated`
+  specs; all in-flight lifecycle states live on branches / in the DB.
