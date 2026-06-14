@@ -460,6 +460,22 @@ def seed_meals_extra():
             "mlog-" + uuid.uuid4().hex[:8], _ds(-(i + 1)), d, logged_by="admin", meal_type=types[i % 3]))
 
 
+def seed_bounties_complete():
+    from apps.bounties import store as bs
+    from app_platform.db import fetch_all_in_schema
+    try:
+        rows = fetch_all_in_schema("app_bounties",
+                                   "SELECT id FROM bounties WHERE status='open' ORDER BY created_at LIMIT 12")
+    except Exception as e:
+        print(f"    (bounties read failed: {e})"); rows = []
+    kids = ["tyler", "katie"]
+    for i, r in enumerate(rows):
+        def go(bid=r["id"], kid=kids[i % 2]):
+            bs.submit_bounty(bid, kid)          # kid claims it
+            bs.approve_bounty(bid, "david")     # parent approves -> status=approved -> leaderboard + balance
+        _try("bounty_completions", go)
+
+
 SEEDERS = {
     "weather": seed_weather, "lists": seed_lists, "todo": seed_todo, "auto": seed_auto,
     "recipes": seed_recipes, "meals": seed_meals, "reminders": seed_reminders,
@@ -468,6 +484,7 @@ SEEDERS = {
     # fill-empty-tabs (additive; safe to run alone via --only)
     "home": seed_home, "medical_extra": seed_medical_extra, "auto_extra": seed_auto_extra,
     "bounties_extra": seed_bounties_extra, "meals_extra": seed_meals_extra,
+    "bounties_complete": seed_bounties_complete,
 }
 
 
