@@ -1,7 +1,7 @@
 kind: specification
 id: evolve.process-engine.walk-step
 title: Advancing an instance dispatches node work and applies gateway logic
-state: proposed
+state: live
 behavior: >
   On each tick the engine advances ready instances. For an `agent` node it dispatches
   the agent (as a job, EVOLVE.md §7); for a `system` node it runs the deterministic
@@ -13,7 +13,7 @@ behavior: >
 implements:
   - apps/evolve/engine/walker.py
 tests:
-  - { type: unit, path: tests/evolve/process-engine/test_walk_step.py }
+  - { type: unit, path: tests/evolve/process_engine/test_engine.py }
 autonomy: hands-on
 links: { related: [evolve.process-engine.instance-state, evolve.agents] }
 notes: "The orchestrator runs as a thinking domain (EVOLVE.md §7)."

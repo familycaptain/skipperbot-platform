@@ -1,7 +1,7 @@
 kind: specification
 id: evolve.cfs-store.boot-sync
 title: Boot scans specs/** into the DB projection
-state: proposed
+state: live
 behavior: >
   On startup, Evolve scans specs/**/*.yaml, ingests every file whose top-level
   `kind` is capability|feature|specification, checksums each, and upserts it into the
@@ -13,7 +13,7 @@ implements:
   - apps/evolve/store.py
   - apps/evolve/migrations/001_cfs_tables.sql
 tests:
-  - { type: unit, path: tests/evolve/cfs-store/test_boot_sync.py }
+  - { type: unit, path: tests/evolve/cfs_store/test_boot_sync.py }
 autonomy: hands-on
 links: { related: [evolve.cfs-store.edit-serialize] }
 notes: "Files→DB direction. The reverse (DB→files) is evolve.cfs-store.edit-serialize."

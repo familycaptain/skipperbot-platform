@@ -1,6 +1,6 @@
 kind: feature
 id: evolve.cfs-store
 title: C/F/S store — files are truth, the DB is a projection
-state: proposed
+state: live
 links: {}
 notes: "Implements EVOLVE.md §4. Deterministic substrate (no LLM) — build this first."

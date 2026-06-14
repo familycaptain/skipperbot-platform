@@ -1,7 +1,7 @@
 kind: specification
 id: evolve.process-engine.mermaid-render
 title: Render the Mermaid view with an instance's current node highlighted
-state: proposed
+state: live
 behavior: >
   The engine renders the process model as Mermaid (the same shape as
   specs/evolve/sdlc.md) and can highlight the current node of any process-instance, so
@@ -10,7 +10,7 @@ behavior: >
 implements:
   - apps/evolve/engine/mermaid.py
 tests:
-  - { type: unit, path: tests/evolve/process-engine/test_mermaid_render.py }
+  - { type: unit, path: tests/evolve/process_engine/test_engine.py }
 autonomy: hands-on
 links: { related: [evolve.app-ui] }
 notes: "sdlc.md is the static generated view; this spec is the live per-instance render."

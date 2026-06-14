@@ -15,16 +15,14 @@ def _records(root, repo):
 
 
 class TestRealTreeVariance(unittest.TestCase):
-    def test_missing_impl_reported_for_unbuilt_specs(self):
+    def test_built_substrate_is_reconciled(self):
+        # The cfs-store + process-engine specs are now `live` and their code exists,
+        # so the real tree should report ZERO missing-impl (full reconciliation).
+        # (Negative detection is covered by TestSyntheticVariance below.)
         recs = _records(SPECS, REPO)
         vs = variance.detect(recs, repo_root=REPO)
-        reasons = {v.reason for v in vs}
-        # at least the not-yet-built engine files should be missing
-        self.assertIn(variance.MISSING_IMPL, reasons)
-        # built files (this very module) must NOT be reported missing
-        missing = {v.detail for v in vs if v.reason == variance.MISSING_IMPL}
-        self.assertNotIn("apps/evolve/variance.py", missing)
-        self.assertNotIn("apps/evolve/schema.py", missing)
+        missing = [v for v in vs if v.reason == variance.MISSING_IMPL]
+        self.assertEqual(missing, [], f"unexpected missing-impl: {[str(v) for v in missing]}")
 
     def test_all_real_specs_have_tests_or_are_flagged(self):
         recs = _records(SPECS, REPO)

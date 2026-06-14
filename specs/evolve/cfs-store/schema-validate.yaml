@@ -1,7 +1,7 @@
 kind: specification
 id: evolve.cfs-store.schema-validate
 title: The loader validates the C/F/S corpus before projecting it
-state: proposed
+state: live
 behavior: >
   The files→DB scan rejects a malformed corpus rather than projecting it: id↔kind↔path
   agree (depth matches kind, id mirrors the path slugs); a spec's feature and a
@@ -13,7 +13,7 @@ implements:
   - apps/evolve/schema.py
   - apps/evolve/store.py
 tests:
-  - { type: unit, path: tests/evolve/cfs-store/test_schema_validate.py }
+  - { type: unit, path: tests/evolve/cfs_store/test_schema_validate.py }
 autonomy: hands-on
 links: { related: [evolve.agents] }
 notes: >

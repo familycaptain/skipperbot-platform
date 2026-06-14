@@ -1,7 +1,7 @@
 kind: specification
 id: evolve.cfs-store.variance-detect
 title: A spec is in variance when its tests fail, are missing, or its code drifted
-state: proposed
+state: live
 behavior: >
   Evolve computes, per spec, whether it is satisfied. A spec is in variance if any
   bound test is failing, if it has no test yet (`untested`), or if one of its
@@ -11,7 +11,7 @@ behavior: >
 implements:
   - apps/evolve/variance.py
 tests:
-  - { type: unit, path: tests/evolve/cfs-store/test_variance_detect.py }
+  - { type: unit, path: tests/evolve/cfs_store/test_variance.py }
 autonomy: hands-on
 links: { related: [evolve.process-engine.instance-state] }
 notes: "Mostly mechanical (tests + checksums); the agentic fallback is the variance-detect / spec-audit agents."

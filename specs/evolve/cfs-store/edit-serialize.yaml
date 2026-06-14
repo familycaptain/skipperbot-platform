@@ -1,7 +1,7 @@
 kind: specification
 id: evolve.cfs-store.edit-serialize
 title: A DB edit serializes back to its YAML file on the same branch
-state: proposed
+state: live
 behavior: >
   When an agent or the human changes a C/F/S record, Evolve writes the DB row AND
   serializes it back to its YAML file in the box-1 workspace checkout, committing it
@@ -12,7 +12,7 @@ behavior: >
 implements:
   - apps/evolve/store.py
 tests:
-  - { type: unit, path: tests/evolve/cfs-store/test_edit_serialize.py }
+  - { type: unit, path: tests/evolve/cfs_store/test_store.py }
 autonomy: hands-on
 links: { related: [evolve.cfs-store.boot-sync] }
 notes: ""
