@@ -236,20 +236,49 @@ the maintainer's canonical specs.
 
 ### Intake sources & triage
 
-- **Issues (intent).** An agent uses the existing C/F/S (= current known/desirable
-  state) to decide: is this a *bug* we should fix, or actually a *new feature
-  request*? If a feature, a **vision-fit agent** decides whether it fits Skipper's
-  vision (see the charter, §9) — with **guardrails for how far it can go without
-  human intervention.** (Example: "after entering an auto issue you can't edit it —
-  there should be an Edit button" → agent agrees, good UX → proposes a spec.)
-- **PRs (code coming in).** Treat an incoming PR as a **high-signal feature
-  request that happens to ship a reference implementation — not code to merge
-  verbatim.** Security/arch agents evaluate intent + blast radius against the
-  canonical C/F/S; if good, it becomes a **spec change**, and Evolve implements it
-  *canonically* (reusing the PR's clean parts, rewriting the rest), validates,
-  and lands a commit on top of — or in place of — the PR, with the C/F/S now
-  complete. A sloppy PR with a great idea still helps; code quality and the single
-  source of truth are protected.
+Three intake **sources**, but **one pipeline and one gate** — they all converge on
+the same artifact (proposed C/F/S changes) and the same Gate 1. Sources plural,
+pipeline singular.
+
+1. **Reactive — requests (issues).** An agent uses the existing C/F/S (= current
+   known/desirable state) to decide: is this a *bug* we should fix, or actually a
+   *new feature request*? If a feature, a **vision-fit agent** decides whether it
+   fits Skipper's vision (see the charter, §9) — with **guardrails for how far it
+   can go without human intervention.** (Example: "after entering an auto issue you
+   can't edit it — there should be an Edit button" → agent agrees, good UX →
+   proposes a spec.)
+2. **Reactive — contributions (PRs).** Treat an incoming PR as a **high-signal
+   feature request that happens to ship a reference implementation — not code to
+   merge verbatim.** Security/arch agents evaluate intent + blast radius against
+   the canonical C/F/S; if good, it becomes a **spec change**, and Evolve
+   implements it *canonically* (reusing the PR's clean parts, rewriting the rest),
+   validates, and lands a commit on top of — or in place of — the PR, with the
+   C/F/S now complete. A sloppy PR with a great idea still helps; code quality and
+   the single source of truth are protected.
+3. **Proactive — design/vision (design agents).** Intake isn't only reactive.
+   **Design agents** look at the current C/F/S + the charter (home/family OS) and
+   propose **what *should* exist that nobody asked for** — "what would a family
+   need?" They emit Capabilities, Features, *or* Specifications (they can deepen
+   existing capabilities, not just propose new apps — "this flow has no undo,"
+   "Recipes has no meal-plan view"). Just another Hermes-style specialist (a
+   "product visionary for a family OS") on a cadence, like the PM domain, feeding
+   the same proposal queue — no new machinery.
+   - **Charter does double duty:** it's both the *filter* for reactive intake and
+     the *generative seed* for this lane.
+   - **Ground it in signal, not free-association:** strongest when it **synthesizes
+     the actual request stream** (clusters of similar asks → a latent capability),
+     finds **C/F/S coverage gaps**, and looks at usage — not when it invents from a
+     blank page.
+   - **Guardrail (important):** this lane is the most likely to violate "protect
+     the maintainer's attention." A generative agent can produce infinite
+     "wouldn't it be cool if…" and flood Gate 1. So it must be **high-bar and
+     selective** — a periodic *design review* surfacing a small curated set with
+     explicit reasoning (what need, why it fits), not a firehose. Net-new
+     *direction* is exactly where human judgment matters most, so proactive
+     proposals stay **lower-autonomy / always hard-gated** (a bug fix can run more
+     autonomously; "add a family-finance app" never should). The design agent may
+     *propose* charter changes, but **the human owns the vision** — it never
+     silently expands what Skipper is.
 
 ### The Issues app
 
