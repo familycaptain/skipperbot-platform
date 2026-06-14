@@ -1,0 +1,132 @@
+"""The agent roster (EVOLVE.md §6) as typed AgentSpecs.
+
+Each agent is single-responsibility: a curated system prompt (prompts/<name>.md) +
+a JSON-schema output contract. The roster is data — add an agent by adding an entry
+here + a prompt file; the runner + engine pick it up with no other change (the
+"scales to any N agents" property, §6).
+"""
+from __future__ import annotations
+
+from apps.evolve.agents.base import AgentSpec
+
+
+def _obj(props: dict, required: list[str]) -> dict:
+    return {"type": "object", "properties": props, "required": required,
+            "additionalProperties": False}
+
+
+_STR = {"type": "string"}
+_BOOL = {"type": "boolean"}
+
+
+def _arr(items: dict) -> dict:
+    return {"type": "array", "items": items}
+
+
+# --------------------------------------------------------------------------- #
+# Output schemas
+# --------------------------------------------------------------------------- #
+TRIAGE_OUT = _obj({
+    "kind": {"type": "string", "enum": ["bug", "feature"]},
+    "duplicate_of": _STR,                         # "" if none
+    "touches_cfs": _arr(_STR),                    # candidate C/F/S ids
+    "rationale": _STR,
+}, ["kind", "rationale"])
+
+VISION_OUT = _obj({
+    "verdict": {"type": "string", "enum": ["fits", "off-vision", "needs-charter-change"]},
+    "rationale": _STR,
+}, ["verdict", "rationale"])
+
+SPEC_AUTHOR_OUT = _obj({
+    "capability": _STR, "feature": _STR, "spec_id": _STR,
+    "title": _STR, "behavior": _STR,
+    "implements": _arr(_STR),
+    "tests": _arr(_obj({"type": _STR, "path": _STR, "rubric": _STR}, ["type"])),
+    "notes": _STR,
+}, ["spec_id", "behavior"])
+
+SPEC_AUDIT_OUT = _obj({
+    "sound": _BOOL,
+    "findings": _arr(_obj({
+        "category": {"type": "string",
+                     "enum": ["cardinality", "missing-state", "ambiguous-resolution",
+                              "untestable", "unstated-precondition", "other"]},
+        "detail": _STR,
+        "severity": {"type": "string", "enum": ["low", "med", "high"]},
+    }, ["category", "detail", "severity"])),
+}, ["sound", "findings"])
+
+INTEROP_OUT = _obj({
+    "conflicts": _arr(_obj({"with_spec": _STR, "kind": _STR, "detail": _STR},
+                           ["with_spec", "detail"])),
+}, ["conflicts"])
+
+REVIEW_OUT = _obj({
+    "concerns": _arr(_obj({"severity": {"type": "string", "enum": ["low", "med", "high"]},
+                           "detail": _STR}, ["severity", "detail"])),
+    "approve": _BOOL,
+}, ["approve", "concerns"])
+
+PRIORITIZE_OUT = _obj({
+    "score": {"type": "number"},
+    "decision": {"type": "string", "enum": ["surface", "park"]},
+    "rationale": _STR,
+}, ["score", "decision", "rationale"])
+
+DESIGN_OUT = _obj({
+    "proposals": _arr(_obj({"title": _STR, "capability": _STR, "need": _STR,
+                            "rationale": _STR}, ["title", "need"])),
+}, ["proposals"])
+
+PACKET_OUT = _obj({
+    "summary": _STR, "risk": {"type": "string", "enum": ["low", "med", "high"]},
+    "test_summary": _STR,
+}, ["summary", "risk"])
+
+
+# --------------------------------------------------------------------------- #
+# The roster
+# --------------------------------------------------------------------------- #
+ROSTER: dict[str, AgentSpec] = {
+    "triage": AgentSpec(
+        "triage", "Classify a work item (bug vs feature), dedup, link to C/F/S.",
+        TRIAGE_OUT, prompt_file="triage.md", tier="fast"),
+    "vision-fit": AgentSpec(
+        "vision-fit", "Judge a feature against the charter + Capability scope.",
+        VISION_OUT, prompt_file="vision-fit.md", tier="smart"),
+    "spec-author": AgentSpec(
+        "spec-author", "Turn accepted intent into a C/F/S record + bound tests.",
+        SPEC_AUTHOR_OUT, prompt_file="spec-author.md", tier="smart"),
+    "spec-audit": AgentSpec(
+        "spec-audit", "Critique a single spec for gaps/holes/naive assumptions.",
+        SPEC_AUDIT_OUT, prompt_file="spec-audit.md", tier="smart"),
+    "interop": AgentSpec(
+        "interop", "Detect spec-vs-spec conflicts (is the desired state satisfiable?).",
+        INTEROP_OUT, prompt_file="interop.md", tier="smart"),
+    "security": AgentSpec(
+        "security", "Review a change for vulnerabilities + supply-chain risk.",
+        REVIEW_OUT, tier="smart"),
+    "architecture": AgentSpec(
+        "architecture", "Review system fit: boundaries, the one-directional dep rule.",
+        REVIEW_OUT, tier="smart"),
+    "ux": AgentSpec(
+        "ux", "Review UX/UI quality + cross-app consistency.",
+        REVIEW_OUT, tier="smart"),
+    "prioritize": AgentSpec(
+        "prioritize", "Score a proposal onto one ranked queue; surface or park.",
+        PRIORITIZE_OUT, prompt_file="prioritize.md", tier="fast"),
+    "design": AgentSpec(
+        "design", "Propose new Capabilities/Features grounded in charter + gaps.",
+        DESIGN_OUT, prompt_file="design.md", tier="smart"),
+    "code-audit": AgentSpec(
+        "code-audit", "Read code for logic bugs, edge cases, security smells, dead code.",
+        SPEC_AUDIT_OUT, tier="smart"),
+    "review-packet": AgentSpec(
+        "review-packet", "Assemble the pre-digested Gate-2 review packet.",
+        PACKET_OUT, tier="fast"),
+}
+
+
+def get(name: str) -> AgentSpec | None:
+    return ROSTER.get(name)
