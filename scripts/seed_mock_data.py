@@ -37,10 +37,10 @@ except ImportError:
 # `admin` is the operator login (admin + primary); the rest are the mock family
 # that owns the seeded data.
 MEMBERS = [
-    ("admin", "Admin", "admin,primary"),
-    ("david", "David", "member"),
-    ("maria", "Maria", "member"),
-    ("tyler", "Tyler", "member"),
+    ("admin", "Admin", "admin,primary"),       # operator / household owner
+    ("david", "David", "member,parent"),        # parents
+    ("maria", "Maria", "member,parent"),
+    ("tyler", "Tyler", "member"),               # kids
     ("katie", "Katie", "member"),
 ]
 
@@ -55,11 +55,12 @@ def _bump(app: str, n: int = 1):
 
 
 def seed_members():
-    from data_layer.users import create_user, get_user, update_password
+    from data_layer.users import create_user, get_user, update_password, update_role
     for name, display, role in MEMBERS:
         if get_user(name):
-            update_password(name, _pw(name))      # ensure the standard password (idempotent)
-            _bump("members_pw_set")
+            update_password(name, _pw(name))      # keep standard password + role in sync (idempotent)
+            update_role(name, role)
+            _bump("members_synced")
         else:
             create_user(name, display, password=_pw(name), role=role)
             _bump("members")
