@@ -188,15 +188,85 @@ the SDK is the robust embedding path.
 Following the **Hermes Agent** pattern: **multiple specialized "agents," each a
 well-curated prompt document with a single focused job** — analogous to today's PM
 thinking domain (focused on good project-management practice). Each has tooling to
-drive the Agent SDK. Roles include:
+drive the Agent SDK.
 
-- **Security agent** — reviews incoming PRs for vulnerabilities / malicious code.
-- **Architecture agent** — big-picture fit: how a request plays into the
-  architecture, how apps interact, how the platform interacts with apps,
-  downstream impacts.
-- **UX/UI agent** — good UX/UI design.
-- **Implementation agent(s)** — the actual coding.
-- **Acceptance-test / validation agent** — runs and judges the spec's tests.
+### The complete agent roster
+
+The full decomposition, by pipeline stage. (v1 — the thin Evolve — collapses many
+of these into a few: e.g. one triage+spec-authoring agent, one review agent, one
+implement+test agent. The list below is the *target* decomposition; each becomes
+its own curated prompt doc as Evolve thickens itself.)
+
+**Intake & triage**
+- **Triage agent** — classify an incoming issue (bug vs. feature request), dedup
+  against open items, and link it to the C/F/S it touches. (Applied to PRs too, to
+  read the contribution's *intent*.)
+- **Vision-fit agent** — judge whether a feature request fits the **charter**;
+  reject/park off-vision asks before they consume the pipeline.
+- **Design (product-visionary) agent** — the *proactive* intake lane: propose new
+  Capabilities/Features grounded in the charter, request clusters, and C/F/S
+  coverage gaps ("what would a family need?").
+- **Spec-authoring agent** — turn accepted intent (issue / PR / design idea) into
+  structured **C/F/S records**: the behavior statement + the bound acceptance
+  tests. (The "draft the requirement" function.)
+
+**Review & consistency**
+- **Security agent** — scan changes (especially incoming PRs) for vulnerabilities,
+  malicious code, and supply-chain risk.
+- **Architecture agent** — system fit: app interactions, platform↔app boundaries,
+  downstream impacts, the one-directional dependency rule.
+- **Interoperability / consistency agent** — spec-vs-spec conflict detection — "is
+  the desired state *satisfiable*?" (detailed below).
+- **UX/UI agent** — good UX/UI design and consistency across apps.
+
+**Prioritization**
+- **Prioritization (backlog-PM) agent** — score every proposal across all lanes
+  onto **one ranked queue**; surface the top-N; park/auto-decline the long tail
+  (never safety-critical); learn the maintainer's taste over time.
+
+**Implementation & validation**
+- **Implementation (coding) agent** — write the code that converges the codebase to
+  the approved spec, on the box-1 workspace feature branch.
+- **Test-authoring agent** — write/update the spec's bound acceptance tests
+  (deterministic Playwright/unit + agentic rubrics).
+- **Validation agent** — run the tests on **box 2** (Playwright against box 2's
+  URL), judge the agentic rubrics, capture pass/fail + screenshots, and drive the
+  fix→retest loop (to green or to escalation).
+
+**Reconciliation & housekeeping**
+- **Spec-extraction (reverse-engineering) agent** — read existing code → draft/
+  refresh baseline C/F/S. This is the **bootstrap** engine (avoids hand-writing
+  thousands of specs) *and* how a directly-merged PR gets re-baselined into specs.
+- **Variance / drift detector** — find specs whose tests fail or whose code has
+  drifted from the spec; queue reconciliation. (Mostly **mechanical** — tests +
+  checksums — with an agentic fallback.)
+- **Review-packet agent** — assemble the pre-digested **Gate-2 packet** (diff +
+  spec change + test results + screenshots + plain-language summary). (Lightweight;
+  may just be the orchestrator.)
+
+**Orchestration**
+- **Evolve-core orchestrator** — the Evolve thinking domain itself: the conductor
+  that routes items through the pipeline, manages C/F/S **state transitions**,
+  spawns the specialists above, and enforces **budgets, the two gates, and the
+  Evolve-core hands-on guardrail**.
+
+**On the interoperability agent specifically:** a desired-state system is only
+reconcilable if the desired state is *internally consistent* — if two specs
+contradict, no code satisfies both and Evolve thrashes forever. It is the natural
+complement to the test binding: **tests catch "code doesn't match a spec"; interop
+catches "two specs can't both be true,"** at the requirements level *before* any
+implementation (the cheapest place). Two layers, like tests: **structural/mechanical**
+conflicts are deterministic and can hard-block (two specs claiming the same route /
+entity prefix / `implements` line with contradictory behavior, duplicate IDs);
+**semantic/behavioral** conflicts are agentic and get *flagged* for resolution, not
+auto-blocked (false-positive risk). Run it **at proposal time** (check a proposal
+against the corpus before Gate 1 → "this contradicts spec X, resolve first") **and
+on a periodic full-corpus sweep** (catch drift). **Scope by locality, not N²** —
+bound the search to same Capability/Feature, specs sharing `implements` files,
+shared entity types/routes, and declared cross-app links; the platform's
+one-directional dependency rule (apps→platform, never app→app) shrinks the surface.
+This also sharpens the architecture agent's boundary: arch = "does this fit the
+system / downstream impacts"; interop = "do the specs logically coexist."
 
 These are separate functions needing very specific prompt guidance. (The agent
 swarm itself is later C/F/S that a thin Evolve helps build — see §10.)
@@ -354,8 +424,9 @@ and an explicit **give-up-and-escalate** path so autonomous loops can't thrash.
 ### Full cycle, end to end
 
 ```
-issue / PR
-  → agents triage + judge fit + propose spec change
+issue / PR / proactive design proposal          (three intake sources)
+  → triage + vision-fit + security/arch + interop conflict-check + author spec change
+  → prioritize (backlog PM): rank across all lanes → top-N reach the human
   → GATE 1 (human approves intent)
   → serialize spec → file  +  implement code  +  write/adjust tests   (feature branch, box-1 workspace)
   → box 2 pulls/restarts → run the spec's tests (loop-to-green or escalate)
@@ -483,4 +554,8 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
 - **Gate 1 / Gate 2** — approve the intent/spec / approve the built-and-tested
   result.
 - **Charter** — the curated "what Skipper is and isn't" doc the vision-fit agent
-  judges against.
+  judges against (and the design agent generates from).
+- **Interoperability agent** — detects spec-vs-spec conflicts (two specs that can't
+  both be true / can't coexist); the "is the desired state satisfiable?" guard.
+- **Backlog-PM agent** — the prioritizer: ranks all proposals onto one queue and
+  cuts the long tail so only the top-N reach the human.
