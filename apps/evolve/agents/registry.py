@@ -101,45 +101,49 @@ VALIDATE_OUT = _obj({
 # --------------------------------------------------------------------------- #
 # The roster
 # --------------------------------------------------------------------------- #
+# Model-tier policy (operator directive): reasoning + code-acting agents run on
+# Opus 4.8 (`deep`) — thoughts/judgment/code need the strongest model. Haiku (`fast`)
+# is reserved for small, discrete tasks only (triage classify, packet assembly). The
+# `smart`/Sonnet tier stays defined but is currently unused.
 ROSTER: dict[str, AgentSpec] = {
     "triage": AgentSpec(
         "triage", "Classify a work item (bug vs feature), dedup, link to C/F/S.",
         TRIAGE_OUT, prompt_file="triage.md", tier="fast"),
     "vision-fit": AgentSpec(
         "vision-fit", "Judge a feature against the charter + Capability scope.",
-        VISION_OUT, prompt_file="vision-fit.md", tier="smart",
+        VISION_OUT, prompt_file="vision-fit.md", tier="deep",
         charter_keys=["thesis", "non-goals", "scope"]),
     "spec-author": AgentSpec(
         "spec-author", "Turn accepted intent into a C/F/S record + bound tests.",
-        SPEC_AUTHOR_OUT, prompt_file="spec-author.md", tier="smart",
+        SPEC_AUTHOR_OUT, prompt_file="spec-author.md", tier="deep",
         charter_keys=["thesis", "surfaces"]),
     "spec-audit": AgentSpec(
         "spec-audit", "Critique a single spec for gaps/holes/naive assumptions.",
-        SPEC_AUDIT_OUT, prompt_file="spec-audit.md", tier="smart",
+        SPEC_AUDIT_OUT, prompt_file="spec-audit.md", tier="deep",
         charter_keys=["surfaces"]),
     "interop": AgentSpec(
         "interop", "Detect spec-vs-spec conflicts (is the desired state satisfiable?).",
-        INTEROP_OUT, prompt_file="interop.md", tier="smart"),
+        INTEROP_OUT, prompt_file="interop.md", tier="deep"),
     "security": AgentSpec(
         "security", "Review a change for vulnerabilities + supply-chain risk.",
-        REVIEW_OUT, prompt_file="security.md", tier="smart", charter_keys=["non-goals"]),
+        REVIEW_OUT, prompt_file="security.md", tier="deep", charter_keys=["non-goals"]),
     "architecture": AgentSpec(
         "architecture", "Review system fit: boundaries, the one-directional dep rule.",
-        REVIEW_OUT, prompt_file="architecture.md", tier="smart", charter_keys=["is", "surfaces"]),
+        REVIEW_OUT, prompt_file="architecture.md", tier="deep", charter_keys=["is", "surfaces"]),
     "ux": AgentSpec(
         "ux", "Review UX/UI quality + cross-app consistency.",
-        REVIEW_OUT, prompt_file="ux.md", tier="smart", charter_keys=["surfaces"]),
+        REVIEW_OUT, prompt_file="ux.md", tier="deep", charter_keys=["surfaces"]),
     "prioritize": AgentSpec(
         "prioritize", "Score a proposal onto one ranked queue; surface or park.",
-        PRIORITIZE_OUT, prompt_file="prioritize.md", tier="fast",
+        PRIORITIZE_OUT, prompt_file="prioritize.md", tier="deep",
         charter_keys=["thesis"]),
     "design": AgentSpec(
         "design", "Propose new Capabilities/Features grounded in charter + gaps.",
-        DESIGN_OUT, prompt_file="design.md", tier="smart",
+        DESIGN_OUT, prompt_file="design.md", tier="deep",
         charter_keys=["thesis", "scope", "surfaces", "non-goals"]),
     "code-audit": AgentSpec(
         "code-audit", "Read code for logic bugs, edge cases, security smells, dead code.",
-        SPEC_AUDIT_OUT, prompt_file="code-audit.md", tier="smart", charter_keys=["non-goals"]),
+        SPEC_AUDIT_OUT, prompt_file="code-audit.md", tier="deep", charter_keys=["non-goals"]),
     "review-packet": AgentSpec(
         "review-packet", "Assemble the pre-digested Gate-2 review packet.",
         PACKET_OUT, prompt_file="review-packet.md", tier="fast"),
@@ -153,11 +157,11 @@ ROSTER: dict[str, AgentSpec] = {
         charter_keys=["surfaces"], skills=["cfs-validate", "run-evolve-tests"]),
     "test-author": AgentSpec(
         "test-author", "Write/update a spec's bound acceptance tests.",
-        TEST_AUTHOR_OUT, prompt_file="test-author.md", tier="smart", requires_tools=True,
+        TEST_AUTHOR_OUT, prompt_file="test-author.md", tier="deep", requires_tools=True,
         skills=["run-evolve-tests"]),
     "validate": AgentSpec(
         "validate", "Run a spec's bound tests on box 2 and judge the result.",
-        VALIDATE_OUT, prompt_file="validate.md", tier="smart", requires_tools=True,
+        VALIDATE_OUT, prompt_file="validate.md", tier="deep", requires_tools=True,
         skills=["run-evolve-tests"]),
 }
 

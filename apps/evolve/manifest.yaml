@@ -45,17 +45,17 @@ config:
     type: string
     default: "claude-haiku-4-5-20251001"
     label: "Evolve model — fast tier"
-    description: "Claude model for cheap/high-volume agents (triage, prioritize, packet)."
+    description: "Small, discrete tasks only (triage classify, review-packet assembly)."
   - key: model_smart
     type: string
     default: "claude-sonnet-4-6"
     label: "Evolve model — smart tier"
-    description: "Claude model for the reasoning agents (spec-author, reviews, spec-audit)."
+    description: "Middle tier — defined but currently unused (reasoning runs on deep)."
   - key: model_deep
     type: string
     default: "claude-opus-4-8"
     label: "Evolve model — deep tier"
-    description: "Claude model for the hardest tasks (reserved; not used by default)."
+    description: "Reasoning + code-acting agents (the default for most of the swarm): vision-fit, spec-author, spec-audit, reviews, prioritize, design, implement, test-author, validate."
   - key: cycle_budget_usd
     type: string
     default: "5.00"
