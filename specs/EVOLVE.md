@@ -297,7 +297,14 @@ environment — a controlled, throwaway sandbox where we can run
 key reframe: since the VM is disposable, **the safety question isn't "protect the
 dev box," it's "gate what reaches `main`."**
 
-Three separate roles, so no instance ever mutates the code it's running on:
+Three separate roles, so no instance ever mutates the code it's running on — **and
+the agent swarm never runs on the system under test.** This second invariant matters
+as much as the first: the swarm lives on box 1, so a broken candidate (won't boot,
+wedged migration, infinite loop, corrupted DB) can fail box 2 arbitrarily and the
+`validate` agent simply *observes* "box 2 is broken" instead of dying with it. The
+SUT's blast radius is contained to the SUT; the only thing that can break the swarm
+is a bug in box-1/`main` itself — exactly what the Evolve-core gate, box-2
+validation, and the release canary exist to keep out.
 
 - **Box 1 — the Evolution brain.** Skipper runs here (e.g. at
   `/home/rodney/skipperbot-platform`) — the stable brain, the Evolve thinking
