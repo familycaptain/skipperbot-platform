@@ -19,7 +19,7 @@ apps, reached by chat, voice, mobile, and a desktop UI over one shared agent.
 ## What Skipper *is*
 
 - **A household assistant, for multiple people.** Family members have roles,
-  per-person data, reminders, and focus. Not a single-user tool.
+  per-person data, reminders, and focus. Not designed explicitly as a single-user tool, although it does contain tools that could be valuable for an individual. 
 - **An app platform.** The core handles chat, memory, scheduling, notifications, the
   agent loop, and shared services; **app packages** (UI + tools + schema + migrations)
   add domain capabilities. Extensibility is drop-in-a-folder.
@@ -39,6 +39,41 @@ apps, reached by chat, voice, mobile, and a desktop UI over one shared agent.
   web desktop all front the one agent.
 - **Self-maintaining (Evolve).** Skipper improves its own codebase through the
   human-gated Evolve loop — this engine.
+
+## Cross-surface parity & consistency
+
+Skipper is reached through several surfaces — **web desktop UI, chat, voice, mobile,
+and Discord** — and they are not separate products. Two properties bind them:
+
+- **Parity** — *every capability is reachable from every surface.* You should be able
+  to do anything through chat that you can do in the UI, and vice versa.
+- **Consistency** — *the same action behaves the same way on every surface.* If you
+  learn to do something one way in web chat, voice should respond the same way.
+
+Why this is load-bearing, not a nicety:
+
+- **UI ⇒ chat parity forces complete tooling.** Chat is the agent calling tools, so
+  "everything in the UI is also doable in chat" means **an MCP tool must exist for all
+  functionality.** That tool coverage is what makes voice, Discord, and automation
+  work too — they all ride the same tools. A UI action with no backing tool is a gap.
+- **chat ⇒ UI affordance.** If something can be done in chat, it should also live in a
+  UI somewhere — sometimes it's just faster to click a button than to type a request.
+  A capability with no UI surface is a gap.
+- **Mobile must be first-class.** In reality **most people reach Skipper from their
+  phone.** If mobile is second-rate, the majority of the experience is diminished —
+  mobile parity is not optional polish.
+- **Voice must be first-class.** The whole point of voice is the hands-busy moment —
+  walking through the house needing something *now*, when pulling out a phone and
+  hunting for the right screen is slower than just speaking. Weak voice = a diminished
+  experience for exactly the cases voice exists to serve.
+- **Met expectations reduce friction.** Consistency across surfaces means a user's
+  learned expectations hold everywhere. Divergence — doing X in web chat, then X in
+  voice and getting something different — breaks trust and adds friction to every use.
+
+**Implication for Evolve.** A feature isn't *complete* until it has surface parity:
+spec-author should state which surfaces a behavior touches and ensure the backing
+tool exists; a missing chat tool, a missing UI affordance, or an untested mobile/voice
+path is a **variance/gap** to surface — and closing such gaps is squarely in scope.
 
 ## What Skipper is *not* (non-goals)
 
@@ -68,6 +103,8 @@ Capability's `scope`, or proposes a coherent new household Capability. Good sign
 - It serves more than one family member, or a shared household concern.
 - It works for a self-hoster who isn't the operator (no machine-specific assumptions).
 - It keeps data local and respects the privacy stance.
+- It closes a cross-surface gap — a UI action with no chat tool, a chat capability
+  with no UI button, or a flow that's broken/missing on mobile or voice.
 
 A feature is **off-charter** when it requires a central/cloud backend, publishes to
 strangers, targets a single power-user workflow over family life, gives professional
