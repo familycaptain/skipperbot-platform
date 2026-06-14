@@ -61,6 +61,11 @@ config:
     default: "5.00"
     label: "Per-cycle budget (USD)"
     description: "Hard cap on Claude spend per Evolve cycle. Stored as a string for the slider UI."
+  - key: monthly_budget_usd
+    type: string
+    default: "500"
+    label: "Monthly budget (USD) — kill-switch"
+    description: "Hard monthly cap on total Claude spend. When month-to-date spend reaches this, Evolve PAUSES (refuses new agent calls) until the next month or the cap is raised. Spend is tracked in the cost ledger (apps/evolve/cost.py)."
 
 # The orchestrator (engine/walker) is a DETERMINISTIC tick, not an LLM prompt
 # domain — it advances ready process-instances and dispatches agents as jobs.

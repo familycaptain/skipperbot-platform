@@ -136,6 +136,8 @@ class Runner:
     tiers: dict = field(default_factory=lambda: dict(MODEL_TIERS))
     charter_path: str = charter.DEFAULT_PATH   # source for per-agent charter grounding
     tool_backend: Backend | None = None        # for requires_tools agents (executes skills)
+    ledger: object | None = None               # CostLedger: record every call (measure everything)
+    monthly_limit_usd: float | None = None      # kill-switch: pause when month-to-date >= this
 
     def composed_system(self, spec: AgentSpec) -> str:
         """Role prompt + only the curated charter sections this agent declares."""
@@ -143,17 +145,27 @@ class Runner:
         base = spec.resolved_prompt()
         return base + ("\n\n" + ground if ground else "")
 
-    def run(self, agent_name: str, payload: dict, context: dict | None = None) -> AgentResult:
+    def run(self, agent_name: str, payload: dict, context: dict | None = None,
+            instance_id: str | None = None) -> AgentResult:
         spec = self.registry.get(agent_name)
         if spec is None:
             return AgentResult(agent_name, ok=False, error=f"unknown agent '{agent_name}'")
+        # monthly kill-switch: stop Evolve once month-to-date spend hits the cap
+        if self.ledger is not None and self.monthly_limit_usd is not None:
+            mtd = self.ledger.month_to_date()
+            if mtd >= self.monthly_limit_usd:
+                return AgentResult(agent_name, ok=False,
+                                   error=f"Evolve paused: monthly budget reached "
+                                         f"(${mtd:.2f} >= ${self.monthly_limit_usd:.2f})")
         if self.budget_usd is not None and self.spent_usd >= self.budget_usd:
             return AgentResult(agent_name, ok=False,
-                               error=f"budget exhausted (${self.spent_usd:.4f} >= ${self.budget_usd:.2f})")
+                               error=f"cycle budget exhausted (${self.spent_usd:.4f} >= ${self.budget_usd:.2f})")
         model = self.tiers.get(spec.tier, self.tiers["smart"])
         backend = self.tool_backend if (spec.requires_tools and self.tool_backend) else self.backend
         res = backend.run(spec, payload, context, model, self.composed_system(spec))
         self.spent_usd += res.cost_usd
+        if self.ledger is not None:
+            self.ledger.record_result(res, instance_id=instance_id)
         # validate the structured output against the agent's schema
         if res.ok and res.output is not None:
             res.schema_errors = validate_against_schema(spec.output_schema, res.output)

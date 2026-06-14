@@ -71,18 +71,23 @@ def run_build(wm: WorkspaceManager, spec_record: dict, *, implement_fn: Implemen
 # Real adapters (used once box 2 + a working repo exist; needs Claude for implement)
 # --------------------------------------------------------------------------- #
 def implement_with_agent(work_item: dict, spec_record: dict, *, model: str,
-                         skills_dir: str = ".claude/skills"):
+                         skills_dir: str = ".claude/skills", ledger=None,
+                         monthly_limit_usd: float | None = None):
     """Return an implement_fn that runs the `implement` agent (tool-use, writes ON)
-    rooted at the feature worktree."""
+    rooted at the feature worktree, THROUGH a Runner so its cost is recorded to the
+    shared ledger and the monthly kill-switch applies."""
     from apps.evolve.agents.tooluse import ToolUseBackend
+    from apps.evolve.agents.runner import Runner, FakeBackend
     from apps.evolve.agents.registry import ROSTER
 
     def _impl(feature: Feature):
-        backend = ToolUseBackend(repo_root=feature.path, skills_dir=skills_dir,
-                                 allow_writes=True, max_turns=20)
-        spec = ROSTER["implement"]
-        return backend.run(spec, {"work_item": work_item, "spec": spec_record},
-                           None, model, system=spec.resolved_prompt())
+        tb = ToolUseBackend(repo_root=feature.path, skills_dir=skills_dir,
+                            allow_writes=True, max_turns=20)
+        runner = Runner(FakeBackend({}), dict(ROSTER), tool_backend=tb,
+                        tiers={"fast": model, "smart": model, "deep": model},
+                        ledger=ledger, monthly_limit_usd=monthly_limit_usd)
+        return runner.run("implement", {"work_item": work_item, "spec": spec_record},
+                          instance_id=spec_record.get("id"))
     return _impl
 
 
