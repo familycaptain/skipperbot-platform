@@ -167,7 +167,7 @@ def _print_packet(pipe, inst, runner=None, ledger=None):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("cmd", choices=["submit", "gate1", "gate2", "show", "diff"])
+    ap.add_argument("cmd", choices=["submit", "gate1", "gate2", "show", "diff", "packet-json"])
     ap.add_argument("decision", nargs="?", default="approve")
     args = ap.parse_args()
 
@@ -196,6 +196,20 @@ def main():
             sys.exit("no feature branch yet (implement hasn't run)")
         from apps.evolve.workspace import git
         print(git(pipe.wm.repo, "diff", "release...{}".format(feat["branch"])))
+    elif args.cmd == "packet-json":
+        # Enriched review packet (adds diff + feature) — for seeding/pushing to the
+        # platform's Evolve gate queue (the UI). Prints clean JSON to stdout.
+        inst = pipe.store.load(iid)
+        pkt = pipe.packet(inst)
+        feat = inst.context.get("feature") or {}
+        if feat:
+            pkt["feature"] = feat
+            from apps.evolve.workspace import git
+            try:
+                pkt["diff"] = git(pipe.wm.repo, "diff", "release...{}".format(feat["branch"]))
+            except Exception:
+                pkt["diff"] = ""
+        print(json.dumps({"instance_id": inst.id, "gate": pkt["gate"], "packet": pkt}, default=str))
 
 
 if __name__ == "__main__":
