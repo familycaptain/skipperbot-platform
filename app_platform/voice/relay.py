@@ -114,8 +114,15 @@ _SPEAKER_AWARENESS = (
 )
 
 
-def _speaker_context_item(name: str | None) -> dict:
-    """A conversation item telling the model who is speaking this turn."""
+def _speaker_context_item(name: str | None, role: str = "user") -> dict:
+    """A conversation item telling the model who is speaking this turn.
+
+    Sent as a `user`-role item by default: the Realtime API honors mid-session
+    `system` items unreliably (they get ignored on later turns, and can even force
+    text-only replies), whereas a user item right before the response is read
+    consistently. The durable session prompt was minted before the speaker was
+    known, so this restated-every-turn note is the model's real source of identity.
+    """
     if name:
         text = (f"System note: The person now speaking has been recognized by voice as "
                 f"{name.title()}. Treat this and the following turns as {name.title()} "
@@ -128,7 +135,7 @@ def _speaker_context_item(name: str | None) -> dict:
         "type": "conversation.item.create",
         "item": {
             "type": "message",
-            "role": "system",
+            "role": role,
             "content": [{"type": "input_text", "text": text}],
         },
     }
@@ -266,7 +273,9 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                 return None
 
         async def _set_locked_identity(name: str | None, score: float, *, relock: bool) -> None:
-            """Record the locked speaker's name, tell the model + satellite, attribute turns."""
+            """Record the locked speaker's name, notify the satellite, attribute turns.
+
+            The model is told separately, every turn, by _accept_and_reply."""
             lock["name"] = name
             if name:
                 session["user_id"] = name  # tools/data/permissions follow the locked speaker
@@ -281,7 +290,8 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                     {"type": "speaker", "name": name or "", "locked": True}))
             except Exception:
                 pass
-            await _send_oai(oai, _speaker_context_item(name))
+            # The model is (re)told who's speaking by _accept_and_reply, right before
+            # each response — so identity survives across turns, not just this one.
 
         async def _adopt_name_if_unidentified(vec) -> None:
             """Still unnamed but a turn was accepted → re-check enrolled profiles.
@@ -333,6 +343,13 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             """Accept this turn: it's the locked speaker. Reply now; persist transcript."""
             last_utterance["pcm"] = pcm
             item_id = last_item.get("id")
+            # Restate who's speaking right before every reply. Identity lives only in
+            # the live conversation (the durable prompt was minted before we knew the
+            # speaker) and a one-shot note gets buried as the chat grows — so we
+            # re-assert it each turn. Skip when speaker-ID is unavailable: we'd have
+            # nothing real to assert and the "call enroll_voice" hint wouldn't work.
+            if speaker_id.available():
+                await _send_oai(oai, _speaker_context_item(lock["name"], role="user"))
             await _create_response()
             _spawn(_finalize_user_transcript(item_id))
 
@@ -386,9 +403,12 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                 lock["n"] = n + 1
                 logger.info("VOICE-RELAY: turn accepted, user_id=%s (sim %.2f) [session %s]",
                             locked_user, sim, session_id[:12])
-                await _accept_and_reply(pcm)
+                # Resolve identity BEFORE replying (awaited, not spawned) so this very
+                # turn's response already knows who they are — otherwise the reply goes
+                # out as "unidentified" and recognition always lags a turn behind.
                 if lock["name"] is None:
-                    _spawn(_adopt_name_if_unidentified(vec))
+                    await _adopt_name_if_unidentified(vec)
+                await _accept_and_reply(pcm)
             else:
                 logger.info("VOICE-RELAY: ignoring off-target voice (sim %.2f < %.2f); "
                             "session locked to user_id=%s [session %s]",
@@ -494,14 +514,29 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                             # Enrollment needs the audio, which only the relay has —
                             # use the just-spoken utterance. Handled here, not tool_runtime.
                             person = (args.get("name") or "").strip()
-                            ok = False
-                            if person and last_utterance["pcm"] and speaker_id.available():
-                                ok = await asyncio.to_thread(
-                                    speaker_id.enroll, person, last_utterance["pcm"], _SR)
-                            out = (f"Got it — I'll recognize {person}'s voice from now on."
-                                   if ok else
-                                   "I couldn't capture a clear voice sample. Make sure voice "
-                                   "recognition is set up, then say a full sentence and try again.")
+                            locked = lock["name"]
+                            if locked and person and person.lower() == locked.lower():
+                                # Already recognized as this person by voice. Don't
+                                # re-enroll every session — just confirm. Defends the
+                                # "model thinks you're a stranger" re-enroll loop even
+                                # if the model still over-calls the tool.
+                                out = (f"You're already enrolled, {person.title()} — "
+                                       "I recognize your voice.")
+                            else:
+                                ok = False
+                                if person and last_utterance["pcm"] and speaker_id.available():
+                                    ok = await asyncio.to_thread(
+                                        speaker_id.enroll, person, last_utterance["pcm"], _SR)
+                                if ok and lock["name"] is None:
+                                    # Newly enrolled mid-session → adopt the name so the
+                                    # rest of the session (tools, data, the reply) is
+                                    # attributed to them right away.
+                                    await _set_locked_identity(
+                                        person.strip().lower(), 1.0, relock=False)
+                                out = (f"Got it — I'll recognize {person}'s voice from now on."
+                                       if ok else
+                                       "I couldn't capture a clear voice sample. Make sure voice "
+                                       "recognition is set up, then say a full sentence and try again.")
                             await _apply_tool_events(oai, [
                                 {"type": "tool_result", "call_id": call_id, "output": out}])
                         else:
