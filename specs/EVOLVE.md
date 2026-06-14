@@ -62,6 +62,18 @@ the work queue, and the regression-test source. That unification is the win. You
 can "regression test all of Recipes" because the specs *are* the source of truth
 for how Recipes should behave.
 
+**Everything is permanent WIP — there is no "done."** A spec is never *ratified* or
+*finalized*; the best it ever is is **"current best understanding, and the code
+conforms."** The lifecycle is a **loop, not a funnel** — any spec, even a resting
+one, can be re-opened the moment an agent or the human decides it no longer makes
+sense. This is why the agents run continuously (not just on new requests): their
+standing job is to keep asking *"does the current state still make sense, or should
+we go a different direction?"* and to **self-correct at every step**. The human
+steers this loop occasionally (the gates, §9); the agents reconcile it constantly.
+The natural failure mode of a never-finished loop is **thrash** — re-litigating
+settled questions forever — so the human gets an explicit **"settle / leave this
+alone"** control (§10) that the audit respects for a cooldown.
+
 ---
 
 ## 3. Spec↔test binding (what makes "variance" concrete)
@@ -144,7 +156,7 @@ kind: capability
 id: recipes
 title: Recipes
 app: recipes            # app id this maps to (omit for cross-cutting capabilities)
-scope: >                # the §10 boundary field — what this is for and where it stops
+scope: >                # the §11 boundary field — what this is for and where it stops
   Meal planning and the family's recipe collection: storing recipes, the
   recipe-detail/edit flow, the weekly meal-plan view. NOT grocery-delivery
   integrations or nutrition tracking (separate capabilities if ever).
@@ -219,27 +231,37 @@ specs/
 The marker files (`_capability.yaml` / `_feature.yaml`) sort first and hold the
 parent records; every other `*.yaml` in a feature dir is a spec. A spec that belongs
 to no particular screen lives under a catch-all feature (e.g. `recipes/core/`).
-Evolve is itself a capability (`specs/evolve/…`, the recursive bootstrap, §11) and
+Evolve is itself a capability (`specs/evolve/…`, the recursive bootstrap, §12) and
 coexists with the design docs in the same tree — the `kind:` contract disambiguates.
 
-### Lifecycle & the `main` invariant
+### Lifecycle — a loop, not a funnel
 
 ```
-proposed → approved → implementing → in-review → live → deprecated
-   │           │                         │
+        ┌──────────── re-opened by audit / human / design ◀─────────┐
+        ▼                                                            │
+proposed → approved → implementing → in-review → live ──────────────┘
+   │           │                         │         (resting, not "done")
  (draft)   (Gate 1)                   (Gate 2)
 ```
 
 `proposed → approved` is **Gate 1** (intent); `in-review → live` is **Gate 2**
 (result). The variance fast-path (§8) jumps `approved → implementing` without
-re-drafting. Two terminal off-ramps — `rejected` and `parked` — exist **only in the
-DB**, never as committed files.
+re-drafting. Two off-ramps — `rejected` and `parked` — exist **only in the DB**,
+never as committed files.
 
-**Invariant: `main` only ever holds `state: live` or `deprecated`.** All the
-in-flight states exist only on feature branches and in the DB projection — because a
-spec, its code, and its tests **merge as one atomic unit** (§4), so by the time a
-spec reaches `main` it is satisfied (`live`) or intentionally retired
-(`deprecated`). This makes "is the repo self-consistent?" a one-line check.
+**`live` is a *resting* state, not a terminal one.** It means only "right now, the
+code conforms to the current best-known intent and nothing has flagged it" — never
+"ratified / settled forever" (everything is permanent WIP, §2). Any `live` spec can
+be **re-opened** at any time by the continuous spec-audit/variance sweep, by a design
+proposal, or by the human — re-entering the working states. The loop never
+terminates.
+
+**Invariant: `main` only ever holds `state: live` or `deprecated`.** The in-flight
+states exist only on feature branches and in the DB projection — because a spec, its
+code, and its tests **merge as one atomic unit**, so anything on `main` is either
+currently-satisfied (`live`) or intentionally retired (`deprecated`). This makes "is
+the repo self-consistent *right now*?" a one-line check — independent of the fact
+that any `live` spec may be reconsidered tomorrow.
 
 ### What is deliberately NOT in the file
 
@@ -359,8 +381,10 @@ more — cheap. Think in **small, decomposable pieces of agentic functionality.*
   (assumes data exists / a single home / one timezone). Runs in **two places, one
   agent**: in the review fan-out at proposal time (`crit`), and as a **proactive
   corpus sweep** over the existing C/F/S (`qa_spec`, the spec-side detector in the
-  QA sweep). This is also the **ratification engine for reverse-engineered specs**
-  (§11) — it's what stops the bootstrap from blessing existing bugs as intent.
+  QA sweep). It is the **continuous sense-maker** behind permanent-WIP (§2) — it
+  re-examines even `live` specs forever, and it's what keeps the bootstrap from
+  blessing existing bugs as intent (extracted specs start as drafts, never trusted
+  as final — §12).
 - **UX/UI agent** — good UX/UI design and consistency across apps.
 
 **Prioritization**
@@ -526,7 +550,7 @@ flowchart TD
 ```
 
 These are separate functions needing very specific prompt guidance. (The agent
-swarm itself is later C/F/S that a thin Evolve helps build — see §11.)
+swarm itself is later C/F/S that a thin Evolve helps build — see §12.)
 
 How Python/tools actually run: Claude doesn't "call functions" natively — it runs
 scripts via the Bash/Agent-SDK tools. So the pattern is **commands as the human
@@ -669,7 +693,7 @@ same Gate 1. Sources plural, pipeline singular.
 1. **Reactive — requests (issues).** An agent uses the existing C/F/S (= current
    known/desirable state) to decide: is this a *bug* we should fix, or actually a
    *new feature request*? If a feature, a **vision-fit agent** decides whether it
-   fits Skipper's vision (see the charter, §10) — with **guardrails for how far it
+   fits Skipper's vision (see the charter, §11) — with **guardrails for how far it
    can go without human intervention.** (Example: "after entering an auto issue you
    can't edit it — there should be an Edit button" → agent agrees, good UX →
    proposes a spec.)
@@ -723,7 +747,7 @@ same Gate 1. Sources plural, pipeline singular.
    - **Spec-audit agent** (`qa_spec`) — the spec-side complement: reads the **C/F/S
      itself** for gaps, holes, and naive assumptions (the "ZIP → city is many-to-one"
      class). The others ask "does the code match the spec?"; this one asks "**is the
-     spec even right?**" — essential because reverse-engineered specs (§11) codify
+     spec even right?**" — essential because reverse-engineered specs (§12) codify
      whatever the code does, bugs included.
    Their findings join (`qa_join`) into **bug or spec-gap** work items that enter the
    same pipeline at Triage. Same one-pipeline-one-gate discipline; just a fourth
@@ -821,7 +845,113 @@ human reading raw code.
 
 ---
 
-## 10. Charter (vision-fit) + guardrails
+## 10. The Evolve app — your work queue + observability
+
+The gates (§9) and the continuous loop (§2) need a surface. That surface **is** the
+**Evolve app** — a normal platform app (`apps/evolve/`, its own Capability) whose UI
+is where the maintainer does the entire job. The governing principle:
+
+> **The queue is the product; everything else is observability.** You should be able
+> to do your whole job from the queue without opening anything else — so each queue
+> item is self-sufficient (carries its full context, the agent's recommendation, and
+> a one-click decision). The agents run the BPM; you run the queue.
+
+Four surfaces:
+
+```
+┌─ EVOLVE ──────────────────────────────────────────────────────────┐
+│  [ Queue ]   C/F/S Explorer   Activity   Charter                   │
+├────────────────────────────────────────────────────────────────────┤
+│  YOUR QUEUE (ranked by backlog-PM)                    12 waiting    │
+│                                                                     │
+│  ▸ ⚠ STEER   Weather names wrong city for shared ZIPs       P1     │
+│      72956 → "Rudy" but home is Van Buren. Two fixes:              │
+│      ◯ A: preferred-city lookup (local)                           │
+│      ◉ B: store city in settings, all geo apps read it  ← rec     │
+│      [ Approve B ]  [ Change… ]  [ Reject ]   touches: weather,    │
+│                                               system.home-location │
+│  ▸ ✅ GATE-2  Add Edit button to recipe detail              P2     │
+│      diff +41/−3 · 3 tests green · screenshot ▸                   │
+│      [ Approve & merge ]  [ Change… ]  [ Reject ]                 │
+│  ▸ ⛔ ESCALATE  Chores rollover loop stuck (5/5 retries)    P2     │
+│      last error ▸  agent's summary ▸                              │
+│      [ Take a look ]  [ Give different guidance… ]  [ Park ]      │
+│  ▸ 💡 STEER   Design: family-finance dashboard?             P4     │
+│      proposed by Design agent · charter-fit: borderline ▸        │
+│      [ Pursue ]  [ Not now ]  [ Off-vision (reject) ]            │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+### 1. Queue — the human's home
+
+A single ranked list of **decisions waiting on you**, rendered from the backlog-PM's
+one queue (§8 prioritization). Item types:
+
+- **Gate-1** — approve the intent/spec.
+- **Gate-2** — approve the built-and-tested result (with the pre-digested packet).
+- **Steer** — a genuine *fork* the agent can't resolve alone: "two viable
+  directions, pick one" (the Weather A-vs-B case). Not pass/fail — a choice.
+- **Escalate** — a stuck/over-budget loop that needs unblocking.
+
+Every item is built for a **30-second decision**. Two affordances are universal:
+
+- **"Change…"** — free-text steering that routes back to the right agent as a *new
+  constraint* ("no — store the city, don't derive it"). This is how you steer
+  **without doing the work**: you change the intent, the swarm re-executes.
+- **"Settle"** — the anti-thrash pin (§2). Marks a question decided-for-now so the
+  continuous audit stops re-opening it for a cooldown. Not "ratified forever" — just
+  "leave this alone." The counterpart to "Change…": one redirects, one freezes.
+
+You work primarily *here*; the other three surfaces are for when you want to look.
+
+### 2. C/F/S Explorer — the living documentation
+
+The browsable Capability → Feature → Spec tree, each spec showing **state +
+conformance health**: tests green?, in variance?, spec-audit-flagged?, untested?,
+stale? Drill into any behavior → its current intent, bound tests, links, and full
+history (free, from `git log specs/…`). You come here to **inspect or hand-edit**,
+not for daily flow — but a hand-edit is just another spec change that enters the
+same pipeline.
+
+### 3. Activity — the factory floor
+
+Live observability into the swarm:
+
+- **Process-instances on the BPM graph** — the generated Mermaid (§7) with each
+  instance's **current node highlighted**: where every work-item is right now.
+- **Agent run log** — who did what, duration, token/cost, pass/fail, escalations
+  (straight from the jobs-app telemetry, §7).
+- **Self-correction feed** — every time the system caught itself: "spec-audit
+  re-opened `weather.home-location`," "impl bounced back at `gw_conf`." This is what
+  makes "the system polices itself" *visible* — and lets you spot **thrash** early
+  (the same spec re-opening repeatedly → time to **Settle** it).
+
+### 4. Charter — steering at the top
+
+View/edit the platform charter + per-Capability `scope` (§11). Editing here reshapes
+what vision-fit and the Design agent generate from — the **slow, deliberate** steering
+surface, vs. the queue's **fast, per-item** steering.
+
+### Self-correction is built into every step
+
+Permanent-WIP (§2) only works if mistakes get caught everywhere, not just at the
+gates. Three layers, all surfaced in the Activity feed:
+
+1. **Intra-node** — each agent validates its *own* output before emitting
+   (spec-author checks "atomic? testable? unambiguous?"; implement checks against the
+   spec before handoff). Bad output never propagates silently.
+2. **Inter-node** — the gateways are explicit correction routes: `gw_conf`
+   (conflict → rework), `gw_tests` (failing → retry, stuck → escalate).
+3. **System-level** — the continuous QA sweep (variance + spec-audit) re-opening
+   resting specs across the whole corpus, forever. This is the engine of
+   permanent-WIP.
+
+The human's two queue controls — **Change…** and **Settle** — are the manual
+override on top of these three automatic layers.
+
+---
+
+## 11. Charter (vision-fit) + guardrails
 
 The "does this fit Skipper's vision" agent needs a curated **charter** — a
 *"what Skipper is and isn't"* document — to judge requests against. It's one of the
@@ -864,7 +994,7 @@ to make any further change. So:
 
 ---
 
-## 11. The recursive bootstrap (and why it's the unlock)
+## 12. The recursive bootstrap (and why it's the unlock)
 
 **The first C/F/S tree we write describes Evolve itself.** This is not a cute
 aside — it does three things at once:
@@ -878,17 +1008,21 @@ aside — it does three things at once:
    against them, and then **Evolve reverse-engineers the legacy apps' specs as its
    job, not the human's.** The recursion *is* the bootstrap plan.
 
-   **But reverse-engineered specs are unratified by default.** A spec extracted from
-   existing code captures what the code *does*, **not** what it *should* do — so it
-   faithfully records latent bugs as if they were intent (a Weather spec would bless
-   "ZIP → city" and its wrong-town output). Therefore:
-   - Reverse-engineered specs enter as **`proposed` / needs-review, never `live`**
-     (a spec only reaches `live` by ratification, never by extraction).
-   - The **spec-audit agent** (§6) processes that needs-review queue as a proactive
-     sweep — flagging gaps/holes/naive assumptions — and routes each to spec-author
-     + the human for ratification. Without this skeptic, the bootstrap merely
-     **launders existing bugs into "approved requirements."** Spec-audit is what
-     makes "reverse-engineer the initial specs" *safe*.
+   **But reverse-engineered specs enter as drafts, never trusted as final.** A spec
+   extracted from existing code captures what the code *does*, **not** what it
+   *should* do — so it faithfully records latent bugs as if they were intent (a
+   Weather spec would record "ZIP → city" and its wrong-town output). This isn't a
+   one-time bootstrap problem you "clear" — it's the same permanent-WIP condition
+   (§2) every spec is always in; extraction just starts a spec lower-confidence.
+   Therefore:
+   - Reverse-engineered specs enter as **`proposed` / draft, never `live`**
+     (extraction never grants the resting state; only conformance-after-review does).
+   - The **spec-audit agent** (§6) is the **continuous sense-maker** over the whole
+     corpus — it works the draft backlog flagging gaps/holes/naive assumptions, and
+     it keeps re-examining even `live` specs afterward, because nothing is ever
+     "settled forever." Without this standing skeptic, the bootstrap merely
+     **launders existing bugs into accepted requirements.** It's what makes
+     "reverse-engineer the initial specs" *safe* — and keeps them honest after.
 3. **Self-hosting compounds.** Like a compiler that compiles itself or Claude Code
    used to build Claude Code — the tool that builds the tool sharpens with every
    improvement, because each improvement makes the next cheaper. Evolve improving
@@ -903,11 +1037,11 @@ Two honest constraints:
   two gates, one implement path, one validate path. The agent swarm
   (security/arch/UX) is later C/F/S the thin Evolve helps build. It bootstraps
   skinny, then thickens itself.
-- **Evolve-core is the dangerous self-mod** (see §10).
+- **Evolve-core is the dangerous self-mod** (see §11).
 
 ---
 
-## 12. Dev / demo data
+## 13. Dev / demo data
 
 A manually-run Python script seeds a database full of realistic mock data — fake
 family members, recipes, automobiles, home issues, to-do lists, chores, etc. — AI
@@ -940,7 +1074,7 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
 
 ---
 
-## 13. Open questions / next steps
+## 14. Open questions / next steps
 
 - **Write the first C/F/S tree: `Capability: Evolve`** → Features (intake, triage,
   spec-sync, implement, validate, gates, charter) → Specifications (the behaviors
@@ -963,6 +1097,10 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   hierarchy-encoding readable IDs, the `specs/<cap>/<feat>/<spec>.yaml` layout, the
   `main`-only-holds-`live`/`deprecated` invariant, and loader validation. Remaining:
   author a JSON-Schema/validator and wire it into the boot files→DB scan.
+- **The Evolve app — DESIGNED** (§10): the four surfaces (work queue / C/F/S
+  explorer / activity / charter), the queue item types + Change/Settle controls, and
+  three-layer self-correction. Remaining: lay out `apps/evolve/` (routes, ui/,
+  entity prefix) and wire the queue to the BPM gate nodes + backlog-PM ranking.
 - **Git topology box1↔box2** — local remote vs GitHub branches; box-2 reset.
 - **Issues app** — final UI/designation, and GitHub-issue sync on the canonical
   instance.
@@ -989,8 +1127,9 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   both be true / can't coexist); the "is the desired state satisfiable?" guard.
 - **Spec-audit (specification-critic) agent** — critiques a *single* spec for
   internal gaps, holes, and naive assumptions (e.g. a 1:1 spec over a many-to-many
-  relationship); the soundness complement to interop's consistency. Runs at proposal
-  time and as a proactive corpus sweep; ratifies reverse-engineered specs.
+  relationship); the soundness complement to interop's consistency. The continuous
+  sense-maker behind permanent-WIP — runs at proposal time and as a forever corpus
+  sweep (even over `live` specs); treats reverse-engineered specs as drafts.
 - **Backlog-PM agent** — the prioritizer: ranks all proposals onto one queue and
   cuts the long tail so only the top-N reach the human.
 - **Evolve-core orchestrator** — the in-process, deterministic control-plane
@@ -1007,3 +1146,15 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   variance detection and interop locality.
 - **`main` invariant** — committed `main` only ever holds `live` or `deprecated`
   specs; all in-flight lifecycle states live on branches / in the DB.
+- **Permanent WIP** — the stance that no spec is ever finalized/ratified; `live` is
+  a *resting* state ("code conforms to current best intent"), and the lifecycle is a
+  loop any spec can re-enter.
+- **Self-correction** — the property that every BPM step can detect its own / the
+  system's mistakes and route work backward: intra-node (an agent checks its own
+  output), inter-node (gateways bounce work back), and system-level (the continuous
+  audit re-opens resting specs).
+- **Settle (anti-thrash)** — the human control to mark a question decided-for-now so
+  the continuous audit stops re-litigating it for a cooldown; *not* "ratified
+  forever," just "leave this alone."
+- **Work queue** — the Evolve app's ranked inbox of decisions waiting on the human
+  (gates, steers, escalations); the human's primary surface (§10).
