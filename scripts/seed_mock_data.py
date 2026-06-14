@@ -44,7 +44,7 @@ EVERYONE = ["admin"] + FAMILY
 # `skipper` (init_db) is `bot`. `admin` is the operator/owner.
 MEMBERS = [
     ("admin", "Admin", "member,admin,primary"),
-    ("david", "David", "member,parent"),
+    ("david", "David", "member,parent,admin"),   # a parent who's also a household admin
     ("maria", "Maria", "member,parent"),
     ("tyler", "Tyler", "member"),
     ("katie", "Katie", "member"),
