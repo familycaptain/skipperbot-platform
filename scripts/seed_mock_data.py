@@ -476,6 +476,82 @@ def seed_bounties_complete():
         _try("bounty_completions", go)
 
 
+def seed_documents():
+    from apps.documents import store as docs
+    samples = [
+        ("Home WiFi & Network Setup", ["reference", "home"], "Router in the living-room closet. SSID: BurtonHome. Guest network enabled. ISP: 1Gbps fiber. Port-forwarding notes below."),
+        ("Family Emergency Plan", ["safety", "family"], "Meeting point: end of the driveway. ICE contacts listed. Fire-extinguisher locations: kitchen + garage. Water shutoff: basement."),
+        ("Paint Colors by Room", ["home", "reference"], "Living room: Agreeable Gray SW7029. Kitchen: Pure White. Master: Sea Salt. Trim: Extra White semi-gloss."),
+        ("Car Maintenance Notes", ["auto"], "Odyssey: synthetic 0W-20 every 7,500 mi. RAV4: 0W-16. Rotate tires every other oil change."),
+        ("Recipes to Try", ["meals"], "1) Korean beef bowl  2) Sheet-pan gnocchi  3) Thai basil chicken  4) Lemon orzo  5) Carnitas tacos."),
+        ("Vacation Packing Checklist", ["travel"], "Documents, chargers, meds, sunscreen, swimsuits, first-aid kit, snacks, refillable bottles."),
+        ("Appliance & Warranty Info", ["home", "reference"], "Fridge: LG (2022, warranty to 2027). HVAC: Carrier, serviced annually. Water heater: Rheem (2021)."),
+        ("Kids' School Contacts", ["family", "school"], "Tyler — Mrs. Johnson, 5th, room 12. Katie — Mr. Lee, 2nd. Front office: 555-0142."),
+        ("Garden Planting Schedule", ["yard"], "Tomatoes & peppers after last frost (~Apr 15). Herbs in May. Garlic in October."),
+        ("Budget Notes 2026", ["finance"], "Fixed: mortgage, utilities, insurance. Variable: groceries, gas. Savings goal: 3-month emergency fund."),
+    ]
+    for title, tags, content in samples:
+        _try("documents", lambda t=title, tg=tags, c=content: docs.create_doc(t, "admin", content=c, tags=tg))
+
+
+def seed_folders():
+    from apps.folders import store as folders
+    samples = [
+        ("Home Improvement", "Projects, quotes, and ideas for the house", "blue"),
+        ("Travel", "Trip plans, itineraries, and bookings", "sky"),
+        ("Finances", "Budgets, statements, and tax docs", "emerald"),
+        ("Kids & School", "School info, permission slips, activities", "violet"),
+        ("Recipes & Meals", "Saved recipes and meal plans", "orange"),
+        ("Auto", "Vehicle records, manuals, insurance", "slate"),
+        ("Medical", "Records, prescriptions, providers", "rose"),
+        ("Important Documents", "Warranties, contracts, references", "amber"),
+        ("Yard & Garden", "Landscaping plans and plant care", "green"),
+        ("Holidays", "Gift ideas, party planning, traditions", "red"),
+    ]
+    for name, desc, color in samples:
+        _try("folders", lambda n=name, d=desc, co=color:
+             folders.create_folder(n, "admin", description=d, color=co))
+
+
+def seed_brainstorming():
+    from data_layer import brainstorming as bs
+    holder = {}
+    _try("brainstorm_ideas", lambda: holder.update(idea=bs.create_idea(
+        "Trip to Paris", summary="A week-long family trip to Paris in the spring — sights, food, logistics, and budget.",
+        tags=["travel", "family", "paris"], priority="high", created_by="admin")))
+    idea = holder.get("idea")
+    if not idea:
+        return
+    iid = idea["id"]
+    parts = [
+        ("Must-See Sights", "- Eiffel Tower (book a sunset slot)\n- Louvre (pre-book, skip the line)\n- Sainte-Chapelle + Notre-Dame exterior\n- Montmartre & Sacré-Cœur\n- Seine river cruise\n- Musée d'Orsay\n- Versailles day trip"),
+        ("Food & Cafés", "- Croissants at Du Pain et des Idées\n- Falafel in Le Marais (L'As du Fallafel)\n- Steak-frites bistro night\n- Crêpes by Luxembourg Gardens\n- Macarons at Pierre Hermé\n- Baguette + cheese picnic on the Seine"),
+        ("Logistics", "- Fly into CDG; RER B into the city\n- Stay in the 6th or Marais (walkable)\n- Navigo Découverte weekly metro pass\n- Paris Museum Pass (2 or 4 day)\n- Kids: stroller-friendly routes + afternoon park breaks"),
+        ("Budget Estimate", "- Flights (4): ~$3,200\n- Lodging 7 nights: ~$1,800\n- Food ~$120/day: ~$840\n- Attractions/passes: ~$500\n- Transit + misc: ~$300\n- Total: ~$6,640"),
+    ]
+    for title, content in parts:
+        _try("brainstorm_parts", lambda i=iid, t=title, c=content:
+             bs.add_part(i, part_type="document", title=t, content=c))
+
+
+def seed_backups():
+    import json as _json
+    from app_platform.db import execute_in_schema
+    for i in range(12):  # ~12 weeks of completed-backup history
+        started = _dt(-7 * (i + 1))
+        pg = 4_500_000 + i * 120_000
+        zipsz = 2_100_000 + i * 80_000
+        files = _json.dumps([f"skipper-backup-{started[:10]}.zip"])
+        counts = _json.dumps({"users": 6, "documents": 10, "chores": 23, "bounties": 20, "reminders": 20})
+        _try("backups", lambda b="bkp-" + uuid.uuid4().hex[:8], s=started, p=pg, z=zipsz,
+             f=files, c=counts, d=round(18.0 + (i % 5) * 2.5, 1):
+             execute_in_schema("app_backups", """
+                INSERT INTO backups (id, job_id, started_at, completed_at, status, pg_dump_size,
+                                     zip_size, network_path, files_created, table_counts, duration_secs, created_by)
+                VALUES (%s, '', %s, %s, 'completed', %s, %s, %s, %s::jsonb, %s::jsonb, %s, 'system')""",
+                (b, s, s, p, z, "/mnt/backups/skipper", f, c, d)))
+
+
 SEEDERS = {
     "weather": seed_weather, "lists": seed_lists, "todo": seed_todo, "auto": seed_auto,
     "recipes": seed_recipes, "meals": seed_meals, "reminders": seed_reminders,
@@ -485,6 +561,8 @@ SEEDERS = {
     "home": seed_home, "medical_extra": seed_medical_extra, "auto_extra": seed_auto_extra,
     "bounties_extra": seed_bounties_extra, "meals_extra": seed_meals_extra,
     "bounties_complete": seed_bounties_complete,
+    "documents": seed_documents, "folders": seed_folders,
+    "brainstorming": seed_brainstorming, "backups": seed_backups,
 }
 
 
