@@ -109,6 +109,14 @@ def run_work_item(model, runner: Runner, work_item: dict, *, charter=None,
 
 
 # --------------------------------------------------------------------------- #
+def load_charter(path: str = "specs/CHARTER.md") -> str | None:
+    """The vision authority (EVOLVE.md §11) — fed to vision-fit + design agents."""
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as fh:
+            return fh.read()
+    return None
+
+
 def _load_env():
     if os.path.exists(".env"):
         with open(".env") as fh:
@@ -130,10 +138,7 @@ if __name__ == "__main__":
     runner = Runner(AnthropicBackend(), dict(ROSTER), budget_usd=1.0,
                     tiers={"fast": haiku, "smart": haiku, "deep": haiku})
 
-    charter = ("Skipper is a self-hosted, agentic family assistant. It bundles apps "
-               "for a household: among them the Auto app, which tracks the family's "
-               "vehicles, their service history, and their issues/repairs. In scope: "
-               "making those household apps more usable and complete.")
+    charter = load_charter() or "Skipper is a self-hosted household assistant."
     issue = {"title": "After saving an auto issue you can't edit it",
              "body": "Once an auto (vehicle) issue is saved there's no way to change it. "
                      "There should be an Edit button on the issue detail."}

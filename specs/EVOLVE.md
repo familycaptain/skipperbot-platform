@@ -1055,6 +1055,14 @@ Hermes-style prompt docs and **the thing that lets the maintainer say *no* at sc
 without weighing every request by hand.** It also encodes the autonomy guardrails
 (how far Evolve can go unattended) and the **Evolve-core asymmetry** below.
 
+> **WRITTEN: [`specs/CHARTER.md`](CHARTER.md).** Grounded in Skipper's actual
+> identity (the README): a self-hosted, multi-person household "life OS". The
+> vision-fit + design agents load it (`apps/evolve/orchestrator.load_charter`).
+> Verified live: an in-charter feature (a fuel-economy chart) → `fits`; an
+> off-charter one (a public parts marketplace) → `off-vision`, citing the charter's
+> non-goals by name — resolving the earlier demo's "vision-fit invents Skipper's
+> identity without a charter" failure.
+
 **Where the vision actually lives — a two-level hierarchy, not help.md/guide.md.**
 The per-app `help.md` / `guide.md` are written for *users* (what the app does, how
 to use it); they're useful **inputs** to vision-fit but they are **not the
@@ -1199,8 +1207,11 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
     git promotion, the GitHub connector (intake), the Evolve app UI, and platform
     integration (`PostgresBackend`, the orchestrator loop) are TODO. See
     `apps/evolve/README.md` for status + how-to-run.
-- **Define the charter** (`what Skipper is / isn't`) — the triage/vision agents and
-  the Evolve-core guardrail all depend on it.
+- **Define the charter — DONE** (`specs/CHARTER.md`): the human-owned vision
+  authority (thesis, what-it-is, non-goals, scope, autonomy guardrails), grounded in
+  the README. Loaded by vision-fit + design; live-verified (in-charter → fits,
+  off-charter → off-vision). Remaining: keep per-Capability `scope` fields filled as
+  the reverse-engineered trees land.
 - **The first SDLC process flow — DRAFTED.** v0.3 in the decided format:
   `specs/evolve/sdlc.yaml` (model = truth) + `specs/evolve/sdlc.md` (generated
   Mermaid view — open in GitHub to see the graph). 39 nodes / 54 edges; the **four
