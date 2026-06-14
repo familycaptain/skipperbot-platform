@@ -4,13 +4,15 @@ Offline: the bash sandbox, skill parsing, the agentic loop (mocked client), and
 Runner routing. Live (gated): a real code-acting agent executing a skill.
 """
 import os
+import tempfile
 import types
 import unittest
 
 from apps.evolve.agents import tooluse, registry
 from apps.evolve.agents.base import AgentResult
 from apps.evolve.agents.runner import Runner, FakeBackend
-from apps.evolve.agents.tooluse import ToolUseBackend, run_bash, read_file, load_skill
+from apps.evolve.agents.tooluse import (ToolUseBackend, run_bash, read_file, write_file,
+                                        load_skill)
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 SKILLS = os.path.join(REPO, ".claude", "skills")
@@ -91,6 +93,37 @@ class TestAgenticLoop(unittest.TestCase):
         res = be.run(registry.ROSTER["validate"], {}, None, "claude-x", system="s")
         self.assertFalse(res.ok)
         self.assertIn("did not emit", res.error)
+
+
+class TestWrites(unittest.TestCase):
+    def test_write_file_bounded(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.assertIn("wrote", write_file("pkg/a.py", "x = 1\n", cwd=d))
+            self.assertTrue(os.path.exists(os.path.join(d, "pkg/a.py")))
+            self.assertIn("DENIED", write_file("../escape.py", "no", cwd=d))
+
+    def test_write_tool_gated_by_allow_writes(self):
+        spec = registry.ROSTER["implement"]
+        on = ToolUseBackend(allow_writes=True)._tools(spec)
+        off = ToolUseBackend(allow_writes=False)._tools(spec)
+        self.assertTrue(any(t["name"] == "write_file" for t in on))
+        self.assertFalse(any(t["name"] == "write_file" for t in off))
+
+    def test_loop_writes_then_emits(self):
+        with tempfile.TemporaryDirectory() as d:
+            responses = [
+                _msg([_block(name="write_file",
+                             input={"path": "apps/demo/x.py", "content": "print(1)\n"}, id="w")]),
+                _msg([_block(name="emit",
+                             input={"summary": "wrote x", "files_changed": ["apps/demo/x.py"],
+                                    "ok": True}, id="e")]),
+            ]
+            be = ToolUseBackend(client=_FakeClient(responses), repo_root=d,
+                                skills_dir=SKILLS, allow_writes=True)
+            res = be.run(registry.ROSTER["implement"], {"spec": "make x"}, None, "claude-x", system="s")
+            self.assertTrue(res.ok, res.error)
+            self.assertTrue(res.output["ok"])
+            self.assertTrue(os.path.exists(os.path.join(d, "apps/demo/x.py")))
 
 
 class TestRunnerRouting(unittest.TestCase):

@@ -1,0 +1,83 @@
+"""Tests for apps/evolve/build_loop.py — the implement→validate→merge orchestration.
+
+Uses fake implement/validate so the loop is exercised end-to-end on a throwaway repo
+with no live Claude and no real edits.
+"""
+import os
+import shutil
+import tempfile
+import types
+import unittest
+
+from apps.evolve import build_loop
+from apps.evolve.build_loop import run_build
+from apps.evolve.workspace import WorkspaceManager, git
+from tests.evolve.test_workspace import init_box1
+
+SPEC = {"kind": "specification", "id": "demo.area.thing", "title": "Thing",
+        "state": "proposed", "behavior": "adds a thing", "implements": [], "tests": []}
+
+
+def _ok():
+    return types.SimpleNamespace(ok=True)
+
+
+def _fail(err="nope"):
+    return types.SimpleNamespace(ok=False, error=err)
+
+
+class TestBuildLoop(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.repo = init_box1(self.tmp)
+        self.wm = WorkspaceManager(self.repo, worktrees_dir=os.path.join(self.tmp, "wt"))
+        self.box2 = os.path.join(self.tmp, "box2")
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def _release_has(self, rel):
+        try:
+            git(self.repo, "show", f"release:{rel}")
+            return True
+        except Exception:
+            return False
+
+    def test_happy_path_merges_to_release(self):
+        def implement(feature):
+            self.wm.write_file(feature, "apps/demo/thing.py", "x = 1\n")
+            return _ok()
+        res = run_build(self.wm, SPEC, implement_fn=implement,
+                        validate_fn=lambda d: True, box2_dir=self.box2)
+        self.assertTrue(res.ok, res.detail)
+        self.assertEqual(res.stage, "merged")
+        # both the spec file and the implemented code reached release
+        self.assertTrue(self._release_has("specs/demo/area/thing.yaml"))
+        self.assertTrue(self._release_has("apps/demo/thing.py"))
+
+    def test_validation_failure_stops_before_merge(self):
+        def implement(feature):
+            self.wm.write_file(feature, "apps/demo/thing.py", "x = 1\n")
+            return _ok()
+        res = run_build(self.wm, SPEC, implement_fn=implement,
+                        validate_fn=lambda d: False, box2_dir=self.box2)
+        self.assertFalse(res.ok)
+        self.assertEqual(res.stage, "failed:validate")
+        self.assertFalse(self._release_has("apps/demo/thing.py"))   # NOT merged
+
+    def test_implement_failure_stops_early(self):
+        res = run_build(self.wm, SPEC, implement_fn=lambda f: _fail("could not converge"),
+                        validate_fn=lambda d: True, box2_dir=self.box2)
+        self.assertFalse(res.ok)
+        self.assertEqual(res.stage, "failed:implement")
+        # the spec was serialized but no code merged
+        self.assertFalse(self._release_has("apps/demo/thing.py"))
+
+    def test_real_adapters_constructible(self):
+        # smoke: the real adapters build without invoking Claude / box 2
+        self.assertTrue(callable(build_loop.validate_with_tests()))
+        self.assertTrue(callable(build_loop.implement_with_agent({}, SPEC, model="claude-x")))
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

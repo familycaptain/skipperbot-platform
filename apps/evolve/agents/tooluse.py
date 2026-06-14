@@ -96,6 +96,18 @@ def read_file(path: str, *, cwd: str) -> str:
         return fh.read()[:8000]
 
 
+def write_file(path: str, content: str, *, cwd: str) -> str:
+    """Write a file, bounded to cwd (the feature worktree). Only offered when
+    allow_writes=True — i.e. when cwd is an isolated, disposable checkout."""
+    full = os.path.realpath(os.path.join(cwd, path))
+    if not full.startswith(os.path.realpath(cwd)):
+        return "DENIED: path escapes the workspace."
+    os.makedirs(os.path.dirname(full) or cwd, exist_ok=True)
+    with open(full, "w", encoding="utf-8") as fh:
+        fh.write(content)
+    return f"wrote {path} ({len(content)} bytes)"
+
+
 # --------------------------------------------------------------------------- #
 # The backend
 # --------------------------------------------------------------------------- #
@@ -127,6 +139,12 @@ class ToolUseBackend:
             {"name": "emit", "description": "Return your final structured result. Call this when done.",
              "input_schema": spec.output_schema},
         ]
+        if self.allow_writes:
+            tools.insert(2, {"name": "write_file",
+                             "description": "Create/overwrite a file in the workspace.",
+                             "input_schema": {"type": "object", "properties": {
+                                 "path": {"type": "string"}, "content": {"type": "string"}},
+                                 "required": ["path", "content"], "additionalProperties": False}})
         return tools
 
     def run(self, spec: AgentSpec, payload: dict, context: dict | None, model: str,
@@ -172,6 +190,10 @@ class ToolUseBackend:
                 elif b.name == "read_file":
                     res = read_file(b.input.get("path", ""), cwd=self.repo_root)
                     transcript.append(f"read {b.input.get('path','')}")
+                elif b.name == "write_file" and self.allow_writes:
+                    res = write_file(b.input.get("path", ""), b.input.get("content", ""),
+                                     cwd=self.repo_root)
+                    transcript.append(res)
                 else:
                     res = f"unknown tool {b.name}"
                 results.append({"type": "tool_result", "tool_use_id": b.id, "content": res})
