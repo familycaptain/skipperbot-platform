@@ -1,0 +1,13 @@
+{
+  "name": "skipper-ui-audit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Headless-browser UI audit: log in, visit every app page, screenshot, flag empty/broken pages. Doubles as the Evolve box-2 validate harness (EVOLVE.md §5).",
+  "scripts": {
+    "audit": "node audit.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

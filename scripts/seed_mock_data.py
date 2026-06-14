@@ -34,6 +34,10 @@ NOW = datetime.now(timezone.utc)
 ADULTS = ["david", "maria"]
 KIDS = ["tyler", "katie"]
 FAMILY = ADULTS + KIDS
+# The operator logs in as `admin`. The platform is heavily per-user (To-Do,
+# Reminders, "My Goals", Prioritize backlog all show only the logged-in user's
+# items), so admin MUST own some of everything or every personal view reads empty.
+EVERYONE = ["admin"] + FAMILY
 
 # Standard test-box logins: password = username + "1234" (NON-SECRET throwaway creds
 # for disposable test machines). Every HUMAN carries `member`; only the bot user
@@ -138,7 +142,7 @@ def seed_todo():
              "Water plants", "Walk the dog", "Meal plan for week", "Charge camera battery",
              "Back up photos", "Cancel free trial", "Mail birthday card", "Defrost chicken"]
     for i, text in enumerate(items):
-        add_todo_item(FAMILY[i % len(FAMILY)], text); _bump("todo_items")
+        add_todo_item(EVERYONE[i % len(EVERYONE)], text); _bump("todo_items")
 
 
 def seed_auto():
@@ -207,7 +211,7 @@ def seed_reminders():
             "Renew passport", "Book summer camp", "Refill prescription", "Oil change due",
             "Send thank-you notes", "Update car insurance"]
     for i, m in enumerate(msgs):
-        create_reminder(FAMILY[i % len(FAMILY)], m, _dt(1 + i)); _bump("reminders")
+        create_reminder(EVERYONE[i % len(EVERYONE)], m, _dt(1 + i)); _bump("reminders")
 
 
 def seed_schedules():
@@ -219,7 +223,7 @@ def seed_schedules():
             ("Car wash", "home"), ("Clean fish tank", "home"), ("Vacuum house", "home"), ("Laundry day", "home")]
     times = ["07:00", "09:00", "18:00", "19:30", "12:00"]
     for i, (title, cat) in enumerate(rows):
-        by = FAMILY[i % len(FAMILY)]
+        by = EVERYONE[i % len(EVERYONE)]
         schedules.create_schedule(title, by, category=cat, assigned_to=by,
                                  recurrence_type="weekly", time_of_day=times[i % len(times)], start_date=_ds(0))
         _bump("schedules")
@@ -244,8 +248,8 @@ def seed_chores():
     }
     for zone, names in zone_chores.items():
         z = chores.create_zone(zone, start, description=f"{zone} weekly cleanup"); _bump("chore_zones")
-        for dow, cname in enumerate(names):
-            chores.create_chore(_id(z), dow % 7, cname); _bump("chores")
+        for dow in range(7):   # every day covered, so the "Today" view is never empty
+            chores.create_chore(_id(z), dow, names[dow % len(names)]); _bump("chores")
 
 
 def seed_goals():
@@ -253,7 +257,8 @@ def seed_goals():
     goals = [("Get fit by summer", "maria"), ("Renovate the kitchen", "david"),
              ("Plan family vacation", "maria"), ("Build emergency fund", "david"),
              ("Learn Spanish", "tyler"), ("Declutter the house", "maria"),
-             ("Start a garden", "david"), ("Read 12 books", "katie")]
+             ("Start a garden", "david"), ("Read 12 books", "katie"),
+             ("Plan home maintenance", "admin"), ("Organize the finances", "admin")]
     proj_names = ["Phase 1: Planning", "Phase 2: Execution", "Wrap-up"]
     task_names = ["Research options", "Set a budget", "Make a timeline", "Do the work", "Review progress"]
     for gname, by in goals:
