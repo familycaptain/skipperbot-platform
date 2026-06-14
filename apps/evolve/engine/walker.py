@@ -107,7 +107,6 @@ class Walker:
         t = node.type
         if t == "event":
             if not outs:                              # end event
-                inst.log(node.id, node.id, "end")
                 inst.context.setdefault("ended_at", []).append(node.id)
                 st = self.end_status.get(node.id)
                 if st in (REJECTED, PARKED):
