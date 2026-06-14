@@ -192,10 +192,14 @@ drive the Agent SDK.
 
 ### The complete agent roster
 
-The full decomposition, by pipeline stage. (v1 — the thin Evolve — collapses many
-of these into a few: e.g. one triage+spec-authoring agent, one review agent, one
-implement+test agent. The list below is the *target* decomposition; each becomes
-its own curated prompt doc as Evolve thickens itself.)
+The full decomposition, by pipeline stage. **Each is a separate agent from day
+one** — single responsibility, its own curated prompt + typed I/O. We deliberately
+do **not** merge them at the start: a kitchen-sink agent does too many things (and
+fails opaquely — you can't tell which responsibility broke), and once merged the
+boundaries are hard to recover. Start each agent with **basic** prompting that does
+its one job; deepen the prompt only where you see it fail. The framework below
+(§ "Agent framework") is what makes running this many small agents — and adding
+more — cheap. Think in **small, decomposable pieces of agentic functionality.**
 
 **Intake & triage**
 - **Triage agent** — classify an incoming issue (bug vs. feature request), dedup
@@ -267,6 +271,63 @@ shared entity types/routes, and declared cross-app links; the platform's
 one-directional dependency rule (apps→platform, never app→app) shrinks the surface.
 This also sharpens the architecture agent's boundary: arch = "does this fit the
 system / downstream impacts"; interop = "do the specs logically coexist."
+
+### Agent framework — small pieces, BPM-orchestrated, scales to any N
+
+**Principle: one agent = one responsibility = one curated prompt + typed I/O.**
+Never merge responsibilities at the start — a kitchen-sink agent does too many
+things and fails opaquely, and once merged the boundaries are hard to recover.
+Start each agent with *basic* prompting that does its one job; **deepen the prompt
+only where you see it fail, never by combining jobs.** Think in **small,
+decomposable pieces of agentic functionality.** The system must scale to *any*
+number of agents and sub-agents, so the real deliverable is the **substrate**, not
+the agents.
+
+**Model the whole thing as a BPM (business-process-management) flow for the SDLC.**
+Each node is an agent or a human; the orchestrator is a **process engine that walks
+an editable flow definition** — not hardcoded code. BPM maps almost 1:1:
+
+- **Service task = agent** (single responsibility).
+- **User task = a gate.** Gate 1 / Gate 2 are human-approval steps — human-in-the-
+  loop is native, not special-cased.
+- **Gateways = branches:** bug-vs-feature after triage, conflict→resolve, tests-
+  fail→loop, stuck→escalate.
+- **Parallel gateway = the review fan-out:** security + architecture + interop + UX
+  run concurrently, then join.
+- **Sub-process = sub-agents:** a node (e.g. "Implement") expands into its own flow —
+  recursion to any depth.
+- **Process instance = a work item's state:** each issue/PR/proposal flows through
+  the graph; "where is it" *is* the C/F/S/proposal record's state. The engine
+  tracks every item's position → process-level observability, time-at-step,
+  bottlenecks, audit, for free.
+- **The process definition is data — versioned, editable** — so the SDLC is an
+  artifact you change without touching the engine, and (recursively) Evolve can
+  edit its own process as a C/F/S change.
+- **Pragmatic:** borrow BPMN's *concepts* (typed tasks, gateways, events,
+  service/user tasks), not necessarily a heavyweight engine — a lightweight
+  graph-walker suffices.
+
+What the substrate must provide so the Nth agent drops in trivially:
+
+- **A uniform agent contract.** Every agent declares: a curated prompt doc, a typed
+  input schema, a typed output schema, an allowed-tool set, and config (model tier,
+  token budget, autonomy level). This is the **app-package philosophy applied to
+  agents** — manifest + standard structure + auto-registration.
+- **A registry + loader.** Agents auto-register from definition files, exactly like
+  apps / tools / job-handlers do today. Adding one is dropping in a file, not
+  editing the orchestrator.
+- **A typed blackboard, not prose telephone.** Agents hand off via structured
+  artifacts (proposal record, C/F/S record, test report) — reading/writing typed
+  fields, never free-text summaries passed agent-to-agent. The DB-projected C/F/S
+  *is* the shared working state; this is what keeps a long agent chain from
+  degrading into a game of telephone.
+- **Per-agent everything** — model, tools, budget, autonomy, prompt — in the
+  agent's own definition (cheap classifier → small model; architecture agent →
+  smart model).
+- **Observability + versioned prompts.** Every invocation logged
+  (input/output/cost/decision) so you can see which agent did what; each prompt doc
+  is a versioned file in the repo. Recursively, the agent definitions are
+  themselves C/F/S-managed — Evolve improves its own agents.
 
 These are separate functions needing very specific prompt guidance. (The agent
 swarm itself is later C/F/S that a thin Evolve helps build — see §10.)
@@ -534,7 +595,10 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   format can carry weight.
 - **Define the charter** (`what Skipper is / isn't`) — the triage/vision agents and
   the Evolve-core guardrail all depend on it.
-- **The state machine** — exact C/F/S states and which agent owns each transition.
+- **The BPM process definition** — the SDLC flow graph: nodes (agents) + gateways +
+  the two human gates, the C/F/S state at each step, and which agent owns each
+  transition. (This is the "state machine" — modeled as a BPM process; see §6
+  "Agent framework.")
 - **Spec-file schema** — finalize fields, ID scheme, and the file layout under
   `specs/`.
 - **Git topology box1↔box2** — local remote vs GitHub branches; box-2 reset.
