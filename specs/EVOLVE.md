@@ -243,7 +243,13 @@ more — cheap. Think in **small, decomposable pieces of agentic functionality.*
   thousands of specs) *and* how a directly-merged PR gets re-baselined into specs.
 - **Variance / drift detector** — find specs whose tests fail or whose code has
   drifted from the spec; queue reconciliation. (Mostly **mechanical** — tests +
-  checksums — with an agentic fallback.)
+  checksums — with an agentic fallback.) Also the first of the **proactive QA
+  sweep's** three detectors; *pure* drift takes the fast-path past Gate 1.
+- **Code-audit agent** — the proactive QA sweep's third detector (alongside the
+  variance detector and the deterministic regression run): read code for **logic
+  bugs, edge cases, security smells, and dead code** that no existing test or spec
+  would catch, and emit them as bug work items. (Finds defects in shipped behavior —
+  complementary to the design agent, which proposes behavior we don't have yet.)
 - **Review-packet agent** — assemble the pre-digested **Gate-2 packet** (diff +
   spec change + test results + screenshots + plain-language summary). (Lightweight;
   may just be the orchestrator.)
@@ -417,9 +423,9 @@ the maintainer's canonical specs.
 
 ### Intake sources & triage
 
-Three intake **sources**, but **one pipeline and one gate** — they all converge on
-the same artifact (proposed C/F/S changes) and the same Gate 1. Sources plural,
-pipeline singular.
+**Four intake sources — two reactive, two proactive** — but **one pipeline and one
+gate**: they all converge on the same artifact (proposed C/F/S changes) and the
+same Gate 1. Sources plural, pipeline singular.
 
 1. **Reactive — requests (issues).** An agent uses the existing C/F/S (= current
    known/desirable state) to decide: is this a *bug* we should fix, or actually a
@@ -460,6 +466,23 @@ pipeline singular.
      autonomously; "add a family-finance app" never should). The design agent may
      *propose* charter changes, but **the human owns the vision** — it never
      silently expands what Skipper is.
+4. **Proactive — QA / bug-discovery (a separate system).** Distinct from the design
+   lane: the design lane invents *new behavior we don't have yet*; this lane finds
+   *defects in the behavior we already shipped*. It runs on a cadence (`qa_sweep`)
+   and fans out three blind detectors in parallel, each finding what the others
+   can't:
+   - **Variance / drift detector** — reconciles the **code against its approved
+     C/F/S.** Pure drift (code stopped matching an already-approved spec) is a
+     special case: it takes the **fast-path** (skips Spec-author *and* Gate 1 — the
+     intent was approved when the spec was) straight to Prioritize → implement →
+     validate → Gate 2. Drift that implies the *spec* is now wrong does not
+     fast-path; it becomes a normal bug item.
+   - **Regression suite** (`qa_reg`) — the deterministic half: re-runs the bound
+     tests across the C/F/S so a newly-red test surfaces as a bug.
+   - **Code-audit agent** (`qa_audit`) — reads code for logic bugs, edge cases,
+     security smells, and dead code that no test or spec would catch.
+   Their findings join (`qa_join`) into **bug** work items that enter the same
+   pipeline at Triage. Same one-pipeline-one-gate discipline; just a fourth feeder.
 
 ### Prioritization — turning the flood into a ranked queue
 
@@ -469,10 +492,10 @@ human at all, and in what order.** Without it, even a perfect gate is swamped by
 volume (the design lane especially). So a dedicated **backlog-PM agent** scores
 every proposed C/F/S change.
 
-- **One ranked queue across all three lanes.** A critical security PR, a
+- **One ranked queue across all four lanes.** A critical security PR, a
   broken-code-path bug, a high-demand feature, and a design "what if" all compete
   for the same scarce resource — the human's attention — so they're scored on **one
-  scale** and surfaced as **one priority-ordered list.** ("Three sources → one
+  scale** and surfaced as **one priority-ordered list.** ("Four sources → one
   pipeline → one gate" becomes "→ one *ranked* queue.")
 - **Scoring** ≈ criticality + reach + demand + vision-fit, weighed against
   effort/risk:
@@ -535,7 +558,9 @@ and an explicit **give-up-and-escalate** path so autonomous loops can't thrash.
 ### Full cycle, end to end
 
 ```
-issue / PR / proactive design proposal          (three intake sources)
+issue / PR / proactive design proposal / QA bug-finding   (four intake sources)
+  ( QA sweep = variance-detect ∥ regression ∥ code-audit → join → bug item;
+    pure variance takes the fast-path straight to prioritize )
   → triage + vision-fit + security/arch + interop conflict-check + author spec change
   → prioritize (backlog PM): rank across all lanes → top-N reach the human
   → GATE 1 (human approves intent)
@@ -558,6 +583,29 @@ The "does this fit Skipper's vision" agent needs a curated **charter** — a
 Hermes-style prompt docs and **the thing that lets the maintainer say *no* at scale
 without weighing every request by hand.** It also encodes the autonomy guardrails
 (how far Evolve can go unattended) and the **Evolve-core asymmetry** below.
+
+**Where the vision actually lives — a two-level hierarchy, not help.md/guide.md.**
+The per-app `help.md` / `guide.md` are written for *users* (what the app does, how
+to use it); they're useful **inputs** to vision-fit but they are **not the
+authority** — they describe today's behavior, not the intended boundary, and they
+drift. The vision-fit agent judges against two curated, first-class things instead:
+
+1. **The platform charter (one doc).** The top-level "what Skipper is / isn't" for
+   the whole system — the home/family-OS thesis, the non-goals, the autonomy
+   guardrails. One file, human-owned, the generative seed for the design lane and
+   the filter for reactive intake.
+2. **A `scope` field on each Capability's C/F/S record.** Per-area boundary lives
+   *with the spec it governs*, versioned and merged atomically with the rest of the
+   C/F/S — "what this Capability is for and where it stops" (e.g. Recipes:
+   "meal planning + the family's recipes; **not** a grocery-delivery integration").
+   A feature request is vision-fit when it fits **both** the charter **and** the
+   target Capability's scope; a request with no home Capability escalates to the
+   charter (and may be a *new*-Capability proposal for the design lane).
+
+This keeps the authority curated and minimal (one charter + one scope line per
+Capability the agent must respect), lets help/guide stay free to describe behavior
+without becoming load-bearing, and means the boundary travels with the spec instead
+of rotting in user docs.
 
 **The one genuinely dangerous self-mod: Evolve modifying Evolve-core.** A bad *app*
 change breaks an app; a bad change to *Evolve-core* can brick the brain's ability
@@ -645,12 +693,14 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   format can carry weight.
 - **Define the charter** (`what Skipper is / isn't`) — the triage/vision agents and
   the Evolve-core guardrail all depend on it.
-- **The first SDLC process flow — DRAFTED.** v0.1 in the decided format:
+- **The first SDLC process flow — DRAFTED.** v0.2 in the decided format:
   `specs/evolve/sdlc.yaml` (model = truth) + `specs/evolve/sdlc.md` (generated
-  Mermaid view — open in GitHub to see the graph). 31 nodes / 41 edges; the three
-  intake sources → triage/vision → spec-author → prioritize → review fan-out →
-  Gate 1 → implement+test on box 2 → Gate 2 → merge → re-sync. Next: refine it,
-  then attach C/F/S state to each step + name which agent owns each transition.
+  Mermaid view — open in GitHub to see the graph). 37 nodes / 50 edges; the **four
+  intake lanes** (issues, PRs, the proactive Design agent, and the proactive QA
+  sweep = variance ∥ regression ∥ code-audit) → triage/vision → spec-author →
+  prioritize → review fan-out → Gate 1 → implement+test on box 2 → Gate 2 → merge →
+  re-sync, plus the variance fast-path. Next: refine it, then attach C/F/S state to
+  each step + name which agent owns each transition.
 - **Spec-file schema** — finalize fields, ID scheme, and the file layout under
   `specs/`.
 - **Git topology box1↔box2** — local remote vs GitHub branches; box-2 reset.
@@ -669,8 +719,12 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   under test.
 - **Gate 1 / Gate 2** — approve the intent/spec / approve the built-and-tested
   result.
-- **Charter** — the curated "what Skipper is and isn't" doc the vision-fit agent
-  judges against (and the design agent generates from).
+- **Charter** — the top-level, human-owned "what Skipper is and isn't" doc the
+  vision-fit agent judges against (and the design agent generates from). Paired with
+  a per-Capability **scope** field for area-level boundaries.
+- **Scope (Capability scope)** — the per-Capability boundary field on its C/F/S
+  record ("what this Capability is for and where it stops"); versioned with the spec
+  and the second authority (with the charter) the vision-fit agent checks.
 - **Interoperability agent** — detects spec-vs-spec conflicts (two specs that can't
   both be true / can't coexist); the "is the desired state satisfiable?" guard.
 - **Backlog-PM agent** — the prioritizer: ranks all proposals onto one queue and

@@ -5,30 +5,39 @@
 # view generated from it (open that in GitHub to see the graph).
 #
 # node.type:
-#   event    - start / end
+#   event    - start / end / intermediate trigger (incl. cadence/timer)
 #   agent    - a specialized agent (service task); one responsibility each
-#   system   - deterministic automation (no LLM): serialize / deploy / merge / resync
+#   system   - deterministic automation (no LLM): serialize / deploy / merge / resync / regression
 #   gate     - a human approval (user task)
 #   gateway  - a branch/merge;  kind: exclusive (one path) | parallel (fan-out/join)
 # lane: intake | agents | system | human | box2
 # edge.when: the condition/label on a branch (omitted = unconditional)
 
 id: evolve-sdlc
-version: 0.1.0
+version: 0.2.0
 
 nodes:
-  # ---- intake (three sources) ----
+  # ---- intake — FOUR lanes: two reactive, two proactive ----
+  # reactive
   - { id: s_issue,   type: event,   lane: intake, label: "Issue (Issues app / GitHub)" }
   - { id: s_pr,      type: event,   lane: intake, label: "PR (community contribution)" }
-  - { id: s_design,  type: event,   lane: intake, label: "Design proposal (proactive)" }
+  # proactive lane A — Design (new features)
+  - { id: gen_design,type: agent,   agent: design, lane: agents, label: "Design agent (cadence): propose features from charter + request clusters + coverage gaps" }
+  # proactive lane B — QA / bug-discovery (defects in our own code)
+  - { id: qa_sweep,  type: event,   lane: intake, label: "QA sweep (cadence)" }
+  - { id: qa_var,    type: agent,   agent: variance-detect, lane: agents, label: "Variance/drift detector: code vs approved C/F/S" }
+  - { id: qa_reg,    type: system,  lane: system, label: "Run regression suite (bound tests)" }
+  - { id: qa_audit,  type: agent,   agent: code-audit, lane: agents, label: "Code-audit: logic bugs, edge cases, security smells, dead code" }
+  - { id: qa_join,   type: gateway, kind: parallel, lane: agents, label: "join findings" }
+  - { id: s_bug,     type: event,   lane: intake, label: "Bug finding (proactive)" }
 
   # ---- triage & vision ----
   - { id: triage,    type: agent,   agent: triage,       lane: agents, label: "Triage: bug/feature, dedup, link to C/F/S" }
   - { id: gw_kind,   type: gateway, kind: exclusive,     lane: agents, label: "bug or feature?" }
-  - { id: vision,    type: agent,   agent: vision-fit,   lane: agents, label: "Vision-fit vs charter" }
+  - { id: vision,    type: agent,   agent: vision-fit,   lane: agents, label: "Vision-fit vs charter + Capability scope" }
   - { id: gw_vision, type: gateway, kind: exclusive,     lane: agents, label: "fits vision?" }
 
-  # ---- spec authoring (convergence point for all three sources) ----
+  # ---- spec authoring (convergence point for new-behavior work items) ----
   - { id: spec,      type: agent,   agent: spec-author,  lane: agents, label: "Spec-author: draft/update C/F/S + bound tests" }
 
   # ---- prioritization ----
@@ -68,9 +77,21 @@ nodes:
 
 edges:
   # intake -> pipeline
-  - { from: s_issue,   to: triage }
-  - { from: s_pr,      to: triage }
-  - { from: s_design,  to: spec }                       # design proposals are already vision-aligned
+  - { from: s_issue,    to: triage }
+  - { from: s_pr,       to: triage }
+  - { from: gen_design, to: spec }                       # design proposals are already vision-aligned
+  # proactive QA / bug-discovery sub-system
+  - { from: qa_sweep,   to: qa_var }
+  - { from: qa_sweep,   to: qa_reg }
+  - { from: qa_sweep,   to: qa_audit }
+  - { from: qa_var,     to: qa_join }
+  - { from: qa_reg,     to: qa_join }
+  - { from: qa_audit,   to: qa_join }
+  - { from: qa_join,    to: s_bug }
+  - { from: s_bug,      to: triage }
+  # variance fast-path: pure code-vs-approved-spec drift skips spec-author + Gate 1
+  # (intent already approved when the spec was) -> straight to prioritize.
+  - { from: qa_var,     to: prio,       when: "pure variance (fast-path)" }
 
   # triage / vision
   - { from: triage,    to: gw_kind }

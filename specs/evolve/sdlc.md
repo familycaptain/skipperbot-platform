@@ -1,21 +1,37 @@
-# Evolve — SDLC process flow (v0.1)
+# Evolve — SDLC process flow (v0.2)
 
 > **Generated view.** The source of truth is [`sdlc.yaml`](./sdlc.yaml); this
 > Mermaid is the picture of it. Open this file in GitHub (or VS Code preview /
 > mermaid.live) to see the graph. See [`../EVOLVE.md`](../EVOLVE.md) for the design.
 
-**Legend:** 🟦 event · 🟩 agent (one specialized agent each) · 🟪 system
-(deterministic automation, no LLM) · 🟨 human gate · 🟥 gateway (branch/join).
+**Legend:** 🟦 event (incl. cadence triggers) · 🟩 agent (one specialized agent
+each) · 🟪 system (deterministic automation, no LLM) · 🟨 human gate · 🟥 gateway
+(branch/join). Dashed edge = the variance fast-path.
 
 ```mermaid
 flowchart TD
-  s_issue(["Issue — Issues app / GitHub"]):::event --> triage
-  s_pr(["PR — community"]):::event --> triage
-  s_design(["Design proposal — proactive"]):::event --> spec
+  %% intake: two reactive
+  s_issue(["Issue — reactive"]):::event --> triage
+  s_pr(["PR — reactive"]):::event --> triage
 
+  %% intake: proactive A — Design (new features)
+  gen_design["Design agent (cadence): propose features"]:::agent --> spec
+
+  %% intake: proactive B — QA / bug-discovery
+  qa_sweep(["QA sweep (cadence)"]):::event --> qa_var["Variance/drift detector — code vs approved spec"]:::agent
+  qa_sweep --> qa_reg[["Run regression suite"]]:::sys
+  qa_sweep --> qa_audit["Code-audit — bugs, edge cases, security"]:::agent
+  qa_var --> qa_join{{"join findings"}}:::gw
+  qa_reg --> qa_join
+  qa_audit --> qa_join
+  qa_join --> s_bug(["Bug finding"]):::event
+  s_bug --> triage
+  qa_var -. "fast-path: pure variance" .-> prio
+
+  %% triage / vision
   triage["Triage: bug/feature, dedup, link"]:::agent --> gw_kind{"bug or feature?"}:::gw
   gw_kind -->|bug| spec
-  gw_kind -->|feature| vision["Vision-fit vs charter"]:::agent
+  gw_kind -->|feature| vision["Vision-fit — charter + Capability scope"]:::agent
   vision --> gw_vision{"fits vision?"}:::gw
   gw_vision -->|off-vision| e_rejected(["Rejected"]):::event
   gw_vision -->|fits| spec
@@ -69,16 +85,25 @@ flowchart TD
 
 ### Reading it
 
-- **Three intake sources** (top) converge at **Spec-author** — issues/PRs go
-  through Triage first (and features through Vision-fit); proactive Design
-  proposals are already vision-aligned, so they enter at Spec-author.
-- **Prioritize** is the attention valve: the long tail is *parked/declined*
-  (recorded, never lost); only the **top-N or safety-critical** continue.
-- **Review fan-out** runs Security / Architecture / Interop / UX in parallel, then
-  joins; an **interop conflict** routes back to Spec-author for rework.
-- **Gate 1** (approve intent) → autonomous **implement + author tests** on the
-  box-1 workspace branch → **box 2** pulls + validates with Playwright.
-- The tests gateway loops **failing → retry** (within budget) or **stuck →
-  escalate**; **green** builds the review packet.
-- **Gate 2** (approve the packet) → **auto-merge** spec+code+tests → **re-sync**.
-- Both gates can **bounce back** ("change this") instead of approve/reject.
+- **Four intake lanes — two reactive, two proactive:**
+  - **Reactive:** *Issues* and *PRs* → **Triage**.
+  - **Proactive A — Design agent (cadence):** generates new-feature proposals from
+    the charter + request clusters + C/F/S coverage gaps → enters at **Spec-author**
+    (already vision-aligned).
+  - **Proactive B — QA / bug-discovery (cadence):** a *separate* system running three
+    detectors in parallel — **variance/drift** (code vs. approved spec), the
+    **regression suite**, and a **code-audit** agent — whose findings become **bug**
+    work items → **Triage**.
+- **Variance fast-path** (dashed): a *pure* code-vs-approved-spec drift skips
+  Spec-author **and** Gate 1 (the intent was approved when the spec was) → straight
+  to **Prioritize**, then implement → validate → Gate 2.
+- **Vision-fit** judges against the **platform charter + the target Capability's
+  scope** (help.md/guide.md are inputs, not the authority).
+- **Prioritize** is the attention valve: long tail *parked/declined* (recorded);
+  only **top-N or safety-critical** continue.
+- **Review fan-out** runs Security / Architecture / Interop / UX in parallel, joins;
+  an **interop conflict** routes back to Spec-author.
+- **Gate 1** (approve intent) → autonomous **implement + author tests** on the box-1
+  branch → **box 2** validates with Playwright → loop **failing→retry** / **stuck→
+  escalate** / **green→packet** → **Gate 2** → **auto-merge** → **re-sync**. Both
+  gates can **bounce back** ("change this").
