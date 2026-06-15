@@ -184,6 +184,24 @@ class TestGatedPipeline(unittest.TestCase):
         self.assertFalse(self._release_has("apps/demo/thing.py"))
 
 
+class TestTouchedDetection(unittest.TestCase):
+    def test_aggregates_tree_and_normalizes_paths(self):
+        from apps.evolve.pipeline import Pipeline, _norm_impl_path
+        self.assertEqual(_norm_impl_path("apps/weather/tools.py::get_x"), "apps/weather/tools.py")
+        self.assertEqual(_norm_impl_path("apps/settings/routes.py (PLATFORM_PANELS…)"), "apps/settings/routes.py")
+        inst = types.SimpleNamespace(context={
+            "proposal": {"spec_id": "root", "implements": ["apps/settings/routes.py (schema…)"]},
+            "spec_tree": [
+                {"spec_id": "root", "implements": ["apps/settings/routes.py (schema…)"]},
+                {"spec_id": "leaf", "implements": ["apps/weather/geocode.py", "apps/weather/tools.py::fn"]},
+            ],
+            "agent_outputs": {}})
+        cfs, files = Pipeline._touched(inst)
+        self.assertEqual(cfs, {"root", "leaf"})
+        self.assertIn("apps/weather/tools.py", files)        # from a LEAF, normalized
+        self.assertIn("apps/settings/routes.py", files)      # parenthetical stripped
+
+
 class TestSpecAwareTriage(unittest.TestCase):
     def test_triage_receives_candidate_specs(self):
         tmp = tempfile.mkdtemp()

@@ -27,6 +27,18 @@ from apps.evolve.workspace import Feature
 CODE_ACTING = {"implement", "test-author", "validate"}
 
 
+def _norm_impl_path(p) -> str:
+    """Normalize an `implements` entry to a bare repo path: drop a `::symbol` suffix and any
+    trailing parenthetical/space description — 'apps/x.py::fn' and 'apps/x.py (does Y)' both
+    become 'apps/x.py' — so overlap detection compares real files, not cosmetics."""
+    s = str(p).split("::")[0].strip()
+    for sep in (" (", "("):
+        if sep in s:
+            s = s.split(sep)[0]
+    parts = s.split()
+    return parts[0].strip() if parts else ""
+
+
 def spec_record_from(spec_out: dict, work_item: dict) -> dict:
     """Build a C/F/S record from the spec-author agent's output."""
     sid = spec_out.get("spec_id") or "evolve.intake.unspecified"
@@ -230,12 +242,26 @@ class Pipeline:
 
     @staticmethod
     def _touched(inst) -> tuple[set, set]:
-        """The C/F/S ids + files this instance affects (from triage + its proposal)."""
+        """The C/F/S ids + files this instance affects — across its WHOLE spec tree (every
+        authored leaf, not just the root) so a decomposed feature's real file footprint is
+        seen, with paths normalized (drop '::symbol' and parenthetical descriptions) so two
+        items that touch the same file aren't missed over cosmetic differences."""
         ao = inst.context.get("agent_outputs", {})
         triage = (ao.get("triage") or {}).get("output") or {}
+        specs = list(inst.context.get("spec_tree") or [])
         proposal = inst.context.get("proposal") or {}
-        cfs = set(triage.get("touches_cfs") or []) | {proposal.get("spec_id")}
-        files = {str(p).split("::")[0] for p in (proposal.get("implements") or [])}
+        if proposal and proposal not in specs:
+            specs.append(proposal)
+        cfs = set(triage.get("touches_cfs") or [])
+        files: set = set()
+        for sp in specs:
+            if not isinstance(sp, dict):
+                continue
+            cfs.add(sp.get("spec_id"))
+            for p in (sp.get("implements") or []):
+                np = _norm_impl_path(p)
+                if np:
+                    files.add(np)
         return cfs - {None, ""}, files - {None, ""}
 
     def _related(self, inst) -> list[dict]:
