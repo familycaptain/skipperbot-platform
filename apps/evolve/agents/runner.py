@@ -140,10 +140,18 @@ class Runner:
     monthly_limit_usd: float | None = None      # kill-switch: pause when month-to-date >= this
 
     def composed_system(self, spec: AgentSpec) -> str:
-        """Role prompt + only the curated charter sections this agent declares."""
+        """Role prompt + the curated charter sections this agent declares + the summary rule."""
         ground = charter.grounding(spec.charter_keys, self.charter_path)
         base = spec.resolved_prompt()
-        return base + ("\n\n" + ground if ground else "")
+        summary_rule = (
+            "\n\n# Always lead with a `summary`\n"
+            "Your result includes a `summary`: 1-3 plain-language sentences a busy human reads "
+            "FIRST — your bottom line, no jargon without a gloss. If you reframed the request, "
+            "say so explicitly: what was asked vs. what is actually needed, and the key WHY "
+            "(e.g. \"asked for city/state/zip; really needs a geocode to lat/lon because the "
+            "weather API runs on coordinates\")."
+        )
+        return base + ("\n\n" + ground if ground else "") + summary_rule
 
     def run(self, agent_name: str, payload: dict, context: dict | None = None,
             instance_id: str | None = None) -> AgentResult:

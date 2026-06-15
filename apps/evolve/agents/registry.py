@@ -26,7 +26,10 @@ def _arr(items: dict) -> dict:
 # --------------------------------------------------------------------------- #
 # Output schemas
 # --------------------------------------------------------------------------- #
+# Every reasoning agent leads with `summary`: a plain-language headline a human reads
+# first (the Runner's composed_system mandates its content). Surfaced as the agent's panel.
 TRIAGE_OUT = _obj({
+    "summary": _STR,
     "kind": {"type": "string", "enum": ["bug", "feature"]},  # drives routing (bug->spec, feature->vision)
     "spec_status": {"type": "string",
                     "enum": ["violates-spec", "no-spec", "conflicts-spec", "unclear"]},
@@ -34,22 +37,25 @@ TRIAGE_OUT = _obj({
     "duplicate_of": _STR,                         # "" if none
     "touches_cfs": _arr(_STR),                    # candidate C/F/S ids
     "rationale": _STR,
-}, ["kind", "rationale"])                          # spec_status prompt-mandated; optional in schema
+}, ["summary", "kind", "rationale"])               # spec_status prompt-mandated; optional in schema
 
 VISION_OUT = _obj({
+    "summary": _STR,
     "verdict": {"type": "string", "enum": ["fits", "off-vision", "needs-charter-change"]},
     "rationale": _STR,
-}, ["verdict", "rationale"])
+}, ["summary", "verdict", "rationale"])
 
 SPEC_AUTHOR_OUT = _obj({
+    "summary": _STR,
     "capability": _STR, "feature": _STR, "spec_id": _STR,
     "title": _STR, "behavior": _STR,
     "implements": _arr(_STR),
     "tests": _arr(_obj({"type": _STR, "path": _STR, "rubric": _STR}, ["type"])),
     "notes": _STR,
-}, ["spec_id", "behavior"])
+}, ["summary", "spec_id", "behavior"])
 
 SPEC_AUDIT_OUT = _obj({
+    "summary": _STR,
     "sound": _BOOL,
     "findings": _arr(_obj({
         "category": {"type": "string",
@@ -58,29 +64,33 @@ SPEC_AUDIT_OUT = _obj({
         "detail": _STR,
         "severity": {"type": "string", "enum": ["low", "med", "high"]},
     }, ["category", "detail", "severity"])),
-}, ["sound", "findings"])
+}, ["summary", "sound", "findings"])
 
 INTEROP_OUT = _obj({
+    "summary": _STR,
     "conflicts": _arr(_obj({"with_spec": _STR, "kind": _STR, "detail": _STR},
                            ["with_spec", "detail"])),
-}, ["conflicts"])
+}, ["summary", "conflicts"])
 
 REVIEW_OUT = _obj({
+    "summary": _STR,
     "concerns": _arr(_obj({"severity": {"type": "string", "enum": ["low", "med", "high"]},
                            "detail": _STR}, ["severity", "detail"])),
     "approve": _BOOL,
-}, ["approve", "concerns"])
+}, ["summary", "approve", "concerns"])
 
 PRIORITIZE_OUT = _obj({
+    "summary": _STR,
     "score": {"type": "number"},
     "decision": {"type": "string", "enum": ["surface", "park"]},
     "rationale": _STR,
-}, ["score", "decision", "rationale"])
+}, ["summary", "score", "decision", "rationale"])
 
 DESIGN_OUT = _obj({
+    "summary": _STR,
     "proposals": _arr(_obj({"title": _STR, "capability": _STR, "need": _STR,
                             "rationale": _STR}, ["title", "need"])),
-}, ["proposals"])
+}, ["summary", "proposals"])
 
 PACKET_OUT = _obj({
     "summary": _STR, "risk": {"type": "string", "enum": ["low", "med", "high"]},
@@ -99,7 +109,7 @@ TEST_AUTHOR_OUT = _obj({
 }, ["tests_written", "summary"])
 
 VALIDATE_OUT = _obj({
-    "passed": _BOOL, "failures": _arr(_STR), "notes": _STR,
+    "summary": _STR, "passed": _BOOL, "failures": _arr(_STR), "notes": _STR,
 }, ["passed"])
 
 
@@ -121,7 +131,7 @@ ROSTER: dict[str, AgentSpec] = {
     "spec-author": AgentSpec(
         "spec-author", "Turn accepted intent into a C/F/S record + bound tests.",
         SPEC_AUTHOR_OUT, prompt_file="spec-author.md", tier="deep",
-        charter_keys=["thesis", "surfaces"]),
+        charter_keys=["thesis", "surfaces", "principles"]),
     "spec-audit": AgentSpec(
         "spec-audit", "Critique a single spec for gaps/holes/naive assumptions.",
         SPEC_AUDIT_OUT, prompt_file="spec-audit.md", tier="deep",
@@ -134,7 +144,7 @@ ROSTER: dict[str, AgentSpec] = {
         REVIEW_OUT, prompt_file="security.md", tier="deep", charter_keys=["non-goals"]),
     "architecture": AgentSpec(
         "architecture", "Review system fit: boundaries, the one-directional dep rule.",
-        REVIEW_OUT, prompt_file="architecture.md", tier="deep", charter_keys=["is", "surfaces"]),
+        REVIEW_OUT, prompt_file="architecture.md", tier="deep", charter_keys=["is", "surfaces", "principles"]),
     "ux": AgentSpec(
         "ux", "Review UX/UI quality + cross-app consistency.",
         REVIEW_OUT, prompt_file="ux.md", tier="deep", charter_keys=["surfaces"]),
@@ -145,7 +155,7 @@ ROSTER: dict[str, AgentSpec] = {
     "design": AgentSpec(
         "design", "Propose new Capabilities/Features grounded in charter + gaps.",
         DESIGN_OUT, prompt_file="design.md", tier="deep",
-        charter_keys=["thesis", "scope", "surfaces", "non-goals"]),
+        charter_keys=["thesis", "scope", "surfaces", "non-goals", "principles"]),
     "code-audit": AgentSpec(
         "code-audit", "Read code for logic bugs, edge cases, security smells, dead code.",
         SPEC_AUDIT_OUT, prompt_file="code-audit.md", tier="deep", charter_keys=["non-goals"]),
@@ -159,7 +169,7 @@ ROSTER: dict[str, AgentSpec] = {
     "implement": AgentSpec(
         "implement", "Write the code that converges the codebase to an approved spec.",
         IMPLEMENT_OUT, prompt_file="implement.md", tier="deep", requires_tools=True,
-        charter_keys=["surfaces"], skills=["cfs-validate", "run-evolve-tests"], max_tokens=8192),
+        charter_keys=["surfaces", "principles"], skills=["cfs-validate", "run-evolve-tests"], max_tokens=8192),
     "test-author": AgentSpec(
         "test-author", "Write/update a spec's bound acceptance tests.",
         TEST_AUTHOR_OUT, prompt_file="test-author.md", tier="deep", requires_tools=True,

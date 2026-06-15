@@ -23,6 +23,7 @@ _KEYS = {
     "non-goals": "non-goals",
     "scope": "scope",
     "autonomy": "autonomy",
+    "principles": "engineering principles",   # non-functional constraints (preconfigure, minimize calls...)
 }
 
 

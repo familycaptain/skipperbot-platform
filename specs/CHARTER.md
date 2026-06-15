@@ -125,3 +125,28 @@ The charter also bounds Evolve's own autonomy (EVOLVE.md §11):
   to. Never unattended.
 - **The human owns the vision.** Evolve may propose, surface, and implement; it never
   redefines what Skipper *is*. That decision is always the maintainer's.
+
+## Engineering principles (non-functional)
+
+*How* Skipper is built, not just what it does. A spec or implementation is judged
+against these too — violating one is a real concern even when the feature "works."
+These are the operator's standing non-functional requirements; honor them by default.
+
+- **Preconfigure once; don't recompute per request.** Resolve expensive or external
+  lookups (geocoding, third-party data, anything slow) ONE time — at configuration
+  time, in the Settings app — and cache the result. Never add a per-request external
+  call when a preconfigured or cached value would do. *(A weather request must not
+  geocode the user's ZIP on every call; the location is configured once and cached as
+  city/region/coordinates.)*
+- **Minimize external dependencies and calls.** Every outbound API call is latency, a
+  failure mode, and a dependency to maintain. Prefer local/cached data; cache or batch
+  what you must fetch; always define the offline/error path explicitly — never silently
+  fall back to a wrong value.
+- **Settings is the home for configuration.** Household/user constants (location,
+  preferences, keys) live in the Settings app, resolved once and surfaced to the user —
+  not hardcoded, not recomputed on demand.
+- **Build for the distributed self-hoster.** Skipper runs on many machines (any OS,
+  deploy, hardware, often headless) — design for all of them, never just one operator's
+  box. No assumptions about a specific host, path, or always-on network.
+- **Degrade gracefully and idempotently.** Define not-found / offline / invalid-input
+  behavior explicitly; make operations safe to retry.
