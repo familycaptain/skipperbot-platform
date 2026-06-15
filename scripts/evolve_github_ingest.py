@@ -111,6 +111,15 @@ def build_pipeline():
         lambda iid, fields, events: bridge.report_run(iid, events=events, **fields),
         log=print).start()
 
+    # Stage 2/3 (opt-in via EVOLVE_USE_SDK=1): run the spec phase as ONE shared claude-agent-sdk
+    # session (constructive chain resumes + caches, critics fork) instead of the hand-rolled backend.
+    sdk_backend = None
+    if os.getenv("EVOLVE_USE_SDK", "").strip() in ("1", "true", "yes"):
+        from apps.evolve.agents.sdk_backend import ClaudeSDKBackend
+        sdk_backend = ClaudeSDKBackend(repo_root=ROOT, allow_writes=False, max_turns=20,
+                                       max_budget_usd=min(20.0, CAP))
+        print("  spec phase: claude-agent-sdk shared session (EVOLVE_USE_SDK=1)")
+
     class RealPipeline(Pipeline):
         def _code_acting(self, agent, inst):
             if agent == "implement":
@@ -130,7 +139,7 @@ def build_pipeline():
 
     pipe = RealPipeline(model, runner=runner, wm=wm, implement_fn=lambda f: None,
                         validate_fn=validate_fn, store=store, log=print, on_gate=None,
-                        on_event=emitter.event, on_run=emitter.run)
+                        on_event=emitter.event, on_run=emitter.run, sdk_backend=sdk_backend)
     pipe.on_gate = _make_on_gate(pipe)
     pipe.emitter = emitter
     return pipe, runner, ledger

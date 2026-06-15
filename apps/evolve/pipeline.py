@@ -62,9 +62,10 @@ class Pipeline:
 
     def __init__(self, model, *, runner, wm, implement_fn, validate_fn,
                  store=None, cfs_store=None, log=lambda *a: None, on_gate=None,
-                 on_event=None, on_run=None):
+                 on_event=None, on_run=None, sdk_backend=None):
         self.model = model
         self.runner = runner               # reasoning agents (shares the cost ledger)
+        self.sdk_backend = sdk_backend     # ClaudeSDKBackend: when set, the spec phase runs as ONE shared session
         self.wm = wm                        # WorkspaceManager (box 1)
         self.implement_fn = implement_fn    # (feature) -> result with .ok (writes the worktree)
         self.validate_fn = validate_fn      # (feature) -> bool (deploy to box 2 + run bound tests)
@@ -394,8 +395,16 @@ class Pipeline:
         ctx = {"human_note": inst.context.get("human_note"),
                "triage": (ao.get("triage") or {}).get("output"),
                "vision": (ao.get("vision") or {}).get("output")}
-        result = run_lead_phase(self.runner, inst.context.get("work_item", {}),
-                                context=ctx, log=self.log, instance_id=inst.id)
+        if self.sdk_backend is not None:
+            # Stage 2/3: ONE shared, prompt-cached claude-agent-sdk session — constructive chain
+            # resumes (no digest), critics fork; per-agent tool calls stream to the live lanes.
+            from apps.evolve.lead_sdk import run_lead_phase_sdk
+            result = run_lead_phase_sdk(self.runner, self.sdk_backend, inst.context.get("work_item", {}),
+                                        context=ctx, log=self.log, instance_id=inst.id,
+                                        on_event=self.on_event)
+        else:
+            result = run_lead_phase(self.runner, inst.context.get("work_item", {}),
+                                    context=ctx, log=self.log, instance_id=inst.id)
         for key, output in result["outputs"].items():
             ao[key] = {"ok": True, "output": output}      # keyed for the packet + per-agent panels
         inst.context["proposal"] = result["proposal"]

@@ -213,6 +213,55 @@ class TestTouchedDetection(unittest.TestCase):
         self.assertIn("apps/settings/routes.py", files)      # parenthetical stripped
 
 
+class _FakeSdkBackend:
+    """Stands in for ClaudeSDKBackend: returns canned per-agent output (the FAKE roster) and a
+    session id, so the SDK spec-phase WIRING is testable offline (real SDK execution is proven
+    live). Records resume/fork so the test can assert the constructive chain shares a session."""
+    def __init__(self):
+        self.on_tool = None
+        self.calls = []
+
+    def run_turn(self, spec, payload, context, model, system="", *, role_prompt=None,
+                 resume=None, fork=False):
+        from apps.evolve.agents.base import AgentResult
+        self.calls.append((spec.name, resume, fork))
+        return AgentResult(spec.name, ok=True, output=dict(FAKE.get(spec.name, {})),
+                           cost_usd=0.001, model=model, session_id=resume or "sess-1")
+
+
+class TestSdkSpecPhaseWiring(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp()
+        self.repo = init_box1(self.tmp)
+        self.wm = WorkspaceManager(self.repo, worktrees_dir=os.path.join(self.tmp, "wt"))
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def test_pipeline_routes_spec_phase_to_sdk_and_emits_per_agent_lanes(self):
+        events = []
+        sdk = _FakeSdkBackend()
+        pipe = Pipeline(M.load(SDLC), runner=Runner(FakeBackend(FAKE), dict(registry.ROSTER)),
+                        wm=self.wm, implement_fn=lambda f: types.SimpleNamespace(ok=True),
+                        validate_fn=lambda f: True, sdk_backend=sdk,
+                        on_event=lambda iid, agent, kind, msg: events.append((agent, kind)))
+        inst = pipe.submit({"title": "add a thing"})
+        # reached Gate 1 via the SDK spec phase, with the SDK-produced proposal
+        self.assertEqual(pipe.gate_waiting(inst), "gate1")
+        self.assertEqual(pipe.packet(inst)["proposal"]["spec_id"], "demo.area.thing")
+        # the SDK backend actually ran the spec team
+        ran = {name for (name, _r, _f) in sdk.calls}
+        self.assertIn("grounding", ran)
+        self.assertIn("design", ran)
+        # per-agent live lanes were emitted (segmented by agent)
+        started = {a for (a, k) in events if k == "agent_start"}
+        self.assertTrue({"grounding", "design", "lead"} <= started)
+        # critics forked; the constructive chain did not
+        forks = {name for (name, _r, f) in sdk.calls if f}
+        self.assertIn("security", forks)
+        self.assertNotIn("design", forks)
+
+
 class TestSpecAwareTriage(unittest.TestCase):
     def test_triage_receives_candidate_specs(self):
         tmp = tempfile.mkdtemp()

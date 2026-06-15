@@ -35,9 +35,16 @@ _SHARED_SYSTEM = (
 )
 
 
+def _emit(on_event, instance_id, agent, kind, message) -> None:
+    try:
+        on_event(instance_id, agent, kind, message)
+    except Exception:
+        pass   # observability must never break a run
+
+
 def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | None = None,
                        model: str = "claude-opus-4-8", max_rounds: int = 3,
-                       log=lambda *a: None, instance_id=None) -> dict:
+                       log=lambda *a: None, instance_id=None, on_event=None) -> dict:
     context = context or {}
     human_note = context.get("human_note")
     outputs: dict[str, dict] = {}
@@ -45,10 +52,19 @@ def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | 
 
     def call(name, payload, *, store_as=None, critic=False):
         spec = runner.registry[name]
+        lane = store_as or name               # the per-agent lane key in the live activity stream
+        # per-agent live streaming: tag THIS turn's tool calls with the running agent's lane.
+        # (The conversation is shared; the engine segments the log because it drives turns serially.)
+        if on_event:
+            _emit(on_event, instance_id, lane, "agent_start", f"{name}{' · fork' if critic else ''}")
+            sdk_backend.on_tool = lambda kind, msg, _l=lane: _emit(on_event, instance_id, _l, kind, msg)
+        else:
+            sdk_backend.on_tool = None
         # frozen system (cache-safe) + the agent's full charter-grounded prompt as the user-turn role
         res = sdk_backend.run_turn(spec, payload, context, model, _SHARED_SYSTEM,
                                    role_prompt=runner.composed_system(spec),
                                    resume=sess["id"], fork=critic)
+        sdk_backend.on_tool = None
         if runner.ledger is not None:
             runner.ledger.record_result(res, instance_id=instance_id)
         out = res.output or {}
@@ -56,8 +72,12 @@ def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | 
             res.schema_errors = base.validate_against_schema(spec.output_schema, out)
         if not critic and res.session_id:    # advance the shared conversation (critics branch off it)
             sess["id"] = res.session_id
-        outputs[store_as or name] = out
-        log(f"    lead-sdk/{store_as or name} ok={res.ok} ${res.cost_usd:.4f} "
+        outputs[lane] = out
+        if on_event:
+            summ = (out.get("summary") or "")[:160] if isinstance(out, dict) else ""
+            _emit(on_event, instance_id, lane, "agent_end",
+                  f"{'✓' if res.ok else '✗'} (${res.cost_usd:.4f}) {summ}".strip())
+        log(f"    lead-sdk/{lane} ok={res.ok} ${res.cost_usd:.4f} "
             f"sess={(res.session_id or '')[:8]}{' (fork)' if critic else ''}")
         return out
 
