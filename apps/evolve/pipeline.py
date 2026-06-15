@@ -74,9 +74,25 @@ class Pipeline:
         if inst is None:
             raise ValueError(f"no such instance {instance_id}")
         self.walker.resume_gate(inst, decision)
+        if inst.status == REJECTED:
+            self._teardown(inst)
         self.store.save(inst)
         self._maybe_notify_gate(inst)
         return inst
+
+    def _teardown(self, inst: Instance) -> None:
+        """Reject cleanup: remove the feature worktree + branch on box 1 so a rejected
+        item leaves nothing orphaned. (approve->merge already cleans up via finish_feature;
+        box 2 is reset by validate_fn after every run, so only box 1 needs teardown here.)"""
+        fd = inst.context.get("feature")
+        if not fd:
+            return
+        try:
+            self.wm.finish_feature(Feature(fd.get("item_id", ""), fd.get("branch", ""), fd.get("path", "")))
+            self.log(f"  reject teardown: removed worktree + branch {fd.get('branch')}")
+            inst.context["feature"] = None
+        except Exception as e:
+            self.log(f"  reject teardown failed: {type(e).__name__}: {e}")
 
     def gate_waiting(self, inst: Instance) -> str | None:
         gates = [n for n in inst.tokens if self.model.node(n).type == "gate"]
