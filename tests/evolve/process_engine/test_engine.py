@@ -40,8 +40,11 @@ def make_walker():
 class TestModel(unittest.TestCase):
     def test_loads_and_validates(self):
         m = M.load(SDLC)
-        self.assertEqual(len(m.nodes), 39)
-        self.assertEqual(len(m.edges), 54)
+        # spec + the 5 review nodes + their gateways collapsed into the single `lead` node
+        # (apps/evolve/lead.run_lead_phase runs them as an agentic inner loop).
+        self.assertEqual(len(m.nodes), 31)
+        self.assertEqual(len(m.edges), 41)
+        self.assertIsNotNone(m.node("lead"))
         self.assertEqual(sorted(m.starts()), ["gen_design", "qa_sweep", "s_issue", "s_pr"])
         self.assertEqual(sorted(m.ends()), ["e_done", "e_parked", "e_rejected"])
 
@@ -62,15 +65,19 @@ class TestWalkHappyPath(unittest.TestCase):
         self.assertEqual(inst.status, DONE)
         self.assertIn("e_done", inst.context["ended_at"])
         visited = {d for _, d in [(t.src, t.dst) for t in inst.history]}
-        for must in ("triage", "vision", "spec", "serialize", "impl", "merge", "resync", "e_done"):
+        for must in ("triage", "vision", "lead", "serialize", "impl", "merge", "resync", "e_done"):
             self.assertIn(must, visited, f"{must} should be on the path")
 
-    def test_review_fan_out_runs_all_five_reviewers(self):
+    def test_lead_orchestrates_the_spec_phase(self):
+        # The reviewers (security/arch/interop/spec-audit/ux) now run INSIDE the lead node
+        # (apps/evolve/lead.run_lead_phase), not as parallel graph nodes — so the graph
+        # walk just shows `lead`, and the old per-reviewer nodes are gone.
         w, model, ran = make_walker()
         inst = w.start(at="s_issue")          # runs up to gate1
         agents_run = {nid for kind, nid in ran if kind == "agent"}
-        for reviewer in ("sec", "arch", "interop", "crit", "ux"):
-            self.assertIn(reviewer, agents_run, "parallel review fan-out must run all reviewers")
+        self.assertIn("lead", agents_run, "the lead node owns the spec phase")
+        for gone in ("spec", "sec", "arch", "crit"):
+            self.assertNotIn(gone, agents_run, f"{gone} should no longer be a graph node")
 
     def test_rejection_ends_rejected(self):
         w, _, _ = make_walker()
