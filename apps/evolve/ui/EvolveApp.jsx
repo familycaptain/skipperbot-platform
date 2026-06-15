@@ -91,8 +91,10 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
     setLoading(true); setError("");
     try {
       const r = await apiFetch(`/gates?status=`);
-      setGates(r.gates || []);
-      if (!sel && r.gates?.length) setSel(r.gates[0].instance_id);
+      // work queue = active items (waiting + just-decided); resolved/superseded/merged drop off
+      const active = (r.gates || []).filter((g) => ["waiting", "decided"].includes(g.status));
+      setGates(active);
+      if (!sel && active.length) setSel(active[0].instance_id);
     } catch (e) { setError(String(e.message || e)); }
     finally { setLoading(false); }
   }, [sel]);
@@ -174,7 +176,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
             <div className={`border rounded-lg p-3 mb-4 ${REC_COLOR[rec.action] || "bg-slate-800/40 border-slate-700"}`}>
               <div className="text-[11px] uppercase tracking-wide opacity-70">Lead's recommendation</div>
               <div className="font-semibold capitalize">{rec.action || "review"}</div>
-              <div className="text-sm opacity-90 mt-0.5">{rec.why || rec.rationale}</div>
+              <div className="text-sm opacity-90 mt-0.5 line-clamp-3">{rec.why || rec.rationale}</div>
             </div>
 
             {pkt.related?.length > 0 && (
