@@ -15,7 +15,7 @@ flowchart TD
   s_pr(["GitHub PR — reactive"]):::event --> triage
 
   %% intake: proactive A — Design (new features)
-  gen_design["Design agent (cadence): propose features"]:::agent --> lead
+  gen_design["Feature-proposer agent (cadence): propose features"]:::agent --> l_design
 
   %% intake: proactive B — QA / bug-discovery (code AND spec defects)
   qa_sweep(["QA sweep (cadence)"]):::event --> qa_var["Variance/drift detector — code vs approved spec"]:::agent
@@ -32,22 +32,34 @@ flowchart TD
 
   %% triage / vision
   triage["Triage: bug/feature, dedup, link"]:::agent --> gw_kind{"bug or feature?"}:::gw
-  gw_kind -->|bug| lead
+  gw_kind -->|bug| l_design
   gw_kind -->|feature| vision["Vision-fit — charter + Capability scope"]:::agent
   vision --> gw_vision{"fits vision?"}:::gw
   gw_vision -->|off-vision| e_rejected(["Rejected"]):::event
-  gw_vision -->|fits| lead
+  gw_vision -->|fits| l_design
 
-  %% Spec phase: the LEAD runs an agentic inner loop INSIDE this one node
-  %% (Design → spec-author ⇄ spec-auditor, bounded rounds → Security/Arch/Interop/UX),
-  %% arbitrates, and owns the proposal + the Gate-1 recommendation.
-  lead["<b>Lead</b> — Design → Spec-author ⇄ Spec-auditor (+ Security / Arch / Interop / UX), arbitrate, recommend"]:::agent --> prio["Prioritize (backlog-PM)"]:::agent
+  %% Spec phase: the LEAD runs an agentic inner loop — shown expanded here.
+  %% Design sets the approach + decides tech choices; Spec-author ⇄ Spec-auditor iterate
+  %% (bounded rounds); Security/Arch/Interop/UX review; the Lead arbitrates + recommends.
+  subgraph LEAD["🟩 Lead — spec phase (agentic inner loop, bounded rounds)"]
+    direction TB
+    l_design["<b>Design</b> — set approach, decide tech choices, size / decompose (reads the real code)"]:::agent
+    l_author["Spec-author — write C/F/S + bound tests"]:::agent
+    l_audit["Spec-auditor — critique the draft"]:::agent
+    l_rev["Reviewers — Security · Architecture · Interop · UX"]:::agent
+    l_lead["<b>Lead</b> — arbitrate rounds; own the proposal + Gate-1 recommendation"]:::agent
+    l_design --> l_author
+    l_author <-->|"bounded rounds"| l_audit
+    l_audit --> l_rev
+    l_rev --> l_lead
+  end
+  l_lead --> prio["Prioritize (backlog-PM)"]:::agent
   prio --> gw_prio{"surface or park?"}:::gw
   gw_prio -->|"park (low-pri)"| e_parked(["Parked / declined"]):::event
   gw_prio -->|"top-N / critical"| gate1
 
   gate1[/"GATE 1 — approve intent"/]:::gate
-  gate1 -->|"change this"| lead
+  gate1 -->|"change this"| l_design
   gate1 -->|reject| e_rejected
   gate1 -->|approve| serialize[["Serialize spec to file (branch)"]]:::sys
 
@@ -58,7 +70,7 @@ flowchart TD
   validate --> gw_tests{"tests green?"}:::gw
   gw_tests -->|"failing, retry within budget"| impl
   gw_tests -->|"stuck, escalate"| gate2
-  gw_tests -->|green| packet["Build review packet"]:::agent
+  gw_tests -->|green| packet["Result review — Arch · UX · Interop · Security describe what changed + Lead verdict"]:::agent
   packet --> gate2
 
   gate2[/"GATE 2 — approve result"/]:::gate
@@ -80,9 +92,10 @@ flowchart TD
 
 - **Four intake lanes — two reactive, two proactive:**
   - **Reactive:** *GitHub issues* and *PRs* (one connector, no in-app tracker) → **Triage**.
-  - **Proactive A — Design agent (cadence):** generates new-feature proposals from
-    the charter + request clusters + C/F/S coverage gaps → enters at the **Lead**
-    (already vision-aligned).
+  - **Proactive A — Feature-proposer agent (cadence):** generates new-feature proposals
+    from the charter + request clusters + C/F/S coverage gaps → enters the **Lead** spec
+    phase (already vision-aligned). (Distinct from the spec-phase **Design** agent inside
+    the Lead, which sets the *how* for an accepted item.)
   - **Proactive B — QA / bug-discovery (cadence):** a *separate* system running four
     detectors in parallel — **variance/drift** (code vs. approved spec), the
     **regression suite**, a **code-audit** agent (defects in the *code*), and a
