@@ -56,14 +56,26 @@ class ClaudeSDKBackend:
 
     def run(self, spec, payload: dict, context: dict | None, model: str,
             system: str = "") -> AgentResult:
-        try:
-            return asyncio.run(self._run(spec, payload, context, model, system))
-        except Exception as e:  # surface, never crash the walk
-            return AgentResult(spec.name, ok=False, error=f"{type(e).__name__}: {e}", model=model)
+        """Backend-protocol entrypoint — a standalone single-turn run (no shared session)."""
+        return self.run_turn(spec, payload, context, model, system)
 
-    async def _run(self, spec, payload, context, model, system) -> AgentResult:
+    def run_turn(self, spec, payload: dict, context: dict | None, model: str,
+                 system: str = "", *, resume: str | None = None, fork: bool = False) -> AgentResult:
+        """One agent turn. `resume` continues a prior session (shared, cached conversation);
+        `fork` branches it first (for adversarial critics — full context, independent branch).
+        The returned AgentResult carries `session_id` so the orchestrator can thread it on."""
+        try:
+            return asyncio.run(self._run(spec, payload, context, model, system, resume, fork))
+        except Exception as e:  # surface, never crash the walk
+            return AgentResult(spec.name, ok=False, error=f"{type(e).__name__}: {e}", model=model,
+                               session_id=resume)
+
+    async def _run(self, spec, payload, context, model, system, resume, fork) -> AgentResult:
         from claude_agent_sdk import (ClaudeSDKClient, ClaudeAgentOptions, HookMatcher,
-                                      AssistantMessage, ResultMessage, ToolUseBlock)
+                                      AssistantMessage, ResultMessage, ToolUseBlock, fork_session)
+
+        if fork and resume:
+            resume = fork_session(resume).session_id   # branch off the shared session, don't pollute it
 
         sink = self.on_tool
         tools = list(_READ_TOOLS) + (list(_WRITE_TOOLS) if self.allow_writes else [])
@@ -88,12 +100,14 @@ class ClaudeSDKBackend:
             max_budget_usd=self.max_budget_usd,
             output_format={"type": "json_schema", "schema": spec.output_schema},
             hooks={"PreToolUse": [HookMatcher(matcher=None, hooks=[pre_tool])]} if sink else None,
+            resume=resume,
         )
 
         out = None
         cost = 0.0
         in_tok = out_tok = 0
         err = None
+        sid = resume
         transcript: list[str] = []
         async with ClaudeSDKClient(options=opts) as client:
             await client.query(render_input(payload, context))
@@ -107,6 +121,7 @@ class ClaudeSDKBackend:
                 elif isinstance(msg, ResultMessage):
                     out = msg.structured_output
                     cost = msg.total_cost_usd or 0.0
+                    sid = msg.session_id or sid
                     u = msg.usage or {}
                     in_tok = (u.get("input_tokens", 0) + u.get("cache_read_input_tokens", 0)
                               + u.get("cache_creation_input_tokens", 0))
@@ -117,5 +132,5 @@ class ClaudeSDKBackend:
         ok = out is not None and err is None
         return AgentResult(spec.name, ok=ok, output=out, model=model,
                            input_tokens=in_tok, output_tokens=out_tok, cost_usd=cost,
-                           raw_text="\n".join(transcript),
+                           raw_text="\n".join(transcript), session_id=sid,
                            error=err if not ok and err else (None if ok else "no structured output"))

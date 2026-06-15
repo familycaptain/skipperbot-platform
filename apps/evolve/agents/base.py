@@ -57,6 +57,7 @@ class AgentResult:
     cost_usd: float = 0.0
     raw_text: str = ""
     schema_errors: list[str] = field(default_factory=list)
+    session_id: str | None = None              # claude-agent-sdk session this turn ran in (for resume/fork)
 
 
 # --------------------------------------------------------------------------- #
