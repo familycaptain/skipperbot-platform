@@ -133,7 +133,10 @@ def build_pipeline():
                     from apps.evolve.build_loop import implement_with_sdk
                     impl = implement_with_sdk(wi, spec_rec, model=DEEP, ledger=ledger,
                                               max_budget_usd=min(20.0, CAP),
-                                              on_event=self.on_event, instance_id=inst.id)(feat)
+                                              on_event=self.on_event, instance_id=inst.id,
+                                              resume_session=inst.context.get("sdk_session_id"))(feat)
+                    if getattr(impl, "session_id", None):    # 1 issue = 1 conversation forever
+                        inst.context["sdk_session_id"] = impl.session_id
                 else:
                     impl = implement_with_agent(wi, spec_rec, model=DEEP, skills_dir=".claude/skills",
                                                 ledger=ledger, monthly_limit_usd=CAP,

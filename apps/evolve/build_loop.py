@@ -114,10 +114,16 @@ def implement_with_agent(work_item: dict, spec_record: dict, *, model: str,
 
 
 def implement_with_sdk(work_item: dict, spec_record: dict, *, model: str, ledger=None,
-                       max_budget_usd: float | None = None, on_event=None, instance_id=None):
+                       max_budget_usd: float | None = None, on_event=None, instance_id=None,
+                       resume_session: str | None = None):
     """Return an implement_fn that runs the `implement` agent on the **claude-agent-sdk** with
     the real Claude Code tools (Read/Edit/Write/Bash/Glob/Grep) rooted at the feature worktree.
-    Cost is the SDK's real `total_cost_usd` to the ledger; tool calls stream to the live lane."""
+    Cost is the SDK's real `total_cost_usd` to the ledger; tool calls stream to the live lane.
+
+    1 issue == 1 conversation forever: when `resume_session` is given, implement RESUMES the
+    issue's spec conversation (it already remembers the grounding + design + every spec) and just
+    writes the code — instead of re-reading the codebase cold. `res.session_id` carries the thread
+    forward so Gate-2 review continues it too."""
     from apps.evolve.agents.sdk_backend import ClaudeSDKBackend
     from apps.evolve.agents.runner import Runner, FakeBackend
     from apps.evolve.agents.registry import ROSTER
@@ -130,10 +136,10 @@ def implement_with_sdk(work_item: dict, spec_record: dict, *, model: str, ledger
         spec = ROSTER["implement"]
         composer = Runner(FakeBackend({}), dict(ROSTER), ledger=ledger)   # for the charter-grounded system prompt
         res = be.run_turn(spec, {"work_item": work_item, "spec": spec_record}, None, model,
-                          system=composer.composed_system(spec))
+                          system=composer.composed_system(spec), resume=resume_session)
         if ledger is not None:
             ledger.record_result(res, instance_id=instance_id)
-        return res   # AgentResult: .ok / .output / .cost_usd — the pipeline gates on the real diff
+        return res   # AgentResult: .ok / .output / .cost_usd / .session_id — pipeline gates on the diff
     return _impl
 
 

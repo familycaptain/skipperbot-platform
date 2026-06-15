@@ -404,7 +404,8 @@ class Pipeline:
             from apps.evolve.lead_sdk import run_lead_phase_sdk
             result = run_lead_phase_sdk(self.runner, self.sdk_backend, inst.context.get("work_item", {}),
                                         context=ctx, log=self.log, instance_id=inst.id,
-                                        on_event=self.on_event)
+                                        on_event=self.on_event,
+                                        resume_session=inst.context.get("sdk_session_id"))  # 1 issue = 1 conversation forever
         else:
             result = run_lead_phase(self.runner, inst.context.get("work_item", {}),
                                     context=ctx, log=self.log, instance_id=inst.id)

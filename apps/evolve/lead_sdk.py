@@ -49,12 +49,15 @@ def _emit(on_event, instance_id, agent, kind, message) -> None:
 
 def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | None = None,
                        model: str = "claude-opus-4-8", max_rounds: int = 3,
-                       log=lambda *a: None, instance_id=None, on_event=None) -> dict:
+                       log=lambda *a: None, instance_id=None, on_event=None,
+                       resume_session: str | None = None) -> dict:
     context = context or {}
     human_note = context.get("human_note")
     outputs: dict[str, dict] = {}
     reviews_incomplete: list[str] = []        # REQUIRED reviews that didn't complete (surfaced, NEVER skipped)
-    sess = {"id": None}                       # the shared session, threaded by the constructive chain
+    # 1 issue == 1 conversation forever: resume the issue's existing session if it has one
+    # (an operator Change re-enters the SAME thread), else this is its first-ever pass.
+    sess = {"id": resume_session}
 
     def call(name, payload, *, store_as=None, critic=False):
         spec = runner.registry[name]
@@ -114,11 +117,18 @@ def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | 
             f"sess={(res.session_id or '')[:8]}{' (fork)' if critic else ''}")
         return out
 
-    # 0. GROUNDING — the one cold scan; everyone downstream resumes THIS conversation.
-    call("grounding", {"work_item": work_item}, store_as="grounding")
+    # 0. GROUNDING — the one cold scan, EVER, for this issue. Skipped when we're resuming the
+    # issue's existing conversation (a Change): the code is already explored in that thread.
+    if sess["id"] is None:
+        call("grounding", {"work_item": work_item}, store_as="grounding")
+    else:
+        log(f"  lead-sdk: resuming issue conversation {sess['id'][:8]} — grounding already done")
+        _emit(on_event, instance_id, "grounding", "info",
+              f"resuming conversation {sess['id'][:8]} — code already explored, skipping re-grounding")
 
-    # 1. DESIGN — resumes grounding (sees the real exploration, not a digest).
-    design = call("design", {"work_item": work_item}, store_as="design")
+    # 1. DESIGN — resumes the conversation (grounding on the first pass; on a Change, the full
+    # prior spec + the operator's answers, so it revises rather than re-deriving from scratch).
+    design = call("design", {"work_item": work_item, "human_note": human_note}, store_as="design")
     tree = design.get("spec_tree") or []
     needs_tree = design.get("sizing") == "needs-tree" and len(tree) >= 2
 
