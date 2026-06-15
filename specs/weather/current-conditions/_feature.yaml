@@ -1,0 +1,9 @@
+kind: feature
+id: weather.current-conditions
+title: Current conditions by US ZIP
+state: live
+links: {}
+notes: >
+  get_current_weather_by_zip in apps/weather/tools.py. Weather data from wttr.in;
+  the city/region label is derived from the authoritative ZIP lookup (_lookup_zip →
+  zippopotam.us) so it matches the real ZIP city and agrees with the forecast tools.

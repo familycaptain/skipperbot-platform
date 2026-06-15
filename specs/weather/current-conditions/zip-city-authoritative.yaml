@@ -1,0 +1,32 @@
+kind: specification
+id: weather.current-conditions.zip-city-authoritative
+title: Current-weather tool labels the city from the authoritative ZIP lookup, not wttr.in's
+  nearest-area
+state: live
+behavior: When a user asks for current weather by US ZIP code, the formatted result's city/region
+  label is derived from the authoritative ZIP lookup (`_lookup_zip` → zippopotam.us, the same
+  source the forecast tools use), so the displayed place matches the real ZIP city — ZIP 72956
+  yields "Van Buren, AR", not wttr.in's nearest-area label "Rena". The weather conditions/temperature
+  data still come from wttr.in. If `_lookup_zip` fails (offline or unknown ZIP), the tool
+  degrades gracefully by falling back to wttr.in's `nearest_area` areaName/region and still
+  returns the weather rather than erroring.
+implements:
+- apps/weather/tools.py::get_current_weather_by_zip
+- apps/weather/tools.py::_lookup_zip
+tests:
+- type: unit
+  path: test_weather_tools.py
+  rubric: 'Offline/deterministic. Mock both outbound fetches in apps/weather/tools.py: stub
+    _lookup_zip (or the zippopotam _fetch_json call) to return city=''Van Buren'', region=''AR''
+    for ''72956'', and stub the wttr.in _fetch_json to return a valid current_condition payload
+    whose nearest_area areaName is ''Rena''/region ''AR''. Assert get_current_weather_by_zip(''72956'')
+    returns a string containing ''Van Buren, AR'' and NOT ''Rena''. Add a second case: when
+    _lookup_zip raises an exception, assert the result still contains wttr.in''s fallback
+    area label and the temperature/conditions (no ''Error fetching weather'' returned).'
+- type: unit
+  path: test_weather_tools.py
+  rubric: 'Consistency check: for a mocked ZIP, assert the city/region in get_current_weather_by_zip''s
+    output equals the city/region returned by _lookup_zip for that same ZIP, proving current-weather
+    and forecast tools agree on the place name.'
+links: {}
+notes: ''
