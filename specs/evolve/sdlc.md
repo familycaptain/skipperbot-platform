@@ -128,3 +128,15 @@ flowchart TD
   main` (publish to the world) is a separate, operator-owned **release gate** —
   batched over many completed instances and canaried on the Pi — so it lives outside
   this per-change graph (EVOLVE.md §5/§9).
+- **Where the branches live (Option A — build on box 1):**
+  - The **implement agent builds on box 1**, in an isolated worktree on a `feature/*`
+    branch cut from box 1's `release`. **box 2** is the disposable test target: it *pulls*
+    the feature branch from box 1 (box 2's git origin **is** box 1) and runs the bound
+    tests — it never builds or merges.
+  - On Gate-2 approve, box 1 merges `feature → release` (local) and **pushes
+    `origin/release`** — the staging branch.
+  - The **Pi tracks `origin/release`**: `skipper update` (a plain `git pull`) deploys the
+    candidate so the operator canary-tests *exactly what will ship*.
+  - The operator then merges **`release → main`** (the publish gate; `main` is
+    branch-protected). `main` is the world — nothing reaches it except that deliberate
+    merge, so box 1 / the agents can never touch production directly.

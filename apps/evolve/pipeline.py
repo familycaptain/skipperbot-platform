@@ -516,8 +516,14 @@ class Pipeline:
             sha = self.wm.merge_to_release(feat)
             inst.context["release_sha"] = sha
             self.wm.finish_feature(feat)
-            self.log(f"  merged -> release @ {sha[:8]}")
-            self._ev(inst, "merge", "agent_end", f"✓ merged → release @ {sha[:8]}")
+            # publish the candidate to origin/release — the staging branch the Pi tracks
+            pushed = self.wm.push_release()
+            inst.context["release_published"] = pushed
+            self.log(f"  merged -> release @ {sha[:8]}"
+                     + ("  + published origin/release" if pushed else "  (origin/release NOT pushed)"))
+            self._ev(inst, "merge", "agent_end", f"✓ merged → release @ {sha[:8]}"
+                     + (" · published to origin/release (Pi can pull it)" if pushed
+                        else " · ⚠ not published to origin/release (box 1 push rights?)"))
             return f"merged@{sha[:8]}"
         if nid == "resync":
             return "resync (files->DB)"
