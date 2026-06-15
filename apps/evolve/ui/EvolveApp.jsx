@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Workflow, Loader2, CheckCircle2, XCircle, RefreshCw, GitBranch, FlaskConical, Activity, Circle, ChevronDown, ChevronRight } from "lucide-react";
+import { Workflow, Loader2, CheckCircle2, XCircle, RefreshCw, GitBranch, FlaskConical, Activity, Circle, ChevronDown, ChevronRight, Archive, ArchiveRestore } from "lucide-react";
 import { hasAnyRole } from "../../../web/src/utils/roles";
 
 const API = "/api/apps/evolve";
@@ -162,6 +162,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
   const [expandAll, setExpandAll] = useState(false);
   const [answers, setAnswers] = useState({});   // operator's answer per decisions_needed question
   const [guidance, setGuidance] = useState(""); // free-text guidance to the spec team
+  const [showArchived, setShowArchived] = useState(false);  // list view: active vs archived
   const lastId = useRef(0);
   const selRef = useRef(null);
 
@@ -170,12 +171,20 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
 
   const loadRuns = useCallback(async () => {
     try {
-      const r = await apiFetch(`/runs`);
+      const r = await apiFetch(`/runs?archived=${showArchived}`);
       const rows = r.runs || [];
       setRuns(rows);
       if (!selRef.current && rows.length) setSel(rows[0].instance_id);
     } catch (e) { setError(String(e.message || e)); }
-  }, []);
+  }, [showArchived]);
+
+  async function archiveRun(id, archived) {
+    try {
+      await apiFetch(`/runs/${id}/archive`, { method: "POST", body: JSON.stringify({ archived }) });
+      if (sel === id) setSel(null);
+      loadRuns();
+    } catch (e) { setError(String(e.message || e)); }
+  }
 
   // poll the runs list
   useEffect(() => {
@@ -267,22 +276,32 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
       <div className="w-72 shrink-0 border-r border-slate-800 flex flex-col">
         <div className="flex items-center justify-between px-3 h-10 border-b border-slate-800 shrink-0">
           <span className="text-sm font-medium flex items-center gap-1.5">
-            <Workflow size={14} /> Runs
-            {needsYou > 0 && <span className="text-[10px] bg-indigo-600 rounded-full px-1.5" title="need your decision">{needsYou}</span>}
+            <Workflow size={14} /> {showArchived ? "Archived" : "Runs"}
+            {!showArchived && needsYou > 0 && <span className="text-[10px] bg-indigo-600 rounded-full px-1.5" title="need your decision">{needsYou}</span>}
           </span>
-          <span className="text-[10px] text-slate-600 flex items-center gap-1"><Activity size={11} className="text-sky-500" /> live</span>
+          <button onClick={() => { setShowArchived((v) => !v); setSel(null); }}
+            className="text-[10px] text-slate-500 hover:text-slate-200 flex items-center gap-1"
+            title={showArchived ? "show active runs" : "show archived runs"}>
+            {showArchived ? (<><Activity size={11} className="text-sky-500" /> active</>)
+                          : (<><Archive size={11} /> archived</>)}
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto">
           {runs.length === 0 && (
-            <div className="text-slate-600 text-sm text-center mt-8 px-4">No runs yet. Ingested issues and their builds show up here live.</div>
+            <div className="text-slate-600 text-sm text-center mt-8 px-4">{showArchived ? "No archived runs." : "No runs yet. Ingested issues and their builds show up here live."}</div>
           )}
           {runs.map((g) => {
             const active = g.instance_id === sel;
             const st = STATUS[g.status] || { cls: "bg-slate-700/60 text-slate-300", label: g.status };
             return (
-              <button key={g.instance_id} onClick={() => setSel(g.instance_id)}
-                className={`w-full text-left px-3 py-2.5 border-b border-slate-800/60 ${active ? "bg-slate-800/70" : "hover:bg-slate-900/60"}`}>
-                <div className="flex items-center gap-1.5 mb-0.5">
+              <div key={g.instance_id} role="button" onClick={() => setSel(g.instance_id)}
+                className={`relative group w-full text-left px-3 py-2.5 border-b border-slate-800/60 cursor-pointer ${active ? "bg-slate-800/70" : "hover:bg-slate-900/60"}`}>
+                <button onClick={(e) => { e.stopPropagation(); archiveRun(g.instance_id, !showArchived); }}
+                  className="absolute top-1.5 right-1.5 p-1 rounded text-slate-600 hover:text-slate-200 hover:bg-slate-700/60 opacity-0 group-hover:opacity-100"
+                  title={showArchived ? "unarchive" : "archive (hide from list)"}>
+                  {showArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
+                </button>
+                <div className="flex items-center gap-1.5 mb-0.5 pr-6">
                   <span className={`text-[10px] px-1.5 rounded inline-flex items-center gap-1 ${st.cls}`}>
                     {isActive(g.status) && <Loader2 size={9} className="animate-spin" />}{st.label}
                   </span>
@@ -293,7 +312,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
                   {isActive(g.status) && g.current_agent ? `⚙ ${AGENT_LABEL[g.current_agent] || g.current_agent}`
                     : g.source || g.instance_id}
                 </div>
-              </button>
+              </div>
             );
           })}
         </div>

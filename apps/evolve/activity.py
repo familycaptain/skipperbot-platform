@@ -49,15 +49,24 @@ def add_events(instance_id: str, events: list[dict]) -> int:
     return n
 
 
-def list_runs(limit: int = 50) -> list[dict]:
-    """All runs, most-recently-active first (active ones float up)."""
+def list_runs(limit: int = 50, archived: bool = False) -> list[dict]:
+    """Runs, most-recently-active first (active ones float up). Archived rows are hidden by
+    default; pass archived=True for the archived view."""
     return fetch_all_in_schema(SCHEMA, """
         SELECT instance_id, title, source, phase, status, current_agent, current_node,
-               created_at, updated_at
+               archived, created_at, updated_at
         FROM run
+        WHERE archived = %s
         ORDER BY (status IN ('running','building')) DESC, updated_at DESC
         LIMIT %s
-    """, (limit,))
+    """, (archived, limit))
+
+
+def set_archived(instance_id: str, archived: bool) -> int:
+    """Archive (hide from the default list) or unarchive a run. The record is kept."""
+    return execute_in_schema(SCHEMA,
+                             "UPDATE run SET archived = %s WHERE instance_id = %s",
+                             (archived, instance_id))
 
 
 def get_run(instance_id: str) -> dict | None:

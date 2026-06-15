@@ -31,6 +31,10 @@ class ResolveReq(BaseModel):
     status: str
 
 
+class ArchiveReq(BaseModel):
+    archived: bool = True
+
+
 class RunReq(BaseModel):
     instance_id: str
     title: str = ""
@@ -124,11 +128,23 @@ async def api_upsert_run(req: RunReq, request: Request):
 
 
 @router.get("/runs")
-async def api_list_runs(limit: int = 50):
-    """All in-flight + recent runs (the mission-control list)."""
-    rows = await asyncio.to_thread(activity.list_runs, limit)
+async def api_list_runs(limit: int = 50, archived: bool = False):
+    """In-flight + recent runs (the mission-control list). archived=true for the archived view."""
+    rows = await asyncio.to_thread(activity.list_runs, limit, archived)
     return {"runs": rows,
             "active": sum(1 for r in rows if r["status"] in ("running", "building"))}
+
+
+@router.post("/runs/{instance_id}/archive")
+async def api_archive_run(instance_id: str, req: ArchiveReq, request: Request):
+    """Archive (hide) or unarchive a run from the operator list (parent/admin)."""
+    p = _principal(request)
+    if not _has_role(p, "admin", "parent"):
+        raise HTTPException(status_code=403, detail="parent or admin only")
+    n = await asyncio.to_thread(activity.set_archived, instance_id, req.archived)
+    if not n:
+        raise HTTPException(status_code=404, detail="no such run")
+    return {"ok": True, "archived": req.archived}
 
 
 @router.get("/runs/{instance_id}/events")
