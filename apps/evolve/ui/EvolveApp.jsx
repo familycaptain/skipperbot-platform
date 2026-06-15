@@ -266,6 +266,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
               <span>{run?.status ? (STATUS[run.status]?.label || run.status) : "run"}</span>
               <span>·</span><span className="font-mono">{sel}</span>
               {(run?.source || pkt.work_item?.source) && <><span>·</span><span>{run?.source || pkt.work_item?.source}</span></>}
+              {pkt.baseline?.sha && <><span>·</span><span className="font-mono" title="code/specs the agents were grounded on">⎇ {pkt.baseline.branch}@{pkt.baseline.sha}</span></>}
             </div>
             <h2 className="text-lg font-semibold mb-3">{run?.title || pkt.work_item?.title || sel}</h2>
 

@@ -123,6 +123,15 @@ class TestGatedPipeline(unittest.TestCase):
         self.assertEqual(alerts[0]["from"], a.id)
         self.assertIn("conflict_alerts", self.pipe.packet(b))
 
+    def test_baseline_is_verified_and_stamped(self):
+        # before the spec agents read anything, box 1 is put on release and the exact
+        # branch@sha is stamped into the packet so the grounding is auditable
+        inst = self.pipe.submit({"title": "add a thing"})
+        base = self.pipe.packet(inst).get("baseline")
+        self.assertTrue(base and base.get("sha"), "baseline branch@sha must be stamped")
+        self.assertEqual(base["branch"], "release")
+        self.assertEqual(git(self.repo, "rev-parse", "--abbrev-ref", "HEAD"), "release")
+
     def test_reject_at_gate1_ends_rejected_no_code(self):
         inst = self.pipe.submit({"title": "add a thing"})
         inst = self.pipe.approve(inst.id, "reject")

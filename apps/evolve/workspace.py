@@ -112,6 +112,35 @@ class WorkspaceManager:
         out = git(feature.path, "diff", f"{self.release}...HEAD", check=False)
         return out[:max_chars] + ("\n…(diff truncated)…" if len(out) > max_chars else "")
 
+    def ensure_baseline(self, branch: str | None = None) -> dict:
+        """Put box 1's checkout on the right, CURRENT baseline before any agent reads code
+        or specs (spec == code). Fetch, be on `branch` (default the release branch), fold in
+        the latest shared `origin/main` if behind, and report cleanliness + the exact sha.
+        Returns {branch, sha, synced, dirty}. Raises only if origin/main can't cleanly fold
+        (never ground a run on a broken tree); tolerates being offline (no origin) for tests.
+        """
+        branch = branch or self.release
+        info = {"branch": branch, "sha": "", "synced": False, "dirty": False}
+        git(self.repo, "fetch", "--quiet", "origin", check=False)
+        exists = git(self.repo, "rev-parse", "--verify", "--quiet", branch, check=False).strip()
+        cur = git(self.repo, "rev-parse", "--abbrev-ref", "HEAD", check=False).strip()
+        if exists and cur != branch:
+            git(self.repo, "checkout", branch)
+        elif not exists:
+            info["branch"] = cur or branch
+        if git(self.repo, "rev-parse", "--verify", "--quiet", "origin/main", check=False).strip():
+            behind = git(self.repo, "rev-list", "--count", "HEAD..origin/main", check=False).strip() or "0"
+            if behind != "0":
+                git(self.repo, *_ID, "merge", "--no-edit", "origin/main", check=False)
+                if git(self.repo, "ls-files", "-u", check=False).strip():
+                    git(self.repo, "merge", "--abort", check=False)
+                    raise RuntimeError(f"baseline: origin/main won't cleanly fold into "
+                                       f"{info['branch']} — fix box 1 before running")
+                info["synced"] = True
+        info["sha"] = git(self.repo, "rev-parse", "--short", "HEAD", check=False).strip()
+        info["dirty"] = bool(git(self.repo, "status", "--porcelain", check=False).strip())
+        return info
+
     # --- box 2: validate the branch in isolation -------------------------
     def box2_deploy(self, feature: Feature, box2_dir: str) -> str:
         """Stand up / update a box-2 clone checked out to the feature branch."""
