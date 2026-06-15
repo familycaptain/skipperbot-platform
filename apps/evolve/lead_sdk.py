@@ -19,8 +19,13 @@ SDK backend).
 """
 from __future__ import annotations
 
+import time
+
 from apps.evolve.agents import base
 from apps.evolve.lead import REVIEWERS
+
+_RETRY_ATTEMPTS = 3          # a transient API/SDK blip must not drop a REQUIRED review
+_RETRY_BACKOFF = (3, 8)      # seconds between attempts (2 retries)
 
 # ONE frozen system prompt for the whole session — the per-agent role goes in the user turn
 # (varying `system` per turn would invalidate the conversation cache). Kept short + stable.
@@ -48,6 +53,7 @@ def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | 
     context = context or {}
     human_note = context.get("human_note")
     outputs: dict[str, dict] = {}
+    reviews_incomplete: list[str] = []        # REQUIRED reviews that didn't complete (surfaced, NEVER skipped)
     sess = {"id": None}                       # the shared session, threaded by the constructive chain
 
     def call(name, payload, *, store_as=None, critic=False):
@@ -60,25 +66,25 @@ def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | 
             sdk_backend.on_tool = lambda kind, msg, _l=lane: _emit(on_event, instance_id, _l, kind, msg)
         else:
             sdk_backend.on_tool = None
-        # frozen system (cache-safe) + the agent's full charter-grounded prompt as the user-turn role
-        try:
+
+        # RETRY transient failures — a flaky API/SDK blip (overload, rate-limit, dropped stream)
+        # must NOT cost us a required review. run_turn never raises (it returns ok=False), so we
+        # retry on a not-ok result with backoff. Every review is required; we fix, we don't skip.
+        res = None
+        for attempt in range(1, _RETRY_ATTEMPTS + 1):
             res = sdk_backend.run_turn(spec, payload, context, model, _SHARED_SYSTEM,
                                        role_prompt=runner.composed_system(spec),
                                        resume=sess["id"], fork=critic)
-        except Exception as e:
-            sdk_backend.on_tool = None
-            # An adversarial critic (fork) is non-essential — a transient SDK/API error on ONE
-            # reviewer must NOT torch the whole spec phase (grounding + design + specs + the other
-            # reviewers, all already paid for). Log it, hand back nothing, let the Lead proceed with
-            # the reviews that did return. The constructive chain (grounding/design/spec/lead) is
-            # load-bearing, so it still raises.
-            if not critic:
-                raise
-            log(f"    lead-sdk/{lane} FAILED (critic, skipped): {type(e).__name__}: {e}")
-            if on_event:
-                _emit(on_event, instance_id, lane, "agent_end", f"✗ skipped ({type(e).__name__})")
-            outputs[lane] = {}
-            return {}
+            if res.ok:
+                break
+            if attempt < _RETRY_ATTEMPTS:
+                wait = _RETRY_BACKOFF[min(attempt - 1, len(_RETRY_BACKOFF) - 1)]
+                log(f"    lead-sdk/{lane} attempt {attempt}/{_RETRY_ATTEMPTS} not ok "
+                    f"({res.error or 'no output'}) — retrying in {wait}s")
+                if on_event:
+                    _emit(on_event, instance_id, lane, "info",
+                          f"retry {attempt}/{_RETRY_ATTEMPTS}: {res.error or 'no output'}")
+                time.sleep(wait)
         sdk_backend.on_tool = None
         if runner.ledger is not None:
             runner.ledger.record_result(res, instance_id=instance_id)
@@ -88,6 +94,18 @@ def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | 
         if not critic and res.session_id:    # advance the shared conversation (critics branch off it)
             sess["id"] = res.session_id
         outputs[lane] = out
+
+        # A REQUIRED review that STILL didn't complete after retries is NOT silently dropped.
+        # We record it and surface it LOUDLY (error event + flag on the gate) so the operator can
+        # never mistake a half-reviewed change for a fully-reviewed one (e.g. a missed security pass).
+        if critic and not res.ok:
+            reviews_incomplete.append(lane)
+            log(f"    lead-sdk/{lane} REVIEW INCOMPLETE after {_RETRY_ATTEMPTS} attempts: {res.error}")
+            if on_event:
+                _emit(on_event, instance_id, lane, "error",
+                      f"⚠ REVIEW INCOMPLETE ({res.error or 'no output'}) — required, will block clean approval")
+            return out
+
         if on_event:
             summ = (out.get("summary") or "")[:160] if isinstance(out, dict) else ""
             _emit(on_event, instance_id, lane, "agent_end",
@@ -152,6 +170,7 @@ def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | 
                                             for s in spec_tree_specs] if needs_tree else None,
                               "decisions_needed": design.get("decisions_needed"),
                               "reviews": {k: outputs.get(k) for k in (*REVIEWERS, "crit")},
+                              "reviews_incomplete": reviews_incomplete,
                               "rounds": rounds, "converged": verdict == "accept", "escalated": escalated,
                               "human_note": human_note}, store_as="lead")
     except Exception as e:
@@ -163,8 +182,20 @@ def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | 
         "action": "change" if (escalated or verdict != "accept") else "approve",
         "why": final.get("summary", ""),
     }
+    # Every review is REQUIRED. If any didn't complete (even after retries), a clean approval is not
+    # honest — force the action off "approve" and tell the operator exactly which reviews are missing,
+    # so a change can't ship with, e.g., the security pass silently absent.
+    if reviews_incomplete:
+        rec["reviews_incomplete"] = reviews_incomplete
+        if rec.get("action") == "approve":
+            rec["action"] = "change"
+        rec["why"] = (f"⚠ Reviews did not complete: {', '.join(reviews_incomplete)} "
+                      f"(required — retried {_RETRY_ATTEMPTS}×). Re-run the spec phase or address the "
+                      f"failure before approving. " + (rec.get("why") or "")).strip()
+        log(f"  lead-sdk: REVIEWS INCOMPLETE {reviews_incomplete} — clean approval blocked")
     log(f"  lead-sdk: {rounds} round(s), {len(spec_tree_specs)} spec(s), recommend={rec.get('action')}"
         + (" (escalated)" if escalated else "") + f", session={(sess['id'] or '-')[:8]}")
     return {"proposal": proposal, "spec_tree": spec_tree_specs, "recommendation": rec,
             "outputs": outputs, "rounds": rounds, "escalated": escalated,
+            "reviews_incomplete": reviews_incomplete,
             "code_context": None, "session_id": sess["id"]}

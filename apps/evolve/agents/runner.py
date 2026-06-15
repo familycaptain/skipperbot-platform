@@ -13,11 +13,26 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from dataclasses import dataclass, field
 from typing import Callable, Protocol
 
 from apps.evolve.agents import charter
 from apps.evolve.agents.base import AgentSpec, AgentResult, validate_against_schema
+
+# Transient infra failures (overload, rate-limit, dropped connection, 5xx) — retry these so a
+# momentary blip can't mis-handle a work item (e.g. auto-reject an issue because triage couldn't
+# reach the API). Deterministic failures (bad schema, config) are NOT retried — they should surface.
+_TRANSIENT_MARKERS = ("overloaded", "rate limit", "rate_limit", "timeout", "timed out",
+                      "connection", "econnreset", "temporarily", "503", "502", "500", "529",
+                      "internalserver", "apiconnection", "apitimeout", "apistatus")
+_RUNNER_RETRIES = 3
+_RUNNER_BACKOFF = (3, 8)
+
+
+def _is_transient(error: str | None) -> bool:
+    e = (error or "").lower()
+    return any(m in e for m in _TRANSIENT_MARKERS)
 
 # Tier -> Anthropic model id. Evolve runs on Claude (separate from the platform's
 # OpenAI assistant). Override via env EVOLVE_MODEL_FAST / _SMART / _DEEP.
@@ -180,10 +195,18 @@ class Runner:
             # tool-use agents stream every command/read; clear the sink after the call
             if backend is self.tool_backend and hasattr(backend, "on_tool"):
                 backend.on_tool = lambda kind, msg: self._emit(ev, instance_id, agent_name, kind, msg)
-        res = backend.run(spec, payload, context, model, self.composed_system(spec))
+        for attempt in range(1, _RUNNER_RETRIES + 1):
+            res = backend.run(spec, payload, context, model, self.composed_system(spec))
+            self.spent_usd += res.cost_usd
+            if res.ok or not _is_transient(res.error) or attempt == _RUNNER_RETRIES:
+                break
+            wait = _RUNNER_BACKOFF[min(attempt - 1, len(_RUNNER_BACKOFF) - 1)]
+            if ev:
+                self._emit(ev, instance_id, agent_name, "info",
+                           f"transient error, retry {attempt}/{_RUNNER_RETRIES} in {wait}s: {res.error[:80]}")
+            time.sleep(wait)
         if hasattr(backend, "on_tool"):
             backend.on_tool = None
-        self.spent_usd += res.cost_usd
         if self.ledger is not None:
             self.ledger.record_result(res, instance_id=instance_id)
         # validate the structured output against the agent's schema
