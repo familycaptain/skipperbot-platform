@@ -29,6 +29,32 @@ _READ_TOOLS = ["Read", "Grep", "Glob", "Bash"]
 _WRITE_TOOLS = ["Edit", "Write"]
 
 
+def _render_output(out: dict) -> str:
+    """A readable rendering of an agent's emitted structured output — so the live lane shows
+    WHAT the agent decided (approach, key_decisions, sizing, findings…), not just 'StructuredOutput'.
+    Reasoning agents barely tool-call, so without this their lane is empty."""
+    if not isinstance(out, dict):
+        return ""
+    lines = []
+    for k, v in out.items():
+        if k == "summary" or v in (None, "", [], {}):
+            continue
+        if isinstance(v, list):
+            lines.append(f"{k}:")
+            for item in v[:8]:
+                if isinstance(item, dict):
+                    s = (item.get("title") or item.get("detail") or item.get("question")
+                         or item.get("spec_id") or item.get("path") or item.get("name") or str(item))
+                else:
+                    s = str(item)
+                lines.append(f"  • {s[:200]}")
+        elif isinstance(v, dict):
+            lines.append(f"{k}: " + "; ".join(f"{kk}={vv}" for kk, vv in list(v.items())[:4])[:200])
+        else:
+            lines.append(f"{k}: {str(v)[:300]}")
+    return "\n".join(lines)[:1800]
+
+
 def _tool_label(name: str, tool_input: dict) -> str:
     """One-line label for a tool call — what scrolls in the live activity log."""
     ti = tool_input or {}
@@ -136,6 +162,13 @@ class ClaudeSDKBackend:
                                     pass
                 elif isinstance(msg, ResultMessage):
                     out = msg.structured_output
+                    if sink and isinstance(out, dict) and out:
+                        # stream the agent's actual decision into the lane — reasoning agents
+                        # barely tool-call, so this is the substance of what they "did".
+                        try:
+                            sink("emit", _render_output(out))
+                        except Exception:
+                            pass
                     cost = msg.total_cost_usd or 0.0
                     sid = msg.session_id or sid
                     u = msg.usage or {}

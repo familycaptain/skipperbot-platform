@@ -61,9 +61,24 @@ def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | 
         else:
             sdk_backend.on_tool = None
         # frozen system (cache-safe) + the agent's full charter-grounded prompt as the user-turn role
-        res = sdk_backend.run_turn(spec, payload, context, model, _SHARED_SYSTEM,
-                                   role_prompt=runner.composed_system(spec),
-                                   resume=sess["id"], fork=critic)
+        try:
+            res = sdk_backend.run_turn(spec, payload, context, model, _SHARED_SYSTEM,
+                                       role_prompt=runner.composed_system(spec),
+                                       resume=sess["id"], fork=critic)
+        except Exception as e:
+            sdk_backend.on_tool = None
+            # An adversarial critic (fork) is non-essential — a transient SDK/API error on ONE
+            # reviewer must NOT torch the whole spec phase (grounding + design + specs + the other
+            # reviewers, all already paid for). Log it, hand back nothing, let the Lead proceed with
+            # the reviews that did return. The constructive chain (grounding/design/spec/lead) is
+            # load-bearing, so it still raises.
+            if not critic:
+                raise
+            log(f"    lead-sdk/{lane} FAILED (critic, skipped): {type(e).__name__}: {e}")
+            if on_event:
+                _emit(on_event, instance_id, lane, "agent_end", f"✗ skipped ({type(e).__name__})")
+            outputs[lane] = {}
+            return {}
         sdk_backend.on_tool = None
         if runner.ledger is not None:
             runner.ledger.record_result(res, instance_id=instance_id)
