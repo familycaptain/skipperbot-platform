@@ -10,14 +10,20 @@ import json
 
 from app_platform.db import (execute_in_schema, fetch_all_in_schema,
                              fetch_one_in_schema)
+from apps.evolve import activity
 
 SCHEMA = "app_evolve"
 
 
 def upsert_gate(instance_id: str, gate: str, packet: dict) -> None:
     """Enqueue (or refresh) a gate waiting for the operator."""
-    title = (packet.get("work_item") or {}).get("title", "") or ""
+    wi = packet.get("work_item") or {}
+    title = wi.get("title", "") or ""
     rec = packet.get("recommendation") or {}
+    # keep the mission-control run row in lock-step so a waiting gate shows in the Runs list
+    activity.upsert_run(instance_id, title=title, source=wi.get("source", ""),
+                        phase=("spec" if gate == "gate1" else "build"),
+                        status="waiting", current_node=gate)
     execute_in_schema(SCHEMA, """
         INSERT INTO gate_queue (instance_id, gate, title, rec_action, rec_why, packet, status)
         VALUES (%s, %s, %s, %s, %s, %s::jsonb, 'waiting')
@@ -60,6 +66,7 @@ def resolve_gate(instance_id: str, status: str) -> int:
     (e.g. 'merged' | 'rejected' | 'orphan'). Moves it out of the 'decided' set so the
     poller won't act on it again. (When a work-item advances to a NEXT gate, the engine
     instead re-pushes it via upsert_gate, which flips it back to 'waiting'.)"""
+    activity.upsert_run(instance_id, status=status, current_agent="")   # mirror to the Runs list
     return execute_in_schema(SCHEMA,
                              "UPDATE gate_queue SET status = %s WHERE instance_id = %s",
                              (status, instance_id))
