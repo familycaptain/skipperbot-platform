@@ -177,6 +177,20 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
               <div className="text-sm opacity-90 mt-0.5">{rec.why || rec.rationale}</div>
             </div>
 
+            {pkt.related?.length > 0 && (
+              <div className="border border-amber-700/40 bg-amber-900/20 rounded-lg p-2.5 mb-4 text-xs">
+                <div className="text-amber-300 font-medium mb-1">
+                  ⚠ Overlaps {pkt.related.length} other in-flight item{pkt.related.length > 1 ? "s" : ""} — may collide at merge
+                </div>
+                {pkt.related.map((r, i) => (
+                  <div key={i} className="text-slate-300">
+                    • {r.title || r.instance}{" "}
+                    <span className="text-slate-500">({r.source || r.gate || r.status}; shares {(r.overlap || []).join(", ")})</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {detail.status === "waiting" ? (
               isParent ? (
                 <div className="flex gap-2 mb-5">

@@ -115,6 +115,7 @@ class Pipeline:
             "work_item": inst.context.get("work_item"),
             "proposal": inst.context.get("proposal"),          # the spec-author C/F/S
             "agents": agents,                                  # ordered per-agent panels (summary + output)
+            "related": self._related(inst),                    # other in-flight items touching the same C/F/S/files
             "triage": ao.get("triage"),                        # incl. spec_status (violates/no-spec/conflicts)
             "reviews": {k: ao.get(k) for k in ("security", "architecture", "interop", "crit", "ux")},
             "prioritize": ao.get("prio"),
@@ -122,6 +123,40 @@ class Pipeline:
             "review_packet": ao.get("packet"),
             "release_sha": inst.context.get("release_sha"),
         }
+
+    @staticmethod
+    def _touched(inst) -> tuple[set, set]:
+        """The C/F/S ids + files this instance affects (from triage + its proposal)."""
+        ao = inst.context.get("agent_outputs", {})
+        triage = (ao.get("triage") or {}).get("output") or {}
+        proposal = inst.context.get("proposal") or {}
+        cfs = set(triage.get("touches_cfs") or []) | {proposal.get("spec_id")}
+        files = {str(p).split("::")[0] for p in (proposal.get("implements") or [])}
+        return cfs - {None, ""}, files - {None, ""}
+
+    def _related(self, inst) -> list[dict]:
+        """Other IN-FLIGHT instances touching the same C/F/S or files — so two items that
+        edit the same code can't silently collide at merge (the cross-item gap). Surfaced
+        in the packet; the operator decides ordering / supersedes."""
+        mine_cfs, mine_files = self._touched(inst)
+        if not (mine_cfs or mine_files):
+            return []
+        out = []
+        try:
+            others = self.store.all()
+        except Exception:
+            return []
+        for other in others:
+            if other.id == inst.id or other.status in (DONE, REJECTED, PARKED):
+                continue
+            o_cfs, o_files = self._touched(other)
+            shared = sorted((mine_cfs & o_cfs) | (mine_files & o_files))
+            if shared:
+                wi = other.context.get("work_item") or {}
+                out.append({"instance": other.id, "title": wi.get("title", ""),
+                            "source": wi.get("source", ""), "gate": self.gate_waiting(other),
+                            "status": other.status, "overlap": shared[:5]})
+        return out
 
     def _recommendation(self, inst, gate, ao) -> dict:
         """Synthesize a recommended action so the human never faces a bare decision.
