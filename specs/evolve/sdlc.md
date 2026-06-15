@@ -1,4 +1,4 @@
-# Evolve — SDLC process flow (v0.3.2)
+# Evolve — SDLC process flow (v0.4.0)
 
 > **Generated view.** The source of truth is [`sdlc.yaml`](./sdlc.yaml); this
 > Mermaid is the picture of it. Open this file in GitHub (or VS Code preview /
@@ -15,7 +15,7 @@ flowchart TD
   s_pr(["GitHub PR — reactive"]):::event --> triage
 
   %% intake: proactive A — Design (new features)
-  gen_design["Design agent (cadence): propose features"]:::agent --> spec
+  gen_design["Design agent (cadence): propose features"]:::agent --> lead
 
   %% intake: proactive B — QA / bug-discovery (code AND spec defects)
   qa_sweep(["QA sweep (cadence)"]):::event --> qa_var["Variance/drift detector — code vs approved spec"]:::agent
@@ -32,33 +32,22 @@ flowchart TD
 
   %% triage / vision
   triage["Triage: bug/feature, dedup, link"]:::agent --> gw_kind{"bug or feature?"}:::gw
-  gw_kind -->|bug| spec
+  gw_kind -->|bug| lead
   gw_kind -->|feature| vision["Vision-fit — charter + Capability scope"]:::agent
   vision --> gw_vision{"fits vision?"}:::gw
   gw_vision -->|off-vision| e_rejected(["Rejected"]):::event
-  gw_vision -->|fits| spec
+  gw_vision -->|fits| lead
 
-  spec["Spec-author: draft/update C/F/S + tests"]:::agent --> prio["Prioritize (backlog-PM)"]:::agent
+  %% Spec phase: the LEAD runs an agentic inner loop INSIDE this one node
+  %% (Design → spec-author ⇄ spec-auditor, bounded rounds → Security/Arch/Interop/UX),
+  %% arbitrates, and owns the proposal + the Gate-1 recommendation.
+  lead["<b>Lead</b> — Design → Spec-author ⇄ Spec-auditor (+ Security / Arch / Interop / UX), arbitrate, recommend"]:::agent --> prio["Prioritize (backlog-PM)"]:::agent
   prio --> gw_prio{"surface or park?"}:::gw
   gw_prio -->|"park (low-pri)"| e_parked(["Parked / declined"]):::event
-  gw_prio -->|"top-N / critical"| gw_rev{{"review fan-out"}}:::gw
-
-  gw_rev --> sec["Security review"]:::agent
-  gw_rev --> arch["Architecture review"]:::agent
-  gw_rev --> interop["Interop / conflict check (spec-vs-spec)"]:::agent
-  gw_rev --> crit["Spec-audit — gaps/holes in THIS spec"]:::agent
-  gw_rev --> ux["UX/UI review"]:::agent
-  sec --> gw_revj{{"join"}}:::gw
-  arch --> gw_revj
-  interop --> gw_revj
-  crit --> gw_revj
-  ux --> gw_revj
-  gw_revj --> gw_conf{"conflict?"}:::gw
-  gw_conf -->|"conflict, rework"| spec
-  gw_conf -->|clear| gate1
+  gw_prio -->|"top-N / critical"| gate1
 
   gate1[/"GATE 1 — approve intent"/]:::gate
-  gate1 -->|"change this"| spec
+  gate1 -->|"change this"| lead
   gate1 -->|reject| e_rejected
   gate1 -->|approve| serialize[["Serialize spec to file (branch)"]]:::sys
 
@@ -92,7 +81,7 @@ flowchart TD
 - **Four intake lanes — two reactive, two proactive:**
   - **Reactive:** *GitHub issues* and *PRs* (one connector, no in-app tracker) → **Triage**.
   - **Proactive A — Design agent (cadence):** generates new-feature proposals from
-    the charter + request clusters + C/F/S coverage gaps → enters at **Spec-author**
+    the charter + request clusters + C/F/S coverage gaps → enters at the **Lead**
     (already vision-aligned).
   - **Proactive B — QA / bug-discovery (cadence):** a *separate* system running four
     detectors in parallel — **variance/drift** (code vs. approved spec), the
@@ -106,10 +95,13 @@ flowchart TD
   scope** (help.md/guide.md are inputs, not the authority).
 - **Prioritize** is the attention valve: long tail *parked/declined* (recorded);
   only **top-N or safety-critical** continue.
-- **Review fan-out** runs Security / Architecture / Interop / **Spec-audit** / UX in
-  parallel, joins; an **interop conflict** routes back to Spec-author. Interop and
-  spec-audit are a pair: interop checks specs *against each other*, spec-audit
-  checks *this* spec for internal gaps/holes.
+- **The Lead owns the spec phase** (an agentic inner loop inside the deterministic
+  walk). It runs **Design** (how should it work — reframes the ask, sets the approach,
+  honors the engineering principles), then iterates **Spec-author ⇄ Spec-auditor** in
+  **bounded** rounds (a stuck negotiation *escalates* to the human rather than spinning),
+  brings in **Security / Architecture / Interop / UX**, **arbitrates**, and is the single
+  agent that hands the human a synthesized **proposal + recommendation** at Gate 1. Every
+  agent (the Lead included) emits a plain-language `summary` and gets its own UI panel.
 - **Gate 1** (approve intent) → autonomous **implement + author tests** on the box-1
   branch → **box 2** validates with Playwright → loop **failing→retry** / **stuck→
   escalate** / **green→packet** → **Gate 2** → **auto-merge to the `release` branch**

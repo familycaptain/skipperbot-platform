@@ -14,7 +14,7 @@
 # edge.when: the condition/label on a branch (omitted = unconditional)
 
 id: evolve-sdlc
-version: 0.3.2
+version: 0.4.0
 
 nodes:
   # ---- intake — FOUR lanes: two reactive, two proactive ----
