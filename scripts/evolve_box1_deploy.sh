@@ -17,5 +17,6 @@ git checkout main
 git reset --hard origin/main          # main mirrors the shared engine source
 git checkout release
 git merge --no-edit main              # release = main + local (unpublished) feature merges
-echo "deployed: release = origin/main + local feature merges"
+git push origin release || true       # publish the candidate so the Pi can pull it (no-op if read-only)
+echo "deployed: release = origin/main + local feature merges (pushed to origin/release)"
 git log --oneline -4
