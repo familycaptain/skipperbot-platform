@@ -113,6 +113,30 @@ def implement_with_agent(work_item: dict, spec_record: dict, *, model: str,
     return _impl
 
 
+def implement_with_sdk(work_item: dict, spec_record: dict, *, model: str, ledger=None,
+                       max_budget_usd: float | None = None, on_event=None, instance_id=None):
+    """Return an implement_fn that runs the `implement` agent on the **claude-agent-sdk** with
+    the real Claude Code tools (Read/Edit/Write/Bash/Glob/Grep) rooted at the feature worktree.
+    Cost is the SDK's real `total_cost_usd` to the ledger; tool calls stream to the live lane."""
+    from apps.evolve.agents.sdk_backend import ClaudeSDKBackend
+    from apps.evolve.agents.runner import Runner, FakeBackend
+    from apps.evolve.agents.registry import ROSTER
+
+    def _impl(feature: Feature):
+        be = ClaudeSDKBackend(repo_root=feature.path, allow_writes=True, max_turns=40,
+                              max_budget_usd=max_budget_usd)
+        if on_event:
+            be.on_tool = lambda kind, msg: on_event(instance_id, "implement", kind, msg)
+        spec = ROSTER["implement"]
+        composer = Runner(FakeBackend({}), dict(ROSTER), ledger=ledger)   # for the charter-grounded system prompt
+        res = be.run_turn(spec, {"work_item": work_item, "spec": spec_record}, None, model,
+                          system=composer.composed_system(spec))
+        if ledger is not None:
+            ledger.record_result(res, instance_id=instance_id)
+        return res   # AgentResult: .ok / .output / .cost_usd — the pipeline gates on the real diff
+    return _impl
+
+
 def local_validate(wm: WorkspaceManager, box2_dir: str,
                    test_path: str = "tests/evolve") -> ValidateFn:
     """Stage-1 stand-in: deploy to a LOCAL box-2 clone on this machine and run the

@@ -129,10 +129,16 @@ def build_pipeline():
                 self._run(inst, phase="build", status="building",
                           current_node="impl", current_agent="implement")
                 self._ev(inst, "implement", "node", "implementing: writing the code + bound test")
-                impl = implement_with_agent(wi, spec_rec, model=DEEP, skills_dir=".claude/skills",
-                                            ledger=ledger, monthly_limit_usd=CAP,
-                                            on_event=self.on_event, instance_id=inst.id,
-                                            code_context=inst.context.get("code_context"))(feat)
+                if self.sdk_backend is not None:
+                    from apps.evolve.build_loop import implement_with_sdk
+                    impl = implement_with_sdk(wi, spec_rec, model=DEEP, ledger=ledger,
+                                              max_budget_usd=min(20.0, CAP),
+                                              on_event=self.on_event, instance_id=inst.id)(feat)
+                else:
+                    impl = implement_with_agent(wi, spec_rec, model=DEEP, skills_dir=".claude/skills",
+                                                ledger=ledger, monthly_limit_usd=CAP,
+                                                on_event=self.on_event, instance_id=inst.id,
+                                                code_context=inst.context.get("code_context"))(feat)
                 # shared gating: ok AND a real code change, else validate is short-circuited
                 return self._finish_implement(inst, feat, impl)
             return super()._code_acting(agent, inst)
