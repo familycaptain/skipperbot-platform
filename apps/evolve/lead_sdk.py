@@ -110,7 +110,9 @@ def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | 
             return out
 
         if on_event:
-            summ = (out.get("summary") or "")[:160] if isinstance(out, dict) else ""
+            # brief tail line (the collapsed-lane preview); the FULL summary also streams as its own
+            # field event above, so nothing is lost — this is just the at-a-glance status.
+            summ = (out.get("summary") or "")[:400] if isinstance(out, dict) else ""
             _emit(on_event, instance_id, lane, "agent_end",
                   f"{'✓' if res.ok else '✗'} (${res.cost_usd:.4f}) {summ}".strip())
         log(f"    lead-sdk/{lane} ok={res.ok} ${res.cost_usd:.4f} "

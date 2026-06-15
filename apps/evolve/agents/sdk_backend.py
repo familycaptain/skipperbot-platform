@@ -29,30 +29,31 @@ _READ_TOOLS = ["Read", "Grep", "Glob", "Bash"]
 _WRITE_TOOLS = ["Edit", "Write"]
 
 
-def _render_output(out: dict) -> str:
-    """A readable rendering of an agent's emitted structured output — so the live lane shows
-    WHAT the agent decided (approach, key_decisions, sizing, findings…), not just 'StructuredOutput'.
-    Reasoning agents barely tool-call, so without this their lane is empty."""
+def _render_fields(out: dict) -> list[tuple[str, str]]:
+    """Each emitted field as its own (label, value) pair — so the live lane shows the agent's
+    FULL decision (one scrollable event per field) instead of one crammed, truncated blob.
+    Reasoning agents barely tool-call, so without this their lane would be empty."""
     if not isinstance(out, dict):
-        return ""
-    lines = []
+        return []
+    fields: list[tuple[str, str]] = []
     for k, v in out.items():
-        if k == "summary" or v in (None, "", [], {}):
+        if v in (None, "", [], {}):
             continue
         if isinstance(v, list):
-            lines.append(f"{k}:")
-            for item in v[:8]:
+            lines = []
+            for item in v:
                 if isinstance(item, dict):
                     s = (item.get("title") or item.get("detail") or item.get("question")
                          or item.get("spec_id") or item.get("path") or item.get("name") or str(item))
                 else:
                     s = str(item)
-                lines.append(f"  • {s[:200]}")
+                lines.append(f"  • {s}")
+            fields.append((k, "\n".join(lines)))
         elif isinstance(v, dict):
-            lines.append(f"{k}: " + "; ".join(f"{kk}={vv}" for kk, vv in list(v.items())[:4])[:200])
+            fields.append((k, "; ".join(f"{kk}={vv}" for kk, vv in v.items())))
         else:
-            lines.append(f"{k}: {str(v)[:300]}")
-    return "\n".join(lines)[:1800]
+            fields.append((k, str(v)))
+    return fields
 
 
 def _tool_label(name: str, tool_input: dict) -> str:
@@ -157,16 +158,18 @@ class ClaudeSDKBackend:
                             transcript.append(txt)
                             if sink:
                                 try:
-                                    sink("text", txt[:600])
+                                    sink("text", txt[:1900])   # 1900 = activity event storage cap
                                 except Exception:
                                     pass
                 elif isinstance(msg, ResultMessage):
                     out = msg.structured_output
                     if sink and isinstance(out, dict) and out:
-                        # stream the agent's actual decision into the lane — reasoning agents
-                        # barely tool-call, so this is the substance of what they "did".
+                        # stream the agent's actual decision into the lane, one event PER FIELD so
+                        # each shows in full (reasoning agents barely tool-call — this is the substance
+                        # of what they "did"). 1900 cap = the activity event storage limit.
                         try:
-                            sink("emit", _render_output(out))
+                            for label, val in _render_fields(out):
+                                sink("emit", f"{label}: {val}"[:1900])
                         except Exception:
                             pass
                     cost = msg.total_cost_usd or 0.0
