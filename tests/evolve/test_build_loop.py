@@ -94,5 +94,20 @@ class TestBuildLoop(unittest.TestCase):
         self.assertTrue(self._release_has("apps/demo/thing.py"))
 
 
+class TestBoundTestSelection(unittest.TestCase):
+    def test_is_test_file(self):
+        for p in ("tests/weather/test_zip.py", "apps/weather/test_tools.py",
+                  "apps/x/tests/test_y.py", "foo_test.py"):
+            self.assertTrue(build_loop.is_test_file(p), p)
+        for p in ("apps/weather/tools.py", "specs/weather/spec.yaml",
+                  "tests/weather/fixtures.json", "README.md"):
+            self.assertFalse(build_loop.is_test_file(p), p)
+
+    def test_select_bound_tests_picks_only_tests(self):
+        changed = ["apps/weather/tools.py", "tests/weather/test_zip.py", "README.md"]
+        self.assertEqual(build_loop.select_bound_tests(changed), ["tests/weather/test_zip.py"])
+        self.assertEqual(build_loop.select_bound_tests([]), [])
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

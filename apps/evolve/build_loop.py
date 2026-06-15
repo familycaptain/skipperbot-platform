@@ -25,6 +25,24 @@ ImplementFn = Callable[[Feature], object]
 ValidateFn = Callable[[Feature], bool]
 
 
+def is_test_file(path: str) -> bool:
+    """A Python test file: basename test_*.py / *_test.py, or anything under a tests/ dir.
+    This is how the validate step finds the BOUND tests in a feature's diff — the tests
+    that must actually run (not the engine's own suite) to prove the change works."""
+    p = path.replace("\\", "/")
+    base = p.rsplit("/", 1)[-1]
+    if not base.endswith(".py"):
+        return False
+    if base.startswith("test_") or base.endswith("_test.py"):
+        return True
+    return p.startswith("tests/") or "/tests/" in p
+
+
+def select_bound_tests(changed_files) -> list[str]:
+    """The test files among a feature's changed files — what validate should run."""
+    return [f for f in (changed_files or []) if is_test_file(f)]
+
+
 @dataclass
 class BuildResult:
     ok: bool
@@ -130,15 +148,49 @@ class RemoteBox2:
         r = self._ssh(f"{self.python} -m unittest discover -s {shlex.quote(test_path)}")
         return r.returncode == 0, (r.stdout + r.stderr)[-2000:]
 
+    def changed_files(self, branch: str, release: str = "release") -> list[str]:
+        b, rel = shlex.quote(branch), shlex.quote(release)
+        r = self._ssh(f"git fetch -q origin && git diff --name-only origin/{rel}...origin/{b}")
+        return [ln.strip() for ln in r.stdout.splitlines() if ln.strip()]
+
+    def run_test_files(self, files: list[str]) -> tuple[bool, str]:
+        """Run specific test FILES (the feature's bound tests). Grouped by directory and
+        run via `unittest discover -s <dir> -p <basename>` so each named file executes
+        wherever it lives — without dragging in the rest of the suite."""
+        from collections import defaultdict
+        by_dir: dict[str, list[str]] = defaultdict(list)
+        for f in files:
+            d, _, base = f.rpartition("/")
+            by_dir[d or "."].append(base)
+        ok_all, out = True, []
+        for d, bases in by_dir.items():
+            pat = bases[0] if len(bases) == 1 else "test_*.py"   # one file -> exact; many -> dir
+            r = self._ssh(f"{self.python} -m unittest discover -s {shlex.quote(d)} "
+                          f"-p {shlex.quote(pat)}")
+            ok_all = ok_all and r.returncode == 0
+            out.append(f"[{d}] {(r.stdout + r.stderr).strip().splitlines()[-1] if (r.stdout+r.stderr).strip() else ''}")
+        return ok_all, "\n".join(out)
+
 
 def remote_validate(box2: RemoteBox2, *, release: str = "release",
                     test_path: str = "tests/evolve", log=lambda *a: None) -> ValidateFn:
-    """The real validate: deploy the feature branch to box 2, run its bound tests
-    there, then reset box 2 to a clean `release` baseline."""
+    """The real validate: deploy the feature branch to box 2 and run the change's BOUND
+    tests there (the test files the feature actually adds/edits), then reset box 2 to a
+    clean `release` baseline. Honest by construction — a change with no bound test is NOT
+    green (you can't validate what you didn't test), and the engine's own suite is only a
+    fallback. This is what stops a wrong fix from passing because its test never ran."""
     def _val(feature: Feature) -> bool:
         box2.deploy(feature.branch)
-        ok, out = box2.run_tests(test_path)
-        log(f"  box2 tests {'green' if ok else 'RED'}: {out.strip().splitlines()[-1] if out.strip() else ''}")
-        box2.reset(release)
+        try:
+            bound = select_bound_tests(box2.changed_files(feature.branch, release))
+            if bound:
+                ok, out = box2.run_test_files(bound)
+                log(f"  box2 bound tests ({len(bound)}) {'green' if ok else 'RED'}: {out}")
+            else:
+                # No bound test in the change — cannot prove it works. Fail closed.
+                ok, out = False, "no bound test in the change"
+                log(f"  box2 validate RED: {out}")
+        finally:
+            box2.reset(release)
         return ok
     return _val

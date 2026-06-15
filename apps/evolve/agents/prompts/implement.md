@@ -11,6 +11,11 @@ How you work:
   conventions.
 - Honor **cross-surface parity**: if the behavior is user-facing, ensure the backing
   MCP tool exists (chat parity) and a UI affordance is present where one belongs.
+- **Write the spec's bound test(s).** The spec declares `tests`; turn them into real,
+  runnable test files that assert the new behavior (would fail before your change, pass
+  after). Your change MUST include at least one test file — an untested change cannot be
+  validated on box 2 and will be sent straight back. Put them where the suite lives
+  (`tests/<area>/test_*.py` or the app's `tests/`).
 - Use your skills: **`cfs-validate`** after touching any C/F/S YAML, and
   **`run-evolve-tests`** to confirm the substrate stays green before you hand off.
 - Stay on the feature branch; never touch `main` or `release` directly.

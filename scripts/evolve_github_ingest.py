@@ -113,11 +113,8 @@ def build_pipeline():
                 wi = inst.context.get("work_item", {})
                 impl = implement_with_agent(wi, spec_rec, model=DEEP, skills_dir=".claude/skills",
                                             ledger=ledger, monthly_limit_usd=CAP)(feat)
-                ok = getattr(impl, "ok", False)
-                if ok and self.wm.is_dirty(feat):
-                    self.wm.commit(feat, f"implement {feat.item_id}")
-                self.log(f"  implement ok={ok}")
-                return {"ok": ok, "output": getattr(impl, "output", None) or {}}
+                # shared gating: ok AND a real code change, else validate is short-circuited
+                return self._finish_implement(inst, feat, impl)
             return super()._code_acting(agent, inst)
 
     pipe = RealPipeline(model, runner=runner, wm=wm, implement_fn=lambda f: None,

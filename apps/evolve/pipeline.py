@@ -195,8 +195,13 @@ class Pipeline:
         if gate == "gate2":
             val = inst.context.get("validation") or {}
             pkt = ao.get("packet") or {}
-            if val.get("passed") is False:
-                return {"action": "change", "why": "bound tests did not pass on box 2 — send back to implement"}
+            if val.get("passed") is not True:
+                # Never recommend approve over an unverified build. Say WHY it failed:
+                # implement never produced a good change, or the bound tests went red.
+                reason = val.get("reason")
+                why = (f"do NOT ship — {reason}; send back to implement" if reason
+                       else "bound tests did not pass on box 2 — send back to implement")
+                return {"action": "change", "why": why}
             return {"action": "approve", "why": pkt.get("summary", "built + validated on box 2"),
                     "risk": pkt.get("risk", "low")}
         return {"action": "review", "why": "no gate is waiting"}
@@ -245,11 +250,7 @@ class Pipeline:
     def _code_acting(self, agent, inst) -> dict:
         feat = self._feature(inst)
         if agent == "implement":
-            r = self.implement_fn(feat)
-            if getattr(r, "ok", False) and self.wm.is_dirty(feat):
-                self.wm.commit(feat, f"implement {feat.item_id}")
-            self.log(f"  implement ok={getattr(r,'ok',False)}")
-            return {"ok": getattr(r, "ok", False), "output": getattr(r, "output", None) or {}}
+            return self._finish_implement(inst, feat, self.implement_fn(feat))
         if agent == "test-author":
             # implement writes its own bound tests in this flow; a dedicated test-author
             # pass is a future refinement. Commit anything it leaves.
@@ -257,11 +258,46 @@ class Pipeline:
                 self.wm.commit(feat, "tests")
             return {"ok": True, "output": {}}
         if agent == "validate":
-            passed = self.validate_fn(feat)
-            inst.context["validation"] = {"passed": passed}
+            # Gate on implement: a failed (or empty) implement must NEVER reach a green
+            # gate2. Don't waste a box-2 run on it — fail validation with the reason.
+            if not inst.context.get("implement_ok", False):
+                reason = inst.context.get("implement_error") or "implement did not succeed"
+                inst.context["validation"] = {"passed": False, "ran": False, "reason": reason}
+                self.log(f"  validate SKIPPED — {reason}")
+                return {"ok": True, "output": {"passed": False, "reason": reason}}
+            passed = bool(self.validate_fn(feat))
+            inst.context["validation"] = {"passed": passed, "ran": True}
             self.log(f"  validate passed={passed}")
             return {"ok": True, "output": {"passed": passed}}
         return {"ok": True, "output": {}}
+
+    def _finish_implement(self, inst, feat, r) -> dict:
+        """Commit the implement agent's work and decide whether it actually succeeded.
+        `ok` ALONE is not trustworthy — an agent can report success while changing
+        nothing. Real success = ok AND it left a code change. Record the verdict +
+        reason in context so `validate` can gate on it and gate2 can explain it.
+        Shared by the base pipeline and the live RealPipeline (which builds its own
+        implement_fn from the work item + spec)."""
+        from apps.evolve.build_loop import select_bound_tests
+        ok = bool(getattr(r, "ok", False))
+        changed = self.wm.is_dirty(feat)
+        if ok and changed:
+            self.wm.commit(feat, f"implement {feat.item_id}")
+        # Real success = ok AND a code change AND a bound test in that change. A change with
+        # no test can't be validated (its behavior is unproven), so it must NOT reach green.
+        bound = select_bound_tests(self.wm.changed_files(feat)) if (ok and changed) else []
+        inst.context["bound_tests"] = bound
+        implemented = ok and changed and bool(bound)
+        inst.context["implement_ok"] = implemented
+        inst.context["implement_error"] = None if implemented else (
+            getattr(r, "error", None)
+            or ("agent reported success but added no bound test — the change is unverifiable"
+                if ok and changed else
+                "agent reported success but changed no files" if ok
+                else "implement agent did not complete"))
+        self.log(f"  implement ok={ok} changed={changed} bound_tests={len(bound)} "
+                 f"-> implemented={implemented}")
+        return {"ok": implemented, "output": getattr(r, "output", None) or {}}
 
     def _system(self, node, inst) -> str:
         nid = node.id

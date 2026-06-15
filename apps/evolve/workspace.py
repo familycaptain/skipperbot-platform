@@ -99,6 +99,13 @@ class WorkspaceManager:
     def is_dirty(self, feature: Feature) -> bool:
         return bool(git(feature.path, "status", "--porcelain"))
 
+    def changed_files(self, feature: Feature) -> list[str]:
+        """Files this feature's COMMITTED history changes vs the release baseline
+        (three-dot: diff against the merge-base). Used to gate on a real change and to
+        find the bound tests the validate step must actually run."""
+        out = git(feature.path, "diff", "--name-only", f"{self.release}...HEAD", check=False)
+        return [ln.strip() for ln in out.splitlines() if ln.strip()]
+
     # --- box 2: validate the branch in isolation -------------------------
     def box2_deploy(self, feature: Feature, box2_dir: str) -> str:
         """Stand up / update a box-2 clone checked out to the feature branch."""

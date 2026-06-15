@@ -61,8 +61,9 @@ def output_driven_decider(node, inst, outs):
     elif node.id == "gw_conf":
         pref = "conflict" if out_of("interop").get("conflicts") else "clear"
     elif node.id == "gw_tests":
-        # route on the validate agent's result; default green when no signal yet
-        pref = "green" if out_of("validate").get("passed", True) else "stuck"
+        # route on the validate agent's result. GREEN only on an explicit pass — a
+        # missing/False signal must NEVER false-green; it escalates to the human gate.
+        pref = "green" if out_of("validate").get("passed") is True else "stuck"
     return _match(outs, pref) or happy_decider(node, inst, outs)
 
 

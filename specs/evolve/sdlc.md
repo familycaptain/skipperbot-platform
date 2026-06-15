@@ -106,6 +106,11 @@ flowchart TD
   branch → **box 2** validates with Playwright → loop **failing→retry** / **stuck→
   escalate** / **green→packet** → **Gate 2** → **auto-merge to the `release` branch**
   → **re-sync**. Both gates can **bounce back** ("change this").
+- **The build half fails closed (#29).** A change reaches a *green* Gate 2 only when the
+  implement agent actually changed code **and** included a runnable **bound test**, and
+  box 2 ran *that* test (not the engine's own suite) and it passed. A failed/empty/untested
+  implement, or red bound tests, never green — it lands at Gate 2 with a `change`
+  recommendation that names the reason, so a broken build can't be auto-approved.
 - **The per-change process ends at `release`, not `main`.** Promotion `release →
   main` (publish to the world) is a separate, operator-owned **release gate** —
   batched over many completed instances and canaried on the Pi — so it lives outside

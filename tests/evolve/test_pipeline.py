@@ -50,14 +50,21 @@ class TestGatedPipeline(unittest.TestCase):
         self.implemented = {}
 
         def implement_fn(feat):
+            # a real change carries its bound test — that's what the build half requires
             self.wm.write_file(feat, "apps/demo/thing.py", "VALUE = 1\n")
+            self.wm.write_file(feat, "tests/demo/test_thing.py", "def test_v():\n    assert True\n")
             self.implemented["did"] = True
             return types.SimpleNamespace(ok=True, output={"ok": True}, cost_usd=0.0)
+        self.implement_fn = implement_fn
 
         self.pipe = Pipeline(
             self.model,
             runner=Runner(FakeBackend(FAKE), dict(registry.ROSTER)),
             wm=self.wm, implement_fn=implement_fn, validate_fn=lambda feat: True)
+
+    def _pipe_with_implement(self, implement_fn, validate_fn=lambda feat: True):
+        return Pipeline(self.model, runner=Runner(FakeBackend(FAKE), dict(registry.ROSTER)),
+                        wm=self.wm, implement_fn=implement_fn, validate_fn=validate_fn)
 
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
@@ -84,7 +91,7 @@ class TestGatedPipeline(unittest.TestCase):
         self.assertEqual(inst.status, BLOCKED)
         self.assertEqual(self.pipe.gate_waiting(inst), "gate2")
         self.assertTrue(self.implemented.get("did"))           # implement ran between gates
-        self.assertEqual(self.pipe.packet(inst)["validation"], {"passed": True})
+        self.assertIs(self.pipe.packet(inst)["validation"]["passed"], True)
         inst = self.pipe.approve(inst.id, "approve")          # gate 2
         self.assertEqual(inst.status, DONE)
         self.assertTrue(self._release_has("specs/demo/area/thing.yaml"))   # spec merged
@@ -106,6 +113,47 @@ class TestGatedPipeline(unittest.TestCase):
         inst = self.pipe.approve(inst.id, "reject")
         self.assertEqual(inst.status, REJECTED)
         self.assertFalse(self.implemented.get("did"))          # never implemented
+        self.assertFalse(self._release_has("apps/demo/thing.py"))
+
+    # --- build-half hardening (#29): a bad build can NEVER reach a green gate 2 -------
+    def _approve_into_build(self, pipe):
+        inst = pipe.submit({"title": "add a thing"})
+        return pipe.approve(inst.id, "approve")                 # gate1 -> build half -> gate2
+
+    def test_failed_implement_blocks_at_gate2_recommending_change(self):
+        pipe = self._pipe_with_implement(
+            lambda f: types.SimpleNamespace(ok=False, error="boom", output={}))
+        inst = self._approve_into_build(pipe)
+        self.assertEqual(self.pipe.gate_waiting(inst), "gate2")
+        pkt = pipe.packet(inst)
+        self.assertIsNot(pkt["validation"]["passed"], True)     # NOT green
+        self.assertEqual(pkt["recommendation"]["action"], "change")
+
+    def test_implement_without_bound_test_is_not_green(self):
+        def impl(f):
+            self.wm.write_file(f, "apps/demo/thing.py", "VALUE = 2\n")   # code, no test
+            return types.SimpleNamespace(ok=True, output={"ok": True})
+        pipe = self._pipe_with_implement(impl)
+        inst = self._approve_into_build(pipe)
+        self.assertEqual(pipe.gate_waiting(inst), "gate2")
+        self.assertIsNot(pipe.packet(inst)["validation"]["passed"], True)
+        self.assertIn("bound test", pipe.packet(inst)["recommendation"]["why"])
+
+    def test_implement_that_changes_nothing_is_not_green(self):
+        pipe = self._pipe_with_implement(
+            lambda f: types.SimpleNamespace(ok=True, output={"ok": True}))   # writes nothing
+        inst = self._approve_into_build(pipe)
+        self.assertEqual(pipe.gate_waiting(inst), "gate2")
+        self.assertIsNot(pipe.packet(inst)["validation"]["passed"], True)
+
+    def test_red_bound_tests_do_not_merge(self):
+        # implement is good (code + test) but the bound tests come back RED on box 2
+        pipe = self._pipe_with_implement(self.implement_fn, validate_fn=lambda f: False)
+        inst = self._approve_into_build(pipe)
+        self.assertEqual(pipe.gate_waiting(inst), "gate2")
+        self.assertIs(pipe.packet(inst)["validation"]["passed"], False)
+        self.assertEqual(pipe.packet(inst)["recommendation"]["action"], "change")
+        # approving "change" sends it back to implement, never merges a red build
         self.assertFalse(self._release_has("apps/demo/thing.py"))
 
 
