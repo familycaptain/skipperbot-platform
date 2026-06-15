@@ -24,6 +24,7 @@ class IngestReq(BaseModel):
 
 class DecisionReq(BaseModel):
     decision: str
+    note: str = ""        # operator's written answers to the "decisions for you" + free-text guidance
 
 
 class ResolveReq(BaseModel):
@@ -86,7 +87,8 @@ async def api_decide_gate(instance_id: str, req: DecisionReq, request: Request):
         raise HTTPException(status_code=403, detail="parent or admin only")
     if req.decision not in ("approve", "reject", "change"):
         raise HTTPException(status_code=400, detail="decision must be approve|reject|change")
-    n = await asyncio.to_thread(gate_queue.record_decision, instance_id, req.decision, p["name"])
+    n = await asyncio.to_thread(gate_queue.record_decision, instance_id, req.decision,
+                                p["name"], req.note)
     if not n:
         raise HTTPException(status_code=404, detail="no such gate")
     return {"ok": True, "decision": req.decision}

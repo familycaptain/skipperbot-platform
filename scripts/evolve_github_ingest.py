@@ -202,11 +202,12 @@ def _run_cmd(args, pipe, runner, ledger):
                 _safe_resolve(iid, "orphan")
                 print(f"  {iid}: not in this brain's store -> marked orphan")
                 continue
-            print(f"  {iid}: operator said '{decision}' — resuming the engine...")
+            note = g.get("note") or ""
+            print(f"  {iid}: operator said '{decision}'{' (+note)' if note else ''} — resuming the engine...")
             try:
                 # Resumes the walk. If it parks at a NEXT gate, the pipeline's on_gate
                 # re-pushes that gate to the queue (flipping the row back to 'waiting').
-                inst = pipe.approve(iid, decision)
+                inst = pipe.approve(iid, decision, note=note)
             except Exception as e:
                 print(f"    resume FAILED: {type(e).__name__}: {e}")
                 continue

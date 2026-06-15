@@ -146,12 +146,15 @@ class Pipeline:
         self._maybe_notify_gate(inst)
         return inst
 
-    def approve(self, instance_id: str, decision: str) -> Instance:
+    def approve(self, instance_id: str, decision: str, note: str = "") -> Instance:
         inst = self.store.load(instance_id)
         if inst is None:
             raise ValueError(f"no such instance {instance_id}")
+        if note:    # the operator's written answers/guidance → the spec team reads this as human_note
+            inst.context["human_note"] = note
         self._run(inst, status="building")
-        self._ev(inst, "engine", "info", f"operator decision: {decision} — resuming")
+        self._ev(inst, "engine", "info",
+                 f"operator decision: {decision}{' (+note)' if note else ''} — resuming")
         self.walker.resume_gate(inst, decision)
         if inst.status == REJECTED:
             self._teardown(inst)

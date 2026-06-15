@@ -160,6 +160,8 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
   const [expandAll, setExpandAll] = useState(false);
+  const [answers, setAnswers] = useState({});   // operator's answer per decisions_needed question
+  const [guidance, setGuidance] = useState(""); // free-text guidance to the spec team
   const lastId = useRef(0);
   const selRef = useRef(null);
 
@@ -184,7 +186,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
 
   // when the selection changes: reset the stream (the tail below fetches the gate packet)
   useEffect(() => {
-    lastId.current = 0; setEvents([]); setDetail(null);
+    lastId.current = 0; setEvents([]); setDetail(null); setAnswers({}); setGuidance("");
   }, [sel]);
 
   // tail the selected run's activity stream, and keep the gate packet in sync with status:
@@ -217,11 +219,25 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
     return () => { alive = false; clearInterval(t); };
   }, [sel]);
 
+  // assemble the operator's written response (answers to each "decision for you" + guidance)
+  // into one note the spec team reads as human_note on a 'change'.
+  function buildNote(pkt) {
+    const parts = [];
+    (pkt?.decisions_needed || []).forEach((d, i) => {
+      const a = (answers[i] || "").trim();
+      if (a) parts.push(`Q: ${d.question}\nA: ${a}`);
+    });
+    const g = guidance.trim();
+    if (g) parts.push(g);
+    return parts.join("\n\n");
+  }
+
   async function decide(decision) {
     if (!sel) return;
+    const note = buildNote(detail?.packet || {});
     setBusy(decision); setError("");
     try {
-      await apiFetch(`/gates/${sel}/decision`, { method: "POST", body: JSON.stringify({ decision }) });
+      await apiFetch(`/gates/${sel}/decision`, { method: "POST", body: JSON.stringify({ decision, note }) });
       setDetail(await apiFetch(`/gates/${sel}`).catch(() => null));
       loadRuns();
     } catch (e) { setError(String(e.message || e)); }
@@ -343,31 +359,59 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
                   </div>
                 )}
 
-                {isParent ? (
-                  <div className="flex gap-2 mb-5">
-                    <button disabled={!!busy} onClick={() => decide("approve")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-sm disabled:opacity-50">
-                      {busy === "approve" ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Approve
-                    </button>
-                    <button disabled={!!busy} onClick={() => decide("change")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-700 hover:bg-amber-600 text-sm disabled:opacity-50">
-                      {busy === "change" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Change
-                    </button>
-                    <button disabled={!!busy} onClick={() => decide("reject")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-800 hover:bg-red-700 text-sm disabled:opacity-50">
-                      {busy === "reject" ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />} Reject
-                    </button>
-                  </div>
-                ) : <div className="text-xs text-slate-500 mb-5">A parent or admin decides this gate.</div>}
-
                 {pkt.decisions_needed?.length > 0 && (
                   <Section title="Decisions for you">
                     {pkt.decisions_needed.map((d, i) => (
-                      <div key={i} className="border border-sky-700/40 bg-sky-900/15 rounded p-2 mb-1.5">
-                        <div className="text-slate-200">{d.question}</div>
-                        {d.options?.length > 0 && <div className="text-xs text-slate-400 mt-0.5">options: {d.options.join(" · ")}</div>}
+                      <div key={i} className="border border-sky-700/40 bg-sky-900/15 rounded p-2 mb-2">
+                        <div className="text-slate-200"><span className="opacity-50 mr-1">{i + 1}.</span>{d.question}</div>
                         {d.recommendation && <div className="text-xs text-sky-300 mt-0.5">→ recommends: {d.recommendation}</div>}
+                        {d.options?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {d.options.map((opt, j) => (
+                              <button key={j} disabled={!isParent}
+                                onClick={() => setAnswers((a) => ({ ...a, [i]: opt }))}
+                                className={`text-[11px] px-2 py-0.5 rounded border disabled:opacity-50 ${answers[i] === opt ? "bg-sky-700 border-sky-500 text-white" : "border-slate-600 text-slate-300 hover:border-slate-400"}`}>
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <input type="text" disabled={!isParent} value={answers[i] || ""}
+                          onChange={(e) => setAnswers((a) => ({ ...a, [i]: e.target.value }))}
+                          placeholder="your answer…"
+                          className="mt-1.5 w-full bg-slate-900/70 border border-slate-700 rounded px-2 py-1 text-sm text-slate-100 placeholder-slate-600 focus:border-sky-600 focus:outline-none disabled:opacity-50" />
                       </div>
                     ))}
                   </Section>
                 )}
+
+                {atGate && isParent && (
+                  <div className="mb-3">
+                    <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Guidance to the team (optional)</div>
+                    <textarea value={guidance} onChange={(e) => setGuidance(e.target.value)} rows={2}
+                      placeholder="Anything else the agents should change or keep in mind…"
+                      className="w-full bg-slate-900/70 border border-slate-700 rounded px-2 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:border-sky-600 focus:outline-none" />
+                  </div>
+                )}
+
+                {isParent ? (
+                  <>
+                    <div className="flex gap-2">
+                      <button disabled={!!busy} onClick={() => decide("approve")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-sm disabled:opacity-50">
+                        {busy === "approve" ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Approve
+                      </button>
+                      <button disabled={!!busy} onClick={() => decide("change")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-700 hover:bg-amber-600 text-sm disabled:opacity-50">
+                        {busy === "change" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Change &amp; send answers
+                      </button>
+                      <button disabled={!!busy} onClick={() => decide("reject")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-800 hover:bg-red-700 text-sm disabled:opacity-50">
+                        {busy === "reject" ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />} Reject
+                      </button>
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-1.5 mb-5">
+                      Your answers above are sent to the agents with <span className="text-amber-300">Change</span> (they revise the spec) or attached as a build note with <span className="text-emerald-300">Approve</span>.
+                    </div>
+                  </>
+                ) : <div className="text-xs text-slate-500 mb-5">A parent or admin decides this gate.</div>}
               </>
             )}
 

@@ -40,7 +40,7 @@ def list_gates(status: str = "waiting") -> list[dict]:
     """List queue rows. status='' returns everything."""
     return fetch_all_in_schema(SCHEMA, """
         SELECT instance_id, gate, title, rec_action, rec_why, status, decision,
-               decided_by, created_at, decided_at
+               decided_by, note, created_at, decided_at
         FROM gate_queue
         WHERE (%s = '' OR status = %s)
         ORDER BY (status = 'waiting') DESC, created_at DESC
@@ -52,13 +52,15 @@ def get_gate(instance_id: str) -> dict | None:
                                (instance_id,))
 
 
-def record_decision(instance_id: str, decision: str, by: str) -> int:
-    """Record the operator's gate decision. The engine poller acts on 'decided' rows."""
+def record_decision(instance_id: str, decision: str, by: str, note: str = "") -> int:
+    """Record the operator's gate decision + their written response (answers to the
+    'decisions for you' + free-text guidance). The engine poller acts on 'decided' rows
+    and feeds `note` back to the spec team as human_note on a 'change'."""
     return execute_in_schema(SCHEMA, """
         UPDATE gate_queue SET status = 'decided', decision = %s, decided_by = %s,
-               decided_at = now()
+               note = %s, decided_at = now()
         WHERE instance_id = %s
-    """, (decision, by, instance_id))
+    """, (decision, by, (note or "")[:4000], instance_id))
 
 
 def resolve_gate(instance_id: str, status: str) -> int:
