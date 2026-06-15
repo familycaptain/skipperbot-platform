@@ -5,7 +5,7 @@
 BEGIN;
 
 CREATE TABLE IF NOT EXISTS process_instances (
-    id          TEXT PRIMARY KEY,                 -- pi-<hex8>
+    id          TEXT PRIMARY KEY,                 -- ev-<hex8> (Evolve process instance)
     model_id    TEXT NOT NULL,                    -- e.g. evolve-sdlc
     status      TEXT NOT NULL DEFAULT 'running',  -- running | blocked | done | rejected | parked
     doc         JSONB NOT NULL,                   -- serialized Instance (Instance.to_dict)

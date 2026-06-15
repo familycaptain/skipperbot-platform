@@ -35,9 +35,15 @@ class Instance:
     history: list[Transition] = field(default_factory=list)
     join_arrivals: dict[str, int] = field(default_factory=dict)  # join node -> count
 
+    # `ev-` = an Evolve process instance (one work item's whole journey through the SDLC).
+    # App-INTERNAL execution state, not a public domain entity — so it is intentionally NOT
+    # registered in the platform's entity_types (see apps/evolve/manifest.yaml). The id is
+    # stable for the item's entire life: gate bounces resume the same instance, same id.
+    ID_PREFIX = "ev-"
+
     @staticmethod
     def new(model_id: str, context: dict | None = None) -> "Instance":
-        return Instance(id="pi-" + uuid.uuid4().hex[:8], model_id=model_id,
+        return Instance(id=Instance.ID_PREFIX + uuid.uuid4().hex[:8], model_id=model_id,
                         context=dict(context or {}))
 
     @property

@@ -17,7 +17,9 @@ platform_min_version: "1.0.0"
 
 # C/F/S records are FILE-backed truth (specs/evolve/**), projected into app_evolve
 # for queries — they are not prefix+hex8 platform entities. Process-instances are
-# app-internal state. So no public entity prefixes are owned here.
+# app-internal execution state, minted with the `ev-` prefix (Instance.ID_PREFIX) — a
+# job/run handle, not a public domain entity — so no public entity prefixes are owned
+# here. (`ev-` is therefore intentionally NOT in the entity_types registry.)
 entity_types: []
 
 platform_deps:
