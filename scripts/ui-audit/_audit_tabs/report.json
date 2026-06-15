@@ -1,0 +1,704 @@
+{
+  "base": "http://evolve-test.local:8000",
+  "user": "david",
+  "findings": [
+    {
+      "id": "auto",
+      "tab": "Service History",
+      "status": "ERROR",
+      "chars": 1372,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [
+        "tab 'Service History' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Auto Add Vehicle 2022 Tesla Model 3 24,000 mi MOCK-1004 2021 Toyota RAV4 31,000 mi MOCK-1001 2019 Honda Odyssey 68,000 mi MOCK-1000 2018 Ford F-150 89"
+    },
+    {
+      "id": "auto",
+      "tab": "Maintenance",
+      "status": "ERROR",
+      "chars": 1456,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [
+        "tab 'Maintenance' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Auto Add Vehicle 2022 Tesla Model 3 24,000 mi MOCK-1004 2021 Toyota RAV4 31,000 mi MOCK-1001 2019 Honda Odyssey 68,000 mi MOCK-1000 2018 Ford F-150 89"
+    },
+    {
+      "id": "auto",
+      "tab": "Issues",
+      "status": "ERROR",
+      "chars": 1455,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [
+        "tab 'Issues' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Auto Add Vehicle 2022 Tesla Model 3 24,000 mi MOCK-1004 2021 Toyota RAV4 31,000 mi MOCK-1001 2019 Honda Odyssey 68,000 mi MOCK-1000 2018 Ford F-150 89"
+    },
+    {
+      "id": "auto",
+      "tab": "Condition",
+      "status": "ERROR",
+      "chars": 1455,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [
+        "tab 'Condition' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Auto Add Vehicle 2022 Tesla Model 3 24,000 mi MOCK-1004 2021 Toyota RAV4 31,000 mi MOCK-1001 2019 Honda Odyssey 68,000 mi MOCK-1000 2018 Ford F-150 89"
+    },
+    {
+      "id": "auto",
+      "tab": "Value",
+      "status": "ERROR",
+      "chars": 1455,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [
+        "tab 'Value' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Auto Add Vehicle 2022 Tesla Model 3 24,000 mi MOCK-1004 2021 Toyota RAV4 31,000 mi MOCK-1001 2019 Honda Odyssey 68,000 mi MOCK-1000 2018 Ford F-150 89"
+    },
+    {
+      "id": "automation",
+      "tab": "Dashboard",
+      "status": "ERROR",
+      "chars": 1517,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [
+        "tab 'Dashboard' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Automation Connect Home Assistant Home Assistant is not configured. Set the URL and access token in Settings → Automation (use a Home Assistant long-l"
+    },
+    {
+      "id": "automation",
+      "tab": "Names",
+      "status": "ERROR",
+      "chars": 1517,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [
+        "tab 'Names' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Automation Connect Home Assistant Home Assistant is not configured. Set the URL and access token in Settings → Automation (use a Home Assistant long-l"
+    },
+    {
+      "id": "home",
+      "tab": "Issues",
+      "status": "ERROR",
+      "chars": 1432,
+      "empty_match": "No issues found",
+      "bad_api": [
+        "500 /api/apps/home/issues"
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Home Maintenance Issues Appliances Insurance Contractors Add Issue Open In Progress Fixed All No issues found Click \"Add Issue\" to log one ⚠️ Overdue:"
+    },
+    {
+      "id": "jobs",
+      "tab": "Config",
+      "status": "ERROR",
+      "chars": 1019,
+      "empty_match": "No jobs found",
+      "bad_api": [],
+      "errors": [
+        "tab 'Config' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Jobs Jobs 0 total All Running0 Queued0 Completed0 Failed0 No jobs found ⚠️ Overdue: Grocery shopping — 10h overdue ⚠️ Overdue: Piano lessons — 10h ove"
+    },
+    {
+      "id": "jobs",
+      "tab": "Logs",
+      "status": "ERROR",
+      "chars": 1019,
+      "empty_match": "No jobs found",
+      "bad_api": [],
+      "errors": [
+        "tab 'Logs' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Jobs Jobs 0 total All Running0 Queued0 Completed0 Failed0 No jobs found ⚠️ Overdue: Grocery shopping — 10h overdue ⚠️ Overdue: Piano lessons — 10h ove"
+    },
+    {
+      "id": "meals",
+      "tab": "Browse",
+      "status": "ERROR",
+      "chars": 2065,
+      "empty_match": null,
+      "bad_api": [
+        "401 /api/apps/meals/events"
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Meals Browse Meal Log Discover Components Manage All Low Medium High New Meal All family quick weeknight Baked Ziti Medium family Beef Stew Medium fam"
+    },
+    {
+      "id": "meals",
+      "tab": "Meal Log",
+      "status": "ERROR",
+      "chars": 1543,
+      "empty_match": "No meals logged yet",
+      "bad_api": [
+        "401 /api/apps/meals/events"
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Meals Browse Meal Log Discover Components Manage Meal Log All meals Dinner Lunch Breakfast Snack 14 days 30 days 60 days 90 days No meals logged yet T"
+    },
+    {
+      "id": "meals",
+      "tab": "Discover",
+      "status": "ERROR",
+      "chars": 1572,
+      "empty_match": null,
+      "bad_api": [
+        "401 /api/apps/meals/events",
+        "404 /api/apps/meals/cuisines"
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Meals Browse Meal Log Discover Components Manage Mode ✓ Include ✗ Exclude Filter by Cuisine Effort Tag Component Value — select — Add Filter Surprise "
+    },
+    {
+      "id": "meals",
+      "tab": "Components",
+      "status": "ERROR",
+      "chars": 1485,
+      "empty_match": "No components found",
+      "bad_api": [
+        "401 /api/apps/meals/events"
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Meals Browse Meal Log Discover Components Manage All types Protein Starch Vegetable Sauce Grain Bread Dairy Fruit Other New Component No components fo"
+    },
+    {
+      "id": "meals",
+      "tab": "Manage",
+      "status": "ERROR",
+      "chars": 1644,
+      "empty_match": null,
+      "bad_api": [
+        "401 /api/apps/meals/events",
+        "404 /api/apps/meals/cuisines"
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Meals Browse Meal Log Discover Components Manage Cuisines Tags any meal baked breakfast comfort food crowd-pleaser dairy-free date night dinner family"
+    },
+    {
+      "id": "reminders",
+      "tab": "Nags",
+      "status": "ERROR",
+      "chars": 1256,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [
+        "tab 'Nags' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Reminders Reminders All users Admin David Katie Maria Tyler Inactive Reminders 4 Nags 0 New Renew car registration Next: Jun 16, 2026, 2:00 PM david C"
+    },
+    {
+      "id": "arcade",
+      "tab": "(default)",
+      "status": "EMPTY",
+      "chars": 1649,
+      "empty_match": "No scores yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Arcade Arcade Four games, one leaderboard. Pick your poison. Wardenfall TOP-DOWN TOWER DEFENSE Hold the mountain pass. Place wardens, channel mana, an"
+    },
+    {
+      "id": "backups",
+      "tab": "(default)",
+      "status": "EMPTY",
+      "chars": 1292,
+      "empty_match": "No backups yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Backups Backups Skipperbot Windows server Run Now Paused 0 2 * * * 0/5 slots No backups yet. Click \"Run Now\" to create the first backup. Trading Servi"
+    },
+    {
+      "id": "behaviors",
+      "tab": "(default)",
+      "status": "EMPTY",
+      "chars": 1411,
+      "empty_match": "No behaviors yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Behaviors Behaviors New Behavior Always-active if/then rules. Every behavior is injected into every chat turn — guaranteed to fire when the trigger ma"
+    },
+    {
+      "id": "bounties",
+      "tab": "Leaderboard",
+      "status": "EMPTY",
+      "chars": 1314,
+      "empty_match": "No completions yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Bounties Board My Balance Leaderboard Templates Settings All Time This Month This Week No completions yet. ⚠️ Overdue: Grocery shopping — 10h overdue "
+    },
+    {
+      "id": "bounties",
+      "tab": "Templates",
+      "status": "EMPTY",
+      "chars": 1324,
+      "empty_match": "No templates yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Bounties Board My Balance Leaderboard Templates Settings BOUNTY TEMPLATES (RECURRING) New Template No templates yet. ⚠️ Overdue: Grocery shopping — 10"
+    },
+    {
+      "id": "brainstorming",
+      "tab": "(default)",
+      "status": "EMPTY",
+      "chars": 1060,
+      "empty_match": "No ideas yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Brainstorming Ideas New Idea All Idea Exploring Developing Parked No ideas yet. Click \"New Idea\" to get started! ⚠️ Overdue: Grocery shopping — 10h ov"
+    },
+    {
+      "id": "chores",
+      "tab": "Today",
+      "status": "EMPTY",
+      "chars": 1460,
+      "empty_match": "nothing to",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Chores Today Week Manage Today Katie nothing today Tyler Clean sink Bathrooms Make beds Bedrooms Sweep Garage Wipe counters Kitchen Vacuum Living Room"
+    },
+    {
+      "id": "documents",
+      "tab": "(default)",
+      "status": "EMPTY",
+      "chars": 993,
+      "empty_match": "No documents yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Documents Documents Create No documents yet ⚠️ Overdue: Grocery shopping — 10h overdue ⚠️ Overdue: Piano lessons — 10h overdue ⚠️ Overdue: Grocery sho"
+    },
+    {
+      "id": "folders",
+      "tab": "(default)",
+      "status": "EMPTY",
+      "chars": 1025,
+      "empty_match": "No folders yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Folders Folders New Folder No folders yet. Click \"New Folder\" to get started! ⚠️ Overdue: Grocery shopping — 10h overdue ⚠️ Overdue: Piano lessons — 1"
+    },
+    {
+      "id": "home",
+      "tab": "Maintenance",
+      "status": "EMPTY",
+      "chars": 1475,
+      "empty_match": "No maintenance tasks yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Home Maintenance Issues Appliances Insurance Contractors Add Task All General HVAC Plumbing Exterior Electrical Pest Control No maintenance tasks yet "
+    },
+    {
+      "id": "images",
+      "tab": "(default)",
+      "status": "EMPTY",
+      "chars": 1047,
+      "empty_match": "No images yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Images Images (0) No images yet. Ask Skipper to generate a chart — e.g. \"show me a chart of SPY\" ⚠️ Overdue: Grocery shopping — 10h overdue ⚠️ Overdue"
+    },
+    {
+      "id": "issues",
+      "tab": "(default)",
+      "status": "EMPTY",
+      "chars": 1000,
+      "empty_match": "No issues found",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Issues New Issue Fixed All Open Mine No issues found ⚠️ Overdue: Grocery shopping — 10h overdue ⚠️ Overdue: Piano lessons — 10h overdue ⚠️ Overdue: Gr"
+    },
+    {
+      "id": "locator",
+      "tab": "(default)",
+      "status": "EMPTY",
+      "chars": 1379,
+      "empty_match": "No locations yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Locator Locations New All No locations yet No items tracked yet. Click + New to add one! ⚠️ Overdue: Grocery shopping — 10h overdue ⚠️ Overdue: Piano "
+    },
+    {
+      "id": "medical",
+      "tab": "Treatments",
+      "status": "EMPTY",
+      "chars": 1481,
+      "empty_match": "No treatments yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Medical All Members David Katie Maria Tyler Medications Treatments Events Labs Appointments Equipment Show inactive Add Treatment No treatments yet. ⚠"
+    },
+    {
+      "id": "medical",
+      "tab": "Labs",
+      "status": "EMPTY",
+      "chars": 1486,
+      "empty_match": "No lab results yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Medical All Members David Katie Maria Tyler Medications Treatments Events Labs Appointments Equipment All Tests All Draws Log Results No lab results y"
+    },
+    {
+      "id": "medical",
+      "tab": "Equipment",
+      "status": "EMPTY",
+      "chars": 1580,
+      "empty_match": "No medical equipment tracked yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Medical All Members David Katie Maria Tyler Medications Treatments Events Labs Appointments Equipment Show inactive Add Equipment No medical equipment"
+    },
+    {
+      "id": "prioritize",
+      "tab": "(default)",
+      "status": "EMPTY",
+      "chars": 2418,
+      "empty_match": "No focus items yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Prioritize Mine Family Nag on FOCUS 0/3 No focus items yet. Promote something from the backlog below. BACKLOG 38 items Goals (27) Renovate the kitchen"
+    },
+    {
+      "id": "thinking",
+      "tab": "Log",
+      "status": "EMPTY",
+      "chars": 2020,
+      "empty_match": "nothing to",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Thinking Today: 0 / 15,000,000 tokens 8 cycles 0.0% memory 0(7c) pm 0(1c) Mind Log Domains All domains chat document goals memory pm self Today 3 days"
+    },
+    {
+      "id": "timeline",
+      "tab": "(default)",
+      "status": "EMPTY",
+      "chars": 1064,
+      "empty_match": "No posts yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Timeline Family Activity Tags Author 0 posts New Post No posts yet Click \"New Post\" to start your family journal! ⚠️ Overdue: Grocery shopping — 10h o"
+    },
+    {
+      "id": "bounties",
+      "tab": "Board",
+      "status": "OK",
+      "chars": 2126,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Bounties Board My Balance Leaderboard Templates Settings $196.00 Open $0.00 Submitted $0.00 Approved All statuses Open Submitted Approved All Yard Kit"
+    },
+    {
+      "id": "bounties",
+      "tab": "My Balance",
+      "status": "OK",
+      "chars": 1313,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Bounties Board My Balance Leaderboard Templates Settings Your Balance $0.00 Earned: $0.00 Paid out: $0.00 ⚠️ Overdue: Grocery shopping — 10h overdue ⚠"
+    },
+    {
+      "id": "bounties",
+      "tab": "Settings",
+      "status": "OK",
+      "chars": 1461,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Bounties Board My Balance Leaderboard Templates Settings MINIMUM PAYOUT AMOUNT $ Save Balance must meet this threshold before a payment can be recorde"
+    },
+    {
+      "id": "calculators",
+      "tab": "(default)",
+      "status": "OK",
+      "chars": 1208,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Calculators Calculators Scientific Compound interest Loan / amortization 0 DEG ( ) C ⌫ sin cos tan ^ √ ln log 7 8 9 π e 4 5 6 x! ÷ 1 2 3 × − 0 . + = T"
+    },
+    {
+      "id": "chores",
+      "tab": "Week",
+      "status": "OK",
+      "chars": 2038,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Chores Today Week Manage Kid Sun, Jun 14 Mon, Jun 15 Tue, Jun 16 Wed, Jun 17 Thu, Jun 18 Fri, Jun 19 Sat, Jun 20 Katie — • Scrub toilet • Put away lau"
+    },
+    {
+      "id": "chores",
+      "tab": "Manage",
+      "status": "OK",
+      "chars": 1521,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Chores Today Week Manage Kids Zones Add kid Name Color User Notify 9am Active Katie #ec4899 — ✓ ✓ Kid One #3b82f6 kid1 ✓ inactive Tyler #3b82f6 — ✓ ✓ "
+    },
+    {
+      "id": "email",
+      "tab": "(default)",
+      "status": "OK",
+      "chars": 1040,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Email Activity Rules Labels Accounts(0) Connect a Gmail account first on the Accounts tab. ⚠️ Overdue: Grocery shopping — 10h overdue ⚠️ Overdue: Pian"
+    },
+    {
+      "id": "finder",
+      "tab": "(default)",
+      "status": "OK",
+      "chars": 1471,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Finder All Goals Documents Recipes Reminders Schedules Items Vehicles Ideas To-Do Search across all your goals, documents, recipes, and more Type at l"
+    },
+    {
+      "id": "goals",
+      "tab": "(default)",
+      "status": "OK",
+      "chars": 1673,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Goals Goals MY GOALS Renovate the kitchen not started 0% Build emergency fund not started 0% Start a garden not started 0% MARIA Get fit by summer not"
+    },
+    {
+      "id": "home",
+      "tab": "Appliances",
+      "status": "OK",
+      "chars": 1392,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Home Maintenance Issues Appliances Insurance Contractors Appliances Purchase history — coming soon ⚠️ Overdue: Grocery shopping — 10h overdue ⚠️ Overd"
+    },
+    {
+      "id": "home",
+      "tab": "Contractors",
+      "status": "OK",
+      "chars": 1425,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Home Maintenance Issues Appliances Insurance Contractors Contractors Electricians, plumbers, roofers, painters & more — coming soon ⚠️ Overdue: Grocer"
+    },
+    {
+      "id": "home",
+      "tab": "Insurance",
+      "status": "OK",
+      "chars": 1408,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Home Maintenance Issues Appliances Insurance Contractors Insurance Valuations, coverage & asset list — coming soon ⚠️ Overdue: Grocery shopping — 10h "
+    },
+    {
+      "id": "lists",
+      "tab": "(default)",
+      "status": "OK",
+      "chars": 2742,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Lists New All Standalone STANDALONE (21 lists) Admin's To-Do 4 items Call the dentist · Renew library card · Return Amazon package · Charge camera bat"
+    },
+    {
+      "id": "medical",
+      "tab": "Medications",
+      "status": "OK",
+      "chars": 1635,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Medical All Members David Katie Maria Tyler Medications Treatments Events Labs Appointments Equipment Show inactive Add Medication ⚫ Amlodipine David "
+    },
+    {
+      "id": "medical",
+      "tab": "Appointments",
+      "status": "OK",
+      "chars": 1936,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Medical All Members David Katie Maria Tyler Medications Treatments Events Labs Appointments Equipment Past Cancelled Schedule Appointment VISIT Annual"
+    },
+    {
+      "id": "medical",
+      "tab": "Events",
+      "status": "OK",
+      "chars": 1755,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Medical All Members David Katie Maria Tyler Medications Treatments Events Labs Appointments Equipment All visit surgery procedure lab note emergency L"
+    },
+    {
+      "id": "notifications",
+      "tab": "(default)",
+      "status": "OK",
+      "chars": 3452,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Notifications Notifications (27) Pushover Not set up Pushover isn't enabled on this server yet. An admin needs to set the Pushover app token in Settin"
+    },
+    {
+      "id": "recipes",
+      "tab": "(default)",
+      "status": "OK",
+      "chars": 1845,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Recipes Categories New All baking dinner indian italian mexican vegetarian Minestrone Soup 47m 5 servings italian French Toast 45m 4 servings indian A"
+    },
+    {
+      "id": "reminders",
+      "tab": "Reminders",
+      "status": "OK",
+      "chars": 1256,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Reminders Reminders All users Admin David Katie Maria Tyler Inactive Reminders 4 Nags 0 New Renew car registration Next: Jun 16, 2026, 2:00 PM david C"
+    },
+    {
+      "id": "schedules",
+      "tab": "(default)",
+      "status": "OK",
+      "chars": 1174,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Schedules New Schedule All Overdue (3) Chore Maintenance School Auto Medical General 3 overdue schedules Grocery shopping General david · Yesterday Pi"
+    },
+    {
+      "id": "settings",
+      "tab": "(default)",
+      "status": "OK",
+      "chars": 1910,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Settings Settings Desktop apps Members Apps System Integrations APP SETTINGS Automation 2 Backups 8 Documents 3 Email 3 Evolve 5 Folders 2 Goals 4 Job"
+    },
+    {
+      "id": "system",
+      "tab": "(default)",
+      "status": "OK",
+      "chars": 1429,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! System System up 8m Restart Refresh SERVER HEALTH 8m Uptime 207.6 MB Memory 25 MB Database 3.12.13 Python PID 1 DATA RECORDS 512 Memories 517 Memory Q"
+    },
+    {
+      "id": "tasks",
+      "tab": "(default)",
+      "status": "OK",
+      "chars": 2497,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Tasks Tasks 18 tasks not started Research options Build emergency fund / Phase 2: Execution 2026-06-21 medium not started Research options Start a gar"
+    },
+    {
+      "id": "thinking",
+      "tab": "Mind",
+      "status": "OK",
+      "chars": 7702,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Thinking Today: 0 / 15,000,000 tokens 8 cycles 0.0% memory 0(7c) pm 0(1c) Mind Log Domains All domains PM General All types Focus Memory Pending Obser"
+    },
+    {
+      "id": "thinking",
+      "tab": "Domains",
+      "status": "OK",
+      "chars": 1787,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Thinking Today: 0 / 15,000,000 tokens 8 cycles 0.0% memory 0(7c) pm 0(1c) Mind Log Domains chat Always On critical Interactive Chat — priority-0 event"
+    },
+    {
+      "id": "to-do",
+      "tab": "(default)",
+      "status": "OK",
+      "chars": 1105,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! To-Do To-Do Sat To-Do 4 1. Reply to teacher email 2. Book flights 3. Clean garage 4. Back up photos l-bc112f69 David's To-Do + Add a Backlog list in S"
+    },
+    {
+      "id": "tools",
+      "tab": "(default)",
+      "status": "OK",
+      "chars": 1813,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Tools Tools 39 categories · 326 tools App:Arcade 1 tools App:Auto 28 tools App:Automation 15 tools App:Behaviors 5 tools App:Bounties 8 tools App:Calc"
+    },
+    {
+      "id": "weather",
+      "tab": "Current",
+      "status": "OK",
+      "chars": 1171,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Weather Weather Go Current Forecast Radar Austin, TX · 78704 🌤️ 91° Mostly clear Feels like 103° 61% 4 mph UV 7 High Keyless data via open-meteo; bas"
+    },
+    {
+      "id": "weather",
+      "tab": "Forecast",
+      "status": "OK",
+      "chars": 1638,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Weather Weather Go Current Forecast Radar Next 12 hours 2 PM 🌤️ 91° 16% 3 PM 🌦️ 86° 27% 4 PM ⛈️ 88° 34% 5 PM 🌧️ 76° 27% 6 PM 🌦️ 82° 20% 7 PM ☁️ 82"
+    },
+    {
+      "id": "weather",
+      "tab": "Radar",
+      "status": "OK",
+      "chars": 1261,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Weather Weather Go Current Forecast Radar + − Radar (NEXRAD) Severe alerts Leaflet | © OpenStreetMap, Radar © IEM NEXRAD Keyless data via open-meteo; "
+    }
+  ]
+}

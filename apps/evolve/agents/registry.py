@@ -171,7 +171,7 @@ ROSTER: dict[str, AgentSpec] = {
     "prioritize": AgentSpec(
         "prioritize", "Score a proposal onto one ranked queue; surface or park.",
         PRIORITIZE_OUT, prompt_file="prioritize.md", tier="deep",
-        charter_keys=["thesis"]),
+        charter_keys=["thesis"], max_tokens=3072),   # headroom: summary + score + rationale must all fit
     "design": AgentSpec(
         "design", "Set the system-level approach (how it should work) before the spec is written.",
         DESIGN_OUT, prompt_file="design.md", tier="deep",

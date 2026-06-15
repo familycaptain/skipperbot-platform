@@ -149,7 +149,9 @@ class Runner:
             "FIRST — your bottom line, no jargon without a gloss. If you reframed the request, "
             "say so explicitly: what was asked vs. what is actually needed, and the key WHY "
             "(e.g. \"asked for city/state/zip; really needs a geocode to lat/lon because the "
-            "weather API runs on coordinates\")."
+            "weather API runs on coordinates\"). Keep it to AT MOST 3 sentences — it is a "
+            "headline, not the full analysis; the detail belongs in your other fields, which "
+            "you must ALSO fill completely."
         )
         return base + ("\n\n" + ground if ground else "") + summary_rule
 

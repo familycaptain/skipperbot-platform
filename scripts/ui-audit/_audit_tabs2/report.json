@@ -1,0 +1,304 @@
+{
+  "base": "http://evolve-test.local:8000",
+  "user": "david",
+  "findings": [
+    {
+      "id": "auto",
+      "tab": "Service History",
+      "status": "ERROR",
+      "chars": 1254,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [
+        "tab 'Service History' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Auto Add Vehicle 2022 Tesla Model 3 24,000 mi MOCK-1004 Brk Tire Bat 2021 Toyota RAV4 31,000 mi MOCK-1001 Brk Tire Bat 2019 Honda Odyssey 68,000 mi MO"
+    },
+    {
+      "id": "auto",
+      "tab": "Maintenance",
+      "status": "ERROR",
+      "chars": 1254,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [
+        "tab 'Maintenance' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Auto Add Vehicle 2022 Tesla Model 3 24,000 mi MOCK-1004 Brk Tire Bat 2021 Toyota RAV4 31,000 mi MOCK-1001 Brk Tire Bat 2019 Honda Odyssey 68,000 mi MO"
+    },
+    {
+      "id": "auto",
+      "tab": "Issues",
+      "status": "ERROR",
+      "chars": 1254,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [
+        "tab 'Issues' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Auto Add Vehicle 2022 Tesla Model 3 24,000 mi MOCK-1004 Brk Tire Bat 2021 Toyota RAV4 31,000 mi MOCK-1001 Brk Tire Bat 2019 Honda Odyssey 68,000 mi MO"
+    },
+    {
+      "id": "auto",
+      "tab": "Condition",
+      "status": "ERROR",
+      "chars": 1254,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [
+        "tab 'Condition' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Auto Add Vehicle 2022 Tesla Model 3 24,000 mi MOCK-1004 Brk Tire Bat 2021 Toyota RAV4 31,000 mi MOCK-1001 Brk Tire Bat 2019 Honda Odyssey 68,000 mi MO"
+    },
+    {
+      "id": "auto",
+      "tab": "Value",
+      "status": "ERROR",
+      "chars": 1254,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [
+        "tab 'Value' not found"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Auto Add Vehicle 2022 Tesla Model 3 24,000 mi MOCK-1004 Brk Tire Bat 2021 Toyota RAV4 31,000 mi MOCK-1001 Brk Tire Bat 2019 Honda Odyssey 68,000 mi MO"
+    },
+    {
+      "id": "home",
+      "tab": "Issues",
+      "status": "ERROR",
+      "chars": 1070,
+      "empty_match": "No issues found",
+      "bad_api": [
+        "500 /api/apps/home/issues"
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Home Maintenance Issues Appliances Insurance Contractors Add Issue Open In Progress Fixed All No issues found Click \"Add Issue\" to log one ⚠️ Overdue:"
+    },
+    {
+      "id": "meals",
+      "tab": "Browse",
+      "status": "ERROR",
+      "chars": 1619,
+      "empty_match": null,
+      "bad_api": [
+        "401 /api/apps/meals/events"
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Meals Browse Meal Log Discover Components Manage All Low Medium High New Meal All family quick weeknight Baked Ziti Medium family Beef Stew Medium fam"
+    },
+    {
+      "id": "meals",
+      "tab": "Meal Log",
+      "status": "ERROR",
+      "chars": 1755,
+      "empty_match": null,
+      "bad_api": [
+        "401 /api/apps/meals/events"
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Meals Browse Meal Log Discover Components Manage Meal Log All meals Dinner Lunch Breakfast Snack 14 days 30 days 60 days 90 days Sat, Jun 13 Dinner Sp"
+    },
+    {
+      "id": "meals",
+      "tab": "Discover",
+      "status": "ERROR",
+      "chars": 1170,
+      "empty_match": null,
+      "bad_api": [
+        "401 /api/apps/meals/events",
+        "404 /api/apps/meals/cuisines"
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Meals Browse Meal Log Discover Components Manage Mode ✓ Include ✗ Exclude Filter by Cuisine Effort Tag Component Value — select — Add Filter Surprise "
+    },
+    {
+      "id": "meals",
+      "tab": "Components",
+      "status": "ERROR",
+      "chars": 1365,
+      "empty_match": null,
+      "bad_api": [
+        "401 /api/apps/meals/events"
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Meals Browse Meal Log Discover Components Manage All types Protein Starch Vegetable Sauce Grain Bread Dairy Fruit Other New Component Baked Salmon pro"
+    },
+    {
+      "id": "meals",
+      "tab": "Manage",
+      "status": "ERROR",
+      "chars": 1365,
+      "empty_match": null,
+      "bad_api": [
+        "401 /api/apps/meals/events",
+        "404 /api/apps/meals/cuisines"
+      ],
+      "errors": [
+        "Failed to load resource: the server responded with a status of 401 (Unauthorized)",
+        "Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ],
+      "sample": "S SkipperBot Connected David Set your priorities! Meals Browse Meal Log Discover Components Manage Cuisines Tags any meal baked breakfast comfort food crowd-pleaser dairy-free date night dinner family"
+    },
+    {
+      "id": "bounties",
+      "tab": "Leaderboard",
+      "status": "EMPTY",
+      "chars": 1035,
+      "empty_match": "No completions yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Bounties Board My Balance Leaderboard Templates Settings All Time This Month This Week No completions yet. ⚠️ Overdue: Mow the lawn — 12h overdue ⚠️ O"
+    },
+    {
+      "id": "bounties",
+      "tab": "Templates",
+      "status": "EMPTY",
+      "chars": 1045,
+      "empty_match": "No templates yet",
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Bounties Board My Balance Leaderboard Templates Settings BOUNTY TEMPLATES (RECURRING) New Template No templates yet. ⚠️ Overdue: Mow the lawn — 12h ov"
+    },
+    {
+      "id": "bounties",
+      "tab": "Board",
+      "status": "OK",
+      "chars": 1847,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Bounties Board My Balance Leaderboard Templates Settings $196.00 Open $0.00 Submitted $0.00 Approved All statuses Open Submitted Approved All Yard Kit"
+    },
+    {
+      "id": "bounties",
+      "tab": "My Balance",
+      "status": "OK",
+      "chars": 1268,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Bounties Board My Balance Leaderboard Templates Settings Your Balance $22.50 Earned: $22.50 Paid out: $0.00 FAMILY BALANCES tyler $50.00 earned $50.00"
+    },
+    {
+      "id": "bounties",
+      "tab": "Settings",
+      "status": "OK",
+      "chars": 1182,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Bounties Board My Balance Leaderboard Templates Settings MINIMUM PAYOUT AMOUNT $ Save Balance must meet this threshold before a payment can be recorde"
+    },
+    {
+      "id": "home",
+      "tab": "Maintenance",
+      "status": "OK",
+      "chars": 2127,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Home Maintenance Issues Appliances Insurance Contractors Add Task All General HVAC Plumbing Exterior Electrical Pest Control On schedule (20) Smoke de"
+    },
+    {
+      "id": "home",
+      "tab": "Appliances",
+      "status": "OK",
+      "chars": 1030,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Home Maintenance Issues Appliances Insurance Contractors Appliances Purchase history — coming soon ⚠️ Overdue: Mow the lawn — 12h overdue ⚠️ Overdue: "
+    },
+    {
+      "id": "home",
+      "tab": "Contractors",
+      "status": "OK",
+      "chars": 1063,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Home Maintenance Issues Appliances Insurance Contractors Contractors Electricians, plumbers, roofers, painters & more — coming soon ⚠️ Overdue: Mow th"
+    },
+    {
+      "id": "home",
+      "tab": "Insurance",
+      "status": "OK",
+      "chars": 1046,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Home Maintenance Issues Appliances Insurance Contractors Insurance Valuations, coverage & asset list — coming soon ⚠️ Overdue: Mow the lawn — 12h over"
+    },
+    {
+      "id": "medical",
+      "tab": "Medications",
+      "status": "OK",
+      "chars": 1233,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Medical All Members David Katie Maria Tyler Medications Treatments Events Labs Appointments Equipment Show inactive Add Medication ⚫ Amlodipine David "
+    },
+    {
+      "id": "medical",
+      "tab": "Appointments",
+      "status": "OK",
+      "chars": 1534,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Medical All Members David Katie Maria Tyler Medications Treatments Events Labs Appointments Equipment Past Cancelled Schedule Appointment VISIT Annual"
+    },
+    {
+      "id": "medical",
+      "tab": "Events",
+      "status": "OK",
+      "chars": 1353,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Medical All Members David Katie Maria Tyler Medications Treatments Events Labs Appointments Equipment All visit surgery procedure lab note emergency L"
+    },
+    {
+      "id": "medical",
+      "tab": "Treatments",
+      "status": "OK",
+      "chars": 1249,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Medical All Members David Katie Maria Tyler Medications Treatments Events Labs Appointments Equipment Show inactive Add Treatment 🟡 Physical therapy "
+    },
+    {
+      "id": "medical",
+      "tab": "Labs",
+      "status": "OK",
+      "chars": 1395,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Medical All Members David Katie Maria Tyler Medications Treatments Events Labs Appointments Equipment All Tests Glucose HDL Hemoglobin A1C Iron Total "
+    },
+    {
+      "id": "medical",
+      "tab": "Equipment",
+      "status": "OK",
+      "chars": 1123,
+      "empty_match": null,
+      "bad_api": [],
+      "errors": [],
+      "sample": "S SkipperBot Connected David Set your priorities! Medical All Members David Katie Maria Tyler Medications Treatments Events Labs Appointments Equipment Show inactive Add Equipment Blood Pressure Monit"
+    }
+  ]
+}
