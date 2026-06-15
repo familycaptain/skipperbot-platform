@@ -172,3 +172,14 @@ class WorkspaceManager:
         """Remove the worktree + delete the feature branch (after merge)."""
         git(self.repo, "worktree", "remove", "--force", feature.path, check=False)
         git(self.repo, "branch", "-D", feature.branch, check=False)
+
+    def push_release(self) -> bool:
+        """Publish the release branch to origin — the staging branch the Pi tracks and the
+        operator tests before promoting release→main. Best-effort: returns False if there's
+        no origin or box 1 lacks push rights (read-only deploy key), so a merge never fails
+        just because publishing the candidate couldn't happen."""
+        try:
+            git(self.repo, "push", "origin", self.release)
+            return True
+        except Exception:
+            return False
