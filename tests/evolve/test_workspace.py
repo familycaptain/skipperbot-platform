@@ -50,6 +50,16 @@ class TestWorkspace(unittest.TestCase):
         self.assertEqual(spec_relpath({"id": "evolve.cfs-store.boot-sync", "kind": "specification"}),
                          "specs/evolve/cfs-store/boot-sync.yaml")
 
+    def test_ensure_baseline_switches_to_release_and_reports_sha(self):
+        # init_box1 leaves the repo on main; ensure_baseline must move it to release,
+        # report a sha, and (offline, no origin) not claim a sync
+        self.assertEqual(git(self.repo, "rev-parse", "--abbrev-ref", "HEAD"), "main")
+        info = self.wm.ensure_baseline()
+        self.assertEqual(info["branch"], "release")
+        self.assertTrue(info["sha"])
+        self.assertFalse(info["synced"])      # no origin in the test repo
+        self.assertEqual(git(self.repo, "rev-parse", "--abbrev-ref", "HEAD"), "release")
+
     def test_start_feature_from_release(self):
         f = self.wm.start_feature("evolve.demo.thing")
         self.assertTrue(os.path.isdir(f.path))

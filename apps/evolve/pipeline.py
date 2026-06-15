@@ -95,6 +95,21 @@ class Pipeline:
             except Exception:
                 pass
 
+    def _ensure_baseline(self, inst, where: str) -> None:
+        """Before any agent reads code/specs, make box 1's checkout the right + current
+        baseline (fetch, on the release branch, latest folded in) and STAMP the exact
+        branch@sha into the run + packet so every grounding is auditable. A hard sync
+        failure aborts the run rather than letting an agent read stale/wrong code."""
+        info = self.wm.ensure_baseline()
+        inst.context["baseline"] = info
+        msg = f"grounded on {info['branch']}@{info.get('sha', '?')}"
+        if info.get("synced"):
+            msg += " (pulled latest)"
+        if info.get("dirty"):
+            msg += " ⚠ working tree dirty"
+        self._ev(inst, "engine", "info", f"{where}: {msg}")
+        self.log(f"  baseline [{where}]: {msg}")
+
     def _maybe_notify_gate(self, inst: Instance) -> None:
         """When the walk parks at a human gate, fire the on_gate hook (e.g. Pushover).
         Best-effort: a notification failure never breaks the pipeline."""
@@ -232,6 +247,7 @@ class Pipeline:
             "agents": agents,                                  # ordered per-agent panels (summary + output)
             "related": self._related(inst),                    # other in-flight items touching the same C/F/S/files
             "conflict_alerts": inst.context.get("conflict_alerts"),  # a related item MERGED — this plan may be stale
+            "baseline": inst.context.get("baseline"),           # branch@sha the agents were grounded on
             "triage": ao.get("triage"),                        # incl. spec_status (violates/no-spec/conflicts)
             "reviews": {k: ao.get(k) for k in ("security", "architecture", "interop", "crit", "ux")},
             "prioritize": ao.get("prio"),
@@ -373,6 +389,7 @@ class Pipeline:
         from apps.evolve.lead import run_lead_phase
         ao = inst.context.setdefault("agent_outputs", {})
         self._run(inst, phase="spec", current_node="lead", current_agent="lead")
+        self._ensure_baseline(inst, "spec phase")   # agents read the right, current code/specs
         self._ev(inst, "lead", "info", "spec phase: Design → author ⇄ auditor → reviewers")
         ctx = {"human_note": inst.context.get("human_note"),
                "triage": (ao.get("triage") or {}).get("output"),
@@ -474,6 +491,7 @@ class Pipeline:
     def _system(self, node, inst) -> str:
         nid = node.id
         if nid == "serialize":
+            self._ensure_baseline(inst, "build")   # cut the feature worktree from CURRENT release
             wi = inst.context.get("work_item", {})
             tree = inst.context.get("spec_tree") or [
                 (inst.context.get("agent_outputs", {}).get("spec") or {}).get("output") or {}]
