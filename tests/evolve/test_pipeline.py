@@ -146,6 +146,18 @@ class TestGatedPipeline(unittest.TestCase):
         self.assertEqual(pipe.gate_waiting(inst), "gate2")
         self.assertIsNot(pipe.packet(inst)["validation"]["passed"], True)
 
+    def test_gate2_packet_uses_result_review_not_spec_panels(self):
+        inst = self.pipe.submit({"title": "add a thing"})
+        inst = self.pipe.approve(inst.id, "approve")          # into gate2
+        self.assertEqual(self.pipe.gate_waiting(inst), "gate2")
+        pkt = self.pipe.packet(inst)
+        keys = {a["key"] for a in pkt["agents"]}
+        # Gate-2 panels are the post-implementation result review (r_*), not spec-phase ones
+        self.assertIn("r_lead", keys)
+        self.assertIn("r_architecture", keys)
+        self.assertNotIn("design", keys)       # design is a Gate-1 (intent) panel
+        self.assertTrue(pkt["recommendation"].get("why"))
+
     def test_red_bound_tests_do_not_merge(self):
         # implement is good (code + test) but the bound tests come back RED on box 2
         pipe = self._pipe_with_implement(self.implement_fn, validate_fn=lambda f: False)

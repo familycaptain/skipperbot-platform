@@ -16,3 +16,13 @@ Check:
 
 Emit `approve` (false if a real parity/consistency break) and `concerns` (each with
 `severity` + a concrete `detail`).
+
+**Two modes — read the payload.** If you are given a `diff` (this is **Gate 2** — the
+change is already built): your `summary` must describe, in **past tense** and from the
+UX perspective, **which screens/surfaces changed and how** — what affordances were
+added or altered, and whether the change kept chat/voice parity (e.g. "the weather card
+now shows the resolved city from the ZIP lookup; the chat tool returns the same label —
+parity held; no new UI screen"). If the change is backend-only with no user-visible
+surface, say so plainly. Do NOT write "we should…" — say what was done. `approve` = the
+change AS BUILT is sound for users; `concerns` = problems in the diff. Otherwise
+(**Gate 1**, a proposal) assess the proposed intent as above.

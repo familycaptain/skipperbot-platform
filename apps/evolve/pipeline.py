@@ -155,11 +155,16 @@ class Pipeline:
         leads with a `recommendation` — nothing reaches the human as a blank choice."""
         ao = {k: (v or {}).get("output") for k, v in inst.context.get("agent_outputs", {}).items()}
         gate = self.gate_waiting(inst)
-        # Every agent that ran gets a panel (Lead first), each led by its `summary`.
-        panels = [("lead", "Lead"), ("design", "Design"), ("triage", "Triage"),
-                  ("vision", "Vision-fit"), ("spec", "Spec-author"), ("crit", "Spec-audit"),
-                  ("security", "Security"), ("architecture", "Architecture"),
-                  ("interop", "Interop"), ("ux", "UX / UI"), ("prio", "Prioritize")]
+        # Gate 1 shows the spec-phase proposal panels ("we should…"); Gate 2 shows the
+        # result-review panels ("here's what we changed…", past tense, per domain).
+        if gate == "gate2":
+            panels = [("r_lead", "Lead"), ("r_architecture", "Architecture"),
+                      ("r_ux", "UX / UI"), ("r_interop", "Interop"), ("r_security", "Security")]
+        else:
+            panels = [("lead", "Lead"), ("design", "Design"), ("triage", "Triage"),
+                      ("vision", "Vision-fit"), ("spec", "Spec-author"), ("crit", "Spec-audit"),
+                      ("security", "Security"), ("architecture", "Architecture"),
+                      ("interop", "Interop"), ("ux", "UX / UI"), ("prio", "Prioritize")]
         agents = [{"key": k, "label": lbl, "output": ao[k]} for k, lbl in panels if ao.get(k)]
         return {
             "instance": inst.id, "status": inst.status, "gate": gate,
@@ -254,6 +259,12 @@ class Pipeline:
                 why = (f"do NOT ship — {reason}; send back to implement" if reason
                        else "bound tests did not pass on box 2 — send back to implement")
                 return {"action": "change", "why": why}
+            # The Lead's result verdict owns the Gate-2 recommendation (it reviewed the diff).
+            res_rec = inst.context.get("result_recommendation")
+            if res_rec and res_rec.get("action"):
+                return {"action": res_rec["action"], "why": res_rec.get("why", ""),
+                        "current": res_rec.get("current", ""), "after": res_rec.get("after", ""),
+                        "risk": pkt.get("risk", "low")}
             return {"action": "approve", "why": pkt.get("summary", "built + validated on box 2"),
                     "risk": pkt.get("risk", "low")}
         return {"action": "review", "why": "no gate is waiting"}
@@ -265,7 +276,10 @@ class Pipeline:
             return self._code_acting(agent, inst)
         if agent == "lead":
             return self._lead(inst)
-        self._run(inst, phase="intake", current_node=node.id, current_agent=agent)
+        if agent == "review-packet":
+            self._result_review(inst)   # Gate-2: domain agents review the real diff + Lead verdict
+        else:
+            self._run(inst, phase="intake", current_node=node.id, current_agent=agent)
         payload = {"work_item": inst.context.get("work_item", {}),
                    "proposal": inst.context.get("proposal")}
         if agent == "triage" and self.cfs_store is not None:
@@ -301,6 +315,29 @@ class Pipeline:
         inst.context["lead_recommendation"] = result["recommendation"]
         inst.context["human_note"] = None                  # consumed by this pass
         return {"ok": True, "output": result["outputs"].get("lead", {})}
+
+    def _result_review(self, inst) -> None:
+        """Gate-2 review: the domain agents look at the ACTUAL diff and report what was
+        CHANGED in their area (past tense), and the Lead gives the 'fix made / worked or
+        not' verdict. Stored under r_* keys so the Gate-2 packet shows these — not the
+        Gate-1 'we should…' proposals."""
+        from apps.evolve.lead import run_result_review
+        self._run(inst, phase="build", status="building",
+                  current_node="result-review", current_agent="lead")
+        self._ev(inst, "lead", "info", "gate 2: reviewing what actually changed")
+        feat = self._feature(inst)
+        try:
+            diff = self.wm.diff(feat)
+        except Exception:
+            diff = ""
+        spec = inst.context.get("spec_record") or (inst.context.get("proposal") or {})
+        result = run_result_review(self.runner, inst.context.get("work_item", {}), spec=spec,
+                                   diff=diff, validation=inst.context.get("validation") or {},
+                                   instance_id=inst.id, log=self.log)
+        ao = inst.context.setdefault("agent_outputs", {})
+        for key, output in result["outputs"].items():
+            ao[f"r_{key}"] = {"ok": True, "output": output}    # gate-2 panels (separate keys)
+        inst.context["result_recommendation"] = result["recommendation"]
 
     def _code_acting(self, agent, inst) -> dict:
         feat = self._feature(inst)

@@ -106,6 +106,12 @@ class WorkspaceManager:
         out = git(feature.path, "diff", "--name-only", f"{self.release}...HEAD", check=False)
         return [ln.strip() for ln in out.splitlines() if ln.strip()]
 
+    def diff(self, feature: Feature, max_chars: int = 12000) -> str:
+        """The feature's committed diff vs the release baseline (truncated). What the
+        Gate-2 result review reads to describe what actually changed."""
+        out = git(feature.path, "diff", f"{self.release}...HEAD", check=False)
+        return out[:max_chars] + ("\n…(diff truncated)…" if len(out) > max_chars else "")
+
     # --- box 2: validate the branch in isolation -------------------------
     def box2_deploy(self, feature: Feature, box2_dir: str) -> str:
         """Stand up / update a box-2 clone checked out to the feature branch."""

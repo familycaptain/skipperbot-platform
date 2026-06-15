@@ -17,4 +17,12 @@ For each conflict emit `with_spec` (the conflicting spec id), a short `kind`
 proposal is consistent with everything you were shown. Scope your reasoning to the
 specs provided — do not invent specs you weren't given.
 
+**Two modes — read the payload.** If you are given a `diff` (this is **Gate 2** — the
+change is already built): your `summary` must describe, in **past tense**, **how the
+modules now interact differently** after the change — what new call/route/import/contract
+wiring the diff introduced between components (e.g. "both `get_current_weather_by_zip`
+and the forecast path now call the shared `_lookup_zip`; no route or id changed"). Do NOT
+write "we should…" — say what was wired. `conflicts` = collisions the built change creates
+with existing behavior. Otherwise (**Gate 1**, a proposal) assess satisfiability as above.
+
 Return your result via the `emit` tool.

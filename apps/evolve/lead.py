@@ -91,3 +91,34 @@ def run_lead_phase(runner, work_item: dict, *, context: dict | None = None,
         + (" (escalated)" if escalated else ""))
     return {"proposal": proposal, "spec_tree": spec_tree_specs, "recommendation": rec,
             "outputs": outputs, "rounds": rounds, "escalated": escalated}
+
+
+def run_result_review(runner, work_item: dict, *, spec: dict, diff: str, validation: dict,
+                      instance_id=None, log=lambda *a: None) -> dict:
+    """The Gate-2 review (EVOLVE.md §8). The intent was already approved at Gate 1; here the
+    same domain reviewers look at the ACTUAL diff and report — in past tense, from each one's
+    perspective — what was CHANGED (architecture: what structure moved; UX: which screens and
+    how; interop: how modules now interact; security: what surface changed). The Lead then
+    gives the verdict: the fix was made, briefly what was done, and whether it worked. These
+    become the Gate-2 packet panels + recommendation (not the Gate-1 'we should…' proposals)."""
+    outputs: dict[str, dict] = {}
+    passed = validation.get("passed") is True
+
+    def call(name, payload, store_as=None):
+        res = runner.run(name, payload, instance_id=instance_id)
+        outputs[store_as or name] = res.output or {}
+        log(f"    result/{store_as or name} ok={res.ok} ${getattr(res, 'cost_usd', 0):.4f}")
+        return outputs[store_as or name]
+
+    base = {"phase": "result", "gate": "gate2", "work_item": work_item, "spec": spec,
+            "diff": diff, "validation": validation}
+    for r in REVIEWERS:
+        call(r, base, store_as=r)     # describe what changed in this domain (past tense)
+    final = call("lead", {**base, "phase": "result-verdict",
+                          "reviews": {k: outputs.get(k) for k in REVIEWERS}}, store_as="lead")
+    rec = final.get("recommendation") or {
+        "action": "approve" if passed else "change",
+        "why": final.get("summary", ""),
+    }
+    log(f"  result review: tests {'green' if passed else 'RED'}, recommend={rec.get('action')}")
+    return {"outputs": outputs, "recommendation": rec}
