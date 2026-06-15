@@ -60,17 +60,20 @@ class ClaudeSDKBackend:
         return self.run_turn(spec, payload, context, model, system)
 
     def run_turn(self, spec, payload: dict, context: dict | None, model: str,
-                 system: str = "", *, resume: str | None = None, fork: bool = False) -> AgentResult:
+                 system: str = "", *, role_prompt: str | None = None,
+                 resume: str | None = None, fork: bool = False) -> AgentResult:
         """One agent turn. `resume` continues a prior session (shared, cached conversation);
         `fork` branches it first (for adversarial critics — full context, independent branch).
-        The returned AgentResult carries `session_id` so the orchestrator can thread it on."""
+        In a shared session, pass a FROZEN `system` (so the cached prefix survives) and the
+        per-agent role as `role_prompt` (prepended to the user turn) — never vary `system`
+        per turn or you invalidate the conversation cache. Returns AgentResult with `session_id`."""
         try:
-            return asyncio.run(self._run(spec, payload, context, model, system, resume, fork))
+            return asyncio.run(self._run(spec, payload, context, model, system, role_prompt, resume, fork))
         except Exception as e:  # surface, never crash the walk
             return AgentResult(spec.name, ok=False, error=f"{type(e).__name__}: {e}", model=model,
                                session_id=resume)
 
-    async def _run(self, spec, payload, context, model, system, resume, fork) -> AgentResult:
+    async def _run(self, spec, payload, context, model, system, role_prompt, resume, fork) -> AgentResult:
         from claude_agent_sdk import (ClaudeSDKClient, ClaudeAgentOptions, HookMatcher,
                                       AssistantMessage, ResultMessage, ToolUseBlock, fork_session)
 
@@ -109,8 +112,11 @@ class ClaudeSDKBackend:
         err = None
         sid = resume
         transcript: list[str] = []
+        user = render_input(payload, context)
+        if role_prompt:                       # per-agent role goes in the USER turn (system stays frozen → cache survives)
+            user = role_prompt + "\n\n" + user
         async with ClaudeSDKClient(options=opts) as client:
-            await client.query(render_input(payload, context))
+            await client.query(user)
             async for msg in client.receive_response():
                 if isinstance(msg, AssistantMessage):
                     # transcript only — live streaming is the PreToolUse hook (fires in real time,

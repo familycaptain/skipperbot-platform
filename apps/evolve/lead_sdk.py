@@ -22,6 +22,18 @@ from __future__ import annotations
 from apps.evolve.agents import base
 from apps.evolve.lead import REVIEWERS
 
+# ONE frozen system prompt for the whole session — the per-agent role goes in the user turn
+# (varying `system` per turn would invalidate the conversation cache). Kept short + stable.
+_SHARED_SYSTEM = (
+    "You are part of Skipper's Evolve spec team, collaborating in ONE shared conversation to "
+    "turn a single work item into a sound, buildable specification. Each turn names the role "
+    "you must play right now (Grounding, Design, Spec-author, Spec-auditor, a domain reviewer, "
+    "or the Lead) and the exact structured result to emit. Build on the shared context above — "
+    "the code already explored and the prior agents' reasoning — instead of starting over. "
+    "Honor Skipper's engineering principles: preconfigure once, minimize external calls, config "
+    "in Settings, build for the self-hoster, degrade gracefully."
+)
+
 
 def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | None = None,
                        model: str = "claude-opus-4-8", max_rounds: int = 3,
@@ -33,8 +45,9 @@ def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | 
 
     def call(name, payload, *, store_as=None, critic=False):
         spec = runner.registry[name]
-        system = runner.composed_system(spec)
-        res = sdk_backend.run_turn(spec, payload, context, model, system,
+        # frozen system (cache-safe) + the agent's full charter-grounded prompt as the user-turn role
+        res = sdk_backend.run_turn(spec, payload, context, model, _SHARED_SYSTEM,
+                                   role_prompt=runner.composed_system(spec),
                                    resume=sess["id"], fork=critic)
         if runner.ledger is not None:
             runner.ledger.record_result(res, instance_id=instance_id)
