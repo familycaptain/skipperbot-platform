@@ -103,11 +103,18 @@ class Pipeline:
         leads with a `recommendation` — nothing reaches the human as a blank choice."""
         ao = {k: (v or {}).get("output") for k, v in inst.context.get("agent_outputs", {}).items()}
         gate = self.gate_waiting(inst)
+        # Every agent that ran gets a panel (Lead first), each led by its `summary`.
+        panels = [("lead", "Lead"), ("design", "Design"), ("triage", "Triage"),
+                  ("vision", "Vision-fit"), ("spec", "Spec-author"), ("crit", "Spec-audit"),
+                  ("security", "Security"), ("architecture", "Architecture"),
+                  ("interop", "Interop"), ("ux", "UX / UI"), ("prio", "Prioritize")]
+        agents = [{"key": k, "label": lbl, "output": ao[k]} for k, lbl in panels if ao.get(k)]
         return {
             "instance": inst.id, "status": inst.status, "gate": gate,
             "recommendation": self._recommendation(inst, gate, ao),
             "work_item": inst.context.get("work_item"),
             "proposal": inst.context.get("proposal"),          # the spec-author C/F/S
+            "agents": agents,                                  # ordered per-agent panels (summary + output)
             "triage": ao.get("triage"),                        # incl. spec_status (violates/no-spec/conflicts)
             "reviews": {k: ao.get(k) for k in ("security", "architecture", "interop", "crit", "ux")},
             "prioritize": ao.get("prio"),
