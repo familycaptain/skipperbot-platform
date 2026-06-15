@@ -155,17 +155,17 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
     return () => clearInterval(t);
   }, [loadRuns, refreshKey]);
 
-  // when the selection changes: reset the stream + fetch the gate packet if one exists
+  // when the selection changes: reset the stream (the tail below fetches the gate packet)
   useEffect(() => {
     lastId.current = 0; setEvents([]); setDetail(null);
-    if (!sel) return;
-    apiFetch(`/gates/${sel}`).then(setDetail).catch((e) => { if (e.status !== 404) setError(String(e.message || e)); });
   }, [sel]);
 
-  // tail the selected run's activity stream
+  // tail the selected run's activity stream, and keep the gate packet in sync with status:
+  // load it whenever the run is waiting on a human, drop it when the run goes back to work.
   useEffect(() => {
     if (!sel) return;
     let alive = true;
+    let gateLoadedFor = null;     // which status we currently hold a packet for
     const tick = async () => {
       try {
         const r = await apiFetch(`/runs/${sel}/events?since=${lastId.current}`);
@@ -174,6 +174,14 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
         if (r.events?.length) {
           lastId.current = r.last;
           setEvents((prev) => [...prev, ...r.events]);
+        }
+        const st = r.run?.status;
+        if (st === "waiting" && gateLoadedFor !== "waiting") {
+          gateLoadedFor = "waiting";   // it parked at a gate — pull the review packet + actions
+          apiFetch(`/gates/${sel}`).then((d) => alive && setDetail(d)).catch(() => {});
+        } else if (st && st !== "waiting" && gateLoadedFor !== st) {
+          gateLoadedFor = st;          // back to working — clear the stale gate review
+          setDetail(null);
         }
       } catch { /* best-effort */ }
     };
