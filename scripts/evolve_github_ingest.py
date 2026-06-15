@@ -97,7 +97,7 @@ def build_pipeline():
     model = M.load("specs/evolve/sdlc.yaml")
     ledger = CostLedger()
     from apps.evolve.agents.tooluse import ToolUseBackend
-    read_tools = ToolUseBackend(repo_root=ROOT, allow_writes=False, max_turns=8)  # spec phase reads REAL code
+    read_tools = ToolUseBackend(repo_root=ROOT, allow_writes=False, max_turns=14)  # spec phase reads REAL code
     runner = Runner(AnthropicBackend(), dict(ROSTER), tool_backend=read_tools,
                     ledger=ledger, monthly_limit_usd=CAP, budget_usd=20.0)
     wm = WorkspaceManager(ROOT, worktrees_dir=os.path.expanduser("~/evolve-wt"), release="release")

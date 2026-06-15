@@ -197,7 +197,11 @@ class ToolUseBackend:
             "\n\n# Skills you may use (run their commands via the `bash` tool)\n" + skill_text
             if skill_text else "")
         user = (f"Input:\n{json.dumps(payload, indent=2, default=str)}\n\n"
-                "Use bash/read_file as needed, then call `emit` with your result.")
+                f"You have a LIMITED budget of ~{self.max_turns} tool calls. Read only a FEW targeted "
+                "things to ground yourself (grep to locate the area, read_file the one or two key "
+                "files), then call `emit` PROMPTLY with your COMPLETE result. Do NOT exhaustively "
+                "explore — running out of tool calls before emitting LOSES ALL YOUR WORK. A complete "
+                "`emit` is mandatory.")
         messages = [{"role": "user", "content": user}]
         in_tok = out_tok = 0
         transcript: list[str] = []
@@ -243,6 +247,9 @@ class ToolUseBackend:
                     res = f"ERROR running {b.name}: {type(e).__name__}: {e}"
                     transcript.append(res)
                 results.append({"type": "tool_result", "tool_use_id": b.id, "content": res})
+            if _ >= self.max_turns - 2:        # running low — force a result before turns run out
+                results.append({"type": "text", "text": "You are almost out of tool calls. "
+                                "Call `emit` NOW with your best COMPLETE result — read nothing else."})
             messages.append({"role": "user", "content": results})
 
         cost = estimate_cost(model, in_tok, out_tok)
