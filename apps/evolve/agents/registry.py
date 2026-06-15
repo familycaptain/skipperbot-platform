@@ -160,7 +160,7 @@ ROSTER: dict[str, AgentSpec] = {
     "design": AgentSpec(
         "design", "Set the system-level approach (how it should work) before the spec is written.",
         DESIGN_OUT, prompt_file="design.md", tier="deep",
-        charter_keys=["thesis", "scope", "surfaces", "non-goals", "principles"]),
+        charter_keys=["scope", "surfaces", "principles"]),
     "code-audit": AgentSpec(
         "code-audit", "Read code for logic bugs, edge cases, security smells, dead code.",
         SPEC_AUDIT_OUT, prompt_file="code-audit.md", tier="deep", charter_keys=["non-goals"]),
