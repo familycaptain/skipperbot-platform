@@ -105,6 +105,8 @@ LEAD_OUT = _obj({
     "verdict": {"type": "string", "enum": ["accept", "revise", "escalate"]},   # per-round arbitration
     "recommendation": _obj({
         "action": {"type": "string", "enum": ["approve", "change", "reject"]},
+        "current": _STR,   # how the affected behavior works TODAY (the status quo / problem)
+        "after": _STR,     # how it will work ONCE this ships — what the operator is approving
         "why": _STR,
     }, ["action", "why"]),                                                       # final Gate-1 recommendation
     "note": _STR,

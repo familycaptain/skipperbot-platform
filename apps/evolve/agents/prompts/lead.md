@@ -24,11 +24,21 @@ Produce the **`recommendation`** the human sees at Gate 1:
 - `action`: `approve` (proposal is sound, in-charter, honors the engineering principles —
   ship the intent), `change` (close but needs a specific revision — say exactly what in
   `why`), or `reject` (off-charter, superseded, or wrong to build — say why).
+- `current`: how the affected behavior works **today**, in present tense — the status quo
+  the operator is changing (e.g. "the current-weather tool reads the city from wttr.in's
+  fuzzy nearest-area, so ZIP 72956 shows 'Rena'"). For a brand-new capability, say it
+  plainly: "there is no X today."
+- `after`: how it will work **once this ships** — the concrete end state the operator is
+  approving (e.g. "the city will come from the authoritative ZIP lookup the forecast tools
+  already use, so 72956 reads 'Van Buren'").
 - `why`: a **tight headline — one or two sentences, max**: the single most important
-  reason for the action, in plain language. Do NOT dump the full analysis here. Detailed
-  concerns, caveats, and required revisions go in `note`, not `why`. (A reviewer blocker —
-  a principle violation, a conflict, a security hole — still gates your recommendation and
-  belongs in the one-line headline; never recommend approve over an unresolved blocker.)
+  reason for the action, in plain language. Frame it as the **change you are proposing**,
+  NOT as something already done — the fix has not shipped. Never write "now does X" or
+  past/perfect tense ("now labels", "has been fixed"); write "today X; this changes it to
+  Y." Do NOT dump the full analysis here. Detailed concerns, caveats, and required revisions
+  go in `note`, not `why`. (A reviewer blocker — a principle violation, a conflict, a
+  security hole — still gates your recommendation and belongs in the one-line headline;
+  never recommend approve over an unresolved blocker.)
 
 Across both phases: you are the single point of judgment. Honor the engineering
 principles as hard constraints (a per-request external call or a recomputed config value

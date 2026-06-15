@@ -177,6 +177,12 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
               <div className="text-[11px] uppercase tracking-wide opacity-70">Lead's recommendation</div>
               <div className="font-semibold capitalize">{rec.action || "review"}</div>
               <div className="text-sm opacity-90 mt-0.5 line-clamp-3">{rec.why || rec.rationale}</div>
+              {(rec.current || rec.after) && (
+                <div className="mt-2 space-y-1 text-xs border-t border-white/10 pt-2">
+                  {rec.current && <div><span className="font-semibold opacity-60">Today: </span><span className="opacity-90">{rec.current}</span></div>}
+                  {rec.after && <div><span className="font-semibold opacity-60">After this change: </span><span className="opacity-90">{rec.after}</span></div>}
+                </div>
+              )}
             </div>
 
             {pkt.related?.length > 0 && (

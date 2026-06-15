@@ -168,7 +168,8 @@ class Pipeline:
             # The Lead owns the Gate-1 recommendation (it arbitrated the spec team).
             lead_rec = inst.context.get("lead_recommendation")
             if lead_rec and lead_rec.get("action"):
-                return {"action": lead_rec["action"], "why": lead_rec.get("why", "")}
+                return {"action": lead_rec["action"], "why": lead_rec.get("why", ""),
+                        "current": lead_rec.get("current", ""), "after": lead_rec.get("after", "")}
             concerns = []
             for k in ("security", "architecture", "ux"):
                 r = ao.get(k) or {}
