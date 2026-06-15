@@ -22,16 +22,16 @@ SDLC = os.path.join(REPO, "specs", "evolve", "sdlc.yaml")
 
 # canned reasoning outputs keyed by AGENT name (happy path: feature, fits, surface, clean)
 FAKE = {
-    "triage": {"kind": "feature", "spec_status": "no-spec", "rationale": "new behavior, new scope"},
-    "vision-fit": {"verdict": "fits", "rationale": "in charter"},
-    "spec-author": {"spec_id": "demo.area.thing", "title": "Thing", "behavior": "adds a thing",
+    "triage": {"summary": "s", "kind": "feature", "spec_status": "no-spec", "rationale": "new behavior, new scope"},
+    "vision-fit": {"summary": "s", "verdict": "fits", "rationale": "in charter"},
+    "spec-author": {"summary": "s", "spec_id": "demo.area.thing", "title": "Thing", "behavior": "adds a thing",
                     "implements": [], "tests": []},
-    "security": {"approve": True, "concerns": []},
-    "architecture": {"approve": True, "concerns": []},
-    "interop": {"conflicts": []},
-    "spec-audit": {"sound": True, "findings": []},
-    "ux": {"approve": True, "concerns": []},
-    "prioritize": {"score": 80, "decision": "surface", "rationale": "high value"},
+    "security": {"summary": "s", "approve": True, "concerns": []},
+    "architecture": {"summary": "s", "approve": True, "concerns": []},
+    "interop": {"summary": "s", "conflicts": []},
+    "spec-audit": {"summary": "s", "sound": True, "findings": []},
+    "ux": {"summary": "s", "approve": True, "concerns": []},
+    "prioritize": {"summary": "s", "score": 80, "decision": "surface", "rationale": "high value"},
     "review-packet": {"summary": "added a thing", "risk": "low",
                       "recommendation": "approve", "recommendation_why": "built + validated, low risk"},
 }
@@ -141,7 +141,7 @@ class TestOffVisionShortCircuit(unittest.TestCase):
         try:
             repo = init_box1(tmp)
             wm = WorkspaceManager(repo, worktrees_dir=os.path.join(tmp, "wt"))
-            fake = dict(FAKE, **{"vision-fit": {"verdict": "off-vision", "rationale": "out of scope"}})
+            fake = dict(FAKE, **{"vision-fit": {"summary": "s", "verdict": "off-vision", "rationale": "out of scope"}})
             pipe = Pipeline(M.load(SDLC), runner=Runner(FakeBackend(fake), dict(registry.ROSTER)),
                             wm=wm, implement_fn=lambda f: types.SimpleNamespace(ok=True),
                             validate_fn=lambda f: True)

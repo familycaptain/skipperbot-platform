@@ -21,7 +21,7 @@ CHARTER_PATH = os.path.join(REPO, "specs", "CHARTER.md")
 class TestSchemaValidator(unittest.TestCase):
     def test_accepts_valid(self):
         errs = base.validate_against_schema(registry.TRIAGE_OUT,
-                                            {"kind": "bug", "rationale": "x"})
+                                            {"summary": "s", "kind": "bug", "rationale": "x"})
         self.assertEqual(errs, [])
 
     def test_rejects_bad_enum_and_missing_required(self):
@@ -40,7 +40,7 @@ class TestRunnerFake(unittest.TestCase):
         return Runner(FakeBackend(responder), dict(registry.ROSTER), **kw)
 
     def test_runs_and_validates_ok(self):
-        r = self._runner({"triage": {"kind": "feature", "rationale": "asks for new behavior"}})
+        r = self._runner({"triage": {"summary": "s", "kind": "feature", "rationale": "asks for new behavior"}})
         res = r.run("triage", {"title": "add an Edit button"})
         self.assertTrue(res.ok, res.error)
         self.assertEqual(res.output["kind"], "feature")
@@ -62,7 +62,7 @@ class TestRunnerFake(unittest.TestCase):
         # a backend that reports a real cost so the budget tracker advances
         class CostBackend:
             def run(self, spec, payload, context, model, system=""):
-                return AgentResult(spec.name, ok=True, output={"kind": "bug", "rationale": "r"},
+                return AgentResult(spec.name, ok=True, output={"summary": "s", "kind": "bug", "rationale": "r"},
                                    model=model, cost_usd=0.40)
         r = Runner(CostBackend(), dict(registry.ROSTER), budget_usd=0.50)
         self.assertTrue(r.run("triage", {}).ok)             # spends 0.40
@@ -77,7 +77,7 @@ class TestRunnerFake(unittest.TestCase):
         seen = {}
         def responder(spec, payload, ctx):
             seen["payload"] = payload
-            return {"kind": "bug", "rationale": "from callable"}
+            return {"summary": "s", "kind": "bug", "rationale": "from callable"}
         r = self._runner(responder)
         res = r.run("triage", {"title": "boom"})
         self.assertEqual(seen["payload"]["title"], "boom")
@@ -117,11 +117,13 @@ class TestCharterGrounding(unittest.TestCase):
         self.assertNotIn("Cross-surface parity", sys)     # it does NOT declare surfaces
 
     def test_triage_gets_no_charter(self):
-        # triage classifies only — no charter_keys, so no grounding appended (no waste)
+        # triage classifies only — no charter_keys, so no charter grounding appended (no
+        # waste). (The global summary rule IS appended to every agent — that's intentional.)
         spec = registry.ROSTER["triage"]
         self.assertEqual(spec.charter_keys, [])
         sys = self._runner().composed_system(spec)
-        self.assertEqual(sys, spec.resolved_prompt())
+        self.assertTrue(sys.startswith(spec.resolved_prompt()))
+        self.assertNotIn("charter — excerpts", sys.lower())
 
     def test_every_agent_within_token_budget(self):
         # The Hermes rule: a composed prompt over budget means trim grounding or SPLIT.

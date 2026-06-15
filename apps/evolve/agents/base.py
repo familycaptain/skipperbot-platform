@@ -14,9 +14,9 @@ from dataclasses import dataclass, field
 TIERS = ("fast", "smart", "deep")
 
 # Hermes-style budget for an agent's COMPOSED system prompt (role + curated charter
-# grounding), in estimated tokens. Exceeding it is the signal to trim the agent's
-# charter_keys or SPLIT the agent — a bloated prompt means it's doing too much.
-SYSTEM_PROMPT_TOKEN_BUDGET = 1600
+# grounding + the global summary rule), in estimated tokens. Exceeding it is the signal
+# to trim the agent's charter_keys or SPLIT the agent — a bloated prompt means too much.
+SYSTEM_PROMPT_TOKEN_BUDGET = 2200
 
 
 @dataclass

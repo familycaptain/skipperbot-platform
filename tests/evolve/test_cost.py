@@ -49,7 +49,7 @@ class TestBudgetGuard(unittest.TestCase):
 
 class TestRunnerLedger(unittest.TestCase):
     def _runner(self, led, limit=None):
-        return Runner(FakeBackend({"triage": {"kind": "bug", "rationale": "r"}}),
+        return Runner(FakeBackend({"triage": {"summary": "s", "kind": "bug", "rationale": "r"}}),
                       dict(registry.ROSTER), ledger=led, monthly_limit_usd=limit)
 
     def test_runner_records_every_call(self):
