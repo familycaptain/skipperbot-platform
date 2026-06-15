@@ -108,6 +108,21 @@ class TestGatedPipeline(unittest.TestCase):
         self.assertEqual(rec2["action"], "approve")
         self.assertTrue(rec2.get("why"))
 
+    def test_merge_flags_overlapping_in_flight_item(self):
+        # B is parked at Gate 1; A runs all the way to merge. Because they touch the same
+        # C/F/S, merging A must flag B with a conflict alert so the operator can re-review.
+        b = self.pipe.submit({"title": "another change to the thing"})
+        self.assertEqual(self.pipe.gate_waiting(b), "gate1")
+        a = self.pipe.submit({"title": "add a thing"})
+        a = self.pipe.approve(a.id, "approve")     # gate1 -> build -> gate2
+        a = self.pipe.approve(a.id, "approve")     # gate2 -> merge -> DONE
+        self.assertEqual(a.status, DONE)
+        b = self.pipe.store.load(b.id)
+        alerts = b.context.get("conflict_alerts") or []
+        self.assertTrue(alerts, "the parked Gate-1 item must be flagged when an overlapping item merges")
+        self.assertEqual(alerts[0]["from"], a.id)
+        self.assertIn("conflict_alerts", self.pipe.packet(b))
+
     def test_reject_at_gate1_ends_rejected_no_code(self):
         inst = self.pipe.submit({"title": "add a thing"})
         inst = self.pipe.approve(inst.id, "reject")

@@ -276,6 +276,23 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
                   )}
                 </div>
 
+                {pkt.conflict_alerts?.length > 0 && (
+                  <div className="border border-red-700/50 bg-red-900/25 rounded-lg p-2.5 mb-4 text-xs">
+                    <div className="text-red-300 font-medium mb-1">
+                      ⚠ A related item MERGED after this was planned — re-review (send back with “Change” to have the Lead re-evaluate)
+                    </div>
+                    {pkt.conflict_alerts.map((c, i) => (
+                      <div key={i} className="text-slate-300 mb-1">
+                        • <span className="font-mono">{c.from}</span> {c.from_title ? `“${c.from_title}” ` : ""}
+                        changed <span className="text-slate-400">{(c.shared || []).join(", ")}</span>
+                        {c.conflicts?.length > 0
+                          ? <div className="text-red-300 ml-2 mt-0.5">conflict: {c.conflicts.map((x) => x.detail || x).join("; ")}</div>
+                          : <span className="text-slate-500"> — overlap; plan may be stale</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
                 {pkt.related?.length > 0 && (
                   <div className="border border-amber-700/40 bg-amber-900/20 rounded-lg p-2.5 mb-4 text-xs">
                     <div className="text-amber-300 font-medium mb-1">

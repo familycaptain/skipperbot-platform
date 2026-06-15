@@ -130,7 +130,51 @@ class Pipeline:
         self._sync_run(inst)
         self.store.save(inst)
         self._maybe_notify_gate(inst)
+        if inst.status == DONE:
+            self._propagate_conflicts(inst)   # warn other in-flight items this merge may collide with
         return inst
+
+    def _propagate_conflicts(self, merged) -> None:
+        """When an item MERGES, its change lands in `release` — and any OTHER in-flight item
+        was planned against the OLD release. Reach out to each overlapping item (shared
+        C/F/S or files), ask the interop agent whether the just-merged change conflicts with
+        that item's plan, and if so annotate it + re-surface its gate so the operator can send
+        it back for the Lead to re-evaluate. Best-effort: never let it break the merge."""
+        try:
+            m_cfs, m_files = self._touched(merged)
+            if not (m_cfs or m_files):
+                return
+            m_spec = merged.context.get("spec_record") or merged.context.get("proposal") or {}
+            m_title = (merged.context.get("work_item") or {}).get("title", "")
+            for other in self.store.all():
+                if other.id == merged.id or other.status in (DONE, REJECTED, PARKED):
+                    continue
+                o_cfs, o_files = self._touched(other)
+                shared = sorted((m_cfs & o_cfs) | (m_files & o_files))
+                if not shared:
+                    continue
+                merged_desc = {"id": m_spec.get("spec_id") or m_spec.get("id") or merged.id,
+                               "behavior": m_spec.get("behavior", "")}
+                res = self.runner.run("interop", {
+                    "phase": "post-merge", "work_item": other.context.get("work_item", {}),
+                    "proposal": other.context.get("proposal") or {},
+                    "existing_specs": [merged_desc],
+                    "merged": {"title": m_title, "files": sorted(m_files)}},
+                    instance_id=other.id)
+                conflicts = (res.output or {}).get("conflicts") or []
+                other.context.setdefault("conflict_alerts", []).append({
+                    "from": merged.id, "from_title": m_title, "shared": shared[:6],
+                    "conflicts": conflicts, "gate": self.gate_waiting(other)})
+                self._ev(other, "interop", "info",
+                         f"⚠ {merged.id} merged changes to {', '.join(shared[:3])} — "
+                         + (f"CONFLICT: {conflicts[0].get('detail', '')}" if conflicts
+                            else "overlap; this item's plan may be stale — re-review"))
+                self.store.save(other)
+                self._maybe_notify_gate(other)    # re-push so the alert reaches the operator
+                self.log(f"  conflict-propagation: flagged {other.id} "
+                         f"({'CONFLICT' if conflicts else 'overlap'} on {shared[:3]})")
+        except Exception as e:
+            self.log(f"  conflict-propagation failed (non-fatal): {type(e).__name__}: {e}")
 
     def _teardown(self, inst: Instance) -> None:
         """Reject cleanup: remove the feature worktree + branch on box 1 so a rejected
@@ -175,6 +219,7 @@ class Pipeline:
             "decisions_needed": (ao.get("design") or {}).get("decisions_needed"),  # human forks (with a recommendation)
             "agents": agents,                                  # ordered per-agent panels (summary + output)
             "related": self._related(inst),                    # other in-flight items touching the same C/F/S/files
+            "conflict_alerts": inst.context.get("conflict_alerts"),  # a related item MERGED — this plan may be stale
             "triage": ao.get("triage"),                        # incl. spec_status (violates/no-spec/conflicts)
             "reviews": {k: ao.get(k) for k in ("security", "architecture", "interop", "crit", "ux")},
             "prioritize": ao.get("prio"),

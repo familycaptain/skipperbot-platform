@@ -25,4 +25,11 @@ and the forecast path now call the shared `_lookup_zip`; no route or id changed"
 write "we should…" — say what was wired. `conflicts` = collisions the built change creates
 with existing behavior. Otherwise (**Gate 1**, a proposal) assess satisfiability as above.
 
+**Post-merge check (phase = "post-merge").** When you are told another item just MERGED
+(its spec is in `existing_specs`, the files it changed in `merged`), decide whether THIS
+item's `proposal` still holds now that that change has landed — would building this item
+now contradict, duplicate, or step on what just merged? Report those as `conflicts` (with
+the merged spec id) so the operator can have the Lead re-evaluate this item against the new
+baseline. Empty `conflicts` = still compatible.
+
 Return your result via the `emit` tool.
