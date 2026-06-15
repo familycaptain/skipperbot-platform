@@ -139,8 +139,7 @@ class Pipeline:
         edit the same code can't silently collide at merge (the cross-item gap). Surfaced
         in the packet; the operator decides ordering / supersedes."""
         mine_cfs, mine_files = self._touched(inst)
-        if not (mine_cfs or mine_files):
-            return []
+        mine_src = (inst.context.get("work_item") or {}).get("source")
         out = []
         try:
             others = self.store.all()
@@ -150,12 +149,14 @@ class Pipeline:
             if other.id == inst.id or other.status in (DONE, REJECTED, PARKED):
                 continue
             o_cfs, o_files = self._touched(other)
+            wi = other.context.get("work_item") or {}
+            same_src = bool(mine_src) and wi.get("source") == mine_src   # same GitHub issue = duplicate
             shared = sorted((mine_cfs & o_cfs) | (mine_files & o_files))
-            if shared:
-                wi = other.context.get("work_item") or {}
+            if same_src or shared:
+                overlap = (["same issue: " + mine_src] if same_src else []) + shared[:5]
                 out.append({"instance": other.id, "title": wi.get("title", ""),
                             "source": wi.get("source", ""), "gate": self.gate_waiting(other),
-                            "status": other.status, "overlap": shared[:5]})
+                            "status": other.status, "overlap": overlap})
         return out
 
     def _recommendation(self, inst, gate, ao) -> dict:
