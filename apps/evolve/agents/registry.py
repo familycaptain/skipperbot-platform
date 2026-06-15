@@ -88,9 +88,14 @@ PRIORITIZE_OUT = _obj({
 
 DESIGN_OUT = _obj({
     "summary": _STR,
-    "proposals": _arr(_obj({"title": _STR, "capability": _STR, "need": _STR,
-                            "rationale": _STR}, ["title", "need"])),
-}, ["summary", "proposals"])
+    "approach": _STR,                  # how it should work, system-level — the headline design decision
+    "key_decisions": _arr(_STR),       # load-bearing decisions ("resolve location once in Settings, cache it")
+    "in_scope": _arr(_STR),
+    "out_of_scope": _arr(_STR),
+    "nonfunctional": _arr(_STR),       # which operator principles apply + how this honors them
+    "sizing": {"type": "string", "enum": ["one-spec", "needs-tree"]},   # decomposition signal (#30)
+    "open_questions": _arr(_STR),
+}, ["summary", "approach", "key_decisions", "sizing"])
 
 PACKET_OUT = _obj({
     "summary": _STR, "risk": {"type": "string", "enum": ["low", "med", "high"]},
@@ -153,7 +158,7 @@ ROSTER: dict[str, AgentSpec] = {
         PRIORITIZE_OUT, prompt_file="prioritize.md", tier="deep",
         charter_keys=["thesis"]),
     "design": AgentSpec(
-        "design", "Propose new Capabilities/Features grounded in charter + gaps.",
+        "design", "Set the system-level approach (how it should work) before the spec is written.",
         DESIGN_OUT, prompt_file="design.md", tier="deep",
         charter_keys=["thesis", "scope", "surfaces", "non-goals", "principles"]),
     "code-audit": AgentSpec(
