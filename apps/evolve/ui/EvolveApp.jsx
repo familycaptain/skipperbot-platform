@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Workflow, Loader2, CheckCircle2, XCircle, RefreshCw, GitBranch, FlaskConical, Activity, Circle } from "lucide-react";
+import { Workflow, Loader2, CheckCircle2, XCircle, RefreshCw, GitBranch, FlaskConical, Activity, Circle, ChevronDown, ChevronRight } from "lucide-react";
 import { hasAnyRole } from "../../../web/src/utils/roles";
 
 const API = "/api/apps/evolve";
@@ -46,7 +46,7 @@ const AGENT_LABEL = {
 const KIND_CLS = {
   tool: "text-slate-400", emit: "text-indigo-300", agent_start: "text-sky-300",
   agent_end: "text-emerald-300", node: "text-slate-300", info: "text-slate-500",
-  error: "text-red-300",
+  error: "text-red-300", text: "text-slate-200",   // the agent's own narration
 };
 
 function Field({ k, v }) {
@@ -101,25 +101,51 @@ function Section({ title, children }) {
   );
 }
 
-// one per-agent live log lane
-function AgentLog({ name, events, active, done }) {
-  const endRef = useRef(null);
-  useEffect(() => { endRef.current?.scrollIntoView({ block: "nearest" }); }, [events.length]);
+// one per-agent live log lane — collapsible, scrollable, sticks to the bottom only when
+// you're already there (so you can scroll up through history without it yanking you down).
+function AgentLog({ name, events, active, done, expandAll }) {
+  const [open, setOpen] = useState(false);
+  const [tall, setTall] = useState(false);
+  const boxRef = useRef(null);
+  const stick = useRef(true);
+  const isOpen = open || expandAll || active;          // active agent + "expand all" auto-open
+  useEffect(() => {
+    const el = boxRef.current;
+    if (isOpen && el && stick.current) el.scrollTop = el.scrollHeight;
+  }, [events.length, isOpen, tall]);
+  const onScroll = (e) => {
+    const el = e.currentTarget;
+    stick.current = el.scrollHeight - el.scrollTop - el.clientHeight < 32;
+  };
+  const last = events.length ? events[events.length - 1].message : "";
   return (
     <div className={`border rounded-md ${active ? "border-sky-600/60" : "border-slate-800"}`}>
       <div className="flex items-center gap-1.5 px-2.5 py-1 border-b border-slate-800/60">
-        {active ? <Circle size={8} className="text-sky-400 fill-sky-400 animate-pulse" />
-          : done ? <CheckCircle2 size={11} className="text-emerald-500" />
-          : <Circle size={8} className="text-slate-600" />}
+        {active ? <Circle size={8} className="text-sky-400 fill-sky-400 animate-pulse shrink-0" />
+          : done ? <CheckCircle2 size={11} className="text-emerald-500 shrink-0" />
+          : <Circle size={8} className="text-slate-600 shrink-0" />}
         <span className="text-xs font-medium">{AGENT_LABEL[name] || name}</span>
-        <span className="text-[10px] text-slate-500 ml-auto">{active ? "active" : done ? "done" : "idle"}</span>
+        <span className="text-[10px] text-slate-500 ml-auto shrink-0">{events.length} · {active ? "active" : done ? "done" : "idle"}</span>
+        {isOpen && (
+          <button onClick={() => setTall((t) => !t)} className="text-[10px] text-slate-500 hover:text-slate-200 shrink-0" title="taller / shorter">
+            {tall ? "▣" : "⤢"}
+          </button>
+        )}
+        <button onClick={() => setOpen((o) => !o)} className="text-slate-500 hover:text-white shrink-0">
+          {isOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+        </button>
       </div>
-      <div className="max-h-40 overflow-y-auto px-2.5 py-1.5 font-mono text-[11px] leading-relaxed bg-black/30">
-        {events.map((e) => (
-          <div key={e.id} className={`whitespace-pre-wrap break-words ${KIND_CLS[e.kind] || "text-slate-400"}`}>{e.message}</div>
-        ))}
-        <div ref={endRef} />
-      </div>
+      {isOpen ? (
+        <div ref={boxRef} onScroll={onScroll}
+             className={`${tall ? "max-h-[32rem]" : "max-h-72"} overflow-y-auto px-2.5 py-1.5 font-mono text-[11px] leading-relaxed bg-black/30`}>
+          {events.length === 0 && <div className="text-slate-600">waiting…</div>}
+          {events.map((e) => (
+            <div key={e.id} className={`whitespace-pre-wrap break-words ${KIND_CLS[e.kind] || "text-slate-400"}`}>{e.message}</div>
+          ))}
+        </div>
+      ) : (
+        last && <button onClick={() => setOpen(true)} className="block w-full text-left px-2.5 py-1 font-mono text-[11px] text-slate-500 truncate hover:text-slate-300">{last}</button>
+      )}
     </div>
   );
 }
@@ -133,6 +159,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
   const [detail, setDetail] = useState(null);  // gate packet (only when parked at a gate)
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
+  const [expandAll, setExpandAll] = useState(false);
   const lastId = useRef(0);
   const selRef = useRef(null);
 
@@ -345,18 +372,28 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
             )}
 
             {/* LIVE ACTIVITY — per-agent scrolling logs */}
-            <Section title={`Live activity${run?.current_agent && isActive(run?.status) ? ` · ⚙ ${AGENT_LABEL[run.current_agent] || run.current_agent}` : ""}`}>
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-[11px] uppercase tracking-wide text-slate-500">
+                  Live activity{run?.current_agent && isActive(run?.status) ? ` · ⚙ ${AGENT_LABEL[run.current_agent] || run.current_agent}` : ""}
+                </div>
+                {lanes.length > 0 && (
+                  <button onClick={() => setExpandAll((x) => !x)} className="text-[10px] text-slate-500 hover:text-slate-200">
+                    {expandAll ? "collapse all" : "expand all"}
+                  </button>
+                )}
+              </div>
               {lanes.length === 0 ? (
                 <div className="text-slate-600 text-xs">No activity yet for this run.</div>
               ) : (
                 <div className="space-y-1.5">
                   {lanes.map((a) => (
-                    <AgentLog key={a} name={a} events={byAgent[a]}
+                    <AgentLog key={a} name={a} events={byAgent[a]} expandAll={expandAll}
                       active={isActive(run?.status) && run?.current_agent === a} done={doneAgents.has(a)} />
                   ))}
                 </div>
               )}
-            </Section>
+            </div>
 
             {/* GATE REVIEW DETAIL (proposal / specs / team / validation / diff) */}
             {atGate && (

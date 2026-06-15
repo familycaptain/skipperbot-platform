@@ -75,7 +75,8 @@ class ClaudeSDKBackend:
 
     async def _run(self, spec, payload, context, model, system, role_prompt, resume, fork) -> AgentResult:
         from claude_agent_sdk import (ClaudeSDKClient, ClaudeAgentOptions, HookMatcher,
-                                      AssistantMessage, ResultMessage, ToolUseBlock, fork_session)
+                                      AssistantMessage, ResultMessage, ToolUseBlock, TextBlock,
+                                      fork_session)
 
         if fork and resume:
             resume = fork_session(resume).session_id   # branch off the shared session, don't pollute it
@@ -119,11 +120,20 @@ class ClaudeSDKBackend:
             await client.query(user)
             async for msg in client.receive_response():
                 if isinstance(msg, AssistantMessage):
-                    # transcript only — live streaming is the PreToolUse hook (fires in real time,
-                    # before execution); emitting here too would double every line.
                     for b in msg.content:
                         if isinstance(b, ToolUseBlock):
+                            # tool calls stream via the PreToolUse hook (real-time); transcript only here
                             transcript.append(_tool_label(b.name, b.input))
+                        elif isinstance(b, TextBlock) and getattr(b, "text", "").strip():
+                            # the agent's own narration ("now I'll check…") — stream it so the lane
+                            # shows the reasoning, not just the tool calls. (Hook covers only tools.)
+                            txt = b.text.strip()
+                            transcript.append(txt)
+                            if sink:
+                                try:
+                                    sink("text", txt[:600])
+                                except Exception:
+                                    pass
                 elif isinstance(msg, ResultMessage):
                     out = msg.structured_output
                     cost = msg.total_cost_usd or 0.0
