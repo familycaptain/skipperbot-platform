@@ -97,6 +97,7 @@ def build_pipeline():
     model = M.load("specs/evolve/sdlc.yaml")
     ledger = CostLedger()
     from apps.evolve.agents.tooluse import ToolUseBackend
+    from apps.evolve.emitter import EventEmitter
     read_tools = ToolUseBackend(repo_root=ROOT, allow_writes=False, max_turns=14)  # spec phase reads REAL code
     runner = Runner(AnthropicBackend(), dict(ROSTER), tool_backend=read_tools,
                     ledger=ledger, monthly_limit_usd=CAP, budget_usd=20.0)
@@ -105,21 +106,32 @@ def build_pipeline():
                                   test_path="tests/evolve", log=print)
     store = SqliteInstanceStore(STATE_DB)
 
+    # live mission-control: batch+flush activity to the Pi off the build thread
+    emitter = EventEmitter(
+        lambda iid, fields, events: bridge.report_run(iid, events=events, **fields),
+        log=print).start()
+
     class RealPipeline(Pipeline):
         def _code_acting(self, agent, inst):
             if agent == "implement":
                 feat = self._feature(inst)
                 spec_rec = inst.context.get("spec_record") or {"id": feat.item_id}
                 wi = inst.context.get("work_item", {})
+                self._run(inst, phase="build", status="building",
+                          current_node="impl", current_agent="implement")
+                self._ev(inst, "implement", "node", "implementing: writing the code + bound test")
                 impl = implement_with_agent(wi, spec_rec, model=DEEP, skills_dir=".claude/skills",
-                                            ledger=ledger, monthly_limit_usd=CAP)(feat)
+                                            ledger=ledger, monthly_limit_usd=CAP,
+                                            on_event=self.on_event, instance_id=inst.id)(feat)
                 # shared gating: ok AND a real code change, else validate is short-circuited
                 return self._finish_implement(inst, feat, impl)
             return super()._code_acting(agent, inst)
 
     pipe = RealPipeline(model, runner=runner, wm=wm, implement_fn=lambda f: None,
-                        validate_fn=validate_fn, store=store, log=print, on_gate=None)
+                        validate_fn=validate_fn, store=store, log=print, on_gate=None,
+                        on_event=emitter.event, on_run=emitter.run)
     pipe.on_gate = _make_on_gate(pipe)
+    pipe.emitter = emitter
     return pipe, runner, ledger
 
 
@@ -143,7 +155,13 @@ def main():
         return
 
     pipe, runner, ledger = build_pipeline()
+    try:
+        _run_cmd(args, pipe, runner, ledger)
+    finally:
+        pipe.emitter.stop()      # final flush of the live activity stream
 
+
+def _run_cmd(args, pipe, runner, ledger):
     if args.cmd == "ingest":
         seen = _seen()
         issues = gh.list_open_issues()

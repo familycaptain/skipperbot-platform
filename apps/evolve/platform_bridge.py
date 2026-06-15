@@ -79,3 +79,16 @@ def resolve(instance_id: str, status: str, token: str | None = None) -> dict:
     """Mark a decided gate's terminal outcome after the engine resumed it."""
     token = token or auth()
     return _post(f"/api/apps/evolve/gates/{instance_id}/resolve", {"status": status}, token)
+
+
+def report_run(instance_id: str, *, title="", source="", phase="", status="",
+               current_agent="", current_node="", events=None,
+               token: str | None = None) -> dict:
+    """Report a run's status + a batch of activity events to the mission-control view
+    (one POST does both). Best-effort observability — never let it break the engine."""
+    token = token or auth()
+    return _post("/api/apps/evolve/runs", {
+        "instance_id": instance_id, "title": title, "source": source, "phase": phase,
+        "status": status, "current_agent": current_agent, "current_node": current_node,
+        "events": events or [],
+    }, token)

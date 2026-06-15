@@ -61,6 +61,22 @@ def gather_skills(spec: AgentSpec, skills_dir: str) -> list[dict]:
     return [load_skill(s, skills_dir) for s in spec.skills]
 
 
+def _tool_label(b) -> str:
+    """One-line human label for a tool call — what shows in the live scrolling log."""
+    inp = getattr(b, "input", {}) or {}
+    if b.name == "bash":
+        return f"$ {inp.get('command', '')}"
+    if b.name == "read_file":
+        return f"read {inp.get('path', '')}"
+    if b.name == "write_file":
+        return f"write {inp.get('path', '')}"
+    if b.name == "edit_file":
+        return f"edit {inp.get('path', '')}"
+    if b.name == "emit":
+        return "emit → result"
+    return b.name
+
+
 # --------------------------------------------------------------------------- #
 # Sandboxed tools
 # --------------------------------------------------------------------------- #
@@ -147,6 +163,7 @@ class ToolUseBackend:
         self.skills_dir = skills_dir
         self.max_turns = max_turns
         self.allow_writes = allow_writes
+        self.on_tool = None   # optional callable(kind, message): live per-tool activity
 
     def _get_client(self):
         if self._client is None:
@@ -218,6 +235,11 @@ class ToolUseBackend:
             messages.append({"role": "assistant", "content": msg.content})
             results = []
             for b in tool_uses:
+                if self.on_tool:
+                    try:
+                        self.on_tool("emit" if b.name == "emit" else "tool", _tool_label(b))
+                    except Exception:
+                        pass
                 if b.name == "emit":
                     cost = estimate_cost(model, in_tok, out_tok)
                     return AgentResult(spec.name, ok=True, output=b.input, model=model,

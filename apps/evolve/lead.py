@@ -19,13 +19,13 @@ REVIEWERS = ("security", "architecture", "interop", "ux")
 
 
 def run_lead_phase(runner, work_item: dict, *, context: dict | None = None,
-                   max_rounds: int = 3, log=lambda *a: None) -> dict:
+                   max_rounds: int = 3, log=lambda *a: None, instance_id=None) -> dict:
     context = context or {}
     human_note = context.get("human_note")
     outputs: dict[str, dict] = {}
 
     def call(name, payload, store_as=None):
-        res = runner.run(name, payload)
+        res = runner.run(name, payload, instance_id=instance_id)
         out = res.output or {}
         outputs[store_as or name] = out
         log(f"    lead/{store_as or name} ok={res.ok} ${getattr(res, 'cost_usd', 0):.4f}")

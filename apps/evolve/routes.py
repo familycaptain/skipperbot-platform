@@ -11,6 +11,7 @@ from pydantic import BaseModel
 
 from app_platform.auth import current_principal
 from apps.evolve import gate_queue
+from apps.evolve import activity
 
 router = APIRouter()
 
@@ -27,6 +28,17 @@ class DecisionReq(BaseModel):
 
 class ResolveReq(BaseModel):
     status: str
+
+
+class RunReq(BaseModel):
+    instance_id: str
+    title: str = ""
+    source: str = ""
+    phase: str = ""
+    status: str = ""
+    current_agent: str = ""
+    current_node: str = ""
+    events: list[dict] = []     # optional batch of {agent, kind, message} to append
 
 
 def _principal(request: Request) -> dict:
@@ -90,3 +102,36 @@ async def api_resolve_gate(instance_id: str, req: ResolveReq, request: Request):
     if not n:
         raise HTTPException(status_code=404, detail="no such gate")
     return {"ok": True, "status": req.status}
+
+
+# --- live mission-control: runs + per-agent activity stream --------------------
+@router.post("/runs")
+async def api_upsert_run(req: RunReq, request: Request):
+    """The engine reports a run's status + a batch of activity events (service or admin).
+    One call both upserts the run row and appends the live log lines."""
+    p = _principal(request)
+    if not (p.get("is_service") or _has_role(p, "admin")):
+        raise HTTPException(status_code=403, detail="admin or service principal only")
+    await asyncio.to_thread(
+        activity.upsert_run, req.instance_id, title=req.title, source=req.source,
+        phase=req.phase, status=req.status, current_agent=req.current_agent,
+        current_node=req.current_node)
+    if req.events:
+        await asyncio.to_thread(activity.add_events, req.instance_id, req.events)
+    return {"ok": True, "events": len(req.events)}
+
+
+@router.get("/runs")
+async def api_list_runs(limit: int = 50):
+    """All in-flight + recent runs (the mission-control list)."""
+    rows = await asyncio.to_thread(activity.list_runs, limit)
+    return {"runs": rows,
+            "active": sum(1 for r in rows if r["status"] in ("running", "building"))}
+
+
+@router.get("/runs/{instance_id}/events")
+async def api_run_events(instance_id: str, since: int = 0, limit: int = 500):
+    """Activity events newer than `since` — the UI tails this for the scrolling log."""
+    run = await asyncio.to_thread(activity.get_run, instance_id)
+    evs = await asyncio.to_thread(activity.events, instance_id, since, limit)
+    return {"run": run, "events": evs, "last": evs[-1]["id"] if evs else since}

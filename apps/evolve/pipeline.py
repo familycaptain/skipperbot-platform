@@ -38,8 +38,19 @@ def spec_record_from(spec_out: dict, work_item: dict) -> dict:
 
 
 class Pipeline:
+    # build-half nodes -> (stage label, human detail) for the live mission-control view
+    _STAGES = {
+        "serialize": ("serializing", "writing the spec to the feature branch"),
+        "impl":      ("implementing", "writing the code + bound test"),
+        "implement": ("implementing", "writing the code + bound test"),
+        "deploy":    ("deploying", "box 2: checking out the feature branch"),
+        "validate":  ("validating", "running the bound tests on box 2"),
+        "merge":     ("merging", "feature → release"),
+    }
+
     def __init__(self, model, *, runner, wm, implement_fn, validate_fn,
-                 store=None, cfs_store=None, log=lambda *a: None, on_gate=None):
+                 store=None, cfs_store=None, log=lambda *a: None, on_gate=None,
+                 on_event=None, on_run=None):
         self.model = model
         self.runner = runner               # reasoning agents (shares the cost ledger)
         self.wm = wm                        # WorkspaceManager (box 1)
@@ -49,8 +60,28 @@ class Pipeline:
         self.store = store or InMemoryInstanceStore()
         self.log = log
         self.on_gate = on_gate              # callback(packet) fired when an instance BLOCKS at a human gate
+        # live observability: on_event(inst_id, agent, kind, msg); on_run(inst_id, **fields)
+        self.on_event = on_event
+        self.on_run = on_run
+        if runner is not None and on_event is not None:
+            runner.on_event = on_event      # so every agent (incl. Lead sub-agents) streams
         self.walker = Walker(model, system_handler=self._system, agent_handler=self._agent,
                              exclusive_decider=output_driven_decider)
+
+    # --- live activity helpers (best-effort) -------------------------------
+    def _ev(self, inst, agent, kind, msg) -> None:
+        if self.on_event:
+            try:
+                self.on_event(inst.id, agent, kind, msg)
+            except Exception:
+                pass
+
+    def _run(self, inst, **fields) -> None:
+        if self.on_run:
+            try:
+                self.on_run(inst.id, **fields)
+            except Exception:
+                pass
 
     def _maybe_notify_gate(self, inst: Instance) -> None:
         """When the walk parks at a human gate, fire the on_gate hook (e.g. Pushover).
@@ -62,9 +93,27 @@ class Pipeline:
         except Exception as e:
             self.log(f"  on_gate hook failed: {type(e).__name__}: {e}")
 
+    def _sync_run(self, inst) -> None:
+        """Project the instance's lifecycle state onto the mission-control run row."""
+        gate = self.gate_waiting(inst)
+        if inst.status == DONE:
+            self._run(inst, status="merged", phase="done", current_agent="")
+        elif inst.status == REJECTED:
+            self._run(inst, status="rejected", phase="done", current_agent="")
+        elif gate:
+            self._run(inst, status="waiting", current_node=gate, current_agent="")
+            self._ev(inst, "engine", "info", f"parked at {gate} — waiting on the operator")
+        else:
+            self._run(inst, status="running")
+
     # public API ------------------------------------------------------------
     def submit(self, work_item: dict, at: str = "s_issue") -> Instance:
         inst = self.walker.start(context={"work_item": work_item}, at=at)
+        wi = work_item or {}
+        self._run(inst, title=wi.get("title", ""), source=wi.get("source", ""),
+                  phase="intake", status="running")
+        self._ev(inst, "engine", "info", f"intake: {wi.get('title', '(work item)')}")
+        self._sync_run(inst)
         self.store.save(inst)
         self._maybe_notify_gate(inst)
         return inst
@@ -73,9 +122,12 @@ class Pipeline:
         inst = self.store.load(instance_id)
         if inst is None:
             raise ValueError(f"no such instance {instance_id}")
+        self._run(inst, status="building")
+        self._ev(inst, "engine", "info", f"operator decision: {decision} — resuming")
         self.walker.resume_gate(inst, decision)
         if inst.status == REJECTED:
             self._teardown(inst)
+        self._sync_run(inst)
         self.store.save(inst)
         self._maybe_notify_gate(inst)
         return inst
@@ -213,6 +265,7 @@ class Pipeline:
             return self._code_acting(agent, inst)
         if agent == "lead":
             return self._lead(inst)
+        self._run(inst, phase="intake", current_node=node.id, current_agent=agent)
         payload = {"work_item": inst.context.get("work_item", {}),
                    "proposal": inst.context.get("proposal")}
         if agent == "triage" and self.cfs_store is not None:
@@ -234,11 +287,13 @@ class Pipeline:
         packet + UI panels find them. The Lead owns the proposal + the Gate-1 recommendation."""
         from apps.evolve.lead import run_lead_phase
         ao = inst.context.setdefault("agent_outputs", {})
+        self._run(inst, phase="spec", current_node="lead", current_agent="lead")
+        self._ev(inst, "lead", "info", "spec phase: Design → author ⇄ auditor → reviewers")
         ctx = {"human_note": inst.context.get("human_note"),
                "triage": (ao.get("triage") or {}).get("output"),
                "vision": (ao.get("vision") or {}).get("output")}
         result = run_lead_phase(self.runner, inst.context.get("work_item", {}),
-                                context=ctx, log=self.log)
+                                context=ctx, log=self.log, instance_id=inst.id)
         for key, output in result["outputs"].items():
             ao[key] = {"ok": True, "output": output}      # keyed for the packet + per-agent panels
         inst.context["proposal"] = result["proposal"]
@@ -249,6 +304,9 @@ class Pipeline:
 
     def _code_acting(self, agent, inst) -> dict:
         feat = self._feature(inst)
+        stage, detail = self._STAGES.get(agent, ("building", agent))
+        self._run(inst, phase="build", status="building", current_node=agent, current_agent=agent)
+        self._ev(inst, agent, "node", f"{stage}: {detail}")
         if agent == "implement":
             return self._finish_implement(inst, feat, self.implement_fn(feat))
         if agent == "test-author":
@@ -264,10 +322,13 @@ class Pipeline:
                 reason = inst.context.get("implement_error") or "implement did not succeed"
                 inst.context["validation"] = {"passed": False, "ran": False, "reason": reason}
                 self.log(f"  validate SKIPPED — {reason}")
+                self._ev(inst, "validate", "error", f"skipped — {reason}")
                 return {"ok": True, "output": {"passed": False, "reason": reason}}
             passed = bool(self.validate_fn(feat))
             inst.context["validation"] = {"passed": passed, "ran": True}
             self.log(f"  validate passed={passed}")
+            self._ev(inst, "validate", "agent_end",
+                     "✓ bound tests green on box 2" if passed else "✗ bound tests RED on box 2")
             return {"ok": True, "output": {"passed": passed}}
         return {"ok": True, "output": {}}
 
@@ -297,6 +358,9 @@ class Pipeline:
                 else "implement agent did not complete"))
         self.log(f"  implement ok={ok} changed={changed} bound_tests={len(bound)} "
                  f"-> implemented={implemented}")
+        self._ev(inst, "implement", "agent_end",
+                 (f"✓ wrote code + {len(bound)} bound test(s)" if implemented
+                  else f"✗ {inst.context['implement_error']}"))
         return {"ok": implemented, "output": getattr(r, "output", None) or {}}
 
     def _system(self, node, inst) -> str:
@@ -314,15 +378,20 @@ class Pipeline:
             extra = f" (+{len(tree) - 1} more)" if len(tree) > 1 else ""
             self.wm.commit(feat, f"spec: {root['id']}{extra}")
             self.log(f"  serialized {len(tree)} spec(s) on {feat.branch}")
+            self._run(inst, phase="build", status="building", current_node="serialize",
+                      current_agent="serialize")
+            self._ev(inst, "serialize", "node", f"wrote {len(tree)} spec(s) to {feat.branch}")
             return "serialized"
         if nid == "deploy":
             return "deploy (box 2 handled by validate)"   # validate_fn deploys + tests + resets
         if nid == "merge":
             feat = self._feature(inst)
+            self._ev(inst, "merge", "node", "merging feature → release")
             sha = self.wm.merge_to_release(feat)
             inst.context["release_sha"] = sha
             self.wm.finish_feature(feat)
             self.log(f"  merged -> release @ {sha[:8]}")
+            self._ev(inst, "merge", "agent_end", f"✓ merged → release @ {sha[:8]}")
             return f"merged@{sha[:8]}"
         if nid == "resync":
             return "resync (files->DB)"

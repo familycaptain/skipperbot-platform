@@ -138,6 +138,7 @@ class Runner:
     tool_backend: Backend | None = None        # for requires_tools agents (executes skills)
     ledger: object | None = None               # CostLedger: record every call (measure everything)
     monthly_limit_usd: float | None = None      # kill-switch: pause when month-to-date >= this
+    on_event: object | None = None             # callable(instance_id, agent, kind, message): live activity
 
     def composed_system(self, spec: AgentSpec) -> str:
         """Role prompt + the curated charter sections this agent declares + the summary rule."""
@@ -172,7 +173,16 @@ class Runner:
                                error=f"cycle budget exhausted (${self.spent_usd:.4f} >= ${self.budget_usd:.2f})")
         model = self.tiers.get(spec.tier, self.tiers["smart"])
         backend = self.tool_backend if (spec.requires_tools and self.tool_backend) else self.backend
+        ev = self.on_event
+        if ev:
+            self._emit(ev, instance_id, agent_name, "agent_start",
+                       f"{agent_name} · {model.split('-')[1] if '-' in model else model}")
+            # tool-use agents stream every command/read; clear the sink after the call
+            if backend is self.tool_backend and hasattr(backend, "on_tool"):
+                backend.on_tool = lambda kind, msg: self._emit(ev, instance_id, agent_name, kind, msg)
         res = backend.run(spec, payload, context, model, self.composed_system(spec))
+        if hasattr(backend, "on_tool"):
+            backend.on_tool = None
         self.spent_usd += res.cost_usd
         if self.ledger is not None:
             self.ledger.record_result(res, instance_id=instance_id)
@@ -182,7 +192,20 @@ class Runner:
             if res.schema_errors:
                 res.ok = False
                 res.error = "output failed schema: " + "; ".join(res.schema_errors[:4])
+        if ev:
+            summ = (res.output or {}).get("summary", "") if isinstance(res.output, dict) else ""
+            tail = (summ or res.error or "")[:200]
+            self._emit(ev, instance_id, agent_name, "agent_end",
+                       f"{'✓ ok' if res.ok else '✗ ' + (res.error or 'failed')[:60]} "
+                       f"(${res.cost_usd:.4f}) {tail}".strip())
         return res
+
+    @staticmethod
+    def _emit(ev, instance_id, agent, kind, message) -> None:
+        try:
+            ev(instance_id, agent, kind, message)
+        except Exception:
+            pass   # observability must never break a run
 
     @property
     def remaining_usd(self) -> float | None:
