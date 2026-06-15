@@ -122,7 +122,8 @@ def build_pipeline():
                 self._ev(inst, "implement", "node", "implementing: writing the code + bound test")
                 impl = implement_with_agent(wi, spec_rec, model=DEEP, skills_dir=".claude/skills",
                                             ledger=ledger, monthly_limit_usd=CAP,
-                                            on_event=self.on_event, instance_id=inst.id)(feat)
+                                            on_event=self.on_event, instance_id=inst.id,
+                                            code_context=inst.context.get("code_context"))(feat)
                 # shared gating: ok AND a real code change, else validate is short-circuited
                 return self._finish_implement(inst, feat, impl)
             return super()._code_acting(agent, inst)

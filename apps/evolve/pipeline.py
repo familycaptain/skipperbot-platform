@@ -401,6 +401,7 @@ class Pipeline:
         inst.context["proposal"] = result["proposal"]
         inst.context["spec_tree"] = result.get("spec_tree") or [result["proposal"]]
         inst.context["lead_recommendation"] = result["recommendation"]
+        inst.context["code_context"] = result.get("code_context")   # shared grounding for implement
         inst.context["human_note"] = None                  # consumed by this pass
         return {"ok": True, "output": result["outputs"].get("lead", {})}
 

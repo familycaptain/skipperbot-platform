@@ -31,8 +31,13 @@ def run_lead_phase(runner, work_item: dict, *, context: dict | None = None,
         log(f"    lead/{store_as or name} ok={res.ok} ${getattr(res, 'cost_usd', 0):.4f}")
         return out
 
-    # 1. Design sets the approach + decides the technical choices (reads the real code).
-    design = call("design", {"work_item": work_item, "context": context}, store_as="design")
+    # 0. GROUNDING: scan the code ONCE; the whole team reuses this digest (no re-scan tax).
+    code_context = call("grounding", {"work_item": work_item, "context": context},
+                        store_as="grounding")
+
+    # 1. Design sets the approach + decides the technical choices (grounded in the digest).
+    design = call("design", {"work_item": work_item, "context": context,
+                             "code_context": code_context}, store_as="design")
     tree = design.get("spec_tree") or []
     needs_tree = design.get("sizing") == "needs-tree" and len(tree) >= 2
 
@@ -45,20 +50,23 @@ def run_lead_phase(runner, work_item: dict, *, context: dict | None = None,
         log(f"  lead: decomposing into {len(tree)} specs")
         for leaf in tree:
             s = call("spec-author", {"work_item": work_item, "design": design, "leaf": leaf,
-                                     "human_note": human_note}, store_as=f"spec:{leaf.get('spec_id', '?')}")
+                                     "code_context": code_context, "human_note": human_note},
+                     store_as=f"spec:{leaf.get('spec_id', '?')}")
             spec_tree_specs.append(s)
         proposal = spec_tree_specs[0] if spec_tree_specs else {}
         outputs["spec"] = proposal                              # root spec drives the panel/serialize
         audit = call("spec-audit", {"work_item": work_item, "proposal": spec_tree_specs,
-                                    "design": design}, store_as="crit")
+                                    "design": design, "code_context": code_context}, store_as="crit")
         rounds = 1
     else:
         # 2b. SINGLE SPEC: author <-> auditor, arbitrated by the Lead each round (bounded).
         for rnd in range(1, max_rounds + 1):
             rounds = rnd
             proposal = call("spec-author", {"work_item": work_item, "design": design,
+                                            "code_context": code_context,
                                             "prior_audit": audit, "human_note": human_note}, store_as="spec")
-            audit = call("spec-audit", {"work_item": work_item, "proposal": proposal}, store_as="crit")
+            audit = call("spec-audit", {"work_item": work_item, "proposal": proposal,
+                                        "code_context": code_context}, store_as="crit")
             arb = call("lead", {"phase": "arbitrate-round", "work_item": work_item, "design": design,
                                 "proposal": proposal, "audit": audit, "round": rnd, "max_rounds": max_rounds},
                        store_as=f"lead-round-{rnd}")
@@ -90,7 +98,8 @@ def run_lead_phase(runner, work_item: dict, *, context: dict | None = None,
     log(f"  lead: {rounds} round(s), {len(spec_tree_specs)} spec(s), recommend={rec.get('action')}"
         + (" (escalated)" if escalated else ""))
     return {"proposal": proposal, "spec_tree": spec_tree_specs, "recommendation": rec,
-            "outputs": outputs, "rounds": rounds, "escalated": escalated}
+            "outputs": outputs, "rounds": rounds, "escalated": escalated,
+            "code_context": code_context}
 
 
 def run_result_review(runner, work_item: dict, *, spec: dict, diff: str, validation: dict,

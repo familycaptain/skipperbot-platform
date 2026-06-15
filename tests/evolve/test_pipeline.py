@@ -22,6 +22,8 @@ SDLC = os.path.join(REPO, "specs", "evolve", "sdlc.yaml")
 
 # canned reasoning outputs keyed by AGENT name (happy path: feature, fits, surface, clean)
 FAKE = {
+    "grounding": {"summary": "s", "relevant_files": [{"path": "apps/demo/thing.py", "role": "the thing"}],
+                  "key_symbols": [], "excerpts": [], "conventions": [], "entry_points": []},
     "triage": {"summary": "s", "kind": "feature", "spec_status": "no-spec", "rationale": "new behavior, new scope"},
     "vision-fit": {"summary": "s", "verdict": "fits", "rationale": "in charter"},
     "design": {"summary": "s", "approach": "do the thing simply", "key_decisions": ["k"], "sizing": "one-spec"},

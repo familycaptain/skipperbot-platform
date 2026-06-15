@@ -91,7 +91,7 @@ def run_build(wm: WorkspaceManager, spec_record: dict, *, implement_fn: Implemen
 def implement_with_agent(work_item: dict, spec_record: dict, *, model: str,
                          skills_dir: str = ".claude/skills", ledger=None,
                          monthly_limit_usd: float | None = None,
-                         on_event=None, instance_id=None):
+                         on_event=None, instance_id=None, code_context=None):
     """Return an implement_fn that runs the `implement` agent (tool-use, writes ON)
     rooted at the feature worktree, THROUGH a Runner so its cost is recorded to the
     shared ledger and the monthly kill-switch applies. `on_event` (if given) streams the
@@ -107,7 +107,8 @@ def implement_with_agent(work_item: dict, spec_record: dict, *, model: str,
                         tiers={"fast": model, "smart": model, "deep": model},
                         ledger=ledger, monthly_limit_usd=monthly_limit_usd,
                         on_event=on_event)
-        return runner.run("implement", {"work_item": work_item, "spec": spec_record},
+        return runner.run("implement",
+                          {"work_item": work_item, "spec": spec_record, "code_context": code_context},
                           instance_id=instance_id or spec_record.get("id"))
     return _impl
 

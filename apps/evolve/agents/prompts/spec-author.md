@@ -18,4 +18,9 @@ Rules:
 - Avoid the naive-spec traps the spec-audit agent hunts (1:1 over a many-to-many,
   missing empty/error states, ambiguous "the X"). Write it sound the first time.
 
+**Use the shared `code_context`** (+ the Design output). The Grounding agent already mapped
+the relevant files, key symbols, excerpts, and conventions — reason from that digest so your
+`implements` paths and behavior match the real code. Only read a file to confirm a specific
+detail the digest doesn't cover; don't re-scan the codebase.
+
 Return your result via the `emit` tool.

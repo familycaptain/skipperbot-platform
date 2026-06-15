@@ -100,6 +100,20 @@ DESIGN_OUT = _obj({
         "spec_id": _STR, "title": _STR, "summary": _STR}, ["spec_id", "title"])),
 }, ["summary", "approach", "key_decisions", "sizing"])
 
+# Shared codebase grounding — scanned ONCE per work item, then handed to every downstream
+# agent so they don't each re-read the code from scratch (the re-scan tax).
+GROUNDING_OUT = _obj({
+    "summary": _STR,                       # what this area of the code does + how the change fits
+    "relevant_files": _arr(_obj({          # the files that matter for this work item
+        "path": _STR, "role": _STR}, ["path", "role"])),
+    "key_symbols": _arr(_obj({             # functions/classes/routes the change will touch or use
+        "name": _STR, "file": _STR, "role": _STR}, ["name", "role"])),
+    "excerpts": _arr(_obj({                # crucial snippets so downstream agents needn't re-open files
+        "path": _STR, "snippet": _STR}, ["path", "snippet"])),
+    "conventions": _arr(_STR),             # patterns/idioms to follow (so the change fits in)
+    "entry_points": _arr(_STR),            # where behavior is wired (routes, tools, UI mount points)
+}, ["summary", "relevant_files"])
+
 LEAD_OUT = _obj({
     "summary": _STR,
     "verdict": {"type": "string", "enum": ["accept", "revise", "escalate"]},   # per-round arbitration
@@ -174,6 +188,10 @@ ROSTER: dict[str, AgentSpec] = {
         "prioritize", "Score a proposal onto one ranked queue; surface or park.",
         PRIORITIZE_OUT, prompt_file="prioritize.md", tier="deep",
         charter_keys=["thesis"], max_tokens=3072),   # headroom: summary + score + rationale must all fit
+    "grounding": AgentSpec(
+        "grounding", "Scan the codebase ONCE and produce a reusable digest for the whole spec team.",
+        GROUNDING_OUT, prompt_file="grounding.md", tier="deep",
+        requires_tools=True, skills=["explore-code"], max_tokens=4096),   # the one cold scan per work item
     "design": AgentSpec(
         "design", "Set the system-level approach (how it should work) before the spec is written.",
         DESIGN_OUT, prompt_file="design.md", tier="deep",
