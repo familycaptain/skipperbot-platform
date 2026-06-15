@@ -2,7 +2,7 @@ kind: specification
 id: weather.current-conditions.zip-city-authoritative
 title: Current-weather tool labels the city from the authoritative ZIP lookup, not wttr.in's
   nearest-area
-state: proposed
+state: live
 behavior: When a user asks for current weather by US ZIP code, the formatted result's city/region
   label is derived from the authoritative ZIP lookup (`_lookup_zip` → zippopotam.us, the same
   source the forecast tools use), so the displayed place matches the real ZIP city — ZIP 72956

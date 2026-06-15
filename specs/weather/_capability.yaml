@@ -1,0 +1,18 @@
+kind: capability
+id: weather
+title: Weather — current conditions and forecasts by US ZIP
+app: weather
+scope: >
+  Family-facing weather: current conditions, hourly, and multi-day forecasts for a
+  US ZIP code, reachable from every surface (UI, chat, voice, Discord, mobile) via
+  MCP tools. Locations are resolved from the configured default ZIP (Settings →
+  System) or an explicit ZIP argument. In scope: ZIP → place resolution, current
+  conditions, and forecast tools. NOT in scope: severe-weather alerting, radar
+  imagery, or non-US locations.
+autonomy: auto
+state: live
+links: {}
+notes: >
+  Conditions data comes from wttr.in; forecast data from Open-Meteo; the
+  authoritative ZIP → city/region/coordinates lookup is zippopotam.us via
+  _lookup_zip, the single source of truth for the displayed place name.

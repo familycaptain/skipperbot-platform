@@ -89,9 +89,20 @@ def get_current_weather_by_zip(zip_code: str = "") -> str:
         
         current = data["current_condition"][0]
         area = data["nearest_area"][0]
-        
-        city = area["areaName"][0]["value"]
-        region = area["region"][0]["value"]
+
+        # Prefer the authoritative ZIP lookup (zippopotam.us, the same source
+        # the forecast tools use) for the place label so the displayed city
+        # matches the real ZIP city rather than wttr.in's nearest-area guess.
+        # If that lookup fails (offline / unknown ZIP), degrade gracefully to
+        # wttr.in's nearest_area label and still return the weather.
+        try:
+            place = _lookup_zip(zip_code)
+            city = place["city"]
+            region = place["region"]
+        except Exception:
+            city = area["areaName"][0]["value"]
+            region = area["region"][0]["value"]
+
         temp_f = current["temp_F"]
         temp_c = current["temp_C"]
         desc = current["weatherDesc"][0]["value"]
