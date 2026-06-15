@@ -39,22 +39,16 @@ nodes:
   - { id: vision,    type: agent,   agent: vision-fit,   lane: agents, label: "Vision-fit vs charter + Capability scope" }
   - { id: gw_vision, type: gateway, kind: exclusive,     lane: agents, label: "fits vision?" }
 
-  # ---- spec authoring (convergence point for new-behavior work items) ----
-  - { id: spec,      type: agent,   agent: spec-author,  lane: agents, label: "Spec-author: draft/update C/F/S + bound tests" }
+  # ---- spec phase: the LEAD orchestrates an agentic inner loop ----
+  # The Lead runs Design -> (spec-author <-> spec-auditor, bounded rounds) -> reviewers,
+  # arbitrates, and owns the proposal + the Gate-1 recommendation. All those sub-agents
+  # run INSIDE this node (apps/evolve/lead.run_lead_phase) — an agentic inner loop within
+  # the deterministic walk. (Replaces the old `spec` node + the parallel review fan-out.)
+  - { id: lead,      type: agent,   agent: lead,         lane: agents, label: "Lead: Design -> spec-author<->spec-auditor (+security/arch/interop/ux), arbitrate, recommend" }
 
   # ---- prioritization ----
   - { id: prio,      type: agent,   agent: prioritize,   lane: agents, label: "Prioritize (backlog-PM): score + rank" }
   - { id: gw_prio,   type: gateway, kind: exclusive,     lane: agents, label: "surface or park?" }
-
-  # ---- review fan-out (parallel) ----
-  - { id: gw_rev,    type: gateway, kind: parallel,      lane: agents, label: "review fan-out" }
-  - { id: sec,       type: agent,   agent: security,     lane: agents, label: "Security review" }
-  - { id: arch,      type: agent,   agent: architecture, lane: agents, label: "Architecture review" }
-  - { id: interop,   type: agent,   agent: interop,      lane: agents, label: "Interop / conflict check (spec-vs-spec)" }
-  - { id: crit,      type: agent,   agent: spec-audit,   lane: agents, label: "Spec-audit (proposal): gaps, holes, naive assumptions in THIS spec" }
-  - { id: ux,        type: agent,   agent: ux,           lane: agents, label: "UX/UI review" }
-  - { id: gw_revj,   type: gateway, kind: parallel,      lane: agents, label: "join" }
-  - { id: gw_conf,   type: gateway, kind: exclusive,     lane: agents, label: "conflict?" }
 
   # ---- gate 1 ----
   - { id: gate1,     type: gate,    lane: human, label: "GATE 1 - approve intent" }
@@ -85,7 +79,7 @@ edges:
   # intake -> pipeline
   - { from: s_issue,    to: triage }
   - { from: s_pr,       to: triage }
-  - { from: gen_design, to: spec }                       # design proposals are already vision-aligned
+  - { from: gen_design, to: lead }                       # design proposals are already vision-aligned
   # proactive QA / bug-discovery sub-system
   - { from: qa_sweep,   to: qa_var }
   - { from: qa_sweep,   to: qa_reg }
@@ -101,37 +95,23 @@ edges:
   # (intent already approved when the spec was) -> straight to prioritize.
   - { from: qa_var,     to: prio,       when: "pure variance (fast-path)" }
 
-  # triage / vision
+  # triage / vision  (both bug and fits-vision feature converge on the Lead)
   - { from: triage,    to: gw_kind }
-  - { from: gw_kind,   to: spec,       when: "bug" }
+  - { from: gw_kind,   to: lead,       when: "bug" }
   - { from: gw_kind,   to: vision,     when: "feature" }
   - { from: vision,    to: gw_vision }
-  - { from: gw_vision, to: spec,       when: "fits" }
+  - { from: gw_vision, to: lead,       when: "fits" }
   - { from: gw_vision, to: e_rejected, when: "off-vision" }
 
-  # prioritize
-  - { from: spec,      to: prio }
+  # Lead-orchestrated spec phase -> prioritize -> Gate 1
+  # (Design, spec-author<->spec-auditor rounds, and the reviewers all run inside `lead`.)
+  - { from: lead,      to: prio }
   - { from: prio,      to: gw_prio }
   - { from: gw_prio,   to: e_parked,   when: "low-priority tail" }
-  - { from: gw_prio,   to: gw_rev,     when: "top-N or safety-critical" }
-
-  # review fan-out / join / conflict
-  - { from: gw_rev,    to: sec }
-  - { from: gw_rev,    to: arch }
-  - { from: gw_rev,    to: interop }
-  - { from: gw_rev,    to: crit }
-  - { from: gw_rev,    to: ux }
-  - { from: sec,       to: gw_revj }
-  - { from: arch,      to: gw_revj }
-  - { from: interop,   to: gw_revj }
-  - { from: crit,      to: gw_revj }
-  - { from: ux,        to: gw_revj }
-  - { from: gw_revj,   to: gw_conf }
-  - { from: gw_conf,   to: spec,       when: "conflict - rework" }
-  - { from: gw_conf,   to: gate1,      when: "clear" }
+  - { from: gw_prio,   to: gate1,      when: "top-N or safety-critical" }
 
   # gate 1
-  - { from: gate1,     to: spec,       when: "change this" }
+  - { from: gate1,     to: lead,       when: "change this" }
   - { from: gate1,     to: e_rejected, when: "reject" }
   - { from: gate1,     to: serialize,  when: "approve" }
 

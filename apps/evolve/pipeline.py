@@ -104,6 +104,10 @@ class Pipeline:
         """Synthesize a recommended action so the human never faces a bare decision.
         Even when uncertain, return the best call + why (+ what's unresolved)."""
         if gate == "gate1":
+            # The Lead owns the Gate-1 recommendation (it arbitrated the spec team).
+            lead_rec = inst.context.get("lead_recommendation")
+            if lead_rec and lead_rec.get("action"):
+                return {"action": lead_rec["action"], "why": lead_rec.get("why", "")}
             concerns = []
             for k in ("security", "architecture", "ux"):
                 r = ao.get(k) or {}
@@ -140,6 +144,8 @@ class Pipeline:
         agent = node.agent or node.id
         if agent in CODE_ACTING:
             return self._code_acting(agent, inst)
+        if agent == "lead":
+            return self._lead(inst)
         payload = {"work_item": inst.context.get("work_item", {}),
                    "proposal": inst.context.get("proposal")}
         if agent == "triage" and self.cfs_store is not None:
@@ -154,6 +160,24 @@ class Pipeline:
             inst.context["proposal"] = out
         self.log(f"  agent {node.id}[{agent}] ok={res.ok} ${res.cost_usd:.4f}")
         return {"ok": res.ok, "output": out, "error": res.error}
+
+    def _lead(self, inst) -> dict:
+        """The Lead node: run the agentic spec phase (Design -> author<->auditor -> reviewers,
+        arbitrated, bounded) and fan every sub-agent's output into agent_outputs so the
+        packet + UI panels find them. The Lead owns the proposal + the Gate-1 recommendation."""
+        from apps.evolve.lead import run_lead_phase
+        ao = inst.context.setdefault("agent_outputs", {})
+        ctx = {"human_note": inst.context.get("human_note"),
+               "triage": (ao.get("triage") or {}).get("output"),
+               "vision": (ao.get("vision") or {}).get("output")}
+        result = run_lead_phase(self.runner, inst.context.get("work_item", {}),
+                                context=ctx, log=self.log)
+        for key, output in result["outputs"].items():
+            ao[key] = {"ok": True, "output": output}      # keyed for the packet + per-agent panels
+        inst.context["proposal"] = result["proposal"]
+        inst.context["lead_recommendation"] = result["recommendation"]
+        inst.context["human_note"] = None                  # consumed by this pass
+        return {"ok": True, "output": result["outputs"].get("lead", {})}
 
     def _code_acting(self, agent, inst) -> dict:
         feat = self._feature(inst)

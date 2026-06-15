@@ -24,8 +24,11 @@ SDLC = os.path.join(REPO, "specs", "evolve", "sdlc.yaml")
 FAKE = {
     "triage": {"summary": "s", "kind": "feature", "spec_status": "no-spec", "rationale": "new behavior, new scope"},
     "vision-fit": {"summary": "s", "verdict": "fits", "rationale": "in charter"},
+    "design": {"summary": "s", "approach": "do the thing simply", "key_decisions": ["k"], "sizing": "one-spec"},
     "spec-author": {"summary": "s", "spec_id": "demo.area.thing", "title": "Thing", "behavior": "adds a thing",
                     "implements": [], "tests": []},
+    "lead": {"summary": "s", "verdict": "accept",
+             "recommendation": {"action": "approve", "why": "reviews clean; in scope"}},
     "security": {"summary": "s", "approve": True, "concerns": []},
     "architecture": {"summary": "s", "approve": True, "concerns": []},
     "interop": {"summary": "s", "conflicts": []},

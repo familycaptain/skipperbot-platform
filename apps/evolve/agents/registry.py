@@ -97,6 +97,16 @@ DESIGN_OUT = _obj({
     "open_questions": _arr(_STR),
 }, ["summary", "approach", "key_decisions", "sizing"])
 
+LEAD_OUT = _obj({
+    "summary": _STR,
+    "verdict": {"type": "string", "enum": ["accept", "revise", "escalate"]},   # per-round arbitration
+    "recommendation": _obj({
+        "action": {"type": "string", "enum": ["approve", "change", "reject"]},
+        "why": _STR,
+    }, ["action", "why"]),                                                       # final Gate-1 recommendation
+    "note": _STR,
+}, ["summary"])
+
 PACKET_OUT = _obj({
     "summary": _STR, "risk": {"type": "string", "enum": ["low", "med", "high"]},
     "test_summary": _STR,
@@ -161,6 +171,10 @@ ROSTER: dict[str, AgentSpec] = {
         "design", "Set the system-level approach (how it should work) before the spec is written.",
         DESIGN_OUT, prompt_file="design.md", tier="deep",
         charter_keys=["scope", "surfaces", "principles"]),
+    "lead": AgentSpec(
+        "lead", "Engineering lead: arbitrate the spec team + own the Gate-1 proposal and recommendation.",
+        LEAD_OUT, prompt_file="lead.md", tier="deep",
+        charter_keys=["thesis", "scope", "principles"]),
     "code-audit": AgentSpec(
         "code-audit", "Read code for logic bugs, edge cases, security smells, dead code.",
         SPEC_AUDIT_OUT, prompt_file="code-audit.md", tier="deep", charter_keys=["non-goals"]),
