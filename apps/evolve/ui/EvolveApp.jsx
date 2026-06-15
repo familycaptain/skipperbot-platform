@@ -211,6 +211,18 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
               <div className="text-sm text-emerald-300 mb-5">Decided: <b>{detail.decision}</b> by {detail.decided_by}</div>
             )}
 
+            {pkt.decisions_needed?.length > 0 && (
+              <Section title="Decisions for you">
+                {pkt.decisions_needed.map((d, i) => (
+                  <div key={i} className="border border-sky-700/40 bg-sky-900/15 rounded p-2 mb-1.5">
+                    <div className="text-slate-200">{d.question}</div>
+                    {d.options?.length > 0 && <div className="text-xs text-slate-400 mt-0.5">options: {d.options.join(" · ")}</div>}
+                    {d.recommendation && <div className="text-xs text-sky-300 mt-0.5">→ recommends: {d.recommendation}</div>}
+                  </div>
+                ))}
+              </Section>
+            )}
+
             {pkt.work_item?.body && <Section title="Report"><p className="whitespace-pre-wrap text-slate-300">{pkt.work_item.body}</p></Section>}
 
             {proposal.spec_id && (
@@ -221,6 +233,18 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
                   <div key={i} className="text-xs text-slate-300 flex gap-1.5 mb-1">
                     <FlaskConical size={12} className="mt-0.5 shrink-0 text-slate-500" />
                     <span><span className="font-mono text-slate-400">{t.path || t.type}</span>{t.rubric ? ` — ${t.rubric}` : ""}</span>
+                  </div>
+                ))}
+              </Section>
+            )}
+
+            {pkt.spec_tree?.length > 1 && (
+              <Section title={`Spec tree (${pkt.spec_tree.length} specs)`}>
+                {pkt.spec_tree.map((s, i) => (
+                  <div key={i} className="text-xs mb-1.5">
+                    <span className="font-mono text-indigo-300">{s.spec_id}</span>
+                    <span className="text-slate-400"> — {s.title}</span>
+                    {s.summary && <div className="text-slate-500 ml-2 mt-0.5">{s.summary}</div>}
                   </div>
                 ))}
               </Section>

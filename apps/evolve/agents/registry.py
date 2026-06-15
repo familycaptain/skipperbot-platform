@@ -89,12 +89,15 @@ PRIORITIZE_OUT = _obj({
 DESIGN_OUT = _obj({
     "summary": _STR,
     "approach": _STR,                  # how it should work, system-level — the headline design decision
-    "key_decisions": _arr(_STR),       # load-bearing decisions ("resolve location once in Settings, cache it")
+    "key_decisions": _arr(_STR),       # decisions it MADE (grounded in the real code it read)
+    "decisions_needed": _arr(_obj({    # genuine forks for the HUMAN — each with a recommendation
+        "question": _STR, "options": _arr(_STR), "recommendation": _STR}, ["question", "recommendation"])),
     "in_scope": _arr(_STR),
     "out_of_scope": _arr(_STR),
     "nonfunctional": _arr(_STR),       # which operator principles apply + how this honors them
     "sizing": {"type": "string", "enum": ["one-spec", "needs-tree"]},   # decomposition signal (#30)
-    "open_questions": _arr(_STR),
+    "spec_tree": _arr(_obj({           # when needs-tree: the leaf specs the Lead should author
+        "spec_id": _STR, "title": _STR, "summary": _STR}, ["spec_id", "title"])),
 }, ["summary", "approach", "key_decisions", "sizing"])
 
 LEAD_OUT = _obj({
@@ -146,11 +149,13 @@ ROSTER: dict[str, AgentSpec] = {
     "spec-author": AgentSpec(
         "spec-author", "Turn accepted intent into a C/F/S record + bound tests.",
         SPEC_AUTHOR_OUT, prompt_file="spec-author.md", tier="deep",
-        charter_keys=["thesis", "surfaces", "principles"]),
+        charter_keys=["thesis", "surfaces", "principles"],
+        requires_tools=True, skills=["explore-code"], max_tokens=4096),   # reads real code first
     "spec-audit": AgentSpec(
         "spec-audit", "Critique a single spec for gaps/holes/naive assumptions.",
         SPEC_AUDIT_OUT, prompt_file="spec-audit.md", tier="deep",
-        charter_keys=["surfaces"]),
+        charter_keys=["surfaces"],
+        requires_tools=True, skills=["explore-code"], max_tokens=4096),   # checks spec vs real code
     "interop": AgentSpec(
         "interop", "Detect spec-vs-spec conflicts (is the desired state satisfiable?).",
         INTEROP_OUT, prompt_file="interop.md", tier="deep"),
@@ -170,7 +175,8 @@ ROSTER: dict[str, AgentSpec] = {
     "design": AgentSpec(
         "design", "Set the system-level approach (how it should work) before the spec is written.",
         DESIGN_OUT, prompt_file="design.md", tier="deep",
-        charter_keys=["scope", "surfaces", "principles"]),
+        charter_keys=["scope", "surfaces", "principles"],
+        requires_tools=True, skills=["explore-code"], max_tokens=4096),   # reads real code before deciding
     "lead": AgentSpec(
         "lead", "Engineering lead: arbitrate the spec team + own the Gate-1 proposal and recommendation.",
         LEAD_OUT, prompt_file="lead.md", tier="deep",

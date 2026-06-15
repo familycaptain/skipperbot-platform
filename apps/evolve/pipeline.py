@@ -113,7 +113,9 @@ class Pipeline:
             "instance": inst.id, "status": inst.status, "gate": gate,
             "recommendation": self._recommendation(inst, gate, ao),
             "work_item": inst.context.get("work_item"),
-            "proposal": inst.context.get("proposal"),          # the spec-author C/F/S
+            "proposal": inst.context.get("proposal"),          # the (root) spec-author C/F/S
+            "spec_tree": inst.context.get("spec_tree"),         # all specs when the design decomposed (#30)
+            "decisions_needed": (ao.get("design") or {}).get("decisions_needed"),  # human forks (with a recommendation)
             "agents": agents,                                  # ordered per-agent panels (summary + output)
             "related": self._related(inst),                    # other in-flight items touching the same C/F/S/files
             "triage": ao.get("triage"),                        # incl. spec_status (violates/no-spec/conflicts)
@@ -234,6 +236,7 @@ class Pipeline:
         for key, output in result["outputs"].items():
             ao[key] = {"ok": True, "output": output}      # keyed for the packet + per-agent panels
         inst.context["proposal"] = result["proposal"]
+        inst.context["spec_tree"] = result.get("spec_tree") or [result["proposal"]]
         inst.context["lead_recommendation"] = result["recommendation"]
         inst.context["human_note"] = None                  # consumed by this pass
         return {"ok": True, "output": result["outputs"].get("lead", {})}
@@ -262,14 +265,18 @@ class Pipeline:
     def _system(self, node, inst) -> str:
         nid = node.id
         if nid == "serialize":
-            spec_out = (inst.context.get("agent_outputs", {}).get("spec") or {}).get("output") or {}
-            rec = spec_record_from(spec_out, inst.context.get("work_item", {}))
-            feat = self.wm.start_feature(rec["id"])
+            wi = inst.context.get("work_item", {})
+            tree = inst.context.get("spec_tree") or [
+                (inst.context.get("agent_outputs", {}).get("spec") or {}).get("output") or {}]
+            root = spec_record_from(tree[0], wi)
+            feat = self.wm.start_feature(root["id"])           # the feature branch is named for the root spec
             inst.context["feature"] = {"item_id": feat.item_id, "branch": feat.branch, "path": feat.path}
-            inst.context["spec_record"] = rec
-            self.wm.serialize_spec(feat, rec)
-            self.wm.commit(feat, f"spec: {rec['id']}")
-            self.log(f"  serialized {rec['id']} on {feat.branch}")
+            inst.context["spec_record"] = root
+            for spec_out in tree:                              # write EVERY spec in the tree to the branch
+                self.wm.serialize_spec(feat, spec_record_from(spec_out, wi))
+            extra = f" (+{len(tree) - 1} more)" if len(tree) > 1 else ""
+            self.wm.commit(feat, f"spec: {root['id']}{extra}")
+            self.log(f"  serialized {len(tree)} spec(s) on {feat.branch}")
             return "serialized"
         if nid == "deploy":
             return "deploy (box 2 handled by validate)"   # validate_fn deploys + tests + resets

@@ -96,7 +96,10 @@ def build_pipeline():
     os.makedirs(os.path.dirname(STATE_DB), exist_ok=True)
     model = M.load("specs/evolve/sdlc.yaml")
     ledger = CostLedger()
-    runner = Runner(AnthropicBackend(), dict(ROSTER), ledger=ledger, monthly_limit_usd=CAP, budget_usd=20.0)
+    from apps.evolve.agents.tooluse import ToolUseBackend
+    read_tools = ToolUseBackend(repo_root=ROOT, allow_writes=False, max_turns=8)  # spec phase reads REAL code
+    runner = Runner(AnthropicBackend(), dict(ROSTER), tool_backend=read_tools,
+                    ledger=ledger, monthly_limit_usd=CAP, budget_usd=20.0)
     wm = WorkspaceManager(ROOT, worktrees_dir=os.path.expanduser("~/evolve-wt"), release="release")
     validate_fn = remote_validate(RemoteBox2(BOX2_HOST, BOX2_REPO), release="release",
                                   test_path="tests/evolve", log=print)
