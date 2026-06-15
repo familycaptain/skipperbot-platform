@@ -142,14 +142,23 @@ def run_lead_phase_sdk(runner, sdk_backend, work_item: dict, *, context: dict | 
         call(r, {"work_item": work_item, "proposal": proposal}, critic=True)
 
     # 3. LEAD recommendation — resumes the shared thread; reviews handed in explicitly.
-    final = call("lead", {"phase": "recommend", "work_item": work_item, "design": design,
-                          "proposal": proposal, "audit": audit,
-                          "spec_tree": [{"spec_id": s.get("spec_id"), "title": s.get("title")}
-                                        for s in spec_tree_specs] if needs_tree else None,
-                          "decisions_needed": design.get("decisions_needed"),
-                          "reviews": {k: outputs.get(k) for k in (*REVIEWERS, "crit")},
-                          "rounds": rounds, "converged": verdict == "accept", "escalated": escalated,
-                          "human_note": human_note}, store_as="lead")
+    # Wrapped: even the load-bearing Lead turn shouldn't lose a whole spec phase to a transient
+    # error — we have design + specs + reviews, so we can still park at Gate 1 with a synthesized
+    # recommendation for the operator rather than crash and discard ~$9 of completed work.
+    try:
+        final = call("lead", {"phase": "recommend", "work_item": work_item, "design": design,
+                              "proposal": proposal, "audit": audit,
+                              "spec_tree": [{"spec_id": s.get("spec_id"), "title": s.get("title")}
+                                            for s in spec_tree_specs] if needs_tree else None,
+                              "decisions_needed": design.get("decisions_needed"),
+                              "reviews": {k: outputs.get(k) for k in (*REVIEWERS, "crit")},
+                              "rounds": rounds, "converged": verdict == "accept", "escalated": escalated,
+                              "human_note": human_note}, store_as="lead")
+    except Exception as e:
+        log(f"    lead-sdk/lead recommend FAILED, synthesizing from reviews: {type(e).__name__}: {e}")
+        final = {"summary": f"Lead synthesis unavailable ({type(e).__name__}); recommendation "
+                            f"defaulted from review convergence. Operator should weigh the specs + "
+                            f"reviews directly."}
     rec = final.get("recommendation") or {
         "action": "change" if (escalated or verdict != "accept") else "approve",
         "why": final.get("summary", ""),
