@@ -92,5 +92,15 @@ def post_comment(number: int, body: str, repo: str | None = None, token: str | N
     return _request("POST", f"/repos/{_repo(repo)}/issues/{number}/comments", token, {"body": body})
 
 
+def close_issue(number: int, comment: str = "", repo: str | None = None, token: str | None = None) -> dict:
+    """Close an issue (optionally leaving a comment first). Used to 'close the loop' only after the
+    operator VERIFIES the shipped change actually works — never on merge alone. Write-boundary:
+    requires a token with Issues:write."""
+    token = token or _token()
+    if comment:
+        _request("POST", f"/repos/{_repo(repo)}/issues/{number}/comments", token, {"body": comment})
+    return _request("PATCH", f"/repos/{_repo(repo)}/issues/{number}", token, {"state": "closed"})
+
+
 def whoami(token: str | None = None) -> dict:
     return _request("GET", "/user", token or _token())

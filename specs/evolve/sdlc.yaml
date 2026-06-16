@@ -71,6 +71,11 @@ nodes:
   - { id: resync,    type: system,  lane: system, label: "Re-sync files to DB" }
 
   # ---- end events ----
+  # NOTE: a Gate-3 "verify" acceptance loop (merge != done; operator tests live, then ✓works closes
+  # the issue / ✗broken resumes the same conversation) is LIVE in the subscription /loop POC engine
+  # (.claude/skills/evolve). It is intentionally NOT yet in this production graph — pipeline.py walks
+  # this yaml at runtime and has no verify-packet / issue-close handling, so adding it here would
+  # block live instances. Production adoption is a tracked follow-up. See sdlc.md for the picture.
   - { id: e_done,     type: event, lane: system, label: "Merged to release (awaiting operator publish)" }
   - { id: e_parked,   type: event, lane: agents, label: "Parked / declined (recorded)" }
   - { id: e_rejected, type: event, lane: human,  label: "Rejected" }

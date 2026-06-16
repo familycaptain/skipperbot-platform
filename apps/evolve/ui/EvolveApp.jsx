@@ -263,6 +263,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
   const agents = pkt.agents || [];
   const atGate = detail?.status === "waiting";
   const gate2 = (detail?.gate || pkt.gate) === "gate2";   // Gate 2 = approve the RESULT → merge to release
+  const gate3 = (detail?.gate || pkt.gate) === "gate3";   // Gate 3 = VERIFY — you tested it on your Pi; works or still broken?
   const needsYou = runs.filter((r) => r.status === "waiting").length;
 
   // group the activity stream into per-agent lanes, in first-seen order
@@ -357,8 +358,9 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
             {/* GATE REVIEW (only when parked at a human gate) */}
             {atGate && (
               <>
-                <div className={`mb-2 inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded ${gate2 ? "bg-emerald-900/40 text-emerald-300 border border-emerald-700/50" : "bg-sky-900/30 text-sky-300 border border-sky-700/40"}`}>
-                  {gate2 ? <><GitBranch size={12} /> Gate 2 · approving here MERGES to release (ships it)</>
+                <div className={`mb-2 inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded ${gate3 ? "bg-amber-900/40 text-amber-300 border border-amber-700/50" : gate2 ? "bg-emerald-900/40 text-emerald-300 border border-emerald-700/50" : "bg-sky-900/30 text-sky-300 border border-sky-700/40"}`}>
+                  {gate3 ? <><FlaskConical size={12} /> Gate 3 · Verify — it's merged to release. Deploy to your Pi, test it, then confirm.</>
+                         : gate2 ? <><GitBranch size={12} /> Gate 2 · approving here MERGES to release (ships it)</>
                          : <>Gate 1 · approve the intent (no code ships yet)</>}
                 </div>
                 <div className={`border rounded-lg p-3 mb-4 ${REC_COLOR[rec.action] || "bg-slate-800/40 border-slate-700"}`}>
@@ -432,9 +434,11 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
 
                 {atGate && isParent && (
                   <div className="mb-3">
-                    <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-1">Guidance to the team (optional)</div>
+                    <div className="text-[11px] uppercase tracking-wide text-slate-500 mb-1">
+                      {gate3 ? "What went wrong? (required if it's still broken)" : "Guidance to the team (optional)"}
+                    </div>
                     <textarea value={guidance} onChange={(e) => setGuidance(e.target.value)} rows={2}
-                      placeholder="Anything else the agents should change or keep in mind…"
+                      placeholder={gate3 ? "Describe what didn't work — it goes back to the same conversation to fix…" : "Anything else the agents should change or keep in mind…"}
                       className="w-full bg-slate-900/70 border border-slate-700 rounded px-2 py-1.5 text-sm text-slate-100 placeholder-slate-600 focus:border-sky-600 focus:outline-none" />
                   </div>
                 )}
@@ -443,17 +447,19 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
                   <>
                     <div className="flex gap-2">
                       <button disabled={!!busy} onClick={() => decide("approve")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-sm disabled:opacity-50">
-                        {busy === "approve" ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} {gate2 ? "Approve & merge → release" : "Approve"}
+                        {busy === "approve" ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} {gate3 ? "✓ Works — close it out" : gate2 ? "Approve & merge → release" : "Approve"}
                       </button>
                       <button disabled={!!busy} onClick={() => decide("change")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-700 hover:bg-amber-600 text-sm disabled:opacity-50">
-                        {busy === "change" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Change &amp; send answers
+                        {busy === "change" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} {gate3 ? "Still broken — send back" : "Change & send answers"}
                       </button>
                       <button disabled={!!busy} onClick={() => decide("reject")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-800 hover:bg-red-700 text-sm disabled:opacity-50">
-                        {busy === "reject" ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />} Reject
+                        {busy === "reject" ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />} {gate3 ? "Abandon" : "Reject"}
                       </button>
                     </div>
                     <div className="text-[11px] text-slate-500 mt-1.5 mb-5">
-                      {gate2
+                      {gate3
+                        ? <><span className="text-emerald-300">Works</span> closes the GitHub issue (the loop is done); <span className="text-amber-300">Still broken</span> reopens the SAME conversation with your note to fix → re-validate → re-merge; <span className="text-red-300">Abandon</span> gives up on it.</>
+                        : gate2
                         ? <><span className="text-emerald-300">Approve</span> merges this branch into <span className="text-slate-300">release</span> and publishes it; <span className="text-amber-300">Change</span> sends it back to rebuild; <span className="text-red-300">Reject</span> discards it.</>
                         : <>Your answers above are sent to the agents with <span className="text-amber-300">Change</span> (they revise the spec) or attached as a build note with <span className="text-emerald-300">Approve</span>.</>}
                     </div>

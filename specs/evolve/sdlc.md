@@ -1,4 +1,4 @@
-# Evolve — SDLC process flow (v0.4.0)
+# Evolve — SDLC process flow (v0.5.0)
 
 > **Generated view.** The source of truth is [`sdlc.yaml`](./sdlc.yaml); this
 > Mermaid is the picture of it. Open this file in GitHub (or VS Code preview /
@@ -125,6 +125,10 @@ flowchart TD
   branch → **box 2** validates with Playwright → loop **failing→retry** / **stuck→
   escalate** / **green→packet** → **Gate 2** → **auto-merge to the `release` branch**
   → **re-sync**. Both gates can **bounce back** ("change this").
+- **Gate 3 — verify (acceptance): merge is NOT done.** A newer **acceptance loop** sits *after*
+  merge — see [§ Gate 3 below](#gate-3--verify-acceptance-loop). It is **live in the subscription
+  `/loop` POC engine today**; the production graph above (which `pipeline.py` walks at runtime) still
+  ends at `e_done`, and adopts the verify gate as a tracked follow-up.
 - **The build half fails closed (#29).** A change reaches a *green* Gate 2 only when the
   implement agent actually changed code **and** included a runnable **bound test**, and
   box 2 ran *that* test (not the engine's own suite) and it passed. A failed/empty/untested
@@ -146,3 +150,35 @@ flowchart TD
   - The operator then merges **`release → main`** (the publish gate; `main` is
     branch-protected). `main` is the world — nothing reaches it except that deliberate
     merge, so box 1 / the agents can never touch production directly.
+
+### Gate 3 — verify (acceptance loop)
+
+**Merge is not done.** Auto-merge ships a *candidate* to `release`, but "shipped" ≠ "works." So
+after merge an item enters a **`verify`** phase: the operator deploys to their Pi (`skipper update`),
+tests it live, and only then confirms.
+
+```mermaid
+flowchart LR
+  merged(["Merged to release"]):::event --> verify[/"GATE 3 — verify (operator tested it on the Pi)"/]:::gate
+  verify -->|"✓ works"| close[["Close the GitHub issue"]]:::sys --> done(["Verified + closed"]):::event
+  verify -->|"✗ still broken"| resume["Resume the SAME conversation → fix → re-validate → Gate 2 → re-merge"]:::agent
+  resume -.->|"loops until it works"| verify
+  verify -->|"abandon"| dropped(["Abandoned"]):::event
+  classDef event fill:#e8eef7,stroke:#5b7aa7,color:#1b2b44;
+  classDef agent fill:#eaf6ec,stroke:#4c9a5a,color:#16331e;
+  classDef sys fill:#f3eefc,stroke:#8a6bbf,color:#2c1f44;
+  classDef gate fill:#fdf1d6,stroke:#caa23a,color:#4a3a0e;
+```
+
+- **✗ still broken** feeds the operator's failure note back into the **same 1-issue conversation**
+  (no re-grounding — it resumes from the item's saved grounding/design/spec/build artifacts), treats
+  it as a bug against the shipped change, fixes, re-validates on box 2, and re-merges → verify again,
+  **looping until it works**.
+- **✓ works** closes the GitHub issue — **the issue stays OPEN until verified**, so a closed issue
+  means a human confirmed the fix, not merely that code merged. This is "closing the loop."
+- **abandon** drops it without closing the issue as resolved.
+- **Where it runs:** live today in the subscription `/loop` engine (`.claude/skills/evolve`, phase
+  `gate2 → verify → done`; the UI relabels the gate buttons to ✓Works / Still-broken / Abandon, and
+  `github_connector.close_issue` does the close-on-verify). The production SDK graph (`sdlc.yaml`)
+  adopts it as a follow-up — it would need a verify-packet builder, the `closeit` system handler, and
+  the works/broken/abandon → resume wiring before the node can go live there.

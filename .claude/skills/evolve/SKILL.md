@@ -35,13 +35,17 @@ gate — you record state and return; a later pass picks up the operator's decis
 ## Per-item state — the backbone
 `~/.evolve-poc/<n>/state.json` (n = GitHub issue #) tracks one item:
 `{ "issue": n, "title", "source", "from_operator", "phase", "feature_branch" }`
-`phase` ∈ `new` → `gate1` → `build` → `gate2` → `done` (terminal: also `rejected` / `parked`). The
-phase tells the next pass which segment to run. Artifacts (`triage.json`, `grounding.json`,
-`design.json`, `spec*.json`, reviews, `lead.json`, the gate packets) live beside it.
+`phase` ∈ `new` → `gate1` → `build` → `gate2` → **`verify`** → `done` (terminal: also `rejected` /
+`parked`). The phase tells the next pass which segment to run. Artifacts (`triage.json`,
+`grounding.json`, `design.json`, `spec*.json`, reviews, `lead.json`, the gate packets) live beside it.
+**Merge is NOT done.** A Gate-2 approve merges to release but the item goes to `verify`: the operator
+deploys to their Pi, tests it, and only then confirms ✓works (→ done, close the GitHub issue) or
+✗broken (→ resume the SAME conversation with their failure note, fix, re-validate, re-merge). The
+GitHub issue stays OPEN until verified — an open issue means "not confirmed working yet."
 
 ## Each pass: advance ONE item by ONE segment, then END
 **1. Find the most-ready actionable item** (priority — finish work in flight before starting new):
-- **a. A decided gate.** For each item with `phase` in {`gate1`,`gate2`}, check ONCE:
+- **a. A decided gate.** For each item with `phase` in {`gate1`,`gate2`,`verify`}, check ONCE:
   `python3 scripts/evolve_poc.py decision poc-<n>` → if it returns a non-null `decision`, that item
   is actionable (advance it).
 - **b. Else a new open issue** — not in `~/.evolve-poc/seen.json` and with no `~/.evolve-poc/<n>/`
@@ -76,12 +80,27 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
     worktree, `phase=rejected`, add to `seen.json`, **END**.
 
 - **`phase=gate2`, decision=`approve`:** Merge feature → release (mechanics), then
-  **`resolve poc-<n> merged`** — this single command clears the gate AND flips the run to
-  **merged / done** (don't rely on a separate status report; this is the terminal write). Set
-  `state.json` `phase=done`, add to `seen.json`, **END**.
+  **`resolve poc-<n> shipped`** (clears the gate + flips the run to **waiting / verify**). Push a
+  **Gate 3 (verify)** packet — `recommendation` = {action:`verify`, why: "Merged to release as
+  `<sha>`. Deploy to your Pi (`skipper update`) and test issue #<n>: <what to check>", current,
+  after} — set `state.json` `phase=verify`, **END**. (The GitHub issue stays OPEN; do NOT mark done
+  or seen yet.)
   - decision=`change` → re-implement, re-push Gate 2, **END**.
   - decision=`reject` → teardown, then `resolve poc-<n> rejected` (clears gate + sets run rejected),
-    `phase=rejected`, **END**.
+    `phase=rejected`, add to `seen.json`, **END**.
+
+- **`phase=verify`, decision=`approve` (✓ it works):** the loop is done. `python3
+  scripts/evolve_poc.py close poc-<n> "Verified working — closing. (Evolve)"` (closes the GitHub
+  issue), then `resolve poc-<n> merged` (clears gate + flips run to **merged / done**), set
+  `state.json` `phase=done`, add to `seen.json`, **END**.
+  - decision=`change` (✗ still broken): the decision `note` is the operator's failure report. **RESUME
+    THE SAME CONVERSATION** — re-load this item's grounding/design/spec/build artifacts and treat the
+    note as a new bug against the shipped change (do NOT re-ground from scratch). `resolve poc-<n>
+    cleared` (run → building). Re-cut/locate the feature worktree, `evolve-implement` the FIX inside
+    it, isolation check, `evolve-validate` on box 2, re-push **Gate 2** (diff + validation),
+    `phase=gate2`, **END**. (It will merge again → verify again → loop until it works.)
+  - decision=`reject` (abandon): `resolve poc-<n> rejected`, teardown, `phase=rejected`, seen, **END**.
+    (Leave the GitHub issue open or comment — do not close an abandoned item as resolved.)
 
 ## At a gate (push it, then END — NEVER poll)
 When a segment reaches a gate, write the packet to `~/.evolve-poc/<n>/<gate>.json` **in the exact
@@ -96,6 +115,9 @@ shape the UI panels render** (so the operator sees the ACTUAL spec + reviews, no
   structured result (spec-audit `findings`, each reviewer's `concerns`/`conflicts`, lead arbitration).
   **"The team"** panel renders each agent's full detail from this.
 - Gate 2 also: `diff` (the full patch), `validation` {passed, reason}, `feature` {branch}.
+- **Gate 3 (verify)** is lighter: `work_item`, `feature` {branch, sha}, and a `recommendation`
+  whose `why` tells the operator exactly what to deploy + test (`gate: "gate3"`). The UI relabels
+  the buttons to ✓Works / Still-broken / Abandon automatically.
 Then:
 1. `python3 scripts/evolve_poc.py run poc-<n> --status waiting`
 2. `python3 scripts/evolve_poc.py gate poc-<n> <gate1|gate2> ~/.evolve-poc/<n>/<gate>.json`  → shows in the UI.

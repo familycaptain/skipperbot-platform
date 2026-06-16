@@ -40,6 +40,7 @@ def main():
     g.add_argument("iid"); g.add_argument("gate"); g.add_argument("packet_file")
     d = sub.add_parser("decision"); d.add_argument("iid")
     rs = sub.add_parser("resolve"); rs.add_argument("iid"); rs.add_argument("status")
+    c = sub.add_parser("close"); c.add_argument("iid"); c.add_argument("comment", nargs="?", default="")
     a = ap.parse_args()
 
     if a.cmd == "run":
@@ -62,13 +63,19 @@ def main():
         # Keep the run row in lockstep with the gate outcome so it can never be left "running"
         # after a terminal gate (the two-step "resolve then report status" used to drop the 2nd).
         run_status, phase = {
-            "merged":   ("merged", "done"),
+            "cleared":  ("building", "build"),       # gate-1 approved → build begins
+            "shipped":  ("waiting", "verify"),       # gate-2 approved + merged → awaiting operator test
+            "merged":   ("merged", "done"),          # gate-3 VERIFIED works → truly done
             "rejected": ("rejected", "rejected"),
-            "cleared":  ("building", "build"),   # gate-1 approved → build begins
         }.get(a.status, ("", ""))
         if run_status:
             bridge.report_run(a.iid, status=run_status, phase=phase)
         print(out)
+    elif a.cmd == "close":
+        # close the loop — only after the operator verifies the shipped change works
+        from apps.evolve import github_connector as gh
+        num = int(str(a.iid).split("-")[-1])
+        print(gh.close_issue(num, comment=a.comment))
 
 
 if __name__ == "__main__":
