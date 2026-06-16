@@ -161,8 +161,10 @@ tests it live, and only then confirms.
 flowchart LR
   merged(["Merged to release"]):::event --> verify[/"GATE 3 — verify (operator tested it on the Pi)"/]:::gate
   verify -->|"✓ works"| close[["Close the GitHub issue"]]:::sys --> done(["Verified + closed"]):::event
-  verify -->|"✗ still broken"| resume["Resume the SAME conversation → fix → re-validate → Gate 2 → re-merge"]:::agent
-  resume -.->|"loops until it works"| verify
+  verify -->|"✗ broken — code bug, spec still valid"| reimpl["Re-implement → Gate 2"]:::agent
+  verify -->|"✗ broken — approach was wrong"| respec["Re-design → REWRITE spec → re-review → Gate 1"]:::agent
+  reimpl -.->|"loops"| verify
+  respec -.->|"Gate 1 → build → Gate 2"| verify
   verify -->|"abandon"| dropped(["Abandoned"]):::event
   classDef event fill:#e8eef7,stroke:#5b7aa7,color:#1b2b44;
   classDef agent fill:#eaf6ec,stroke:#4c9a5a,color:#16331e;
@@ -171,9 +173,18 @@ flowchart LR
 ```
 
 - **✗ still broken** feeds the operator's failure note back into the **same 1-issue conversation**
-  (no re-grounding — it resumes from the item's saved grounding/design/spec/build artifacts), treats
-  it as a bug against the shipped change, fixes, re-validates on box 2, and re-merges → verify again,
-  **looping until it works**.
+  (no re-grounding — it resumes from the item's saved artifacts), and the agents **judge the depth of
+  the fix**:
+  - **Localized bug** (approach + spec still right, the code was wrong) → re-implement, update the
+    spec's behavior/tests if anything shifted, re-validate, re-push **Gate 2**. The cheap path.
+  - **The approach itself was wrong** (the agents change the plan) → **re-enter the spec phase**:
+    Design re-frames, the spec is **rewritten** to the new way, spec-audit + the four reviewers
+    (security/architecture/interop/ux) re-review the *new* design, and it re-pushes **Gate 1** for
+    re-approval before building. A new approach is a new plan — it gets the full funnel, not a code
+    patch.
+  - **Invariant:** the spec always describes **what is actually built** — a change of approach
+    rewrites the spec; you never leave it documenting a way you no longer ship (the architecture
+    reviewer flags a stale spec).
 - **✓ works** closes the GitHub issue — **the issue stays OPEN until verified**, so a closed issue
   means a human confirmed the fix, not merely that code merged. This is "closing the loop."
 - **abandon** drops it without closing the issue as resolved.

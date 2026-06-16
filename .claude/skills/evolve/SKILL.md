@@ -97,11 +97,25 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   issue), then `resolve poc-<n> merged` (clears gate + flips run to **merged / done**), set
   `state.json` `phase=done`, add to `seen.json`, **END**.
   - decision=`change` (✗ still broken): the decision `note` is the operator's failure report. **RESUME
-    THE SAME CONVERSATION** — re-load this item's grounding/design/spec/build artifacts and treat the
-    note as a new bug against the shipped change (do NOT re-ground from scratch). `resolve poc-<n>
-    cleared` (run → building). Re-cut/locate the feature worktree, `evolve-implement` the FIX inside
-    it, isolation check, `evolve-validate` on box 2, re-push **Gate 2** (diff + validation),
-    `phase=gate2`, **END**. (It will merge again → verify again → loop until it works.)
+    THE SAME CONVERSATION** (re-load this item's grounding/design/spec/build artifacts; do NOT
+    re-ground from scratch). **First judge the DEPTH of the fix** (act as Design/Lead) — this decides
+    where it re-enters:
+    - **Localized bug** — the approach + spec are still right, the *code* was wrong. `resolve poc-<n>
+      cleared`, re-cut/locate the worktree, `evolve-implement` the fix, **update the spec's
+      `behavior`/`tests` if the behavior shifted at all** (the spec must always match what's built),
+      isolation check, `evolve-validate`, re-push **Gate 2**, `phase=gate2`, **END**.
+    - **New approach** — the failure shows the *approach itself* was wrong, so the agents change the
+      plan. You CANNOT skip to a code patch: re-enter the **SPEC PHASE** so the new way is documented
+      and re-reviewed. `evolve-design` (re-frame with the failure as input → new approach + tech
+      choices) → `evolve-spec-author` (**REWRITE** the spec(s) to the new way) → SPAWN
+      `evolve-spec-audit` → SPAWN the 4 `evolve-review` lenses (re-review the NEW design:
+      security/architecture/interop/ux) → `evolve-lead`. Re-push **Gate 1** (the intent/approach
+      changed — it needs re-approval), `phase=gate1`, **END**. It then flows Gate 1 → build → Gate 2
+      → verify as normal.
+    **Routing rule:** if the fix changes the **approach, the behavior contract, or a load-bearing tech
+    choice** → it's a new approach → spec phase + **Gate 1**. Only a code-level bug *under an unchanged
+    spec* skips ahead to re-implement → Gate 2. **Never leave the spec describing a way you no longer
+    build** — a stale spec is itself a defect (the architecture reviewer will flag it).
   - decision=`reject` (abandon): `resolve poc-<n> rejected`, teardown, `phase=rejected`, seen, **END**.
     (Leave the GitHub issue open or comment — do not close an abandoned item as resolved.)
 
