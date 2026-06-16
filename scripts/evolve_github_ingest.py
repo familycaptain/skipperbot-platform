@@ -235,6 +235,8 @@ def _run_cmd(args, pipe, runner, ledger):
         print(f"{len(decided)} decided gate(s) on the platform")
         for g in decided:
             iid, decision = g["instance_id"], g["decision"]
+            if iid.startswith("poc-"):
+                continue   # POC /loop gates are owned by the in-session POC engine, not this poller
             inst = pipe.store.load(iid)
             if inst is None:
                 _safe_resolve(iid, "orphan")

@@ -16,7 +16,7 @@ Settings, the five surfaces, degrade gracefully). Cross-surface parity matters: 
 both `tools.py` (chat/voice/Discord) and a `*.jsx` UI (web/mobile), fix BOTH with identical messages.
 
 ## Workspace isolation — NON-NEGOTIABLE (this bit us before)
-- **Edit ONLY files inside the feature worktree** (your cwd, e.g. `~/evolve-wt/ev-poc-<id>/`). Use
+- **Edit ONLY files inside the feature worktree** (your cwd, e.g. `~/evolve-wt/poc-<n>/`). Use
   repo-relative paths. NEVER an absolute path into the main `~/repos/skipperbot-platform` checkout,
   never `cd` out to edit. That's the live code.
 - After you finish, the orchestrator runs the **isolation check**: if the main checkout is dirty →

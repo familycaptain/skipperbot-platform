@@ -31,8 +31,21 @@ git/test mechanics).
    never the live `release` checkout. After implement, if the main checkout is dirty → discard it
    and FAIL the build (don't merge contamination). This is non-negotiable (it bit us before).
 
+## Show it in the Evolve UI (REQUIRED — report as you go)
+The operator watches the **Evolve app**, not your terminal — so report at every step or they see
+nothing. The run id is **`poc-<issue#>`** (the `poc-` prefix keeps the production poller out of your
+gates). All via `python3 scripts/evolve_poc.py …` :
+- **on pick:** `run poc-<n> --title "<title>" --source "<source>" --phase intake --status running`
+- **each agent step:** START → `event poc-<n> <agent> agent_start "<agent> · poc"`, END →
+  `event poc-<n> <agent> agent_end "<✓/✗> <one-line result>"`. Stream notable lines too
+  (`event poc-<n> <agent> tool "<what you ran>"` / `info` / `emit`) so the lane fills. The `<agent>`
+  is the role: `triage`, `vision`, `prio`, `grounding`, `design`, `spec-author`, `spec-audit`,
+  `security`/`architecture`/`interop`/`ux`, `lead`, `implement`, `validate`.
+- **status:** `run poc-<n> --status building` (build), `--status waiting` (parked at a gate),
+  `--status merged` / `--status rejected` (terminal).
+
 ## The cycle (one item per pass; `/loop` re-invokes you for the next)
-Walk these in order. Stop at a human gate and wait for the operator's decision (see **Gates**).
+Walk these in order. **Report each step to the UI** (above). Stop at a human gate and wait (see **Gates**).
 
 1. **Pick the next item.** Open GitHub issues via the connector (read-only):
    `python3 -c "import apps.evolve.github_connector as g; [print(i['number'], i['title']) for i in g.list_open_issues()]"`
@@ -77,17 +90,22 @@ Walk these in order. Stop at a human gate and wait for the operator's decision (
 Reuse the EXISTING modules read-only (don't modify them). From the repo root on box 1:
 - **ensure baseline / cut worktree / serialize / merge / diff:** `apps.evolve.workspace.WorkspaceManager`
   (release-first; `ensure_baseline()` already resets ROOT to pristine). e.g.
-  `python3 -c "from apps.evolve.workspace import WorkspaceManager as W; w=W('.'); print(w.start_feature('ev-poc-<id>'))"`
+  `python3 -c "from apps.evolve.workspace import WorkspaceManager as W; w=W('.'); print(w.start_feature('poc-<n>'))"`
 - **box-2 validate:** `apps.evolve.build_loop.remote_validate` + `RemoteBox2` (runs the bound tests on box 2).
 - **the canonical role instructions + output schemas:** `apps/evolve/agents/prompts/<role>.md` and
   the `*_OUT` shapes in `apps/evolve/agents/registry.py`.
 
 ## Gates (human-in-the-loop)
-You are supervised. At a gate, write a compact review packet to `~/.evolve-poc/gates/<id>.json`
-and **tell the operator** (print clearly; optionally `apps.evolve.platform_bridge.report_run` /
-`push_gate` with a `poc:` marker so it shows in the Evolve UI). Then PAUSE — do not act on the
-item until the operator gives a decision (they reply in the session, or you re-read the gate file
-on the next `/loop` pass). Never approve your own gate.
+You are supervised — the operator decides in the **Evolve UI**. At a gate:
+1. Write a compact review packet (production shape: `work_item`, `recommendation`
+   {action, current, after, why}, the spec(s), the reviews, any `decisions_needed`) to
+   `~/.evolve-poc/<n>/<gate>.json`.
+2. `python3 scripts/evolve_poc.py run poc-<n> --status waiting`
+3. `python3 scripts/evolve_poc.py gate poc-<n> <gate1|gate2> ~/.evolve-poc/<n>/<gate>.json`  → it shows in the UI.
+4. POLL for the decision: `python3 scripts/evolve_poc.py decision poc-<n>` — repeat (sleep a few
+   seconds between) until it returns a non-null `decision`. Honor `approve` / `change` / `reject`
+   (+ the operator's `note`). Then `python3 scripts/evolve_poc.py resolve poc-<n> <merged|rejected|cleared>`.
+Never approve your own gate.
 
 ## Operating rules
 - **Subscription, not API.** This session runs on the Claude subscription; that's the whole point.
