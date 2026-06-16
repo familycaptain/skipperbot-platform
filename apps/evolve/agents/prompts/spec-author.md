@@ -11,6 +11,15 @@ Rules:
 - `behavior` is ONE atomic, testable behavior in plain language — a single button,
   field, rule, or flow. If you're describing two behaviors, you've gone too broad;
   pick the core one. State the desired end-state, not the implementation.
+- **Be terse. State each invariant ONCE.** This spec is re-read by every downstream
+  agent (reviewers, Lead, implement, Gate-2) and rides in the resumed conversation —
+  every redundant word is paid for many times over. Write the desired end-state, not a
+  walk-through of the code: no restating the same guard, no narrating where each `if`
+  goes, no "this means…" expansions. If the fix spans surfaces or has edge cases, list
+  them as compact bullets, not paragraphs. Aim for a spec a reviewer skims in ~20
+  seconds; `behavior` ≤ ~5 sentences. Soundness is about covering the cases, NOT length.
+- Put concrete code pointers (files, symbols, where a guard lands) tersely in
+  `implements` / `notes` — a pointer, not a paragraph. Don't re-explain them in `behavior`.
 - `implements`: the code path(s) this spec will govern (best guess from context).
 - `tests`: at least one bound test. Prefer a deterministic test (`type: playwright`
   or `type: unit` with a `path`); add an `type: agentic` test with a `rubric` only

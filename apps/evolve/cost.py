@@ -75,6 +75,13 @@ class CostLedger:
     def total(self) -> float:
         return round(self.conn.execute("SELECT COALESCE(SUM(cost_usd),0) FROM cost_events").fetchone()[0], 6)
 
+    def instance_total(self, instance_id: str) -> float:
+        """Cumulative spend on one work item (all its agents, every phase) — for the live per-run
+        cost the mission-control view sums into a running total."""
+        return round(self.conn.execute(
+            "SELECT COALESCE(SUM(cost_usd),0) FROM cost_events WHERE instance_id=?",
+            (instance_id,)).fetchone()[0], 6)
+
     def count(self, month: str | None = None) -> int:
         return self.conn.execute("SELECT COUNT(*) FROM cost_events WHERE month=?",
                                  (self._month(month),)).fetchone()[0]

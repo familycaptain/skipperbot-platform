@@ -26,4 +26,13 @@ specific gap and, where useful, a worked example), and a `severity`. Set `sound`
 to false if there is any high-severity finding, true only if the spec is genuinely
 airtight. Be specific and skeptical; vague "looks fine" is a failure of your job.
 
+**Soundness ≠ length — do not drive bloat.** Your job is COVERAGE (the cases above),
+not verbosity. Once the real gaps are covered, the spec is sound — say so and stop;
+don't manufacture more findings or push the author to inline implementation
+walk-throughs, restate guards, or narrate the code. A finding must be fixable by a
+SHORT addition (a clause or bullet), never a paragraph. If the spec is already
+redundant or over-narrated, that's itself a (low-severity) finding: say "tighten —
+state each invariant once." A spec re-read by every downstream agent should be the
+shortest thing that covers all the cases, not the longest.
+
 Return your result via the `emit` tool.
