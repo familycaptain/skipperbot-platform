@@ -66,17 +66,22 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   `evolve-implement` as a build hint. The SPEC stays authoritative (it was written for the
   recommended option); the note refines it. ⚠ If the note's answer plainly CONTRADICTS the spec's
   chosen option, the operator likely meant `change`, not `approve` — build the spec as-written but
-  flag the mismatch in the Gate-2 packet so they catch it. `resolve poc-<n> cleared`. **BUILD:** cut
-  the feature worktree (mechanics), serialize the spec, `evolve-implement` **inside the worktree**,
-  run the **isolation check** (main checkout dirty → `git checkout -- .` + FAIL), `evolve-validate`
-  on box 2. Push **Gate 2** (diff + validation), `phase=gate2`, **END**.
+  flag the mismatch in the Gate-2 packet so they catch it. `resolve poc-<n> cleared` (this also flips
+  the run to **building** — one command). **BUILD:** cut the feature worktree (mechanics), serialize
+  the spec, `evolve-implement` **inside the worktree**, run the **isolation check** (main checkout
+  dirty → `git checkout -- .` + FAIL), `evolve-validate` on box 2. Push **Gate 2** (diff +
+  validation), `phase=gate2`, **END**.
   - decision=`change` → re-run the spec phase with the operator's note, re-push Gate 1, **END**.
-  - decision=`reject` → teardown the worktree, `phase=rejected`, add to `seen.json`, **END**.
+  - decision=`reject` → `resolve poc-<n> rejected` (clears gate + sets run rejected), teardown the
+    worktree, `phase=rejected`, add to `seen.json`, **END**.
 
-- **`phase=gate2`, decision=`approve`:** `resolve poc-<n> cleared`. Merge feature → release
-  (mechanics), report `--status merged`, `phase=done`, add to `seen.json`, **END**.
+- **`phase=gate2`, decision=`approve`:** Merge feature → release (mechanics), then
+  **`resolve poc-<n> merged`** — this single command clears the gate AND flips the run to
+  **merged / done** (don't rely on a separate status report; this is the terminal write). Set
+  `state.json` `phase=done`, add to `seen.json`, **END**.
   - decision=`change` → re-implement, re-push Gate 2, **END**.
-  - decision=`reject` → teardown, `phase=rejected`, **END**.
+  - decision=`reject` → teardown, then `resolve poc-<n> rejected` (clears gate + sets run rejected),
+    `phase=rejected`, **END**.
 
 ## At a gate (push it, then END — NEVER poll)
 When a segment reaches a gate, write the packet to `~/.evolve-poc/<n>/<gate>.json` **in the exact

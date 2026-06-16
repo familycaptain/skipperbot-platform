@@ -58,7 +58,17 @@ def main():
         print(json.dumps({"decision": dec[0]["decision"] if dec else None,
                           "note": dec[0].get("note") if dec else None}))
     elif a.cmd == "resolve":
-        print(bridge.resolve(a.iid, a.status))
+        out = bridge.resolve(a.iid, a.status)
+        # Keep the run row in lockstep with the gate outcome so it can never be left "running"
+        # after a terminal gate (the two-step "resolve then report status" used to drop the 2nd).
+        run_status, phase = {
+            "merged":   ("merged", "done"),
+            "rejected": ("rejected", "rejected"),
+            "cleared":  ("building", "build"),   # gate-1 approved → build begins
+        }.get(a.status, ("", ""))
+        if run_status:
+            bridge.report_run(a.iid, status=run_status, phase=phase)
+        print(out)
 
 
 if __name__ == "__main__":
