@@ -163,6 +163,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
   const [answers, setAnswers] = useState({});   // operator's answer per decisions_needed question
   const [guidance, setGuidance] = useState(""); // free-text guidance to the spec team
   const [showArchived, setShowArchived] = useState(false);  // list view: active vs archived
+  const [totalCost, setTotalCost] = useState(0);            // cumulative Evolve spend (all runs)
   const lastId = useRef(0);
   const selRef = useRef(null);
 
@@ -174,6 +175,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
       const r = await apiFetch(`/runs?archived=${showArchived}`);
       const rows = r.runs || [];
       setRuns(rows);
+      if (typeof r.total_cost === "number") setTotalCost(r.total_cost);
       if (!selRef.current && rows.length) setSel(rows[0].instance_id);
     } catch (e) { setError(String(e.message || e)); }
   }, [showArchived]);
@@ -272,7 +274,16 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
   const doneAgents = new Set(lanes.filter((a) => byAgent[a].some((e) => e.kind === "agent_end")));
 
   return (
-    <div className="flex h-full w-full bg-zinc-950 text-zinc-100">
+    <div className="flex flex-col h-full w-full bg-zinc-950 text-zinc-100">
+      {/* TOP BAR: live cumulative Evolve spend */}
+      <div className="flex items-center justify-between px-3 h-8 border-b border-slate-800 shrink-0">
+        <span className="text-[11px] uppercase tracking-wide text-slate-500 flex items-center gap-1.5"><Workflow size={12} /> Evolve</span>
+        <span className="text-[11px] flex items-center gap-1.5" title="cumulative Evolve spend across all runs">
+          <span className="text-slate-600 uppercase tracking-wide">total spend</span>
+          <span className="font-mono text-emerald-300">${totalCost.toFixed(2)}</span>
+        </span>
+      </div>
+      <div className="flex flex-1 min-h-0">
       {/* LEFT: runs */}
       <div className="w-72 shrink-0 border-r border-slate-800 flex flex-col">
         <div className="flex items-center justify-between px-3 h-10 border-b border-slate-800 shrink-0">

@@ -102,6 +102,16 @@ class Pipeline:
             except Exception:
                 pass
 
+    def _report_cost(self, inst) -> None:
+        """Push the run's cumulative spend (ledger sum for this instance) to mission-control —
+        the app sums these into the running total shown at the top. Best-effort."""
+        led = getattr(getattr(self, "runner", None), "ledger", None)
+        if self.on_run and led is not None:
+            try:
+                self.on_run(inst.id, cost_usd=led.instance_total(inst.id))
+            except Exception:
+                pass
+
     def _ensure_baseline(self, inst, where: str) -> None:
         """Before any agent reads code/specs, make box 1's checkout the right + current
         baseline (fetch, on the release branch, latest folded in) and STAMP the exact
@@ -129,6 +139,7 @@ class Pipeline:
 
     def _sync_run(self, inst) -> None:
         """Project the instance's lifecycle state onto the mission-control run row."""
+        self._report_cost(inst)           # keep the running cost total current at every lifecycle step
         gate = self.gate_waiting(inst)
         if inst.status == DONE:
             self._run(inst, status="merged", phase="done", current_agent="")
@@ -429,6 +440,7 @@ class Pipeline:
         inst.context["code_context"] = result.get("code_context")   # shared grounding for implement
         inst.context["sdk_session_id"] = result.get("session_id")    # the spec conversation (build half can resume)
         inst.context["human_note"] = None                  # consumed by this pass
+        self._report_cost(inst)                             # spec phase is a big chunk — surface it now
         return {"ok": True, "output": result["outputs"].get("lead", {})}
 
     def _result_review(self, inst) -> None:
@@ -523,6 +535,7 @@ class Pipeline:
         self._ev(inst, "implement", "agent_end",
                  (f"✓ wrote code + {len(bound)} bound test(s)" if implemented
                   else f"✗ {inst.context['implement_error']}"))
+        self._report_cost(inst)                             # the build is the other big chunk
         return {"ok": implemented, "output": getattr(r, "output", None) or {}}
 
     def _system(self, node, inst) -> str:

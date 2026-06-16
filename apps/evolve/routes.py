@@ -43,6 +43,7 @@ class RunReq(BaseModel):
     status: str = ""
     current_agent: str = ""
     current_node: str = ""
+    cost_usd: float | None = None   # the run's cumulative spend (None = leave unchanged)
     events: list[dict] = []     # optional batch of {agent, kind, message} to append
 
 
@@ -121,7 +122,7 @@ async def api_upsert_run(req: RunReq, request: Request):
     await asyncio.to_thread(
         activity.upsert_run, req.instance_id, title=req.title, source=req.source,
         phase=req.phase, status=req.status, current_agent=req.current_agent,
-        current_node=req.current_node)
+        current_node=req.current_node, cost_usd=req.cost_usd)
     if req.events:
         await asyncio.to_thread(activity.add_events, req.instance_id, req.events)
     return {"ok": True, "events": len(req.events)}
@@ -131,7 +132,8 @@ async def api_upsert_run(req: RunReq, request: Request):
 async def api_list_runs(limit: int = 50, archived: bool = False):
     """In-flight + recent runs (the mission-control list). archived=true for the archived view."""
     rows = await asyncio.to_thread(activity.list_runs, limit, archived)
-    return {"runs": rows,
+    total_cost = await asyncio.to_thread(activity.total_cost)
+    return {"runs": rows, "total_cost": total_cost,
             "active": sum(1 for r in rows if r["status"] in ("running", "building"))}
 
 

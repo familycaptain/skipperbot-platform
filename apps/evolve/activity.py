@@ -12,12 +12,14 @@ SCHEMA = "app_evolve"
 
 
 def upsert_run(instance_id: str, *, title: str = "", source: str = "", phase: str = "",
-               status: str = "", current_agent: str = "", current_node: str = "") -> None:
+               status: str = "", current_agent: str = "", current_node: str = "",
+               cost_usd: float | None = None) -> None:
     """Create/refresh the run row. Empty string fields are treated as 'leave unchanged'
-    on update (COALESCE-by-NULLIF) so a progress ping needn't resend the title etc."""
+    on update (COALESCE-by-NULLIF) so a progress ping needn't resend the title etc.
+    cost_usd (when given) is the run's cumulative spend; None leaves it unchanged."""
     execute_in_schema(SCHEMA, """
-        INSERT INTO run (instance_id, title, source, phase, status, current_agent, current_node)
-        VALUES (%s, %s, %s, COALESCE(NULLIF(%s,''),''), COALESCE(NULLIF(%s,''),'running'), %s, %s)
+        INSERT INTO run (instance_id, title, source, phase, status, current_agent, current_node, cost_usd)
+        VALUES (%s, %s, %s, COALESCE(NULLIF(%s,''),''), COALESCE(NULLIF(%s,''),'running'), %s, %s, COALESCE(%s,0))
         ON CONFLICT (instance_id) DO UPDATE SET
             title         = COALESCE(NULLIF(EXCLUDED.title,''), run.title),
             source        = COALESCE(NULLIF(EXCLUDED.source,''), run.source),
@@ -25,9 +27,10 @@ def upsert_run(instance_id: str, *, title: str = "", source: str = "", phase: st
             status        = COALESCE(NULLIF(EXCLUDED.status,''), run.status),
             current_agent = EXCLUDED.current_agent,
             current_node  = COALESCE(NULLIF(EXCLUDED.current_node,''), run.current_node),
+            cost_usd      = COALESCE(%s, run.cost_usd),
             updated_at    = now()
     """, (instance_id, title[:200], source[:80], phase, status, current_agent[:60],
-          current_node[:60]))
+          current_node[:60], cost_usd, cost_usd))
 
 
 def add_events(instance_id: str, events: list[dict]) -> int:
@@ -54,12 +57,18 @@ def list_runs(limit: int = 50, archived: bool = False) -> list[dict]:
     default; pass archived=True for the archived view."""
     return fetch_all_in_schema(SCHEMA, """
         SELECT instance_id, title, source, phase, status, current_agent, current_node,
-               archived, created_at, updated_at
+               archived, cost_usd, created_at, updated_at
         FROM run
         WHERE archived = %s
         ORDER BY (status IN ('running','building')) DESC, updated_at DESC
         LIMIT %s
     """, (archived, limit))
+
+
+def total_cost() -> float:
+    """Cumulative Evolve spend across ALL runs (the running total shown at the top)."""
+    rows = fetch_all_in_schema(SCHEMA, "SELECT COALESCE(SUM(cost_usd),0) AS t FROM run", ())
+    return round(float(rows[0]["t"]) if rows else 0.0, 4)
 
 
 def set_archived(instance_id: str, archived: bool) -> int:

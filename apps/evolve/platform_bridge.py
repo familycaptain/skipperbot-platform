@@ -82,7 +82,7 @@ def resolve(instance_id: str, status: str, token: str | None = None) -> dict:
 
 
 def report_run(instance_id: str, *, title="", source="", phase="", status="",
-               current_agent="", current_node="", events=None,
+               current_agent="", current_node="", cost_usd=None, events=None,
                token: str | None = None) -> dict:
     """Report a run's status + a batch of activity events to the mission-control view
     (one POST does both). Best-effort observability — never let it break the engine."""
@@ -90,5 +90,5 @@ def report_run(instance_id: str, *, title="", source="", phase="", status="",
     return _post("/api/apps/evolve/runs", {
         "instance_id": instance_id, "title": title, "source": source, "phase": phase,
         "status": status, "current_agent": current_agent, "current_node": current_node,
-        "events": events or [],
+        "cost_usd": cost_usd, "events": events or [],
     }, token)
