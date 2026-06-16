@@ -72,6 +72,13 @@ class CostLedger:
                                 (self._month(month),))
         return round(cur.fetchone()[0], 6)
 
+    def day_to_date(self, day: str | None = None) -> float:
+        """Spend so far TODAY (UTC) — the daily pacer for auto-ingest."""
+        d = day or _now_iso()[:10]
+        cur = self.conn.execute(
+            "SELECT COALESCE(SUM(cost_usd),0) FROM cost_events WHERE substr(ts,1,10)=?", (d,))
+        return round(cur.fetchone()[0], 6)
+
     def total(self) -> float:
         return round(self.conn.execute("SELECT COALESCE(SUM(cost_usd),0) FROM cost_events").fetchone()[0], 6)
 

@@ -166,6 +166,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["list", "ingest", "poll"])
     ap.add_argument("--all", action="store_true", help="ingest: re-submit even already-seen issues")
+    ap.add_argument("--max", type=int, default=int(os.getenv("EVOLVE_INGEST_MAX", "0")),
+                    help="ingest: process at most N new issues this run (0 = no limit; default $EVOLVE_INGEST_MAX)")
+    ap.add_argument("--daily-cap", type=float, default=float(os.getenv("EVOLVE_DAILY_CAP_USD", "0")),
+                    help="ingest: stop before starting another issue once today's spend hits this $ (0 = off)")
     ap.add_argument("--loop", type=float, default=0.0,
                     help="poll: keep polling every N seconds in ONE process (snappy; pipeline loaded once)")
     ap.add_argument("--duration", type=float, default=0.0,
@@ -198,14 +202,30 @@ def _run_cmd(args, pipe, runner, ledger):
         seen = _seen()
         issues = gh.list_open_issues()
         todo = [i for i in issues if args.all or i["number"] not in seen]
-        print(f"{len(issues)} open, {len(todo)} to ingest")
-        for issue in todo:
+        # PACER: cap how many new issues one run processes (so auto-ingest can't fire dozens of
+        # spec phases at once). GitHub stays the single list — the `seen` set means the rest just
+        # get picked up on the next run; nothing is dropped.
+        capped = todo[:args.max] if args.max and args.max > 0 else todo
+        print(f"{len(issues)} open, {len(todo)} new, ingesting up to {len(capped)} "
+              f"(max={args.max or '∞'}, daily-cap=${args.daily_cap or 0:.0f})")
+        ingested = 0
+        for issue in capped:
+            # daily-spend guard: stop BEFORE starting another if today's spend hit the cap —
+            # the unprocessed ones ingest on a later run (their numbers aren't marked seen).
+            if args.daily_cap and ledger.day_to_date() >= args.daily_cap:
+                print(f"  ⏸ daily spend cap ${args.daily_cap:.0f} reached (today ${ledger.day_to_date():.2f}) "
+                      f"— stopping after {ingested}; the rest ingest next run")
+                break
             wi = gh.issue_to_work_item(issue)
             print(f"\n=== ingest #{issue['number']}: {wi['title']} ===")
             inst = pipe.submit(wi)
             _mark(issue["number"])
+            ingested += 1
             print(f"  instance {inst.id} status={inst.status} gate={pipe.gate_waiting(inst)}")
-        print(f"\nthis-run reasoning spend: ${runner.spent_usd:.4f}  month-to-date: ${ledger.month_to_date():.4f}")
+        leftover = len(todo) - ingested
+        print(f"\ningested {ingested} this run{f' ({leftover} left for next run)' if leftover else ''}; "
+              f"this-run spend: ${runner.spent_usd:.4f}  today: ${ledger.day_to_date():.4f}  "
+              f"month-to-date: ${ledger.month_to_date():.4f}")
 
     elif args.cmd == "poll":
         from apps.evolve.engine.instance import DONE, REJECTED
