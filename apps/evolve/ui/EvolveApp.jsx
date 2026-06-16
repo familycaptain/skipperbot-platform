@@ -165,6 +165,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
   const [showArchived, setShowArchived] = useState(false);  // list view: active vs archived
   const [totalCost, setTotalCost] = useState(0);            // cumulative Evolve spend (all runs)
   const [weekCost, setWeekCost] = useState(0);              // spend this week (since Monday)
+  const [decided, setDecided] = useState({});              // instance_id -> decided gate (approved/changed but engine hasn't acted yet)
   const lastId = useRef(0);
   const selRef = useRef(null);
 
@@ -179,6 +180,11 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
       if (typeof r.total_cost === "number") setTotalCost(r.total_cost);
       if (typeof r.week_cost === "number") setWeekCost(r.week_cost);
       if (!selRef.current && rows.length) setSel(rows[0].instance_id);
+      // gates you've already decided but the engine hasn't acted on yet → "approved, building soon"
+      apiFetch(`/gates?status=decided`).then((g) => {
+        const m = {}; (g.gates || []).forEach((x) => { m[x.instance_id] = x; });
+        setDecided(m);
+      }).catch(() => {});
     } catch (e) { setError(String(e.message || e)); }
   }, [showArchived]);
 
@@ -275,7 +281,14 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
   const atGate = detail?.status === "waiting";
   const gate2 = (detail?.gate || pkt.gate) === "gate2";   // Gate 2 = approve the RESULT → merge to release
   const gate3 = (detail?.gate || pkt.gate) === "gate3";   // Gate 3 = VERIFY — you tested it on your Pi; works or still broken?
-  const needsYou = runs.filter((r) => r.status === "waiting").length;
+  // "needs you" = waiting AND you haven't already decided it (a decided gate is the engine's to act on)
+  const needsYou = runs.filter((r) => r.status === "waiting" && !decided[r.instance_id]).length;
+  // chip for a gate you've decided but the engine hasn't picked up yet
+  const decidedChip = (dec) => {
+    const d = dec.decision === "approve" ? "approved" : dec.decision;
+    const verb = dec.decision === "approve" ? "building" : dec.decision === "change" ? "revising" : "closing";
+    return { cls: "bg-violet-900/50 text-violet-300", label: `${d} · ${verb} soon` };
+  };
 
   // group the activity stream into per-agent lanes, in first-seen order
   const lanes = [];
@@ -325,7 +338,9 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
           )}
           {runs.map((g) => {
             const active = g.instance_id === sel;
-            const st = STATUS[g.status] || { cls: "bg-slate-700/60 text-slate-300", label: g.status };
+            const st = (g.status === "waiting" && decided[g.instance_id])
+              ? decidedChip(decided[g.instance_id])
+              : (STATUS[g.status] || { cls: "bg-slate-700/60 text-slate-300", label: g.status });
             return (
               <div key={g.instance_id} role="button" onClick={() => setSel(g.instance_id)}
                 className={`relative group w-full text-left px-3 py-2.5 border-b border-slate-800/60 cursor-pointer ${active ? "bg-slate-800/70" : "hover:bg-slate-900/60"}`}>
@@ -374,6 +389,21 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
                   {busy === "reverify" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Didn't work — re-verify
                 </button>
                 <div className="text-[11px] text-slate-500 mt-1">Re-opens this at the verify gate so you can report what's broken; it resumes the same conversation to fix it.</div>
+              </div>
+            )}
+
+            {/* DECIDED but the engine hasn't picked it up yet — explain the limbo instead of a blank panel */}
+            {!atGate && detail?.status === "decided" && (
+              <div className="mb-4 border rounded-lg p-3 bg-violet-900/20 border-violet-700/40 text-sm text-violet-200">
+                <div className="font-medium mb-0.5">
+                  ✓ You {detail.decision === "approve" ? "approved this" : `chose "${detail.decision}"`}
+                  {detail.decided_by ? ` (${detail.decided_by})` : ""} — nothing more needed from you.
+                </div>
+                <div className="text-violet-300/80 text-xs">
+                  {detail.decision === "approve" ? "The engine builds it on the next loop pass"
+                   : detail.decision === "change" ? "The engine re-works it on the next loop pass"
+                   : "The engine tears it down on the next loop pass"} (make sure the box-1 /loop is running).
+                </div>
               </div>
             )}
 
