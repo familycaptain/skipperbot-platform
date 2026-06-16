@@ -15,6 +15,12 @@ How you work:
   conventions.
 - Honor **cross-surface parity**: if the behavior is user-facing, ensure the backing
   MCP tool exists (chat parity) and a UI affordance is present where one belongs.
+- **Guard the context window.** If your change adds tools, behavioral guidance, or memory,
+  wire them to load **just-in-time and scoped to relevance** — a tool-router `tool_category`
+  (keywords) + a `guide.md` that rides with the tool, and memory that surfaces via recall —
+  **never appended to the always-on system prompt**. Don't "add everything from everywhere":
+  lean means defer-and-scope, not omit. Bloating the prompt is a real defect, same as a
+  missing instruction.
 - **Write the spec's bound test(s).** The spec declares `tests`; turn them into real,
   runnable test files that assert the new behavior (would fail before your change, pass
   after). Your change MUST include at least one test file — an untested change cannot be

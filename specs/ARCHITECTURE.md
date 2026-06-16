@@ -31,6 +31,44 @@ dropping a folder in; removing it means deleting the folder.
 
 ---
 
+## Core principle: context economy (assemble context just-in-time)
+
+The model's context window is a **finite, contended, expensive** resource, and
+stuffing it works *against* quality — it inflates token cost and latency, and it
+**dilutes attention** so the one instruction that matters gets buried under
+everything that doesn't. So a load-bearing rule across the whole system:
+
+> **Give the agent exactly the guidance, tools, and memories the task in front of
+> it needs — assembled at the right time — and nothing more.**
+
+We deliberately do **not** concatenate every prompt, every tool schema, every
+`guide.md`, and every memory into one giant always-on system prompt. Instead we
+**inject just-in-time, scoped by relevance, with on-demand expansion**:
+
+- **Tools** — the tool router injects only the categories a turn's keywords match,
+  not the whole catalog; the LLM pulls more mid-conversation with
+  `request_tools(category)`. (See [Keyword routing](#keyword-routing-for-tool-injection).)
+- **Behavioral guidance** — a tool's `guide.md` rides *alongside that tool* when it's
+  routed in, never globally.
+- **Memory** — recall surfaces the *relevant* memories via semantic search
+  (`search_memories`), never the entire store.
+- **Evolve's own agents** — each role gets *its* lens prompt (the security reviewer
+  doesn't carry the UX prompt); the spec phase **grounds once and resumes** rather than
+  re-stuffing the codebase into every turn.
+
+This is a **design constraint, not an afterthought.** When you add a capability, wire
+its context to load **conditionally / on demand** — do not append it to the always-on
+system prompt because it's convenient. Prefer lazy loading, relevance-scoping, and an
+explicit "ask for more" path (`request_tools`, `search_memories`) over eager inclusion.
+
+It is a **balance to manage, not a race to the smallest prompt.** "Lazy" here means
+*defer and scope*, never *omit* — include everything genuinely required for correct
+behavior, just delivered at the right moment to the right agent. The failure modes are
+symmetric: a bloated prompt (lazy in the *other* direction — "add everything from
+everywhere") is as much a defect as a missing instruction.
+
+---
+
 ## Layered architecture
 
 Every feature follows a strict bottom-up layering. The same shape applies

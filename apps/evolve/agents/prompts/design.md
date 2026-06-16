@@ -29,9 +29,13 @@ Then, given the work-item (+ triage/vision context):
    or fork it cleanly.
 
 4. **Honor the engineering principles** (non-negotiable): preconfigure once, minimize
-   external calls, Settings for config, build for the self-hoster, degrade gracefully.
-   Say in `nonfunctional` which apply and how. A per-request external call or a recomputed
-   config value is a design failure, not an implementation nit.
+   external calls, Settings for config, build for the self-hoster, degrade gracefully, and
+   **guard the context window** — if the feature adds tools/guidance/memory, design them to
+   load **just-in-time and scoped** (tool-router category + `guide.md` with the tool, relevant
+   memories only), NOT appended to the always-on system prompt. Say in `nonfunctional` which
+   apply and how. A per-request external call, a recomputed config value, **or a capability that
+   bloats the system prompt instead of injecting on demand** is a design failure, not an
+   implementation nit.
 
 5. **Size it honestly + decompose.** Set `sizing`: `one-spec` if a single spec + bound
    test truly covers it. `needs-tree` if it's really several behaviors (e.g. the

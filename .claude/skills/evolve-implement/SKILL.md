@@ -12,7 +12,10 @@ Play the **Implement** agent. Canonical instructions: read `apps/evolve/agents/p
 
 Write the code that satisfies the approved spec — no more (scope is the spec), no less (satisfy it
 fully) — **AND** its bound test. Honor the engineering principles (preconfigure once, config in
-Settings, the five surfaces, degrade gracefully). Cross-surface parity matters: if behavior lives in
+Settings, the five surfaces, degrade gracefully, **guard the context window**: wire any new
+tools/guidance/memory to load just-in-time and scoped — tool-router category + `guide.md` with the
+tool, relevant memories only — never appended to the always-on system prompt). Cross-surface parity
+matters: if behavior lives in
 both `tools.py` (chat/voice/Discord) and a `*.jsx` UI (web/mobile), fix BOTH with identical messages.
 
 ## Workspace isolation — NON-NEGOTIABLE (this bit us before)

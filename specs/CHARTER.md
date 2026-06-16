@@ -150,3 +150,15 @@ These are the operator's standing non-functional requirements; honor them by def
   box. No assumptions about a specific host, path, or always-on network.
 - **Degrade gracefully and idempotently.** Define not-found / offline / invalid-input
   behavior explicitly; make operations safe to retry.
+- **Guard the context window — inject just-in-time, never bloat the prompt.** The model's
+  context is finite, costly, and attention-diluting: stuffing it *lowers* quality because
+  the instruction that matters gets buried. A capability must load its tools, behavioral
+  guidance (`guide.md`), and memory **on demand and scoped to relevance** — the tool router
+  injects only the matched categories (not the whole catalog), a guide rides *with* its tool,
+  and memory recall surfaces only the relevant memories, not the whole store. **Never append a
+  feature's tools/prompt to the always-on system prompt because it's convenient**; wire it to
+  load conditionally, with an explicit "ask for more" path (`request_tools`, `search_memories`).
+  This is a balance, not a race to the smallest prompt: "lean" means *defer and scope*, never
+  *omit* — include everything needed for correct behavior, delivered at the right time to the
+  right agent. A bloated prompt ("add everything from everywhere") is as much a defect as a
+  missing instruction. *(See [ARCHITECTURE.md → Context economy](ARCHITECTURE.md#core-principle-context-economy-assemble-context-just-in-time).)*

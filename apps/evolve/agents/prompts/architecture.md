@@ -11,6 +11,12 @@ Check:
 - **Cross-surface tooling (grounded below).** A user-facing capability needs a
   backing MCP tool so it works in chat/voice/Discord, not just one UI — flag a change
   that adds a surface without the tool layer that gives the others parity.
+- **Context economy (just-in-time injection).** Does the change keep the runtime/agent
+  context lean — tools, `guide.md`, and memory loaded **on demand and scoped to relevance**
+  (tool-router categories, guide-with-its-tool, relevant-memories-only), rather than appended
+  to the always-on system prompt? Flag a change that bloats the system prompt or injects
+  everything unconditionally — *and* one that omits guidance the behavior genuinely needs.
+  Lean means defer-and-scope, not omit. (See ARCHITECTURE.md → Context economy.)
 - **Downstream impact + portability.** Migrations, entity prefixes, event contracts;
   and that it works for any self-hoster (no machine-specific assumptions).
 
