@@ -257,6 +257,17 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
     finally { setBusy(""); }
   }
 
+  // re-open a merged/done item at the verify gate ("it shipped but doesn't work")
+  async function reverify() {
+    if (!sel) return;
+    setBusy("reverify"); setError("");
+    try {
+      await apiFetch(`/runs/${sel}/reverify`, { method: "POST", body: "{}" });
+      loadRuns();   // status -> waiting; the tail then loads the Gate-3 packet
+    } catch (e) { setError(String(e.message || e)); }
+    finally { setBusy(""); }
+  }
+
   const pkt = detail?.packet || {};
   const rec = pkt.recommendation || {};
   const proposal = pkt.proposal || {};
@@ -354,6 +365,17 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
               {run?.cost_usd > 0 && <><span>·</span><span className="font-mono text-emerald-300" title="this item's spend so far (all its agents, every phase)">${run.cost_usd.toFixed(2)}</span></>}
             </div>
             <h2 className="text-lg font-semibold mb-3">{run?.title || pkt.work_item?.title || sel}</h2>
+
+            {/* DIDN'T WORK — re-open a merged/done item at the verify gate */}
+            {!atGate && run?.status === "merged" && isParent && (
+              <div className="mb-4">
+                <button disabled={!!busy} onClick={reverify}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-amber-700/60 text-amber-300 hover:bg-amber-900/30 text-sm disabled:opacity-50">
+                  {busy === "reverify" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Didn't work — re-verify
+                </button>
+                <div className="text-[11px] text-slate-500 mt-1">Re-opens this at the verify gate so you can report what's broken; it resumes the same conversation to fix it.</div>
+              </div>
+            )}
 
             {/* GATE REVIEW (only when parked at a human gate) */}
             {atGate && (

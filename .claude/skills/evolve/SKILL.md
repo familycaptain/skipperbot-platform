@@ -45,9 +45,12 @@ GitHub issue stays OPEN until verified — an open issue means "not confirmed wo
 
 ## Each pass: advance ONE item by ONE segment, then END
 **1. Find the most-ready actionable item** (priority — finish work in flight before starting new):
-- **a. A decided gate.** For each item with `phase` in {`gate1`,`gate2`,`verify`}, check ONCE:
-  `python3 scripts/evolve_poc.py decision poc-<n>` → if it returns a non-null `decision`, that item
-  is actionable (advance it).
+- **a. A decided gate.** For **every** item dir under `~/.evolve-poc/*/` — *including `done` ones*, a
+  done item can be re-opened at the verify gate from the UI ("Didn't work") — check ONCE:
+  `python3 scripts/evolve_poc.py decision poc-<n>`. If it returns a non-null `decision`, that item is
+  actionable. **Route on the returned `gate`** (`gate1`/`gate2`/`gate3`), NOT the local phase — the UI
+  gate is authoritative; a re-opened `done` item comes back as a decided `gate3`. Reconcile
+  `state.json` `phase` to match the gate before running the segment (`gate3` → `verify`).
 - **b. Else a new open issue** — not in `~/.evolve-poc/seen.json` and with no `~/.evolve-poc/<n>/`
   dir: `python3 -c "import apps.evolve.github_connector as g; [print(i['number'], i['title']) for i in g.list_open_issues()]"`.
 - **c. Nothing ready** → say so and **END the pass** (the loop idles; the next pass re-checks).

@@ -149,6 +149,29 @@ async def api_archive_run(instance_id: str, req: ArchiveReq, request: Request):
     return {"ok": True, "archived": req.archived}
 
 
+@router.post("/runs/{instance_id}/reverify")
+async def api_reverify_run(instance_id: str, request: Request):
+    """Re-open a merged/done item at the verify gate so the operator can report it didn't work
+    (parent/admin). Re-parks it as a Gate-3 verify; the engine then resumes the SAME conversation
+    when the operator clicks 'still broken'. This is the UI path for 'it shipped but doesn't work'."""
+    p = _principal(request)
+    if not _has_role(p, "admin", "parent"):
+        raise HTTPException(status_code=403, detail="parent or admin only")
+    run = await asyncio.to_thread(activity.get_run, instance_id)
+    if not run:
+        raise HTTPException(status_code=404, detail="no such run")
+    packet = {
+        "instance": instance_id, "gate": "gate3",
+        "work_item": {"title": run.get("title", "")},
+        "recommendation": {"action": "verify",
+            "why": "Re-opened — you reported this didn't work. Describe what's broken below and send "
+                   "it back; it resumes the same conversation to fix it, re-validate, and re-merge."},
+    }
+    await asyncio.to_thread(gate_queue.upsert_gate, instance_id, "gate3", packet)
+    await asyncio.to_thread(activity.upsert_run, instance_id, status="waiting", phase="verify")
+    return {"ok": True}
+
+
 @router.get("/runs/{instance_id}/events")
 async def api_run_events(instance_id: str, since: int = 0, limit: int = 500):
     """Activity events newer than `since` — the UI tails this for the scrolling log."""

@@ -57,7 +57,8 @@ def main():
     elif a.cmd == "decision":
         dec = [x for x in bridge.list_decided() if x.get("instance_id") == a.iid]
         print(json.dumps({"decision": dec[0]["decision"] if dec else None,
-                          "note": dec[0].get("note") if dec else None}))
+                          "note": dec[0].get("note") if dec else None,
+                          "gate": dec[0].get("gate") if dec else None}))
     elif a.cmd == "resolve":
         out = bridge.resolve(a.iid, a.status)
         # Keep the run row in lockstep with the gate outcome so it can never be left "running"
