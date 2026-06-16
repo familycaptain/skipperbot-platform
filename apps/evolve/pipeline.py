@@ -91,6 +91,10 @@ class Pipeline:
 
     def _run(self, inst, **fields) -> None:
         if self.on_run:
+            # always carry the work-item title: submit() runs the whole walk inside walker.start()
+            # and only reports the title afterward, so without this the run row shows just the id
+            # for the entire running phase (until it parks at a gate). Empty title COALESCEs away.
+            fields.setdefault("title", (inst.context.get("work_item") or {}).get("title", "") or "")
             try:
                 self.on_run(inst.id, **fields)
             except Exception:
