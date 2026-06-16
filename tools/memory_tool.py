@@ -22,6 +22,15 @@ def remember(content: str, tags: str, about: str = "", saved_by: str = "", relat
     a general fact, or anything related to a goal/project/task/list/reminder.
     Always resolve pronouns to actual names before saving.
 
+    This tool only RECORDS information — it changes nothing else. Do NOT use it to
+    satisfy a request to *do* something. When the user asks you to STOP, end, pause,
+    disable, turn off, or cancel a feature, behavior, goal, or recurring outreach,
+    that is an ACTION: call the relevant action tool that actually performs it (for
+    example, `stop_onboarding` to stop the first-run onboarding) — do NOT merely
+    save a memory about their preference, because a memory does not change anything
+    and the behavior would keep running. Saving the preference in addition is fine
+    only after the action tool has been called.
+
     Args:
         content: The fact to remember, e.g. "Bob's favorite color is black"
         tags: Comma-separated lowercase tags, e.g. "bob,color,favorite,preference"
