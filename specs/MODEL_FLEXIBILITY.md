@@ -4,8 +4,10 @@
 > plan for a later series of stories (P1 onward). Issue #5.
 >
 > Operator decisions baked in: bespoke first-class connector per named vendor on a
-> shared OpenAI-compatible base; **no third-party proxies** (direct first-party or
-> self-hosted endpoints only); embedding dimension tailored per vendor at setup with
+> shared OpenAI-compatible base; **bundled connectors are first-party / self-hosted only**
+> so nothing out of the box requires a third-party proxy (a community/custom connector MAY
+> still target one — it's just never a dependency of the default path); embedding dimension
+> tailored per vendor at setup with
 > **no cross-vendor migration**; start by shipping the **OpenAI connector** and routing
 > all existing OpenAI calls through it, prove it works, then add the rest.
 
@@ -135,13 +137,18 @@ following the existing provider-registry pattern (`nag_registry.py`,
 as apps), so a broken connector cannot crash the platform. Boot wires this with a
 `load_all_connectors()` call beside `load_all_apps()` in `agent.py`.
 
-**NO THIRD-PARTY PROXIES (operator directive, load-bearing).** Every connector talks
-DIRECTLY to the vendor's own first-party API endpoint, or to a LOCAL/self-hosted endpoint
-the operator controls (Ollama / vLLM / LM Studio). There is **no aggregator or proxy in
-the middle** — explicitly **no OpenRouter, no LiteLLM/ClawRouter-style proxy, no
-Together/Groq/Fireworks-style third-party re-hosts.** The operator's API key + prompts go
-only to the vendor that owns the model, or stay on the operator's own hardware — never
-through an intermediary.
+**NO REQUIRED THIRD-PARTY PROXIES (operator directive, load-bearing).** Out of the box,
+every BUNDLED connector talks DIRECTLY to the vendor's own first-party API endpoint, or to
+a LOCAL/self-hosted endpoint the operator controls (Ollama / vLLM / LM Studio). The goal is
+that a self-hoster **never has to install or sign up for a separate aggregator just to get
+Skipper working** — so no OpenRouter, LiteLLM/ClawRouter, or Together/Groq/Fireworks-style
+re-host is ever a dependency of the default path, and out of the box the operator's API key +
+prompts go only to the vendor that owns the model or stay on their own hardware. This is
+**not a prohibition** on connectors that route through a proxy: a community connector or
+no-code custom endpoint (§14) MAY point at OpenRouter or any aggregator if its operator
+chooses. The directive is about defaults — bundled, first-party connectors make
+going-direct the zero-setup path, so a proxy is always opt-in convenience, never a
+requirement.
 
 **Proposed built-in connector set** (the largest / most-common vendors; recommended
 starting set, not frozen; all first-party / self-hosted):
@@ -165,7 +172,8 @@ share one `OpenAICompatibleConnector` base (per-vendor: first-party endpoint, mo
 `api_mode`, capabilities) while each remains a distinct selectable vendor. **Anthropic**
 gets a bespoke native-Messages adapter (`api_mode = "anthropic_messages"`). Additional
 first-party vendors (Cohere, MiniMax, z.ai/GLM, …) are added via the community plugin
-mechanism (§14) or a no-code custom endpoint — never by routing through an aggregator.
+mechanism (§14) or a no-code custom endpoint; routing one through an aggregator is possible
+but a deliberate operator choice, not the bundled default.
 
 ---
 
@@ -333,9 +341,10 @@ Two existing agents independently validate this architecture:
   or an installable provider-profile plugin.
 
 This plan **adopts** their direct per-vendor connector + capability descriptor + onboarding-
-wizard patterns, and **deliberately rejects** the proxy/aggregator routing path those tools
-also offer (OpenRouter, LiteLLM/ClawRouter, Nous Portal) per the **no-third-party-proxy**
-directive — Skipper connects directly to first-party / self-hosted endpoints only.
+wizard patterns, and **declines to depend on** the proxy/aggregator routing path those tools
+also offer (OpenRouter, LiteLLM/ClawRouter, Nous Portal): Skipper's bundled connectors connect
+directly to first-party / self-hosted endpoints, so no aggregator is ever required out of the
+box. A community or custom connector MAY still target one if its operator wants it.
 
 ---
 
@@ -344,8 +353,9 @@ directive — Skipper connects directly to first-party / self-hosted endpoints o
 Adding a model/vendor must not require forking core. Three tiers:
 
 1. **No-code custom endpoint** — `base_url` + key + model list + `api_mode` in Settings,
-   pointed at a **vendor's own first-party API or a self-hosted endpoint** (never an
-   aggregator). Covers any OpenAI-compatible vendor instantly.
+   typically pointed at a **vendor's own first-party API or a self-hosted endpoint** (an
+   aggregator like OpenRouter works too if the operator chooses — it's just never required).
+   Covers any OpenAI-compatible vendor instantly.
 2. **Installable community connector plugin** — a folder/package with a `ConnectorManifest`
    exposing the known base class, dropped into `connectors/` (installed like an app),
    discovered via a lazy registry and registered through `register_model_provider(...)`.
