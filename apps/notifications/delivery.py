@@ -192,6 +192,6 @@ async def _deliver_one(notif: dict):
 
     logger.info(
         "NOTIF_DELIVERY: Delivered %s to %s [%s]. Results: %s",
-        notif_id, recipient, channel,
+        notif_id, recipient, ", ".join(sorted(targets)) or "websocket",
         "; ".join(delivery_results) or "WebSocket only",
     )
