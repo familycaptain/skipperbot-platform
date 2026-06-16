@@ -273,6 +273,8 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
     setBusy(decision); setError("");
     try {
       await apiFetch(`/gates/${sel}/decision`, { method: "POST", body: JSON.stringify({ decision, note }) });
+      // optimistically flip the list chip to "<decision> · …soon" instantly (don't wait for the poll)
+      setDecided((m) => ({ ...m, [sel]: { instance_id: sel, decision, gate: detail?.gate } }));
       setDetail(await apiFetch(`/gates/${sel}`).catch(() => null));
       loadRuns();
     } catch (e) { setError(String(e.message || e)); }
