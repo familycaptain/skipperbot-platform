@@ -23,16 +23,20 @@ running app and judge on **hard evidence** — the actual tool-calls + responses
 reusable harness scripts on box 2 do the heavy lifting (drive them over ssh from box 1):
 
 1. **Deploy the change onto the live instance:** `python ~/box2_live.py deploy <feature-branch>` —
-   `git checkout` + `skipper update` (non-interactive) + waits until it's actually serving. (Reset
-   after with `python ~/box2_live.py reset`.)
-2. **Generate acceptance scenarios from the APPROVED spec/story** — a JSON list of scenarios, each a
+   `git checkout` + `skipper update` (non-interactive) + waits until it's actually serving. (Code
+   reset after with `python ~/box2_live.py reset`.)
+2. **Restore the data fixture (reproducible start):** `python ~/box2_fixture.py reset` — rolls box 2's
+   DB back to a known baseline snapshot, so every run starts from an IDENTICAL state (the DB persists
+   across deploys, so without this, data drifts run-to-run). Capture the baseline once with
+   `box2_fixture.py snapshot`.
+3. **Generate acceptance scenarios from the APPROVED spec/story** — a JSON list of scenarios, each a
    sequence of `steps`: UI actions (`open_app`, `click`, `fill`, `select`, `expect_ui`) and `chat`
    turns. **For chat, use VARIED phrasings** (how real users actually talk, not the literal wording)
    and assert the RIGHT outcome: `expect_tool` (which MCP tool must fire) + `expect_answer_contains`.
    This is what catches an intent path that string-matches instead of letting the LLM decide.
-3. **Run it:** `python ~/box2_acceptance.py --scenario <file.json>` → returns a structured report
+4. **Run it:** `python ~/box2_acceptance.py --scenario <file.json>` → returns a structured report
    with per-step pass/fail and the captured evidence (answer + `tool_calls` from `/api/chat/history`).
-4. **Judge** the report. Cap scenarios (~5–10 chat turns — bounded; box 2's agent spends API credits).
+5. **Judge** the report. Cap scenarios (~5–10 chat turns — bounded; box 2's agent spends API credits).
 
 **Fail closed (either layer):**
 - A change with **no bound test** → NOT green.
@@ -40,8 +44,8 @@ reusable harness scripts on box 2 do the heavy lifting (drive them over ssh from
   doesn't reflect the change) → NOT green; report it as the variance signal → back to implement.
 - Only all-green (bound tests + acceptance) is green → Gate 2.
 
-> Known gaps (Phase 1): box 2's DB persists across `skipper update`, so seed/reset a known fixture
-> per run for reproducibility; the acceptance scenarios are the agent's to author from the spec.
+> The baseline fixture is captured once (`box2_fixture.py snapshot`) and restored per run (step 2);
+> the acceptance scenarios are the agent's to author from the spec.
 
 Emit `VALIDATE_OUT` (`apps/evolve/agents/registry.py`) — `passed` + `failures` (include the failing
 scenario's captured evidence). Save to `~/.evolve-poc/<id>/validate.json`.
