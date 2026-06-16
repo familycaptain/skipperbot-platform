@@ -390,12 +390,21 @@ class Pipeline:
             self._run(inst, phase="intake", current_node=node.id, current_agent=agent)
         payload = {"work_item": inst.context.get("work_item", {}),
                    "proposal": inst.context.get("proposal")}
-        if agent == "triage" and self.cfs_store is not None:
-            # give triage the existing specs so it can tell violates-spec / no-spec /
-            # conflicts-spec apart (the §8 three-way classification)
-            payload["existing_specs"] = [
-                {"id": r["id"], "behavior": r.get("behavior", "")}
-                for r in self.cfs_store.by_kind("specification")]
+        if agent == "triage":
+            if self.cfs_store is not None:
+                # existing specs → triage tells violates-spec / no-spec / conflicts-spec apart,
+                # AND flags a request already governed by a live spec (an already-done duplicate).
+                payload["existing_specs"] = [
+                    {"id": r["id"], "behavior": r.get("behavior", "")}
+                    for r in self.cfs_store.by_kind("specification")]
+            try:
+                # other IN-FLIGHT items → triage can spot a duplicate of an open issue (not yet built)
+                payload["open_items"] = [
+                    {"id": o.id, "title": (o.context.get("work_item") or {}).get("title", "")}
+                    for o in self.store.all()
+                    if o.id != inst.id and o.status not in (DONE, REJECTED, PARKED)]
+            except Exception:
+                payload["open_items"] = []
         res = self.runner.run(agent, payload, instance_id=inst.id)
         out = res.output or {}
         if agent == "spec-author" and res.ok:
