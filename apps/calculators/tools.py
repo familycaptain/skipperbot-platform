@@ -21,6 +21,14 @@ def _num(v):
     return None if v == "" else float(v)
 
 
+# Edge-case messages for the compound-interest solver. Kept IDENTICAL to the
+# strings in apps/calculators/ui/CalculatorsApp.jsx so the UI, chat, and voice
+# all read the same when the goal is already met.
+_GOAL_MET_YEARS = "Your goal is below your current balance — you've already reached it, so no saving time is needed."
+_BELOW_PRINCIPAL_RATE = "Your future value is below your principal, so no positive rate would reach it."
+_ALREADY_AT_GOAL_NOTE = "Already at your goal."
+
+
 def _payment(P, c, N):
     return P / N if c == 0 else P * c / (1 - (1 + c) ** (-N))
 
@@ -136,9 +144,19 @@ def compound_interest(principal: str = "", annual_rate: str = "", compounds_per_
             out = A / (1 + r / n) ** (n * t)
             return f"Required principal: ${out:,.2f} to reach ${A:,.2f} at {rate}% over {t} years."
         if field == "years":
+            if A is not None and P is not None and A > 0 and P > 0:
+                if A < P:
+                    return _GOAL_MET_YEARS
+                if A == P:
+                    return f"Years needed: 0.00 — {_ALREADY_AT_GOAL_NOTE}"
             out = math.log(A / P) / (n * math.log(1 + r / n))
             return f"Years needed: {out:.2f} to grow ${P:,.2f} to ${A:,.2f} at {rate}%."
         if field == "annual_rate":
+            if A is not None and P is not None and A > 0 and P > 0:
+                if A < P:
+                    return _BELOW_PRINCIPAL_RATE
+                if A == P:
+                    return f"Required annual rate: 0.000% — {_ALREADY_AT_GOAL_NOTE}"
             cc = (A / P) ** (1 / (n * t)) - 1
             return f"Required annual rate: {cc * n * 100:.3f}% to grow ${P:,.2f} to ${A:,.2f} in {t} years."
     except (ValueError, ZeroDivisionError):
