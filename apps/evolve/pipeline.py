@@ -1,8 +1,9 @@
 """The full gated pipeline (EVOLVE.md §8) — the capstone integration.
 
-Walks a work-item through the WHOLE SDLC graph: intake → triage → vision → spec-author
-→ reviews (security/arch/interop/spec-audit/ux) → prioritize → GATE 1 → serialize →
-implement → tests → deploy → validate (box 2) → GATE 2 → merge → release.
+Walks a work-item through the WHOLE SDLC graph as a FUNNEL — cheap gates first, the
+expensive spec phase only for survivors: intake → triage (reject junk) → vision-fit
+(scope) → prioritize (rank) → top-N → Lead spec phase (Design ⇄ author/auditor + reviewers)
+→ GATE 1 → serialize → implement → validate (box 2) → GATE 2 → merge → release.
 
 It wires together everything built so far:
   - reasoning agents      → the Runner (Opus, shared cost ledger + kill-switch)

@@ -95,21 +95,23 @@ edges:
   # (intent already approved when the spec was) -> straight to prioritize.
   - { from: qa_var,     to: prio,       when: "pure variance (fast-path)" }
 
-  # triage / vision  (both bug and fits-vision feature converge on the Lead)
+  # FUNNEL — cheap gates first; the expensive spec phase runs ONLY for survivors:
+  #   triage (reject junk) → vision-fit (scope) → prioritize (rank) → top-N → Lead spec phase → Gate 1
   - { from: triage,    to: gw_kind }
   - { from: gw_kind,   to: e_rejected, when: "reject" }     # duplicate / malicious / invalid — stop here, never spec it
-  - { from: gw_kind,   to: lead,       when: "bug" }
-  - { from: gw_kind,   to: vision,     when: "feature" }
+  - { from: gw_kind,   to: prio,       when: "bug" }        # bugs skip vision-fit (fixing already-accepted behavior)
+  - { from: gw_kind,   to: vision,     when: "feature" }    # features get the scope check first
   - { from: vision,    to: gw_vision }
-  - { from: gw_vision, to: lead,       when: "fits" }
+  - { from: gw_vision, to: prio,       when: "fits" }
   - { from: gw_vision, to: e_rejected, when: "off-vision" }
 
-  # Lead-orchestrated spec phase -> prioritize -> Gate 1
-  # (Design, spec-author<->spec-auditor rounds, and the reviewers all run inside `lead`.)
-  - { from: lead,      to: prio }
+  # prioritize BEFORE the expensive spec phase — park the low-priority tail, spec ONLY the top-N
   - { from: prio,      to: gw_prio }
   - { from: gw_prio,   to: e_parked,   when: "low-priority tail" }
-  - { from: gw_prio,   to: gate1,      when: "top-N or safety-critical" }
+  - { from: gw_prio,   to: lead,       when: "top-N or safety-critical" }
+
+  # Lead-orchestrated spec phase (Design, spec-author<->auditor rounds, reviewers — all inside `lead`) → Gate 1
+  - { from: lead,      to: gate1 }
 
   # gate 1
   - { from: gate1,     to: lead,       when: "change this" }

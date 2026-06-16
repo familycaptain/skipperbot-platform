@@ -30,13 +30,17 @@ flowchart TD
   s_bug --> triage
   qa_var -. "fast-path: pure variance" .-> prio
 
-  %% triage / vision
-  triage["Triage: bug/feature, dedup, link"]:::agent --> gw_kind{"bug or feature?"}:::gw
-  gw_kind -->|bug| l_design
+  %% FUNNEL — cheap gates first; the expensive spec phase runs ONLY for survivors
+  triage["Triage: reject junk (dup/malicious/invalid), classify bug/feature"]:::agent --> gw_kind{"reject / bug / feature?"}:::gw
+  gw_kind -->|reject| e_rejected(["Rejected"]):::event
+  gw_kind -->|bug| prio["Prioritize — rank (demand-fed); park the tail"]:::agent
   gw_kind -->|feature| vision["Vision-fit — charter + Capability scope"]:::agent
   vision --> gw_vision{"fits vision?"}:::gw
-  gw_vision -->|off-vision| e_rejected(["Rejected"]):::event
-  gw_vision -->|fits| l_design
+  gw_vision -->|off-vision| e_rejected
+  gw_vision -->|fits| prio
+  prio --> gw_prio{"surface or park?"}:::gw
+  gw_prio -->|"park (low-pri)"| e_parked(["Parked / declined"]):::event
+  gw_prio -->|"top-N / critical"| l_design
 
   %% Spec phase: the LEAD runs an agentic inner loop — shown expanded here.
   %% Design sets the approach + decides tech choices; Spec-author ⇄ Spec-auditor iterate
@@ -53,10 +57,7 @@ flowchart TD
     l_audit --> l_rev
     l_rev --> l_lead
   end
-  l_lead --> prio["Prioritize (backlog-PM)"]:::agent
-  prio --> gw_prio{"surface or park?"}:::gw
-  gw_prio -->|"park (low-pri)"| e_parked(["Parked / declined"]):::event
-  gw_prio -->|"top-N / critical"| gate1
+  l_lead --> gate1
 
   gate1[/"GATE 1 — approve intent"/]:::gate
   gate1 -->|"change this"| l_design
