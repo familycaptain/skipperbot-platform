@@ -536,6 +536,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
           </div>
         )}
       </div>
+      </div>
     </div>
   );
 }
