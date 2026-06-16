@@ -53,7 +53,9 @@ def output_driven_decider(node, inst, outs):
 
     pref = None
     if node.id == "gw_kind":
-        pref = out_of("triage").get("kind")                       # bug | feature
+        t = out_of("triage")
+        # triage rejects duplicates / malicious / invalid items HERE — they never reach the spec phase
+        pref = "reject" if t.get("disposition") in ("duplicate", "malicious", "invalid") else t.get("kind")
     elif node.id == "gw_vision":
         pref = "fits" if out_of("vision").get("verdict") == "fits" else "off-vision"
     elif node.id == "gw_prio":

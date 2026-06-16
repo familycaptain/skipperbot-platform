@@ -35,7 +35,7 @@ nodes:
 
   # ---- triage & vision ----
   - { id: triage,    type: agent,   agent: triage,       lane: agents, label: "Triage: bug/feature, dedup, link to C/F/S" }
-  - { id: gw_kind,   type: gateway, kind: exclusive,     lane: agents, label: "bug or feature?" }
+  - { id: gw_kind,   type: gateway, kind: exclusive,     lane: agents, label: "reject / bug / feature?" }
   - { id: vision,    type: agent,   agent: vision-fit,   lane: agents, label: "Vision-fit vs charter + Capability scope" }
   - { id: gw_vision, type: gateway, kind: exclusive,     lane: agents, label: "fits vision?" }
 
@@ -97,6 +97,7 @@ edges:
 
   # triage / vision  (both bug and fits-vision feature converge on the Lead)
   - { from: triage,    to: gw_kind }
+  - { from: gw_kind,   to: e_rejected, when: "reject" }     # duplicate / malicious / invalid — stop here, never spec it
   - { from: gw_kind,   to: lead,       when: "bug" }
   - { from: gw_kind,   to: vision,     when: "feature" }
   - { from: vision,    to: gw_vision }

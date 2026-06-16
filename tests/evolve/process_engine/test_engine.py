@@ -43,7 +43,7 @@ class TestModel(unittest.TestCase):
         # spec + the 5 review nodes + their gateways collapsed into the single `lead` node
         # (apps/evolve/lead.run_lead_phase runs them as an agentic inner loop).
         self.assertEqual(len(m.nodes), 31)
-        self.assertEqual(len(m.edges), 41)
+        self.assertEqual(len(m.edges), 42)   # + gw_kind -> e_rejected (triage rejects duplicate/malicious/invalid)
         self.assertIsNotNone(m.node("lead"))
         self.assertEqual(sorted(m.starts()), ["gen_design", "qa_sweep", "s_issue", "s_pr"])
         self.assertEqual(sorted(m.ends()), ["e_done", "e_parked", "e_rejected"])

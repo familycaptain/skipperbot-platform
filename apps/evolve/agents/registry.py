@@ -30,6 +30,8 @@ def _arr(items: dict) -> dict:
 # first (the Runner's composed_system mandates its content). Surfaced as the agent's panel.
 TRIAGE_OUT = _obj({
     "summary": _STR,
+    "disposition": {"type": "string", "enum": ["proceed", "duplicate", "malicious", "invalid"]},
+                                                 # anything but 'proceed' is REJECTED at triage — never passed downstream
     "kind": {"type": "string", "enum": ["bug", "feature"]},  # drives routing (bug->spec, feature->vision)
     "spec_status": {"type": "string",
                     "enum": ["violates-spec", "no-spec", "conflicts-spec", "unclear"]},
