@@ -246,13 +246,14 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
     is_onboarding = bool(goal_snap and goal_snap.get("goal_name") == ONBOARDING_GOAL_NAME)
     if is_onboarding and _past_target_date(goal_snap):
         try:
-            from apps.goals.store import update_item
+            # Reuse the single canonical close-out path: cascades open children and
+            # disables this domain. Timeout closes as 'done' ("completed the window"),
+            # unlike a user-requested stop which closes as 'cancelled'.
+            from apps.goals.store import close_out_goal
             await asyncio.to_thread(
-                update_item, goal_id, updated_by="skipper", status="done",
-                history_note="Onboarding window (1 month) elapsed — closing out as-is.",
+                close_out_goal, goal_id, by="skipper", status="done",
+                reason="Onboarding window (1 month) elapsed — closing out as-is.",
             )
-            from goal_domain_lifecycle import sync_goal_domain
-            await asyncio.to_thread(sync_goal_domain, goal_id)
         except Exception as e:
             logger.warning("GOAL_THINK[%s]: onboarding auto-close failed: %s", goal_id, e)
         return _skip_result("Onboarding window elapsed — closed out.", next_check=86400)

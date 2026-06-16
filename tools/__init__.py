@@ -27,7 +27,7 @@ from tools.yaml_validate_tool import yaml_validate_file
 from tools.pushover_tool import send_pushover_notification
 # reminders tools moved to apps/reminders/tools.py (app package).
 # The platform loader auto-discovers them; no need to re-export here.
-from apps.goals.tools import create_goal, create_project, create_task, update_item, get_goals_summary, get_goal_detail, get_project_detail, get_entity_detail, get_my_tasks, search_goals, update_entity_notes, get_entity_notes, set_due_reminder, delete_item, set_task_order, set_task_dependency, enable_project_nag, disable_project_nag, set_task_parent, link_project_to_trello, unlink_project_from_trello, create_trello_task, adopt_trello_card, check_trello_item, set_project_order, set_project_dependency, set_goal_order, set_goal_dependency
+from apps.goals.tools import create_goal, create_project, create_task, update_item, stop_onboarding, get_goals_summary, get_goal_detail, get_project_detail, get_entity_detail, get_my_tasks, search_goals, update_entity_notes, get_entity_notes, set_due_reminder, delete_item, set_task_order, set_task_dependency, enable_project_nag, disable_project_nag, set_task_parent, link_project_to_trello, unlink_project_from_trello, create_trello_task, adopt_trello_card, check_trello_item, set_project_order, set_project_dependency, set_goal_order, set_goal_dependency
 from tools.link_tool import link_entities, get_entity_links, unlink_entities
 # notifications tools moved to apps/notifications/tools.py (app package).
 # The platform loader auto-discovers them; no need to re-export here.
@@ -94,6 +94,7 @@ __all__ = [
     "create_project",
     "create_task",
     "update_item",
+    "stop_onboarding",
     "get_goals_summary",
     "get_goal_detail",
     "get_project_detail",
