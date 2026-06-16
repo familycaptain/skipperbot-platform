@@ -54,8 +54,15 @@ def output_driven_decider(node, inst, outs):
     pref = None
     if node.id == "gw_kind":
         t = out_of("triage")
-        # triage rejects duplicates / malicious / invalid items HERE — they never reach the spec phase
-        pref = "reject" if t.get("disposition") in ("duplicate", "malicious", "invalid") else t.get("kind")
+        wi = inst.context.get("work_item", {})
+        # reject junk first; then operator-authored items skip vision-fit (they ARE the vision
+        # authority) and go straight to prioritize; everyone else routes on bug/feature.
+        if t.get("disposition") in ("duplicate", "malicious", "invalid"):
+            pref = "reject"
+        elif wi.get("from_operator"):
+            pref = "trusted"
+        else:
+            pref = t.get("kind")                                  # bug -> prio, feature -> vision-fit
     elif node.id == "gw_vision":
         pref = "fits" if out_of("vision").get("verdict") == "fits" else "off-vision"
     elif node.id == "gw_prio":

@@ -35,7 +35,7 @@ nodes:
 
   # ---- triage & vision ----
   - { id: triage,    type: agent,   agent: triage,       lane: agents, label: "Triage: bug/feature, dedup, link to C/F/S" }
-  - { id: gw_kind,   type: gateway, kind: exclusive,     lane: agents, label: "reject / bug / feature?" }
+  - { id: gw_kind,   type: gateway, kind: exclusive,     lane: agents, label: "reject / trusted / bug / feature?" }
   - { id: vision,    type: agent,   agent: vision-fit,   lane: agents, label: "Vision-fit vs charter + Capability scope" }
   - { id: gw_vision, type: gateway, kind: exclusive,     lane: agents, label: "fits vision?" }
 
@@ -99,8 +99,9 @@ edges:
   #   triage (reject junk) → vision-fit (scope) → prioritize (rank) → top-N → Lead spec phase → Gate 1
   - { from: triage,    to: gw_kind }
   - { from: gw_kind,   to: e_rejected, when: "reject" }     # duplicate / malicious / invalid — stop here, never spec it
+  - { from: gw_kind,   to: prio,       when: "trusted" }    # operator-authored — skip vision-fit (they ARE the vision)
   - { from: gw_kind,   to: prio,       when: "bug" }        # bugs skip vision-fit (fixing already-accepted behavior)
-  - { from: gw_kind,   to: vision,     when: "feature" }    # features get the scope check first
+  - { from: gw_kind,   to: vision,     when: "feature" }    # external features get the scope check first
   - { from: vision,    to: gw_vision }
   - { from: gw_vision, to: prio,       when: "fits" }
   - { from: gw_vision, to: e_rejected, when: "off-vision" }

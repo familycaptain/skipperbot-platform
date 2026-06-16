@@ -63,9 +63,16 @@ def list_open_issues(repo: str | None = None, token: str | None = None) -> list[
     return out
 
 
+def _operator_logins() -> set:
+    """GitHub logins treated as the operator (their requests ARE the vision — skip vision-fit).
+    Configure via EVOLVE_OPERATOR_GH (comma-separated). Empty = trust no one (default)."""
+    return {s.strip().lower() for s in (os.getenv("EVOLVE_OPERATOR_GH", "") or "").split(",") if s.strip()}
+
+
 def issue_to_work_item(issue: dict, repo: str | None = None) -> dict:
     """Map a GitHub issue to an Evolve work-item (the pipeline's s_issue input)."""
     repo = _repo(repo)
+    author = (issue.get("user") or {}).get("login", "")
     return {
         "title": issue.get("title", "") or "",
         "body": issue.get("body") or "",
@@ -73,7 +80,8 @@ def issue_to_work_item(issue: dict, repo: str | None = None) -> dict:
         "url": issue.get("html_url", ""),
         "number": issue.get("number"),
         "labels": [l.get("name") for l in issue.get("labels", [])],
-        "author": (issue.get("user") or {}).get("login", ""),
+        "author": author,
+        "from_operator": author.lower() in _operator_logins(),   # operator-authored → skip vision-fit
     }
 
 
