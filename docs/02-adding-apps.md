@@ -105,14 +105,24 @@ cd ..
 The folder name (`recipes`) **must** match the `id:` field in the app's
 `manifest.yaml`. The trailing `recipes` argument to `git clone` enforces this.
 
-### Step B — Install any new Python dependencies
+### Step B — Python dependencies install automatically on restart
+
+If the app ships its own `requirements.txt` (most don't — they rely on the
+platform's), you **don't** need to install it by hand. Just like the web bundle,
+the restart in Step C installs it for you: both the native start script and the
+Docker entrypoint union every `apps/<id>/requirements.txt` and `pip install` the
+set before launching the agent. A checksum stamp makes this a fast no-op when
+nothing changed. So `git clone <app> apps/<id>` + restart just works.
 
 ```bash
+# Optional — only if you want to install the deps now, outside the restart:
 pip install -r apps/recipes/requirements.txt   # if the app ships one
 ```
 
-Most apps don't ship their own `requirements.txt` — they rely on the
-platform's. The app's README will say so if it doesn't.
+> **Docker note:** install the deps via the restart (Step C), not a host-side
+> `pip install` — a host install never reaches the container, and a manual
+> `docker compose exec agent pip install ...` is wiped on the next
+> rebuild/recreate. The entrypoint's auto-install is the durable path.
 
 ### Step C — Restart the platform (required — web bundle rebuilds automatically)
 
@@ -181,8 +191,8 @@ each up.
 cd apps/<id>
 git pull
 cd ..
-pip install -r apps/<id>/requirements.txt    # if it ships one
-# Restart — the entrypoint detects the change and rebuilds the web bundle.
+# Restart — the entrypoint rebuilds the web bundle AND installs any new Python
+# deps from apps/<id>/requirements.txt (no manual pip step needed).
 # Native: Ctrl+C and re-run python agent.py
 # Docker: docker compose restart agent
 ```
@@ -238,7 +248,7 @@ loader picks up your version. See [docs/customizing.md](customizing.md).
 |---|---|
 | App doesn't appear in launcher | Did you run `npm run build`? |
 | App appears but shows errors | Check the boot log — migration probably failed. |
-| `Module not found` in agent log | Did you `pip install -r apps/<id>/requirements.txt`? |
+| `Module not found` in agent log | Did you **restart** after cloning? The restart installs the app's `requirements.txt`. Check the boot log for `installing packaged-app Python dependencies` (and its pip output). If the app ships no `requirements.txt` but imports a package, that's an app bug — add the dep to the app repo's `requirements.txt`. |
 | Settings cog wheel does nothing | Check the app's `manifest.yaml` has a `config:` array. |
 | App's tools don't appear in chat | Check `tool_routes` — the platform may need a restart. |
 

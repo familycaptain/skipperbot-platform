@@ -64,6 +64,39 @@ if ! ( cd "$WEB_DIR" && node packaged-app-deps.mjs --install ); then
 fi
 
 # ---------------------------------------------------------------------------
+# 0c. Install packaged-app Python dependencies.
+# ---------------------------------------------------------------------------
+# The Python mirror of 0b. Optional/community apps cloned into apps/<id>/ may
+# import Python packages the base platform's requirements.txt doesn't bundle
+# (e.g. newsletter -> yfinance, scriptures -> pymupdf). Each declares them in
+# apps/<id>/requirements.txt; this unions every such file and pip-installs the
+# set so `git clone <app> apps/<id>` + restart just works — no edit to the
+# platform's own requirements.txt. A checksum stamp kept beside site-packages
+# (so it resets exactly when a rebuilt image resets the installed packages)
+# makes this a fast no-op when nothing changed — pip on a Pi is slow.
+# ---------------------------------------------------------------------------
+_app_pydeps() (
+    shopt -s nullglob
+    reqs=( "$APP_ROOT"/apps/*/requirements.txt )
+    [ "${#reqs[@]}" -eq 0 ] && exit 0
+    site="$(python -c 'import sysconfig; print(sysconfig.get_path("purelib"))' 2>/dev/null || echo /tmp)"
+    stamp="$site/.skipper-app-pydeps-stamp"
+    sig="$(cat "${reqs[@]}" 2>/dev/null | sha1sum | cut -d' ' -f1)"
+    if [ -f "$stamp" ] && [ "$(cat "$stamp" 2>/dev/null)" = "$sig" ]; then
+        exit 0   # app deps already match what's installed
+    fi
+    log "installing packaged-app Python dependencies (${#reqs[@]} app requirements file(s)) ..."
+    args=(); for r in "${reqs[@]}"; do args+=( -r "$r" ); done
+    if pip install "${args[@]}"; then
+        echo "$sig" > "$stamp" && log "packaged-app Python dependencies installed"
+    else
+        log "WARNING: packaged-app Python dependency install failed; apps needing"
+        log "         extra packages may error at runtime."
+    fi
+)
+_app_pydeps || true
+
+# ---------------------------------------------------------------------------
 # 1. Rebuild the web bundle every start.
 # ---------------------------------------------------------------------------
 # Rationale: web/dist is NOT bind-mounted from the host (see docker-compose.yml)

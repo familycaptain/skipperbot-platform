@@ -63,10 +63,35 @@ function Invoke-WebBuild {
     }
 }
 
+function Invoke-AppPyDeps {
+    # Install packaged-app Python deps (mirrors deploy/entrypoint.sh §0c).
+    # Optional/community apps cloned into apps\<id>\ may import Python packages
+    # the platform's requirements.txt doesn't bundle (e.g. newsletter ->
+    # yfinance). Each declares them in apps\<id>\requirements.txt; install the
+    # union so a cloned app's imports resolve at runtime - no manual pip step.
+    # Fast no-op when unchanged via a checksum stamp beside site-packages.
+    $reqs = @(Get-ChildItem -Path (Join-Path $AppRoot "apps\*\requirements.txt") -ErrorAction SilentlyContinue)
+    if ($reqs.Count -eq 0) { return }
+    $site = (& $Python -c "import sysconfig; print(sysconfig.get_path('purelib'))" 2>$null)
+    if (-not $site) { $site = $env:TEMP }
+    $stamp = Join-Path $site ".skipper-app-pydeps-stamp"
+    $sig = (Get-FileHash -Algorithm SHA1 -InputStream ([IO.MemoryStream]::new([Text.Encoding]::UTF8.GetBytes(($reqs | Get-Content -Raw) -join "")))).Hash
+    if ((Test-Path $stamp) -and ((Get-Content $stamp -ErrorAction SilentlyContinue) -eq $sig)) { return }
+    Log "installing packaged-app Python dependencies ($($reqs.Count) file(s)) ..."
+    $args = @(); foreach ($r in $reqs) { $args += @("-r", $r.FullName) }
+    & $Python -m pip install @args
+    if ($LASTEXITCODE -eq 0) {
+        Set-Content -Path $stamp -Value $sig
+    } else {
+        Log "WARNING: packaged-app Python dep install failed; apps needing extra packages may error."
+    }
+}
+
 $env:PYTHONUTF8 = "1"
 
 while ($true) {
     Invoke-WebBuild
+    Invoke-AppPyDeps
 
     # The agent mounts /assets from web/dist/assets and exits non-zero if it's
     # missing. Without this guard a failed build would crash-loop here forever.

@@ -85,6 +85,32 @@ else
     fi
 fi
 
+# ---------------------------------------------------------------------------
+# Install packaged-app Python dependencies (mirrors deploy/entrypoint.sh §0c).
+# Optional/community apps cloned into apps/<id>/ may import Python packages the
+# platform's requirements.txt doesn't bundle (e.g. newsletter -> yfinance,
+# scriptures -> pymupdf). Each declares them in apps/<id>/requirements.txt;
+# install the union so a cloned app's imports resolve at runtime — no manual
+# pip step. Fast no-op when unchanged via a checksum stamp beside site-packages.
+# ---------------------------------------------------------------------------
+(
+    shopt -s nullglob
+    reqs=( "$APP_ROOT"/apps/*/requirements.txt )
+    [ "${#reqs[@]}" -eq 0 ] && exit 0
+    SITE="$("$PYTHON" -c 'import sysconfig; print(sysconfig.get_path("purelib"))' 2>/dev/null || echo /tmp)"
+    STAMP="$SITE/.skipper-app-pydeps-stamp"
+    SIG="$(cat "${reqs[@]}" 2>/dev/null | sha1sum | cut -d' ' -f1)"
+    if [ ! -f "$STAMP" ] || [ "$(cat "$STAMP" 2>/dev/null)" != "$SIG" ]; then
+        log "installing packaged-app Python dependencies (${#reqs[@]} file(s)) ..."
+        args=(); for r in "${reqs[@]}"; do args+=( -r "$r" ); done
+        if "$PYTHON" -m pip install "${args[@]}"; then
+            echo "$SIG" > "$STAMP"
+        else
+            log "WARNING: packaged-app Python dep install failed; apps needing extra packages may error." >&2
+        fi
+    fi
+) || true
+
 # The agent mounts /assets from web/dist/assets and exits non-zero if it's
 # missing. Fail fast with a clear message rather than a confusing traceback
 # (and, under systemd, an immediate restart loop).
