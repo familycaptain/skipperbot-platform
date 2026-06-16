@@ -18,6 +18,8 @@ lands in the ledger automatically.
 """
 from __future__ import annotations
 
+import os
+
 from apps.evolve.engine.instance import (Instance, InMemoryInstanceStore,
                                          BLOCKED, DONE, REJECTED, PARKED)
 from apps.evolve.engine.walker import Walker
@@ -403,13 +405,18 @@ class Pipeline:
                "triage": (ao.get("triage") or {}).get("output"),
                "vision": (ao.get("vision") or {}).get("output")}
         if self.sdk_backend is not None:
-            # Stage 2/3: ONE shared, prompt-cached claude-agent-sdk session — constructive chain
-            # resumes (no digest), critics fork; per-agent tool calls stream to the live lanes.
+            # 1 issue = 1 branch = 1 conversation: cut the feature worktree NOW (from the synced
+            # release) and run the WHOLE SDK spec phase INSIDE it — same cwd as the build, so the
+            # conversation's cwd-scoped session carries from spec straight into implement. ONE shared,
+            # prompt-cached session: constructive chain resumes (no digest), critics fork; tool calls
+            # stream to the live lanes.
+            feat = self._ensure_feature(inst)
+            self.sdk_backend.repo_root = feat.path   # spec phase reads (and the build later writes) the SAME worktree
             from apps.evolve.lead_sdk import run_lead_phase_sdk
             result = run_lead_phase_sdk(self.runner, self.sdk_backend, inst.context.get("work_item", {}),
                                         context=ctx, log=self.log, instance_id=inst.id,
                                         on_event=self.on_event,
-                                        resume_session=inst.context.get("sdk_session_id"))  # 1 issue = 1 conversation forever
+                                        resume_session=inst.context.get("sdk_session_id"))
         else:
             result = run_lead_phase(self.runner, inst.context.get("work_item", {}),
                                     context=ctx, log=self.log, instance_id=inst.id)
@@ -511,13 +518,11 @@ class Pipeline:
     def _system(self, node, inst) -> str:
         nid = node.id
         if nid == "serialize":
-            self._ensure_baseline(inst, "build")   # cut the feature worktree from CURRENT release
             wi = inst.context.get("work_item", {})
             tree = inst.context.get("spec_tree") or [
                 (inst.context.get("agent_outputs", {}).get("spec") or {}).get("output") or {}]
             root = spec_record_from(tree[0], wi)
-            feat = self.wm.start_feature(root["id"])           # the feature branch is named for the root spec
-            inst.context["feature"] = {"item_id": feat.item_id, "branch": feat.branch, "path": feat.path}
+            feat = self._ensure_feature(inst)      # reuse the worktree the spec phase already cut (legacy: cut now)
             inst.context["spec_record"] = root
             for spec_out in tree:                              # write EVERY spec in the tree to the branch
                 self.wm.serialize_spec(feat, spec_record_from(spec_out, wi))
@@ -552,3 +557,16 @@ class Pipeline:
     def _feature(self, inst) -> Feature:
         fd = inst.context.get("feature") or {}
         return Feature(fd.get("item_id", ""), fd.get("branch", ""), fd.get("path", ""))
+
+    def _ensure_feature(self, inst) -> Feature:
+        """Cut feature/<instance> from `release` if this instance has no worktree yet, else reuse it.
+        Cutting EARLY (at the spec phase, not at build time) means grounding, design, the spec, the
+        reviewers, AND the build all run in the SAME worktree/cwd — so the SDK's cwd-scoped session
+        follows the issue from spec straight into implement. One issue = one branch = one conversation."""
+        fd = inst.context.get("feature") or {}
+        if fd.get("path") and os.path.isdir(fd["path"]):
+            return Feature(fd.get("item_id", ""), fd.get("branch", ""), fd["path"])
+        feat = self.wm.start_feature(inst.id)      # named for the INSTANCE (the spec doesn't exist yet)
+        inst.context["feature"] = {"item_id": feat.item_id, "branch": feat.branch, "path": feat.path}
+        self._ev(inst, "engine", "info", f"cut {feat.branch} — spec + build live in this branch")
+        return feat

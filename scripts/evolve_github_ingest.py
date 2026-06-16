@@ -166,6 +166,10 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("cmd", choices=["list", "ingest", "poll"])
     ap.add_argument("--all", action="store_true", help="ingest: re-submit even already-seen issues")
+    ap.add_argument("--loop", type=float, default=0.0,
+                    help="poll: keep polling every N seconds in ONE process (snappy; pipeline loaded once)")
+    ap.add_argument("--duration", type=float, default=0.0,
+                    help="poll --loop: exit after N seconds (lets cron relaunch + reset; 0 = forever)")
     args = ap.parse_args()
 
     if args.cmd == "list":
@@ -175,7 +179,16 @@ def main():
 
     pipe, runner, ledger = build_pipeline()
     try:
-        _run_cmd(args, pipe, runner, ledger)
+        if args.cmd == "poll" and args.loop > 0:
+            import time
+            start = time.monotonic()
+            while True:
+                _run_cmd(args, pipe, runner, ledger)              # quiet when nothing is decided
+                if args.duration and (time.monotonic() - start) >= args.duration:
+                    break
+                time.sleep(args.loop)
+        else:
+            _run_cmd(args, pipe, runner, ledger)
     finally:
         pipe.emitter.stop()      # final flush of the live activity stream
 

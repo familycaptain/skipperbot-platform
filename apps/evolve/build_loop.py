@@ -135,8 +135,15 @@ def implement_with_sdk(work_item: dict, spec_record: dict, *, model: str, ledger
             be.on_tool = lambda kind, msg: on_event(instance_id, "implement", kind, msg)
         spec = ROSTER["implement"]
         composer = Runner(FakeBackend({}), dict(ROSTER), ledger=ledger)   # for the charter-grounded system prompt
-        res = be.run_turn(spec, {"work_item": work_item, "spec": spec_record}, None, model,
-                          system=composer.composed_system(spec), resume=resume_session)
+        sysp = composer.composed_system(spec)
+        payload = {"work_item": work_item, "spec": spec_record}
+        res = be.run_turn(spec, payload, None, model, system=sysp, resume=resume_session)
+        if not res.ok and resume_session:
+            # The build runs in the feature WORKTREE — a DIFFERENT cwd than the spec phase (repo
+            # root). The claude-agent-sdk scopes sessions by project dir (~/.claude/projects/<cwd>),
+            # so resuming the spec conversation from the worktree can't find it and errors. Fall back
+            # to a FRESH build that reads the serialized spec — the spec IS the handoff artifact.
+            res = be.run_turn(spec, payload, None, model, system=sysp, resume=None)
         if ledger is not None:
             ledger.record_result(res, instance_id=instance_id)
         return res   # AgentResult: .ok / .output / .cost_usd / .session_id — pipeline gates on the diff
