@@ -132,8 +132,8 @@ async def api_upsert_run(req: RunReq, request: Request):
 async def api_list_runs(limit: int = 50, archived: bool = False):
     """In-flight + recent runs (the mission-control list). archived=true for the archived view."""
     rows = await asyncio.to_thread(activity.list_runs, limit, archived)
-    total_cost = await asyncio.to_thread(activity.total_cost)
-    return {"runs": rows, "total_cost": total_cost,
+    cost = await asyncio.to_thread(activity.cost_summary)
+    return {"runs": rows, "total_cost": cost["total"], "week_cost": cost["week"],
             "active": sum(1 for r in rows if r["status"] in ("running", "building"))}
 
 

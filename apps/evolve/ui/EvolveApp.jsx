@@ -164,6 +164,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
   const [guidance, setGuidance] = useState(""); // free-text guidance to the spec team
   const [showArchived, setShowArchived] = useState(false);  // list view: active vs archived
   const [totalCost, setTotalCost] = useState(0);            // cumulative Evolve spend (all runs)
+  const [weekCost, setWeekCost] = useState(0);              // spend this week (since Monday)
   const lastId = useRef(0);
   const selRef = useRef(null);
 
@@ -176,6 +177,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
       const rows = r.runs || [];
       setRuns(rows);
       if (typeof r.total_cost === "number") setTotalCost(r.total_cost);
+      if (typeof r.week_cost === "number") setWeekCost(r.week_cost);
       if (!selRef.current && rows.length) setSel(rows[0].instance_id);
     } catch (e) { setError(String(e.message || e)); }
   }, [showArchived]);
@@ -278,9 +280,16 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
       {/* TOP BAR: live cumulative Evolve spend */}
       <div className="flex items-center justify-between px-3 h-8 border-b border-slate-800 shrink-0">
         <span className="text-[11px] uppercase tracking-wide text-slate-500 flex items-center gap-1.5"><Workflow size={12} /> Evolve</span>
-        <span className="text-[11px] flex items-center gap-1.5" title="cumulative Evolve spend across all runs">
-          <span className="text-slate-600 uppercase tracking-wide">total spend</span>
-          <span className="font-mono text-emerald-300">${totalCost.toFixed(2)}</span>
+        <span className="text-[11px] flex items-center gap-2">
+          <span className="flex items-center gap-1" title="Evolve spend this week (since Monday)">
+            <span className="text-slate-600 uppercase tracking-wide">this week</span>
+            <span className="font-mono text-emerald-300">${weekCost.toFixed(2)}</span>
+          </span>
+          <span className="text-slate-700">·</span>
+          <span className="flex items-center gap-1" title="cumulative Evolve spend across all items">
+            <span className="text-slate-600 uppercase tracking-wide">all items</span>
+            <span className="font-mono text-emerald-400/80">${totalCost.toFixed(2)}</span>
+          </span>
         </span>
       </div>
       <div className="flex flex-1 min-h-0">
@@ -341,6 +350,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
               <span>·</span><span className="font-mono">{sel}</span>
               {(run?.source || pkt.work_item?.source) && <><span>·</span><span>{run?.source || pkt.work_item?.source}</span></>}
               {pkt.baseline?.sha && <><span>·</span><span className="font-mono" title="code/specs the agents were grounded on">⎇ {pkt.baseline.branch}@{pkt.baseline.sha}</span></>}
+              {run?.cost_usd > 0 && <><span>·</span><span className="font-mono text-emerald-300" title="this item's spend so far (all its agents, every phase)">${run.cost_usd.toFixed(2)}</span></>}
             </div>
             <h2 className="text-lg font-semibold mb-3">{run?.title || pkt.work_item?.title || sel}</h2>
 

@@ -65,10 +65,16 @@ def list_runs(limit: int = 50, archived: bool = False) -> list[dict]:
     """, (archived, limit))
 
 
-def total_cost() -> float:
-    """Cumulative Evolve spend across ALL runs (the running total shown at the top)."""
-    rows = fetch_all_in_schema(SCHEMA, "SELECT COALESCE(SUM(cost_usd),0) AS t FROM run", ())
-    return round(float(rows[0]["t"]) if rows else 0.0, 4)
+def cost_summary() -> dict:
+    """Evolve spend totals for the top bar: all-items (every run) + week-to-date (runs touched
+    since Monday — date_trunc('week') starts Monday). Runs are short-lived, so a run's cost lands
+    in the week it ran; the week figure resets each Monday."""
+    rows = fetch_all_in_schema(SCHEMA, """
+        SELECT COALESCE(SUM(cost_usd), 0) AS total,
+               COALESCE(SUM(cost_usd) FILTER (WHERE updated_at >= date_trunc('week', now())), 0) AS week
+        FROM run""", ())
+    r = rows[0] if rows else {"total": 0, "week": 0}
+    return {"total": round(float(r["total"]), 4), "week": round(float(r["week"]), 4)}
 
 
 def set_archived(instance_id: str, archived: bool) -> int:
