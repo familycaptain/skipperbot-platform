@@ -24,13 +24,15 @@ def upsert_run(instance_id: str, *, title: str = "", source: str = "", phase: st
             title         = COALESCE(NULLIF(EXCLUDED.title,''), run.title),
             source        = COALESCE(NULLIF(EXCLUDED.source,''), run.source),
             phase         = COALESCE(NULLIF(EXCLUDED.phase,''), run.phase),
-            status        = COALESCE(NULLIF(EXCLUDED.status,''), run.status),
+            -- use the RAW status arg, NOT EXCLUDED (whose INSERT default 'running' would clobber a
+            -- real status on any cost-only / no-status report). '' = leave the existing status.
+            status        = COALESCE(NULLIF(%s,''), run.status),
             current_agent = EXCLUDED.current_agent,
             current_node  = COALESCE(NULLIF(EXCLUDED.current_node,''), run.current_node),
             cost_usd      = COALESCE(%s, run.cost_usd),
             updated_at    = now()
     """, (instance_id, title[:200], source[:80], phase, status, current_agent[:60],
-          current_node[:60], cost_usd, cost_usd))
+          current_node[:60], cost_usd, status, cost_usd))
 
 
 def add_events(instance_id: str, events: list[dict]) -> int:
