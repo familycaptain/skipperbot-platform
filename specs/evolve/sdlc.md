@@ -105,10 +105,15 @@ flowchart TD
 - **Variance fast-path** (dashed): a *pure* code-vs-approved-spec drift skips
   Spec-author **and** Gate 1 (the intent was approved when the spec was) → straight
   to **Prioritize**, then implement → validate → Gate 2.
-- **Vision-fit** judges against the **platform charter + the target Capability's
-  scope** (help.md/guide.md are inputs, not the authority).
-- **Prioritize** is the attention valve: long tail *parked/declined* (recorded);
-  only **top-N or safety-critical** continue.
+- **The funnel — cheap gates BEFORE the expensive spec phase (so it scales).** After
+  Triage rejects junk (duplicate / malicious / invalid), **Vision-fit** judges scope (the
+  **platform charter + the target Capability's scope**; help.md/guide.md are inputs, not the
+  authority) — *features only*, since a bug fixes already-accepted behavior. Then **Prioritize**
+  is the attention valve: the long tail is *parked/declined* (recorded), only **top-N or
+  safety-critical** reach the Lead. The expensive Design/spec/build runs ONLY for the
+  survivors — the difference between a trickle and a public repo's thousands of issues.
+  (Prioritize scoring on *fed* demand signals — GitHub reactions + duplicate-cluster counts,
+  not the agent's guess — is the next per-agent refinement.)
 - **The Lead owns the spec phase** (an agentic inner loop inside the deterministic
   walk). It runs **Design** (how should it work — reframes the ask, sets the approach,
   honors the engineering principles), then iterates **Spec-author ⇄ Spec-auditor** in
