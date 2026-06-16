@@ -217,7 +217,7 @@ class Runner:
                 res.error = "output failed schema: " + "; ".join(res.schema_errors[:4])
         if ev:
             summ = (res.output or {}).get("summary", "") if isinstance(res.output, dict) else ""
-            tail = (summ or res.error or "")[:200]
+            tail = (summ or res.error or "")[:1900]   # full summary (1900 = activity event cap), not a 200-char stub
             self._emit(ev, instance_id, agent_name, "agent_end",
                        f"{'✓ ok' if res.ok else '✗ ' + (res.error or 'failed')[:60]} "
                        f"(${res.cost_usd:.4f}) {tail}".strip())
