@@ -36,7 +36,11 @@ Walk these in order. Stop at a human gate and wait for the operator's decision (
 
 1. **Pick the next item.** Open GitHub issues via the connector (read-only):
    `python3 -c "import apps.evolve.github_connector as g; [print(i['number'], i['title']) for i in g.list_open_issues()]"`
-   Choose the next un-processed one (track processed numbers in `~/.evolve-poc/seen.json`).
+   **Skip an issue PRODUCTION already owns.** Evolve doesn't close GitHub issues yet, so a
+   merged/in-flight one stays "open." Skip any issue that already has a production instance —
+   check `~/.evolve/instances.sqlite` for one whose `work_item.source` ends in `#<number>` (ANY
+   status: done/merged/blocked/running). Also skip numbers in `~/.evolve-poc/seen.json`. Pick the
+   first remaining un-processed issue; add its number to `seen.json` when you finish or reject it.
 
 2. **FUNNEL — cheap gates first (reject/park before any expensive work):**
    - **triage** → use skill **`evolve-triage`**. Reject `duplicate` / `malicious` / `invalid`
