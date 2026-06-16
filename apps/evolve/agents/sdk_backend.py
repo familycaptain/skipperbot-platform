@@ -158,7 +158,7 @@ class ClaudeSDKBackend:
                             transcript.append(txt)
                             if sink:
                                 try:
-                                    sink("text", txt[:1900])   # 1900 = activity event storage cap
+                                    sink("text", txt[:20000])   # full narration — never clip; high safety bound only
                                 except Exception:
                                     pass
                 elif isinstance(msg, ResultMessage):
@@ -169,7 +169,7 @@ class ClaudeSDKBackend:
                         # of what they "did"). 1900 cap = the activity event storage limit.
                         try:
                             for label, val in _render_fields(out):
-                                sink("emit", f"{label}: {val}"[:1900])
+                                sink("emit", f"{label}: {val}"[:20000])   # full field — never clip
                         except Exception:
                             pass
                     cost = msg.total_cost_usd or 0.0

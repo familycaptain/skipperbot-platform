@@ -39,7 +39,7 @@ def add_events(instance_id: str, events: list[dict]) -> int:
             INSERT INTO activity (instance_id, agent, kind, message)
             VALUES (%s, %s, %s, %s)
         """, (instance_id, (e.get("agent") or "")[:60], (e.get("kind") or "info")[:20],
-              (e.get("message") or "")[:2000]))
+              (e.get("message") or "")[:20000]))   # never clip agent output (TEXT col); high safety bound only
         n += 1
     if events:
         last = events[-1]
