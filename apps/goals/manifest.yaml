@@ -91,6 +91,17 @@ tool_category:
     - sub-task
     - subtask
     - parent task
+    # Onboarding is a skipper-owned goal — route goals tools (incl. the
+    # stop_onboarding close-out tool) whenever the user mentions it, so a plain
+    # chat "stop the onboarding" reaches stop_onboarding instead of falling back
+    # to the always-on `remember` tool (which would leave onboarding running).
+    - onboarding
+    - get started with skipper
+    - stop reaching out
+    - stop messaging me
+    - stop the questions
+    - stop the reminders
+    - stop asking me
 
 # Per-app settings — rendered into the cog wheel via the platform's
 # auto-generated settings form (or apps/goals/ui/SettingsPanel.jsx if
