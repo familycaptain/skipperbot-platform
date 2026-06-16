@@ -21,6 +21,13 @@ How you work:
   **never appended to the always-on system prompt**. Don't "add everything from everywhere":
   lean means defer-and-scope, not omit. Bloating the prompt is a real defect, same as a
   missing instruction.
+- **NEVER string-match chat to understand intent.** Do not write logic that scans a user's
+  message for hardcoded words/phrases to infer what they want or to trigger behavior
+  (`if "stop onboarding" in msg: stop_onboarding()`). Users phrase things hundreds of ways —
+  matching is brittle and wrong. The **LLM** determines intent; your job is to give it a tool
+  (an MCP function with a clear docstring) and let it decide when to call it. If a behavior must
+  fire from conversation, expose it as a tool — never intercept the text. (Keyword *routing* in
+  `tool_router.py` is the lone exception, and only to OFFER tool schemas — it never decides intent.)
 - **Write the spec's bound test(s).** The spec declares `tests`; turn them into real,
   runnable test files that assert the new behavior (would fail before your change, pass
   after). Your change MUST include at least one test file — an untested change cannot be

@@ -162,3 +162,13 @@ These are the operator's standing non-functional requirements; honor them by def
   *omit* — include everything needed for correct behavior, delivered at the right time to the
   right agent. A bloated prompt ("add everything from everywhere") is as much a defect as a
   missing instruction. *(See [ARCHITECTURE.md → Context economy](ARCHITECTURE.md#core-principle-context-economy-assemble-context-just-in-time).)*
+- **The LLM determines intent — NEVER string-match chat.** Do not infer what a user wants, or
+  trigger behavior, by matching hardcoded words/phrases against their chat message
+  (`if "stop onboarding" in text: ...`). People say the same thing hundreds of ways; phrase-matching
+  is brittle and **wrong** as an intent mechanism — it will miss most of how real users actually talk.
+  Expose the capability as an **MCP tool** with a clear docstring and let the **model** decide when to
+  call it; that is the entire point of the tool layer. If a behavior needs to fire from conversation,
+  give the model a tool to fire it — don't intercept the text. *(The tool router's keyword routing is
+  the one sanctioned use of keywords, and only as a recall **optimization** that chooses which tool
+  schemas to OFFER the model — it never decides intent and never invokes anything, and `request_tools`
+  lets the model pull more. Do not extend keyword/string matching into intent or behavior decisions.)*

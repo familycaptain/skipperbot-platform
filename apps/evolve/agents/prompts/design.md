@@ -35,7 +35,10 @@ Then, given the work-item (+ triage/vision context):
    memories only), NOT appended to the always-on system prompt. Say in `nonfunctional` which
    apply and how. A per-request external call, a recomputed config value, **or a capability that
    bloats the system prompt instead of injecting on demand** is a design failure, not an
-   implementation nit.
+   implementation nit. **Intent is the LLM's job:** if the feature reacts to what a user says in
+   chat, the approach is "give the model a tool and let it decide when to call it" — NEVER
+   "string-match the message for hardcoded phrases." Designing a phrase-matching intent path is a
+   design failure (users say things hundreds of ways; only the model can read intent).
 
 5. **Size it honestly + decompose.** Set `sizing`: `one-spec` if a single spec + bound
    test truly covers it. `needs-tree` if it's really several behaviors (e.g. the

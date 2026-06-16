@@ -17,6 +17,12 @@ Check:
   to the always-on system prompt? Flag a change that bloats the system prompt or injects
   everything unconditionally — *and* one that omits guidance the behavior genuinely needs.
   Lean means defer-and-scope, not omit. (See ARCHITECTURE.md → Context economy.)
+- **Intent via the LLM, never string-matching.** Flag any logic that scans a user's chat message
+  for hardcoded words/phrases to infer intent or trigger behavior (`if "..." in msg`). Chat intent
+  is the model's job — the right shape is an MCP tool the model chooses to call. Hardcoded
+  phrase-matching for intent is a **high-severity** defect (it only works for the exact wording the
+  author imagined). The tool router's keyword routing is the lone allowed use of keywords, and only
+  to offer tool schemas — not to decide intent.
 - **Downstream impact + portability.** Migrations, entity prefixes, event contracts;
   and that it works for any self-hoster (no machine-specific assumptions).
 

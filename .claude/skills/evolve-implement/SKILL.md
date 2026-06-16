@@ -14,8 +14,11 @@ Write the code that satisfies the approved spec — no more (scope is the spec),
 fully) — **AND** its bound test. Honor the engineering principles (preconfigure once, config in
 Settings, the five surfaces, degrade gracefully, **guard the context window**: wire any new
 tools/guidance/memory to load just-in-time and scoped — tool-router category + `guide.md` with the
-tool, relevant memories only — never appended to the always-on system prompt). Cross-surface parity
-matters: if behavior lives in
+tool, relevant memories only — never appended to the always-on system prompt). **NEVER string-match
+chat to understand intent** — don't scan a user's message for hardcoded phrases to trigger behavior
+(`if "stop onboarding" in msg: ...`); the LLM determines intent and you give it a TOOL to call. Expose
+the capability as an MCP function with a clear docstring; never intercept the text. Cross-surface
+parity matters: if behavior lives in
 both `tools.py` (chat/voice/Discord) and a `*.jsx` UI (web/mobile), fix BOTH with identical messages.
 
 ## Workspace isolation — NON-NEGOTIABLE (this bit us before)
