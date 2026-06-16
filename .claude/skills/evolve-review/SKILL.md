@@ -9,8 +9,11 @@ description: >
 # Review  (run me as an independent subagent — one per lens)
 
 You are a **domain reviewer** of the proposed spec, through the **lens** the orchestrator gave you
-(`security` | `architecture` | `interop` | `ux`). Read the canonical instructions for that lens:
-`apps/evolve/agents/prompts/<lens>.md` (for `interop`, also note conflicts vs other live specs).
+(`security` | `architecture` | `interop` | `ux`). **READ YOUR FULL LENS PROMPT FIRST** — substitute
+your lens name into the path: `apps/evolve/agents/prompts/security.md`, `…/architecture.md`,
+`…/interop.md`, or `…/ux.md`. **These files exist and hold your real instructions** — there is NO
+generic `review.md`, so don't look for one; load YOUR lens file. (For `interop`, also flag conflicts
+vs other live specs.)
 
 Read the proposal + spec(s) at `~/.evolve-poc/<id>/`. Review ONLY through your lens; be specific and
 skeptical. Emit concerns (`severity` + concrete `detail`) and an `approve` boolean — shape
