@@ -251,18 +251,10 @@ local DB backups. Without it, backups stay local.
 
 **Cost:** Free tier (15 GB).
 
-**Setup:**
-
-1. Create a Google service account; share a Drive folder with it.
-2. Download the JSON key.
-3. Add to `.env`:
-   ```
-   BACKUP_GOOGLE_KEY_FILE=/path/to/key.json
-   GDRIVE_IMPERSONATE_EMAIL=your-google-account@example.com
-   ```
-4. Restart.
-
-**Verify:** From the Backups app, trigger a backup and confirm it appears in Drive.
+**Setup:** Backups are configured in **Settings → Backups** (not `.env`). For
+the full walkthrough — the master switch, retention, the filesystem
+destination, and the Google Drive service-account steps — see
+[**Setting Up Backups**](backups-setup.md).
 
 ---
 
