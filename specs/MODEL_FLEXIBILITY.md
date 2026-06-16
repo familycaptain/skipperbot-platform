@@ -308,7 +308,7 @@ through it; prove everything still works; then add the other connectors.**
 - **Risk:** embedding-dimension provisioning touches schema DDL; ship it behind setup, not
   a live toggle.
 - **Open question:** does Evolve (`apps/evolve`) adopt the new `ChatProvider` or stay
-  separate? (Recommend: keep Evolve separate initially; converge later.)
+  separate? (Recommend: keep Evolve separate initially; converge later.) ANSWER: Evolve explicitly stays Claude Code.
 - **Open question:** exact 2026 model IDs churn — the curated model lists must be easy to
   update without code edits.
 - **Test strategy:** unit tests per connector (request/response transform), the conformance
