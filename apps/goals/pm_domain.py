@@ -565,18 +565,22 @@ def _pick_next_project(observations: list[dict]) -> str | None:
     - Findings: +3 if working_memory exists with issues
     """
     from apps.goals.data import list_entities, load_entity
+    from apps.goals.lifecycle import _INACTIVE_STATUSES
     from data_layer.skipper_state import list_states
 
-    # Load all active projects
+    # Load all active projects. Skip any goal/project in an INACTIVE status
+    # (done/deferred/archived/cancelled) so a cancelled or archived goal is no
+    # longer surfaced for PM review — aligning this filter with the per-goal
+    # goal-think domain, which already treats all four as inactive.
     goals = list_entities("g-")
     project_ids = []
     project_meta = {}  # project_id -> {priority, goal_name, pm_cadence_minutes}
     for g in goals:
-        if g.get("status") in ("done", "deferred"):
+        if g.get("status") in _INACTIVE_STATUSES:
             continue
         for pid in g.get("projects", []):
             proj = load_entity(pid)
-            if not proj or proj.get("status") in ("done", "deferred"):
+            if not proj or proj.get("status") in _INACTIVE_STATUSES:
                 continue
             project_ids.append(pid)
             project_meta[pid] = {

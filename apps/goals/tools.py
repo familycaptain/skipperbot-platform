@@ -18,6 +18,7 @@ from apps.goals.store import (
     create_project as _create_project,
     create_task as _create_task,
     update_item as _update_item,
+    close_out_goal as _close_out_goal,
     update_notes as _update_notes,
     get_notes as _get_notes,
     get_goals_summary as _get_goals_summary,
@@ -325,6 +326,48 @@ def update_item(
 
     except Exception as e:
         return f"Error in update_item: {str(e)}"
+
+
+def stop_onboarding(requested_by: str) -> str:
+    """Stop / close out the first-run onboarding ("Get started with Skipper").
+
+    Call this when the primary user asks to stop, end, skip, or be done with the
+    onboarding — AFTER you have confirmed they want to set it aside (see the
+    proactive reply guide). This durably closes the onboarding goal out: it marks
+    the onboarding goal and all its still-open projects/tasks as cancelled,
+    disables the goal's thinking domain, and clears its pending PM nudges, so
+    Skipper stops reaching out about onboarding. This is the correct action — do
+    NOT just record a memory, which leaves the onboarding running.
+
+    The onboarding goal is resolved internally from the platform's seed config;
+    this tool deliberately takes NO goal id, so it can only ever close onboarding.
+    Onboarding can be brought back later by reopening that goal.
+
+    Args:
+        requested_by: Who asked to stop onboarding (person name).
+
+    Returns:
+        Confirmation string, or a note that there's nothing to stop.
+    """
+    try:
+        if not requested_by or not requested_by.strip():
+            return "Error: requested_by is required."
+
+        from app_platform import config as platform_config
+        seeded = platform_config.get("onboarding_seeded", scope="app:goals") or {}
+        goal_id = seeded.get("goal_id")
+        if not goal_id:
+            return ("There's nothing to stop — onboarding isn't set up "
+                    "(no onboarding goal exists).")
+
+        return _close_out_goal(
+            goal_id,
+            by=requested_by.strip().lower(),
+            status="cancelled",
+            reason="User asked to stop onboarding — closing it out.",
+        )
+    except Exception as e:
+        return f"Error in stop_onboarding: {str(e)}"
 
 
 def get_goals_summary(user_id: str) -> str:

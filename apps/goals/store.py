@@ -975,6 +975,128 @@ def update_item(
     return result
 
 
+def close_out_goal(
+    goal_id: str,
+    by: str,
+    status: str = "cancelled",
+    reason: str = "",
+) -> str:
+    """Close a goal out: set it (and every still-open descendant) terminal and
+    disable its thinking domain.
+
+    This is the single canonical "stop / close a goal" path. It:
+      1. Validates *status* is an inactive/terminal status.
+      2. No-ops idempotently if the goal is already inactive — checked BEFORE
+         any walk, so a repeat call never re-cascades.
+      3. Sets the goal to *status* (the load-bearing step).
+      4. Cascades every still-open descendant project and task (any depth,
+         including subtasks) to the same status, routing each through update_item
+         so existing side-effects (auto-unblock, parent-completion, Trello,
+         auto-memory, nag refresh) stay consistent.
+      5. Expires any active PM pending_actions whose subject is the goal or a
+         closed descendant, so the PM domain stops nagging about it.
+      6. Calls lifecycle.sync_goal_domain(goal_id) for an immediate domain
+         disable (the per-goal handler's self-disable stays a next-cycle backstop).
+
+    Steps 4–6 are best-effort and logged; step 3 is the load-bearing one, so a
+    partial failure still stops the primary nag path.
+
+    Args:
+        goal_id: The goal to close (g-xxx).
+        by: Who is closing it.
+        status: Terminal status to close with — must be inactive (cancelled,
+                done, deferred, or archived). Defaults to 'cancelled'.
+        reason: Optional note recorded on the goal's history.
+
+    Returns:
+        Confirmation string.
+    """
+    from apps.goals import lifecycle as _lifecycle
+
+    if not goal_id or not goal_id.startswith("g-"):
+        return f"Error: '{goal_id}' is not a goal ID (goals start with g-)."
+
+    new_status = (status or "").strip().lower()
+    if new_status not in _lifecycle._INACTIVE_STATUSES:
+        return (
+            f"Error: close_out_goal status must be one of "
+            f"{', '.join(sorted(_lifecycle._INACTIVE_STATUSES))}; got '{status}'."
+        )
+
+    goal = _find_item(goal_id)
+    if not goal:
+        return f"Error: Goal '{goal_id}' not found."
+
+    # Idempotent: already inactive → no re-cascade, no writes.
+    current = (goal.get("status") or "").lower()
+    if current in _lifecycle._INACTIVE_STATUSES:
+        return f"Goal '{goal_id}' is already {current} — nothing to close out."
+
+    goal_name = goal.get("name", goal_id)
+
+    # 1. Load-bearing: close the goal itself (update_item on a goal is deliberately
+    #    non-cascading — close_out_goal is the single cascade path).
+    note = reason.strip() if reason else f"Goal closed out ({new_status})."
+    update_item(goal_id, updated_by=by, status=new_status, history_note=note)
+
+    # 2. Cascade every still-open descendant project + task (any depth). Each child
+    #    routes through update_item so its side-effects fire; failures are logged.
+    closed_ids = [goal_id]
+    cascaded = 0
+    for proj in _get_projects_for_goal(goal_id):
+        pid = proj["id"]
+        try:
+            if (proj.get("status") or "").lower() not in _lifecycle._INACTIVE_STATUSES:
+                update_item(pid, updated_by=by, status=new_status,
+                            history_note=f"Parent goal {goal_id} closed out.")
+                cascaded += 1
+            closed_ids.append(pid)
+        except Exception as e:
+            logger.warning("close_out_goal: failed to close project %s: %s", pid, e)
+        # _get_tasks_for_project returns the whole task tree (any depth) flat,
+        # because subtasks inherit project_id.
+        for task in _get_tasks_for_project(pid):
+            tid = task["id"]
+            try:
+                if (task.get("status") or "").lower() not in _lifecycle._INACTIVE_STATUSES:
+                    update_item(tid, updated_by=by, status=new_status,
+                                history_note=f"Parent goal {goal_id} closed out.")
+                    cascaded += 1
+                closed_ids.append(tid)
+            except Exception as e:
+                logger.warning("close_out_goal: failed to close task %s: %s", tid, e)
+
+    # 3. Expire active PM pending_actions tied to the goal or a closed descendant.
+    expired = 0
+    try:
+        from data_layer.skipper_state import list_states, expire_state
+        closed_set = set(closed_ids)
+        for st in list_states(domain="pm", state_type="pending_action",
+                              status="active", limit=200):
+            if st.get("subject_id") in closed_set:
+                expire_state(st["id"])
+                expired += 1
+    except Exception as e:
+        logger.warning("close_out_goal: failed to expire PM pending_actions for %s: %s",
+                       goal_id, e)
+
+    # 4. Disable the per-goal thinking domain immediately.
+    try:
+        _lifecycle.sync_goal_domain(goal_id)
+    except Exception as e:
+        logger.warning("close_out_goal: sync_goal_domain failed for %s: %s", goal_id, e)
+
+    logger.info(
+        "GOAL_CLOSE: %s (%s) closed as %s — %d descendant(s), %d pending action(s) expired",
+        goal_id, goal_name, new_status, cascaded, expired,
+    )
+    return (
+        f"Goal '{goal_name}' ({goal_id}) closed out as {new_status}. "
+        f"{cascaded} open item(s) closed; {expired} pending action(s) cleared; "
+        f"thinking domain disabled."
+    )
+
+
 def update_notes(
     item_id: str,
     content: str,

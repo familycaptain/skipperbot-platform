@@ -33,7 +33,7 @@ import agent_loop
 # ---------------------------------------------------------------------------
 
 GOAL_MUTATING_TOOLS = {
-    "create_goal", "create_project", "create_task", "update_item",
+    "create_goal", "create_project", "create_task", "update_item", "stop_onboarding",
     "delete_item", "update_entity_notes", "set_task_order", "set_task_dependency",
     "set_task_parent", "set_project_order", "set_project_dependency",
     "set_goal_order", "set_goal_dependency", "enable_project_nag", "disable_project_nag",
