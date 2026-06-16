@@ -62,10 +62,14 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   `evolve-lead`. Save every artifact. Then push **Gate 1** (see *At a gate*), `phase=gate1`, **END**.
 
 - **`phase=gate1`, decision=`approve`:** RE-LOAD spec + grounding + design from `~/.evolve-poc/<n>/`.
-  `resolve poc-<n> cleared`. **BUILD:** cut the feature worktree (mechanics), serialize the spec,
-  `evolve-implement` **inside the worktree**, run the **isolation check** (main checkout dirty →
-  `git checkout -- .` + FAIL), `evolve-validate` on box 2. Push **Gate 2** (diff + validation),
-  `phase=gate2`, **END**.
+  **Read the decision `note`** (the operator's selected answers + guidance) and pass it to
+  `evolve-implement` as a build hint. The SPEC stays authoritative (it was written for the
+  recommended option); the note refines it. ⚠ If the note's answer plainly CONTRADICTS the spec's
+  chosen option, the operator likely meant `change`, not `approve` — build the spec as-written but
+  flag the mismatch in the Gate-2 packet so they catch it. `resolve poc-<n> cleared`. **BUILD:** cut
+  the feature worktree (mechanics), serialize the spec, `evolve-implement` **inside the worktree**,
+  run the **isolation check** (main checkout dirty → `git checkout -- .` + FAIL), `evolve-validate`
+  on box 2. Push **Gate 2** (diff + validation), `phase=gate2`, **END**.
   - decision=`change` → re-run the spec phase with the operator's note, re-push Gate 1, **END**.
   - decision=`reject` → teardown the worktree, `phase=rejected`, add to `seen.json`, **END**.
 
