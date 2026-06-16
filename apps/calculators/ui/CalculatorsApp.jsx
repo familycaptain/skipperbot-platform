@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Calculator, TrendingUp, Landmark, AlertCircle, FlaskConical } from "lucide-react";
+import { Calculator, TrendingUp, Landmark, AlertCircle, Info, FlaskConical } from "lucide-react";
+
+// Shared edge-case messages for the compound-interest solver. Kept IDENTICAL to
+// the strings in apps/calculators/tools.py (compound_interest) so the in-app UI,
+// chat, and voice all read the same when the goal is already met.
+const GOAL_MET_YEARS = "Your goal is below your current balance — you've already reached it, so no saving time is needed.";
+const BELOW_PRINCIPAL_RATE = "Your future value is below your principal, so no positive rate would reach it.";
+const ALREADY_AT_GOAL_NOTE = "Already at your goal.";
 
 // ---------------------------------------------------------------------------
 // Math helpers — pure functions, no UI.
@@ -32,11 +39,15 @@ function solveCompound({ P, rate, n, t, A }) {
     }
     if (field === "t") {
       if (A <= 0 || P <= 0 || c <= 0) return { error: "Need positive Principal, Future value, and Rate to solve for Years." };
+      if (A < P) return { info: GOAL_MET_YEARS };
+      if (A === P) return { field, value: 0, label: "Years", unit: "yr", note: ALREADY_AT_GOAL_NOTE };
       const out = Math.log(A / P) / (n * Math.log(1 + c));
       return { field, value: round2(out), label: "Years", unit: "yr" };
     }
     if (field === "rate") {
       if (P <= 0 || A <= 0 || t <= 0) return { error: "Need positive Principal, Future value, and Years to solve for Rate." };
+      if (A < P) return { info: BELOW_PRINCIPAL_RATE };
+      if (A === P) return { field, value: 0, label: "Annual rate", unit: "%", note: ALREADY_AT_GOAL_NOTE };
       const cc = Math.pow(A / P, 1 / (n * t)) - 1;
       return { field, value: round2(cc * n * 100), label: "Annual rate", unit: "%" };
     }
@@ -162,12 +173,16 @@ function CompoundTab() {
       {res?.error && (
         <div className="flex items-start gap-2 text-rose-400 text-sm"><AlertCircle size={14} className="mt-0.5 shrink-0" /><span>{res.error}</span></div>
       )}
-      {res && !res.error && (
+      {res?.info && (
+        <div className="flex items-start gap-2 bg-sky-900/20 border border-sky-800 rounded-lg p-4 text-sky-200 text-sm"><Info size={14} className="mt-0.5 shrink-0" /><span>{res.info}</span></div>
+      )}
+      {res && !res.error && !res.info && (
         <div className="bg-slate-800/60 border border-slate-700 rounded-lg p-4">
           <div className="text-xs text-slate-400">{res.label}</div>
           <div className="text-2xl font-semibold text-sky-300">
             {res.unit ? `${res.value}${res.unit === "%" ? "%" : " " + res.unit}` : money(res.value)}
           </div>
+          {res.note && <div className="text-xs text-slate-400 mt-1">{res.note}</div>}
         </div>
       )}
     </div>
