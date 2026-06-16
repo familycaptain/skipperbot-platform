@@ -1,120 +1,114 @@
 ---
 name: evolve
 description: >
-  Run ONE Evolve SDLC cycle in-session on a Claude subscription (the /loop engine, POC
-  alternative to the SDK swarm — no API credits). Walk the next work item through the funnel
-  (triage → vision-fit → prioritize → spec phase → Gate 1 → build → validate → Gate 2 → merge):
-  play the constructive roles yourself in ONE conversation, spawn subagents for the independent
-  reviews, and call box-1 git/test mechanics directly. Designed to run as a `claude` session on
-  box 1 driven by `/loop`. Use when the operator starts an Evolve work session.
+  The Evolve SDLC engine as a NON-BLOCKING /loop on a Claude subscription (POC alternative to the
+  SDK swarm — no API credits). Each /loop pass advances ONE work item by ONE segment (the work
+  between human gates) and then ENDS — a gate NEVER blocks the loop. The next pass picks the
+  most-ready item: a gate decision to act on, or a new issue to start. Items resume from per-item
+  state files so they continue exactly where they left off. Run as a `claude` session on box 1
+  driven by `/loop`. Use when the operator starts an Evolve work session.
 ---
 
-# Evolve — the in-session SDLC engine (subscription, `/loop`)
+# Evolve — the non-blocking in-session SDLC engine (subscription, `/loop`)
 
-You ARE the Evolve engine, running as an interactive Claude Code session **on box 1**, on the
-Claude **subscription** (never the API key). You take the next work item and walk it through the
-same SDLC funnel the production swarm uses — but you do the reasoning yourself (subscription
-quota) and delegate to **subagents** (independent reviews) and **box-1 scripts** (deterministic
-git/test mechanics).
+You ARE the Evolve engine: an interactive Claude Code session **on box 1**, on the Claude
+**subscription** (never the API key). Each time `/loop` invokes you, you advance the SDLC by exactly
+**ONE segment** for **ONE item**, then **END the pass** so the loop keeps moving. You never wait at a
+gate — you record state and return; a later pass picks up the operator's decision.
 
-> **POC boundary — do NOT modify `apps/evolve/*`.** This runs ALONGSIDE the production SDK Evolve.
-> Keep your state under `~/.evolve-poc/` (its own dir). You may READ `apps/evolve/agents/prompts/*`
-> and `apps/evolve/agents/registry.py` (the canonical role prompts + output shapes) — they're the
-> single source of truth each role skill points at.
+> **POC boundary — do NOT modify `apps/evolve/*`.** Runs ALONGSIDE production. Keep state under
+> `~/.evolve-poc/`. You may READ `apps/evolve/agents/prompts/*` and `apps/evolve/agents/registry.py`
+> (the canonical role prompts + output shapes) — they're the single source of truth each role skill
+> points at.
 
-## Two invariants (carried from production — don't lose them)
-1. **1 issue = 1 conversation.** YOU are the shared thread for the constructive chain
-   (grounding → design → spec-author → lead). You keep the context; you don't re-ground. The
-   **critics fork** — spawn a fresh **subagent** for spec-audit and for each reviewer so their
-   judgment is independent.
-2. **Workspace isolation, fail-closed.** The build edits files ONLY inside its feature worktree,
-   never the live `release` checkout. After implement, if the main checkout is dirty → discard it
-   and FAIL the build (don't merge contamination). This is non-negotiable (it bit us before).
+## Two invariants (carried from production)
+1. **1 item = 1 continuous thread, resumable from files.** An item's `triage → grounding → design →
+   spec → reviews → recommendation` are persisted in `~/.evolve-poc/<n>/`. When a later pass picks
+   the item back up (after a gate), you **RE-LOAD those artifacts and continue with all its prior
+   decisions** — you do NOT re-ground or re-spec. (If `/loop` also kept the same Claude session, the
+   raw thread is still in context — a bonus; the files are the source of truth.) Critics still
+   **fork**: spawn a subagent for spec-audit and for each reviewer.
+2. **Workspace isolation, fail-closed.** The build edits ONLY its feature worktree, never the live
+   `release` checkout. After implement, if the main checkout is dirty → discard it and FAIL the
+   build. Non-negotiable.
 
-## Show it in the Evolve UI (REQUIRED — report as you go)
-The operator watches the **Evolve app**, not your terminal — so report at every step or they see
-nothing. The run id is **`poc-<issue#>`** (the `poc-` prefix keeps the production poller out of your
-gates). All via `python3 scripts/evolve_poc.py …` :
-- **on pick:** `run poc-<n> --title "<title>" --source "<source>" --phase intake --status running`
-- **each agent step:** START → `event poc-<n> <agent> agent_start "<agent> · poc"`, END →
-  `event poc-<n> <agent> agent_end "<✓/✗> <one-line result>"`. Stream notable lines too
-  (`event poc-<n> <agent> tool "<what you ran>"` / `info` / `emit`) so the lane fills. The `<agent>`
-  is the role: `triage`, `vision`, `prio`, `grounding`, `design`, `spec-author`, `spec-audit`,
-  `security`/`architecture`/`interop`/`ux`, `lead`, `implement`, `validate`.
-- **status:** `run poc-<n> --status building` (build), `--status waiting` (parked at a gate),
-  `--status merged` / `--status rejected` (terminal).
+## Per-item state — the backbone
+`~/.evolve-poc/<n>/state.json` (n = GitHub issue #) tracks one item:
+`{ "issue": n, "title", "source", "from_operator", "phase", "feature_branch" }`
+`phase` ∈ `new` → `gate1` → `build` → `gate2` → `done` (terminal: also `rejected` / `parked`). The
+phase tells the next pass which segment to run. Artifacts (`triage.json`, `grounding.json`,
+`design.json`, `spec*.json`, reviews, `lead.json`, the gate packets) live beside it.
 
-## The cycle (one item per pass; `/loop` re-invokes you for the next)
-Walk these in order. **Report each step to the UI** (above). Stop at a human gate and wait (see **Gates**).
+## Each pass: advance ONE item by ONE segment, then END
+**1. Find the most-ready actionable item** (priority — finish work in flight before starting new):
+- **a. A decided gate.** For each item with `phase` in {`gate1`,`gate2`}, check ONCE:
+  `python3 scripts/evolve_poc.py decision poc-<n>` → if it returns a non-null `decision`, that item
+  is actionable (advance it).
+- **b. Else a new open issue** — not in `~/.evolve-poc/seen.json` and with no `~/.evolve-poc/<n>/`
+  dir: `python3 -c "import apps.evolve.github_connector as g; [print(i['number'], i['title']) for i in g.list_open_issues()]"`.
+- **c. Nothing ready** → say so and **END the pass** (the loop idles; the next pass re-checks).
 
-1. **Pick the next item.** Open GitHub issues via the connector (read-only):
-   `python3 -c "import apps.evolve.github_connector as g; [print(i['number'], i['title']) for i in g.list_open_issues()]"`
-   Pick the first issue not already in `~/.evolve-poc/seen.json`. (The operator **closes** an issue
-   on GitHub once it's done/handled, so an *open* issue is genuinely yours to work — no need to
-   cross-check production.) Add the number to `seen.json` when you finish or reject it.
+Pick **ONE** item, run its segment below, then **END the pass** (do not start a second item).
 
-2. **FUNNEL — cheap gates first (reject/park before any expensive work):**
-   - **triage** → use skill **`evolve-triage`**. Reject `duplicate` / `malicious` / `invalid`
-     (stop — log it, mark seen, next item). Else classify `bug`/`feature`. Operator-authored
-     (`from_operator`) skips vision-fit.
-   - **vision-fit** (external features only) → **`evolve-vision-fit`**. Off-scope → reject.
-   - **prioritize** → **`evolve-prioritize`**. `park` the low-priority tail (record, stop). Only
-     `surface` (top-N / safety) continues.
+**2. Run the segment for that item's phase / decision:**
 
-3. **SPEC PHASE — ONE conversation (you are the thread):**
-   - **grounding** → **`evolve-grounding`**: scan the relevant code ONCE; keep the result.
-   - **design** → **`evolve-design`**: set the approach; size one-spec vs needs-tree.
-   - **spec-author** → **`evolve-spec-author`**: write the spec(s) + bound tests.
-   - **spec-audit** → **SPAWN A SUBAGENT** (Task tool) with **`evolve-spec-audit`** — independent
-     critique. If it finds high-severity gaps, revise (bounded: ≤3 rounds, then escalate).
-   - **reviewers** → **SPAWN 4 SUBAGENTS** with **`evolve-review`**, one per lens: `security`,
-     `architecture`, `interop`, `ux`. Collect their findings. A required review that errors is
-     surfaced, never silently dropped.
-   - **lead** → **`evolve-lead`**: arbitrate, then write the Gate-1 recommendation
-     (action: approve/change/reject + current/after/why).
+- **New item (no state):** report the run (`run poc-<n> --title … --source … --status running`).
+  Run the **FUNNEL**: `evolve-triage` → if `duplicate`/`malicious`/`invalid`: report `rejected`,
+  state `phase=rejected`, add to `seen.json`, **END**. Else (`proceed`): bug **or** operator-authored
+  → skip vision; external feature → `evolve-vision-fit` (`off-vision` → rejected, **END**). Then
+  `evolve-prioritize` → `park` → `phase=parked`, **END**; `surface` → run the **SPEC PHASE**:
+  `evolve-grounding` → `evolve-design` → `evolve-spec-author` → SPAWN subagent `evolve-spec-audit`
+  (≤3 revise rounds) → SPAWN 4 subagents `evolve-review` (security/architecture/interop/ux) →
+  `evolve-lead`. Save every artifact. Then push **Gate 1** (see *At a gate*), `phase=gate1`, **END**.
 
-4. **GATE 1** — present the Lead recommendation + the spec(s) + each review. Wait (see **Gates**).
-   - `change` → re-enter the spec phase with the operator's note. `reject` → stop, mark seen.
+- **`phase=gate1`, decision=`approve`:** RE-LOAD spec + grounding + design from `~/.evolve-poc/<n>/`.
+  `resolve poc-<n> cleared`. **BUILD:** cut the feature worktree (mechanics), serialize the spec,
+  `evolve-implement` **inside the worktree**, run the **isolation check** (main checkout dirty →
+  `git checkout -- .` + FAIL), `evolve-validate` on box 2. Push **Gate 2** (diff + validation),
+  `phase=gate2`, **END**.
+  - decision=`change` → re-run the spec phase with the operator's note, re-push Gate 1, **END**.
+  - decision=`reject` → teardown the worktree, `phase=rejected`, add to `seen.json`, **END**.
 
-5. **BUILD (on approve) — in an isolated worktree:**
-   - **serialize + cut worktree** (mechanics, below).
-   - **implement** → **`evolve-implement`**: write the code **inside the worktree only**. Then run
-     the **isolation check**: if the main checkout is dirty → `git checkout -- .` it and FAIL.
-   - **validate** → **`evolve-validate`**: run the change's bound tests on **box 2** (mechanics).
-     No bound test or red → fail closed (no green).
+- **`phase=gate2`, decision=`approve`:** `resolve poc-<n> cleared`. Merge feature → release
+  (mechanics), report `--status merged`, `phase=done`, add to `seen.json`, **END**.
+  - decision=`change` → re-implement, re-push Gate 2, **END**.
+  - decision=`reject` → teardown, `phase=rejected`, **END**.
 
-6. **GATE 2** — present the diff + validation result. Wait.
-   - `approve` → **merge to release** (mechanics). `change` → re-implement. `reject` → tear down.
+## At a gate (push it, then END — NEVER poll)
+When a segment reaches a gate: write the packet (production shape: `work_item`, `recommendation`
+{action, current, after, why}, the spec(s), the reviews, any `decisions_needed`) to
+`~/.evolve-poc/<n>/<gate>.json`, then:
+1. `python3 scripts/evolve_poc.py run poc-<n> --status waiting`
+2. `python3 scripts/evolve_poc.py gate poc-<n> <gate1|gate2> ~/.evolve-poc/<n>/<gate>.json`  → shows in the UI.
+3. Set the item's `phase` in `state.json` and **END the pass.** Do NOT wait, sleep, or poll — the
+   operator decides on their own time, and a *future* pass (step 1a) picks the decision up. After you
+   act on a decision, `resolve poc-<n> <merged|rejected|cleared>` to clear the gate. Never approve your own gate.
+
+## Show it in the Evolve UI (report as you go)
+The operator watches the **Evolve app**. Report at each step (run id = **`poc-<issue#>`**; the `poc-`
+prefix keeps the production poller out of your gates) via `python3 scripts/evolve_poc.py …`:
+- **run:** `run poc-<n> --title "<t>" --source "<s>" --phase <p> --status <running|building|waiting|merged|rejected>`
+- **agent step:** START `event poc-<n> <agent> agent_start "<agent> · poc"`, END
+  `event poc-<n> <agent> agent_end "<✓/✗> <one-line>"`; stream notable lines (`tool`/`info`/`emit`).
+  `<agent>` = the role: triage, vision, prio, grounding, design, spec-author, spec-audit,
+  security/architecture/interop/ux, lead, implement, validate.
 
 ## Mechanics (deterministic — call these, don't reason them)
-Reuse the EXISTING modules read-only (don't modify them). From the repo root on box 1:
+Reuse the EXISTING modules read-only (never modify them), from the repo root on box 1:
 - **ensure baseline / cut worktree / serialize / merge / diff:** `apps.evolve.workspace.WorkspaceManager`
-  (release-first; `ensure_baseline()` already resets ROOT to pristine). e.g.
+  (`ensure_baseline()` resets ROOT to pristine), e.g.
   `python3 -c "from apps.evolve.workspace import WorkspaceManager as W; w=W('.'); print(w.start_feature('poc-<n>'))"`
-- **box-2 validate:** `apps.evolve.build_loop.remote_validate` + `RemoteBox2` (runs the bound tests on box 2).
-- **the canonical role instructions + output schemas:** `apps/evolve/agents/prompts/<role>.md` and
-  the `*_OUT` shapes in `apps/evolve/agents/registry.py`.
-
-## Gates (human-in-the-loop)
-You are supervised — the operator decides in the **Evolve UI**. At a gate:
-1. Write a compact review packet (production shape: `work_item`, `recommendation`
-   {action, current, after, why}, the spec(s), the reviews, any `decisions_needed`) to
-   `~/.evolve-poc/<n>/<gate>.json`.
-2. `python3 scripts/evolve_poc.py run poc-<n> --status waiting`
-3. `python3 scripts/evolve_poc.py gate poc-<n> <gate1|gate2> ~/.evolve-poc/<n>/<gate>.json`  → it shows in the UI.
-4. POLL for the decision: `python3 scripts/evolve_poc.py decision poc-<n>` — repeat (sleep a few
-   seconds between) until it returns a non-null `decision`. Honor `approve` / `change` / `reject`
-   (+ the operator's `note`). Then `python3 scripts/evolve_poc.py resolve poc-<n> <merged|rejected|cleared>`.
-Never approve your own gate.
+- **box-2 validate:** `apps.evolve.build_loop.remote_validate` + `RemoteBox2`.
+- **canonical role instructions + schemas:** `apps/evolve/agents/prompts/<role>.md` + the `*_OUT`
+  shapes in `apps/evolve/agents/registry.py`.
 
 ## Operating rules
-- **Subscription, not API.** This session runs on the Claude subscription; that's the whole point.
-- **Pace within rate limits.** If you hit a usage limit, checkpoint state to `~/.evolve-poc/` and
-  stop cleanly — the operator resumes the loop later; nothing is lost (the item isn't marked seen).
-- **On-demand.** The operator starts the loop when working and stops it when done. One item per
-  pass keeps it interruptible.
-- **Report honestly.** If a step fails, surface it and stop that item; don't fake a green.
+- **Subscription, not API.** This session runs on the Claude subscription — that's the whole point.
+- **One segment per pass, then END.** Never block; gates and "nothing ready" both just end the pass.
+- **Pace.** If you hit a usage limit, checkpoint `state.json` and end cleanly — the next pass resumes
+  from files; nothing is lost.
+- **Report honestly.** A step that fails surfaces + stops that item; never fake a green.
 
-## Launch (for reference)
-On box 1: `cd ~/repos/skipperbot-platform && claude` (logged into the subscription), then drive it
-with `/loop` pointed at this skill (one Evolve cycle per pass). Stop the loop to stop Evolve.
+## Launch
+On box 1: `cd ~/repos/skipperbot-platform && claude` (logged into the subscription), then drive with
+`/loop` pointed at this skill — one segment per pass, gates handled out-of-band via the UI.
