@@ -492,7 +492,17 @@ class Pipeline:
         Shared by the base pipeline and the live RealPipeline (which builds its own
         implement_fn from the work item + spec)."""
         from apps.evolve.build_loop import select_bound_tests
+        from apps.evolve.workspace import git
         ok = bool(getattr(r, "ok", False))
+        # ISOLATION GUARD: the build is sandboxed to its worktree; the live release checkout must stay
+        # pristine (baseline reset guarantees it was clean at start). If implement escaped — wrote to
+        # the main repo via an absolute path / `cd` — discard the contamination and FAIL CLOSED, so we
+        # never merge a bad build or a stub-in-worktree/real-fix-in-ROOT split.
+        escaped = bool(git(self.wm.repo, "status", "--porcelain", check=False).strip())
+        if escaped:
+            git(self.wm.repo, "checkout", "--", ".", check=False)
+            self._ev(inst, "implement", "error", "escaped its workspace (wrote to the live checkout) — discarded + failed")
+            ok = False
         changed = self.wm.is_dirty(feat)
         if ok and changed:
             self.wm.commit(feat, f"implement {feat.item_id}")
@@ -527,7 +537,8 @@ class Pipeline:
             for spec_out in tree:                              # write EVERY spec in the tree to the branch
                 self.wm.serialize_spec(feat, spec_record_from(spec_out, wi))
             extra = f" (+{len(tree) - 1} more)" if len(tree) > 1 else ""
-            self.wm.commit(feat, f"spec: {root['id']}{extra}")
+            if self.wm.is_dirty(feat):                         # idempotent: a re-serialize with no change must not crash `commit`
+                self.wm.commit(feat, f"spec: {root['id']}{extra}")
             self.log(f"  serialized {len(tree)} spec(s) on {feat.branch}")
             self._run(inst, phase="build", status="building", current_node="serialize",
                       current_agent="serialize")

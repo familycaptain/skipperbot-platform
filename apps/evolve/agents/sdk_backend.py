@@ -111,7 +111,7 @@ class ClaudeSDKBackend:
         sink = self.on_tool
         tools = list(_READ_TOOLS) + (list(_WRITE_TOOLS) if self.allow_writes else [])
 
-        async def pre_tool(input_data, tool_use_id, ctx):
+        async def pre_tool(input_data, tool_use_id, ctx):   # live streaming of each tool call
             if sink:
                 try:
                     sink("tool", _tool_label(input_data.get("tool_name", ""),

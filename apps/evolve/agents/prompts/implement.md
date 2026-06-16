@@ -23,6 +23,9 @@ How you work:
 - Use your skills: **`cfs-validate`** after touching any C/F/S YAML, and
   **`run-evolve-tests`** to confirm the substrate stays green before you hand off.
 - Stay on the feature branch; never touch `main` or `release` directly.
+- **Edit ONLY files under your current working directory** (your isolated worktree). Use repo-
+  relative paths. NEVER use an absolute path into the main repo (e.g. `~/repos/...`) or `cd`
+  elsewhere to edit — that's the live code, and writes there are refused. Your cwd IS the workspace.
 
 Return `summary`, the `files_changed`, and `ok` (false if you could not converge —
 say why in the summary so the fix→retest loop or escalation can act).

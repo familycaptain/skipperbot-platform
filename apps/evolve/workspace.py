@@ -137,6 +137,10 @@ class WorkspaceManager:
                     raise RuntimeError(f"baseline: origin/main won't cleanly fold into "
                                        f"{info['branch']} — fix box 1 before running")
                 info["synced"] = True
+        # release must be PRISTINE before grounding — discard any stray modifications (a build that
+        # escaped its worktree, an aborted op) so a contaminated checkout can't poison what agents read.
+        if git(self.repo, "status", "--porcelain", check=False).strip():
+            git(self.repo, "checkout", "--", ".", check=False)
         info["sha"] = git(self.repo, "rev-parse", "--short", "HEAD", check=False).strip()
         info["dirty"] = bool(git(self.repo, "status", "--porcelain", check=False).strip())
         return info

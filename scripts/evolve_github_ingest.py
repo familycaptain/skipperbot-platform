@@ -210,6 +210,8 @@ def _run_cmd(args, pipe, runner, ledger):
     elif args.cmd == "poll":
         from apps.evolve.engine.instance import DONE, REJECTED
         decided = bridge.list_decided()
+        if not decided:
+            return                       # quiet: nothing to resume (the --loop polls every few seconds)
         print(f"{len(decided)} decided gate(s) on the platform")
         for g in decided:
             iid, decision = g["instance_id"], g["decision"]
@@ -225,7 +227,11 @@ def _run_cmd(args, pipe, runner, ledger):
                 # re-pushes that gate to the queue (flipping the row back to 'waiting').
                 inst = pipe.approve(iid, decision, note=note)
             except Exception as e:
+                # A failed resume must be processed ONCE, never looped: leaving the gate 'decided'
+                # makes the poller re-run the same (expensive) build every cycle (the runaway).
+                # Flip it to 'error' so it leaves the decided set; the operator re-decides once fixed.
                 print(f"    resume FAILED: {type(e).__name__}: {e}")
+                _safe_resolve(iid, "error")
                 continue
             if inst.status == DONE:
                 _safe_resolve(iid, "merged")
