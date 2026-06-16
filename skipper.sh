@@ -541,6 +541,24 @@ _announce_when_ready() {
 # visible in real time), and announce the URL from the background once health
 # responds. Ctrl+C stops the tail but leaves the daemon running. Shared by
 # start() and update() so they can't drift.
+# Non-interactive readiness wait: poll the app's status endpoint until it answers,
+# then RETURN (unlike _follow_boot, which tails the log forever). Used by automation
+# so an agent can run `SKIPPER_NO_FOLLOW=1 skipper update` and continue once it's up.
+_wait_until_ready() {
+    local port="$1" url tries=120 i=0
+    url="http://localhost:$port/api/onboarding/status"
+    log "Waiting for Skipper to come up on :$port (non-interactive)…"
+    while [ "$i" -lt "$tries" ]; do   # ~10 min at 5s; first build on a slow box can be minutes
+        if curl -fsS -o /dev/null --max-time 3 "$url" 2>/dev/null; then
+            ok "Skipper is up and serving on :$port."
+            return 0
+        fi
+        sleep 5; i=$((i+1))
+    done
+    warn "Skipper did not become ready within ~10 min — scroll up for build errors."
+    return 1
+}
+
 _follow_boot() {
     local port; port="$(skipper_port)"
     echo
@@ -614,7 +632,14 @@ update() {
         log "Rebuilding and recycling the Docker stack (down; up -d --build) so dependency changes take effect…"
         docker compose down
         docker compose up -d --build
-        _follow_boot
+        # Interactive operator → tail the boot log (Ctrl+C to stop). Automation
+        # (SKIPPER_NO_FOLLOW=1, or no TTY) → block until the app answers, then
+        # RETURN — never tail forever, so an agent/CI run can continue.
+        if [ "${SKIPPER_NO_FOLLOW:-}" = "1" ] || [ ! -t 1 ]; then
+            _wait_until_ready "$(skipper_port)"
+        else
+            _follow_boot
+        fi
     else
         echo
         ok "Code updated (git pull complete)."
