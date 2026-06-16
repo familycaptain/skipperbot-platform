@@ -11,6 +11,25 @@ Hierarchical productivity tracking: Goals → Projects → Tasks (with subtask t
   and goals/projects/tasks all have an `artifacts[]` array. These are maintained automatically
   when you create child entities or attach artifacts.
 
+## Stopping onboarding ("Get started with Skipper")
+
+Onboarding is a real skipper-owned goal with a thinking domain that proactively
+reaches out. When the user asks to **stop / end / pause / skip / be done with the
+onboarding** — or, in that context, to **stop the questions / stop the reminders /
+stop reaching out** — the correct action is to call the **`stop_onboarding`** tool.
+
+- `stop_onboarding(requested_by)` durably closes the onboarding goal out (cancels
+  the goal and its open projects/tasks, disables its thinking domain, clears its
+  pending PM nudges), so the proactive messages actually stop. It resolves the
+  onboarding goal internally — you pass no goal id.
+- **Do NOT just record a memory** with `remember`/`write_memory`. A memory is
+  inert — it does NOT change the goal's status, so both the goal-think and PM
+  domains keep nagging. Saving a preference instead of calling `stop_onboarding`
+  is the wrong tool and leaves onboarding running.
+- Confirm first if it's a passing/ambiguous mention, then call `stop_onboarding`.
+  Afterwards, acknowledge warmly, say onboarding is set aside, and offer to bring
+  it back later (reopening the goal re-enables it).
+
 ## Task Tree Structure
 
 Tasks form a **tree** with arbitrary depth:
