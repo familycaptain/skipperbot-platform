@@ -79,9 +79,19 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   - decision=`reject` → teardown, `phase=rejected`, **END**.
 
 ## At a gate (push it, then END — NEVER poll)
-When a segment reaches a gate: write the packet (production shape: `work_item`, `recommendation`
-{action, current, after, why}, the spec(s), the reviews, any `decisions_needed`) to
-`~/.evolve-poc/<n>/<gate>.json`, then:
+When a segment reaches a gate, write the packet to `~/.evolve-poc/<n>/<gate>.json` **in the exact
+shape the UI panels render** (so the operator sees the ACTUAL spec + reviews, not a summary):
+- `work_item` {number, title, body}
+- `recommendation` {action: approve|change|reject, current, after, why} — the Lead's call.
+- `proposal` — the spec-author's FULL output object: {spec_id, title, behavior, implements,
+  tests:[{type, path, rubric}], notes}. The **"Proposed spec"** panel renders this verbatim.
+- `spec_tree` — the list of specs when design decomposed (omit / `[proposal]` if single).
+- `decisions_needed` — the design's human forks, each {question, recommendation, options:[…]}.
+- `agents` — one entry **per role** `{key, label, output}` where `output` is that role's full
+  structured result (spec-audit `findings`, each reviewer's `concerns`/`conflicts`, lead arbitration).
+  **"The team"** panel renders each agent's full detail from this.
+- Gate 2 also: `diff` (the full patch), `validation` {passed, reason}, `feature` {branch}.
+Then:
 1. `python3 scripts/evolve_poc.py run poc-<n> --status waiting`
 2. `python3 scripts/evolve_poc.py gate poc-<n> <gate1|gate2> ~/.evolve-poc/<n>/<gate>.json`  → shows in the UI.
 3. Set the item's `phase` in `state.json` and **END the pass.** Do NOT wait, sleep, or poll — the
@@ -96,6 +106,11 @@ prefix keeps the production poller out of your gates) via `python3 scripts/evolv
   `event poc-<n> <agent> agent_end "<✓/✗> <one-line>"`; stream notable lines (`tool`/`info`/`emit`).
   `<agent>` = the role: triage, vision, prio, grounding, design, spec-author, spec-audit,
   security/architecture/interop/ux, lead, implement, validate.
+- **show the ACTUAL work, not just a one-liner.** The log renders full, untruncated text — so after
+  a substantive step, `emit` its FULL content: after `spec-author` (AND each revise round) the
+  complete spec (behavior + every test + notes); after each reviewer its full findings; after `lead`
+  the full recommendation; the build diff. e.g.
+  `event poc-<n> spec-author emit "<the whole spec text>"`. Never summarize the detail away.
 
 ## Mechanics (deterministic — call these, don't reason them)
 Reuse the EXISTING modules read-only (never modify them), from the repo root on box 1:

@@ -494,13 +494,18 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
                 {proposal.spec_id && (
                   <Section title="Proposed spec">
                     <div className="font-mono text-xs text-indigo-300 mb-1">{proposal.spec_id}</div>
-                    <div className="mb-2">{proposal.behavior}</div>
+                    {proposal.title && <div className="font-medium mb-1">{proposal.title}</div>}
+                    <div className="mb-2 whitespace-pre-wrap">{proposal.behavior}</div>
+                    {proposal.implements?.length > 0 && (
+                      <div className="text-xs text-slate-400 mb-2">implements: {proposal.implements.join(", ")}</div>
+                    )}
                     {proposal.tests?.length > 0 && proposal.tests.map((t, i) => (
                       <div key={i} className="text-xs text-slate-300 flex gap-1.5 mb-1">
                         <FlaskConical size={12} className="mt-0.5 shrink-0 text-slate-500" />
-                        <span><span className="font-mono text-slate-400">{t.path || t.type}</span>{t.rubric ? ` — ${t.rubric}` : ""}</span>
+                        <span><span className="font-mono text-slate-400">{t.path || t.type}</span>{t.rubric ? <span className="whitespace-pre-wrap"> — {t.rubric}</span> : null}</span>
                       </div>
                     ))}
+                    {proposal.notes && <div className="text-xs text-slate-500 mt-2 whitespace-pre-wrap">{proposal.notes}</div>}
                   </Section>
                 )}
 
