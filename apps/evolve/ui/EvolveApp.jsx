@@ -166,6 +166,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
   const [totalCost, setTotalCost] = useState(0);            // cumulative Evolve spend (all runs)
   const [weekCost, setWeekCost] = useState(0);              // spend this week (since Monday)
   const [decided, setDecided] = useState({});              // instance_id -> decided gate (approved/changed but engine hasn't acted yet)
+  const [bump, setBump] = useState(0);                      // manual/visibility refresh trigger (also re-pulls the detail)
   const lastId = useRef(0);
   const selRef = useRef(null);
 
@@ -187,6 +188,21 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
       }).catch(() => {});
     } catch (e) { setError(String(e.message || e)); }
   }, [showArchived]);
+
+  // manual + auto refresh: reload the list AND re-pull the selected detail/gate (bump drives the tail)
+  const refresh = useCallback(() => { loadRuns(); setBump((b) => b + 1); }, [loadRuns]);
+
+  // browsers throttle/pause our 1.5s poll while the tab is backgrounded — so refresh the instant
+  // the operator returns to the tab/window (this is what made gates look stale until reopening).
+  useEffect(() => {
+    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, [refresh]);
 
   async function archiveRun(id, archived) {
     try {
@@ -236,7 +252,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
     tick();
     const t = setInterval(tick, POLL_MS);
     return () => { alive = false; clearInterval(t); };
-  }, [sel]);
+  }, [sel, bump]);
 
   // assemble the operator's written response (answers to each "decision for you" + guidance)
   // into one note the spec team reads as human_note on a 'change'.
@@ -325,12 +341,18 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
             <Workflow size={14} /> {showArchived ? "Archived" : "Runs"}
             {!showArchived && needsYou > 0 && <span className="text-[10px] bg-indigo-600 rounded-full px-1.5" title="need your decision">{needsYou}</span>}
           </span>
-          <button onClick={() => { setShowArchived((v) => !v); setSel(null); }}
-            className="text-[10px] text-slate-500 hover:text-slate-200 flex items-center gap-1"
-            title={showArchived ? "show active runs" : "show archived runs"}>
-            {showArchived ? (<><Activity size={11} className="text-sky-500" /> active</>)
-                          : (<><Archive size={11} /> archived</>)}
-          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={refresh} title="refresh now"
+              className="text-slate-500 hover:text-slate-200 flex items-center">
+              <RefreshCw size={12} />
+            </button>
+            <button onClick={() => { setShowArchived((v) => !v); setSel(null); }}
+              className="text-[10px] text-slate-500 hover:text-slate-200 flex items-center gap-1"
+              title={showArchived ? "show active runs" : "show archived runs"}>
+              {showArchived ? (<><Activity size={11} className="text-sky-500" /> active</>)
+                            : (<><Archive size={11} /> archived</>)}
+            </button>
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto">
           {runs.length === 0 && (
