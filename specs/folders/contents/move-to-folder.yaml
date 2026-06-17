@@ -1,0 +1,13 @@
+kind: specification
+id: folders.contents.move-to-folder
+title: Move between folders
+state: proposed
+autonomy: gated
+behavior: Moving relocates a document or artifact from one folder to another.
+implements:
+- apps/folders/tools.py
+- apps/folders/ui/FolderDetailApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

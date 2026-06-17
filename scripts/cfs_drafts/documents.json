@@ -1,0 +1,28 @@
+{
+  "app": "documents",
+  "title": "Documents",
+  "scope": "Markdown documents with tags, semantic search (pgvector), parent links, and an LLM thinking domain that reorganizes Skipper's accumulated memories into a navigable doc tree. The long-form text store used by research, refine, print, brainstorming, and any app that wants structured prose. NOT folder organization (the Folders app) — Documents owns the content.",
+  "features": [
+    {
+      "id": "documents",
+      "title": "Documents",
+      "specs": [
+        {"id": "create-doc", "title": "Create a document", "behavior": "Creating a document records a new markdown knowledge page with title, content, and tags, and assigns it an id.", "implements": ["apps/documents/tools.py", "apps/documents/ui/DocumentEditor.jsx"]},
+        {"id": "get-doc", "title": "Read a document", "behavior": "Reading returns a document's full content and metadata.", "implements": ["apps/documents/tools.py", "apps/documents/ui/DocumentEditor.jsx"]},
+        {"id": "list-docs", "title": "List documents", "behavior": "Listing returns all documents, optionally filtered.", "implements": ["apps/documents/tools.py", "apps/documents/ui/DocListApp.jsx"]},
+        {"id": "search-docs", "title": "Search documents", "behavior": "Searching matches documents semantically across content, title, and tags.", "implements": ["apps/documents/tools.py", "apps/documents/ui/DocListApp.jsx"]},
+        {"id": "delete-doc", "title": "Delete a document", "behavior": "Deleting permanently removes a document.", "implements": ["apps/documents/tools.py", "apps/documents/ui/DocListApp.jsx"]}
+      ]
+    },
+    {
+      "id": "editing",
+      "title": "Editing & enhancement",
+      "specs": [
+        {"id": "update-doc", "title": "Update a document", "behavior": "Updating replaces a document's full content.", "implements": ["apps/documents/tools.py", "apps/documents/ui/DocumentEditor.jsx"]},
+        {"id": "append-to-doc", "title": "Append to a document", "behavior": "Appending adds content to the end of a document.", "implements": ["apps/documents/tools.py", "apps/documents/ui/DocumentEditor.jsx"]},
+        {"id": "update-doc-meta", "title": "Update document metadata", "behavior": "Updating metadata changes a document's tags/title/etc. without touching its content.", "implements": ["apps/documents/tools.py", "apps/documents/ui/DocumentEditor.jsx"]},
+        {"id": "enhance-doc", "title": "Enhance a document", "behavior": "Enhancing uses AI to expand, improve, or flesh out sections of a document.", "implements": ["apps/documents/tools.py", "apps/documents/ui/DocumentEditor.jsx"]}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+kind: specification
+id: folders.folders.search-folders
+title: Search folders
+state: proposed
+autonomy: gated
+behavior: Searching matches folders by name, description, or tags.
+implements:
+- apps/folders/tools.py
+- apps/folders/ui/FoldersApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

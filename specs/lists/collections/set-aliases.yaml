@@ -1,0 +1,14 @@
+kind: specification
+id: lists.collections.set-aliases
+title: Set list aliases
+state: proposed
+autonomy: gated
+behavior: Setting aliases attaches nicknames to a list so it can be resolved by those names in
+  chat.
+implements:
+- apps/lists/tools.py
+- apps/lists/ui/ListsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

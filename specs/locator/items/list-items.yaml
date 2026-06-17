@@ -1,0 +1,13 @@
+kind: specification
+id: locator.items.list-items
+title: List items
+state: proposed
+autonomy: gated
+behavior: Listing returns tracked items, optionally filtered by location or category.
+implements:
+- apps/locator/tools.py
+- apps/locator/ui/LocatorListApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

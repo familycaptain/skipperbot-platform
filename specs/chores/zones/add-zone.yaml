@@ -1,0 +1,13 @@
+kind: specification
+id: chores.zones.add-zone
+title: Add a zone
+state: proposed
+autonomy: gated
+behavior: Adding creates a new chore zone (parent only).
+implements:
+- apps/chores/tools.py
+- apps/chores/ui/ChoresApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

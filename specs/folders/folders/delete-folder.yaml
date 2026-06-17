@@ -1,0 +1,14 @@
+kind: specification
+id: folders.folders.delete-folder
+title: Delete a folder
+state: proposed
+autonomy: gated
+behavior: Deleting soft-deletes a folder; its contents survive as standalone documents and its
+  sub-folders become root-level.
+implements:
+- apps/folders/tools.py
+- apps/folders/ui/FoldersApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

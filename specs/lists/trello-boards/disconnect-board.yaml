@@ -1,0 +1,13 @@
+kind: specification
+id: lists.trello-boards.disconnect-board
+title: Disconnect a Trello board
+state: proposed
+autonomy: gated
+behavior: Disconnecting a board removes its local l- files and its config entry.
+implements:
+- apps/lists/tools.py
+- apps/lists/ui/TrelloSettings.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

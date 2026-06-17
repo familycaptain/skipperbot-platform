@@ -1,0 +1,13 @@
+kind: specification
+id: chores.zones.list-zones
+title: List zones
+state: proposed
+autonomy: gated
+behavior: Listing returns all zones with their members and chore counts.
+implements:
+- apps/chores/tools.py
+- apps/chores/ui/ChoresApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

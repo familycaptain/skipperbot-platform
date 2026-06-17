@@ -1,0 +1,13 @@
+kind: specification
+id: folders.folders.list-folders
+title: List folders
+state: proposed
+autonomy: gated
+behavior: Listing returns folders, optionally filtered by owner.
+implements:
+- apps/folders/tools.py
+- apps/folders/ui/FoldersApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

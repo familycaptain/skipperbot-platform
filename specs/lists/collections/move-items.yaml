@@ -1,0 +1,13 @@
+kind: specification
+id: lists.collections.move-items
+title: Move items between lists
+state: proposed
+autonomy: gated
+behavior: Moving items relocates them from one list to another by text match.
+implements:
+- apps/lists/tools.py
+- apps/lists/ui/ListsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

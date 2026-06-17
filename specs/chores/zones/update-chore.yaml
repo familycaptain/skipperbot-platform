@@ -1,0 +1,13 @@
+kind: specification
+id: chores.zones.update-chore
+title: Update a chore
+state: proposed
+autonomy: gated
+behavior: Updating changes a chore (parent only).
+implements:
+- apps/chores/tools.py
+- apps/chores/ui/ChoresApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

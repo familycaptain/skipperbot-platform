@@ -1,0 +1,28 @@
+{
+  "app": "locator",
+  "title": "Locator",
+  "scope": "Item locator — track where physical items are stored around the household. Find things by location, category, tags, or search, attach photos, and manage the set of storage locations. NOT inventory/shopping (the Lists app) — Locator answers 'where did we put it?'.",
+  "features": [
+    {
+      "id": "items",
+      "title": "Located items",
+      "specs": [
+        {"id": "create-item", "title": "Track an item", "behavior": "Creating a located item records what it is and where it is stored, with optional category, tags, and a photo.", "implements": ["apps/locator/tools.py", "apps/locator/ui/LocatorDetailApp.jsx"]},
+        {"id": "get-item", "title": "Get an item", "behavior": "Getting returns the full details of a located item.", "implements": ["apps/locator/tools.py", "apps/locator/ui/LocatorDetailApp.jsx"]},
+        {"id": "list-items", "title": "List items", "behavior": "Listing returns tracked items, optionally filtered by location or category.", "implements": ["apps/locator/tools.py", "apps/locator/ui/LocatorListApp.jsx"]},
+        {"id": "search-items", "title": "Search items", "behavior": "Searching matches items by name, description, location, or tags.", "implements": ["apps/locator/tools.py", "apps/locator/ui/LocatorListApp.jsx"]},
+        {"id": "update-item", "title": "Update an item", "behavior": "Updating changes only the supplied fields of a located item.", "implements": ["apps/locator/tools.py", "apps/locator/ui/LocatorDetailApp.jsx"]},
+        {"id": "delete-item", "title": "Delete an item", "behavior": "Deleting permanently removes a located item.", "implements": ["apps/locator/tools.py", "apps/locator/ui/LocatorListApp.jsx"]}
+      ]
+    },
+    {
+      "id": "locations",
+      "title": "Storage locations",
+      "specs": [
+        {"id": "list-locations", "title": "List locations", "behavior": "Listing returns all defined storage locations.", "implements": ["apps/locator/tools.py", "apps/locator/ui/LocatorListApp.jsx"]},
+        {"id": "create-location", "title": "Create a location", "behavior": "Creating defines a new storage location (e.g. Garage, Attic, Storage Shed).", "implements": ["apps/locator/tools.py", "apps/locator/ui/LocatorListApp.jsx"]},
+        {"id": "delete-location", "title": "Delete a location", "behavior": "Deleting removes a storage-location definition.", "implements": ["apps/locator/tools.py", "apps/locator/ui/LocatorListApp.jsx"]}
+      ]
+    }
+  ]
+}

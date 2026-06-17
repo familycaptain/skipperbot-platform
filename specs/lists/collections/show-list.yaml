@@ -1,0 +1,13 @@
+kind: specification
+id: lists.collections.show-list
+title: Show a list
+state: proposed
+autonomy: gated
+behavior: Showing a list returns its items in their current order.
+implements:
+- apps/lists/tools.py
+- apps/lists/ui/ListsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

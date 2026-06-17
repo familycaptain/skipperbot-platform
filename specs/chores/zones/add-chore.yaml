@@ -1,0 +1,13 @@
+kind: specification
+id: chores.zones.add-chore
+title: Add a chore
+state: proposed
+autonomy: gated
+behavior: Adding inserts a chore slot into a zone.
+implements:
+- apps/chores/tools.py
+- apps/chores/ui/ChoresApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

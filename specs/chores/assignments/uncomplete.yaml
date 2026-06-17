@@ -1,0 +1,13 @@
+kind: specification
+id: chores.assignments.uncomplete
+title: Un-check a chore
+state: proposed
+autonomy: gated
+behavior: Un-checking reverses a previously recorded completion.
+implements:
+- apps/chores/tools.py
+- apps/chores/ui/ChoresApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

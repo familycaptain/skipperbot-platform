@@ -1,0 +1,13 @@
+kind: specification
+id: locator.items.search-items
+title: Search items
+state: proposed
+autonomy: gated
+behavior: Searching matches items by name, description, location, or tags.
+implements:
+- apps/locator/tools.py
+- apps/locator/ui/LocatorListApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

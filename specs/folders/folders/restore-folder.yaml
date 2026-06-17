@@ -1,0 +1,13 @@
+kind: specification
+id: folders.folders.restore-folder
+title: Restore a folder
+state: proposed
+autonomy: gated
+behavior: Restoring brings back a previously deleted folder.
+implements:
+- apps/folders/tools.py
+- apps/folders/ui/FoldersApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

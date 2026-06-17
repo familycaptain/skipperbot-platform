@@ -1,0 +1,13 @@
+kind: specification
+id: locator.locations.list-locations
+title: List locations
+state: proposed
+autonomy: gated
+behavior: Listing returns all defined storage locations.
+implements:
+- apps/locator/tools.py
+- apps/locator/ui/LocatorListApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

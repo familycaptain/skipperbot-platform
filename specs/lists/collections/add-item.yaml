@@ -1,0 +1,14 @@
+kind: specification
+id: lists.collections.add-item
+title: Add an item
+state: proposed
+autonomy: gated
+behavior: Adding an item appends it to a list (and, for a board-backed list, creates the backing
+  Trello card).
+implements:
+- apps/lists/tools.py
+- apps/lists/ui/ListsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

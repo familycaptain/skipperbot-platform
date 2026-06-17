@@ -1,0 +1,13 @@
+kind: specification
+id: folders.contents.remove-from-folder
+title: Remove from a folder
+state: proposed
+autonomy: gated
+behavior: Removing takes a document or artifact out of a folder without deleting it.
+implements:
+- apps/folders/tools.py
+- apps/folders/ui/FolderDetailApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

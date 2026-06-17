@@ -1,0 +1,13 @@
+kind: specification
+id: documents.documents.list-docs
+title: List documents
+state: proposed
+autonomy: gated
+behavior: Listing returns all documents, optionally filtered.
+implements:
+- apps/documents/tools.py
+- apps/documents/ui/DocListApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

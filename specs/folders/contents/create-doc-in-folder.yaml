@@ -1,0 +1,13 @@
+kind: specification
+id: folders.contents.create-doc-in-folder
+title: Create a doc in a folder
+state: proposed
+autonomy: gated
+behavior: Creating-in-folder makes a new document and adds it to the folder in one step.
+implements:
+- apps/folders/tools.py
+- apps/folders/ui/FolderDetailApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

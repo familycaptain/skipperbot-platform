@@ -1,0 +1,13 @@
+kind: specification
+id: documents.documents.search-docs
+title: Search documents
+state: proposed
+autonomy: gated
+behavior: Searching matches documents semantically across content, title, and tags.
+implements:
+- apps/documents/tools.py
+- apps/documents/ui/DocListApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,13 @@
+kind: specification
+id: locator.items.get-item
+title: Get an item
+state: proposed
+autonomy: gated
+behavior: Getting returns the full details of a located item.
+implements:
+- apps/locator/tools.py
+- apps/locator/ui/LocatorDetailApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

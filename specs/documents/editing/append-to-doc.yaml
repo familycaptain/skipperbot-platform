@@ -1,0 +1,13 @@
+kind: specification
+id: documents.editing.append-to-doc
+title: Append to a document
+state: proposed
+autonomy: gated
+behavior: Appending adds content to the end of a document.
+implements:
+- apps/documents/tools.py
+- apps/documents/ui/DocumentEditor.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

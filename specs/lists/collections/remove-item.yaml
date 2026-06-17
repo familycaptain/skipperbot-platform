@@ -1,0 +1,13 @@
+kind: specification
+id: lists.collections.remove-item
+title: Remove an item
+state: proposed
+autonomy: gated
+behavior: Removing an item archives it off the list by text match.
+implements:
+- apps/lists/tools.py
+- apps/lists/ui/ListsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

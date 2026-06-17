@@ -1,0 +1,13 @@
+kind: specification
+id: locator.items.update-item
+title: Update an item
+state: proposed
+autonomy: gated
+behavior: Updating changes only the supplied fields of a located item.
+implements:
+- apps/locator/tools.py
+- apps/locator/ui/LocatorDetailApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

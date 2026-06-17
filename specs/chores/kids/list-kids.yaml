@@ -1,0 +1,13 @@
+kind: specification
+id: chores.kids.list-kids
+title: List kids
+state: proposed
+autonomy: gated
+behavior: Listing returns the active kids in the chore rotation.
+implements:
+- apps/chores/tools.py
+- apps/chores/ui/ChoresApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

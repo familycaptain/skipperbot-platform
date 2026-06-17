@@ -1,0 +1,14 @@
+kind: specification
+id: lists.trello-boards.connect-board
+title: Connect a Trello board
+state: proposed
+autonomy: gated
+behavior: Connecting a board registers it, scans its lists, creates local l- list files, and syncs
+  cards in.
+implements:
+- apps/lists/tools.py
+- apps/lists/ui/TrelloSettings.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

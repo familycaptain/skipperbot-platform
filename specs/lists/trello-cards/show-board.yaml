@@ -1,0 +1,12 @@
+kind: specification
+id: lists.trello-cards.show-board
+title: Show a board
+state: proposed
+autonomy: gated
+behavior: Showing a board returns all of its lists and cards at once.
+implements:
+- apps/lists/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

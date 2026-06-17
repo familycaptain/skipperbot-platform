@@ -1,0 +1,13 @@
+kind: specification
+id: chores.assignments.week
+title: Weekly chore strip
+state: proposed
+autonomy: gated
+behavior: The weekly strip returns a kid's 7-day chore view (or every kid's, when none is named).
+implements:
+- apps/chores/tools.py
+- apps/chores/ui/ChoresApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

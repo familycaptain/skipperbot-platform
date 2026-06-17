@@ -1,0 +1,13 @@
+kind: specification
+id: chores.kids.remove-kid
+title: Remove a kid
+state: proposed
+autonomy: gated
+behavior: Removing soft-deletes a kid while preserving their completion history (parent only).
+implements:
+- apps/chores/tools.py
+- apps/chores/ui/ChoresApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

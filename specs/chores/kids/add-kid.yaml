@@ -1,0 +1,13 @@
+kind: specification
+id: chores.kids.add-kid
+title: Add a kid
+state: proposed
+autonomy: gated
+behavior: Adding a kid puts them into the rotation (parent only).
+implements:
+- apps/chores/tools.py
+- apps/chores/ui/ChoresApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

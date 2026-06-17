@@ -1,0 +1,13 @@
+kind: specification
+id: documents.documents.get-doc
+title: Read a document
+state: proposed
+autonomy: gated
+behavior: Reading returns a document's full content and metadata.
+implements:
+- apps/documents/tools.py
+- apps/documents/ui/DocumentEditor.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

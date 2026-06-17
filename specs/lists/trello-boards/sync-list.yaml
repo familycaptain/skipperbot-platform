@@ -1,0 +1,12 @@
+kind: specification
+id: lists.trello-boards.sync-list
+title: Sync a Trello list
+state: proposed
+autonomy: gated
+behavior: Syncing forces a Trello-linked list to re-pull from Trello, the source of truth.
+implements:
+- apps/lists/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

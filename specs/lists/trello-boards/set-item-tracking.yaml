@@ -1,0 +1,12 @@
+kind: specification
+id: lists.trello-boards.set-item-tracking
+title: Toggle item tracking
+state: proposed
+autonomy: gated
+behavior: Item tracking enables or disables item-history tracking on a Trello-linked list.
+implements:
+- apps/lists/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'
