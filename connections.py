@@ -13,8 +13,10 @@ class ConnectionManager:
     def __init__(self):
         self.active: dict[str, WebSocket] = {}
 
-    async def connect(self, user_id: str, websocket: WebSocket):
-        await websocket.accept()
+    async def connect(self, user_id: str, websocket: WebSocket, subprotocol: str | None = None):
+        # Echo the negotiated subprotocol (the browser's 'bearer.<token>' offer) so
+        # the handshake completes; None for header-authenticated clients (RFC 6455).
+        await websocket.accept(subprotocol=subprotocol)
         self.active[user_id] = websocket
         logger.debug("WS CONNECT: %s (total: %d)", user_id, len(self.active))
 

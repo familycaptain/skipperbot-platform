@@ -38,7 +38,7 @@ from knowledge_store import migrate_chunk_embeddings
 from data_layer.db import close_pool
 from app_platform.loader import load_all_apps, get_app_tool_routes
 from data_layer.users import authenticate, get_user, update_password, get_all_users, has_role, create_user, update_role, delete_user, parse_roles
-from app_platform.auth import principal_from_request, principal_from_ws, require_user, require_admin, resolve_target, scope_user
+from app_platform.auth import principal_from_request, principal_from_ws, ws_bearer_subprotocol, require_user, require_admin, resolve_target, scope_user
 from app_platform.ratelimit import check_rate
 
 # Minimum web password length (audit #31/#35).
@@ -792,7 +792,10 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
         await websocket.close(code=4401, reason="Authentication required")
         return
     user_id = principal["name"]  # authoritative identity — ignore the path param
-    await manager.connect(user_id, websocket)
+    # Browsers authenticate via the Sec-WebSocket-Protocol header; RFC 6455 requires
+    # the server to echo back the selected subprotocol or the handshake fails. Native/
+    # voice clients (Authorization header) offer no subprotocol, so this is None there.
+    await manager.connect(user_id, websocket, subprotocol=ws_bearer_subprotocol(websocket))
     # Send build ID so client can detect agent restarts
     await websocket.send_json({"type": "build_id", "build_id": BUILD_ID})
     try:

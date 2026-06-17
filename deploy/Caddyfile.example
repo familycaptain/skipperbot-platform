@@ -22,5 +22,10 @@ skipperbot.yourdomain.example {
 	encode zstd gzip
 	# reverse_proxy handles WebSocket upgrades transparently
 	# (the agent exposes /ws/voice/* and /ws/{user_id}).
+	# NOTE: no `log` directive here on purpose. The app redacts auth tokens from its
+	# own uvicorn access log, but Caddy's access log would capture the full request
+	# URI upstream of that filter. If you enable `log`, do NOT log full URIs on /ws
+	# paths (the WS token rides the Sec-WebSocket-Protocol header, not the URL, so a
+	# correct client won't put it there — but legacy/proxy logs are out of our reach).
 	reverse_proxy localhost:8000
 }

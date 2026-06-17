@@ -1,5 +1,5 @@
 import { useRef, useState, useCallback, useEffect } from "react";
-import { getToken } from "../utils/api";
+import { getToken, forceLogout } from "../utils/api";
 
 /**
  * WebSocket hook for SkipperBot chat.
@@ -12,9 +12,24 @@ import { getToken } from "../utils/api";
 
 const RECONNECT_DELAY = 3000;
 const PING_INTERVAL = 30000;
+// Server closes with this code when the token is missing/rejected (agent.py).
+const WS_AUTH_FAILED = 4401;
+
+// Carry the bearer token in the Sec-WebSocket-Protocol header instead of the URL
+// querystring, so it never lands in the access log (issue #7). The raw token isn't
+// a legal subprotocol value (it contains ':'), so base64url-encode it; the server
+// decodes 'bearer.<b64url>'. Read per-connect so a refreshed token is used on reconnect.
+function bearerSubprotocol() {
+  const token = getToken();
+  if (!token) return null;
+  const b64 = btoa(token).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return `bearer.${b64}`;
+}
 
 export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDocsUpdated, onRemindersUpdated, onRecipesUpdated, onBrainstormUpdated, onEditProposal, onTodoUpdated) {
   const [connected, setConnected] = useState(false);
+  // Coarse connection state for the chat surface: 'connecting' | 'connected' | 'auth_failed'.
+  const [connectionState, setConnectionState] = useState("connecting");
   // Starts empty; the history effect below populates prior turns then a greeting.
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -86,19 +101,23 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
   const getWsUrl = useCallback(() => {
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
     const host = window.location.host;
-    const token = getToken();
-    const q = token ? `?token=${encodeURIComponent(token)}` : "";
-    return `${proto}//${host}/ws/${encodeURIComponent(userId)}${q}`;
+    // No token in the URL — it rides the Sec-WebSocket-Protocol header (issue #7).
+    return `${proto}//${host}/ws/${encodeURIComponent(userId)}`;
   }, [userId]);
 
   const connect = useCallback(() => {
     if (!userId) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    const ws = new WebSocket(getWsUrl());
+    setConnectionState("connecting");
+    const subprotocol = bearerSubprotocol();
+    const ws = subprotocol
+      ? new WebSocket(getWsUrl(), [subprotocol])
+      : new WebSocket(getWsUrl());
 
     ws.onopen = () => {
       setConnected(true);
+      setConnectionState("connected");
       clearInterval(pingTimer.current);
       pingTimer.current = setInterval(() => {
         if (ws.readyState === WebSocket.OPEN) {
@@ -218,10 +237,18 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
       }
     };
 
-    ws.onclose = () => {
+    ws.onclose = (event) => {
       setConnected(false);
       wsRef.current = null;
       clearInterval(pingTimer.current);
+      if (event && event.code === WS_AUTH_FAILED) {
+        // Token missing/rejected — don't retry forever into a silently dead chat.
+        // Surface it and bounce to login, mirroring the HTTP 401 path.
+        setConnectionState("auth_failed");
+        forceLogout();
+        return;
+      }
+      setConnectionState("connecting");
       reconnectTimer.current = setTimeout(connect, RECONNECT_DELAY);
     };
 
@@ -267,5 +294,5 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
     []
   );
 
-  return { connected, messages, isTyping, progress, sending, updateAvailable, sendMessage, sendContext };
+  return { connected, connectionState, messages, isTyping, progress, sending, updateAvailable, sendMessage, sendContext };
 }
