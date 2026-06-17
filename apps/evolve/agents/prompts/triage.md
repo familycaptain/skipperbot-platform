@@ -38,6 +38,15 @@ Decide `spec_status` — the crux (only when `proceed`):
 - **`unclear`** — you can't tell from what you were given; set `kind` your best guess
   and say why.
 
+Set `belongs_to` — **where the FIX lives, not where the symptom shows.** Use `platform`
+when the code to change is in THIS repo (the platform core or a bundled in-repo app — the
+default for almost everything). Use the external app/package name (e.g. `anime`) when the
+change genuinely belongs to a separate optional app-package repo that was removed from this
+repo — Evolve here cannot edit or validate that code. **Root cause wins over symptom:** if a
+symptom surfaces *in* an external app but the real fix is a platform gap (e.g. the platform
+can't authenticate media navigations / pop-out windows), `belongs_to` is `platform` — that's
+the in-scope fix. Only when the change is purely the external app's own code is it external.
+
 Also: `duplicate_of` (id of an open item it restates, or ""), `touches_cfs` (the
 C/F/S ids it most likely affects), and a crisp `rationale` (what it's really asking
 and why that spec_status). Do not design the fix; only classify, link, and route.

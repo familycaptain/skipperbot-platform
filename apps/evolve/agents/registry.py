@@ -38,8 +38,10 @@ TRIAGE_OUT = _obj({
     "conflicting_spec": _STR,                     # spec id when spec_status == conflicts-spec, else ""
     "duplicate_of": _STR,                         # "" if none
     "touches_cfs": _arr(_STR),                    # candidate C/F/S ids
+    "belongs_to": _STR,                           # where the FIX lives: "platform" (this repo) or an
+                                                  # external app-package name Evolve here can't build
     "rationale": _STR,
-}, ["summary", "kind", "rationale"])               # spec_status prompt-mandated; optional in schema
+}, ["summary", "kind", "rationale"])               # spec_status + belongs_to prompt-mandated; optional in schema
 
 VISION_OUT = _obj({
     "summary": _STR,

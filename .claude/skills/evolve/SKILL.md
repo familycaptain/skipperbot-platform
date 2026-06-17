@@ -66,7 +66,12 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   operator-facing note so it surfaces at **Gate 1** for the operator to decide (redirect, accept an
   in-scope reframe, or reject it themselves). Triage rejection applies ONLY to PUBLIC (non-operator)
   items: `duplicate`/`malicious`/`invalid` → report `rejected`, `phase=rejected`, add to `seen.json`,
-  **END**. Proceeding: bug **or** operator-authored → skip vision; external feature →
+  **END**. **Check `belongs_to`:** if it is an external app-package (not `platform`), the fix lives in
+  another repo Evolve here can't build/validate yet (multi-repo, #31). Do NOT grind the spec phase on
+  it — push a Gate-1 packet that states the fix `belongs_to: <repo>`, includes triage's in-scope angle
+  (if any), and asks the operator to decide (handle it in that repo, pursue an in-scope **platform**
+  reframe instead, or drop it); `phase=gate1`, **END**. Only items whose fix is `platform` continue.
+  Proceeding: bug **or** operator-authored → skip vision; external feature →
   `evolve-vision-fit` (`off-vision` → rejected, **END**, *public items only*). Then
   `evolve-prioritize` → `park` → `phase=parked`, **END**; `surface` → run the **SPEC PHASE**:
   `evolve-grounding` → `evolve-design` → `evolve-spec-author` → SPAWN subagent `evolve-spec-audit`
