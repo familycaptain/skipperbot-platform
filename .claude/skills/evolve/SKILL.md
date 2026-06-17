@@ -106,7 +106,12 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   **Gate 3 (verify)** packet — `recommendation` = {action:`verify`, why: "Merged to release as
   `<sha>`. Deploy to your Pi (`skipper update`) and test issue #<n>: <what to check>", current,
   after} — set `state.json` `phase=verify`, **END**. (The GitHub issue stays OPEN; do NOT mark done
-  or seen yet.)
+  or seen yet.) **ALWAYS spell out any USER ACTION required to observe the fix** in the `why` — a
+  correct change can look broken until the operator does it: **re-login** (auth/session/cookie changes —
+  a stale browser session won't have the new cookie), **reconfigure** a Setting, **clear cache / hard
+  refresh** (UI bundle), reinstall an app package, etc. The implement/lead notes should carry this
+  forward; if the diff touches auth/cookies/session, login, config schema, or the web bundle, name the
+  step explicitly.
   - decision=`change` → re-implement, re-push Gate 2, **END**.
   - decision=`reject` → teardown, then `resolve poc-<n> rejected` (clears gate + sets run rejected),
     `phase=rejected`, add to `seen.json`, **END**.
