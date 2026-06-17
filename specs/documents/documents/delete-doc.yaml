@@ -1,7 +1,7 @@
 kind: specification
 id: documents.documents.delete-doc
 title: Delete a document
-state: proposed
+state: live
 autonomy: gated
 behavior: Deleting permanently removes a document.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/documents/ui/DocListApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

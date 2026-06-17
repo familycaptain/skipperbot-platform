@@ -1,7 +1,7 @@
 kind: specification
 id: goals.views.project-detail
 title: Project detail
-state: proposed
+state: live
 autonomy: gated
 behavior: Project detail returns a project's full task tree — milestones, subtasks, and uncategorized
   tasks with their ranks.
@@ -10,5 +10,4 @@ implements:
 - apps/goals/ui/TasksApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

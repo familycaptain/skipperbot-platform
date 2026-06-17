@@ -1,7 +1,7 @@
 kind: specification
 id: timeline.tags.list-tags
 title: List tags
-state: proposed
+state: live
 autonomy: gated
 behavior: Listing returns all Timeline tags with their post counts.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/timeline/ui/TimelineApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

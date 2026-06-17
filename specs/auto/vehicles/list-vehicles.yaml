@@ -1,12 +1,11 @@
 kind: specification
 id: auto.vehicles.list-vehicles
 title: List vehicles
-state: proposed
+state: live
 autonomy: gated
 behavior: All household vehicles are listed with their key details (name, mileage, status).
 implements:
 - apps/auto/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

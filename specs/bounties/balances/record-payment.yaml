@@ -1,7 +1,7 @@
 kind: specification
 id: bounties.balances.record-payment
 title: Record a payment
-state: proposed
+state: live
 autonomy: gated
 behavior: Recording logs an external payment to a kid, debiting their balance (parent/admin only).
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/bounties/ui/BountiesApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

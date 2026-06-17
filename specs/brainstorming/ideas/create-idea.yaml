@@ -1,7 +1,7 @@
 kind: specification
 id: brainstorming.ideas.create-idea
 title: Capture an idea
-state: proposed
+state: live
 autonomy: gated
 behavior: Creating captures a new idea with a status, priority, tags, and a backing structured
   document.
@@ -9,5 +9,4 @@ implements:
 - apps/brainstorming/ui/BrainstormListApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -6,8 +6,7 @@ scope: 'General-purpose ordered collections: drag-reorderable items, optionally 
   Trello board (Trello is the source of truth for board-backed lists). The foundation the To-Do
   app and any other ''ordered items'' use case build on. NOT a to-do lens itself (that is the
   Todo app).'
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

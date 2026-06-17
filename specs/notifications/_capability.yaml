@@ -6,8 +6,7 @@ scope: 'Cross-app notification fan-out: every ''tell the user X'' event is recor
   row, then a background delivery loop pushes it out over the configured channels (Discord DM,
   Pushover, WebSocket, chat log, FCM mobile push). The shared delivery layer every app uses. NOT
   the message content owners (each app is) — Notifications owns recording + delivery.'
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

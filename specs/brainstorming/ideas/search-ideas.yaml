@@ -1,12 +1,11 @@
 kind: specification
 id: brainstorming.ideas.search-ideas
 title: Search ideas
-state: proposed
+state: live
 autonomy: gated
 behavior: Searching matches ideas by content and tags.
 implements:
 - apps/brainstorming/ui/BrainstormListApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

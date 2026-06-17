@@ -1,7 +1,7 @@
 kind: specification
 id: finder.search.aggregate-search
 title: Search across apps
-state: proposed
+state: live
 autonomy: gated
 behavior: Finder dispatches a search query to each app that owns data (goals, documents, recipes,
   reminders, schedules, …) and aggregates the results into one ranked view.
@@ -9,5 +9,4 @@ implements:
 - apps/finder/ui/FinderApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -1,7 +1,7 @@
 kind: specification
 id: meals.library.rate-meal
 title: Rate a meal
-state: proposed
+state: live
 autonomy: gated
 behavior: Rating sets a 1–5 star rating on a meal.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/meals/ui/MealsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

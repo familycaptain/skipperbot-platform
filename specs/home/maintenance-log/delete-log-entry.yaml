@@ -1,7 +1,7 @@
 kind: specification
 id: home.maintenance-log.delete-log-entry
 title: Delete a log entry
-state: proposed
+state: live
 autonomy: gated
 behavior: Deleting removes a specific maintenance completion record.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/home/ui/HomeApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

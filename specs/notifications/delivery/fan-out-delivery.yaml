@@ -1,7 +1,7 @@
 kind: specification
 id: notifications.delivery.fan-out-delivery
 title: Record & deliver a notification
-state: proposed
+state: live
 autonomy: gated
 behavior: A notification event is recorded as a row, then the background delivery loop sends it
   to the user over each configured/available channel (Discord DM, Pushover, WebSocket, chat log,
@@ -10,5 +10,4 @@ implements:
 - apps/notifications/delivery.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

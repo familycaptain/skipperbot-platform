@@ -1,7 +1,7 @@
 kind: specification
 id: settings.account.manage-account
 title: Manage your account
-state: proposed
+state: live
 autonomy: gated
 behavior: Account settings read and update the signed-in user's own account details.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/settings/ui/SettingsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

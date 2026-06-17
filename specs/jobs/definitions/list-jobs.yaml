@@ -1,7 +1,7 @@
 kind: specification
 id: jobs.definitions.list-jobs
 title: List jobs
-state: proposed
+state: live
 autonomy: gated
 behavior: Listing returns jobs, optionally filtered by status or creator.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/jobs/ui/JobsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

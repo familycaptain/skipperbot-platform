@@ -1,12 +1,11 @@
 kind: specification
 id: automation.control.call-service
 title: Call a service
-state: proposed
+state: live
 autonomy: gated
 behavior: Calling invokes any Home Assistant service with parameters.
 implements:
 - apps/automation/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

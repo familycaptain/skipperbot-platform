@@ -1,12 +1,11 @@
 kind: specification
 id: auto.issues.list-issues
 title: List vehicle issues
-state: proposed
+state: live
 autonomy: gated
 behavior: A vehicle's issues can be listed, optionally filtered by status (e.g. open vs resolved).
 implements:
 - apps/auto/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

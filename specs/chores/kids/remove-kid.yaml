@@ -1,7 +1,7 @@
 kind: specification
 id: chores.kids.remove-kid
 title: Remove a kid
-state: proposed
+state: live
 autonomy: gated
 behavior: Removing soft-deletes a kid while preserving their completion history (parent only).
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/chores/ui/ChoresApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

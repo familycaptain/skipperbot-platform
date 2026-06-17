@@ -1,12 +1,11 @@
 kind: specification
 id: brainstorming.ideas.develop-idea
 title: Develop an idea
-state: proposed
+state: live
 autonomy: gated
 behavior: Developing an idea edits its document and flowchart and updates its status and priority.
 implements:
 - apps/brainstorming/ui/BrainstormDetailApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

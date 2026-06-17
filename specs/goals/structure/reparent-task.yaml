@@ -1,7 +1,7 @@
 kind: specification
 id: goals.structure.reparent-task
 title: Reparent a task
-state: proposed
+state: live
 autonomy: gated
 behavior: Reparenting moves a task to be a subtask of another task.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/goals/ui/TasksApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

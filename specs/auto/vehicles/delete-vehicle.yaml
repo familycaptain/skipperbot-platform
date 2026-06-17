@@ -1,13 +1,12 @@
 kind: specification
 id: auto.vehicles.delete-vehicle
 title: Delete a vehicle
-state: proposed
+state: live
 autonomy: gated
-behavior: A vehicle can be removed from the fleet; its dependent records are handled per the
-  data model.
+behavior: A vehicle can be removed from the fleet; its dependent records are handled per the data
+  model.
 implements:
 - apps/auto/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

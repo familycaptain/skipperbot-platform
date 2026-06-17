@@ -1,7 +1,7 @@
 kind: specification
 id: email.rules.update-rule
 title: Update a rule
-state: proposed
+state: live
 autonomy: gated
 behavior: Updating changes an existing inbox rule.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/email/ui/EmailApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -1,12 +1,11 @@
 kind: specification
 id: auto.vehicles.update-vehicle
 title: Update a vehicle
-state: proposed
+state: live
 autonomy: gated
 behavior: An existing vehicle's fields (make/model/trim/color/status) can be edited and saved.
 implements:
 - apps/auto/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

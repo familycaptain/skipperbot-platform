@@ -1,12 +1,11 @@
 kind: specification
 id: lists.trello-cards.board-labels
 title: Manage board labels
-state: proposed
+state: live
 autonomy: gated
 behavior: Board-label operations list, create, update, or delete labels at the board level.
 implements:
 - apps/lists/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

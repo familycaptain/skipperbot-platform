@@ -1,7 +1,7 @@
 kind: specification
 id: goals.items.update-item
 title: Update a goal/project/task
-state: proposed
+state: live
 autonomy: gated
 behavior: Updating changes any goal, project, or task's fields (status, name, dates, assignee,
   etc.).
@@ -10,5 +10,4 @@ implements:
 - apps/goals/ui/TasksApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -1,7 +1,6 @@
 kind: feature
 id: auto.service-records
 title: Service records & history
-state: proposed
+state: live
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

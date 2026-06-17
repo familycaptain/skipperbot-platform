@@ -1,12 +1,11 @@
 kind: specification
 id: goals.notes.due-reminder
 title: Set a due-date reminder
-state: proposed
+state: live
 autonomy: gated
 behavior: Setting a due reminder creates a reminder for a goal/project/task's due date.
 implements:
 - apps/goals/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

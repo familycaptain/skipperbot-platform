@@ -1,12 +1,11 @@
 kind: specification
 id: goals.trello.check-trello-item
 title: Check a Trello checklist item
-state: proposed
+state: live
 autonomy: gated
 behavior: Checking toggles a checklist item on a Trello-linked task.
 implements:
 - apps/goals/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

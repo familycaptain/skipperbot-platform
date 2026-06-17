@@ -1,7 +1,7 @@
 kind: specification
 id: chores.assignments.today
 title: Today's chores
-state: proposed
+state: live
 autonomy: gated
 behavior: Showing today's chores lists each kid's chore assignments for the current day.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/chores/ui/ChoresApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

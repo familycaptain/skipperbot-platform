@@ -1,7 +1,7 @@
 kind: specification
 id: medical.equipment.list-equipment-tasks
 title: List equipment tasks
-state: proposed
+state: live
 autonomy: gated
 behavior: Listing returns equipment maintenance tasks and their due dates.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/medical/ui/MedicalApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

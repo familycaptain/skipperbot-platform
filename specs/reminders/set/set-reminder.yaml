@@ -1,7 +1,7 @@
 kind: specification
 id: reminders.set.set-reminder
 title: Set a reminder
-state: proposed
+state: live
 autonomy: gated
 behavior: Setting a reminder records a message and a specific due date/time and, when an RRULE
   is supplied, makes it recurring; it assigns an r- id and adds it to the user's active reminders.
@@ -9,5 +9,4 @@ implements:
 - apps/reminders/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

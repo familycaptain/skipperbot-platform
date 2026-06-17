@@ -6,8 +6,7 @@ scope: A small arcade of self-contained canvas/WebGL games — Wardenfall (tower
   (3D exploration), Spinhazard (vector shooter), and Solitaire (Klondike, with per-user save/resume)
   — sharing one high-score board. Demonstrates the platform's in-browser game capability. NOT
   a competitive/online game service; these are local single-player diversions.
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

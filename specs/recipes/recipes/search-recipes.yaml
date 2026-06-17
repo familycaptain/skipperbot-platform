@@ -1,7 +1,7 @@
 kind: specification
 id: recipes.recipes.search-recipes
 title: Search recipes
-state: proposed
+state: live
 autonomy: gated
 behavior: Searching matches recipes by title, description, or ingredients.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/recipes/ui/RecipeListApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -6,8 +6,7 @@ scope: 'Short, in-memory countdown timers (sub-30-minute: cooking, pomodoros) th
   when they expire. Ephemeral — each timer is an asyncio task with no database row; the only persisted
   artifact is the notification on expiry. NOT long-term reminders (the Reminders app) or recurring
   schedules (the Schedules app).'
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

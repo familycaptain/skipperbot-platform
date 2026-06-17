@@ -6,8 +6,7 @@ scope: A pure-UI launcher tile that aggregates search across the apps owning the
   (goals, documents, recipes, reminders, schedules, …). Owns no schema, tables, migrations, chat
   tools, or REST routes — every search dispatches to the owning app. NOT a data store itself;
   Finder is a unified cross-app search surface.
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

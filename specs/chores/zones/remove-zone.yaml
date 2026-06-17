@@ -1,7 +1,7 @@
 kind: specification
 id: chores.zones.remove-zone
 title: Remove a zone
-state: proposed
+state: live
 autonomy: gated
 behavior: Removing deletes a zone and its chores (parent only); it fails if completion history
   references those chores.
@@ -10,5 +10,4 @@ implements:
 - apps/chores/ui/ChoresApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

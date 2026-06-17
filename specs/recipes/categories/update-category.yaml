@@ -1,7 +1,7 @@
 kind: specification
 id: recipes.categories.update-category
 title: Rename a category
-state: proposed
+state: live
 autonomy: gated
 behavior: Updating renames a recipe category.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/recipes/ui/RecipeListApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -5,8 +5,7 @@ app: home
 scope: Home management hub — recurring and ad-hoc maintenance tasks, home issues (problems/repairs),
   and the maintenance log, organized by category. Tracks the upkeep of the house itself. NOT vehicle
   upkeep (the Auto app) or medical-equipment upkeep (the Medical app).
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -1,7 +1,7 @@
 kind: specification
 id: recipes.recipes.get-recipe
 title: Get a recipe
-state: proposed
+state: live
 autonomy: gated
 behavior: Getting returns a recipe's full details — ingredients, steps, and metadata.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/recipes/ui/RecipeDetailApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

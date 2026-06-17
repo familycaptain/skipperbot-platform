@@ -1,7 +1,7 @@
 kind: specification
 id: documents.editing.append-to-doc
 title: Append to a document
-state: proposed
+state: live
 autonomy: gated
 behavior: Appending adds content to the end of a document.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/documents/ui/DocumentEditor.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

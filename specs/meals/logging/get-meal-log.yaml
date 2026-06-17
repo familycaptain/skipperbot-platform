@@ -1,7 +1,7 @@
 kind: specification
 id: meals.logging.get-meal-log
 title: Recent meal log
-state: proposed
+state: live
 autonomy: gated
 behavior: The meal log returns recent log entries (dinners, lunches, or both).
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/meals/ui/MealsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

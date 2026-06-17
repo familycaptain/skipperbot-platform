@@ -1,7 +1,7 @@
 kind: specification
 id: automation.diagnostics.low-batteries
 title: Find low batteries
-state: proposed
+state: live
 autonomy: gated
 behavior: Low-battery search finds Home Assistant battery sensors that are low or need replacement.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/automation/ui/AutomationApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

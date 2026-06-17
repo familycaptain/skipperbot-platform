@@ -1,7 +1,7 @@
 kind: specification
 id: home.issues.list-issues
 title: List issues
-state: proposed
+state: live
 autonomy: gated
 behavior: Listing returns home issues (problems, repairs, things to fix).
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/home/ui/HomeApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

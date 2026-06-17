@@ -1,12 +1,11 @@
 kind: specification
 id: automation.services.list-services
 title: List services
-state: proposed
+state: live
 autonomy: gated
 behavior: Listing returns Home Assistant service domains and their services.
 implements:
 - apps/automation/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

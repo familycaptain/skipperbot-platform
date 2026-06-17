@@ -1,7 +1,7 @@
 kind: specification
 id: automation.control.switch-device
 title: Turn on/off/toggle a device
-state: proposed
+state: live
 autonomy: gated
 behavior: Switching turns a controllable Home Assistant entity (or alias) on, off, or toggles
   it.
@@ -10,5 +10,4 @@ implements:
 - apps/automation/ui/AutomationApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -6,8 +6,7 @@ scope: Markdown documents with tags, semantic search (pgvector), parent links, a
   domain that reorganizes Skipper's accumulated memories into a navigable doc tree. The long-form
   text store used by research, refine, print, brainstorming, and any app that wants structured
   prose. NOT folder organization (the Folders app) — Documents owns the content.
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

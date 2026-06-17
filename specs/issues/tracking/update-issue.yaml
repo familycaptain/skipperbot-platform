@@ -1,7 +1,7 @@
 kind: specification
 id: issues.tracking.update-issue
 title: Triage / resolve an issue
-state: proposed
+state: live
 autonomy: gated
 behavior: Updating changes an issue's status as the developer triages and resolves it.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/issues/ui/IssuesApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

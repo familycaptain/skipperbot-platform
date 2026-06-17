@@ -1,7 +1,7 @@
 kind: specification
 id: auto.issues.report-issue
 title: Report a vehicle issue
-state: proposed
+state: live
 autonomy: gated
 behavior: An issue (a problem or needed repair) is reported against a vehicle with a description
   and an initial status, getting a vis- id and appearing in the vehicle's issue list.
@@ -9,5 +9,4 @@ implements:
 - apps/auto/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

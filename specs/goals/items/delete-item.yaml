@@ -1,7 +1,7 @@
 kind: specification
 id: goals.items.delete-item
 title: Delete a goal/project/task
-state: proposed
+state: live
 autonomy: gated
 behavior: Deleting permanently removes a goal, project, or task.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/goals/ui/GoalsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

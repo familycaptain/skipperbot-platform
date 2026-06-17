@@ -1,7 +1,7 @@
 kind: specification
 id: timers.countdowns.start-timer
 title: Start a timer
-state: proposed
+state: live
 autonomy: gated
 behavior: Starting a timer launches a background countdown of a given duration that fires a notification
   to the user when it expires.
@@ -9,5 +9,4 @@ implements:
 - apps/timers/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

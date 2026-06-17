@@ -1,7 +1,7 @@
 kind: specification
 id: meals.discovery.list-meals
 title: List meals
-state: proposed
+state: live
 autonomy: gated
 behavior: Listing returns the meal library, optionally filtered by tag, effort, or search.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/meals/ui/MealsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

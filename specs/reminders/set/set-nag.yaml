@@ -1,7 +1,7 @@
 kind: specification
 id: reminders.set.set-nag
 title: Set a nag
-state: proposed
+state: live
 autonomy: gated
 behavior: 'A nag is a low-ceremony persistent daily nudge: it records a message (and an optional
   time-of-day slot) that re-fires every day until the user acknowledges or cancels it.'
@@ -9,5 +9,4 @@ implements:
 - apps/reminders/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

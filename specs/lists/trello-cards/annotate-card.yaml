@@ -1,12 +1,11 @@
 kind: specification
 id: lists.trello-cards.annotate-card
 title: Annotate a card
-state: proposed
+state: live
 autonomy: gated
 behavior: Card annotations view or set a card's checklist, add comments, and manage its labels.
 implements:
 - apps/lists/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

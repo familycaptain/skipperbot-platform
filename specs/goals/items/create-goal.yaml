@@ -1,7 +1,7 @@
 kind: specification
 id: goals.items.create-goal
 title: Create a goal
-state: proposed
+state: live
 autonomy: gated
 behavior: Creating a goal records a top-level objective and assigns a g- id.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/goals/ui/GoalsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

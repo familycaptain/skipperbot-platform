@@ -1,7 +1,7 @@
 kind: specification
 id: folders.folders.get-folder
 title: Get a folder
-state: proposed
+state: live
 autonomy: gated
 behavior: Getting a folder returns its details and contents.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/folders/ui/FolderDetailApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

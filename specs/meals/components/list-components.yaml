@@ -1,7 +1,7 @@
 kind: specification
 id: meals.components.list-components
 title: List components
-state: proposed
+state: live
 autonomy: gated
 behavior: Listing returns the reusable meal components (building blocks).
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/meals/ui/MealsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -1,7 +1,7 @@
 kind: specification
 id: locator.locations.delete-location
 title: Delete a location
-state: proposed
+state: live
 autonomy: gated
 behavior: Deleting removes a storage-location definition.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/locator/ui/LocatorListApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

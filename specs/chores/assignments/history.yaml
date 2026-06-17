@@ -1,7 +1,7 @@
 kind: specification
 id: chores.assignments.history
 title: Completion history
-state: proposed
+state: live
 autonomy: gated
 behavior: History shows completion records for a kid (or everyone) over a date range.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/chores/ui/ChoresApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

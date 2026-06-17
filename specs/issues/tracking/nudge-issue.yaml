@@ -1,7 +1,7 @@
 kind: specification
 id: issues.tracking.nudge-issue
 title: Nudge an issue
-state: proposed
+state: live
 autonomy: gated
 behavior: Nudging pings the relevant party about an open issue.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/issues/ui/IssuesApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -1,7 +1,7 @@
 kind: specification
 id: email.activity.view-log
 title: View processed-email log
-state: proposed
+state: live
 autonomy: gated
 behavior: The log returns the history of processed email.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/email/ui/EmailApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

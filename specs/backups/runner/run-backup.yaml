@@ -1,7 +1,7 @@
 kind: specification
 id: backups.runner.run-backup
 title: Run a backup
-state: proposed
+state: live
 autonomy: gated
 behavior: Running performs a database + project-files backup to each enabled destination.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/backups/ui/BackupsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

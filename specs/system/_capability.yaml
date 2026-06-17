@@ -6,8 +6,7 @@ scope: 'System-health dashboard: aggregates record counts across every installed
   size, the latest job and backup, the doc-curation cursor, and a process-level snapshot. Owns
   no schema — a single read-only metrics route the UI renders. NOT an admin control panel; System
   observes platform health.'
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

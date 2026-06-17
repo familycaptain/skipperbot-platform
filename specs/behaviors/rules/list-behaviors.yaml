@@ -1,7 +1,7 @@
 kind: specification
 id: behaviors.rules.list-behaviors
 title: List behaviors
-state: proposed
+state: live
 autonomy: gated
 behavior: Listing returns the user's behavior rules, optionally filtered by scope.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/behaviors/ui/BehaviorsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

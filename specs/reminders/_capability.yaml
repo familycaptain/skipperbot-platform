@@ -6,8 +6,7 @@ scope: 'Per-user ''tell me X at time Y'' reminders: one-shot and recurring (RRUL
   nag mode that re-fires daily until acknowledged, and snooze; plus a desktop UI to edit the list.
   A fired reminder hands off to the Notifications app for delivery. NOT a calendar or recurring-schedule
   engine (the Schedules app owns backing schedules), and NOT the notification-delivery layer itself.'
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

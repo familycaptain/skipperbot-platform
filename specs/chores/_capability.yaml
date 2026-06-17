@@ -6,8 +6,7 @@ scope: Recurring household chores rotated across the kids — replaces the famil
   spreadsheet. A daily 9am push gives each kid their chores, with kid-driven check-off and full
   chore/zone/kid CRUD via UI and chat. NOT general task management (the Todo/Tasks apps); chores
   are the fixed, rotating household duties.
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

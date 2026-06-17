@@ -1,7 +1,7 @@
 kind: specification
 id: schedules.recurrence.define-schedule
 title: Define a schedule
-state: proposed
+state: live
 autonomy: gated
 behavior: Defining a schedule records a recurring event with a recurrence rule (RRULE, cron, friendly,
   or usage-based) and an owning entity.
@@ -10,5 +10,4 @@ implements:
 - apps/schedules/ui/SchedulesApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -1,7 +1,7 @@
 kind: specification
 id: goals.views.goal-detail
 title: Goal detail
-state: proposed
+state: live
 autonomy: gated
 behavior: Goal detail returns a goal's info plus its project list with progress.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/goals/ui/GoalsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

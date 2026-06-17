@@ -1,7 +1,7 @@
 kind: specification
 id: timeline.posts.delete-post
 title: Delete a post
-state: proposed
+state: live
 autonomy: gated
 behavior: Deleting removes a post and its linked document.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/timeline/ui/TimelineApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

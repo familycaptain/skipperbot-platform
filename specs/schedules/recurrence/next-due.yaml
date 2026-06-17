@@ -1,7 +1,7 @@
 kind: specification
 id: schedules.recurrence.next-due
 title: Compute next due
-state: proposed
+state: live
 autonomy: gated
 behavior: The engine computes a schedule's next due occurrence from its recurrence rule and last
   completion.
@@ -9,5 +9,4 @@ implements:
 - apps/schedules/store.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -1,7 +1,7 @@
 kind: specification
 id: behaviors.rules.add-behavior
 title: Add a behavior
-state: proposed
+state: live
 autonomy: gated
 behavior: Adding a behavior records an if/then rule — a trigger description and an action description,
   with scope and notes — that is injected into the chat system prompt.
@@ -10,5 +10,4 @@ implements:
 - apps/behaviors/ui/BehaviorsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

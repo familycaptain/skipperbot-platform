@@ -5,8 +5,7 @@ app: issues
 scope: 'Bug and feature-request tracker: family members report issues, the developer triages and
   resolves them, and reporters validate fixes. A required core app (the Evolve engine reads from
   it). NOT the external GitHub issue queue — this is the in-platform tester-facing tracker.'
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

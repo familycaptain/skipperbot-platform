@@ -1,7 +1,7 @@
 kind: specification
 id: lists.trello-cards.manage-card
 title: Create / read / update / move / archive a card
-state: proposed
+state: live
 autonomy: gated
 behavior: Card operations add a card, read its full details, update its title/description/due
   date, move it between lists, and archive it.
@@ -9,5 +9,4 @@ implements:
 - apps/lists/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

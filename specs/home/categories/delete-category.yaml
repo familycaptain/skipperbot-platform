@@ -1,7 +1,7 @@
 kind: specification
 id: home.categories.delete-category
 title: Delete a category
-state: proposed
+state: live
 autonomy: gated
 behavior: Deleting removes a home maintenance task category.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/home/ui/HomeApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

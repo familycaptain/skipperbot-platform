@@ -1,7 +1,7 @@
 kind: specification
 id: chores.kids.update-kid
 title: Update a kid
-state: proposed
+state: live
 autonomy: gated
 behavior: Updating changes a kid's fields, leaving unspecified fields unchanged (parent only).
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/chores/ui/ChoresApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

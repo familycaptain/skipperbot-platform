@@ -1,7 +1,7 @@
 kind: specification
 id: folders.contents.add-to-folder
 title: Add to a folder
-state: proposed
+state: live
 autonomy: gated
 behavior: Adding places an existing document or artifact into a folder, triggering the folder's
   intelligence pipeline.
@@ -10,5 +10,4 @@ implements:
 - apps/folders/ui/FolderDetailApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

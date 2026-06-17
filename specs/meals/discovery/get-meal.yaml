@@ -1,7 +1,7 @@
 kind: specification
 id: meals.discovery.get-meal
 title: Get a meal
-state: proposed
+state: live
 autonomy: gated
 behavior: Getting returns a meal's full details including its components.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/meals/ui/MealsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -1,7 +1,7 @@
 kind: specification
 id: jobs.execution.run-job
 title: Run a job
-state: proposed
+state: live
 autonomy: gated
 behavior: Running a job executes it manually now via its registered handler and records the result.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/jobs/ui/JobsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

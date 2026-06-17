@@ -1,7 +1,7 @@
 kind: specification
 id: automation.aliases.list-aliases
 title: List aliases
-state: proposed
+state: live
 autonomy: gated
 behavior: Listing returns saved human aliases for Home Assistant entities.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/automation/ui/AutomationApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

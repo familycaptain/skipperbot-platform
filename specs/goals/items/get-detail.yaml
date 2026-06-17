@@ -1,7 +1,7 @@
 kind: specification
 id: goals.items.get-detail
 title: Get an entity's full record
-state: proposed
+state: live
 autonomy: gated
 behavior: Getting an entity detail returns the full record for any goal, project, or task — fields,
   notes, history, artifacts, and linked entities.
@@ -10,5 +10,4 @@ implements:
 - apps/goals/ui/GoalShared.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

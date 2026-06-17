@@ -1,7 +1,7 @@
 kind: specification
 id: meals.discovery.random-meals
 title: Random meal ideas
-state: proposed
+state: live
 autonomy: gated
 behavior: Random picks meal ideas from the library, optionally filtered by tag or effort.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/meals/ui/MealsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

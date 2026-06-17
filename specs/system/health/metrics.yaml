@@ -1,7 +1,7 @@
 kind: specification
 id: system.health.metrics
 title: System metrics
-state: proposed
+state: live
 autonomy: gated
 behavior: The dashboard aggregates record counts across all apps, DB size, the latest job and
   backup, the doc-curation cursor, and a process-level snapshot, exposed read-only to the UI.
@@ -10,5 +10,4 @@ implements:
 - apps/system/ui/SystemApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

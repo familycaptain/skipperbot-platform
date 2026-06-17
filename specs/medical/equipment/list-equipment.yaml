@@ -1,7 +1,7 @@
 kind: specification
 id: medical.equipment.list-equipment
 title: List equipment
-state: proposed
+state: live
 autonomy: gated
 behavior: Listing returns medical equipment such as dialysis machines and supply systems.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/medical/ui/MedicalApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

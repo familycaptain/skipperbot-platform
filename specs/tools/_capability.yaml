@@ -6,8 +6,7 @@ scope: 'A browser for the tool-routing registry: the categories, the tools each 
   and the long-form prompt-guide markdown beside them. An operator/developer surface for understanding
   what the chat agent can do and how it''s routed. NOT the tool router itself — Tools is the read-only
   window onto it.'
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

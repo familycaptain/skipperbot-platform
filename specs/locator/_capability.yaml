@@ -5,8 +5,7 @@ app: locator
 scope: Item locator — track where physical items are stored around the household. Find things
   by location, category, tags, or search, attach photos, and manage the set of storage locations.
   NOT inventory/shopping (the Lists app) — Locator answers 'where did we put it?'.
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

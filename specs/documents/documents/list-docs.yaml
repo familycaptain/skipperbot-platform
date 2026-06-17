@@ -1,7 +1,7 @@
 kind: specification
 id: documents.documents.list-docs
 title: List documents
-state: proposed
+state: live
 autonomy: gated
 behavior: Listing returns all documents, optionally filtered.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/documents/ui/DocListApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

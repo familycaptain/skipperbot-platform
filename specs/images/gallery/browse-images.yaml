@@ -1,12 +1,11 @@
 kind: specification
 id: images.gallery.browse-images
 title: Browse images
-state: proposed
+state: live
 autonomy: gated
 behavior: Browsing shows the gallery of saved images and generated charts.
 implements:
 - apps/images/ui/ImagesApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

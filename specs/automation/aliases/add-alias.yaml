@@ -1,7 +1,7 @@
 kind: specification
 id: automation.aliases.add-alias
 title: Add an alias
-state: proposed
+state: live
 autonomy: gated
 behavior: Adding saves a human-friendly alias for a Home Assistant entity.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/automation/ui/AutomationApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

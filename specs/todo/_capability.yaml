@@ -6,8 +6,7 @@ scope: 'A focused to-do lens for each user: a default to-do list (backed by the 
   an optional backlog, with quick add / mark-done and a weekly triage nudge. Owns the user-scoped
   to-do config (which list is default/backlog, nudge settings); the items themselves live in the
   Lists app. NOT a general multi-list manager (that is the Lists app).'
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

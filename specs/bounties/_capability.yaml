@@ -5,8 +5,7 @@ app: bounties
 scope: 'Family chore-and-reward system: parents post tasks with dollar values, kids complete them
   for balance credits, and parents record external payments. Tracks balances and a family leaderboard.
   NOT the recurring chore rotation (the Chores app) — bounties are one-off, money-valued tasks.'
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

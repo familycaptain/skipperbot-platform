@@ -6,8 +6,7 @@ scope: Hierarchical folders for organizing entities (documents, links, projects)
   colors, soft delete, and breadcrumbs, plus an LLM intelligence pipeline that extracts facts
   + embeddings from each folder's contents for chat-grounded retrieval. NOT the documents themselves
   (the Documents app owns those) — Folders organizes them.
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

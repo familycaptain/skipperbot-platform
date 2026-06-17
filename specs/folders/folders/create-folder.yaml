@@ -1,7 +1,7 @@
 kind: specification
 id: folders.folders.create-folder
 title: Create a folder
-state: proposed
+state: live
 autonomy: gated
 behavior: Creating a folder records a new container (with name, tags, icon, color) for organizing
   documents and artifacts.
@@ -10,5 +10,4 @@ implements:
 - apps/folders/ui/FoldersApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

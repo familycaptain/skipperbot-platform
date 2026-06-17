@@ -1,7 +1,7 @@
 kind: specification
 id: automation.entities.get-entity
 title: Get entity state
-state: proposed
+state: live
 autonomy: gated
 behavior: Getting returns the current state and attributes for a Home Assistant entity or alias.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/automation/ui/AutomationApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

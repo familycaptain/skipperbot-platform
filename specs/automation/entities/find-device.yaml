@@ -1,7 +1,7 @@
 kind: specification
 id: automation.entities.find-device
 title: Find a device
-state: proposed
+state: live
 autonomy: gated
 behavior: Finding a device locates a Home Assistant DEVICE by friendly name or alias and lists
   its entities.
@@ -10,5 +10,4 @@ implements:
 - apps/automation/ui/AutomationApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

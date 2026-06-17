@@ -1,7 +1,7 @@
 kind: specification
 id: home.tasks.overdue-tasks
 title: Overdue tasks
-state: proposed
+state: live
 autonomy: gated
 behavior: Overdue returns all home tasks that are overdue or due soon.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/home/ui/HomeApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

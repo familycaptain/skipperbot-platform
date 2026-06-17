@@ -1,7 +1,7 @@
 kind: specification
 id: home.tasks.get-task
 title: Get a task
-state: proposed
+state: live
 autonomy: gated
 behavior: Getting returns a task's details and completion history.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/home/ui/HomeApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

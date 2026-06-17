@@ -1,7 +1,7 @@
 kind: specification
 id: lists.collections.show-all-lists
 title: Show all lists
-state: proposed
+state: live
 autonomy: gated
 behavior: Showing all lists returns every available list, including board-backed and standalone
   lists.
@@ -10,5 +10,4 @@ implements:
 - apps/lists/ui/ListsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

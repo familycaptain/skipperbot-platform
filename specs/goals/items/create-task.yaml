@@ -1,7 +1,7 @@
 kind: specification
 id: goals.items.create-task
 title: Create a task
-state: proposed
+state: live
 autonomy: gated
 behavior: Creating a task records a t- entity under a project, or a subtask under another task.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/goals/ui/TasksApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

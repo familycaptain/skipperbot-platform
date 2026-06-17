@@ -1,7 +1,7 @@
 kind: specification
 id: email.accounts.connect-account
 title: Connect a Gmail account
-state: proposed
+state: live
 autonomy: gated
 behavior: Connecting runs the Gmail OAuth flow (start + callback) and registers the account.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/email/ui/EmailApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

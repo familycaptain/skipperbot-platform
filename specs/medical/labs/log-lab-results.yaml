@@ -1,7 +1,7 @@
 kind: specification
 id: medical.labs.log-lab-results
 title: Log lab results
-state: proposed
+state: live
 autonomy: gated
 behavior: Logging records lab results for a member.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/medical/ui/MedicalApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

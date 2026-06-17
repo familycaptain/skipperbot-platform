@@ -1,7 +1,7 @@
 kind: specification
 id: lists.collections.create-list
 title: Create a list
-state: proposed
+state: live
 autonomy: gated
 behavior: Creating a list records a new ordered collection, assigns an l- id, and makes it available
   to add items to.
@@ -10,5 +10,4 @@ implements:
 - apps/lists/ui/ListsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

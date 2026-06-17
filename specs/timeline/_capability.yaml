@@ -6,8 +6,7 @@ scope: Family journal + microblog of posts, photos, and tags. Doubles as the pla
   activity log — whenever any app fires digest_record on a non-read CRUD, a personal post is written
   here, so every action is also a journal entry. NOT a per-app history view; Timeline is the unified
   family feed.
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

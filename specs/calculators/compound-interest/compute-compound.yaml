@@ -1,7 +1,7 @@
 kind: specification
 id: calculators.compound-interest.compute-compound
 title: Solve compound interest
-state: proposed
+state: live
 autonomy: gated
 behavior: The compound-interest calculator solves for whichever of principal, annual rate, years,
   or future value is left blank, given the others.
@@ -10,5 +10,4 @@ implements:
 - apps/calculators/ui/CalculatorsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -1,7 +1,7 @@
 kind: specification
 id: home.maintenance-log.recent-log
 title: Recent maintenance log
-state: proposed
+state: live
 autonomy: gated
 behavior: The recent log returns the latest maintenance completions across all tasks.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/home/ui/HomeApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

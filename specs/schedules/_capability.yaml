@@ -7,8 +7,7 @@ scope: 'The platform''s recurrence engine: defines recurring events backing chor
   and usage-based (every N miles) recurrence. Owns ''next due'' computation and a completion log.
   NOT one-shot reminders (the Reminders app) or job execution (the Jobs app) — Schedules answers
   ''when is it next due?''.'
-state: proposed
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

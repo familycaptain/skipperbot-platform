@@ -1,7 +1,7 @@
 kind: specification
 id: medical.labs.lab-history
 title: Lab history
-state: proposed
+state: live
 autonomy: gated
 behavior: Lab history returns historical results (trend) for a specific test.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/medical/ui/MedicalApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

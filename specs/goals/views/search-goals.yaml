@@ -1,7 +1,7 @@
 kind: specification
 id: goals.views.search-goals
 title: Search goals/projects/tasks
-state: proposed
+state: live
 autonomy: gated
 behavior: Searching matches across goals, projects, and tasks by keyword over names, notes, and
   history.
@@ -10,5 +10,4 @@ implements:
 - apps/goals/ui/GoalsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -2,17 +2,17 @@ kind: specification
 id: calculators.compound-interest.goal-already-met
 title: Compound-interest solver reports "goal already met" instead of a negative duration/rate
   when Future value ≤ Principal
-state: proposed
+state: live
 behavior: 'When the Compound-interest calculator solves for **Years** or **Annual rate** with
   positive Principal P and Future value A:
 
-  - **A == P** → return exactly `0` (already at the goal; no time/rate needed), shown as the
-  normal result, not an error.
+  - **A == P** → return exactly `0` (already at the goal; no time/rate needed), shown as the normal
+  result, not an error.
 
-  - **A < P** → return a friendly message stating the goal is below the current balance so
-  it''s already met — never a negative number and never an uncaught math error. (UI: an `{error}`-style
-  message; chat tool: a plain-English string in the same spirit as the existing loan "too
-  low to ever pay off" message.)
+  - **A < P** → return a friendly message stating the goal is below the current balance so it''s
+  already met — never a negative number and never an uncaught math error. (UI: an `{error}`-style
+  message; chat tool: a plain-English string in the same spirit as the existing loan "too low
+  to ever pay off" message.)
 
   - **A > P** (and existing positive-input guards hold) → unchanged: compute the real positive
   years/rate.
@@ -21,24 +21,23 @@ behavior: 'When the Compound-interest calculator solves for **Years** or **Annua
 
   Behavior and wording must match across both surfaces.'
 implements:
-- 'apps/calculators/ui/CalculatorsApp.jsx — solveCompound(): guard A<=P at the start of the
-  field==="t" and field==="rate" branches, before the Math.log / Math.pow computation.'
+- 'apps/calculators/ui/CalculatorsApp.jsx — solveCompound(): guard A<=P at the start of the field==="t"
+  and field==="rate" branches, before the Math.log / Math.pow computation.'
 - 'apps/calculators/tools.py — compound_interest(): same guard at the start of the field=="years"
   and field=="annual_rate" branches, returning a plain-English string.'
 - apps/calculators/manifest.yaml — version bump.
 tests:
 - type: unit
   path: apps/calculators/tests/test_tools_compound.py
-  rubric: compound_interest solving for years with principal=20000, future_value=8408 (the
-    reporter's case → previously -11.58) returns a non-negative 'already met'/below-balance
-    message, no minus sign. A==P (e.g. 10000/10000, years blank) returns 0. A>P (10000→20000)
-    still returns the correct positive years. Same three cases for annual_rate blank. No exception
-    raised.
+  rubric: compound_interest solving for years with principal=20000, future_value=8408 (the reporter's
+    case → previously -11.58) returns a non-negative 'already met'/below-balance message, no minus
+    sign. A==P (e.g. 10000/10000, years blank) returns 0. A>P (10000→20000) still returns the
+    correct positive years. Same three cases for annual_rate blank. No exception raised.
 - type: playwright
   path: apps/calculators/tests/compound_goal_met.spec.js
   rubric: 'In the Calculators app → Compound interest tab: enter Principal 20000, Future value
     8408, leave Years blank, Calculate → result shows an ''already met''/below-balance message
-    and NO negative number. Principal==Future value → shows 0 years. Principal 10000, Future
-    value 20000 → shows a correct positive years figure.'
+    and NO negative number. Principal==Future value → shows 0 years. Principal 10000, Future value
+    20000 → shows a correct positive years figure.'
 links: {}
 notes: ''

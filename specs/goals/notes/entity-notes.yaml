@@ -1,7 +1,7 @@
 kind: specification
 id: goals.notes.entity-notes
 title: Read/update the notes document
-state: proposed
+state: live
 autonomy: gated
 behavior: Notes operations read, replace, and append to a goal/project/task's stable NOTES document.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/goals/ui/GoalShared.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

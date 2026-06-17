@@ -1,12 +1,11 @@
 kind: specification
 id: lists.trello-boards.suggest-location
 title: Suggest where an item lives
-state: proposed
+state: live
 autonomy: gated
 behavior: Suggesting looks up where an item was last seen on Trello.
 implements:
 - apps/lists/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

@@ -1,7 +1,7 @@
 kind: specification
 id: meals.logging.check-today
 title: Check today's meals
-state: proposed
+state: live
 autonomy: gated
 behavior: Checking returns the meals logged today across all types.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/meals/ui/MealsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

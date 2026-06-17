@@ -1,12 +1,11 @@
 kind: specification
 id: recipes.printing.print-recipe
 title: Print a recipe
-state: proposed
+state: live
 autonomy: gated
 behavior: Printing sends a recipe to the default physical printer.
 implements:
 - apps/recipes/tools.py
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

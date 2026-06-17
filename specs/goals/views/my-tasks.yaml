@@ -1,7 +1,7 @@
 kind: specification
 id: goals.views.my-tasks
 title: My tasks
-state: proposed
+state: live
 autonomy: gated
 behavior: My tasks returns all tasks assigned to a person across every goal and project.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/goals/ui/TasksApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

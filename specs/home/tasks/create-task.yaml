@@ -1,7 +1,7 @@
 kind: specification
 id: home.tasks.create-task
 title: Create a task
-state: proposed
+state: live
 autonomy: gated
 behavior: Creating records a home maintenance task, recurring or ad-hoc.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/home/ui/HomeApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

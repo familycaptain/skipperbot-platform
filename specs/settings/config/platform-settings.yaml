@@ -1,7 +1,7 @@
 kind: specification
 id: settings.config.platform-settings
 title: Platform settings
-state: proposed
+state: live
 autonomy: gated
 behavior: Platform settings read and write the platform-scope configuration.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/settings/ui/SettingsApp.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

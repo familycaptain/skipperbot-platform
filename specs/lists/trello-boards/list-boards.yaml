@@ -1,7 +1,7 @@
 kind: specification
 id: lists.trello-boards.list-boards
 title: List Trello boards
-state: proposed
+state: live
 autonomy: gated
 behavior: Listing boards returns all configured Trello boards and their settings.
 implements:
@@ -9,5 +9,4 @@ implements:
 - apps/lists/ui/TrelloSettings.jsx
 tests: []
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''

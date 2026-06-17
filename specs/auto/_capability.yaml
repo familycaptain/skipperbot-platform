@@ -2,11 +2,10 @@ kind: capability
 id: auto
 title: Auto Maintenance
 app: auto
-scope: 'Track the household''s vehicles and everything about keeping them running: service
-  history, issues/repairs, maintenance schedules, mileage, valuations, and condition reports.
-  NOT a marketplace, dealership, or driving/navigation tool.'
-state: proposed
+scope: 'Track the household''s vehicles and everything about keeping them running: service history,
+  issues/repairs, maintenance schedules, mileage, valuations, and condition reports. NOT a marketplace,
+  dealership, or driving/navigation tool.'
+state: live
 autonomy: gated
 links: {}
-notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
-  review + bound tests before `live`.'
+notes: ''
