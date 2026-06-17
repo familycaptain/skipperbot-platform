@@ -60,9 +60,14 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
 **2. Run the segment for that item's phase / decision:**
 
 - **New item (no state):** report the run (`run poc-<n> --title … --source … --status running`).
-  Run the **FUNNEL**: `evolve-triage` → if `duplicate`/`malicious`/`invalid`: report `rejected`,
-  state `phase=rejected`, add to `seen.json`, **END**. Else (`proceed`): bug **or** operator-authored
-  → skip vision; external feature → `evolve-vision-fit` (`off-vision` → rejected, **END**). Then
+  Run the **FUNNEL**: `evolve-triage`. **Operator-authored items (`from_operator`) are NEVER
+  rejected — the operator is the authority.** Even if triage flags `duplicate`/`invalid`/out-of-scope,
+  do NOT reject: proceed, and carry triage's `summary`/`rationale` forward as a prominent
+  operator-facing note so it surfaces at **Gate 1** for the operator to decide (redirect, accept an
+  in-scope reframe, or reject it themselves). Triage rejection applies ONLY to PUBLIC (non-operator)
+  items: `duplicate`/`malicious`/`invalid` → report `rejected`, `phase=rejected`, add to `seen.json`,
+  **END**. Proceeding: bug **or** operator-authored → skip vision; external feature →
+  `evolve-vision-fit` (`off-vision` → rejected, **END**, *public items only*). Then
   `evolve-prioritize` → `park` → `phase=parked`, **END**; `surface` → run the **SPEC PHASE**:
   `evolve-grounding` → `evolve-design` → `evolve-spec-author` → SPAWN subagent `evolve-spec-audit`
   (≤3 revise rounds) → SPAWN 4 subagents `evolve-review` (security/architecture/interop/ux) →

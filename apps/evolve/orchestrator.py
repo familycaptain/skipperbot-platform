@@ -55,12 +55,14 @@ def output_driven_decider(node, inst, outs):
     if node.id == "gw_kind":
         t = out_of("triage")
         wi = inst.context.get("work_item", {})
-        # reject junk first; then operator-authored items skip vision-fit (they ARE the vision
-        # authority) and go straight to prioritize; everyone else routes on bug/feature.
-        if t.get("disposition") in ("duplicate", "malicious", "invalid"):
-            pref = "reject"
-        elif wi.get("from_operator"):
+        # Operator-authored items are NEVER rejected — the operator is the authority. They go
+        # 'trusted' (skip vision-fit) even if triage flagged duplicate/invalid; that disposition
+        # is carried forward as advice for the operator to weigh at Gate 1, not a hard reject.
+        # Only PUBLIC (non-operator) submissions get filtered as junk here.
+        if wi.get("from_operator"):
             pref = "trusted"
+        elif t.get("disposition") in ("duplicate", "malicious", "invalid"):
+            pref = "reject"
         else:
             pref = t.get("kind")                                  # bug -> prio, feature -> vision-fit
     elif node.id == "gw_vision":
