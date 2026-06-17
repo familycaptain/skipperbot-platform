@@ -59,14 +59,77 @@ def auth() -> str:
     return res["token"]
 
 
+# --- offline outbox -----------------------------------------------------------
+# The Pi goes down during a `skipper update`. Rather than lose the agents' status/gate
+# post-backs, buffer them on box 1 and flush in FIFO order once the Pi is reachable
+# again — every write reconciles on the Pi exactly once, in order, when it's back up.
+import socket
+import urllib.error
+
+_OUTBOX = os.path.expanduser(os.getenv("EVOLVE_OUTBOX", "~/.evolve/outbox.jsonl"))
+
+
+def _is_conn_error(e: Exception) -> bool:
+    # connection-level failure (Pi down/unreachable) — NOT an HTTP 4xx/5xx (a real error
+    # that retrying won't fix, so we must not buffer it forever).
+    if isinstance(e, urllib.error.HTTPError):
+        return False
+    return isinstance(e, (urllib.error.URLError, socket.timeout, ConnectionError, OSError))
+
+
+def _enqueue(path: str, body: dict) -> None:
+    os.makedirs(os.path.dirname(_OUTBOX), exist_ok=True)
+    with open(_OUTBOX, "a") as f:
+        f.write(json.dumps({"path": path, "body": body}) + "\n")
+
+
+def _flush() -> None:
+    """Deliver buffered post-backs in order; stop at the first connection error (Pi still down)."""
+    if not os.path.exists(_OUTBOX):
+        return
+    lines = [l for l in open(_OUTBOX).read().splitlines() if l.strip()]
+    if not lines:
+        return
+    try:
+        token = auth()
+    except Exception:
+        return                                   # can't even auth → leave the queue intact
+    done = 0
+    for line in lines:
+        try:
+            item = json.loads(line)
+            _post(item["path"], item["body"], token)
+            done += 1
+        except Exception as e:
+            if _is_conn_error(e):
+                break                            # Pi still down — keep this and the rest
+            done += 1                            # poison/HTTP error → drop it, don't block the queue
+    tail = lines[done:]
+    if tail:
+        open(_OUTBOX, "w").write("\n".join(tail) + "\n")
+    elif os.path.exists(_OUTBOX):
+        os.remove(_OUTBOX)
+
+
+def _send(path: str, body: dict) -> dict:
+    """Resilient write: flush any backlog first, then post — buffering this one if the Pi is down."""
+    _flush()
+    try:
+        return _post(path, body, auth())
+    except Exception as e:
+        if _is_conn_error(e):
+            _enqueue(path, body)
+            return {"queued": True, "path": path}
+        raise
+
+
 def push_gate(packet: dict, token: str | None = None) -> dict:
-    """Surface a parked gate in the operator's work queue (on the Pi)."""
-    token = token or auth()
-    return _post("/api/apps/evolve/gates", {
+    """Surface a parked gate in the operator's work queue (on the Pi). Buffered if the Pi is down."""
+    return _send("/api/apps/evolve/gates", {
         "instance_id": packet.get("instance"),
         "gate": packet.get("gate"),
         "packet": packet,
-    }, token)
+    })
 
 
 def list_decided(token: str | None = None) -> list[dict]:
@@ -76,19 +139,18 @@ def list_decided(token: str | None = None) -> list[dict]:
 
 
 def resolve(instance_id: str, status: str, token: str | None = None) -> dict:
-    """Mark a decided gate's terminal outcome after the engine resumed it."""
-    token = token or auth()
-    return _post(f"/api/apps/evolve/gates/{instance_id}/resolve", {"status": status}, token)
+    """Mark a decided gate's terminal outcome after the engine resumed it. Buffered if the Pi is down."""
+    return _send(f"/api/apps/evolve/gates/{instance_id}/resolve", {"status": status})
 
 
 def report_run(instance_id: str, *, title="", source="", phase="", status="",
                current_agent="", current_node="", cost_usd=None, events=None,
                token: str | None = None) -> dict:
     """Report a run's status + a batch of activity events to the mission-control view
-    (one POST does both). Best-effort observability — never let it break the engine."""
-    token = token or auth()
-    return _post("/api/apps/evolve/runs", {
+    (one POST does both). Best-effort observability — buffered if the Pi is down, flushed in
+    order when it's back, so a `skipper update` never loses run/event updates."""
+    return _send("/api/apps/evolve/runs", {
         "instance_id": instance_id, "title": title, "source": source, "phase": phase,
         "status": status, "current_agent": current_agent, "current_node": current_node,
         "cost_usd": cost_usd, "events": events or [],
-    }, token)
+    })
