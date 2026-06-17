@@ -140,7 +140,7 @@ app = FastAPI(title="SkipperBot Agent", version="0.1.0", lifespan=lifespan)
 # attaches request.state.principal, and rejects any unauthenticated request to a
 # non-public path with 401. Enforcement is unconditional — there is no off switch.
 # ---------------------------------------------------------------------------
-_PUBLIC_EXACT = {"/", "/api/health", "/auth/login",
+_PUBLIC_EXACT = {"/", "/api/health", "/auth/login", "/auth/logout",
                  "/api/onboarding/status", "/api/onboarding/check-openai"}
 _PUBLIC_PREFIXES = ("/assets/", "/static/", "/web/")
 
@@ -241,6 +241,27 @@ _NO_SESSION_ERR = ("Could not establish a session: the server's auth signing "
                    "SKIPPERBOT_AUTH_KEY) in .env and restart the agent.")
 
 
+def _set_session_cookie(response: JSONResponse, token: str, http_request: Request) -> None:
+    """Mirror the session token into the httpOnly ``sb_session`` cookie.
+
+    Same token returned in the body; httpOnly + SameSite=Lax + Path=/ +
+    Max-Age=SESSION_TTL. Secure is set IFF the request scheme is https (omitted on
+    plain HTTP so self-hosters on http:// still receive the cookie). This is what
+    lets top-level browser navigations / pop-out media windows authenticate without
+    a header — the cookie is honored ONLY for safe methods (see
+    principal_from_request). The token never appears in any URL or access log."""
+    from app_platform.auth import SESSION_TTL
+    response.set_cookie(
+        key="sb_session",
+        value=token,
+        max_age=SESSION_TTL,
+        httponly=True,
+        samesite="lax",
+        path="/",
+        secure=(http_request.url.scheme == "https"),
+    )
+
+
 def _issue_token(user: dict) -> str:
     """Mint a session token for a just-authenticated user.
 
@@ -287,9 +308,30 @@ async def login(request: LoginRequest, http_request: Request):
     token = _issue_token(authed)
     if not token:
         return {"ok": False, "error": _NO_SESSION_ERR}
-    return {"ok": True,
-            "user": {"name": authed["name"], "display_name": authed["display_name"], "role": authed["role"]},
-            "token": token}
+    response = JSONResponse({
+        "ok": True,
+        "user": {"name": authed["name"], "display_name": authed["display_name"], "role": authed["role"]},
+        "token": token,
+    })
+    _set_session_cookie(response, token, http_request)
+    return response
+
+
+@app.get("/auth/logout")
+async def logout(http_request: Request):
+    """Clear the httpOnly ``sb_session`` cookie (public — reachable unauthenticated).
+
+    The SPA's forceLogout() also calls this so the server-side cookie is cleared
+    (JS can't clear an httpOnly cookie). Same attributes + Max-Age=0."""
+    response = JSONResponse({"ok": True})
+    response.delete_cookie(
+        key="sb_session",
+        path="/",
+        httponly=True,
+        samesite="lax",
+        secure=(http_request.url.scheme == "https"),
+    )
+    return response
 
 
 # NOTE: there is deliberately NO public "set a password for a passwordless
@@ -464,7 +506,7 @@ async def onboarding_check_openai():
 
 
 @app.post("/api/onboarding/create-user")
-async def onboarding_create_user(request: OnboardingCreateUserRequest):
+async def onboarding_create_user(request: OnboardingCreateUserRequest, http_request: Request):
     """Create the primary admin user and write the chosen timezone into
     `public.app_config` (scope=platform, key=timezone) so the rest of
     the platform can pick it up after the next restart.
@@ -543,7 +585,15 @@ async def onboarding_create_user(request: OnboardingCreateUserRequest):
             "token": token,
         }
 
-    return await asyncio.to_thread(_do)
+    result = await asyncio.to_thread(_do)
+    # On a successful onboarding auto-login, mirror the token into the session
+    # cookie (same as /auth/login) so the new admin's browser navigations are
+    # authenticated. Failures (no Set-Cookie) pass through as the plain dict.
+    if isinstance(result, dict) and result.get("ok") and result.get("token"):
+        response = JSONResponse(result)
+        _set_session_cookie(response, result["token"], http_request)
+        return response
+    return result
 
 
 class MobileRegisterRequest(BaseModel):

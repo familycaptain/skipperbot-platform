@@ -170,8 +170,22 @@ def _bearer(header_value: str | None) -> str | None:
 
 
 def principal_from_request(request) -> dict | None:
-    """Verify the Authorization: Bearer token on an HTTP request."""
-    return verify_token(_bearer(request.headers.get("authorization")))
+    """Resolve an HTTP request's principal.
+
+    Header is PRIMARY: verify ``Authorization: Bearer <token>`` first. If that
+    yields no principal AND the request is a SAFE method (GET/HEAD), fall back to
+    the ``sb_session`` cookie — verified by the same ``verify_token`` (so expiry
+    and token_version revocation apply unchanged, and a tampered cookie yields
+    nothing). The cookie is IGNORED for mutating methods (POST/PUT/PATCH/DELETE):
+    that safe-method restriction is the CSRF guard, and it lives HERE in the
+    resolver. (OPTIONS short-circuits the gate before this is reached.)
+    """
+    principal = verify_token(_bearer(request.headers.get("authorization")))
+    if principal:
+        return principal
+    if request.method in ("GET", "HEAD"):
+        return verify_token(request.cookies.get("sb_session"))
+    return None
 
 
 _WS_BEARER_PREFIX = "bearer."
