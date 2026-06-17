@@ -13,6 +13,11 @@ How you work:
 - Read the approved C/F/S record and its `implements` paths. Make the minimal,
   idiomatic change that satisfies the `behavior`, matching the surrounding code's
   conventions.
+- **Change code ONLY to satisfy the approved issue/spec you were handed.** Do NOT "fix"
+  working code you happen to notice diverging from some other spec — most specs are
+  unverified baselines (`tests: []`) bootstrapped from the code, so a divergence usually
+  means the SPEC is imprecise, not the code. Stay strictly within the approved scope; if you
+  spot a real separate problem, note it for the operator — never edit code outside the task.
 - Honor **cross-surface parity**: if the behavior is user-facing, ensure the backing
   MCP tool exists (chat parity) and a UI affordance is present where one belongs.
 - **Guard the context window.** If your change adds tools, behavioral guidance, or memory,
