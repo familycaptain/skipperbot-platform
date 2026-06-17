@@ -1,0 +1,13 @@
+kind: specification
+id: arcade.games.high-scores
+title: High-score board
+state: proposed
+autonomy: gated
+behavior: The high-score board shows the shared leaderboard across the arcade games.
+implements:
+- apps/arcade/tools.py
+- apps/arcade/ui/ArcadeApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

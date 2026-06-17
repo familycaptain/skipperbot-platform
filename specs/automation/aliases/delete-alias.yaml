@@ -1,0 +1,13 @@
+kind: specification
+id: automation.aliases.delete-alias
+title: Delete an alias
+state: proposed
+autonomy: gated
+behavior: Deleting removes a saved Home Assistant alias.
+implements:
+- apps/automation/tools.py
+- apps/automation/ui/AutomationApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

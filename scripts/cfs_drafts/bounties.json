@@ -1,0 +1,27 @@
+{
+  "app": "bounties",
+  "title": "Bounties",
+  "scope": "Family chore-and-reward system: parents post tasks with dollar values, kids complete them for balance credits, and parents record external payments. Tracks balances and a family leaderboard. NOT the recurring chore rotation (the Chores app) — bounties are one-off, money-valued tasks.",
+  "features": [
+    {
+      "id": "bounties",
+      "title": "Bounties",
+      "specs": [
+        {"id": "list-bounties", "title": "List bounties", "behavior": "Listing returns bounties, optionally filtered by status and/or category.", "implements": ["apps/bounties/tools.py", "apps/bounties/ui/BountiesApp.jsx"]},
+        {"id": "get-bounty", "title": "Get a bounty", "behavior": "Getting returns detailed information about a specific bounty.", "implements": ["apps/bounties/tools.py", "apps/bounties/ui/BountiesApp.jsx"]},
+        {"id": "create-bounty", "title": "Create a bounty", "behavior": "Creating posts a new one-off bounty with a dollar value (parent/admin only).", "implements": ["apps/bounties/tools.py", "apps/bounties/ui/BountiesApp.jsx"]},
+        {"id": "submit-bounty", "title": "Submit a bounty", "behavior": "Submitting marks a bounty completed by a kid, pending approval.", "implements": ["apps/bounties/tools.py", "apps/bounties/ui/BountiesApp.jsx"]},
+        {"id": "approve-bounty", "title": "Approve a bounty", "behavior": "Approving accepts a submitted bounty and credits the kid's balance (parent/admin only).", "implements": ["apps/bounties/tools.py", "apps/bounties/ui/BountiesApp.jsx"]}
+      ]
+    },
+    {
+      "id": "balances",
+      "title": "Balances & payments",
+      "specs": [
+        {"id": "get-balance", "title": "Check a balance", "behavior": "Checking returns a user's current bounty balance.", "implements": ["apps/bounties/tools.py", "apps/bounties/ui/BountiesApp.jsx"]},
+        {"id": "record-payment", "title": "Record a payment", "behavior": "Recording logs an external payment to a kid, debiting their balance (parent/admin only).", "implements": ["apps/bounties/tools.py", "apps/bounties/ui/BountiesApp.jsx"]},
+        {"id": "leaderboard", "title": "Leaderboard", "behavior": "The leaderboard returns the family bounty standings.", "implements": ["apps/bounties/tools.py", "apps/bounties/ui/BountiesApp.jsx"]}
+      ]
+    }
+  ]
+}

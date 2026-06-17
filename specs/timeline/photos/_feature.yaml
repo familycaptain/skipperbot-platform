@@ -1,0 +1,7 @@
+kind: feature
+id: timeline.photos
+title: Photos
+state: proposed
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

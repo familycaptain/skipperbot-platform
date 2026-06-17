@@ -1,0 +1,12 @@
+kind: specification
+id: automation.entities.resolve-entity
+title: Resolve an entity
+state: proposed
+autonomy: gated
+behavior: Resolving maps a human name or alias to the best matching Home Assistant entity.
+implements:
+- apps/automation/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

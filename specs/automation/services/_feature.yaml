@@ -1,0 +1,7 @@
+kind: feature
+id: automation.services
+title: Services
+state: proposed
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

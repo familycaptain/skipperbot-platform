@@ -1,0 +1,13 @@
+kind: specification
+id: timeline.posts.delete-post
+title: Delete a post
+state: proposed
+autonomy: gated
+behavior: Deleting removes a post and its linked document.
+implements:
+- apps/timeline/tools.py
+- apps/timeline/ui/TimelineApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

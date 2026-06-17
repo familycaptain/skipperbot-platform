@@ -1,0 +1,13 @@
+kind: specification
+id: bounties.bounties.approve-bounty
+title: Approve a bounty
+state: proposed
+autonomy: gated
+behavior: Approving accepts a submitted bounty and credits the kid's balance (parent/admin only).
+implements:
+- apps/bounties/tools.py
+- apps/bounties/ui/BountiesApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

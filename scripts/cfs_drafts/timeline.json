@@ -1,0 +1,34 @@
+{
+  "app": "timeline",
+  "title": "Timeline",
+  "scope": "Family journal + microblog of posts, photos, and tags. Doubles as the platform's automatic activity log — whenever any app fires digest_record on a non-read CRUD, a personal post is written here, so every action is also a journal entry. NOT a per-app history view; Timeline is the unified family feed.",
+  "features": [
+    {
+      "id": "posts",
+      "title": "Posts",
+      "specs": [
+        {"id": "post", "title": "Create a post", "behavior": "Posting creates a new Timeline entry (family journal / microblog) with title, body, and tags.", "implements": ["apps/timeline/tools.py", "apps/timeline/ui/TimelineApp.jsx"]},
+        {"id": "list-feed", "title": "Browse the feed", "behavior": "Browsing returns the Timeline feed, paginated, newest first.", "implements": ["apps/timeline/tools.py", "apps/timeline/ui/TimelineApp.jsx"]},
+        {"id": "get-post", "title": "Get a post", "behavior": "Getting returns a single post with its full content and photos.", "implements": ["apps/timeline/tools.py", "apps/timeline/ui/TimelineApp.jsx"]},
+        {"id": "update-post", "title": "Edit a post", "behavior": "Editing changes a post's title, body, or tags.", "implements": ["apps/timeline/tools.py", "apps/timeline/ui/TimelineApp.jsx"]},
+        {"id": "delete-post", "title": "Delete a post", "behavior": "Deleting removes a post and its linked document.", "implements": ["apps/timeline/tools.py", "apps/timeline/ui/TimelineApp.jsx"]},
+        {"id": "search", "title": "Search the timeline", "behavior": "Searching does full-text matching across post titles and bodies.", "implements": ["apps/timeline/tools.py", "apps/timeline/ui/TimelineApp.jsx"]},
+        {"id": "pin-post", "title": "Pin a post", "behavior": "Pinning toggles a post's pinned status so it sticks to the top of the feed.", "implements": ["apps/timeline/tools.py", "apps/timeline/ui/TimelineApp.jsx"]}
+      ]
+    },
+    {
+      "id": "photos",
+      "title": "Photos",
+      "specs": [
+        {"id": "add-photos", "title": "Attach photos", "behavior": "Attaching adds photos to a post for its carousel.", "implements": ["apps/timeline/tools.py", "apps/timeline/ui/TimelineApp.jsx"]}
+      ]
+    },
+    {
+      "id": "tags",
+      "title": "Tags",
+      "specs": [
+        {"id": "list-tags", "title": "List tags", "behavior": "Listing returns all Timeline tags with their post counts.", "implements": ["apps/timeline/tools.py", "apps/timeline/ui/TimelineApp.jsx"]}
+      ]
+    }
+  ]
+}

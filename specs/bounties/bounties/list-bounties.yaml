@@ -1,0 +1,13 @@
+kind: specification
+id: bounties.bounties.list-bounties
+title: List bounties
+state: proposed
+autonomy: gated
+behavior: Listing returns bounties, optionally filtered by status and/or category.
+implements:
+- apps/bounties/tools.py
+- apps/bounties/ui/BountiesApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

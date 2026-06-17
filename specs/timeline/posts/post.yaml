@@ -1,0 +1,14 @@
+kind: specification
+id: timeline.posts.post
+title: Create a post
+state: proposed
+autonomy: gated
+behavior: Posting creates a new Timeline entry (family journal / microblog) with title, body,
+  and tags.
+implements:
+- apps/timeline/tools.py
+- apps/timeline/ui/TimelineApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

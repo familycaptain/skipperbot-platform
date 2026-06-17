@@ -1,0 +1,13 @@
+kind: specification
+id: timeline.photos.add-photos
+title: Attach photos
+state: proposed
+autonomy: gated
+behavior: Attaching adds photos to a post for its carousel.
+implements:
+- apps/timeline/tools.py
+- apps/timeline/ui/TimelineApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

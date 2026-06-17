@@ -1,0 +1,13 @@
+kind: specification
+id: automation.entities.list-entities
+title: List entities
+state: proposed
+autonomy: gated
+behavior: Listing returns Home Assistant entities, optionally filtered by domain or search text.
+implements:
+- apps/automation/tools.py
+- apps/automation/ui/AutomationApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

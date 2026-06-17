@@ -1,0 +1,15 @@
+{
+  "app": "arcade",
+  "title": "Arcade",
+  "scope": "A small arcade of self-contained canvas/WebGL games — Wardenfall (tower defense), Aeldrift (3D exploration), Spinhazard (vector shooter), and Solitaire (Klondike, with per-user save/resume) — sharing one high-score board. Demonstrates the platform's in-browser game capability. NOT a competitive/online game service; these are local single-player diversions.",
+  "features": [
+    {
+      "id": "games",
+      "title": "Games & scores",
+      "specs": [
+        {"id": "play-games", "title": "Play the games", "behavior": "The arcade offers four self-contained in-browser games (Wardenfall tower defense, Aeldrift 3D exploration, Spinhazard vector shooter, Solitaire with per-user save/resume) rendered on canvas/WebGL.", "implements": ["apps/arcade/ui/ArcadeApp.jsx"]},
+        {"id": "high-scores", "title": "High-score board", "behavior": "The high-score board shows the shared leaderboard across the arcade games.", "implements": ["apps/arcade/tools.py", "apps/arcade/ui/ArcadeApp.jsx"]}
+      ]
+    }
+  ]
+}

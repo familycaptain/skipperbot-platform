@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.games.play-games
+title: Play the games
+state: proposed
+autonomy: gated
+behavior: The arcade offers four self-contained in-browser games (Wardenfall tower defense, Aeldrift
+  3D exploration, Spinhazard vector shooter, Solitaire with per-user save/resume) rendered on
+  canvas/WebGL.
+implements:
+- apps/arcade/ui/ArcadeApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

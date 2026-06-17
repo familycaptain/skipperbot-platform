@@ -1,0 +1,13 @@
+kind: specification
+id: automation.control.set-light
+title: Set a light
+state: proposed
+autonomy: gated
+behavior: Setting a light adjusts its brightness and/or color by entity id or alias.
+implements:
+- apps/automation/tools.py
+- apps/automation/ui/AutomationApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,13 @@
+kind: specification
+id: bounties.bounties.get-bounty
+title: Get a bounty
+state: proposed
+autonomy: gated
+behavior: Getting returns detailed information about a specific bounty.
+implements:
+- apps/bounties/tools.py
+- apps/bounties/ui/BountiesApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

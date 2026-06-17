@@ -1,0 +1,13 @@
+kind: specification
+id: bounties.balances.get-balance
+title: Check a balance
+state: proposed
+autonomy: gated
+behavior: Checking returns a user's current bounty balance.
+implements:
+- apps/bounties/tools.py
+- apps/bounties/ui/BountiesApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

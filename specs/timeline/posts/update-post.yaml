@@ -1,0 +1,13 @@
+kind: specification
+id: timeline.posts.update-post
+title: Edit a post
+state: proposed
+autonomy: gated
+behavior: Editing changes a post's title, body, or tags.
+implements:
+- apps/timeline/tools.py
+- apps/timeline/ui/TimelineApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

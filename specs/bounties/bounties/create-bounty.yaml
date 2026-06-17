@@ -1,0 +1,13 @@
+kind: specification
+id: bounties.bounties.create-bounty
+title: Create a bounty
+state: proposed
+autonomy: gated
+behavior: Creating posts a new one-off bounty with a dollar value (parent/admin only).
+implements:
+- apps/bounties/tools.py
+- apps/bounties/ui/BountiesApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

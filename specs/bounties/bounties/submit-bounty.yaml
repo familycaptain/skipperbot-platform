@@ -1,0 +1,13 @@
+kind: specification
+id: bounties.bounties.submit-bounty
+title: Submit a bounty
+state: proposed
+autonomy: gated
+behavior: Submitting marks a bounty completed by a kid, pending approval.
+implements:
+- apps/bounties/tools.py
+- apps/bounties/ui/BountiesApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

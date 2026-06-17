@@ -1,0 +1,12 @@
+kind: capability
+id: automation
+title: Automation
+app: automation
+scope: 'Home Assistant bridge: check sensors, control smart-home devices, manage human-friendly
+  aliases, list services, and find low batteries — by talking to the configured Home Assistant
+  REST API. NOT user prompt rules (the Behaviors app); this drives real smart-home entities.'
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

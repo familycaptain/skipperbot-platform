@@ -1,0 +1,13 @@
+kind: specification
+id: notifications.delivery.list-recent
+title: List recent notifications
+state: proposed
+autonomy: gated
+behavior: Listing returns recent notifications delivered by the system.
+implements:
+- apps/notifications/tools.py
+- apps/notifications/ui/NotificationsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

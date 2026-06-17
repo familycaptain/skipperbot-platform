@@ -1,0 +1,13 @@
+kind: specification
+id: timeline.tags.list-tags
+title: List tags
+state: proposed
+autonomy: gated
+behavior: Listing returns all Timeline tags with their post counts.
+implements:
+- apps/timeline/tools.py
+- apps/timeline/ui/TimelineApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

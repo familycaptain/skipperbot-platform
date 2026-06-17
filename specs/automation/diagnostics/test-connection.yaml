@@ -1,0 +1,13 @@
+kind: specification
+id: automation.diagnostics.test-connection
+title: Test the connection
+state: proposed
+autonomy: gated
+behavior: Testing checks whether the configured Home Assistant REST API is reachable.
+implements:
+- apps/automation/tools.py
+- apps/automation/ui/AutomationApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'
