@@ -38,3 +38,12 @@ both tool paths call it; no new cross-app dependency"). Do NOT write "we should�
 work is done; say what was done. `approve` = the change AS BUILT respects the structure;
 `concerns` = problems you see in the diff. Otherwise (**Gate 1**, a proposal) assess the
 proposed intent as above.
+
+**At Gate 1 you are also given the Code Scout's `code_plan`** — the coding agent's read-only
+sketch of WHICH files it would touch (each with an `action`) and its `placement_notes`. This is
+your sharpest signal: review the **planned placement**, not just the abstract approach. If the
+plan would put shared logic in an app the platform (or another app) then has to import — e.g.
+"rewrite the location/geocode lookup inside `apps/weather/`" when voice/config need it too —
+that is a one-directional dependency-rule violation **in the making**; raise it as a high-
+severity concern and set `approve:false` so it's corrected before the build, not after. Judge
+the plan's `changes`/`new_modules` against where things actually belong (app vs `app_platform`).

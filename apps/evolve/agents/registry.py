@@ -118,6 +118,24 @@ GROUNDING_OUT = _obj({
     "entry_points": _arr(_STR),            # where behavior is wired (routes, tools, UI mount points)
 }, ["summary", "relevant_files"])
 
+# Read-only implementation sketch — the coding agent's high-level plan of WHAT code would
+# change, produced at Gate 1 WITHOUT writing any code. Gives the operator (and the architecture
+# reviewer) visibility into where the change would land before it's approved — so a bad placement
+# (e.g. "rewrite the zip lookup INSIDE apps/weather") is caught at the gate, not after the build.
+CODE_PLAN_OUT = _obj({
+    "summary": _STR,                       # the approach in one human-readable line
+    "approach": _STR,                      # the high-level strategy in prose — how it would be built
+    "changes": _arr(_obj({                 # the planned file-level edits (the visibility the operator wants)
+        "path": _STR,                      # the file/area it would touch
+        "action": {"type": "string", "enum": ["add", "modify", "rewrite", "delete", "move"]},
+        "what": _STR,                      # one line: what changes here and why
+    }, ["path", "action", "what"])),
+    "new_modules": _arr(_STR),             # any new files/modules it would create, and where they'd live
+    "placement_notes": _arr(_STR),         # WHERE shared logic should live (platform vs app) + dep-rule awareness
+    "risks": _arr(_STR),                   # risks / things the operator should weigh before approving
+    "open_questions": _arr(_STR),          # what it could not resolve from a read-only scan
+}, ["summary", "approach", "changes"])
+
 LEAD_OUT = _obj({
     "summary": _STR,
     "verdict": {"type": "string", "enum": ["accept", "revise", "escalate"]},   # per-round arbitration
@@ -201,6 +219,11 @@ ROSTER: dict[str, AgentSpec] = {
         DESIGN_OUT, prompt_file="design.md", tier="deep",
         charter_keys=["scope", "surfaces", "principles"],
         requires_tools=True, skills=["explore-code"], max_tokens=4096),   # reads real code before deciding
+    "code-scout": AgentSpec(
+        "code-scout", "Read-only: sketch WHAT code would change for an approved approach — no code written.",
+        CODE_PLAN_OUT, prompt_file="code-scout.md", tier="deep",
+        charter_keys=["surfaces", "principles"],
+        requires_tools=True, skills=["explore-code"], max_tokens=4096),   # reads real code, writes none
     "lead": AgentSpec(
         "lead", "Engineering lead: arbitrate the spec team + own the Gate-1 proposal and recommendation.",
         LEAD_OUT, prompt_file="lead.md", tier="deep",

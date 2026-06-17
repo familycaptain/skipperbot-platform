@@ -23,6 +23,12 @@ const REC_COLOR = {
 const SEV_COLOR = { high: "bg-red-900/50 text-red-300", med: "bg-amber-900/50 text-amber-300",
   medium: "bg-amber-900/50 text-amber-300", low: "bg-slate-700/60 text-slate-300" };
 const ATTENTION = new Set(["crit", "lead"]);
+// Code Scout "planned change" action badges — rewrite/delete/move read as higher-impact
+const ACTION_CLS = {
+  add: "bg-emerald-900/50 text-emerald-300", modify: "bg-sky-900/50 text-sky-300",
+  rewrite: "bg-amber-900/50 text-amber-300", delete: "bg-red-900/50 text-red-300",
+  move: "bg-violet-900/50 text-violet-300",
+};
 
 // run status -> chip style + label
 const STATUS = {
@@ -37,7 +43,8 @@ const isActive = (s) => s === "running" || s === "building";
 // pretty labels for the per-agent lanes
 const AGENT_LABEL = {
   engine: "Engine", lead: "Lead", design: "Design", "spec-author": "Spec-author",
-  spec: "Spec-author", crit: "Spec-audit", "spec-audit": "Spec-audit", triage: "Triage",
+  spec: "Spec-author", "code-scout": "Code scout", scout: "Code scout",
+  crit: "Spec-audit", "spec-audit": "Spec-audit", triage: "Triage",
   "vision-fit": "Vision-fit", vision: "Vision-fit", prioritize: "Prioritize", prio: "Prioritize",
   security: "Security", architecture: "Architecture", interop: "Interop", ux: "UX / UI",
   serialize: "Serialize", implement: "Implement", validate: "Validate", merge: "Merge",
@@ -295,6 +302,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
   const pkt = detail?.packet || {};
   const rec = pkt.recommendation || {};
   const proposal = pkt.proposal || {};
+  const codePlan = pkt.code_plan || null;   // Code Scout's read-only "what would change" sketch (Gate 1)
   const agents = pkt.agents || [];
   const atGate = detail?.status === "waiting";
   const gate2 = (detail?.gate || pkt.gate) === "gate2";   // Gate 2 = approve the RESULT → merge to release
@@ -606,6 +614,48 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
                       </div>
                     ))}
                     {proposal.notes && <div className="text-xs text-slate-500 mt-2 whitespace-pre-wrap">{proposal.notes}</div>}
+                  </Section>
+                )}
+
+                {codePlan && !gate2 && !gate3 && (
+                  <Section title="Planned code changes (read-only sketch — no code written yet)">
+                    {codePlan.summary && <div className="text-sm text-slate-200 mb-1">{codePlan.summary}</div>}
+                    {codePlan.approach && <div className="text-xs text-slate-400 mb-2 whitespace-pre-wrap">{codePlan.approach}</div>}
+                    {codePlan.changes?.length > 0 && (
+                      <div className="space-y-1 mb-2">
+                        {codePlan.changes.map((c, i) => (
+                          <div key={i} className="text-xs flex gap-1.5 items-baseline">
+                            <span className={`text-[9px] uppercase px-1 rounded shrink-0 ${ACTION_CLS[c.action] || "bg-slate-700/60 text-slate-300"}`}>{c.action}</span>
+                            <span className="font-mono text-indigo-300 shrink-0">{c.path}</span>
+                            {c.what && <span className="text-slate-400">— {c.what}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {codePlan.new_modules?.length > 0 && (
+                      <div className="text-xs text-slate-400 mb-1.5">
+                        <span className="text-slate-500">new modules: </span>
+                        {codePlan.new_modules.map((m, i) => <span key={i} className="font-mono text-emerald-300 mr-2">{m}</span>)}
+                      </div>
+                    )}
+                    {codePlan.placement_notes?.length > 0 && (
+                      <div className="border border-amber-700/40 bg-amber-900/15 rounded p-2 mb-1.5">
+                        <div className="text-[11px] text-amber-300 font-medium mb-0.5">Placement / dependency-rule notes</div>
+                        <ul className="list-disc ml-4 text-xs text-slate-300 space-y-0.5">
+                          {codePlan.placement_notes.map((n, i) => <li key={i}>{n}</li>)}
+                        </ul>
+                      </div>
+                    )}
+                    {codePlan.risks?.length > 0 && (
+                      <div className="text-xs mb-1"><span className="text-slate-500">risks: </span>
+                        <ul className="list-disc ml-4 text-slate-300 space-y-0.5">{codePlan.risks.map((r, i) => <li key={i}>{r}</li>)}</ul>
+                      </div>
+                    )}
+                    {codePlan.open_questions?.length > 0 && (
+                      <div className="text-xs"><span className="text-slate-500">open questions: </span>
+                        <ul className="list-disc ml-4 text-slate-400 space-y-0.5">{codePlan.open_questions.map((q, i) => <li key={i}>{q}</li>)}</ul>
+                      </div>
+                    )}
                   </Section>
                 )}
 

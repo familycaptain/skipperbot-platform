@@ -74,9 +74,14 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   Proceeding: bug **or** operator-authored → skip vision; external feature →
   `evolve-vision-fit` (`off-vision` → rejected, **END**, *public items only*). Then
   `evolve-prioritize` → `park` → `phase=parked`, **END**; `surface` → run the **SPEC PHASE**:
-  `evolve-grounding` → `evolve-design` → `evolve-spec-author` → SPAWN subagent `evolve-spec-audit`
-  (≤3 revise rounds) → SPAWN 4 subagents `evolve-review` (security/architecture/interop/ux) →
-  `evolve-lead`. Save every artifact. Then push **Gate 1** (see *At a gate*), `phase=gate1`, **END**.
+  `evolve-grounding` → `evolve-design` → `evolve-spec-author` → **`evolve-code-scout`**
+  (read-only: sketch WHAT code would change — files/areas, add/modify/rewrite, where new logic lives —
+  writing NO code; save as `code_plan.json`) then SPAWN subagent `evolve-spec-audit`
+  (≤3 revise rounds) → SPAWN 4 subagents `evolve-review` (security/architecture/interop/ux) —
+  **pass the `code_plan` to the architecture reviewer** so it audits the PLANNED placement against the
+  one-directional dep rule (catches "rewrite the zip lookup inside `apps/weather`" at the gate, before
+  the build) then `evolve-lead` (weigh the `code_plan` + any architecture concern in the recommendation).
+  Save every artifact. Then push **Gate 1** (see *At a gate*), `phase=gate1`, **END**.
 
 - **`phase=gate1`, decision=`approve`:** RE-LOAD spec + grounding + design from `~/.evolve-poc/<n>/`.
   **Read the decision `note`** (the operator's selected answers + guidance) and pass it to
@@ -131,9 +136,11 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
     - **New approach** — the failure shows the *approach itself* was wrong, so the agents change the
       plan. You CANNOT skip to a code patch: re-enter the **SPEC PHASE** so the new way is documented
       and re-reviewed. `evolve-design` (re-frame with the failure as input → new approach + tech
-      choices) → `evolve-spec-author` (**REWRITE** the spec(s) to the new way) → SPAWN
-      `evolve-spec-audit` → SPAWN the 4 `evolve-review` lenses (re-review the NEW design:
-      security/architecture/interop/ux) → `evolve-lead`. Re-push **Gate 1** (the intent/approach
+      choices) → `evolve-spec-author` (**REWRITE** the spec(s) to the new way) → **`evolve-code-scout`**
+      (re-sketch the code footprint for the new approach) → SPAWN
+      `evolve-spec-audit` → SPAWN the 4 `evolve-review` lenses (re-review the NEW design,
+      architecture lens gets the new `code_plan`: security/architecture/interop/ux) → `evolve-lead`.
+      Re-push **Gate 1** (the intent/approach
       changed — it needs re-approval), `phase=gate1`, **END**. It then flows Gate 1 → build → Gate 2
       → verify as normal.
     **Routing rule:** if the fix changes the **approach, the behavior contract, or a load-bearing tech
@@ -151,6 +158,10 @@ shape the UI panels render** (so the operator sees the ACTUAL spec + reviews, no
 - `proposal` — the spec-author's FULL output object: {spec_id, title, behavior, implements,
   tests:[{type, path, rubric}], notes}. The **"Proposed spec"** panel renders this verbatim.
 - `spec_tree` — the list of specs when design decomposed (omit / `[proposal]` if single).
+- `code_plan` — the Code Scout's read-only sketch: {summary, approach, changes:[{path, action, what}],
+  new_modules, placement_notes, risks, open_questions}. The **"Planned code changes"** panel renders it
+  so the operator sees the change's code footprint (which files, add/modify/**rewrite**, where new logic
+  lands) BEFORE approving — not just the spec. Gate 1 only.
 - `decisions_needed` — the design's human forks, each {question, recommendation, options:[…]}.
 - `agents` — one entry **per role** `{key, label, output}` where `output` is that role's full
   structured result (spec-audit `findings`, each reviewer's `concerns`/`conflicts`, lead arbitration).
@@ -172,7 +183,7 @@ prefix keeps the production poller out of your gates) via `python3 scripts/evolv
 - **run:** `run poc-<n> --title "<t>" --source "<s>" --phase <p> --status <running|building|waiting|merged|rejected>`
 - **agent step:** START `event poc-<n> <agent> agent_start "<agent> · poc"`, END
   `event poc-<n> <agent> agent_end "<✓/✗> <one-line>"`; stream notable lines (`tool`/`info`/`emit`).
-  `<agent>` = the role: triage, vision, prio, grounding, design, spec-author, spec-audit,
+  `<agent>` = the role: triage, vision, prio, grounding, design, spec-author, code-scout, spec-audit,
   security/architecture/interop/ux, lead, implement, validate.
 - **show the ACTUAL work, not just a one-liner.** The log renders full, untruncated text — so after
   a substantive step, `emit` its FULL content: after `spec-author` (AND each revise round) the

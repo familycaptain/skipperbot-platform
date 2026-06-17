@@ -486,6 +486,15 @@ more — cheap. Think in **small, decomposable pieces of agentic functionality.*
   (never safety-critical); learn the maintainer's taste over time.
 
 **Implementation & validation**
+- **Code-scout agent** — the coding agent in **read-only, plan-only mode at Gate 1**.
+  After the design + spec, it scans the real code and produces a **high-level sketch of
+  WHAT code would change** — the files/areas it would touch (add / modify / **rewrite** /
+  move), where any new logic would live, and explicit **placement notes** against the
+  one-directional dependency rule — **without writing any code**. It gives the operator
+  (and the architecture reviewer, which receives the sketch) visibility into the change's
+  code footprint *before* approval, so a bad placement (e.g. "rewrite the ZIP/geocode
+  lookup inside `apps/weather/`" when it's a platform concern) is caught at the gate, not
+  after the build. The sketch informs the Gate-1 decision; it is not the implement contract.
 - **Implementation (coding) agent** — write the code that converges the codebase to
   the approved spec, on the box-1 workspace feature branch.
 - **Test-authoring agent** — write/update the spec's bound acceptance tests
