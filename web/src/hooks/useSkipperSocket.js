@@ -26,6 +26,37 @@ function bearerSubprotocol() {
   return `bearer.${b64}`;
 }
 
+// The user's IANA timezone — sent to /api/chat/history so the server buckets dates
+// (and Today/Yesterday) in the SAME zone the client uses for live grouping (issue #8).
+function browserTz() {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ""; } catch { return ""; }
+}
+
+// Local calendar day-key 'YYYY-MM-DD' for an ISO timestamp (en-CA renders ISO order).
+// Must match the server's local-Y-M-D day-key so live and reloaded separators line up.
+function localDayKey(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  return d.toLocaleDateString("en-CA");
+}
+
+// Append a live message: stamp ts (server ts or local receive time), and insert a
+// date_separator before it when its local day differs from the last real message's
+// (so a session crossing midnight stays grouped without a reload).
+function appendLive(prev, msg, makeId) {
+  const ts = msg.ts || new Date().toISOString();
+  const out = prev.slice();
+  let lastKey = null;
+  for (let i = out.length - 1; i >= 0; i--) {
+    if (out[i].role !== "date_separator" && out[i].ts) { lastKey = localDayKey(out[i].ts); break; }
+  }
+  const key = localDayKey(ts);
+  if (key && key !== lastKey) out.push({ id: makeId(), role: "date_separator", date: key });
+  out.push({ ...msg, ts });
+  return out;
+}
+
 export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDocsUpdated, onRemindersUpdated, onRecipesUpdated, onBrainstormUpdated, onEditProposal, onTodoUpdated) {
   const [connected, setConnected] = useState(false);
   // Coarse connection state for the chat surface: 'connecting' | 'connected' | 'auth_failed'.
@@ -74,9 +105,10 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
     (async () => {
       let hist = [];
       try {
-        const res = await fetch("/api/chat/history?limit=20");
+        const res = await fetch(`/api/chat/history?limit=20&tz=${encodeURIComponent(browserTz())}`);
         if (res.ok) {
           const data = await res.json();
+          // Server returns ts on each message + date_separator rows (issue #8).
           hist = (data.messages || []).map((m) => ({ ...m, id: nextId() }));
         }
       } catch {
@@ -86,6 +118,7 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
       const greeting = {
         id: nextId(),
         role: "bot",
+        ts: new Date().toISOString(),
         content: hist.length
           ? "Welcome back! Here's where we left off — what can I help you with?"
           : "Hello! I'm Skipper, your AI assistant. How can I help you today?",
@@ -142,33 +175,27 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
           setIsTyping(false);
           setProgress(null);
           setSending(false);
-          setMessages((prev) => [
-            ...prev,
-            { id: nextId(), role: "bot", content: data.response },
-          ]);
+          setMessages((prev) => appendLive(prev,
+            { id: nextId(), role: "bot", content: data.response, ts: data.ts }, nextId));
           break;
 
         case "notification":
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: nextId(),
-              role: "notification",
-              content: data.message,
-              source: data.source,
-            },
-          ]);
+          setMessages((prev) => appendLive(prev, {
+            id: nextId(),
+            role: "notification",
+            content: data.message,
+            source: data.source,
+            ts: data.ts,
+          }, nextId));
           break;
 
         case "message_from_user":
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: nextId(),
-              role: "bot",
-              content: `[Message from ${data.from_user}]: ${data.message}`,
-            },
-          ]);
+          setMessages((prev) => appendLive(prev, {
+            id: nextId(),
+            role: "bot",
+            content: `[Message from ${data.from_user}]: ${data.message}`,
+            ts: data.ts,
+          }, nextId));
           break;
 
         case "open_app":
@@ -202,16 +229,14 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
           break;
 
         case "tool_call":
-          setMessages((prev) => [
-            ...prev,
-            {
-              id: nextId(),
-              role: "tool_call",
-              toolName: data.tool_name,
-              toolArgs: data.tool_args || {},
-              toolCallId: data.tool_call_id,
-            },
-          ]);
+          setMessages((prev) => appendLive(prev, {
+            id: nextId(),
+            role: "tool_call",
+            toolName: data.tool_name,
+            toolArgs: data.tool_args || {},
+            toolCallId: data.tool_call_id,
+            ts: data.ts,
+          }, nextId));
           break;
 
         case "idea_edit_proposal":
@@ -219,10 +244,8 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
           break;
 
         case "server_restarting":
-          setMessages((prev) => [
-            ...prev,
-            { id: nextId(), role: "notification", content: "Agent is restarting — draining in-flight work...", source: "system" },
-          ]);
+          setMessages((prev) => appendLive(prev,
+            { id: nextId(), role: "notification", content: "Agent is restarting — draining in-flight work...", source: "system" }, nextId));
           break;
 
         case "build_id":
@@ -277,10 +300,9 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
     (text) => {
       if (!text.trim() || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
       setSending(true);
-      setMessages((prev) => [
-        ...prev,
-        { id: nextId(), role: "user", content: text },
-      ]);
+      // No server echo for the user turn — stamp it client-side (issue #8).
+      setMessages((prev) => appendLive(prev,
+        { id: nextId(), role: "user", content: text }, nextId));
       wsRef.current.send(JSON.stringify({ message: text }));
     },
     []
