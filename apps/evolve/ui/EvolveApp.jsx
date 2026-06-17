@@ -301,11 +301,18 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
   const gate3 = (detail?.gate || pkt.gate) === "gate3";   // Gate 3 = VERIFY — you tested it on your Pi; works or still broken?
   // "needs you" = waiting AND you haven't already decided it (a decided gate is the engine's to act on)
   const needsYou = runs.filter((r) => r.status === "waiting" && !decided[r.instance_id]).length;
-  // chip for a gate you've decided but the engine hasn't picked up yet
+  // chip for a gate you've decided but the engine hasn't picked up yet — GATE-AWARE
+  // (approve means build@gate1, merge@gate2, but VERIFIED/done@gate3 — not "building")
   const decidedChip = (dec) => {
-    const d = dec.decision === "approve" ? "approved" : dec.decision;
-    const verb = dec.decision === "approve" ? "building" : dec.decision === "change" ? "revising" : "closing";
-    return { cls: "bg-violet-900/50 text-violet-300", label: `${d} · ${verb} soon` };
+    const g = dec.gate, d = dec.decision;
+    if (d === "approve") {
+      if (g === "gate3") return { cls: "bg-emerald-900/50 text-emerald-300", label: "verified · finishing soon" };
+      if (g === "gate2") return { cls: "bg-violet-900/50 text-violet-300", label: "approved · merging soon" };
+      return { cls: "bg-violet-900/50 text-violet-300", label: "approved · building soon" };
+    }
+    if (d === "change")
+      return { cls: "bg-amber-900/50 text-amber-300", label: g === "gate3" ? "reported · re-fixing soon" : "changes · revising soon" };
+    return { cls: "bg-red-900/50 text-red-300", label: "rejected · closing soon" };
   };
 
   // group the activity stream into per-agent lanes, in first-seen order
@@ -416,20 +423,31 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
               </div>
             )}
 
-            {/* DECIDED but the engine hasn't picked it up yet — explain the limbo instead of a blank panel */}
-            {!atGate && detail?.status === "decided" && (
-              <div className="mb-4 border rounded-lg p-3 bg-violet-900/20 border-violet-700/40 text-sm text-violet-200">
-                <div className="font-medium mb-0.5">
-                  ✓ You {detail.decision === "approve" ? "approved this" : `chose "${detail.decision}"`}
-                  {detail.decided_by ? ` (${detail.decided_by})` : ""} — nothing more needed from you.
+            {/* DECIDED but the engine hasn't picked it up yet — explain the limbo (gate-aware) */}
+            {!atGate && detail?.status === "decided" && (() => {
+              const g = detail.gate, d = detail.decision;
+              const verified = g === "gate3" && d === "approve";
+              const did = verified ? "verified this works"
+                : d === "approve" ? "approved this" : `chose "${d}"`;
+              const next = d === "approve"
+                  ? (g === "gate3" ? "closes the GitHub issue and finishes it"
+                     : g === "gate2" ? "merges it to release, then asks you to verify"
+                     : "builds it")
+                : d === "change"
+                  ? (g === "gate3" ? "resumes the same conversation to fix what you reported"
+                     : "re-works it")
+                : "tears it down";
+              return (
+                <div className={`mb-4 border rounded-lg p-3 text-sm ${verified ? "bg-emerald-900/20 border-emerald-700/40 text-emerald-200" : "bg-violet-900/20 border-violet-700/40 text-violet-200"}`}>
+                  <div className="font-medium mb-0.5">
+                    ✓ You {did}{detail.decided_by ? ` (${detail.decided_by})` : ""} — nothing more needed from you.
+                  </div>
+                  <div className={`text-xs ${verified ? "text-emerald-300/80" : "text-violet-300/80"}`}>
+                    The engine {next} on the next loop pass (make sure the box-1 /loop is running).
+                  </div>
                 </div>
-                <div className="text-violet-300/80 text-xs">
-                  {detail.decision === "approve" ? "The engine builds it on the next loop pass"
-                   : detail.decision === "change" ? "The engine re-works it on the next loop pass"
-                   : "The engine tears it down on the next loop pass"} (make sure the box-1 /loop is running).
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* GATE REVIEW (only when parked at a human gate) */}
             {atGate && (
