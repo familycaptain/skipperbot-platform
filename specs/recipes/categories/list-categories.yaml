@@ -1,0 +1,13 @@
+kind: specification
+id: recipes.categories.list-categories
+title: List categories
+state: proposed
+autonomy: gated
+behavior: Listing returns all recipe categories.
+implements:
+- apps/recipes/tools.py
+- apps/recipes/ui/RecipeListApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

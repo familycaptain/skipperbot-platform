@@ -1,0 +1,13 @@
+kind: specification
+id: goals.structure.set-dependency
+title: Set dependencies
+state: proposed
+autonomy: gated
+behavior: Dependency operations declare which other goals/projects/tasks must complete before
+  a given one.
+implements:
+- apps/goals/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,13 @@
+kind: specification
+id: medical.treatments.add-treatment
+title: Add a treatment
+state: proposed
+autonomy: gated
+behavior: Adding records a recurring treatment (injection, infusion) for a member with its interval.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

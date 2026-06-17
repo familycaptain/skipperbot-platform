@@ -1,0 +1,13 @@
+kind: specification
+id: goals.trello.trello-task
+title: Create/adopt a Trello task
+state: proposed
+autonomy: gated
+behavior: Trello-task operations create a new Trello-linked task under a project or adopt an existing
+  Trello card into the project as a linked task.
+implements:
+- apps/goals/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

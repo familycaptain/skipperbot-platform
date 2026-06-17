@@ -1,0 +1,13 @@
+kind: capability
+id: meals
+title: Meals
+app: meals
+scope: 'Meal idea generator and decision assistant: filter a curated meal library by cuisine,
+  effort, tags, and components to decide what to eat, log what was actually eaten, and grow the
+  library over time. NOT recipes with ingredients/steps (the Recipes app) — Meals is about choosing
+  what to make.'
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

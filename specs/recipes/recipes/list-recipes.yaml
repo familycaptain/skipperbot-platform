@@ -1,0 +1,13 @@
+kind: specification
+id: recipes.recipes.list-recipes
+title: List recipes
+state: proposed
+autonomy: gated
+behavior: Listing returns recipes, optionally filtered by category or creator.
+implements:
+- apps/recipes/tools.py
+- apps/recipes/ui/RecipeListApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

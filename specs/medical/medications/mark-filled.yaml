@@ -1,0 +1,14 @@
+kind: specification
+id: medical.medications.mark-filled
+title: Mark a medication filled
+state: proposed
+autonomy: gated
+behavior: Marking filled advances the last-dose date by the supply duration and resets the refill
+  cycle.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,13 @@
+kind: specification
+id: goals.nagging.toggle-project-nag
+title: Enable/disable project nagging
+state: proposed
+autonomy: gated
+behavior: Project nagging can be turned on or off, controlling whether the PM domain auto-nags
+  about a project.
+implements:
+- apps/goals/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

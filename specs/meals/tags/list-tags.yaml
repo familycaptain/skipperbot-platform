@@ -1,0 +1,13 @@
+kind: specification
+id: meals.tags.list-tags
+title: List meal tags
+state: proposed
+autonomy: gated
+behavior: Listing returns all meal tags with their usage counts.
+implements:
+- apps/meals/tools.py
+- apps/meals/ui/MealsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

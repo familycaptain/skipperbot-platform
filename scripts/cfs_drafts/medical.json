@@ -1,0 +1,71 @@
+{
+  "app": "medical",
+  "title": "Medical",
+  "scope": "Family medical tracker: per-member medications with refill-nag reminders, recurring treatments (injections/infusions), a medical event journal (visits, surgeries, labs, notes), lab results with trend history, and medical-equipment maintenance. NOT a diagnosis or clinical-advice tool — it's a household record and reminder system.",
+  "features": [
+    {
+      "id": "members",
+      "title": "Family members",
+      "specs": [
+        {"id": "add-member", "title": "Add a member", "behavior": "Adding records a family member in the medical tracker.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "list-members", "title": "List members", "behavior": "Listing returns all family members in the medical tracker.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]}
+      ]
+    },
+    {
+      "id": "medications",
+      "title": "Medications & refills",
+      "specs": [
+        {"id": "add-medication", "title": "Add a medication", "behavior": "Adding tracks a medication for a member with its dosing and refill cycle.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "list-medications", "title": "List medications", "behavior": "Listing returns medications with their refill status.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "update-medication", "title": "Update a medication", "behavior": "Updating changes only the supplied fields of a medication record.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "mark-ordered", "title": "Mark a medication ordered", "behavior": "Marking ordered stops the 'needs ordering' nag; the nag continues daily as 'ordered, awaiting fill'.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "mark-filled", "title": "Mark a medication filled", "behavior": "Marking filled advances the last-dose date by the supply duration and resets the refill cycle.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "upcoming-refills", "title": "Upcoming refills", "behavior": "Upcoming refills returns medications needing a refill within the next N days.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]}
+      ]
+    },
+    {
+      "id": "events",
+      "title": "Medical events",
+      "specs": [
+        {"id": "log-event", "title": "Log a medical event", "behavior": "Logging records a medical event — visit, surgery, procedure, lab, note, or emergency.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "list-events", "title": "List medical events", "behavior": "Listing returns medical events with optional filters.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]}
+      ]
+    },
+    {
+      "id": "treatments",
+      "title": "Recurring treatments",
+      "specs": [
+        {"id": "add-treatment", "title": "Add a treatment", "behavior": "Adding records a recurring treatment (injection, infusion) for a member with its interval.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "log-treatment", "title": "Log a treatment", "behavior": "Logging records an instance of a treatment and advances its next-due date by the interval.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "list-treatments", "title": "List treatments", "behavior": "Listing returns recurring treatments with their due status.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]}
+      ]
+    },
+    {
+      "id": "labs",
+      "title": "Lab results",
+      "specs": [
+        {"id": "add-lab-test", "title": "Add a lab test", "behavior": "Adding registers a lab test on the master list.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "log-lab-results", "title": "Log lab results", "behavior": "Logging records lab results for a member.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "results-by-date", "title": "Results by date", "behavior": "Results-by-date returns all recorded lab results for an exact date.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "lab-history", "title": "Lab history", "behavior": "Lab history returns historical results (trend) for a specific test.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]}
+      ]
+    },
+    {
+      "id": "equipment",
+      "title": "Medical equipment",
+      "specs": [
+        {"id": "list-equipment", "title": "List equipment", "behavior": "Listing returns medical equipment such as dialysis machines and supply systems.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "list-equipment-tasks", "title": "List equipment tasks", "behavior": "Listing returns equipment maintenance tasks and their due dates.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "due-equipment-tasks", "title": "Due equipment tasks", "behavior": "Due-tasks returns equipment maintenance due soon or overdue.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]},
+        {"id": "complete-equipment-task", "title": "Complete an equipment task", "behavior": "Completing marks an equipment maintenance task done.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]}
+      ]
+    },
+    {
+      "id": "search",
+      "title": "Search",
+      "specs": [
+        {"id": "search-medical", "title": "Search medical records", "behavior": "Searching matches across medications, treatments, and events.", "implements": ["apps/medical/tools.py", "apps/medical/ui/MedicalApp.jsx"]}
+      ]
+    }
+  ]
+}

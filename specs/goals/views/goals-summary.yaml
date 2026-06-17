@@ -1,0 +1,13 @@
+kind: specification
+id: goals.views.goals-summary
+title: Goals overview
+state: proposed
+autonomy: gated
+behavior: The goals summary lists the user's goals with progress percentages.
+implements:
+- apps/goals/tools.py
+- apps/goals/ui/GoalsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,13 @@
+kind: specification
+id: home.issues.update-issue
+title: Update an issue
+state: proposed
+autonomy: gated
+behavior: Updating changes only the supplied fields of a home issue.
+implements:
+- apps/home/tools.py
+- apps/home/ui/HomeApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

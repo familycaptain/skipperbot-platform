@@ -1,0 +1,13 @@
+kind: specification
+id: goals.trello.link-project
+title: Link/unlink a project to Trello
+state: proposed
+autonomy: gated
+behavior: Linking connects a project to a Trello board for live task↔card integration; unlinking
+  removes it.
+implements:
+- apps/goals/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

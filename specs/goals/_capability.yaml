@@ -1,0 +1,13 @@
+kind: capability
+id: goals
+title: Goals
+app: goals
+scope: Goals, projects, and tasks — the platform's project-management core that every other app
+  links to for context. A three-level hierarchy (goal → project → task/subtask) with notes, ordering,
+  dependencies, due reminders, Trello integration, and a PM thinking domain that nudges and flags
+  at-risk items. NOT lightweight to-dos (the Todo app) — this is structured, linked project management.
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

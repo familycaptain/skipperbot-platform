@@ -1,0 +1,13 @@
+kind: specification
+id: meals.library.rate-meal
+title: Rate a meal
+state: proposed
+autonomy: gated
+behavior: Rating sets a 1–5 star rating on a meal.
+implements:
+- apps/meals/tools.py
+- apps/meals/ui/MealsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,13 @@
+kind: specification
+id: home.categories.create-category
+title: Create a category
+state: proposed
+autonomy: gated
+behavior: Creating adds a new home maintenance task category.
+implements:
+- apps/home/tools.py
+- apps/home/ui/HomeApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

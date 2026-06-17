@@ -1,0 +1,13 @@
+kind: specification
+id: medical.equipment.due-equipment-tasks
+title: Due equipment tasks
+state: proposed
+autonomy: gated
+behavior: Due-tasks returns equipment maintenance due soon or overdue.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

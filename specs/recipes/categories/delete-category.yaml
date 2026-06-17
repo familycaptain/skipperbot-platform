@@ -1,0 +1,13 @@
+kind: specification
+id: recipes.categories.delete-category
+title: Delete a category
+state: proposed
+autonomy: gated
+behavior: Deleting removes a recipe category.
+implements:
+- apps/recipes/tools.py
+- apps/recipes/ui/RecipeListApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

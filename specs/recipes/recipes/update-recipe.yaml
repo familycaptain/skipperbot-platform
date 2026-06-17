@@ -1,0 +1,13 @@
+kind: specification
+id: recipes.recipes.update-recipe
+title: Update a recipe
+state: proposed
+autonomy: gated
+behavior: Updating changes only the supplied fields of a recipe.
+implements:
+- apps/recipes/tools.py
+- apps/recipes/ui/RecipeDetailApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

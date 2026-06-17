@@ -1,0 +1,13 @@
+kind: specification
+id: recipes.recipes.create-recipe
+title: Create a recipe
+state: proposed
+autonomy: gated
+behavior: Creating records a recipe with structured ingredients and steps.
+implements:
+- apps/recipes/tools.py
+- apps/recipes/ui/RecipeDetailApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

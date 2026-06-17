@@ -1,0 +1,70 @@
+{
+  "app": "goals",
+  "title": "Goals",
+  "scope": "Goals, projects, and tasks — the platform's project-management core that every other app links to for context. A three-level hierarchy (goal → project → task/subtask) with notes, ordering, dependencies, due reminders, Trello integration, and a PM thinking domain that nudges and flags at-risk items. NOT lightweight to-dos (the Todo app) — this is structured, linked project management.",
+  "features": [
+    {
+      "id": "items",
+      "title": "Goals, projects & tasks",
+      "specs": [
+        {"id": "create-goal", "title": "Create a goal", "behavior": "Creating a goal records a top-level objective and assigns a g- id.", "implements": ["apps/goals/tools.py", "apps/goals/ui/GoalsApp.jsx"]},
+        {"id": "create-project", "title": "Create a project", "behavior": "Creating a project records a p- entity under a goal.", "implements": ["apps/goals/tools.py", "apps/goals/ui/GoalsApp.jsx"]},
+        {"id": "create-task", "title": "Create a task", "behavior": "Creating a task records a t- entity under a project, or a subtask under another task.", "implements": ["apps/goals/tools.py", "apps/goals/ui/TasksApp.jsx"]},
+        {"id": "update-item", "title": "Update a goal/project/task", "behavior": "Updating changes any goal, project, or task's fields (status, name, dates, assignee, etc.).", "implements": ["apps/goals/tools.py", "apps/goals/ui/TasksApp.jsx"]},
+        {"id": "delete-item", "title": "Delete a goal/project/task", "behavior": "Deleting permanently removes a goal, project, or task.", "implements": ["apps/goals/tools.py", "apps/goals/ui/GoalsApp.jsx"]},
+        {"id": "get-detail", "title": "Get an entity's full record", "behavior": "Getting an entity detail returns the full record for any goal, project, or task — fields, notes, history, artifacts, and linked entities.", "implements": ["apps/goals/tools.py", "apps/goals/ui/GoalShared.jsx"]}
+      ]
+    },
+    {
+      "id": "views",
+      "title": "Overviews & search",
+      "specs": [
+        {"id": "goals-summary", "title": "Goals overview", "behavior": "The goals summary lists the user's goals with progress percentages.", "implements": ["apps/goals/tools.py", "apps/goals/ui/GoalsApp.jsx"]},
+        {"id": "goal-detail", "title": "Goal detail", "behavior": "Goal detail returns a goal's info plus its project list with progress.", "implements": ["apps/goals/tools.py", "apps/goals/ui/GoalsApp.jsx"]},
+        {"id": "project-detail", "title": "Project detail", "behavior": "Project detail returns a project's full task tree — milestones, subtasks, and uncategorized tasks with their ranks.", "implements": ["apps/goals/tools.py", "apps/goals/ui/TasksApp.jsx"]},
+        {"id": "my-tasks", "title": "My tasks", "behavior": "My tasks returns all tasks assigned to a person across every goal and project.", "implements": ["apps/goals/tools.py", "apps/goals/ui/TasksApp.jsx"]},
+        {"id": "search-goals", "title": "Search goals/projects/tasks", "behavior": "Searching matches across goals, projects, and tasks by keyword over names, notes, and history.", "implements": ["apps/goals/tools.py", "apps/goals/ui/GoalsApp.jsx"]}
+      ]
+    },
+    {
+      "id": "notes",
+      "title": "Notes & due reminders",
+      "specs": [
+        {"id": "entity-notes", "title": "Read/update the notes document", "behavior": "Notes operations read, replace, and append to a goal/project/task's stable NOTES document.", "implements": ["apps/goals/tools.py", "apps/goals/ui/GoalShared.jsx"]},
+        {"id": "due-reminder", "title": "Set a due-date reminder", "behavior": "Setting a due reminder creates a reminder for a goal/project/task's due date.", "implements": ["apps/goals/tools.py"]}
+      ]
+    },
+    {
+      "id": "structure",
+      "title": "Ordering, dependencies & hierarchy",
+      "specs": [
+        {"id": "set-order", "title": "Set stack-rank order", "behavior": "Order operations set the stack-rank order of goals globally, of projects within a goal, and of tasks within a project.", "implements": ["apps/goals/tools.py", "apps/goals/ui/TasksApp.jsx"]},
+        {"id": "set-dependency", "title": "Set dependencies", "behavior": "Dependency operations declare which other goals/projects/tasks must complete before a given one.", "implements": ["apps/goals/tools.py"]},
+        {"id": "reparent-task", "title": "Reparent a task", "behavior": "Reparenting moves a task to be a subtask of another task.", "implements": ["apps/goals/tools.py", "apps/goals/ui/TasksApp.jsx"]}
+      ]
+    },
+    {
+      "id": "nagging",
+      "title": "Project nagging",
+      "specs": [
+        {"id": "toggle-project-nag", "title": "Enable/disable project nagging", "behavior": "Project nagging can be turned on or off, controlling whether the PM domain auto-nags about a project.", "implements": ["apps/goals/tools.py"]}
+      ]
+    },
+    {
+      "id": "onboarding",
+      "title": "Onboarding lifecycle",
+      "specs": [
+        {"id": "stop-onboarding", "title": "Stop onboarding", "behavior": "Stopping onboarding closes out the first-run 'Get started with Skipper' goal so its nudges cease.", "implements": ["apps/goals/tools.py"]}
+      ]
+    },
+    {
+      "id": "trello",
+      "title": "Trello integration",
+      "specs": [
+        {"id": "link-project", "title": "Link/unlink a project to Trello", "behavior": "Linking connects a project to a Trello board for live task↔card integration; unlinking removes it.", "implements": ["apps/goals/tools.py"]},
+        {"id": "trello-task", "title": "Create/adopt a Trello task", "behavior": "Trello-task operations create a new Trello-linked task under a project or adopt an existing Trello card into the project as a linked task.", "implements": ["apps/goals/tools.py"]},
+        {"id": "check-trello-item", "title": "Check a Trello checklist item", "behavior": "Checking toggles a checklist item on a Trello-linked task.", "implements": ["apps/goals/tools.py"]}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+kind: specification
+id: medical.treatments.log-treatment
+title: Log a treatment
+state: proposed
+autonomy: gated
+behavior: Logging records an instance of a treatment and advances its next-due date by the interval.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,12 @@
+kind: capability
+id: home
+title: Home
+app: home
+scope: Home management hub — recurring and ad-hoc maintenance tasks, home issues (problems/repairs),
+  and the maintenance log, organized by category. Tracks the upkeep of the house itself. NOT vehicle
+  upkeep (the Auto app) or medical-equipment upkeep (the Medical app).
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

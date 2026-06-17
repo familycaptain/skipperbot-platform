@@ -1,0 +1,13 @@
+kind: specification
+id: medical.labs.add-lab-test
+title: Add a lab test
+state: proposed
+autonomy: gated
+behavior: Adding registers a lab test on the master list.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

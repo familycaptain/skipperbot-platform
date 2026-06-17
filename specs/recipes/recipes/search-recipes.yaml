@@ -1,0 +1,13 @@
+kind: specification
+id: recipes.recipes.search-recipes
+title: Search recipes
+state: proposed
+autonomy: gated
+behavior: Searching matches recipes by title, description, or ingredients.
+implements:
+- apps/recipes/tools.py
+- apps/recipes/ui/RecipeListApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

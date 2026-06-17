@@ -1,0 +1,13 @@
+kind: specification
+id: recipes.categories.create-category
+title: Create a category
+state: proposed
+autonomy: gated
+behavior: Creating adds a new recipe category.
+implements:
+- apps/recipes/tools.py
+- apps/recipes/ui/RecipeListApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

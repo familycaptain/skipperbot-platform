@@ -1,0 +1,13 @@
+kind: specification
+id: medical.labs.lab-history
+title: Lab history
+state: proposed
+autonomy: gated
+behavior: Lab history returns historical results (trend) for a specific test.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

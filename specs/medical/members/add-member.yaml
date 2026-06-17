@@ -1,0 +1,13 @@
+kind: specification
+id: medical.members.add-member
+title: Add a member
+state: proposed
+autonomy: gated
+behavior: Adding records a family member in the medical tracker.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

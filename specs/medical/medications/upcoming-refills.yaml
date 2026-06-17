@@ -1,0 +1,13 @@
+kind: specification
+id: medical.medications.upcoming-refills
+title: Upcoming refills
+state: proposed
+autonomy: gated
+behavior: Upcoming refills returns medications needing a refill within the next N days.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

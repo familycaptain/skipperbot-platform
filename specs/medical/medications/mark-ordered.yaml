@@ -1,0 +1,14 @@
+kind: specification
+id: medical.medications.mark-ordered
+title: Mark a medication ordered
+state: proposed
+autonomy: gated
+behavior: Marking ordered stops the 'needs ordering' nag; the nag continues daily as 'ordered,
+  awaiting fill'.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

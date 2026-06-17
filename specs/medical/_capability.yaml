@@ -1,0 +1,13 @@
+kind: capability
+id: medical
+title: Medical
+app: medical
+scope: 'Family medical tracker: per-member medications with refill-nag reminders, recurring treatments
+  (injections/infusions), a medical event journal (visits, surgeries, labs, notes), lab results
+  with trend history, and medical-equipment maintenance. NOT a diagnosis or clinical-advice tool
+  — it''s a household record and reminder system.'
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

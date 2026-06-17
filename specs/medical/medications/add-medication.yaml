@@ -1,0 +1,13 @@
+kind: specification
+id: medical.medications.add-medication
+title: Add a medication
+state: proposed
+autonomy: gated
+behavior: Adding tracks a medication for a member with its dosing and refill cycle.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

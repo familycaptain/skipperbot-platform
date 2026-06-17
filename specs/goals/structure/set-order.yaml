@@ -1,0 +1,14 @@
+kind: specification
+id: goals.structure.set-order
+title: Set stack-rank order
+state: proposed
+autonomy: gated
+behavior: Order operations set the stack-rank order of goals globally, of projects within a goal,
+  and of tasks within a project.
+implements:
+- apps/goals/tools.py
+- apps/goals/ui/TasksApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,13 @@
+kind: specification
+id: medical.medications.list-medications
+title: List medications
+state: proposed
+autonomy: gated
+behavior: Listing returns medications with their refill status.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

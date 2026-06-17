@@ -1,0 +1,13 @@
+kind: specification
+id: home.maintenance-log.delete-log-entry
+title: Delete a log entry
+state: proposed
+autonomy: gated
+behavior: Deleting removes a specific maintenance completion record.
+implements:
+- apps/home/tools.py
+- apps/home/ui/HomeApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

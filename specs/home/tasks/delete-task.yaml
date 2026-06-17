@@ -1,0 +1,13 @@
+kind: specification
+id: home.tasks.delete-task
+title: Delete a task
+state: proposed
+autonomy: gated
+behavior: Deleting permanently removes a task and its completion history.
+implements:
+- apps/home/tools.py
+- apps/home/ui/HomeApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

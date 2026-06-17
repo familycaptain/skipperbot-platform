@@ -1,0 +1,13 @@
+kind: specification
+id: goals.onboarding.stop-onboarding
+title: Stop onboarding
+state: proposed
+autonomy: gated
+behavior: Stopping onboarding closes out the first-run 'Get started with Skipper' goal so its
+  nudges cease.
+implements:
+- apps/goals/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

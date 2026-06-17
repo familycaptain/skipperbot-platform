@@ -1,0 +1,13 @@
+kind: specification
+id: medical.events.list-events
+title: List medical events
+state: proposed
+autonomy: gated
+behavior: Listing returns medical events with optional filters.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,13 @@
+kind: specification
+id: medical.equipment.complete-equipment-task
+title: Complete an equipment task
+state: proposed
+autonomy: gated
+behavior: Completing marks an equipment maintenance task done.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

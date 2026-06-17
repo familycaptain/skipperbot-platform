@@ -1,0 +1,13 @@
+kind: specification
+id: meals.library.add-meal
+title: Add a meal
+state: proposed
+autonomy: gated
+behavior: Adding records a meal idea in the library without logging it as eaten.
+implements:
+- apps/meals/tools.py
+- apps/meals/ui/MealsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

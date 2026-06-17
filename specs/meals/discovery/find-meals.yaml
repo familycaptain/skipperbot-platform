@@ -1,0 +1,13 @@
+kind: specification
+id: meals.discovery.find-meals
+title: Find meals
+state: proposed
+autonomy: gated
+behavior: Finding returns meals matching include/exclude filter criteria.
+implements:
+- apps/meals/tools.py
+- apps/meals/ui/MealsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

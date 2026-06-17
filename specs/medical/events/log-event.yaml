@@ -1,0 +1,13 @@
+kind: specification
+id: medical.events.log-event
+title: Log a medical event
+state: proposed
+autonomy: gated
+behavior: Logging records a medical event — visit, surgery, procedure, lab, note, or emergency.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

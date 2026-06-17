@@ -1,0 +1,13 @@
+kind: specification
+id: medical.labs.results-by-date
+title: Results by date
+state: proposed
+autonomy: gated
+behavior: Results-by-date returns all recorded lab results for an exact date.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

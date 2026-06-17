@@ -1,0 +1,13 @@
+kind: specification
+id: medical.search.search-medical
+title: Search medical records
+state: proposed
+autonomy: gated
+behavior: Searching matches across medications, treatments, and events.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

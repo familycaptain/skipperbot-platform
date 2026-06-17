@@ -1,0 +1,50 @@
+{
+  "app": "meals",
+  "title": "Meals",
+  "scope": "Meal idea generator and decision assistant: filter a curated meal library by cuisine, effort, tags, and components to decide what to eat, log what was actually eaten, and grow the library over time. NOT recipes with ingredients/steps (the Recipes app) — Meals is about choosing what to make.",
+  "features": [
+    {
+      "id": "discovery",
+      "title": "Finding meals",
+      "specs": [
+        {"id": "find-meals", "title": "Find meals", "behavior": "Finding returns meals matching include/exclude filter criteria.", "implements": ["apps/meals/tools.py", "apps/meals/ui/MealsApp.jsx"]},
+        {"id": "list-meals", "title": "List meals", "behavior": "Listing returns the meal library, optionally filtered by tag, effort, or search.", "implements": ["apps/meals/tools.py", "apps/meals/ui/MealsApp.jsx"]},
+        {"id": "random-meals", "title": "Random meal ideas", "behavior": "Random picks meal ideas from the library, optionally filtered by tag or effort.", "implements": ["apps/meals/tools.py", "apps/meals/ui/MealsApp.jsx"]},
+        {"id": "get-meal", "title": "Get a meal", "behavior": "Getting returns a meal's full details including its components.", "implements": ["apps/meals/tools.py", "apps/meals/ui/MealsApp.jsx"]}
+      ]
+    },
+    {
+      "id": "library",
+      "title": "Meal library",
+      "specs": [
+        {"id": "add-meal", "title": "Add a meal", "behavior": "Adding records a meal idea in the library without logging it as eaten.", "implements": ["apps/meals/tools.py", "apps/meals/ui/MealsApp.jsx"]},
+        {"id": "update-meal", "title": "Update a meal", "behavior": "Updating changes a meal's metadata — name, effort, tags, description, notes, or rating.", "implements": ["apps/meals/tools.py", "apps/meals/ui/MealsApp.jsx"]},
+        {"id": "rate-meal", "title": "Rate a meal", "behavior": "Rating sets a 1–5 star rating on a meal.", "implements": ["apps/meals/tools.py", "apps/meals/ui/MealsApp.jsx"]}
+      ]
+    },
+    {
+      "id": "components",
+      "title": "Components",
+      "specs": [
+        {"id": "list-components", "title": "List components", "behavior": "Listing returns the reusable meal components (building blocks).", "implements": ["apps/meals/tools.py", "apps/meals/ui/MealsApp.jsx"]},
+        {"id": "add-component", "title": "Add a component", "behavior": "Adding records a new reusable meal component.", "implements": ["apps/meals/tools.py", "apps/meals/ui/MealsApp.jsx"]}
+      ]
+    },
+    {
+      "id": "logging",
+      "title": "Meal logging",
+      "specs": [
+        {"id": "log-meal", "title": "Log a meal", "behavior": "Logging records what was actually eaten and grows the meal library as a side effect.", "implements": ["apps/meals/tools.py", "apps/meals/ui/MealsApp.jsx"]},
+        {"id": "check-today", "title": "Check today's meals", "behavior": "Checking returns the meals logged today across all types.", "implements": ["apps/meals/tools.py", "apps/meals/ui/MealsApp.jsx"]},
+        {"id": "get-meal-log", "title": "Recent meal log", "behavior": "The meal log returns recent log entries (dinners, lunches, or both).", "implements": ["apps/meals/tools.py", "apps/meals/ui/MealsApp.jsx"]}
+      ]
+    },
+    {
+      "id": "tags",
+      "title": "Tags",
+      "specs": [
+        {"id": "list-tags", "title": "List meal tags", "behavior": "Listing returns all meal tags with their usage counts.", "implements": ["apps/meals/tools.py", "apps/meals/ui/MealsApp.jsx"]}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+kind: specification
+id: medical.labs.log-lab-results
+title: Log lab results
+state: proposed
+autonomy: gated
+behavior: Logging records lab results for a member.
+implements:
+- apps/medical/tools.py
+- apps/medical/ui/MedicalApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'
