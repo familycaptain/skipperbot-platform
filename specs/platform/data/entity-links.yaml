@@ -1,0 +1,13 @@
+kind: specification
+id: platform.data.entity-links
+title: Entity links & blast radius
+state: live
+autonomy: gated
+behavior: Entities can be linked across apps; the platform tracks a change's blast radius across
+  linked entities.
+implements:
+- app_platform/links.py
+- link_registry.py
+tests: []
+links: {}
+notes: ''

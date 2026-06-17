@@ -1,0 +1,14 @@
+kind: capability
+id: platform
+title: Platform
+app: platform
+scope: 'The Skipperbot host: the agent runtime that loads app packages and the shared, cross-cutting
+  services every app builds on — the conversational agent, authentication, configuration, memory,
+  the tool layer, schema-scoped data + events + entity links, and a timezone-aware clock. NOT
+  app domain logic (each app owns that), and NOT the app-backed facades (app_platform.schedules/jobs/notifications/documents
+  forward to their owning apps, which are specced separately). The platform is the host and its
+  infrastructure.'
+state: live
+autonomy: gated
+links: {}
+notes: ''

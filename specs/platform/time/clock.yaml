@@ -1,0 +1,12 @@
+kind: specification
+id: platform.time.clock
+title: Timezone-aware clock
+state: live
+autonomy: gated
+behavior: The platform clock provides now / utcnow / to_local; app code resolves time through
+  it and never reads the naive wall clock.
+implements:
+- app_platform/time.py
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,12 @@
+kind: specification
+id: platform.config.app-config
+title: App & platform config
+state: live
+autonomy: gated
+behavior: Each app declares a config schema; the platform stores and serves values scoped app:<id>
+  (and a platform scope), resolved once and surfaced through the Settings app.
+implements:
+- app_platform/config.py
+tests: []
+links: {}
+notes: ''

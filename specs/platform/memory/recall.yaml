@@ -1,0 +1,13 @@
+kind: specification
+id: platform.memory.recall
+title: Semantic recall
+state: live
+autonomy: gated
+behavior: search_memories returns the most relevant memories for a turn via semantic search —
+  the decisive signal when tool routing surfaces several apps' tools.
+implements:
+- app_platform/memory.py
+- memory_store.py
+tests: []
+links: {}
+notes: ''

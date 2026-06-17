@@ -1,0 +1,13 @@
+kind: specification
+id: platform.tools.mcp-tools
+title: MCP tools from apps
+state: live
+autonomy: gated
+behavior: Each app's public tools.py functions are exposed as MCP tools the agent can call; their
+  Google-style docstrings become the schemas the model sees.
+implements:
+- mcp_server.py
+- tool_dispatch.py
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,13 @@
+kind: specification
+id: platform.auth.onboarding
+title: First-run onboarding
+state: live
+autonomy: gated
+behavior: On first run, with no non-bot users, the platform requires creating the first user before
+  normal use; afterward only admins create users.
+implements:
+- agent.py
+- data_layer/users.py
+tests: []
+links: {}
+notes: ''

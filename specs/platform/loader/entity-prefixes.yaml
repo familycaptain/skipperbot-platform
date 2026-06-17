@@ -1,0 +1,13 @@
+kind: specification
+id: platform.loader.entity-prefixes
+title: Entity-type registration
+state: live
+autonomy: gated
+behavior: Each app registers the entity-id prefixes it owns (e.g. r- for reminders), which the
+  platform reserves so ids are globally unambiguous.
+implements:
+- app_platform/loader.py
+- data_layer/entity_types.py
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,12 @@
+kind: specification
+id: platform.data.event-bus
+title: Event bus
+state: live
+autonomy: gated
+behavior: Apps emit and subscribe to events (e.g. reminder.created) over the platform event bus
+  for cross-app reactions.
+implements:
+- app_platform/events.py
+tests: []
+links: {}
+notes: ''

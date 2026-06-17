@@ -1,0 +1,12 @@
+kind: specification
+id: platform.agent.agent-loop
+title: The agent loop
+state: live
+autonomy: gated
+behavior: 'Each chat turn runs a tool-using agent loop: the model is given the routed tools, calls
+  them, and composes a reply; each tool call''s name, args, and result are captured.'
+implements:
+- agent_loop.py
+tests: []
+links: {}
+notes: ''

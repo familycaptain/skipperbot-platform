@@ -1,0 +1,14 @@
+kind: specification
+id: platform.agent.chat-turn
+title: Chat turn persistence
+state: live
+autonomy: gated
+behavior: Each completed turn is persisted — user message, assistant reply, the tool_calls made,
+  the system prompt, and the selected tools — to the chat_turns store, and is retrievable as chat
+  history.
+implements:
+- chat.py
+- data_layer/chatlogs.py
+tests: []
+links: {}
+notes: ''

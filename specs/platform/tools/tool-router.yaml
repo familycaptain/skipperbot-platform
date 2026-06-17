@@ -1,0 +1,13 @@
+kind: specification
+id: platform.tools.tool-router
+title: Keyword tool routing
+state: live
+autonomy: gated
+behavior: The tool router injects only the tool categories whose keywords match a turn (plus always-on
+  core + meta tools), keeping context lean; the model can pull more categories mid-conversation
+  with request_tools.
+implements:
+- tool_router.py
+tests: []
+links: {}
+notes: ''

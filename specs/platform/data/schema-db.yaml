@@ -1,0 +1,12 @@
+kind: specification
+id: platform.data.schema-db
+title: Schema-scoped database
+state: live
+autonomy: gated
+behavior: Apps get schema-scoped Postgres access (an app_<id> schema per app), isolating each
+  app's tables behind the app_platform.db facade.
+implements:
+- app_platform/db.py
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,13 @@
+kind: specification
+id: platform.memory.digest-record
+title: Memory ingestion on CRUD
+state: live
+autonomy: gated
+behavior: Every non-read CRUD calls digest_record, ingesting the change into semantic memory (embeddings)
+  so it can ground future chat — required of every app's data layer.
+implements:
+- app_platform/memory.py
+- data_layer/memories.py
+tests: []
+links: {}
+notes: ''

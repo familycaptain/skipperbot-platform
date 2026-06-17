@@ -1,0 +1,14 @@
+kind: specification
+id: platform.loader.load-apps
+title: Discover & wire app packages
+state: live
+autonomy: gated
+behavior: At boot the platform discovers app packages under apps/<id>/, validates each manifest,
+  and wires its routes, tools, UI, and background tasks — adding a capability is dropping in a
+  folder, removing it is deleting the folder.
+implements:
+- app_platform/loader.py
+- app_platform/manifest.py
+tests: []
+links: {}
+notes: ''

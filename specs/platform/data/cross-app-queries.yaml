@@ -1,0 +1,12 @@
+kind: specification
+id: platform.data.cross-app-queries
+title: Cross-app entity queries
+state: live
+autonomy: gated
+behavior: query_entities provides read-only queries across apps' entities without breaching the
+  one-directional dependency rule.
+implements:
+- app_platform/entities.py
+tests: []
+links: {}
+notes: ''

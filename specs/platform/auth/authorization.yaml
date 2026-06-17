@@ -1,0 +1,13 @@
+kind: specification
+id: platform.auth.authorization
+title: Principal & role authorization
+state: live
+autonomy: gated
+behavior: Requests are authorized by principal and role; non-browser clients (voice, mobile) use
+  service tokens.
+implements:
+- app_platform/auth.py
+- data_layer/service_tokens.py
+tests: []
+links: {}
+notes: ''

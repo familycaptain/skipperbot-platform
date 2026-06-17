@@ -1,0 +1,13 @@
+kind: specification
+id: platform.auth.login
+title: Login & session tokens
+state: live
+autonomy: gated
+behavior: Users authenticate with username + password; the platform mints a stateless bearer session
+  token carrying the principal's name and role (admin / parent / member / bot).
+implements:
+- app_platform/auth.py
+- data_layer/users.py
+tests: []
+links: {}
+notes: ''
