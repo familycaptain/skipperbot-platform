@@ -59,6 +59,13 @@ class Record:
         return list(self.raw.get("tests") or [])
 
     @property
+    def verified(self) -> bool:
+        # True only when an agent has marked the spec verified (it earned a passing bound test +
+        # went through the gates). Until then a spec is an unverified baseline: the CODE is the
+        # source of truth, and a code↔spec divergence reconciles the SPEC, not the code.
+        return bool(self.raw.get("verified", False))
+
+    @property
     def autonomy(self) -> str | None:
         return self.raw.get("autonomy")
 
@@ -202,6 +209,9 @@ def validate(
                     rep.warnings.append(f"{r.id}: implements path missing (drift/not-built): {p}")
             if not r.tests:
                 rep.warnings.append(f"{r.id}: untested variance (no bound tests)")
+            if r.verified and not r.tests:
+                rep.errors.append(f"{r.id}: marked verified but has no bound tests — verification "
+                                  f"requires a passing bound test")
         # links resolve
         for key in ("related", "supersedes"):
             for target in r.links.get(key, []) or []:

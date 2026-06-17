@@ -88,7 +88,10 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   (not stuck on the operator-side "queued/approved" chip) — do this BEFORE any build work. **BUILD:**
   cut the feature worktree (mechanics), serialize the spec, `evolve-implement` **inside the worktree**,
   run the **isolation check** (main checkout dirty → `git checkout -- .` + FAIL), `evolve-validate` on
-  box 2. Push **Gate 2** (diff + validation), `phase=gate2`, **END**.
+  box 2. **When validate is GREEN**, set `verified: true` on each spec the change proved with a passing
+  bound test (edit the spec YAML in the worktree so it merges with the code+test) — that graduates it
+  from unverified baseline to an authoritative, code-governing contract. Push **Gate 2** (diff +
+  validation), `phase=gate2`, **END**.
   - decision=`change` → re-run the spec phase with the operator's note, re-push Gate 1, **END**.
   - decision=`reject` → `resolve poc-<n> rejected` (clears gate + sets run rejected), teardown the
     worktree, `phase=rejected`, add to `seen.json`, **END**.

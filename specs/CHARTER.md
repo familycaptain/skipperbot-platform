@@ -172,13 +172,15 @@ These are the operator's standing non-functional requirements; honor them by def
   the one sanctioned use of keywords, and only as a recall **optimization** that chooses which tool
   schemas to OFFER the model — it never decides intent and never invokes anything, and `request_tools`
   lets the model pull more. Do not extend keyword/string matching into intent or behavior decisions.)*
-- **Code is the truth until a spec is verified — never rewrite working code to match a testless spec.**
-  Most of the C/F/S corpus was **bootstrapped from the current code** and has **no bound tests yet**
-  (`tests: []`): each such spec *describes what the code does*, it is not yet a vetted contract. A spec
-  earns authority over the code by gaining **bound tests** (+ human review). So: a spec **with bound
-  tests** is the contract — converge the code to satisfy it (desired-state). A spec with **`tests: []`
-  is an unverified baseline** — the **running code is the source of truth**: if the code diverges, the
-  SPEC is the suspect → **update the spec to match the code** (a spec-only correction), NEVER edit
-  working code to match a testless spec. And **code changes only ever happen to satisfy a real reported
-  bug or an approved feature** — never a bare spec-vs-code mismatch. When unsure which way a divergence
-  should reconcile, surface it to the operator; do not guess by editing code.
+- **Code is the truth until a spec is `verified` — never rewrite working code to match an unverified
+  spec.** Most of the C/F/S corpus was **bootstrapped from the current code** and is **not yet
+  verified** (`verified: false` / absent, `tests: []`): each such spec *describes what the code does*,
+  it is not yet a vetted contract. A spec earns authority over the code only by becoming **`verified:
+  true`** — which an agent sets once the spec has a **passing bound test** and has been through the
+  gates (a spec marked verified MUST have a bound test; the loader errors otherwise). So: a
+  **`verified: true`** spec is the contract — converge the code to satisfy it (desired-state). An
+  **unverified** spec is a baseline — the **running code is the source of truth**: if the code
+  diverges, the SPEC is the suspect → **update the spec to match the code** (a spec-only correction),
+  NEVER edit working code to match an unverified spec. And **code changes only ever happen to satisfy a
+  real reported bug or an approved feature** — never a bare spec-vs-code mismatch. When unsure which
+  way a divergence should reconcile, surface it to the operator; do not guess by editing code.
