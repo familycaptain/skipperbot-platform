@@ -1,0 +1,28 @@
+{
+  "app": "calculators",
+  "title": "Calculators",
+  "scope": "A set of in-browser calculators: a scientific calculator (default), a compound-interest calculator, and a loan/amortization calculator. The finance calculators solve for whichever value is left blank and show a full payoff schedule. Runs entirely in the browser; no data is stored.",
+  "features": [
+    {
+      "id": "scientific",
+      "title": "Scientific calculator",
+      "specs": [
+        {"id": "calculate", "title": "Evaluate an expression", "behavior": "The scientific calculator evaluates a math expression and returns the result.", "implements": ["apps/calculators/tools.py", "apps/calculators/ui/CalculatorsApp.jsx"]}
+      ]
+    },
+    {
+      "id": "compound-interest",
+      "title": "Compound interest",
+      "specs": [
+        {"id": "compute-compound", "title": "Solve compound interest", "behavior": "The compound-interest calculator solves for whichever of principal, annual rate, years, or future value is left blank, given the others.", "implements": ["apps/calculators/tools.py", "apps/calculators/ui/CalculatorsApp.jsx"]}
+      ]
+    },
+    {
+      "id": "loan",
+      "title": "Loan amortization",
+      "specs": [
+        {"id": "compute-loan", "title": "Solve a loan / amortization", "behavior": "The loan/amortization calculator solves for whichever of loan amount, annual rate, term, or payment is left blank and shows a full payoff schedule.", "implements": ["apps/calculators/tools.py", "apps/calculators/ui/CalculatorsApp.jsx"]}
+      ]
+    }
+  ]
+}

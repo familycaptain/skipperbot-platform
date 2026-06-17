@@ -164,3 +164,6 @@ apps/*
 !apps/medical/
 !apps/recipes/
 !apps/weather/
+
+# C/F/S specs for the Backups app are real source, not backup artifacts
+!specs/backups/

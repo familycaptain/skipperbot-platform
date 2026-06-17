@@ -1,0 +1,14 @@
+kind: specification
+id: calculators.loan.compute-loan
+title: Solve a loan / amortization
+state: proposed
+autonomy: gated
+behavior: The loan/amortization calculator solves for whichever of loan amount, annual rate, term,
+  or payment is left blank and shows a full payoff schedule.
+implements:
+- apps/calculators/tools.py
+- apps/calculators/ui/CalculatorsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,13 @@
+kind: specification
+id: backups.runner.backup-status
+title: Backup status & history
+state: proposed
+autonomy: gated
+behavior: Status returns recent backup runs and their outcomes per destination.
+implements:
+- apps/backups/routes.py
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

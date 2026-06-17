@@ -1,0 +1,13 @@
+kind: capability
+id: backups
+title: Backups
+app: backups
+scope: Database + project-files backup runner. Two independently configurable destinations — a
+  local/network filesystem path and Google Drive (service account with domain-wide delegation)
+  — each with its own enable/disable toggle. Runs backups and tracks their status/history. NOT
+  a restore/migration tool; Backups produces and tracks backup artifacts.
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

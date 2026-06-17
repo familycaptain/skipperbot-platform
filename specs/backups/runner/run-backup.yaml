@@ -1,0 +1,13 @@
+kind: specification
+id: backups.runner.run-backup
+title: Run a backup
+state: proposed
+autonomy: gated
+behavior: Running performs a database + project-files backup to each enabled destination.
+implements:
+- apps/backups/routes.py
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

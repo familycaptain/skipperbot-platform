@@ -1,0 +1,14 @@
+kind: specification
+id: backups.runner.configure-destinations
+title: Configure destinations
+state: proposed
+autonomy: gated
+behavior: Configuration sets up the two backup destinations (local/network path and Google Drive),
+  each independently enabled or disabled.
+implements:
+- apps/backups/routes.py
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

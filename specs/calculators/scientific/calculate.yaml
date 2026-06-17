@@ -1,0 +1,13 @@
+kind: specification
+id: calculators.scientific.calculate
+title: Evaluate an expression
+state: proposed
+autonomy: gated
+behavior: The scientific calculator evaluates a math expression and returns the result.
+implements:
+- apps/calculators/tools.py
+- apps/calculators/ui/CalculatorsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

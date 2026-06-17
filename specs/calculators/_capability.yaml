@@ -1,0 +1,13 @@
+kind: capability
+id: calculators
+title: Calculators
+app: calculators
+scope: 'A set of in-browser calculators: a scientific calculator (default), a compound-interest
+  calculator, and a loan/amortization calculator. The finance calculators solve for whichever
+  value is left blank and show a full payoff schedule. Runs entirely in the browser; no data is
+  stored.'
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'
