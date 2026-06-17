@@ -1,0 +1,13 @@
+kind: specification
+id: settings.config.platform-settings
+title: Platform settings
+state: proposed
+autonomy: gated
+behavior: Platform settings read and write the platform-scope configuration.
+implements:
+- apps/settings/routes.py
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

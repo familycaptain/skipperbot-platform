@@ -1,0 +1,14 @@
+{
+  "app": "system",
+  "title": "System",
+  "scope": "System-health dashboard: aggregates record counts across every installed app, plus DB size, the latest job and backup, the doc-curation cursor, and a process-level snapshot. Owns no schema — a single read-only metrics route the UI renders. NOT an admin control panel; System observes platform health.",
+  "features": [
+    {
+      "id": "health",
+      "title": "Health dashboard",
+      "specs": [
+        {"id": "metrics", "title": "System metrics", "behavior": "The dashboard aggregates record counts across all apps, DB size, the latest job and backup, the doc-curation cursor, and a process-level snapshot, exposed read-only to the UI.", "implements": ["apps/system/routes.py", "apps/system/ui/SystemApp.jsx"]}
+      ]
+    }
+  ]
+}

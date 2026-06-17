@@ -1,0 +1,13 @@
+kind: specification
+id: issues.tracking.report-issue
+title: Report an issue
+state: proposed
+autonomy: gated
+behavior: Reporting records a bug or feature request from a family member.
+implements:
+- apps/issues/routes.py
+- apps/issues/ui/IssuesApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

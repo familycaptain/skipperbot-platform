@@ -1,0 +1,14 @@
+kind: specification
+id: schedules.recurrence.log-completion
+title: Log a completion
+state: proposed
+autonomy: gated
+behavior: Completing a schedule occurrence records it in the completion log and advances the next-due
+  date.
+implements:
+- apps/schedules/routes.py
+- apps/schedules/ui/SchedulesApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,12 @@
+kind: specification
+id: images.gallery.view-image
+title: View an image
+state: proposed
+autonomy: gated
+behavior: Viewing opens a single image full-size with its metadata.
+implements:
+- apps/images/ui/ImageViewer.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

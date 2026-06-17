@@ -1,0 +1,13 @@
+kind: capability
+id: settings
+title: Settings
+app: settings
+scope: 'Central settings panel: discovers every installed app''s config: schema at runtime, renders
+  schema-driven inputs, and round-trips values through app_platform.config (scope app:<id>). Also
+  exposes platform-scope settings, app panels, and the user''s account. NOT per-app business logic
+  — Settings is the configuration surface over the platform config service.'
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

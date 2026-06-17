@@ -1,0 +1,30 @@
+{
+  "app": "settings",
+  "title": "Settings",
+  "scope": "Central settings panel: discovers every installed app's config: schema at runtime, renders schema-driven inputs, and round-trips values through app_platform.config (scope app:<id>). Also exposes platform-scope settings, app panels, and the user's account. NOT per-app business logic — Settings is the configuration surface over the platform config service.",
+  "features": [
+    {
+      "id": "config",
+      "title": "App & platform settings",
+      "specs": [
+        {"id": "list-app-settings", "title": "List app settings", "behavior": "Listing discovers every installed app's config schema and the apps that expose settings.", "implements": ["apps/settings/routes.py", "apps/settings/ui/SettingsApp.jsx"]},
+        {"id": "edit-app-settings", "title": "Edit app settings", "behavior": "Editing reads and writes an app's config values via schema-driven inputs (scope app:<id>).", "implements": ["apps/settings/routes.py", "apps/settings/ui/SettingsApp.jsx"]},
+        {"id": "platform-settings", "title": "Platform settings", "behavior": "Platform settings read and write the platform-scope configuration.", "implements": ["apps/settings/routes.py", "apps/settings/ui/SettingsApp.jsx"]}
+      ]
+    },
+    {
+      "id": "panels",
+      "title": "App panels",
+      "specs": [
+        {"id": "manage-panels", "title": "Manage app panels", "behavior": "Panel settings read and update the configuration of app panels.", "implements": ["apps/settings/routes.py", "apps/settings/ui/SettingsApp.jsx"]}
+      ]
+    },
+    {
+      "id": "account",
+      "title": "Account",
+      "specs": [
+        {"id": "manage-account", "title": "Manage your account", "behavior": "Account settings read and update the signed-in user's own account details.", "implements": ["apps/settings/routes.py", "apps/settings/ui/SettingsApp.jsx"]}
+      ]
+    }
+  ]
+}

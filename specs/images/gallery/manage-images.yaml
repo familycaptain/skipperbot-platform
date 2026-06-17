@@ -1,0 +1,12 @@
+kind: specification
+id: images.gallery.manage-images
+title: Manage images
+state: proposed
+autonomy: gated
+behavior: Managing lets the user organize or delete saved images.
+implements:
+- apps/images/ui/ImagesApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

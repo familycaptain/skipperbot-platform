@@ -1,0 +1,12 @@
+kind: specification
+id: thinking.viewer.inspect-cognition
+title: Inspect working memory & reasoning
+state: proposed
+autonomy: gated
+behavior: The inspector shows Skipper's working memory, reasoning log, and active cognitive domains.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

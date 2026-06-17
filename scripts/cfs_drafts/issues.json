@@ -1,0 +1,18 @@
+{
+  "app": "issues",
+  "title": "Issues",
+  "scope": "Bug and feature-request tracker: family members report issues, the developer triages and resolves them, and reporters validate fixes. A required core app (the Evolve engine reads from it). NOT the external GitHub issue queue — this is the in-platform tester-facing tracker.",
+  "features": [
+    {
+      "id": "tracking",
+      "title": "Issue tracking",
+      "specs": [
+        {"id": "report-issue", "title": "Report an issue", "behavior": "Reporting records a bug or feature request from a family member.", "implements": ["apps/issues/routes.py", "apps/issues/ui/IssuesApp.jsx"]},
+        {"id": "list-issues", "title": "List issues", "behavior": "Listing returns reported issues with their statuses.", "implements": ["apps/issues/routes.py", "apps/issues/ui/IssuesApp.jsx"]},
+        {"id": "get-issue", "title": "Get an issue", "behavior": "Getting returns the full detail of a single issue.", "implements": ["apps/issues/routes.py", "apps/issues/ui/IssuesApp.jsx"]},
+        {"id": "update-issue", "title": "Triage / resolve an issue", "behavior": "Updating changes an issue's status as the developer triages and resolves it.", "implements": ["apps/issues/routes.py", "apps/issues/ui/IssuesApp.jsx"]},
+        {"id": "nudge-issue", "title": "Nudge an issue", "behavior": "Nudging pings the relevant party about an open issue.", "implements": ["apps/issues/routes.py", "apps/issues/ui/IssuesApp.jsx"]}
+      ]
+    }
+  ]
+}

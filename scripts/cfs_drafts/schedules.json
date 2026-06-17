@@ -1,0 +1,16 @@
+{
+  "app": "schedules",
+  "title": "Schedules",
+  "scope": "The platform's recurrence engine: defines recurring events backing chores, maintenance, medical, etc., supporting RRULE, cron-style, friendly (daily/weekly/monthly/yearly/interval), and usage-based (every N miles) recurrence. Owns 'next due' computation and a completion log. NOT one-shot reminders (the Reminders app) or job execution (the Jobs app) — Schedules answers 'when is it next due?'.",
+  "features": [
+    {
+      "id": "recurrence",
+      "title": "Recurring schedules",
+      "specs": [
+        {"id": "define-schedule", "title": "Define a schedule", "behavior": "Defining a schedule records a recurring event with a recurrence rule (RRULE, cron, friendly, or usage-based) and an owning entity.", "implements": ["apps/schedules/routes.py", "apps/schedules/ui/SchedulesApp.jsx"]},
+        {"id": "next-due", "title": "Compute next due", "behavior": "The engine computes a schedule's next due occurrence from its recurrence rule and last completion.", "implements": ["apps/schedules/store.py"]},
+        {"id": "log-completion", "title": "Log a completion", "behavior": "Completing a schedule occurrence records it in the completion log and advances the next-due date.", "implements": ["apps/schedules/routes.py", "apps/schedules/ui/SchedulesApp.jsx"]}
+      ]
+    }
+  ]
+}

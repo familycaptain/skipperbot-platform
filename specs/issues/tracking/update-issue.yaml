@@ -1,0 +1,13 @@
+kind: specification
+id: issues.tracking.update-issue
+title: Triage / resolve an issue
+state: proposed
+autonomy: gated
+behavior: Updating changes an issue's status as the developer triages and resolves it.
+implements:
+- apps/issues/routes.py
+- apps/issues/ui/IssuesApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

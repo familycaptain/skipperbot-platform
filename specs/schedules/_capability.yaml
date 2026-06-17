@@ -1,0 +1,14 @@
+kind: capability
+id: schedules
+title: Schedules
+app: schedules
+scope: 'The platform''s recurrence engine: defines recurring events backing chores, maintenance,
+  medical, etc., supporting RRULE, cron-style, friendly (daily/weekly/monthly/yearly/interval),
+  and usage-based (every N miles) recurrence. Owns ''next due'' computation and a completion log.
+  NOT one-shot reminders (the Reminders app) or job execution (the Jobs app) — Schedules answers
+  ''when is it next due?''.'
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

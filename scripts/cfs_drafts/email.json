@@ -1,0 +1,36 @@
+{
+  "app": "email",
+  "title": "Email",
+  "scope": "Gmail integration: connect Gmail accounts via OAuth, define rule-based inbox processing (label, archive, mark read), and view a processed-email activity log. NOT a full mail client — it's account linking + automated inbox rules.",
+  "features": [
+    {
+      "id": "accounts",
+      "title": "Gmail accounts",
+      "specs": [
+        {"id": "connect-account", "title": "Connect a Gmail account", "behavior": "Connecting runs the Gmail OAuth flow (start + callback) and registers the account.", "implements": ["apps/email/routes.py", "apps/email/ui/EmailApp.jsx"]},
+        {"id": "list-accounts", "title": "List accounts", "behavior": "Listing returns the connected Gmail accounts.", "implements": ["apps/email/routes.py", "apps/email/ui/EmailApp.jsx"]},
+        {"id": "update-account", "title": "Update an account", "behavior": "Updating changes a connected account's settings.", "implements": ["apps/email/routes.py", "apps/email/ui/EmailApp.jsx"]},
+        {"id": "disconnect-account", "title": "Disconnect an account", "behavior": "Disconnecting removes a linked Gmail account.", "implements": ["apps/email/routes.py", "apps/email/ui/EmailApp.jsx"]}
+      ]
+    },
+    {
+      "id": "rules",
+      "title": "Inbox rules",
+      "specs": [
+        {"id": "list-rules", "title": "List rules", "behavior": "Listing returns the configured inbox rules.", "implements": ["apps/email/routes.py", "apps/email/ui/EmailApp.jsx"]},
+        {"id": "create-rule", "title": "Create a rule", "behavior": "Creating adds an inbox rule (label, archive, mark read) that processes matching email.", "implements": ["apps/email/routes.py", "apps/email/ui/EmailApp.jsx"]},
+        {"id": "update-rule", "title": "Update a rule", "behavior": "Updating changes an existing inbox rule.", "implements": ["apps/email/routes.py", "apps/email/ui/EmailApp.jsx"]},
+        {"id": "delete-rule", "title": "Delete a rule", "behavior": "Deleting removes an inbox rule.", "implements": ["apps/email/routes.py", "apps/email/ui/EmailApp.jsx"]},
+        {"id": "reorder-rules", "title": "Reorder rules", "behavior": "Reordering sets the evaluation order of inbox rules.", "implements": ["apps/email/routes.py", "apps/email/ui/EmailApp.jsx"]}
+      ]
+    },
+    {
+      "id": "activity",
+      "title": "Activity & labels",
+      "specs": [
+        {"id": "view-log", "title": "View processed-email log", "behavior": "The log returns the history of processed email.", "implements": ["apps/email/routes.py", "apps/email/ui/EmailApp.jsx"]},
+        {"id": "list-labels", "title": "List labels", "behavior": "Listing returns the Gmail labels available for rules.", "implements": ["apps/email/routes.py", "apps/email/ui/EmailApp.jsx"]}
+      ]
+    }
+  ]
+}

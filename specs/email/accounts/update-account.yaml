@@ -1,0 +1,13 @@
+kind: specification
+id: email.accounts.update-account
+title: Update an account
+state: proposed
+autonomy: gated
+behavior: Updating changes a connected account's settings.
+implements:
+- apps/email/routes.py
+- apps/email/ui/EmailApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

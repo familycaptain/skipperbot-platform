@@ -1,0 +1,12 @@
+kind: specification
+id: thinking.viewer.token-budget
+title: View the token budget
+state: proposed
+autonomy: gated
+behavior: The viewer shows the agent's current token budget and usage.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

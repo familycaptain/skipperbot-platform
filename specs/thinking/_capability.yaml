@@ -1,0 +1,12 @@
+kind: capability
+id: thinking
+title: Thinking
+app: thinking
+scope: 'A read-only operator surface for inspecting Skipper''s cognition: working memory, the
+  reasoning log, the token budget, and the active cognitive (thinking) domains. A required core
+  viewer. NOT a control surface — it observes the agent''s thinking, it doesn''t change it.'
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

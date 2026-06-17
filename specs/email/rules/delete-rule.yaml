@@ -1,0 +1,13 @@
+kind: specification
+id: email.rules.delete-rule
+title: Delete a rule
+state: proposed
+autonomy: gated
+behavior: Deleting removes an inbox rule.
+implements:
+- apps/email/routes.py
+- apps/email/ui/EmailApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

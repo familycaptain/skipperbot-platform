@@ -1,0 +1,13 @@
+kind: specification
+id: settings.account.manage-account
+title: Manage your account
+state: proposed
+autonomy: gated
+behavior: Account settings read and update the signed-in user's own account details.
+implements:
+- apps/settings/routes.py
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

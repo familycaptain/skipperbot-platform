@@ -1,0 +1,13 @@
+kind: specification
+id: settings.config.list-app-settings
+title: List app settings
+state: proposed
+autonomy: gated
+behavior: Listing discovers every installed app's config schema and the apps that expose settings.
+implements:
+- apps/settings/routes.py
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,12 @@
+kind: capability
+id: email
+title: Email
+app: email
+scope: 'Gmail integration: connect Gmail accounts via OAuth, define rule-based inbox processing
+  (label, archive, mark read), and view a processed-email activity log. NOT a full mail client
+  — it''s account linking + automated inbox rules.'
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

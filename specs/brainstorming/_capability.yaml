@@ -1,0 +1,12 @@
+kind: capability
+id: brainstorming
+title: Brainstorming
+app: brainstorming
+scope: Idea capture and development — create, browse, and search ideas backed by structured documents,
+  with flowcharts, statuses, priorities, and tags. NOT long-form knowledge docs (the Documents
+  app) — Brainstorming is the idea-development workspace.
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

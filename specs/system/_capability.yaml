@@ -1,0 +1,13 @@
+kind: capability
+id: system
+title: System
+app: system
+scope: 'System-health dashboard: aggregates record counts across every installed app, plus DB
+  size, the latest job and backup, the doc-curation cursor, and a process-level snapshot. Owns
+  no schema — a single read-only metrics route the UI renders. NOT an admin control panel; System
+  observes platform health.'
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,17 @@
+{
+  "app": "brainstorming",
+  "title": "Brainstorming",
+  "scope": "Idea capture and development — create, browse, and search ideas backed by structured documents, with flowcharts, statuses, priorities, and tags. NOT long-form knowledge docs (the Documents app) — Brainstorming is the idea-development workspace.",
+  "features": [
+    {
+      "id": "ideas",
+      "title": "Ideas",
+      "specs": [
+        {"id": "create-idea", "title": "Capture an idea", "behavior": "Creating captures a new idea with a status, priority, tags, and a backing structured document.", "implements": ["apps/brainstorming/ui/BrainstormListApp.jsx"]},
+        {"id": "browse-ideas", "title": "Browse ideas", "behavior": "Browsing lists captured ideas with their statuses and priorities.", "implements": ["apps/brainstorming/ui/BrainstormListApp.jsx"]},
+        {"id": "search-ideas", "title": "Search ideas", "behavior": "Searching matches ideas by content and tags.", "implements": ["apps/brainstorming/ui/BrainstormListApp.jsx"]},
+        {"id": "develop-idea", "title": "Develop an idea", "behavior": "Developing an idea edits its document and flowchart and updates its status and priority.", "implements": ["apps/brainstorming/ui/BrainstormDetailApp.jsx"]}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "app": "thinking",
+  "title": "Thinking",
+  "scope": "A read-only operator surface for inspecting Skipper's cognition: working memory, the reasoning log, the token budget, and the active cognitive (thinking) domains. A required core viewer. NOT a control surface — it observes the agent's thinking, it doesn't change it.",
+  "features": [
+    {
+      "id": "viewer",
+      "title": "Thinking inspector",
+      "specs": [
+        {"id": "inspect-cognition", "title": "Inspect working memory & reasoning", "behavior": "The inspector shows Skipper's working memory, reasoning log, and active cognitive domains.", "implements": ["apps/thinking/ui/ThinkingApp.jsx"]},
+        {"id": "token-budget", "title": "View the token budget", "behavior": "The viewer shows the agent's current token budget and usage.", "implements": ["apps/thinking/ui/ThinkingApp.jsx"]}
+      ]
+    }
+  ]
+}

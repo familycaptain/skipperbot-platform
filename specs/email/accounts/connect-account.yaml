@@ -1,0 +1,13 @@
+kind: specification
+id: email.accounts.connect-account
+title: Connect a Gmail account
+state: proposed
+autonomy: gated
+behavior: Connecting runs the Gmail OAuth flow (start + callback) and registers the account.
+implements:
+- apps/email/routes.py
+- apps/email/ui/EmailApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,12 @@
+kind: specification
+id: brainstorming.ideas.browse-ideas
+title: Browse ideas
+state: proposed
+autonomy: gated
+behavior: Browsing lists captured ideas with their statuses and priorities.
+implements:
+- apps/brainstorming/ui/BrainstormListApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

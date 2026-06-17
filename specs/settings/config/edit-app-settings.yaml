@@ -1,0 +1,13 @@
+kind: specification
+id: settings.config.edit-app-settings
+title: Edit app settings
+state: proposed
+autonomy: gated
+behavior: Editing reads and writes an app's config values via schema-driven inputs (scope app:<id>).
+implements:
+- apps/settings/routes.py
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

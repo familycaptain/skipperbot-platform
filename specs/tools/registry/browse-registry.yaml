@@ -1,0 +1,14 @@
+kind: specification
+id: tools.registry.browse-registry
+title: Browse the tool registry
+state: proposed
+autonomy: gated
+behavior: The browser shows the tool-routing registry — categories, the tools each category exposes,
+  and the long-form guide markdown for each.
+implements:
+- apps/tools/routes.py
+- apps/tools/ui/ToolsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

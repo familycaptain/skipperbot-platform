@@ -1,0 +1,13 @@
+kind: specification
+id: email.accounts.disconnect-account
+title: Disconnect an account
+state: proposed
+autonomy: gated
+behavior: Disconnecting removes a linked Gmail account.
+implements:
+- apps/email/routes.py
+- apps/email/ui/EmailApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

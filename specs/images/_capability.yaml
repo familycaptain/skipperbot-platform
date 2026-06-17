@@ -1,0 +1,12 @@
+kind: capability
+id: images
+title: Images
+app: images
+scope: Photo gallery — browse, view, and manage saved images and generated charts. A required
+  core viewer over the platform-level `image` entity type (the shared images table). NOT image
+  generation itself (that is a platform/agent capability) — Images is the gallery surface.
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

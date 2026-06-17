@@ -1,0 +1,13 @@
+kind: specification
+id: issues.tracking.get-issue
+title: Get an issue
+state: proposed
+autonomy: gated
+behavior: Getting returns the full detail of a single issue.
+implements:
+- apps/issues/routes.py
+- apps/issues/ui/IssuesApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,13 @@
+kind: specification
+id: issues.tracking.list-issues
+title: List issues
+state: proposed
+autonomy: gated
+behavior: Listing returns reported issues with their statuses.
+implements:
+- apps/issues/routes.py
+- apps/issues/ui/IssuesApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'
