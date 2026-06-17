@@ -1,0 +1,13 @@
+kind: specification
+id: reminders.manage.cancel-reminder
+title: Cancel a reminder
+state: proposed
+autonomy: gated
+behavior: Cancelling deactivates an active reminder by id so it no longer fires.
+implements:
+- apps/reminders/tools.py
+- apps/reminders/ui/RemindersApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

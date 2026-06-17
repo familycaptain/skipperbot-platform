@@ -1,0 +1,13 @@
+kind: specification
+id: reminders.snooze.snooze-reminder
+title: Snooze a reminder
+state: proposed
+autonomy: gated
+behavior: Snoozing a reminder or nag creates a one-time follow-up that fires after a given duration,
+  deferring the nudge without cancelling the original recurrence.
+implements:
+- apps/reminders/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

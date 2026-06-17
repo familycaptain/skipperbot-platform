@@ -1,0 +1,14 @@
+kind: specification
+id: reminders.manage.modify-reminder
+title: Modify a reminder
+state: proposed
+autonomy: gated
+behavior: Modifying an existing reminder or nag changes only the fields supplied — message, due
+  time, recurrence (or clearing it), or nag time-slot — leaving the rest unchanged.
+implements:
+- apps/reminders/tools.py
+- apps/reminders/ui/RemindersApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

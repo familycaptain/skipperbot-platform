@@ -1,0 +1,14 @@
+kind: specification
+id: reminders.manage.list-reminders
+title: List reminders
+state: proposed
+autonomy: gated
+behavior: Listing returns the user's reminders (active by default; optionally including inactive/past
+  ones), surfaced in chat and in the desktop Reminders app.
+implements:
+- apps/reminders/tools.py
+- apps/reminders/ui/RemindersApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'
