@@ -835,10 +835,12 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
                     app_context=_user_app_context.get(user_id),
                     send_event=_ws_event,
                 )
+                from datetime import datetime as _now_dt, timezone as _now_tz
                 await websocket.send_json({
                     "type": "chat_response",
                     "response": response_text,
-                    "user_id": user_id
+                    "user_id": user_id,
+                    "ts": _now_dt.now(_now_tz.utc).isoformat(),  # issue #8: bubble timestamp
                 })
             except Exception as e:
                 import traceback
@@ -864,7 +866,7 @@ async def chat(request: ChatRequest):
 
 
 @app.get("/api/chat/history")
-async def chat_history(request: Request, limit: int = 20):
+async def chat_history(request: Request, limit: int = 20, tz: str = ""):
     """Recent conversation turns for the authed user — lets the web client
     resume a session on page load instead of starting cold.
 
@@ -885,26 +887,12 @@ async def chat_history(request: Request, limit: int = 20):
 
     turns = await asyncio.to_thread(_load)
 
-    messages: list[dict] = []
-    for t in turns:
-        um = (t.get("user_message") or "").strip()
-        am = t.get("assistant_message") or ""
-        # Bot-initiated turn: user_message is a "[reminder_notification]"-style marker.
-        if um.startswith("[") and um.endswith("]"):
-            if am:
-                messages.append({"role": "notification", "content": am,
-                                 "source": um.strip("[]")})
-            continue
-        if um:
-            messages.append({"role": "user", "content": um})
-        for tc in (t.get("tool_calls") or []):
-            messages.append({
-                "role": "tool_call",
-                "toolName": tc.get("name"),
-                "toolArgs": tc.get("args") or {},
-            })
-        if am:
-            messages.append({"role": "bot", "content": am})
+    # Flatten + stamp ts + insert date separators in the client's timezone (issue #8).
+    # The grouping/label logic lives in the pure chat_render.render_chat_history so it's
+    # deterministically unit-tested; tz is untrusted client input (falls back to UTC).
+    from chat_render import render_chat_history
+    from datetime import datetime, timezone
+    messages = render_chat_history(turns, datetime.now(timezone.utc), tz)
 
     return {"messages": messages}
 

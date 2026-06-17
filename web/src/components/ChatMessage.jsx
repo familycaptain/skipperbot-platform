@@ -35,16 +35,41 @@ function formatArgValue(value) {
   return String(value);
 }
 
-export default function ChatMessage({ message }) {
-  const { role, content, source } = message;
+// A small, muted timestamp shown under a bubble (issue #8). Locale-formatted so it
+// respects the user's 12h/24h preference; a real <time> element for accessibility.
+function formatTime(ts) {
+  if (!ts) return "";
+  const d = new Date(ts);
+  if (isNaN(d)) return "";
+  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+
+function MessageTime({ ts, align }) {
+  const label = formatTime(ts);
+  if (!label) return null;
+  const full = (() => { const d = new Date(ts); return isNaN(d) ? "" : d.toLocaleString(); })();
+  return (
+    <time
+      dateTime={ts}
+      title={full}
+      className={`block text-[11px] text-slate-500 mt-0.5 px-1 ${align === "end" ? "text-right" : "text-left"}`}
+    >
+      {label}
+    </time>
+  );
+}
+
+export default function ChatMessage({ message, showTime = false }) {
+  const { role, content, source, ts } = message;
 
   // ── User message ──
   if (role === "user") {
     return (
-      <div className="flex justify-end">
+      <div className="flex flex-col items-end">
         <div className="max-w-[80%] md:max-w-[65%] px-4 py-2.5 rounded-2xl rounded-br-md bg-indigo-600 text-white text-sm leading-relaxed">
           {content}
         </div>
+        {showTime && <MessageTime ts={ts} align="end" />}
       </div>
     );
   }
@@ -53,11 +78,12 @@ export default function ChatMessage({ message }) {
   if (role === "notification") {
     const Icon = NOTIF_ICONS[source] || Bell;
     return (
-      <div className="flex justify-start">
+      <div className="flex flex-col items-start">
         <div className="max-w-[85%] md:max-w-[70%] px-4 py-2.5 rounded-2xl rounded-bl-md bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-slate-200 text-sm leading-relaxed flex items-start gap-2">
           <Icon size={16} className="text-indigo-400 mt-0.5 shrink-0" />
           <span className="whitespace-pre-wrap">{content}</span>
         </div>
+        {showTime && <MessageTime ts={ts} align="start" />}
       </div>
     );
   }
@@ -92,10 +118,11 @@ export default function ChatMessage({ message }) {
 
   // ── Bot message (markdown) ──
   return (
-    <div className="flex justify-start">
+    <div className="flex flex-col items-start">
       <div className="max-w-[85%] md:max-w-[70%] px-4 py-2.5 rounded-2xl rounded-bl-md bg-slate-800 text-slate-100 text-sm leading-relaxed markdown-body">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
       </div>
+      {showTime && <MessageTime ts={ts} align="start" />}
     </div>
   );
 }
