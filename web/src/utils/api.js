@@ -25,6 +25,12 @@ export function clearToken() {
 export function forceLogout() {
   clearToken();
   try { localStorage.removeItem("skipperbot_user"); } catch { /* ignore */ }
+  // Clear the server-side httpOnly sb_session cookie too — JS can't touch an
+  // httpOnly cookie, so GET /auth/logout (public) does it. Fire-and-forget:
+  // the reload below should not wait on it, and a failure must not block logout.
+  try {
+    if (typeof fetch === "function") fetch("/auth/logout", { method: "GET" }).catch(() => {});
+  } catch { /* ignore */ }
   if (typeof window !== "undefined") window.location.reload();
 }
 

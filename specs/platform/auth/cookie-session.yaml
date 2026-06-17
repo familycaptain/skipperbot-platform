@@ -1,0 +1,56 @@
+kind: specification
+id: platform.auth.cookie-session
+title: Session cookie auth for top-level navigations
+state: live
+autonomy: gated
+behavior: 'On successful browser login (POST /auth/login and the onboarding auto-login) the
+  platform sets the SAME session token it returns in the body as cookie ''sb_session'': httpOnly,
+  SameSite=Lax, Path=/, Max-Age=SESSION_TTL, and Secure iff request.url.scheme==''https''
+  (omitted on plain HTTP so self-hosters still receive it). FAILED login responses (unknown
+  user, wrong password, rate-limited) set no cookie. A public GET /auth/logout clears it (Set-Cookie
+  sb_session, Max-Age=0, same attributes); the SPA''s forceLogout calls it alongside clearing
+  localStorage. In the auth gate, when no valid Authorization-header principal is present,
+  the platform falls back to verifying the sb_session cookie''s token ONLY when request.method
+  in (''GET'',''HEAD''); every other method (POST/PUT/PATCH/DELETE) ignores the cookie and
+  still requires the bearer header (OPTIONS already short-circuits the gate before this point).
+  The cookie token is verified by the existing verify_token, so a present-but-expired/revoked/tampered
+  cookie yields no principal, and expiry + token_version revocation apply unchanged; the token
+  never appears in any URL or access log (preserves #7). Net: a protected GET to /api/* with
+  only a valid sb_session cookie is authenticated (the pop-out media window loads); the same
+  path as a POST with only the cookie, or any request whose cookie is missing/invalid and
+  has no valid header, returns 401 {"detail":"Authentication required"}.'
+implements:
+- app_platform/auth.py
+- agent.py
+- web/src/utils/api.js
+tests:
+- type: unit
+  path: tests/test_cookie_session_auth.py
+  rubric: 'Pure-stdlib unittest in the style of tests/test_ws_auth_transport.py: stub verify_token
+    so only ''GOOD'' verifies; feed a minimal fake Request exposing headers, cookies, and
+    method. Assert: (1) GET with only sb_session=GOOD cookie -> principal resolved; (2) POST
+    with only sb_session=GOOD cookie -> NO principal (cookie ignored for mutations); (3) HEAD
+    with only sb_session=GOOD -> principal resolved; (4) GET with a valid Authorization: Bearer
+    header and no cookie -> principal (header primary); (5) GET with sb_session=BAD (verify_token
+    returns None, i.e. expired/tampered) -> no principal; (6) GET with neither cookie nor
+    header -> no principal; (7) GET with BOTH a valid Authorization header and a valid sb_session
+    cookie -> principal resolved from the header (header precedence). No DB, no network.'
+links: {}
+notes: 'Logout is a GET so the SPA can hit it from forceLogout; clearing one''s OWN cookie
+  is harmless, so a cross-site GET to /auth/logout is at most a low-severity nuisance, not
+  a state-changing CSRF. Restricting the fallback to GET/HEAD is the CSRF guard — do NOT widen
+  to mutating methods. Secure flag keyed on request.url.scheme==''https'' (Starlette honors
+  X-Forwarded-Proto when uvicorn runs with proxy headers). verify_token already enforces exp
+  + token_version; reused as-is so revocation is uniform across header and cookie. Keep CORS
+  allow_credentials=False: the cookie is only relied on for same-origin top-level navigations,
+  never credentialed cross-origin fetch. Standard access logs omit request headers, so the
+  cookie-borne token is never written to a log — that is the basis for the #7-preserved claim.
+  Safe-method gating is enforced inside principal_from_request (resolves the architecture
+  reviewer''s layer question). Cookie Max-Age and token exp BOTH derive from SESSION_TTL —
+  keep them from drifting. Add a one-line cross-reference in specs/platform/auth/authorization.yaml
+  noting the cookie is a valid credential transport for safe requests (interop reviewer).
+  The still-unauthenticated pop-out (expired cookie) still renders the platform''s 401 JSON
+  — graceful rendering is the app''s concern, out of scope here. /auth/logout is a public
+  GET: clearing one''s own cookie is harmless, so cross-site logout is a low nuisance, not
+  CSRF — note in release notes.'
+verified: true

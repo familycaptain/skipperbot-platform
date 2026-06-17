@@ -10,4 +10,6 @@ implements:
 - data_layer/service_tokens.py
 tests: []
 links: {}
-notes: ''
+notes: 'The sb_session httpOnly cookie (platform.auth.cookie-session) is a valid credential
+  transport for SAFE (GET/HEAD) requests only; the Authorization header remains primary
+  and is the only accepted transport for mutating methods.'
