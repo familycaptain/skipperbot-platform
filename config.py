@@ -25,6 +25,12 @@ for _noisy in ("discord", "fakeredis", "mcp", "docket", "httpx", "httpcore", "op
                "websockets", "websockets.client", "websockets.server"):
     logging.getLogger(_noisy).setLevel(logging.WARNING)
 
+# Strip any auth token out of the uvicorn access-log request line (issue #7).
+# Installed here so it applies under every launch path — uvicorn.run, gunicorn,
+# --reload, or an external ASGI server — not just agent.py's __main__.
+from app_platform.log_redaction import install_access_log_redaction
+install_access_log_redaction()
+
 # Windows-safe rotating handler: falls back to copy+truncate when os.rename is blocked
 class _WinSafeRotatingHandler(TimedRotatingFileHandler):
     def doRollover(self):

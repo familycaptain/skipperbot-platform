@@ -20,6 +20,14 @@ export function clearToken() {
   try { localStorage.removeItem(TOKEN_KEY); } catch { /* ignore */ }
 }
 
+// Drop the session and bounce to the login screen. Shared by the HTTP 401 path
+// and the WebSocket 4401 close handler so auth failures behave the same everywhere.
+export function forceLogout() {
+  clearToken();
+  try { localStorage.removeItem("skipperbot_user"); } catch { /* ignore */ }
+  if (typeof window !== "undefined") window.location.reload();
+}
+
 let _installed = false;
 
 export function installAuthFetch() {
@@ -42,9 +50,7 @@ export function installAuthFetch() {
     const res = await orig(input, init);
     if (res.status === 401 && token && sameOrigin) {
       // Token rejected/expired — drop the session and bounce to login.
-      clearToken();
-      try { localStorage.removeItem("skipperbot_user"); } catch { /* */ }
-      window.location.reload();
+      forceLogout();
     }
     return res;
   };

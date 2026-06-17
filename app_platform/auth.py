@@ -35,7 +35,10 @@ import json
 import os
 import time
 
-from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+# NOTE: cryptography is imported lazily inside the mint/verify helpers (below) rather
+# than at module load, so importing this module needs only the stdlib. That keeps the
+# WS-auth transport helpers (and their stdlib-only bound tests) importable without the
+# third-party crypto stack — see tests/test_ws_auth_transport.py.
 
 _PREFIX = "tok:1:"
 _NONCE_BYTES = 12
@@ -96,6 +99,7 @@ def mint_session_token(user: dict) -> str:
         "iat": _now(),
         "exp": _now() + SESSION_TTL,
     }
+    from cryptography.hazmat.primitives.ciphers.aead import AESGCM
     nonce = os.urandom(_NONCE_BYTES)
     ct = AESGCM(key).encrypt(nonce, json.dumps(payload).encode("utf-8"), None)
     return _PREFIX + base64.urlsafe_b64encode(nonce + ct).decode("ascii")
@@ -106,6 +110,7 @@ def _verify_session(token: str) -> dict | None:
     if key is None or not token.startswith(_PREFIX):
         return None
     try:
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
         blob = base64.urlsafe_b64decode(token[len(_PREFIX):])
         nonce, ct = blob[:_NONCE_BYTES], blob[_NONCE_BYTES:]
         payload = json.loads(AESGCM(key).decrypt(nonce, ct, None).decode("utf-8"))
@@ -169,11 +174,54 @@ def principal_from_request(request) -> dict | None:
     return verify_token(_bearer(request.headers.get("authorization")))
 
 
+_WS_BEARER_PREFIX = "bearer."
+
+
+def _ws_subprotocols(websocket) -> list[str]:
+    """Client-offered WS subprotocols (the comma-separated Sec-WebSocket-Protocol
+    header), trimmed and in offer order."""
+    raw = websocket.headers.get("sec-websocket-protocol", "") or ""
+    return [p.strip() for p in raw.split(",") if p.strip()]
+
+
+def ws_bearer_subprotocol(websocket) -> str | None:
+    """The first offered subprotocol carrying a bearer token, returned VERBATIM.
+
+    Browsers can't set an Authorization header on a WS handshake, but they can offer
+    subprotocols, so the web client carries its token as ``bearer.<b64url(token)>``
+    (the raw token isn't a legal subprotocol value — it contains ``:``). The value
+    is returned unchanged so the endpoint can echo it back on ``accept()`` — RFC 6455
+    requires the server to select one of the offered subprotocols or the handshake
+    fails. Keeping the token out of the URL means it can never reach the access log
+    (issue #7)."""
+    for proto in _ws_subprotocols(websocket):
+        if proto.startswith(_WS_BEARER_PREFIX) and len(proto) > len(_WS_BEARER_PREFIX):
+            return proto
+    return None
+
+
+def _decode_ws_bearer(subprotocol: str) -> str | None:
+    """Recover the raw token from a ``bearer.<b64url-nopad>`` subprotocol value."""
+    enc = subprotocol[len(_WS_BEARER_PREFIX):]
+    try:
+        return base64.urlsafe_b64decode(enc + "=" * (-len(enc) % 4)).decode("utf-8")
+    except Exception:
+        return None
+
+
 def principal_from_ws(websocket) -> dict | None:
-    """Verify a websocket's ``?token=`` (or Authorization header for native clients)."""
-    tok = websocket.query_params.get("token")
-    if tok:
-        return verify_token(tok)
+    """Authenticate a WebSocket. Browser clients carry the bearer token in the
+    Sec-WebSocket-Protocol header (``bearer.<b64url(token)>``); native/voice clients
+    use the Authorization header. The token is NEVER read from the URL querystring,
+    so it can't leak into access logs (issue #7)."""
+    proto = ws_bearer_subprotocol(websocket)
+    if proto:
+        raw = _decode_ws_bearer(proto)
+        principal = verify_token(raw) if raw else None
+        if principal:
+            return principal
+        # Malformed/expired subprotocol token: fall through to the Authorization
+        # header rather than short-circuiting to a 4401.
     return verify_token(_bearer(websocket.headers.get("authorization")))
 
 
