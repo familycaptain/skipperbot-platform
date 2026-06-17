@@ -1,0 +1,13 @@
+kind: capability
+id: jobs
+title: Jobs
+app: jobs
+scope: 'Long-running, retryable, cancellable background work: owns the job queue, the dispatcher,
+  and the runner loop, with per-job-type handlers registered by the apps that own them. Schedules
+  can fire a job at its next occurrence via the schedules→jobs trigger. A required core app. NOT
+  the scheduling source itself (Schedules) — Jobs runs the work.'
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

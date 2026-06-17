@@ -1,0 +1,14 @@
+kind: specification
+id: todo.list.view-todo
+title: View the to-do list
+state: proposed
+autonomy: gated
+behavior: Showing the to-do list resolves the user's default list automatically and returns its
+  open items.
+implements:
+- apps/todo/tools.py
+- apps/todo/ui/TodoApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

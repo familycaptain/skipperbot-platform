@@ -1,0 +1,13 @@
+kind: capability
+id: prioritize
+title: Prioritize
+app: prioritize
+scope: 'Per-user focus: up to 3 active priority slots, plus a backlog aggregator that combines
+  goals, reminders, schedules, to-do items, and any other app-package provider into one ranked
+  list. A required core app surfacing ''show my priorities''. NOT the source of the underlying
+  items (each owning app is) — Prioritize ranks and focuses them.'
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

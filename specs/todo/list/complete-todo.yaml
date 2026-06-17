@@ -1,0 +1,13 @@
+kind: specification
+id: todo.list.complete-todo
+title: Mark a to-do done
+state: proposed
+autonomy: gated
+behavior: Marking a to-do done matches it by text and archives it off the active list.
+implements:
+- apps/todo/tools.py
+- apps/todo/ui/TodoApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

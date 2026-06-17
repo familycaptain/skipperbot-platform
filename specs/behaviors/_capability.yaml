@@ -1,0 +1,13 @@
+kind: capability
+id: behaviors
+title: Behaviors
+app: behaviors
+scope: User-customizable if/then behavior rules, stored per user and unconditionally injected
+  into every chat system prompt — so they reliably steer the assistant ('when I say I started
+  my truck, mark the matching auto maintenance item done'). NOT event-driven automations (the
+  Automation app); these are prompt-injected rules the chat agent follows in conversation.
+state: proposed
+autonomy: gated
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

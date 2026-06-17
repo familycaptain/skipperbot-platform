@@ -1,0 +1,14 @@
+kind: specification
+id: jobs.definitions.create-job
+title: Create a job
+state: proposed
+autonomy: gated
+behavior: Creating a job records a named unit of background work — on-demand or scheduled — with
+  its command, optional schedule, creator, and notify-on-done setting.
+implements:
+- apps/jobs/tools.py
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

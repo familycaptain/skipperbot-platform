@@ -1,0 +1,13 @@
+kind: specification
+id: prioritize.backlog.backlog-summary
+title: Backlog summary
+state: proposed
+autonomy: gated
+behavior: The backlog summary aggregates actionable items across goals, reminders, schedules,
+  to-dos, and any other registered provider into one ranked list.
+implements:
+- apps/prioritize/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

@@ -1,0 +1,12 @@
+kind: specification
+id: timers.countdowns.list-timers
+title: List timers
+state: proposed
+autonomy: gated
+behavior: Listing returns the user's active (still-running) timers.
+implements:
+- apps/timers/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

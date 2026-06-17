@@ -1,0 +1,14 @@
+kind: specification
+id: behaviors.rules.toggle-behavior
+title: Toggle a behavior
+state: proposed
+autonomy: gated
+behavior: Toggling enables or disables a rule without deleting it, so it stops (or resumes) being
+  injected into the prompt.
+implements:
+- apps/behaviors/tools.py
+- apps/behaviors/ui/BehaviorsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

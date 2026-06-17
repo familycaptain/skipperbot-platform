@@ -1,0 +1,13 @@
+kind: specification
+id: prioritize.focus.family-focus
+title: Family focus
+state: proposed
+autonomy: gated
+behavior: Family focus shows every household member's current priorities together.
+implements:
+- apps/prioritize/tools.py
+- apps/prioritize/ui/PrioritizeApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

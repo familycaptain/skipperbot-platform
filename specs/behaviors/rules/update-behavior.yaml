@@ -1,0 +1,13 @@
+kind: specification
+id: behaviors.rules.update-behavior
+title: Update a behavior
+state: proposed
+autonomy: gated
+behavior: Updating changes a rule's trigger, action, or notes.
+implements:
+- apps/behaviors/tools.py
+- apps/behaviors/ui/BehaviorsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

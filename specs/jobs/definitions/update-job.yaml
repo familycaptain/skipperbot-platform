@@ -1,0 +1,13 @@
+kind: specification
+id: jobs.definitions.update-job
+title: Update a job
+state: proposed
+autonomy: gated
+behavior: Updating changes a job's definition — status, name, command, schedule, or notify setting.
+implements:
+- apps/jobs/tools.py
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

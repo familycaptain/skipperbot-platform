@@ -1,0 +1,12 @@
+kind: specification
+id: timers.countdowns.cancel-timer
+title: Cancel a timer
+state: proposed
+autonomy: gated
+behavior: Cancelling stops an active timer before it fires.
+implements:
+- apps/timers/tools.py
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

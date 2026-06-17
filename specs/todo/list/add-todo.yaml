@@ -1,0 +1,13 @@
+kind: specification
+id: todo.list.add-todo
+title: Add a to-do item
+state: proposed
+autonomy: gated
+behavior: Adding an item appends it to the user's default to-do list, optionally at the top.
+implements:
+- apps/todo/tools.py
+- apps/todo/ui/TodoApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'

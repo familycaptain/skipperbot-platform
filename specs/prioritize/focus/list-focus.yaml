@@ -1,0 +1,13 @@
+kind: specification
+id: prioritize.focus.list-focus
+title: Show focus
+state: proposed
+autonomy: gated
+behavior: Showing focus returns the user's current priority slots (at most 3 active).
+implements:
+- apps/prioritize/tools.py
+- apps/prioritize/ui/PrioritizeApp.jsx
+tests: []
+links: {}
+notes: 'Reverse-engineered draft (EVOLVE.md §12): describes current code behavior; needs human
+  review + bound tests before `live`.'
