@@ -185,6 +185,12 @@ Reuse the EXISTING modules read-only (never modify them), from the repo root on 
 - **Pace.** If you hit a usage limit, checkpoint `state.json` and end cleanly — the next pass resumes
   from files; nothing is lost.
 - **Report honestly.** A step that fails surfaces + stops that item; never fake a green.
+- **The Pi being down is NOT fatal.** The operator restarts the Pi to test changes (`skipper update`).
+  When it's unreachable: `decision` reads return no decisions (handled — `list_decided` yields `[]`),
+  and every status/gate write **buffers to the box-1 outbox** and flushes in order when the Pi is back.
+  So a Pi outage only pauses *gated-item advancement* for a minute — new GitHub issues still come from
+  GitHub and can be worked (box 1 + box 2 need no Pi until reporting, which buffers). **Never stop or
+  crash the loop because the Pi is down** — degrade, keep going, reconcile on a later pass.
 
 ## Launch
 On box 1: `cd ~/repos/skipperbot-platform && claude` (logged into the subscription), then drive with

@@ -133,9 +133,15 @@ def push_gate(packet: dict, token: str | None = None) -> dict:
 
 
 def list_decided(token: str | None = None) -> list[dict]:
-    """Gates the operator has decided in the UI (for the resume poller)."""
-    token = token or auth()
-    return _get("/api/apps/evolve/gates?status=decided", token).get("gates", [])
+    """Gates the operator has decided in the UI (for the resume poller). If the Pi is unreachable
+    (e.g. mid `skipper update`), return [] — no decisions are visible right now; the loop keeps
+    working new GitHub issues and reconciles once the Pi is back. Never let a Pi outage crash it."""
+    try:
+        return _get("/api/apps/evolve/gates?status=decided", token or auth()).get("gates", [])
+    except Exception as e:
+        if _is_conn_error(e):
+            return []
+        raise
 
 
 def resolve(instance_id: str, status: str, token: str | None = None) -> dict:
