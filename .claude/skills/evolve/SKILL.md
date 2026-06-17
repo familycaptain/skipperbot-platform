@@ -87,11 +87,16 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   **IMMEDIATELY** `run poc-<n> --status building --phase build` so the UI shows it ACTIVELY building
   (not stuck on the operator-side "queued/approved" chip) — do this BEFORE any build work. **BUILD:**
   cut the feature worktree (mechanics), serialize the spec, `evolve-implement` **inside the worktree**,
-  run the **isolation check** (main checkout dirty → `git checkout -- .` + FAIL), `evolve-validate` on
-  box 2. **When validate is GREEN**, set `verified: true` on each spec the change proved with a passing
-  bound test (edit the spec YAML in the worktree so it merges with the code+test) — that graduates it
-  from unverified baseline to an authoritative, code-governing contract. Push **Gate 2** (diff +
-  validation), `phase=gate2`, **END**.
+  run the **isolation check** (main checkout dirty → `git checkout -- .` + FAIL). **Then the
+  dependency-rule guard:** `python3 scripts/evolve_dep_check.py <worktree-path> release` — if it
+  reports violations (the change made the **platform import an app**, or **one app import another**),
+  the build introduced a structural break: include the violations PROMINENTLY in the Gate-2 packet as
+  an architecture concern and set the Lead recommendation to `change` with the fix (move the shared
+  code into the platform) — never hand the operator a clean "approve" over a dependency-rule break.
+  `evolve-validate` on box 2. **When validate is GREEN**, set `verified: true` on each spec the change
+  proved with a passing bound test (edit the spec YAML in the worktree so it merges with the
+  code+test) — that graduates it from unverified baseline to an authoritative, code-governing contract.
+  Push **Gate 2** (diff + validation + the dep-check result), `phase=gate2`, **END**.
   - decision=`change` → re-run the spec phase with the operator's note, re-push Gate 1, **END**.
   - decision=`reject` → `resolve poc-<n> rejected` (clears gate + sets run rejected), teardown the
     worktree, `phase=rejected`, add to `seen.json`, **END**.
