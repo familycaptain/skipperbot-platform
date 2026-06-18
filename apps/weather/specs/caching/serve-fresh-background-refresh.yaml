@@ -3,7 +3,7 @@ id: weather.caching.serve-fresh-background-refresh
 title: Weather tools serve from a per-lookup freshness cache, background-refreshed on
   an interval, controlled by Settings → Weather; degrade to stale-on-failure
 state: live
-verified: false
+verified: true
 behavior: >
   The weather tools (apps/weather/tools.py) no longer hit Open-Meteo on every call.
   All four live fetches — current conditions, the rain/precip forecast, the hourly
