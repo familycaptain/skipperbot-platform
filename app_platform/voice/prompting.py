@@ -200,6 +200,7 @@ def build_app_voice_payload(
     messaging_rules = build_voice_messaging_rules()
     memory_rules    = build_voice_memory_rules(user_id, device_info)
     tool_ack_rules  = build_voice_tool_ack_rules()
+    brevity_rules   = build_voice_brevity_rules()
 
     # App-specific blocks. The automation app gets a compact list of HA
     # aliases so the model knows which friendly names are real callable
@@ -217,6 +218,7 @@ def build_app_voice_payload(
         "The user can say 'go to [app name]' to switch apps, or 'exit'/'base mode' "
         "to return to the default voice mode.\n"
         "Do not use the open_app tool for voice app switching. Use switch_voice_app instead.\n"
+        f"{brevity_rules}"
         f"{time_context}"
         f"{location_context}"
         f"{device_context}"
@@ -264,6 +266,7 @@ def build_base_voice_instructions(
     messaging_rules = build_voice_messaging_rules()
     memory_rules   = build_voice_memory_rules(user_id, device_info)
     tool_ack_rules = build_voice_tool_ack_rules()
+    brevity_rules  = build_voice_brevity_rules()
     default_guides = load_guides(default_categories)
 
     if is_home_voice_device(device_info):
@@ -313,6 +316,7 @@ def build_base_voice_instructions(
         f"{personality}\n\n"
         "---\n"
         f"{mode}"
+        f"{brevity_rules}"
         f"{time_context}"
         f"{location_context}"
         f"{device_context}"
@@ -547,6 +551,54 @@ def build_voice_tool_ack_rules() -> str:
         "for the tool result before speaking the ack — that defeats the "
         "whole purpose. After the tool result comes back, continue with the "
         "real answer using the data you got.\n"
+    )
+
+
+def build_voice_brevity_rules() -> str:
+    """Tell the model to keep SPOKEN replies concise and listening-tuned.
+
+    Voice answers are heard, not read — a wall of prose that reads fine on a
+    screen is exhausting through a speaker. This dedicated rule (placed
+    prominently, mirroring build_voice_tool_ack_rules) tells the model to lead
+    with the answer and stay short, while explicitly forbidding it from dropping
+    the actual answer/key facts or suppressing safety content and the #18
+    pre-tool ack. It is GUIDANCE for the model to judge what's essential — NOT a
+    mechanical word/character cap — and it is VOICE-ONLY (the text/chat surface,
+    governed by the shared BEHAVIOR.md, stays as detailed as today).
+    """
+    return (
+        "\n## Voice Brevity — Speak Concisely (Listening-Tuned)\n"
+        "These replies are HEARD, not read. Lead with the direct answer FIRST, "
+        "then stop. Keep spoken prose SHORT — about one or two sentences as a "
+        "default for prose. Trim filler, preamble, and over-explanation.\n"
+        "\n"
+        "### Never sacrifice the answer for brevity\n"
+        "- Short does NOT mean incomplete: never omit the actual answer, the key "
+        "facts, or any value the user specifically asked for. If they asked for a "
+        "verbatim id, number, name, or other recalled detail, SPEAK IT IN FULL — "
+        "that is the answer, not trimmable preamble.\n"
+        "- When the answer is a small SET of items or steps (e.g. a few reminders, "
+        "a device list, a short multi-step), speak them compactly as a brief "
+        "spoken list — do NOT collapse them to a single vague sentence or defer "
+        "them.\n"
+        "\n"
+        "### Offer more — judiciously\n"
+        "For genuinely long or detailed information, give the essentials briefly "
+        "and OFFER to say more. But do this ONLY when meaningful detail was "
+        "actually withheld — never tack an offer onto a simple, already-complete "
+        "answer — and vary the phrasing (no rote suffix every turn).\n"
+        "\n"
+        "### Speak naturally\n"
+        "Avoid markdown, headings, or long bulleted lists that don't read aloud. "
+        "Use plain spoken sentences.\n"
+        "\n"
+        "### Carve-outs (brevity NEVER overrides these)\n"
+        "- SAFETY: required confirmations for dangerous, expensive, irreversible, "
+        "or sensitive actions — and the ask-who-is-speaking identity check — are "
+        "never the trimmable 'preamble'. Keep them.\n"
+        "- PACING: brevity governs the ANSWER, not the pacing signal. Still SPEAK "
+        "THE BRIEF PRE-TOOL ACKNOWLEDGMENT before a slow tool (see Voice Pacing). "
+        "Brevity does not suppress that ack.\n"
     )
 
 
