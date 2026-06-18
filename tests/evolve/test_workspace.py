@@ -44,11 +44,11 @@ class TestWorkspace(unittest.TestCase):
 
     def test_spec_relpath_layout(self):
         self.assertEqual(spec_relpath({"id": "evolve", "kind": "capability"}),
-                         "specs/evolve/_capability.yaml")
+                         "apps/evolve/specs/_capability.yaml")
         self.assertEqual(spec_relpath({"id": "evolve.cfs-store", "kind": "feature"}),
-                         "specs/evolve/cfs-store/_feature.yaml")
+                         "apps/evolve/specs/cfs-store/_feature.yaml")
         self.assertEqual(spec_relpath({"id": "evolve.cfs-store.boot-sync", "kind": "specification"}),
-                         "specs/evolve/cfs-store/boot-sync.yaml")
+                         "apps/evolve/specs/cfs-store/boot-sync.yaml")
 
     def test_ensure_baseline_switches_to_release_and_reports_sha(self):
         # init_box1 leaves the repo on main; ensure_baseline must move it to release,
@@ -81,7 +81,7 @@ class TestWorkspace(unittest.TestCase):
         rec = {"kind": "specification", "id": "demo.area.thing", "title": "T",
                "state": "proposed", "behavior": "does a thing", "implements": [], "tests": []}
         rel = self.wm.serialize_spec(f, rec)
-        self.assertEqual(rel, "specs/demo/area/thing.yaml")
+        self.assertEqual(rel, "apps/demo/specs/area/thing.yaml")
         self.assertTrue(os.path.exists(os.path.join(f.path, rel)))
 
     def test_merge_to_release(self):

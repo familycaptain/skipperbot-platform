@@ -12,7 +12,7 @@ from apps.evolve.engine.instance import SqliteInstanceStore, DONE, BLOCKED, REJE
 from apps.evolve.engine.walker import Walker, _default_decider
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-SDLC = os.path.join(REPO, "specs", "evolve", "sdlc.yaml")
+SDLC = os.path.join(REPO, "apps", "evolve", "specs", "sdlc.yaml")
 
 # happy-path branch preferences for the exclusive gateways
 _PREFER = {"gw_kind": "feature", "gw_vision": "fits", "gw_prio": "top-n",

@@ -192,9 +192,9 @@ class Store:
 
 if __name__ == "__main__":   # quick manual projection of the real tree
     import sys
-    root = sys.argv[1] if len(sys.argv) > 1 else "specs/evolve"
+    root = sys.argv[1] if len(sys.argv) > 1 else "apps/evolve/specs"
     store = Store(SqliteBackend(":memory:"))
     rep = store.boot_sync(root, repo_root=os.getcwd(),
-                          capability=os.path.basename(root.rstrip("/")), on_main=True)
+                          capability=schema.capability_from_root(root), on_main=True)
     print(f"projected {len(store.all())} records; report: {rep}")
     print(json.dumps(store.tree(), indent=2))

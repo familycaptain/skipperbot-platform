@@ -12,7 +12,7 @@ from apps.evolve.engine.walker import Walker
 from apps.evolve import orchestrator
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-SDLC = os.path.join(REPO, "specs", "evolve", "sdlc.yaml")
+SDLC = os.path.join(REPO, "apps", "evolve", "specs", "sdlc.yaml")
 
 
 def walk_with(outputs: dict):

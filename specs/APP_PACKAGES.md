@@ -118,7 +118,11 @@ apps/
       RecipeListApp.jsx    # React components
       RecipeDetailApp.jsx
     specs/
-      SPEC.md              # this app's spec
+      SPEC.md              # this app's prose design spec
+      _capability.yaml     # the app's C/F/S tree (Capability/Feature/Specification)
+      <feature>/           #   — Evolve's source of truth; travels WITH the app
+        _feature.yaml      #     (in-repo or in the app's own repo), see EVOLVE.md §4
+        <spec>.yaml
 ```
 
 The platform discovers capabilities by **well-known file names** — no central
@@ -138,7 +142,8 @@ registration. A file's mere presence wires it in:
 | `ui/index.js` | for any app with a UI | Default-exports the launcher registry array (see UI Collector). |
 | `think.md` | if `thinking` is declared | The thinking-domain system prompt (filename comes from `manifest.thinking.prompt_file`). |
 | `data.py` / `store.py` / `runner.py` | convention | App-internal data layer / business logic / background pipeline. Not discovered by name — imported by the app's own `tools.py`/`routes.py`. |
-| `specs/SPEC.md` | convention | The app's own design spec. |
+| `specs/SPEC.md` | convention | The app's own prose design spec. |
+| `specs/**/*.yaml` | convention | The app's C/F/S tree (Evolve's source of truth), co-located so it travels with the app whether in-repo or in its own repo. See [EVOLVE.md §4](EVOLVE.md). |
 
 > **`guide.md` vs `help.md` — ship both.** `guide.md` tells *the agent* how to
 > drive the tools (names, args, edge cases). `help.md` is a full *user manual*

@@ -10,7 +10,7 @@ import unittest
 from apps.evolve import schema
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-SPECS = os.path.join(REPO, "specs", "evolve")
+SPECS = os.path.join(REPO, "apps", "evolve", "specs")
 
 
 def _write(root, relpath, body):
@@ -22,7 +22,7 @@ def _write(root, relpath, body):
 
 
 class TestRealEvolveTree(unittest.TestCase):
-    """The hand-authored specs/evolve/ tree must be well-formed."""
+    """The hand-authored apps/evolve/specs/ tree must be well-formed."""
 
     def test_validates_clean_as_bootstrap(self):
         recs, rep = schema.load_and_validate(

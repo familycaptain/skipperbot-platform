@@ -1,6 +1,6 @@
 """Load + validate the SDLC process model (EVOLVE.md §7; spec evolve.process-engine.load-model).
 
-The model is versioned DATA (specs/evolve/sdlc.yaml); the engine walks it. This module
+The model is versioned DATA (apps/evolve/specs/sdlc.yaml); the engine walks it. This module
 parses it into typed nodes/edges and refuses a malformed model.
 """
 from __future__ import annotations
@@ -102,7 +102,7 @@ def load(path: str) -> Model:
 
 if __name__ == "__main__":
     import sys
-    p = sys.argv[1] if len(sys.argv) > 1 else "specs/evolve/sdlc.yaml"
+    p = sys.argv[1] if len(sys.argv) > 1 else "apps/evolve/specs/sdlc.yaml"
     m = load(p)
     print(f"{m.id} v{m.version}: {len(m.nodes)} nodes, {len(m.edges)} edges")
     print("starts:", m.starts())

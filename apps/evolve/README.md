@@ -1,7 +1,7 @@
 # Evolve — build status & how to run
 
 The self-maintaining SDLC engine (design: `specs/EVOLVE.md`; C/F/S tree:
-`specs/evolve/`). This is an overnight first build of the substrate + the agent
+`apps/evolve/specs/`). This is an overnight first build of the substrate + the agent
 swarm. **The deterministic core runs and is unit-tested; the Claude agent swarm is
 verified live end-to-end.**
 
@@ -75,12 +75,12 @@ site-packages, so it has pyyaml). The pure substrate needs only system `python3`
 python3 -m unittest discover -s tests/evolve
 
 # validate + project the C/F/S tree
-python3 -m apps.evolve.schema specs/evolve
-python3 -m apps.evolve.store  specs/evolve     # projects to SQLite + prints the tree
-python3 -m apps.evolve.variance specs/evolve   # 0 variances (fully reconciled)
+python3 -m apps.evolve.schema apps/evolve/specs
+python3 -m apps.evolve.store  apps/evolve/specs     # projects to SQLite + prints the tree
+python3 -m apps.evolve.variance apps/evolve/specs   # 0 variances (fully reconciled)
 
 # load + walk the process model
-python3 -m apps.evolve.engine.model specs/evolve/sdlc.yaml
+python3 -m apps.evolve.engine.model apps/evolve/specs/sdlc.yaml
 
 # LIVE: walk a work-item through the swarm (needs ANTHROPIC_API_KEY in .env; ~$0.023 on Haiku)
 /tmp/evolve-venv/bin/python -m apps.evolve.orchestrator

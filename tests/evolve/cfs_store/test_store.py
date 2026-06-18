@@ -9,7 +9,7 @@ import unittest
 from apps.evolve import schema, store
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-SPECS = os.path.join(REPO, "specs", "evolve")
+SPECS = os.path.join(REPO, "apps", "evolve", "specs")
 
 
 class TestBootSync(unittest.TestCase):

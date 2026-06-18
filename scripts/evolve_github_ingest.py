@@ -94,7 +94,7 @@ def _make_on_gate(pipe):
 
 def build_pipeline():
     os.makedirs(os.path.dirname(STATE_DB), exist_ok=True)
-    model = M.load("specs/evolve/sdlc.yaml")
+    model = M.load("apps/evolve/specs/sdlc.yaml")
     ledger = CostLedger()
     from apps.evolve.agents.tooluse import ToolUseBackend
     from apps.evolve.emitter import EventEmitter

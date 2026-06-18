@@ -149,7 +149,7 @@ if __name__ == "__main__":
     from apps.evolve.agents.registry import ROSTER
 
     _load_env()
-    model = M.load("specs/evolve/sdlc.yaml")
+    model = M.load("apps/evolve/specs/sdlc.yaml")
     # cheap demo: force every tier to Haiku, cap the budget
     haiku = MODEL_TIERS["fast"]
     runner = Runner(AnthropicBackend(), dict(ROSTER), budget_usd=1.0,

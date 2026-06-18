@@ -2,8 +2,8 @@
 name: cfs-validate
 description: >
   Validate a Capability/Feature/Specification tree against the §4 loader rules
-  before relying on it. Use after authoring or editing C/F/S YAML under specs/, or
-  whenever an agent needs to confirm the corpus is well-formed.
+  before relying on it. Use after authoring or editing C/F/S YAML under an app's
+  specs/ tree, or whenever an agent needs to confirm the corpus is well-formed.
 allowed-tools: Bash(python3 -m apps.evolve.schema*)
 ---
 
@@ -12,7 +12,7 @@ allowed-tools: Bash(python3 -m apps.evolve.schema*)
 Run the Evolve loader validation over a specs directory:
 
 ```bash
-python3 -m apps.evolve.schema <specs_dir>     # e.g. specs/evolve  or  specs/auto
+python3 -m apps.evolve.schema <specs_dir>     # e.g. apps/evolve/specs  or  apps/auto/specs  (platform: specs/platform)
 ```
 
 ## Interpreting the result

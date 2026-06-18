@@ -1,7 +1,7 @@
 """Evolve — Skipper's self-maintaining SDLC engine.
 
 This package is the implementation of the `evolve` Capability described in
-specs/EVOLVE.md and seeded as a C/F/S tree under specs/evolve/.
+specs/EVOLVE.md and seeded as a C/F/S tree under apps/evolve/specs/.
 
 Build status (the deterministic, no-LLM substrate is real and unit-tested;
 the agent/runtime/UI layers are staged for box-1/box-2 and the platform):
