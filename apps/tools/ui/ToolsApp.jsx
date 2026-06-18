@@ -52,7 +52,7 @@ export default function ToolsApp({ appId, userId, onTitle, refreshKey }) {
       const data = await res.json();
       setGuide(data.content || "");
     } catch {
-      setGuide("_Failed to load guide._");
+      setGuide("__GUIDE_LOAD_ERROR__");
     } finally {
       setGuideLoading(false);
     }
@@ -209,7 +209,7 @@ function CategoryDetail({ cat, guide, guideLoading }) {
             className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-300 transition-colors"
           >
             <BookOpen size={12} />
-            Guide: {cat.guide}
+            Guide
             <ChevronRight size={12} className={`transition-transform ${showGuide ? "rotate-90" : ""}`} />
           </button>
           {showGuide && (
@@ -218,6 +218,8 @@ function CategoryDetail({ cat, guide, guideLoading }) {
                 <div className="flex items-center text-slate-400 text-sm">
                   <Loader2 size={14} className="animate-spin mr-2" /> Loading guide...
                 </div>
+              ) : guide === "__GUIDE_LOAD_ERROR__" ? (
+                <p className="text-sm text-amber-400/80 italic">This guide could not be loaded.</p>
               ) : guide ? (
                 <div className="prose prose-invert prose-sm max-w-none
                   prose-headings:text-slate-200 prose-p:text-slate-300
