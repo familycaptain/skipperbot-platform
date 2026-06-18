@@ -1,0 +1,62 @@
+kind: specification
+id: platform.voice.spoken-brevity
+title: Voice responses are concise and listening-tuned
+state: live
+behavior: 'The voice Realtime session instructions include a DEDICATED brevity rule (build_voice_brevity_rules()
+  in app_platform/voice/prompting.py) wired into BOTH the base voice instructions (build_base_voice_instructions)
+  AND the app-switch session payload (build_app_voice_payload). The rule instructs the model
+  to: lead with the direct answer; keep spoken PROSE replies short (about one or two sentences
+  as a DEFAULT for prose — NOT a hard cap on all answers); trim filler, preamble, and over-explanation
+  but NEVER omit the actual answer, key facts, or any value the user specifically asked for
+  (e.g. a verbatim id/number/name from recall). When the answer IS a small set of items or
+  steps (e.g. a few reminders, a device list, a short multi-step), speak them compactly as
+  a brief spoken list rather than collapsing to one sentence or deferring them. For genuinely
+  long/detailed information, give the essentials briefly and OFFER to say more — but JUDICIOUSLY:
+  only when meaningful detail was actually withheld, never appended to simple/complete answers,
+  and with varied phrasing (not a rote suffix). Avoid markdown/headings/long lists that don''t
+  read aloud; speak naturally. Two carve-outs: (a) brevity NEVER overrides required SAFETY
+  content — confirmations for dangerous/expensive/irreversible/sensitive actions and the ask-who-is-speaking
+  identity check are never the trimmable ''preamble''; (b) brevity does NOT suppress the #18
+  pre-tool acknowledgment — the brief ack before a slow tool still happens; brevity governs
+  the ANSWER, not the pacing signal. It is explicitly VOICE-ONLY — the text/chat surface stays
+  as detailed as today (the rule lives in voice-specific prompting, NOT the shared BEHAVIOR.md).
+  It is guidance for the model to decide what''s essential — NOT a mechanical character/word
+  truncation or hard cap. Mirrors the existing build_voice_tool_ack_rules pattern; placed
+  prominently so the model weights brevity.'
+implements:
+- app_platform/voice/prompting.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_voice_brevity.py
+  rubric: 'Deterministic/offline: (1) build_voice_brevity_rules() returns a non-empty block
+    whose text conveys (case-insensitive, robust intent-bearing substrings — NOT exact phrases)
+    lead-with-the-answer, short/sentence, do-not-omit/offer-more, voice/aloud, and the safety
+    carve-out + the no-suppress-ack note. (2) Source/AST check of app_platform/voice/prompting.py
+    asserting the build_voice_brevity_rules symbol is referenced inside BOTH builders by name
+    — build_base_voice_instructions AND build_app_voice_payload (reachable from each builder''s
+    AST subtree; NOT keyed on a local var name or a fixed ordinal position). (3) The brevity
+    guidance is NOT added to prompts/BEHAVIOR.md (voice-only). Avoid importing the full instruction
+    assembly. Fails on baseline (no build_voice_brevity_rules / not wired in either builder)
+    and passes after. NOTE: proves the rule is PRESENT+wired in both builders, not that the
+    model is actually brief (that''s Gate-3).'
+- type: acceptance
+  path: 'live: voice reply length'
+  rubric: 'Driving the live voice agent: (a) a prose question the model tends to over-explain
+    -> reply leads with the answer, ~1-2 sentences, offers more (only if there''s genuinely
+    more) instead of dumping; key info NOT dropped. (b) an ID/verbatim recall query -> the
+    requested value is still spoken in full. (c) an enumerable answer (a few reminders/devices)
+    -> spoken as a brief compact list, not collapsed/deferred. (d) a slow-tool query (e.g.
+    weather) -> still gets its #18 pre-tool ack. (e) the same queries on web/chat stay detailed.
+    Operator Gate-3 live verify.'
+links: {}
+notes: 'Built to recommended forks: prominent placement (fork 1=A) and keep the existing passing
+  ''concise'' mode lines (fork 2=A). Voice-only — must NOT touch BEHAVIOR.md (shared with
+  text/chat). Sibling #18. Spec unverified until the bound test passes on box 2; actual spoken
+  brevity verified live at Gate-3. | REVISED (r1) per critics: offer-more must be JUDICIOUS
+  + varied (ux MED); ~1-2 sentences is a prose DEFAULT not a cap — enumerable answers spoken
+  as a brief compact list (ux MED); safety carve-out — brevity never overrides required confirmations
+  / who''s-speaking (security); exempt user-requested verbatim IDs from deferral (interop);
+  does NOT suppress the #18 pre-tool ack (ux/interop); test uses robust substrings + names
+  BOTH builders (build_base_voice_instructions + build_app_voice_payload), asserts wiring
+  not ordinal position (audit/arch).'
+verified: true

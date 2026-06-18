@@ -1,0 +1,7 @@
+kind: feature
+id: platform.voice
+title: Voice — Realtime spoken assistant
+state: live
+links: {}
+notes: Voice Realtime session prompting + tools (app_platform/voice/prompting.py). Spoken-surface-specific
+  instruction blocks (tool-ack pacing, brevity) live here, NOT in the shared prompts/BEHAVIOR.md.
