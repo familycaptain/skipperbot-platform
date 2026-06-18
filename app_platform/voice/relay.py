@@ -73,6 +73,18 @@ _LOCK_STRICT = os.getenv("VOICE_SPEAKER_LOCK_STRICT", "").strip().lower() in ("1
 # ID of the process lifetime (a truly fresh start has a null speaker, as it should).
 _LAST_SPEAKER: dict = {"name": None, "vec": None}
 
+# Deterministic ack: how long to wait after a tool dispatches (with no spoken audio) before
+# voicing a filler. Fast/local tools return before this and never trigger it; slow/external
+# tools (weather, search) are still running, so the filler covers their dead air.
+_ACK_FILLER_DELAY = float(os.getenv("VOICE_ACK_FILLER_DELAY", "1.0"))
+# Self-contained instruction for the out-of-band filler response (no conversation context, so
+# it must be generic — a short "looking that up", NOT the actual answer).
+_ACK_FILLER_INSTRUCTION = (
+    "Say ONE short, natural, varied acknowledgment that you're getting that for them right "
+    "now — e.g. 'let me check that', 'one sec', 'looking that up'. Under 6 words. Do NOT "
+    "answer the question or add anything else; just the brief filler, then stop."
+)
+
 _AUDIO_DELTA_TYPES = {"response.audio.delta", "response.output_audio.delta"}
 _ASSISTANT_TRANSCRIPT_TYPES = {
     "response.audio_transcript.done",
@@ -255,6 +267,10 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         resp_idle = asyncio.Event()
         resp_idle.set()
         turn_lock = asyncio.Lock()
+        # Did the CURRENT response stream any audio yet? Drives the deterministic ack-before-
+        # slow-tool filler: if the model calls a tool WITHOUT speaking first (Realtime models
+        # often skip the instructed ack), we voice a brief filler so there's no dead silence.
+        resp_state = {"audio": False}
         # The session voice-lock: the reference voiceprint (adapted toward the speaker
         # as accepted turns come in, so it stabilizes), the resolved identity, and the
         # number of turns blended into the reference.
@@ -379,6 +395,23 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                                      session=session_id[:12], kind="resp")
             await _send_oai(oai, {"type": "response.create"})
             debug_log.record("→ response.create", session=session_id[:12], kind="resp")
+
+        async def _speak_filler() -> None:
+            """Voice a brief out-of-band acknowledgment (Skipper's own voice) to cover the dead
+            air of a slow tool the model called without speaking first. `conversation:"none"`
+            keeps it out of the conversation history; it's generated from a self-contained
+            instruction (no context), so it stays a generic 'looking that up'."""
+            # Let the calling (tool) response finish so we don't stack two active responses.
+            try:
+                await asyncio.wait_for(resp_idle.wait(), timeout=2.0)
+            except asyncio.TimeoutError:
+                pass
+            await _send_oai(oai, {"type": "response.create", "response": {
+                "conversation": "none",
+                "instructions": _ACK_FILLER_INSTRUCTION,
+            }})
+            debug_log.record("→ filler ack (model called a tool without speaking)",
+                             session=session_id[:12], kind="resp")
 
         async def _accept_and_reply(pcm: bytes) -> None:
             """Accept this turn: it's the locked speaker. Reply now; persist transcript."""
@@ -562,10 +595,12 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                     if et in _AUDIO_DELTA_TYPES:
                         delta = event.get("delta", "")
                         if delta:
+                            resp_state["audio"] = True   # the model IS speaking — no filler needed
                             await satellite_ws.send_bytes(base64.b64decode(delta))
 
                     elif et == "response.created":
                         resp_idle.clear()
+                        resp_state["audio"] = False       # new response — no audio yet
                         debug_log.record("← response.created (generating reply)", session=session_id[:12], kind="resp")
                     elif et in ("response.done", "response.cancelled"):
                         resp_idle.set()
@@ -656,14 +691,40 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                             await _apply_tool_events(oai, [
                                 {"type": "tool_result", "call_id": call_id, "output": out}])
                         else:
+                            # Deterministic ack: if the model called this tool WITHOUT speaking
+                            # first AND the tool is slow (still running after _ACK_FILLER_DELAY),
+                            # voice a brief filler so there's no dead silence. Fast/local tools
+                            # return before the watchdog fires (cancelled below) → no filler.
+                            fired = {"on": False}
+
+                            async def _filler_watchdog():
+                                try:
+                                    await asyncio.sleep(_ACK_FILLER_DELAY)
+                                    if not resp_state["audio"]:
+                                        fired["on"] = True
+                                        await _speak_filler()
+                                except asyncio.CancelledError:
+                                    pass
+
+                            wd = asyncio.create_task(_filler_watchdog())
                             _t0 = time.monotonic()
-                            events = await handle_voice_tool_call(
-                                session_id=session_id, call_id=call_id, tool_name=name, arguments=args,
-                            )
+                            try:
+                                events = await handle_voice_tool_call(
+                                    session_id=session_id, call_id=call_id, tool_name=name, arguments=args,
+                                )
+                            finally:
+                                wd.cancel()
                             _out = next((str(e.get("output", "")) for e in events
                                          if e.get("type") == "tool_result"), "")
                             debug_log.record(f"tool {name} returned in {time.monotonic()-_t0:.2f}s: {_out[:80]}",
                                              session=session_id[:12], kind="tool")
+                            # If we voiced a filler, let it finish before requesting the answer
+                            # so two responses don't collide.
+                            if fired["on"]:
+                                try:
+                                    await asyncio.wait_for(resp_idle.wait(), timeout=2.0)
+                                except asyncio.TimeoutError:
+                                    pass
                             if await _apply_tool_events(oai, events):
                                 break
 
