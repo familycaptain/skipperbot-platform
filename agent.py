@@ -27,9 +27,7 @@ import mcp_client
 import tool_dispatch
 from chat import process_chat
 import discord_bot
-from apps.reminders.scheduler import start_reminder_scheduler
 from app_platform.jobs import start_dispatcher
-from apps.jobs.runner import start_job_runner
 from thinking_scheduler import start_thinking_scheduler
 from job_handlers import register_all_handlers
 from trello_sync import start_trello_sync
@@ -37,6 +35,7 @@ from memory_store import backfill_embeddings
 from knowledge_store import migrate_chunk_embeddings
 from data_layer.db import close_pool
 from app_platform.loader import load_all_apps, get_app_tool_routes
+from app_platform import lifecycle
 from data_layer.users import authenticate, get_user, update_password, get_all_users, has_role, create_user, update_role, delete_user, parse_roles
 from app_platform.auth import principal_from_request, principal_from_ws, ws_bearer_subprotocol, require_user, require_admin, resolve_target, scope_user
 from app_platform.ratelimit import check_rate
@@ -103,10 +102,14 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("STARTUP: Discord disabled (DISCORD_ENABLED=false) — starting background tasks")
 
-    reminder_task = asyncio.create_task(start_reminder_scheduler())
     register_all_handlers()
+    # App background workers (reminders scheduler, job runner, ...) are started
+    # from the lifecycle registry, which load_all_apps() populated by running
+    # each app's hooks.py register_hooks(). The platform no longer imports any
+    # apps.* worker directly (see specs/platform/loader/lifecycle-hooks).
+    # Started after register_all_handlers() so the dispatcher has its handlers.
+    background_tasks = lifecycle.start_background_tasks()
     job_task = asyncio.create_task(start_dispatcher())
-    job_runner_task = asyncio.create_task(start_job_runner())
     trello_task = asyncio.create_task(start_trello_sync())
     thinking_task = asyncio.create_task(start_thinking_scheduler())
     yield
@@ -115,20 +118,16 @@ async def lifespan(app: FastAPI):
         await discord_bot.stop_discord_bot()
         if discord_task:
             discord_task.cancel()
-    reminder_task.cancel()
+    # Ordered shutdown: graceful app shutdown hooks first (e.g. reminders'
+    # request_shutdown, timers' shutdown_all_timers — registered via the
+    # registry), then cancel the registry's background tasks. run_shutdown_hooks
+    # is internally bounded so it can't hang the shutdown.
+    await lifecycle.run_shutdown_hooks()
+    for _task in background_tasks.values():
+        _task.cancel()
     job_task.cancel()
-    job_runner_task.cancel()
     trello_task.cancel()
     thinking_task.cancel()
-    # Cancel any in-flight timers so none fire after shutdown begins. Timers
-    # ships bundled with the platform (apps/timers/); the import is wrapped only
-    # as defensive cleanup in case the folder was deleted (in-memory timer tasks
-    # would be cancelled by the loop on shutdown anyway).
-    try:
-        from apps.timers.scheduler import shutdown_all_timers
-        await shutdown_all_timers()
-    except Exception as e:
-        logger.error("STARTUP: Timer shutdown failed: %s", e)
     close_pool()
 
 
@@ -4615,14 +4614,15 @@ async def api_admin_restart(request: Request):
         return JSONResponse({"ok": False, "error": "Admin access required."}, status_code=403)
     from thinking_scheduler import request_shutdown as thinking_shutdown, is_shutting_down
     from app_platform.jobs import request_shutdown as jobs_shutdown
-    from apps.reminders.scheduler import request_shutdown as reminders_shutdown
 
     if is_shutting_down():
         return {"status": "already_shutting_down"}
 
     thinking_shutdown()
     jobs_shutdown()
-    reminders_shutdown()
+    # Graceful app shutdown (e.g. reminders' request_shutdown) runs via the
+    # lifecycle registry \u2014 the platform no longer imports apps.* directly.
+    await lifecycle.run_shutdown_hooks()
     logger.info("ADMIN: Graceful restart requested \u2014 draining in-flight work (max 30s)")
 
     # Notify connected clients
@@ -4669,14 +4669,15 @@ async def api_admin_deploy(request: Request):
         return JSONResponse({"ok": False, "error": "Admin access required."}, status_code=403)
     from thinking_scheduler import request_shutdown as thinking_shutdown, is_shutting_down
     from app_platform.jobs import request_shutdown as jobs_shutdown
-    from apps.reminders.scheduler import request_shutdown as reminders_shutdown
 
     if is_shutting_down():
         return {"status": "already_shutting_down"}
 
     thinking_shutdown()
     jobs_shutdown()
-    reminders_shutdown()
+    # Graceful app shutdown (e.g. reminders' request_shutdown) runs via the
+    # lifecycle registry — the platform no longer imports apps.* directly.
+    await lifecycle.run_shutdown_hooks()
     logger.info("ADMIN: Deploy requested — draining (max 30s), then git pull + recycle via host watcher")
 
     await manager.broadcast({"type": "server_restarting"})
