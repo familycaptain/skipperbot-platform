@@ -28,6 +28,36 @@ def _platform_root() -> Path:
     return Path(__file__).resolve().parent.parent.parent
 
 
+def _resolvable_guide(root: Path, key: str, cat: dict):
+    """Compute the public, "/"-free guide *name* for a category.
+
+    The returned value is one that ``GET /guide/{name}`` can resolve, or
+    ``None`` when no guide file exists. It is NEVER the internal absolute
+    ``_guide_path`` (which stays in the registry untouched for prompt
+    injection) and never contains a "/".
+
+    Derivation is per-category from the category's own identity:
+
+    * PACKAGED (key starts with ``"app:"``): the bare app id, IFF
+      ``apps/<app_id>/guide.md`` exists on disk; else ``None``.
+    * LEGACY (bare key, from tool_routes.json): its declared ``guide``
+      value returned verbatim (already a "/"-free ``*.md`` name), IFF
+      ``prompts/guides/<value>`` exists on disk; else ``None``.
+    """
+    if key.startswith("app:"):
+        app_id = key[len("app:"):]
+        if app_id and "/" not in app_id and (root / "apps" / app_id / "guide.md").is_file():
+            return app_id
+        return None
+
+    declared = cat.get("guide")
+    if not declared or "/" in declared or "\\" in declared:
+        return None
+    if (root / "prompts" / "guides" / declared).is_file():
+        return declared
+    return None
+
+
 @router.get("/categories")
 async def api_tool_categories():
     """Return every tool category — both the legacy
@@ -53,7 +83,7 @@ async def api_tool_categories():
                     "id": key,
                     "description": cat.get("description", ""),
                     "tools": cat.get("tools", []),
-                    "guide": cat.get("guide", None),
+                    "guide": _resolvable_guide(root, key, cat),
                     "keywords": cat.get("keywords", []),
                 }
 
@@ -67,7 +97,7 @@ async def api_tool_categories():
                     "id": key,
                     "description": cat.get("description", ""),
                     "tools": cat.get("tools", []),
-                    "guide": cat.get("guide", cat.get("_guide_path")),
+                    "guide": _resolvable_guide(root, key, cat),
                     "keywords": cat.get("keywords", []),
                 }
         except Exception as exc:

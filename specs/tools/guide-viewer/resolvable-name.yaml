@@ -1,0 +1,80 @@
+kind: specification
+id: tools.guide-viewer.resolvable-name
+title: Tools app exposes a resolvable per-category guide name (fixes 'Failed to load guide')
+state: live
+autonomy: gated
+behavior: 'The Tools app''s category API and guide viewer use a consistent BARE-NAME guide
+  contract; no absolute path is ever exposed to the client.
+
+  1. CATEGORIES API (GET /api/apps/tools/categories, apps/tools/routes.py api_tool_categories):
+  each returned category''s `guide` field is either a BARE, ''/''-free name that GET /api/apps/tools/guide/{name}
+  resolves, or null. Derivation is PER-CATEGORY from that category''s OWN identity: for a
+  PACKAGED category (key ''app:<id>''), app_id = key without the ''app:'' prefix; guide =
+  app_id IFF apps/<id>/guide.md exists, else null. For a LEGACY category (from tool_routes.json),
+  guide = its declared guide value RETURNED VERBATIM (these already include the ''.md'' suffix,
+  e.g. ''web.md'', and are ''/''-free; /guide tolerates the trailing .md) IFF prompts/guides/<that-value>
+  exists, else null. The response NEVER contains the internal absolute _guide_path or any
+  string containing ''/''. The internal _guide_path is left UNCHANGED (it is correctly populated
+  for packaged categories and is used by tool_router.get_guides_for_message for system-prompt
+  injection — DO NOT touch it; there is NO loader key bug to fix).
+
+  2. GUIDE FETCH (GET /api/apps/tools/guide/{name}): UNCHANGED — resolves a bare app-id to
+  apps/<id>/guide.md (stripping a trailing .md) or a legacy name to prompts/guides/<name>.md,
+  rejects path traversal (''/'',''\\'',''..''), 404s when absent. Because /categories now
+  only ever supplies a bare resolvable name (or null), a category that advertises a guide
+  loads successfully (no 400 ''Invalid guide name'').
+
+  3. UI (apps/tools/ui/ToolsApp.jsx): selecting a category loads THAT category''s guide by
+  fetching its bare `guide` name (existing logic, unchanged). The guide section''s heading/toggle
+  is a FIXED label (''Guide'') — it must NOT interpolate cat.guide (an internal lookup key)
+  into user-visible text; the human content is the rendered guide markdown beneath it. A category
+  with guide==null shows no guide section and no BookOpen indicator (both already gated on
+  cat.guide). On a genuine load failure, show a distinct, clearly-worded message (e.g. ''This
+  guide could not be loaded.''), not raw markdown that looks like content.
+
+  INVARIANT: for every category returned by GET /categories, `guide` is null OR a value that
+  GET /guide/{guide} resolves to 200 with content; no category''s `guide` is an absolute path
+  or contains ''/''; among PACKAGED categories, distinct apps return distinct guide names
+  (regression guard for the ''always one path'' symptom); a category whose guide file does
+  not exist returns guide==null (no broken guide section); no user-visible string interpolates
+  the bare guide key.'
+implements:
+- apps/tools/routes.py
+- apps/tools/ui/ToolsApp.jsx
+tests:
+- type: unit
+  path: tests/evolve/tools/test_tool_guide.py
+  rubric: 'Test seam: monkeypatch tool_router.TOOL_CATEGORIES with a packaged category keyed
+    ''app:auto'' (auto has apps/auto/guide.md) plus one with no guide file, and (optionally)
+    tmp files. GET /api/apps/tools/categories: the ''app:auto'' category''s guide == ''auto''
+    (bare, NO ''/'', not absolute); the no-guide category''s guide is null. Assert NO returned
+    category''s guide contains ''/'' or starts with ''/''. Assert two distinct PACKAGED categories
+    with guides return DIFFERENT guide values (regression for the always-same-path symptom).'
+- type: unit
+  path: tests/evolve/tools/test_tool_guide.py
+  rubric: 'Round-trip: for each category whose guide is non-null from /categories, GET /api/apps/tools/guide/{guide}
+    returns 200 with non-empty content (no 400 ''Invalid guide name'', no 404). A name containing
+    ''/'' or an absolute path still 400s (the traversal guard is intact). A legacy guide value
+    carrying ''.md'' (e.g. ''web.md'') is accepted verbatim and resolves.'
+- type: unit
+  path: tests/evolve/tools/test_tool_guide.py
+  rubric: 'Resolution parity / no-regression: GET /guide/<app_id> for a packaged app returns
+    content from apps/<app_id>/guide.md (source ''apps/<app_id>/guide.md''); a nonexistent
+    name returns 404. The internal _guide_path (absolute, used by get_guides_for_message)
+    is unaffected by the categories-API change (assert a packaged category still has its _guide_path
+    populated).'
+links: {}
+notes: 'Boundary fix in apps/tools (decision fork 1 = option A): derive a per-category bare
+  resolvable guide name; never expose the absolute _guide_path; leave _guide_path internal
+  for prompt injection. ROOT CAUSE (corrected): apps/tools/routes.py:70 returns cat.get(''guide'',
+  cat.get(''_guide_path'')) and packaged categories have no ''guide'' key, so the absolute
+  _guide_path leaks to the client; GET /guide rejects ''/''-containing names -> 400 ''Failed
+  to load''. [revise-1 resolves: audit-HIGH/interop-MED legacy ''.md'' (return legacy value
+  VERBATIM, existence-check verbatim); arch-MED REMOVED the phantom ''guide_path vs _guide_path''
+  upstream follow-up — loader writes guide_path and merge_app_tool_routes reads guide_path;
+  they MATCH; prompt injection works; do not touch it; audit-MED distinctness scoped to packaged
+  apps; audit-MED test seam (monkeypatch TOOL_CATEGORIES + real app:auto, new test file);
+  ux-MED fixed ''Guide'' label (no key interpolation) + clearer error.] DRY (low, optional):
+  a shared resolve_guide_name() used by both /categories and /guide would avoid drift. Found
+  via operator repro on the Tools app.'
+verified: true
