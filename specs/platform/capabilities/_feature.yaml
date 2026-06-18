@@ -1,0 +1,6 @@
+kind: feature
+id: platform.capabilities
+title: Optional-integration capability registry
+state: live
+links: {}
+notes: ''
