@@ -57,6 +57,26 @@ def _get_encoder():
     return _encoder
 
 
+def warm() -> None:
+    """Preload the voice encoder in the background, OFF the turn hot path.
+
+    The encoder is a multi-second CPU model load. Loading it lazily on the FIRST
+    voice turn stalled (and effectively dropped) the user's first utterance — the
+    "say it three times" symptom. Call this when a voice session starts: by the
+    time the first turn arrives, the encoder is (usually) already resident.
+    Idempotent and best-effort — failure just means lazy-load on first use."""
+    if not available():
+        return
+
+    def _load():
+        try:
+            _get_encoder()
+        except Exception as exc:
+            logger.warning("SPEAKER-ID: warm failed: %s", exc)
+
+    threading.Thread(target=_load, name="speaker-id-warm", daemon=True).start()
+
+
 def _ensure_schema() -> None:
     global _schema_ready
     if _schema_ready:

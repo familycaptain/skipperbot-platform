@@ -58,6 +58,12 @@ OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime"
 # speaker on the same mic typically scores well above this; a different person
 # falls below. Tunable via env.
 _LOCK_THRESHOLD = float(os.getenv("VOICE_SPEAKER_LOCK_THRESHOLD", "0.65"))
+# Speaker-ID is ATTRIBUTION, not a gate on whether Skipper replies. By default the relay
+# FAILS OPEN — it answers every turn and only uses the voiceprint to label the speaker.
+# Set VOICE_SPEAKER_LOCK_STRICT=1 to restore the old behavior (silently drop turns whose
+# voiceprint doesn't match the lock) — that made voice eat the user's own turns when the
+# cosine similarity dipped (the "listening/thinking, no You:" bug), so it's off by default.
+_LOCK_STRICT = os.getenv("VOICE_SPEAKER_LOCK_STRICT", "").strip().lower() in ("1", "true", "yes", "on")
 
 _AUDIO_DELTA_TYPES = {"response.audio.delta", "response.output_audio.delta"}
 _ASSISTANT_TRANSCRIPT_TYPES = {
@@ -216,7 +222,11 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         await _send_oai(oai, _session_update(instructions, tools, voice))
 
         # --- per-turn audio capture for speaker identification ---
-        from app_platform.voice import speaker_id
+        from app_platform.voice import speaker_id, debug_log
+        debug_log.install()              # mirror voice logs into the live debug stream
+        speaker_id.warm()               # preload the encoder OFF the hot path (don't stall turn 1)
+        debug_log.record(f"session {session_id[:12]} relay started (user={user_id})",
+                         session=session_id[:12], kind="session")
         _SR = REALTIME_AUDIO_RATE
         # Rolling buffer of the most recent mic audio. We DON'T gate capture on the
         # OpenAI VAD events (they arrive over the network lagged vs the live mic
@@ -327,6 +337,7 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                 await satellite_ws.send_text(json.dumps({"type": "transcript", "role": "user", "text": text}))
             except Exception:
                 pass
+            debug_log.record(f"You: {text}", session=session_id[:12], kind="you")
 
         async def _create_response() -> None:
             """Ask the model to reply. Cancel any in-flight response first and wait for
@@ -373,7 +384,7 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                 await _accept_and_reply(pcm)
                 return
 
-            # Not locked yet → this utterance becomes the lock, then we reply.
+            # Not locked yet → this utterance establishes the lock, then we reply.
             if lock["vec"] is None:
                 vec = await _embed(pcm)
                 if vec is not None:
@@ -385,12 +396,18 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                         name, score = None, 0.0
                     await _set_locked_identity(name, score, relock=True)
                 else:
-                    logger.info("VOICE-RELAY: first utterance too short to lock; "
-                                "retrying next turn [session %s]", session_id[:12])
+                    # Encoder still warming / utterance not embeddable yet — ANSWER ANYWAY
+                    # and lock on a later turn. (Never make the user repeat themselves just
+                    # because speaker-ID isn't ready.)
+                    logger.info("VOICE-RELAY: first utterance not embedded yet; answering anyway, "
+                                "will lock on a later turn [session %s]", session_id[:12])
                 await _accept_and_reply(pcm)
                 return
 
-            # Locked → only answer if this turn is the same voice; else ignore + delete it.
+            # Locked. Speaker-ID is ATTRIBUTION, not a reply gate: a confident match adapts
+            # the lock + keeps the identity; a low-confidence turn is STILL answered (fail-open),
+            # just not blended into the reference. Old behavior (drop off-target turns) is opt-in
+            # via VOICE_SPEAKER_LOCK_STRICT.
             locked_user = lock["name"] or "unidentified"
             vec = await _embed(pcm)
             sim = speaker_id.cosine(vec, lock["vec"]) if vec is not None else 0.0
@@ -409,18 +426,25 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                 if lock["name"] is None:
                     await _adopt_name_if_unidentified(vec)
                 await _accept_and_reply(pcm)
-            else:
-                logger.info("VOICE-RELAY: ignoring off-target voice (sim %.2f < %.2f); "
-                            "session locked to user_id=%s [session %s]",
+                return
+
+            # Low-confidence / unmatched turn.
+            if _LOCK_STRICT:
+                logger.info("VOICE-RELAY: [strict] ignoring off-target voice (sim %.2f < %.2f); "
+                            "locked to user_id=%s [session %s]",
                             sim, _LOCK_THRESHOLD, locked_user, session_id[:12])
                 item_id = last_item.get("id")
                 if item_id:
-                    # Drop the stray turn so it never reaches the model OR chat history.
                     await _send_oai(oai, {"type": "conversation.item.delete", "item_id": item_id})
                     dropped_items.add(item_id)  # its transcript may still be in flight
                     fut = transcript_futs.pop(item_id, None)
                     if fut and not fut.done():
                         fut.cancel()
+                return
+            logger.info("VOICE-RELAY: low-confidence voice (sim %.2f < %.2f) — answering anyway "
+                        "(fail-open); not adapting the lock [session %s]",
+                        sim, _LOCK_THRESHOLD, session_id[:12])
+            await _accept_and_reply(pcm)
 
         async def pump_satellite_to_openai():
             """Mic PCM (binary) → OpenAI input_audio_buffer.append; text = control."""
@@ -472,8 +496,10 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
 
                     elif et == "input_audio_buffer.speech_started":
                         await satellite_ws.send_text(json.dumps({"type": "status", "status": "speech_started"}))
+                        debug_log.record("● speech started (listening)", session=session_id[:12], kind="vad")
                     elif et == "input_audio_buffer.speech_stopped":
                         await satellite_ws.send_text(json.dumps({"type": "status", "status": "speech_stopped"}))
+                        debug_log.record("■ speech stopped (processing turn)", session=session_id[:12], kind="vad")
                         # Voice-lock check + drive the reply (response.create is issued in
                         # there, not by server-VAD). Snapshot the last ~8s of mic audio and
                         # run off the event loop so embed work doesn't stall the receive pump.
@@ -482,6 +508,18 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                     elif et == "input_audio_buffer.committed":
                         # Remember the user item id so an off-target turn can be deleted.
                         last_item["id"] = event.get("item_id")
+
+                    elif et == "conversation.item.input_audio_transcription.delta":
+                        # Live partial transcript — stream words to the satellite "You:" line
+                        # and the debug stream AS they're heard (don't wait for the full turn).
+                        d = event.get("delta", "")
+                        if d:
+                            try:
+                                await satellite_ws.send_text(json.dumps(
+                                    {"type": "transcript_partial", "role": "user", "delta": d}))
+                            except Exception:
+                                pass
+                            debug_log.record(d, session=session_id[:12], kind="you_partial")
 
                     elif et == "conversation.item.input_audio_transcription.completed":
                         # Hand the text to the turn's future; the accept path persists +
@@ -500,6 +538,7 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                         if record_voice_transcript:
                             await record_voice_transcript(session_id, "assistant", text, user_id=session.get("user_id", ""))
                         await satellite_ws.send_text(json.dumps({"type": "transcript", "role": "assistant", "text": text}))
+                        debug_log.record(f"Skipper: {text[:300]}", session=session_id[:12], kind="skipper")
 
                     elif et == "response.function_call_arguments.done":
                         call_id = event.get("call_id", "")

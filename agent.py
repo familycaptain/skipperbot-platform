@@ -697,6 +697,35 @@ async def voice_end_session(request: VoiceEndRequest):
     return {"success": True}
 
 
+@app.get("/api/voice/debug")
+async def voice_debug_read(since: int = 0):
+    """Live voice debug stream — relay + speaker-ID + satellite events in one place,
+    so the whole voice pipeline (turn capture, partial/final transcripts, lock/identity,
+    tool calls) can be watched live from a single endpoint. Poll with ?since=<last id>.
+    Auth is enforced by the global middleware (service/admin token)."""
+    from app_platform.voice import debug_log
+    rows = debug_log.since(since)
+    return {"events": rows, "last": rows[-1]["id"] if rows else since}
+
+
+@app.post("/api/voice/debug")
+async def voice_debug_write(request: Request):
+    """A voice component (e.g. the satellite) pushes one event into the stream, so the
+    satellite's wake/listen/transcribe states show up alongside the server-side events."""
+    from app_platform.voice import debug_log
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    msg = str(body.get("message", "") or "")[:2000]
+    if msg:
+        debug_log.record(msg, source=str(body.get("source", "satellite"))[:32],
+                         level=str(body.get("level", "info"))[:16],
+                         session=str(body.get("session", ""))[:24],
+                         kind=str(body.get("kind", ""))[:24])
+    return {"ok": True}
+
+
 @app.websocket("/ws/voice/{session_id}")
 async def voice_tool_relay(websocket: WebSocket, session_id: str):
     """Sideband WebSocket for relaying tool calls from Android to backend.
