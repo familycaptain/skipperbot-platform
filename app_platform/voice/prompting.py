@@ -30,6 +30,25 @@ GLOBAL_CATEGORIES = {"core", "utility", "web", "knowledge", "filesystem", "timer
 VOICE_CORE_CATEGORIES = {"weather", "automation", "reminders", "notifications"}
 
 HOME_VOICE_DEFAULT_CATEGORIES = {"automation"}  # extra categories for home voice devices
+
+# Tools NEVER worth carrying in the always-on voice prompt — dev / filesystem / admin /
+# knowledge-base management. Nobody greps files, validates YAML, or manages knowledge
+# crawls by voice, yet these (from the filesystem/utility globals) were ~half the voice
+# tool budget. Excluded from the voice tool set to keep the Realtime context lean; they
+# remain available on the chat/text surface. Tune freely.
+VOICE_TOOL_EXCLUDE = {
+    # filesystem / file ops
+    "cat_file", "tail_file", "ls_dir", "glob_search", "grep_search", "os_level_find",
+    # dev / code / introspection
+    "json_validate_file", "yaml_validate_file", "git_tool", "read_feature_spec", "list_all_tools",
+    # network / admin
+    "curl_request", "ping_host", "restart_agent",
+    # knowledge-base management (query_knowledge/recall/remember stay)
+    "learn_from_url", "list_knowledge_crawls", "list_knowledge_sources",
+    "get_knowledge_crawl", "remove_knowledge_source",
+    # misc dev/test
+    "echo",
+}
 BASE_DIR = Path(__file__).resolve().parent
 APPS_DIR = BASE_DIR / "apps"
 
@@ -663,9 +682,13 @@ def build_voice_tools(category_names: Iterable[str] = ()) -> list[dict]:
     seen: set[str] = set()
 
     for schema in get_mcp_tool_schemas_for_categories(categories):
+        if schema.get("name") in VOICE_TOOL_EXCLUDE:
+            continue
         add_schema(schemas, seen, schema)
 
     for schema in get_global_tool_schemas():
+        if schema.get("name") in VOICE_TOOL_EXCLUDE:
+            continue
         add_schema(schemas, seen, schema)
 
     add_schema(schemas, seen, end_voice_session_schema())
