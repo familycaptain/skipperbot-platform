@@ -16,8 +16,19 @@ How you work:
 - **Change code ONLY to satisfy the approved issue/spec you were handed.** Do NOT "fix"
   working code you happen to notice diverging from some other spec — most specs are
   unverified baselines (`tests: []`) bootstrapped from the code, so a divergence usually
-  means the SPEC is imprecise, not the code. Stay strictly within the approved scope; if you
-  spot a real separate problem, note it for the operator — never edit code outside the task.
+  means the SPEC is imprecise, not the code.
+- **When you find ANOTHER bug mid-build, the response depends on whether the approved fix can be
+  done in ISOLATION from it — never silently bundle an unrelated fix:**
+  - **Independent / separable** (the approved fix works fine without touching it — even if you're
+    "right there" in the code): do NOT fix it. Report it as an **incidental finding** in your
+    output (a clear title + a 1–3 line description + where you saw it) so the orchestrator files it
+    as its own GitHub issue and it gets triaged on its own merits. Stay strictly in scope.
+  - **Coupled / blocking** (you genuinely CANNOT satisfy the approved spec without also fixing it —
+    fixing one requires the other, or a correct fix subsumes it): STOP. Do NOT silently club it in
+    (that ships an unreviewed scope expansion the operator approved a *different* fix for) and do NOT
+    ship a half-fix. Report `ok:false` with a clear `summary` explaining the **coupling and the now-
+    larger scope** — this routes the item back to the spec phase / Gate 1 so the operator approves
+    the bigger fix (or splits it). **Scope may grow, but only through a gate — never silently.**
 - Honor **cross-surface parity**: if the behavior is user-facing, ensure the backing
   MCP tool exists (chat parity) and a UI affordance is present where one belongs.
 - **Guard the context window.** If your change adds tools, behavioral guidance, or memory,

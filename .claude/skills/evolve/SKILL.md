@@ -109,7 +109,16 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   **IMMEDIATELY** `run ev-<n> --status building --phase build` so the UI shows it ACTIVELY building
   (not stuck on the operator-side "queued/approved" chip) — do this BEFORE any build work. **BUILD:**
   cut the feature worktree (mechanics), serialize the spec, `evolve-implement` **inside the worktree**,
-  run the **isolation check** (main checkout dirty → `git checkout -- .` + FAIL). **Then the
+  run the **isolation check** (main checkout dirty → `git checkout -- .` + FAIL).
+  - **Incidental bug found mid-build (route by COUPLING — never silently club; see implement.md):**
+    - **Independent / separable** finding (the approved fix stands on its own) → do NOT fix it here;
+      **file it as its OWN GitHub issue** so it enters the queue: `python3 -c "import apps.evolve.github_connector as g; print(g.create_issue('<short title>', '<1–3 line desc + \\'found while building ev-<n>\\'>', labels=['evolve-incidental']))"`. Note the new issue # in the Gate-2 packet and **continue this build unchanged**.
+    - **Coupled / blocking** finding (`evolve-implement` returned `ok:false` because the approved fix
+      can't be done in isolation) → do NOT merge a half-fix and do NOT silently expand scope: re-enter
+      the **SPEC PHASE** with the coupling as input (so the now-larger fix is specced + re-reviewed) and
+      re-push **Gate 1** for the operator to approve the bigger scope; `phase=gate1`, **END**. Scope may
+      grow, but only through a gate.
+  - **Then the
   dependency-rule guard:** `python3 scripts/evolve_dep_check.py <worktree-path> release` — if it
   reports violations (the change made the **platform import an app**, or **one app import another**),
   the build introduced a structural break: include the violations PROMINENTLY in the Gate-2 packet as

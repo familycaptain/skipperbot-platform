@@ -54,6 +54,12 @@ Your job now is to report on the RESULT:
 - `action`: `approve` (built, validated, sound — ship it to `release`), or `change` (a
   reviewer found a real problem in the diff, or validation did not pass — say what, send
   back to implement). Never `approve` over red validation or an unresolved reviewer blocker.
+- **Incidental bugs found mid-build** (see implement.md's three-way): if implement hit a
+  **coupled/blocking** finding (it returned `ok:false` because the approved fix can't be done in
+  isolation), do NOT `approve` a half-fix — recommend `change` and frame the now-larger scope, so it
+  re-enters the spec phase / Gate 1 for the operator to approve. Scope grows only through a gate, never
+  silently. If implement instead found an **independent** bug and the orchestrator filed it as its own
+  issue, just **note the new issue #** in your `summary` — it doesn't gate this item.
 
 Across all phases: you are the single point of judgment. Honor the engineering
 principles as hard constraints (a per-request external call or a recomputed config value

@@ -92,6 +92,22 @@ def post_comment(number: int, body: str, repo: str | None = None, token: str | N
     return _request("POST", f"/repos/{_repo(repo)}/issues/{number}/comments", token, {"body": body})
 
 
+def create_issue(title: str, body: str = "", labels: list[str] | None = None,
+                 repo: str | None = None, token: str | None = None) -> dict:
+    """Open a NEW issue — used by Evolve to log a separate, INDEPENDENT bug an agent found while
+    working a different item (so it enters the queue and gets triaged on its own merits, instead of
+    being silently clubbed into an unrelated fix or lost in a gate note). Write-boundary: requires a
+    token with Issues:write. NOT for coupled/blocking findings — those route to re-spec/Gate-1 so the
+    operator approves the larger scope (see the loop's build segment + implement.md)."""
+    token = token or _token()
+    if not token:
+        raise RuntimeError("GITHUB_TOKEN is not set")
+    payload: dict = {"title": title, "body": body}
+    if labels:
+        payload["labels"] = labels
+    return _request("POST", f"/repos/{_repo(repo)}/issues", token, payload)
+
+
 def close_issue(number: int, comment: str = "", repo: str | None = None, token: str | None = None) -> dict:
     """Close an issue (optionally leaving a comment first). Used to 'close the loop' only after the
     operator VERIFIES the shipped change actually works — never on merge alone. Write-boundary:
