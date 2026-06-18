@@ -61,6 +61,16 @@ def _line(label, val):
         print(f"  {label}: {val}")
 
 
+def _aslist(v):
+    """Coerce a maybe-list field to a list so we never iterate a string char-by-char
+    (agent JSON sometimes emits a scalar where the schema says array)."""
+    if isinstance(v, list):
+        return v
+    if v in (None, "", {}):
+        return []
+    return [v]
+
+
 def digest(iid, runs):
     run = next((r for r in runs if r["instance_id"] == iid), {})
     try:
@@ -107,7 +117,7 @@ def digest(iid, runs):
         _line("id", prop.get("spec_id"))
         _line("title", prop.get("title"))
         _line("behavior", prop.get("behavior"))
-        for t in (prop.get("tests") or []):
+        for t in _aslist(prop.get("tests")):
             _line("test", f"{t.get('path') or t.get('type')} — {t.get('rubric', '')}")
         _line("notes", prop.get("notes"))
 
@@ -116,15 +126,15 @@ def digest(iid, runs):
         print("\n-- Planned code changes (code scout, read-only) --")
         _line("summary", cp.get("summary"))
         _line("approach", cp.get("approach"))
-        for c in (cp.get("changes") or []):
+        for c in _aslist(cp.get("changes")):
             _line(f"[{c.get('action')}]", f"{c.get('path')} — {c.get('what', '')}")
-        for n in (cp.get("new_modules") or []):
+        for n in _aslist(cp.get("new_modules")):
             _line("new module", n)
-        for n in (cp.get("placement_notes") or []):
+        for n in _aslist(cp.get("placement_notes")):
             _line("placement", n)
-        for n in (cp.get("risks") or []):
+        for n in _aslist(cp.get("risks")):
             _line("risk", n)
-        for n in (cp.get("open_questions") or []):
+        for n in _aslist(cp.get("open_questions")):
             _line("open question", n)
 
     st = pkt.get("spec_tree")
@@ -139,11 +149,11 @@ def digest(iid, runs):
         _line("summary", o.get("summary"))
         if "approve" in o:
             _line("approve", o.get("approve"))
-        for c in (o.get("concerns") or []):
+        for c in _aslist(o.get("concerns")):
             _line(f"concern[{c.get('severity')}]", c.get("detail"))
-        for c in (o.get("findings") or []):
+        for c in _aslist(o.get("findings")):
             _line(f"finding[{c.get('severity')}]", f"{c.get('category', '')}: {c.get('detail', '')}")
-        for c in (o.get("conflicts") or []):
+        for c in _aslist(o.get("conflicts")):
             _line("conflict", f"{c.get('with_spec', '')}: {c.get('detail', '')}")
 
     val = pkt.get("validation")
