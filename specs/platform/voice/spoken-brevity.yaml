@@ -59,4 +59,4 @@ notes: 'Built to recommended forks: prominent placement (fork 1=A) and keep the 
   does NOT suppress the #18 pre-tool ack (ux/interop); test uses robust substrings + names
   BOTH builders (build_base_voice_instructions + build_app_voice_payload), asserts wiring
   not ordinal position (audit/arch).'
-verified: false
+verified: true
