@@ -19,7 +19,36 @@ from app_platform.prompt_context import collect_prompt_context
 
 
 GLOBAL_CATEGORIES = {"core", "utility", "web", "knowledge", "filesystem", "timers"}
-HOME_VOICE_DEFAULT_CATEGORIES = {"automation"}
+
+# Curated VOICE-CORE categories: app tools ALWAYS loaded at the start of EVERY voice
+# session, so the most common quick asks work WITHOUT first saying "open the <app> app"
+# ("what's the weather", "remind me…", "turn on the lights", "any notifications?").
+# Keep this list SMALL and curated — every category here adds tools to the always-on
+# voice prompt, which is exactly what the open-the-XYZ-app JIT loading exists to avoid.
+# Everything NOT listed stays behind request_tools / "open the <app> app" (auto, medical,
+# home-maintenance, etc.). Tune to the most common voice use cases.
+VOICE_CORE_CATEGORIES = {"weather", "automation", "reminders", "notifications"}
+
+HOME_VOICE_DEFAULT_CATEGORIES = {"automation"}  # extra categories for home voice devices
+
+# Tools NEVER worth carrying in the always-on voice prompt — dev / filesystem / admin /
+# knowledge-base management. Nobody greps files, validates YAML, or manages knowledge
+# crawls by voice, yet these (from the filesystem/utility globals) were ~half the voice
+# tool budget. Excluded from the voice tool set to keep the Realtime context lean; they
+# remain available on the chat/text surface. Tune freely.
+VOICE_TOOL_EXCLUDE = {
+    # filesystem / file ops
+    "cat_file", "tail_file", "ls_dir", "glob_search", "grep_search", "os_level_find",
+    # dev / code / introspection
+    "json_validate_file", "yaml_validate_file", "git_tool", "read_feature_spec", "list_all_tools",
+    # network / admin
+    "curl_request", "ping_host", "restart_agent",
+    # knowledge-base management (query_knowledge/recall/remember stay)
+    "learn_from_url", "list_knowledge_crawls", "list_knowledge_sources",
+    "get_knowledge_crawl", "remove_knowledge_source",
+    # misc dev/test
+    "echo",
+}
 BASE_DIR = Path(__file__).resolve().parent
 APPS_DIR = BASE_DIR / "apps"
 
@@ -590,9 +619,14 @@ def build_voice_memory_rules(user_id: str = "", device_info: dict | None = None)
 
 
 def get_default_categories(device_info: dict | None) -> set[str]:
+    # The curated voice-core loads for EVERY voice session; home voice devices add theirs.
+    # Resolve friendly names ("weather") to their REAL categories ("app:weather") — the same
+    # resolution switch_voice_app uses — so the tools actually load (a bare name matches no
+    # category and silently loads nothing).
+    names = set(VOICE_CORE_CATEGORIES)
     if is_home_voice_device(device_info):
-        return set(HOME_VOICE_DEFAULT_CATEGORIES)
-    return set()
+        names |= set(HOME_VOICE_DEFAULT_CATEGORIES)
+    return {resolve_app_category(name) or name for name in names}
 
 
 def is_home_voice_device(device_info: dict | None) -> bool:
@@ -651,9 +685,13 @@ def build_voice_tools(category_names: Iterable[str] = ()) -> list[dict]:
     seen: set[str] = set()
 
     for schema in get_mcp_tool_schemas_for_categories(categories):
+        if schema.get("name") in VOICE_TOOL_EXCLUDE:
+            continue
         add_schema(schemas, seen, schema)
 
     for schema in get_global_tool_schemas():
+        if schema.get("name") in VOICE_TOOL_EXCLUDE:
+            continue
         add_schema(schemas, seen, schema)
 
     add_schema(schemas, seen, end_voice_session_schema())

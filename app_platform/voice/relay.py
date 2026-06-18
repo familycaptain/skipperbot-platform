@@ -29,6 +29,7 @@ import base64
 import json
 import logging
 import os
+import time
 
 import websockets
 from websockets.exceptions import ConnectionClosed
@@ -58,6 +59,31 @@ OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime"
 # speaker on the same mic typically scores well above this; a different person
 # falls below. Tunable via env.
 _LOCK_THRESHOLD = float(os.getenv("VOICE_SPEAKER_LOCK_THRESHOLD", "0.65"))
+# Speaker-ID is ATTRIBUTION, not a gate on whether Skipper replies. By default the relay
+# FAILS OPEN — it answers every turn and only uses the voiceprint to label the speaker.
+# Set VOICE_SPEAKER_LOCK_STRICT=1 to restore the old behavior (silently drop turns whose
+# voiceprint doesn't match the lock) — that made voice eat the user's own turns when the
+# cosine similarity dipped (the "listening/thinking, no You:" bug), so it's off by default.
+_LOCK_STRICT = os.getenv("VOICE_SPEAKER_LOCK_STRICT", "").strip().lower() in ("1", "true", "yes", "on")
+
+# Sticky identity ACROSS sessions (process-level): the last voice the relay confidently
+# identified. A new session seeds its lock from this so the FIRST turn already has a
+# provisional user_id (e.g. "what's on my todo list" works without waiting for a fresh
+# embed); the background attribution then confirms or corrects it. None until the first
+# ID of the process lifetime (a truly fresh start has a null speaker, as it should).
+_LAST_SPEAKER: dict = {"name": None, "vec": None}
+
+# Deterministic ack: how long to wait after a tool dispatches (with no spoken audio) before
+# voicing a filler. Fast/local tools return before this and never trigger it; slow/external
+# tools (weather, search) are still running, so the filler covers their dead air.
+_ACK_FILLER_DELAY = float(os.getenv("VOICE_ACK_FILLER_DELAY", "1.0"))
+# Self-contained instruction for the out-of-band filler response (no conversation context, so
+# it must be generic — a short "looking that up", NOT the actual answer).
+_ACK_FILLER_INSTRUCTION = (
+    "Say ONE short, natural, varied acknowledgment that you're getting that for them right "
+    "now — e.g. 'let me check that', 'one sec', 'looking that up'. Under 6 words. Do NOT "
+    "answer the question or add anything else; just the brief filler, then stop."
+)
 
 _AUDIO_DELTA_TYPES = {"response.audio.delta", "response.output_audio.delta"}
 _ASSISTANT_TRANSCRIPT_TYPES = {
@@ -178,6 +204,11 @@ async def _apply_tool_events(oai, events: list[dict]) -> bool:
                 },
             })
             await _send_oai(oai, {"type": "response.create"})
+            try:
+                from app_platform.voice import debug_log as _dl
+                _dl.record("→ response.create (after tool result) — expecting a spoken reply", kind="resp")
+            except Exception:
+                pass
         elif et == "end_session":
             should_end = True
     return should_end
@@ -216,7 +247,11 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         await _send_oai(oai, _session_update(instructions, tools, voice))
 
         # --- per-turn audio capture for speaker identification ---
-        from app_platform.voice import speaker_id
+        from app_platform.voice import speaker_id, debug_log
+        debug_log.install()              # mirror voice logs into the live debug stream
+        speaker_id.warm()               # preload the encoder OFF the hot path (don't stall turn 1)
+        debug_log.record(f"session {session_id[:12]} relay started (user={user_id})",
+                         session=session_id[:12], kind="session")
         _SR = REALTIME_AUDIO_RATE
         # Rolling buffer of the most recent mic audio. We DON'T gate capture on the
         # OpenAI VAD events (they arrive over the network lagged vs the live mic
@@ -232,10 +267,23 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         resp_idle = asyncio.Event()
         resp_idle.set()
         turn_lock = asyncio.Lock()
+        # Did the CURRENT response stream any audio yet? Drives the deterministic ack-before-
+        # slow-tool filler: if the model calls a tool WITHOUT speaking first (Realtime models
+        # often skip the instructed ack), we voice a brief filler so there's no dead silence.
+        resp_state = {"audio": False}
         # The session voice-lock: the reference voiceprint (adapted toward the speaker
         # as accepted turns come in, so it stabilizes), the resolved identity, and the
         # number of turns blended into the reference.
         lock = {"vec": None, "name": None, "n": 0}
+        # Sticky: seed identity from the last speaker this process identified, so the FIRST
+        # turn already has a provisional user_id (background attribution confirms/corrects).
+        if _LAST_SPEAKER.get("name"):
+            lock["name"] = _LAST_SPEAKER["name"]
+            lock["vec"] = _LAST_SPEAKER["vec"]
+            lock["n"] = 1
+            session["user_id"] = _LAST_SPEAKER["name"]
+            debug_log.record(f"provisional identity (sticky from last session): {_LAST_SPEAKER['name']}",
+                             session=session_id[:12], kind="attr")
         last_item = {"id": None}            # id of the latest committed user item (for delete)
         # item_id -> Future[transcript]. The user transcript arrives on its own event,
         # but we only persist it once the turn is ACCEPTED — so the transcription
@@ -266,8 +314,12 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         async def _embed(pcm: bytes):
             if not pcm:
                 return None
+            t0 = time.monotonic()
             try:
-                return await asyncio.to_thread(speaker_id.embed, pcm, _SR)
+                v = await asyncio.to_thread(speaker_id.embed, pcm, _SR)
+                debug_log.record(f"embed {'ok' if v is not None else 'none'} in {time.monotonic()-t0:.2f}s",
+                                 session=session_id[:12], kind="timing")
+                return v
             except Exception as exc:
                 logger.warning("VOICE-RELAY: embed failed: %s", exc)
                 return None
@@ -327,17 +379,39 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                 await satellite_ws.send_text(json.dumps({"type": "transcript", "role": "user", "text": text}))
             except Exception:
                 pass
+            debug_log.record(f"You: {text}", session=session_id[:12], kind="you")
 
         async def _create_response() -> None:
             """Ask the model to reply. Cancel any in-flight response first and wait for
             it to end, so we never hit conversation_already_has_active_response."""
             if not resp_idle.is_set():
+                debug_log.record("→ response.cancel (prior reply still active) — waiting…",
+                                 session=session_id[:12], kind="resp")
                 await _send_oai(oai, {"type": "response.cancel"})
                 try:
                     await asyncio.wait_for(resp_idle.wait(), timeout=2.0)
                 except asyncio.TimeoutError:
-                    pass
+                    debug_log.record("⚠ prior response didn't go idle within 2s",
+                                     session=session_id[:12], kind="resp")
             await _send_oai(oai, {"type": "response.create"})
+            debug_log.record("→ response.create", session=session_id[:12], kind="resp")
+
+        async def _speak_filler() -> None:
+            """Voice a brief out-of-band acknowledgment (Skipper's own voice) to cover the dead
+            air of a slow tool the model called without speaking first. `conversation:"none"`
+            keeps it out of the conversation history; it's generated from a self-contained
+            instruction (no context), so it stays a generic 'looking that up'."""
+            # Let the calling (tool) response finish so we don't stack two active responses.
+            try:
+                await asyncio.wait_for(resp_idle.wait(), timeout=2.0)
+            except asyncio.TimeoutError:
+                pass
+            await _send_oai(oai, {"type": "response.create", "response": {
+                "conversation": "none",
+                "instructions": _ACK_FILLER_INSTRUCTION,
+            }})
+            debug_log.record("→ filler ack (model called a tool without speaking)",
+                             session=session_id[:12], kind="resp")
 
         async def _accept_and_reply(pcm: bytes) -> None:
             """Accept this turn: it's the locked speaker. Reply now; persist transcript."""
@@ -353,27 +427,72 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             await _create_response()
             _spawn(_finalize_user_transcript(item_id))
 
+        async def _attribute_turn(pcm: bytes) -> None:
+            """Background speaker-ID for a turn that was ALREADY answered: embed, set/adapt
+            the session lock, resolve identity. This runs OFF the reply path on purpose —
+            the first resemblyzer embed is ~10-20s on a Pi CPU, so blocking the response on
+            it is exactly the stall we're fixing. Identity it resolves applies to the
+            session going forward (subsequent turns / tools / personal data)."""
+            if not speaker_id.available():
+                return
+            vec = await _embed(pcm)
+            if vec is None:
+                return
+            try:
+                name, score = await asyncio.to_thread(speaker_id.identify_vec, vec)
+            except Exception:
+                name, score = None, 0.0
+            if name:
+                # Confident enrolled match → set/switch identity (sticky to whoever matches).
+                if name != lock["name"]:
+                    await _set_locked_identity(name, score, relock=(lock["name"] is None))
+                lock["vec"] = vec
+                lock["n"] = (lock["n"] or 0) + 1
+                _LAST_SPEAKER["name"] = name
+                _LAST_SPEAKER["vec"] = vec
+            elif lock["vec"] is None:
+                # Nothing matched and nothing locked yet → lock to this (unnamed) voice.
+                lock["vec"] = vec
+                lock["n"] = 1
+                await _set_locked_identity(None, score, relock=True)
+            elif speaker_id.cosine(vec, lock["vec"]) >= _LOCK_THRESHOLD:
+                # Same voice as the current lock → adapt the reference (identity stays sticky).
+                n = lock["n"] or 1
+                lock["vec"] = [(o * n + x) / (n + 1) for o, x in zip(lock["vec"], vec)]
+                lock["n"] = n + 1
+                if lock["name"]:
+                    _LAST_SPEAKER["vec"] = lock["vec"]
+            # else: an unrecognized voice while we already have an identity → keep it
+            # (STICKY — never revert a known speaker to null on one uncertain turn).
+            debug_log.record(f"attribution: score {score:.2f} → user_id={lock['name'] or 'unidentified'}",
+                             session=session_id[:12], kind="attr")
+
         async def _on_user_turn(pcm: bytes) -> None:
             """Drive the turn's reply (server-VAD create_response is off, so we own it).
 
-            First utterance establishes the session voice-lock and replies. Later turns
-            reply ONLY if their voiceprint matches the lock; any other voice (background,
-            adjacent rooms, other people) is ignored and its stray turn is deleted from
-            the model's context (and never written to chat history). The lock holds until
-            the session ends ("goodbye").
+            DEFAULT (fail-open): reply IMMEDIATELY, then run speaker-ID ATTRIBUTION in the
+            background — so the multi-second first embed never stalls the response. Identity
+            lags at most the very first turn, then holds for the session. STRICT mode
+            (VOICE_SPEAKER_LOCK_STRICT) keeps the old embed-gate-before-reply path (only the
+            locked voice is answered), accepting the latency.
 
-            Serialized via turn_lock so rapid/overlapping turns (e.g. the wake-word
-            pre-roll burst) can't race response.create against each other.
+            turn_lock serializes the reply path so rapid/overlapping turns (e.g. the
+            wake-word pre-roll burst) can't race response.create against each other.
             """
+            if _LOCK_STRICT:
+                async with turn_lock:
+                    await _handle_turn(pcm)
+                return
             async with turn_lock:
-                await _handle_turn(pcm)
+                await _accept_and_reply(pcm)
+            _spawn(_attribute_turn(pcm))
 
         async def _handle_turn(pcm: bytes) -> None:
             if not speaker_id.available():
                 await _accept_and_reply(pcm)
                 return
 
-            # Not locked yet → this utterance becomes the lock, then we reply.
+            # Not locked yet → this utterance establishes the lock, then we reply.
             if lock["vec"] is None:
                 vec = await _embed(pcm)
                 if vec is not None:
@@ -385,12 +504,18 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                         name, score = None, 0.0
                     await _set_locked_identity(name, score, relock=True)
                 else:
-                    logger.info("VOICE-RELAY: first utterance too short to lock; "
-                                "retrying next turn [session %s]", session_id[:12])
+                    # Encoder still warming / utterance not embeddable yet — ANSWER ANYWAY
+                    # and lock on a later turn. (Never make the user repeat themselves just
+                    # because speaker-ID isn't ready.)
+                    logger.info("VOICE-RELAY: first utterance not embedded yet; answering anyway, "
+                                "will lock on a later turn [session %s]", session_id[:12])
                 await _accept_and_reply(pcm)
                 return
 
-            # Locked → only answer if this turn is the same voice; else ignore + delete it.
+            # Locked. Speaker-ID is ATTRIBUTION, not a reply gate: a confident match adapts
+            # the lock + keeps the identity; a low-confidence turn is STILL answered (fail-open),
+            # just not blended into the reference. Old behavior (drop off-target turns) is opt-in
+            # via VOICE_SPEAKER_LOCK_STRICT.
             locked_user = lock["name"] or "unidentified"
             vec = await _embed(pcm)
             sim = speaker_id.cosine(vec, lock["vec"]) if vec is not None else 0.0
@@ -409,18 +534,25 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                 if lock["name"] is None:
                     await _adopt_name_if_unidentified(vec)
                 await _accept_and_reply(pcm)
-            else:
-                logger.info("VOICE-RELAY: ignoring off-target voice (sim %.2f < %.2f); "
-                            "session locked to user_id=%s [session %s]",
+                return
+
+            # Low-confidence / unmatched turn.
+            if _LOCK_STRICT:
+                logger.info("VOICE-RELAY: [strict] ignoring off-target voice (sim %.2f < %.2f); "
+                            "locked to user_id=%s [session %s]",
                             sim, _LOCK_THRESHOLD, locked_user, session_id[:12])
                 item_id = last_item.get("id")
                 if item_id:
-                    # Drop the stray turn so it never reaches the model OR chat history.
                     await _send_oai(oai, {"type": "conversation.item.delete", "item_id": item_id})
                     dropped_items.add(item_id)  # its transcript may still be in flight
                     fut = transcript_futs.pop(item_id, None)
                     if fut and not fut.done():
                         fut.cancel()
+                return
+            logger.info("VOICE-RELAY: low-confidence voice (sim %.2f < %.2f) — answering anyway "
+                        "(fail-open); not adapting the lock [session %s]",
+                        sim, _LOCK_THRESHOLD, session_id[:12])
+            await _accept_and_reply(pcm)
 
         async def pump_satellite_to_openai():
             """Mic PCM (binary) → OpenAI input_audio_buffer.append; text = control."""
@@ -463,17 +595,23 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                     if et in _AUDIO_DELTA_TYPES:
                         delta = event.get("delta", "")
                         if delta:
+                            resp_state["audio"] = True   # the model IS speaking — no filler needed
                             await satellite_ws.send_bytes(base64.b64decode(delta))
 
                     elif et == "response.created":
                         resp_idle.clear()
+                        resp_state["audio"] = False       # new response — no audio yet
+                        debug_log.record("← response.created (generating reply)", session=session_id[:12], kind="resp")
                     elif et in ("response.done", "response.cancelled"):
                         resp_idle.set()
+                        debug_log.record(f"← {et}", session=session_id[:12], kind="resp")
 
                     elif et == "input_audio_buffer.speech_started":
                         await satellite_ws.send_text(json.dumps({"type": "status", "status": "speech_started"}))
+                        debug_log.record("● speech started (listening)", session=session_id[:12], kind="vad")
                     elif et == "input_audio_buffer.speech_stopped":
                         await satellite_ws.send_text(json.dumps({"type": "status", "status": "speech_stopped"}))
+                        debug_log.record("■ speech stopped (processing turn)", session=session_id[:12], kind="vad")
                         # Voice-lock check + drive the reply (response.create is issued in
                         # there, not by server-VAD). Snapshot the last ~8s of mic audio and
                         # run off the event loop so embed work doesn't stall the receive pump.
@@ -482,6 +620,18 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                     elif et == "input_audio_buffer.committed":
                         # Remember the user item id so an off-target turn can be deleted.
                         last_item["id"] = event.get("item_id")
+
+                    elif et == "conversation.item.input_audio_transcription.delta":
+                        # Live partial transcript — stream words to the satellite "You:" line
+                        # and the debug stream AS they're heard (don't wait for the full turn).
+                        d = event.get("delta", "")
+                        if d:
+                            try:
+                                await satellite_ws.send_text(json.dumps(
+                                    {"type": "transcript_partial", "role": "user", "delta": d}))
+                            except Exception:
+                                pass
+                            debug_log.record(d, session=session_id[:12], kind="you_partial")
 
                     elif et == "conversation.item.input_audio_transcription.completed":
                         # Hand the text to the turn's future; the accept path persists +
@@ -500,6 +650,7 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                         if record_voice_transcript:
                             await record_voice_transcript(session_id, "assistant", text, user_id=session.get("user_id", ""))
                         await satellite_ws.send_text(json.dumps({"type": "transcript", "role": "assistant", "text": text}))
+                        debug_log.record(f"Skipper: {text[:300]}", session=session_id[:12], kind="skipper")
 
                     elif et == "response.function_call_arguments.done":
                         call_id = event.get("call_id", "")
@@ -540,9 +691,40 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                             await _apply_tool_events(oai, [
                                 {"type": "tool_result", "call_id": call_id, "output": out}])
                         else:
-                            events = await handle_voice_tool_call(
-                                session_id=session_id, call_id=call_id, tool_name=name, arguments=args,
-                            )
+                            # Deterministic ack: if the model called this tool WITHOUT speaking
+                            # first AND the tool is slow (still running after _ACK_FILLER_DELAY),
+                            # voice a brief filler so there's no dead silence. Fast/local tools
+                            # return before the watchdog fires (cancelled below) → no filler.
+                            fired = {"on": False}
+
+                            async def _filler_watchdog():
+                                try:
+                                    await asyncio.sleep(_ACK_FILLER_DELAY)
+                                    if not resp_state["audio"]:
+                                        fired["on"] = True
+                                        await _speak_filler()
+                                except asyncio.CancelledError:
+                                    pass
+
+                            wd = asyncio.create_task(_filler_watchdog())
+                            _t0 = time.monotonic()
+                            try:
+                                events = await handle_voice_tool_call(
+                                    session_id=session_id, call_id=call_id, tool_name=name, arguments=args,
+                                )
+                            finally:
+                                wd.cancel()
+                            _out = next((str(e.get("output", "")) for e in events
+                                         if e.get("type") == "tool_result"), "")
+                            debug_log.record(f"tool {name} returned in {time.monotonic()-_t0:.2f}s: {_out[:80]}",
+                                             session=session_id[:12], kind="tool")
+                            # If we voiced a filler, let it finish before requesting the answer
+                            # so two responses don't collide.
+                            if fired["on"]:
+                                try:
+                                    await asyncio.wait_for(resp_idle.wait(), timeout=2.0)
+                                except asyncio.TimeoutError:
+                                    pass
                             if await _apply_tool_events(oai, events):
                                 break
 
