@@ -74,7 +74,9 @@ above matter. A couple of optional files the scaffold doesn't create, which you
 can add by hand when you need them:
 
 - `hooks.py` — export `register_hooks()` to plug into platform provider slots
-  (backlog / activity / nag providers, schedule claims) without the platform
+  (backlog / activity / nag providers, schedule claims, and prompt-context
+  providers via `app_platform.prompt_context.register_prompt_context` to inject
+  extra prompt blocks for the `voice`/`chat` surfaces) without the platform
   importing your app.
 - `store.py` / `runner.py` — app-internal business logic / background pipeline.
 - `think.md` — a thinking-domain prompt, if your manifest declares `thinking`.
