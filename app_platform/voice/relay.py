@@ -184,6 +184,11 @@ async def _apply_tool_events(oai, events: list[dict]) -> bool:
                 },
             })
             await _send_oai(oai, {"type": "response.create"})
+            try:
+                from app_platform.voice import debug_log as _dl
+                _dl.record("→ response.create (after tool result) — expecting a spoken reply", kind="resp")
+            except Exception:
+                pass
         elif et == "end_session":
             should_end = True
     return should_end
@@ -276,8 +281,12 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         async def _embed(pcm: bytes):
             if not pcm:
                 return None
+            t0 = time.monotonic()
             try:
-                return await asyncio.to_thread(speaker_id.embed, pcm, _SR)
+                v = await asyncio.to_thread(speaker_id.embed, pcm, _SR)
+                debug_log.record(f"embed {'ok' if v is not None else 'none'} in {time.monotonic()-t0:.2f}s",
+                                 session=session_id[:12], kind="timing")
+                return v
             except Exception as exc:
                 logger.warning("VOICE-RELAY: embed failed: %s", exc)
                 return None
@@ -343,12 +352,16 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             """Ask the model to reply. Cancel any in-flight response first and wait for
             it to end, so we never hit conversation_already_has_active_response."""
             if not resp_idle.is_set():
+                debug_log.record("→ response.cancel (prior reply still active) — waiting…",
+                                 session=session_id[:12], kind="resp")
                 await _send_oai(oai, {"type": "response.cancel"})
                 try:
                     await asyncio.wait_for(resp_idle.wait(), timeout=2.0)
                 except asyncio.TimeoutError:
-                    pass
+                    debug_log.record("⚠ prior response didn't go idle within 2s",
+                                     session=session_id[:12], kind="resp")
             await _send_oai(oai, {"type": "response.create"})
+            debug_log.record("→ response.create", session=session_id[:12], kind="resp")
 
         async def _accept_and_reply(pcm: bytes) -> None:
             """Accept this turn: it's the locked speaker. Reply now; persist transcript."""
@@ -491,8 +504,10 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
 
                     elif et == "response.created":
                         resp_idle.clear()
+                        debug_log.record("← response.created (generating reply)", session=session_id[:12], kind="resp")
                     elif et in ("response.done", "response.cancelled"):
                         resp_idle.set()
+                        debug_log.record(f"← {et}", session=session_id[:12], kind="resp")
 
                     elif et == "input_audio_buffer.speech_started":
                         await satellite_ws.send_text(json.dumps({"type": "status", "status": "speech_started"}))
@@ -579,9 +594,14 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                             await _apply_tool_events(oai, [
                                 {"type": "tool_result", "call_id": call_id, "output": out}])
                         else:
+                            _t0 = time.monotonic()
                             events = await handle_voice_tool_call(
                                 session_id=session_id, call_id=call_id, tool_name=name, arguments=args,
                             )
+                            _out = next((str(e.get("output", "")) for e in events
+                                         if e.get("type") == "tool_result"), "")
+                            debug_log.record(f"tool {name} returned in {time.monotonic()-_t0:.2f}s: {_out[:80]}",
+                                             session=session_id[:12], kind="tool")
                             if await _apply_tool_events(oai, events):
                                 break
 
