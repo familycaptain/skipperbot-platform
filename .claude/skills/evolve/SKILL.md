@@ -132,8 +132,15 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   - decision=`reject` → `resolve ev-<n> rejected` (clears gate + sets run rejected), teardown the
     worktree, `phase=rejected`, add to `seen.json`, **END**.
 
-- **`phase=gate2`, decision=`approve`:** Merge feature → release (mechanics), then
-  **`resolve ev-<n> shipped`** (clears the gate + flips the run to **waiting / verify**). Push a
+- **`phase=gate2`, decision=`approve`:** Merge feature → release (mechanics). **On a merge conflict:**
+  resolve **trivial / non-code** conflicts yourself and continue — typically a **doc or list** both
+  sides appended to (e.g. two apps each adding a row to `specs/APP_PACKAGES.md`'s hooks list, or a
+  changelog) → keep **BOTH** sides' additions. This is common landing a sibling-cluster tail (#11/#12/#13
+  all touch `APP_PACKAGES.md`). For a **real code conflict** (the same logic edited incompatibly on both
+  sides), do NOT guess: abort the merge, set the Lead note to explain the collision, re-push **Gate 2**
+  as `change` so the operator decides — never ship a hand-merged code resolution unreviewed. After a
+  clean (or trivially-resolved) merge: **`resolve ev-<n> shipped`** (clears the gate + flips the run to
+  **waiting / verify**). Push a
   **Gate 3 (verify)** packet — `recommendation` = {action:`verify`, why: "Merged to release as
   `<sha>`. Deploy to your Pi (`skipper update`) and test issue #<n>: <what to check>", current,
   after} — set `state.json` `phase=verify`, **END**. (The GitHub issue stays OPEN; do NOT mark done
