@@ -1,0 +1,114 @@
+kind: specification
+id: platform.agent.prompt-context-providers
+title: Apps register prompt-context providers; prompt assembly never imports an app
+state: live
+autonomy: gated
+behavior: 'Platform prompt assembly builds system/voice context from platform-owned builders
+  PLUS context apps register at load, importing nothing from apps.* (existing hooks.py register-at-load
+  convention; same mechanism as #11/#12).
+
+  1. REGISTRY (new app_platform/prompt_context.py): register_prompt_context(fn, *, surface=''all'',
+  app=None). fn(ctx)->str takes a context dict ctx={''user_id'',''device_info'',''app_key''}
+  (documented in the function docstring) and returns a string ('''' to contribute nothing).
+  PROVIDERS MUST BE CHEAP/NON-BLOCKING — no network or slow DB on the prompt-build hot path
+  (read cached state, like build_voice_alias_block); a provider doing slow work is an app
+  bug (the registry logs a warning if a provider is slow). surface is an OPEN string (today
+  ''voice'' and ''chat''; ''all'' matches any requested surface; an unknown surface simply
+  never matches -> fails safe). collect_prompt_context(surface, *, app_key=None, user_id='''',
+  device_info=None) -> str returns ''''.join() of the non-empty outputs (in REGISTRATION ORDER,
+  deterministic) of every provider whose surface matches (surface==''all'' OR ==requested)
+  AND whose app scope matches (app is None OR app==app_key); each provider call is wrapped
+  in try/except -> '''' (a raise/failure contributes nothing, NEVER breaks assembly) and on
+  failure logs the provider IDENTITY + exception only (never the output or raw ctx — secrets/PII).
+  register_prompt_context is IDEMPOTENT (the same fn/app/surface registered twice — e.g. hot-reload
+  — is a no-op, no duplicate). list_prompt_context_providers() -> list of (app, surface, name)
+  for debugging (''why is X in the prompt?''). reset() for tests. The module imports NOTHING
+  from apps.*.
+
+  2. VOICE ASSEMBLER (app_platform/voice/prompting.py): the app_key==''automation'' block
+  (`from apps.automation.devices import build_voice_alias_block`) is REPLACED by extra_blocks
+  = collect_prompt_context(''voice'', app_key=app_key, user_id=user_id, device_info=device_info);
+  the import is REMOVED. The surrounding template KEEPS its existing f"{extra_blocks}\n" so
+  output is BYTE-IDENTICAL: populated automation app -> the same alias block (it self-delimits
+  with its own leading/trailing \n); empty-device case -> extra_blocks='''' -> the same bare
+  ''\n''; non-automation app -> '''' as today.
+
+  3. CHAT ASSEMBLER (config.py get_dynamic_system_context): append collect_prompt_context(''chat'',
+  user_id=user_id) as an additional entry in the parts[] list (before the final ''\n''.join),
+  ONLY when non-empty (no dangling separator). Chat passes NO app_key, so only USER-SCOPED
+  providers (surface in {''chat'',''all''}, app=None) fire on chat — app-scoped providers
+  are inherently voice-only (chat has no active-app concept). This is the forward seam (no
+  app registers chat context today via this registry; the existing chat_domain._inject_app_context
+  entity/app-context path is unchanged and separate). Home-location is NOT changed here —
+  poc-1/#1 owns it.
+
+  4. AUTOMATION REGISTRATION (apps/automation/hooks.py — already has register_hooks() that
+  starts a singleton refresh thread): EXTEND register_hooks() (do not clobber the thread)
+  with register_prompt_context(lambda ctx: build_voice_alias_block(), surface=''voice'', app=''automation''),
+  importing build_voice_alias_block from apps.automation.devices INSIDE the hook (app importing
+  its own module — allowed); idempotent so a hot-reload re-call doesn''t double-register.
+
+  5. ORDERING & ISOLATION: registration runs inside load_all_apps() (loader._load_hooks) at
+  boot, before any per-request prompt assembly; a failing app hook is logged + skipped (its
+  provider isn''t registered), never crashing boot; collect_prompt_context degrades to platform-only
+  context if no providers match (returns '''').
+
+  6. DOCS: update specs/APP_PACKAGES.md (hooks.py provider-slot list, ~line 135) and docs/BUILDING_APPS.md
+  (~76) to include prompt-context providers; apps/automation/hooks.py is the worked example.
+
+  INVARIANT: app_platform/voice/prompting.py and config.py contain NO import (top-level OR
+  function-local) of apps.* for prompt context; scripts/evolve_dep_check.py reports no platform->app
+  violation in the prompt-assembly paths; the automation voice app''s rendered instructions
+  are BYTE-EQUIVALENT to before (populated AND empty-device cases); a registered provider
+  that raises yields no output and never breaks assembly; provider output is treated as DATA
+  (providers must not splice unvalidated free-form user-controlled strings as instructions).'
+implements:
+- app_platform/prompt_context.py
+- app_platform/voice/prompting.py
+- config.py
+- apps/automation/hooks.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_prompt_context_registry.py
+  rubric: 'Filtering + join: register voice+app=''automation'' provider; collect_prompt_context(''voice'',app_key=''automation'')
+    == its raw output (''''.join, verbatim, no wrapper); (''voice'',app_key=''weather'') ==
+    ''''; (''chat'') == '''' (surface+app excluded). A surface=''all'' app=None provider appears
+    for BOTH ''voice'' and ''chat''. Two non-empty providers concatenate in registration order
+    via ''''.join. A single provider returning '''' yields ''''. An UNKNOWN surface yields
+    ''''. No providers -> ''''.'
+- type: unit
+  path: tests/evolve/platform/test_prompt_context_registry.py
+  rubric: 'Robustness: a provider that RAISES contributes '''' and collect_prompt_context
+    still returns the other providers'' output (no exception); the failure log contains the
+    provider identity but NOT its output/ctx. register_prompt_context twice with the same
+    fn/app/surface is idempotent (no duplicate). reset() clears. list_prompt_context_providers()
+    enumerates registered (app,surface,name).'
+- type: unit
+  path: tests/evolve/platform/test_prompt_context_registry.py
+  rubric: 'Automation migration parity incl. empty case: calling apps/automation/hooks.py
+    register_hooks() (register_prompt_context spied; build_voice_alias_block stubbed) registers
+    a voice+app=''automation'' provider; collect_prompt_context(''voice'',app_key=''automation'')
+    returns the stub output when non-empty AND '''' when the stub returns '''' (so the voice
+    template''s f"{extra_blocks}\n" reproduces both the populated block and the bare-newline
+    empty case byte-for-byte); non-automation app_key -> ''''.'
+- type: unit
+  path: tests/evolve/platform/test_prompt_context_no_app_imports.py
+  rubric: 'Dependency-rule guard: ast.walk over app_platform/voice/prompting.py AND config.py
+    asserting NO Import/ImportFrom node — module-level OR nested in any function body — references
+    apps.* (the prompting.py apps.automation.devices import is gone). Walk MUST include function
+    bodies (the removed import was function-local).'
+links: {}
+notes: 'Reuses the #11/#12 register-at-load mechanism (hooks.py + a core registry). [revise-1
+  resolves: audit-MED byte-equivalence (''''.join verbatim + empty-case bare newline + test);
+  audit-MED separator; audit-MED/all ast function-local scan; arch-MED chat user-scoped only
+  (no app_key on chat; chat_domain._inject_app_context untouched); arch-MED/interop-MED EXTEND
+  automation register_hooks idempotently; arch-LOW open-string surface; sec-MED cheap/non-blocking
+  provider contract + slow-provider warning; sec-MED prompt-injection (output is data); sec-LOW
+  identity-only failure logging; ux-MED ctx docstring; ux-MED list_prompt_context_providers()
+  debug enumerator; ux-MED APP_PACKAGES.md + BUILDING_APPS.md docs.] Scope = mechanism + wire
+  both assemblers + migrate the ONE app import (automation.devices). Home-location is poc-1''s;
+  #13 does not touch those lines. INTEGRATION NOTE for build: poc-1 and #13 both edit get_dynamic_system_context
+  (config.py) and prompting.py; if both land, expect a small ordered merge in get_dynamic_system_context
+  (poc-1=home-location source, #13=append chat providers). Completes the #11-13 cluster. Found
+  by scripts/evolve_dep_check.py.'
+verified: true
