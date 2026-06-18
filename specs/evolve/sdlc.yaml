@@ -1,5 +1,11 @@
 # Evolve — SDLC process model (the source of truth the engine walks)
 # =============================================================================
+# DEPRECATED as a RUNTIME artifact: this graph is walked only by the SDK/API engine
+# (apps/evolve/pipeline.py + engine/), which is superseded by the in-session `/loop`
+# engine (.claude/skills/evolve/SKILL.md). The /loop does NOT walk this file — its flow
+# (incl. Gate-3 verify + the Gate-1 code scout) lives in the skill. Kept as the canonical
+# process DIAGRAM/reference + for the engine tests; do not assume the live flow matches it.
+#
 # First BPM-for-SDLC flow for Evolve (see specs/EVOLVE.md). The engine is our own
 # lightweight graph-walker over THIS file. specs/evolve/sdlc.md holds the Mermaid
 # view generated from it (open that in GitHub to see the graph).

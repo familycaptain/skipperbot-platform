@@ -1,4 +1,7 @@
-"""Build loop — the box-1 implement→validate→merge cycle (EVOLVE.md §5/§8).
+"""DEPRECATED — part of the SDK/API Evolve engine, superseded by the in-session `/loop`
+engine (`.claude/skills/evolve/`). Kept for reference + tests; not run by default.
+
+Build loop — the box-1 implement→validate→merge cycle (EVOLVE.md §5/§8).
 
 Strings the workspace mechanics together: cut a feature worktree, serialize the
 approved spec, let `implement` write code INTO the worktree (writes are safe there —

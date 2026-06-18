@@ -171,6 +171,12 @@ def main():
     ap.add_argument("decision", nargs="?", default="approve")
     args = ap.parse_args()
 
+    # DEPRECATED: SDK/API Evolve engine — superseded by the in-session /loop (subscription, no API
+    # credits). Gated off to prevent accidental spend; set EVOLVE_SDK_ENABLE=1 to run it anyway.
+    if not os.getenv("EVOLVE_SDK_ENABLE"):
+        sys.exit("This script drives the DEPRECATED SDK/API Evolve engine — use the in-session "
+                 "/loop engine instead. Set EVOLVE_SDK_ENABLE=1 to run the legacy engine anyway.")
+
     pipe, runner, ledger = build_pipeline()
 
     if args.cmd == "submit":

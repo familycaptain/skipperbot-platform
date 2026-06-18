@@ -1,4 +1,7 @@
-"""Orchestrator — wires the process engine (control plane) to the agent runner
+"""DEPRECATED — part of the SDK/API Evolve engine, superseded by the in-session `/loop`
+engine (`.claude/skills/evolve/`). Kept for reference + tests; not run by default.
+
+Orchestrator — wires the process engine (control plane) to the agent runner
 (data plane) and walks a work-item through the SDLC (EVOLVE.md §7).
 
 `run_work_item` is the integration seam: agent nodes dispatch to the real Runner

@@ -1,4 +1,8 @@
-"""The Lead spec phase on the claude-agent-sdk — ONE shared conversation per work item.
+"""DEPRECATED — part of the SDK/API Evolve engine, superseded by the in-session `/loop`
+engine (`.claude/skills/evolve/`, which runs the Lead phase in-session). Kept for reference; not
+run by default.
+
+The Lead spec phase on the claude-agent-sdk — ONE shared conversation per work item.
 
 This is the Stage-2 re-platform of `lead.run_lead_phase`. Instead of a fresh, isolated API
 call per agent (and a lossy grounding *digest* passed between them), the whole spec team works

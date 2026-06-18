@@ -181,6 +181,16 @@ def main():
             print(f"#{i['number']}: {i['title']}  (labels: {[l['name'] for l in i.get('labels', [])]})")
         return
 
+    # --- DEPRECATED: the SDK/API engine (ingest/poll) is superseded by the in-session /loop ---------
+    # The /loop runs on the Claude subscription (no API credits) and is the active Evolve engine.
+    # `ingest`/`poll` drive the old Anthropic-API pipeline and bill the shared ledger, so they are
+    # gated off by default to prevent accidental spend / a stale engine resuming gates. Set
+    # EVOLVE_SDK_ENABLE=1 only if you deliberately want to run the legacy engine.
+    if not os.getenv("EVOLVE_SDK_ENABLE"):
+        sys.exit(f"`{args.cmd}` is DEPRECATED — the SDK/API Evolve engine is superseded by the "
+                 f"in-session /loop engine (run it on box 1 with the `evolve` skill). "
+                 f"Set EVOLVE_SDK_ENABLE=1 to run the legacy engine anyway.")
+
     pipe, runner, ledger = build_pipeline()
     try:
         if args.cmd == "poll" and args.loop > 0:

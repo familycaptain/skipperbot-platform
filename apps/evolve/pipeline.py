@@ -1,4 +1,9 @@
-"""The full gated pipeline (EVOLVE.md §8) — the capstone integration.
+"""DEPRECATED — the SDK/API Evolve engine, superseded by the in-session `/loop` engine
+(see `.claude/skills/evolve/`, run on the Claude subscription with no API credits). Kept for
+reference + the shared test suite; not run by default (CLI entrypoints are gated behind
+EVOLVE_SDK_ENABLE). Do NOT build new work on this path.
+
+The full gated pipeline (EVOLVE.md §8) — the capstone integration.
 
 Walks a work-item through the WHOLE SDLC graph as a FUNNEL — cheap gates first, the
 expensive spec phase only for survivors: intake → triage (reject junk) → vision-fit
