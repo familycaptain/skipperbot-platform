@@ -72,18 +72,14 @@ def _file_exists(env_var: str) -> Callable[[], bool]:
     return check
 
 
-def _trello_configured() -> bool:
-    """True if at least one Trello account is configured in the lists app DB."""
-    try:
-        from apps.lists import trello_config
-        return trello_config.any_account_configured()
-    except Exception:
-        return False
-
-
 # ---------------------------------------------------------------------------
 # Registry — every optional integration the platform knows about.
-# Adding a new integration: add a row here. The startup banner picks it up.
+# Adding a new PLATFORM integration: add a row here. The startup banner picks
+# it up. APP-owned capabilities are NOT listed here — each app registers its
+# own capability at load time via its ``hooks.py`` register_hooks(), which
+# calls ``register_capability()`` (so the platform never imports app code to
+# build this registry). The static rows below are authoritative: a registered
+# capability can never override one of them.
 # ---------------------------------------------------------------------------
 
 CAPABILITIES: tuple[Capability, ...] = (
@@ -110,14 +106,9 @@ CAPABILITIES: tuple[Capability, ...] = (
         docs_anchor="03-extended-functionality.md#brave-web-search",
         not_configured_message="Web search is not configured. Add a Brave API key in Settings → Integrations.",
     ),
-    Capability(
-        name="trello",
-        label="Trello",
-        env_vars=(),
-        extra_check=_trello_configured,
-        docs_anchor="03-extended-functionality.md#trello",
-        not_configured_message="Trello is not configured. Add an account in the Lists app (Trello settings).",
-    ),
+    # Note: the `trello` capability is owned by the Lists app and registered
+    # at load time via apps/lists/hooks.py (register_capability) — the platform
+    # must not import app code to build this registry.
     Capability(
         name="resend",
         label="Resend (outbound email)",
@@ -185,7 +176,64 @@ CAPABILITIES: tuple[Capability, ...] = (
 )
 
 
-_BY_NAME: dict[str, Capability] = {c.name: c for c in CAPABILITIES}
+# ---------------------------------------------------------------------------
+# Dynamic registration — apps register their own capabilities at load time
+# (via hooks.py) so the platform never imports app code to build the registry.
+# The STATIC ``CAPABILITIES`` tuple is authoritative: a registered capability
+# can never override a static one, and the first registration of any given
+# name wins.
+# ---------------------------------------------------------------------------
+
+_REGISTERED: list[Capability] = []
+
+
+def register_capability(cap: Capability) -> None:
+    """Register an app-owned capability.
+
+    Dedup is keyed on ``cap.name``:
+      - If the name matches a STATIC platform capability (one already in the
+        ``CAPABILITIES`` tuple) it is REJECTED (logged + skipped) — the static
+        platform set is authoritative and is never overwritten.
+      - If the name is already registered, the first registration wins; a
+        byte-identical same-name re-registration (hot-reload) is an idempotent
+        no-op, while a differing same-name registration is rejected (logged).
+    """
+    static_names = {c.name for c in CAPABILITIES}
+    if cap.name in static_names:
+        logger.warning(
+            "register_capability: '%s' matches a static platform capability — "
+            "rejected (static set is authoritative)", cap.name)
+        return
+
+    for existing in _REGISTERED:
+        if existing.name == cap.name:
+            if existing == cap:
+                # Idempotent hot-reload re-registration — no-op.
+                return
+            logger.warning(
+                "register_capability: '%s' is already registered — keeping the "
+                "first registration, rejecting the new one", cap.name)
+            return
+
+    _REGISTERED.append(cap)
+
+
+def reset_registered() -> None:
+    """Clear all dynamically-registered capabilities (test isolation)."""
+    _REGISTERED.clear()
+
+
+def _all() -> tuple[Capability, ...]:
+    """All capabilities: the static platform set followed by registered ones."""
+    return CAPABILITIES + tuple(_REGISTERED)
+
+
+def _lookup(name: str) -> Capability | None:
+    """Resolve a capability by name over the live (static + registered) set."""
+    for cap in _all():
+        if cap.name == name:
+            return cap
+    return None
 
 
 def is_enabled(name: str) -> bool:
@@ -193,9 +241,10 @@ def is_enabled(name: str) -> bool:
 
     Migrated capabilities (those with ``settings_keys``) are checked through
     the settings layer, so creds saved in the Settings UI count as well as
-    ``.env``. Others fall back to the legacy env-only check.
+    ``.env``. Others fall back to the legacy env-only check. Lookup is dynamic,
+    so a capability registered after import (at app load) is resolved too.
     """
-    cap = _BY_NAME.get(name)
+    cap = _lookup(name)
     if not cap:
         logger.warning("capability lookup for unknown name: %s", name)
         return False
@@ -210,15 +259,23 @@ def is_enabled(name: str) -> bool:
             if not os.getenv(var, "").strip():
                 return False
 
-    if cap.extra_check and not cap.extra_check():
-        return False
+    if cap.extra_check:
+        # Fail-safe: an app-supplied extra_check must never be able to crash
+        # is_enabled / status() / boot_banner(). Any exception => OFF.
+        try:
+            if not cap.extra_check():
+                return False
+        except Exception:
+            logger.exception(
+                "capability '%s' extra_check raised — treating as disabled", name)
+            return False
 
     return True
 
 
 def not_configured_message(name: str) -> str:
     """Return the user-facing message for a disabled capability."""
-    cap = _BY_NAME.get(name)
+    cap = _lookup(name)
     if not cap:
         return f"Capability '{name}' is unknown."
     return cap.not_configured_message
@@ -226,10 +283,10 @@ def not_configured_message(name: str) -> str:
 
 def status() -> dict[str, bool]:
     """Return a dict of capability_name → enabled?, for the startup banner."""
-    return {c.name: is_enabled(c.name) for c in CAPABILITIES}
+    return {c.name: is_enabled(c.name) for c in _all()}
 
 
 def boot_banner() -> str:
     """Render the boot-time integration banner."""
-    parts = [f"{c.label}={'ON' if is_enabled(c.name) else 'OFF'}" for c in CAPABILITIES]
+    parts = [f"{c.label}={'ON' if is_enabled(c.name) else 'OFF'}" for c in _all()]
     return "[boot] integrations: " + ", ".join(parts)

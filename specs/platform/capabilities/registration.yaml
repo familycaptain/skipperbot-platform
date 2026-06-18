@@ -1,0 +1,99 @@
+kind: specification
+id: platform.capabilities.registration
+title: Apps register their capabilities; the platform never imports an app to learn them
+state: live
+autonomy: gated
+behavior: 'app_platform/capabilities.py builds its capability set from a STATIC platform-level
+  list PLUS capabilities apps register at load, importing nothing from apps.* (following the
+  existing hooks.py register-at-load convention; same mechanism as #11 and apps/auto/hooks.py).
+
+  1. REGISTRY: capabilities.py adds a module-level _REGISTERED list and register_capability(cap:
+  Capability). Dedup is keyed on cap.name (NO app_id/__module__ inference — consistent with
+  how the codebase keys registries). The STATIC platform set is AUTHORITATIVE: register_capability
+  REJECTS (logs by name + skips, never overwrites) any cap whose name matches a STATIC platform
+  capability OR an already-registered name (first registration wins); a byte-identical same-name
+  re-registration (hot-reload) is an idempotent no-op. An _all() accessor returns the static
+  platform tuple followed by _REGISTERED. is_enabled / not_configured_message / status / boot_banner
+  resolve over _all() DYNAMICALLY (replacing the build-once-at-import _BY_NAME, since registrations
+  happen AFTER import); an unknown/not-yet-registered name behaves exactly as today (is_enabled
+  -> False, the same ''unknown name'' path), so a pre-load lookup degrades like any unconfigured
+  capability rather than crashing. A reset()/clear is provided for test isolation.
+
+  2. EXTRA_CHECK FAIL-SAFE: is_enabled wraps cap.extra_check() in try/except and treats ANY
+  exception as False (fail-safe OFF) — app-supplied extra_check callables are arbitrary code
+  and must not be able to crash is_enabled, status(), or boot_banner(). (Matches the existing
+  _trello_configured self-guard, now enforced centrally.)
+
+  3. TRELLO INVERSION: _trello_configured() AND `from apps.lists import trello_config` are
+  REMOVED from capabilities.py (and the module docstring''s ''add a row here'' note updated).
+  A NEW apps/lists/hooks.py register_hooks() constructs the trello Capability (name=''trello'',
+  label=''Trello'', env_vars=(), extra_check calling apps.lists.trello_config.any_account_configured(),
+  same docs_anchor + not_configured_message) and calls register_capability(it) as its FIRST
+  action (before anything that could raise). The apps.lists import now lives in the APP. register_hooks
+  is robust: it guards its own body so a failure logs and leaves trello unregistered (OFF)
+  rather than aborting the lists app load.
+
+  4. STATIC PLATFORM CAPABILITIES retained in core (no app import): openai, discord, brave_search,
+  resend, picovoice, openai_admin, and (decision fork 1 = option A) the string-keyed gmail/fcm/pushover/home_assistant
+  remain static rows (they reference app settings by key only — NOT an import violation).
+
+  5. ORDERING: registration runs inside load_all_apps() (loader._load_hooks) at boot, BEFORE
+  boot_banner() and well before any tool-time is_enabled(); lists is in REQUIRED_APPS so require_apps()
+  hard-fails boot if lists doesn''t load — there is no half-booted state where trello is silently
+  dropped while traffic is served.
+
+  6. DOCS: update specs/CAPABILITIES.md (the ''adding an integration is a one-row change''
+  guidance) to document registering via the owning app''s hooks.py, and specs/APP_PACKAGES.md''s
+  hooks.py description (~line 135) to include capabilities; apps/lists/hooks.py serves as
+  the canonical worked example.
+
+  INVARIANT: app_platform/capabilities.py contains NO import (top-level OR function-local)
+  of any apps.* module; scripts/evolve_dep_check.py reports no platform->app violation for
+  it; a registered capability behaves identically to a static one in is_enabled/status/boot_banner;
+  a registered name can NEVER override a static platform capability; an extra_check that raises
+  yields is_enabled()==False and never breaks the boot banner; trello is enabled iff a lists
+  Trello account is configured, now owned by apps/lists.'
+implements:
+- app_platform/capabilities.py
+- apps/lists/hooks.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_capability_registration.py
+  rubric: 'Registry mechanics: register_capability(Capability(name=''demo'',...)) makes is_enabled(''demo'')
+    resolve via the same env/settings/extra_check logic, appear in status()/boot_banner(),
+    and be found by not_configured_message(''demo''); a capability registered AFTER module
+    import is found (the dynamic-lookup fix). reset() clears (isolation). _all() = static
+    then registered.'
+- type: unit
+  path: tests/evolve/platform/test_capability_registration.py
+  rubric: 'Authoritative static set: register_capability with a name matching a STATIC platform
+    cap (e.g. ''openai'') is REJECTED (logged+skipped) and leaves the static cap''s is_enabled
+    and not_configured_message UNCHANGED; a duplicate registered name keeps the first; an
+    idempotent same-cap re-register adds no duplicate row.'
+- type: unit
+  path: tests/evolve/platform/test_capability_registration.py
+  rubric: 'extra_check fail-safe: a registered capability whose extra_check RAISES yields
+    is_enabled()==False (not an exception) and status()/boot_banner() still render without
+    error.'
+- type: unit
+  path: tests/evolve/platform/test_capability_registration.py
+  rubric: 'Trello migration parity: calling apps/lists/hooks.py register_hooks() (register_capability
+    spied) registers a ''trello'' Capability whose extra_check reflects apps.lists.trello_config.any_account_configured()
+    (stub True/False -> is_enabled(''trello'') follows); identical behavior to the old _trello_configured.'
+- type: unit
+  path: tests/evolve/platform/test_capabilities_no_app_imports.py
+  rubric: 'Dependency-rule guard: ast.walk over app_platform/capabilities.py asserting NO
+    Import/ImportFrom node — module-level OR nested in ANY function body — references apps.*
+    . (The old violation was a function-local import, so the walk MUST include function bodies
+    or the test is vacuous.)'
+links: {}
+notes: 'Reuses the #11 register-at-load mechanism (hooks.py + a core mutable registry). [revise-1
+  resolves: audit/security-MED static-name authority (registered can''t override static) +
+  bound test; security-MED extra_check try/except fail-safe + bound test; arch-MED drop __module__
+  inference (dedup on cap.name); audit-MED ast test scans function-local imports; interop-MED
+  post-load ordering invariant + idempotent register-first; ux-MED mandate specs/CAPABILITIES.md
+  + APP_PACKAGES.md updates + ship apps/lists/hooks.py worked example + delete _trello_configured/import.]
+  Scope = mechanism + migrate the ONLY import violation (trello); fork 1 option A leaves string-keyed
+  gmail/fcm/pushover/home_assistant static (no import) — option B migrates them as a follow-up.
+  Sibling cluster: #11 (lifecycle, Gate-1), #13 (prompt-context). Found by scripts/evolve_dep_check.py.'
+verified: true
