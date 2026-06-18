@@ -57,6 +57,19 @@ function appendLive(prev, msg, makeId) {
   return out;
 }
 
+// Greeting typing beat (issue #16): on load, show the typing indicator for a brief
+// beat before the greeting "pops in", so Skipper feels present rather than dumping
+// canned text. Plays on EVERY load (operator's call). prefers-reduced-motion gets
+// the greeting immediately (0ms) — an accessibility carve-out.
+const GREETING_TYPING_MS = 2000;
+function greetingTypingDelay() {
+  if (typeof window !== "undefined" && typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    return 0;
+  }
+  return GREETING_TYPING_MS;
+}
+
 export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDocsUpdated, onRemindersUpdated, onRecipesUpdated, onBrainstormUpdated, onEditProposal, onTodoUpdated) {
   const [connected, setConnected] = useState(false);
   // Coarse connection state for the chat surface: 'connecting' | 'connected' | 'auth_failed'.
@@ -102,6 +115,7 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
     if (!userId || historyLoadedRef.current) return;
     historyLoadedRef.current = true;
     let cancelled = false;
+    let greetingTimer = null;
     (async () => {
       let hist = [];
       try {
@@ -115,6 +129,10 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
         // Offline or fresh session — fall through to a plain greeting.
       }
       if (cancelled) return;
+      // Show history immediately; the GREETING is deferred behind a short typing
+      // beat so Skipper feels present rather than dumping text instantly (issue #16).
+      if (hist.length) setMessages((prev) => [...hist, ...prev]);
+
       const greeting = {
         id: nextId(),
         role: "bot",
@@ -123,11 +141,25 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
           ? "Welcome back! Here's where we left off — what can I help you with?"
           : "Hello! I'm Skipper, your AI assistant. How can I help you today?",
       };
-      // Prepend history ahead of anything that arrived while loading (e.g. a
-      // proactive notification), then the greeting closes out the resume.
-      setMessages((prev) => [...hist, greeting, ...prev]);
+      // Append the greeting via the same ts-stamped path live messages use, so a
+      // notification arriving during the beat stays correctly ordered (issue #8).
+      const showGreeting = () => {
+        if (cancelled) return;
+        setIsTyping(false);
+        setMessages((prev) => appendLive(prev, greeting, nextId));
+      };
+      const delay = greetingTypingDelay();
+      if (delay <= 0) {
+        showGreeting();
+      } else {
+        setIsTyping(true);
+        greetingTimer = setTimeout(showGreeting, delay);
+      }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (greetingTimer) clearTimeout(greetingTimer);
+    };
   }, [userId]);
 
   // Build WebSocket URL — use Vite proxy in dev, direct in prod

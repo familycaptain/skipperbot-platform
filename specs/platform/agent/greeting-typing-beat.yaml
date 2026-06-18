@@ -1,0 +1,49 @@
+kind: specification
+id: platform.agent.greeting-typing-beat
+title: Greeting typing beat (web)
+state: live
+autonomy: gated
+behavior: 'On web chat load, the assistant greeting is shown after a short typing beat instead
+  of instantly. The greeting-timing helper returns GREETING_TYPING_MS = 2000ms by default,
+  or 0ms when the browser reports prefers-reduced-motion. The beat plays on EVERY web load
+  (no once-per-session suppression). When the delay is >0, the existing typing indicator (TypingIndicator)
+  is shown for that duration, then the greeting message pops in and the indicator clears;
+  when 0 the greeting appears immediately. Applies to both the fresh-user greeting and the
+  welcome-back resume greeting (same render path). The beat runs per userId load, guarded
+  by the existing run-once + cancelled flags; if the user/session changes before it elapses
+  the pending timer is cleared (clearTimeout) and no greeting is appended. Messages arriving
+  DURING the beat (e.g. a proactive notification, or a server typing/response event) still
+  render immediately and in correct timestamp order: the deferred greeting is appended through
+  the same ts-stamped insert path used for live messages (preserving issue-#8 date separators),
+  and the greeting beat only manages the typing indicator for itself (it must not clear a
+  concurrently-active server typing state). The delay defers ONLY the greeting; the message
+  input is usable throughout, and timing for real server-driven responses is unchanged. Accessibility:
+  the greeting renders into an aria-live=polite region so assistive tech announces it. No
+  backend or message-content change.'
+implements:
+- web/src/hooks/useSkipperSocket.js
+- web/src/components/ChatPanel.jsx
+- web/src/components/TypingIndicator.jsx
+tests:
+- type: acceptance
+  path: 'live: web chat first load'
+  rubric: 'Driving the live Skipper web UI with motion enabled: on load the typing indicator
+    is visible for a clear beat — roughly 1.5s to 2.5s — with NO greeting text yet, then the
+    greeting appears and the indicator disappears (NOT instantaneous; a near-zero greeting
+    is a FAIL). The input box is interactive throughout; a normal sent message still shows
+    server-driven typing as before. A SECOND load in the same session ALSO shows the ~2s beat
+    (every-load behavior). Reduced-motion check: with prefers-reduced-motion set, the greeting
+    appears immediately with NO typing beat (0ms carve-out). No deterministic unit test —
+    the repo has no JS test runner and the operator declined adding one (fork 2=B); validation
+    rests on this live acceptance at Gate-3.'
+links: {}
+notes: 'Revised on operator Gate-1 ''change'': duration 2000ms (was 3000), replay on EVERY
+  load (was once-per-session), and NO vitest/JS unit test (bind to live Gate-3 acceptance).
+  Kept from the prior review round: prefers-reduced-motion -> 0ms and aria-live announcement
+  (accessibility; not contradicted by ''every load'' — see the one open carve-out decision).
+  IMPORTANT consequence of fork 2=B: this spec has NO deterministic offline bound test, so
+  at Build/Gate-2 the validation will be the LIVE drive only (evolve-validate part B) — there
+  is no green pytest to show; the proof is the operator''s Gate-3 live verify. Honest by construction:
+  not a faked green. Prior domain reviews (security/architecture/interop/ux) still apply;
+  dropping vitest RESOLVES the earlier architecture(box-2 node) + security(supply-chain) concerns,
+  and the UX reload-sluggishness concern is operator-waived.'
