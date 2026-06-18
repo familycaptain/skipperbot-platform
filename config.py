@@ -365,22 +365,23 @@ def get_dynamic_system_context(user_id: str = "") -> str:
     if user_id:
         parts.append(f"You are currently talking to: {user_id}")
 
-    # Home ZIP code (Settings → System → Default ZIP code). Surfacing it here
-    # lets the assistant answer "what's my zip?" and pass it to the weather
-    # tools instead of guessing a location. Read live so it works without a
-    # restart. Best-effort — never break context assembly over it.
+    # Home location (Settings → System → Location). Surfacing it here lets the
+    # assistant answer "where am I?" and pass it to the weather tools instead of
+    # guessing a location. Resolved via the platform location service (the
+    # canonical 'City, Region, CountryName' label, no per-call geocoding). Read
+    # live so it works without a restart. Best-effort — never break context
+    # assembly over it.
     try:
-        from app_platform import settings as _settings
-        # str() — the stored value can come back as an int (e.g. 72956), and
-        # int.strip() would raise (and the old silent except hid it).
-        _zip = str(_settings.get("default_zip", scope="platform", default="") or "").strip()
-        if _zip:
+        from app_platform.location import resolve_location, display_label
+        _rec = resolve_location()
+        _label = display_label(_rec) if _rec.get("configured") else ""
+        if _label:
             parts.append(
-                f"The user's home ZIP code is {_zip}. Use it for weather and other "
+                f"The user's home location is {_label}. Use it for weather and other "
                 f"location lookups when they don't specify one — never invent a location."
             )
     except Exception:
-        logger.warning("dynamic context: default_zip lookup failed", exc_info=True)
+        logger.warning("dynamic context: home location lookup failed", exc_info=True)
 
     # Primary user — the person who installed/owns this Skipper. Lets onboarding
     # and proactive outreach know who to engage (onboarding is about this person).

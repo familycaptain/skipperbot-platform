@@ -1,18 +1,23 @@
 kind: capability
 id: weather
-title: Weather — current conditions and forecasts by US ZIP
+title: Weather — current conditions and forecasts for any location
 app: weather
 scope: >
-  Family-facing weather: current conditions, hourly, and multi-day forecasts for a
-  US ZIP code, reachable from every surface (UI, chat, voice, Discord, mobile) via
-  MCP tools. Locations are resolved from the configured default ZIP (Settings →
-  System) or an explicit ZIP argument. In scope: ZIP → place resolution, current
-  conditions, and forecast tools. NOT in scope: severe-weather alerting, radar
-  imagery, or non-US locations.
+  Family-facing weather: current conditions, hourly, and multi-day forecasts for any
+  international location, reachable from every surface (UI, chat, voice, Discord,
+  mobile) via MCP tools. Locations are resolved by the platform location service
+  (app_platform.location) — from the configured home location (Settings → System →
+  Location) or an explicit override (a place name like "Lyon, France" or a
+  "<postal>,<country>" string). In scope: current conditions and forecast tools that
+  consume the platform-resolved coordinates. NOT in scope: home-location
+  resolution/geocoding (that is a platform-core service, app_platform.location, which
+  weather consumes), radar imagery, or general severe-weather alerting (NWS alerts are
+  US-only and degrade explicitly for non-US locations).
 autonomy: auto
 state: live
 links: {}
 notes: >
-  Conditions data comes from wttr.in; forecast data from Open-Meteo; the
-  authoritative ZIP → city/region/coordinates lookup is zippopotam.us via
-  _lookup_zip, the single source of truth for the displayed place name.
+  Conditions and forecast data come from Open-Meteo (current weather + forecast by
+  lat/lon). The authoritative place label is the platform location service's canonical
+  "City, Region, CountryName" (display_label), identical across chat, voice, and the
+  dashboard. NWS severe-weather alerts (api.weather.gov) remain US-only.

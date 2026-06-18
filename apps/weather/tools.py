@@ -1,5 +1,9 @@
 """
-Zip Weather Tool - Get weather for US zip codes using no-key public APIs.
+Weather tools — current conditions and forecasts for any international location.
+
+Location resolution is delegated to the platform service
+``app_platform.location`` (the shared resolver/geocoder). Weather calls
+Open-Meteo by lat/lon. No weather-local ZIP lookup exists anymore.
 """
 
 import json
@@ -11,39 +15,52 @@ from statistics import mean
 from zoneinfo import ZoneInfo
 
 from app_platform.time import get_timezone
-
-
-def _clean_zip(zip_code) -> str:
-    # str() — a configured default ZIP can come back as an int (e.g. 72956);
-    # calling .strip() on an int would raise.
-    return str(zip_code or "").strip().split("-")[0]
-
-
-def _validate_zip(zip_code: str) -> str | None:
-    if not zip_code.isdigit() or len(zip_code) != 5:
-        return f"Error: '{zip_code}' is not a valid 5-digit US zip code."
-    return None
-
-
-def _default_zip() -> str:
-    """The configured default ZIP (Settings → System → Default ZIP code), or ''."""
-    try:
-        from app_platform import settings as _settings
-        return _clean_zip(_settings.get("default_zip", scope="platform", default="") or "")
-    except Exception:
-        return ""
-
-
-def _resolve_zip(zip_code: str) -> str:
-    """Use the given ZIP, or fall back to the configured default. Callers that
-    get '' should return _NO_ZIP_MSG (no ZIP given and none configured)."""
-    return _clean_zip(zip_code) or _default_zip()
-
-
-_NO_ZIP_MSG = (
-    "No ZIP code was provided and no default is configured. Set one in "
-    "Settings → System → \"Default ZIP code\", or include a 5-digit US ZIP."
+from app_platform.location import (
+    resolve_location,
+    display_label,
+    LocationNotFound,
+    GeocoderUnavailable,
 )
+
+
+# Shown when no location was provided and none is configured.
+_NO_LOCATION_MSG = (
+    "No location was provided and no home location is configured. Set one in "
+    'Settings → System → "Location" (e.g. "Austin, Texas, US" or '
+    '"SW1A 1AA, UK"), or include a place name or postal,country with your request.'
+)
+
+
+def _resolve_place(location: str = ""):
+    """Resolve a place via the platform service.
+
+    Returns (place_dict_or_None, error_message_or_None). ``place`` carries
+    {label, lat, lon, country_code, region, ...} when resolved.
+    """
+    override = (location or "").strip() or None
+    try:
+        record = resolve_location(override=override)
+    except LocationNotFound:
+        return None, "Couldn't find that location. Try a place name or postal,country."
+    except GeocoderUnavailable:
+        return None, "The location service is temporarily unavailable. Please try again."
+    except Exception:
+        return None, "Couldn't resolve that location."
+    if not record.get("configured"):
+        return None, record.get("message") or _NO_LOCATION_MSG
+    place = {
+        "label": record.get("display_label") or display_label(record),
+        "lat": record.get("lat"),
+        "lon": record.get("lon"),
+        "country_code": record.get("country_code") or "",
+        "region": record.get("region") or "",
+    }
+    if place["lat"] is None or place["lon"] is None:
+        return None, (
+            "Your home location couldn't be resolved to coordinates. Re-save it "
+            'in Settings → System → "Location".'
+        )
+    return place, None
 
 
 def _fetch_json(url: str, timeout: int = 10) -> dict:
@@ -52,79 +69,67 @@ def _fetch_json(url: str, timeout: int = 10) -> dict:
         return json.loads(resp.read().decode())
 
 
-def _lookup_zip(zip_code: str) -> dict:
-    url = f"https://api.zippopotam.us/us/{zip_code}"
-    data = _fetch_json(url)
-    place = data["places"][0]
-    return {
-        "city": place["place name"],
-        "region": place["state abbreviation"],
-        "lat": float(place["latitude"]),
-        "lon": float(place["longitude"]),
-    }
-
-
-def get_current_weather_by_zip(zip_code: str = "") -> str:
+def get_current_weather_by_zip(location: str = "") -> str:
     """
-    Get the current weather for a US zip code.
+    Get the current weather for a location.
 
     Args:
-        zip_code: US ZIP code (e.g., "90210", "60601"). Optional — if omitted,
-            uses the configured default ZIP (Settings → System → Default ZIP code).
+        location: Optional. The home location is used when none is given; you
+            may pass any international place name (e.g. "Lyon, France",
+            "Tokyo") or a "postal,country" (e.g. "SW1A 1AA, UK").
 
     Returns:
         Current weather conditions as a formatted string
     """
-    zip_code = _resolve_zip(zip_code)
-    if not zip_code:
-        return _NO_ZIP_MSG
+    place, err = _resolve_place(location)
+    if err:
+        return err
 
-    error = _validate_zip(zip_code)
-    if error:
-        return error
-    
     try:
-        url = f"https://wttr.in/{zip_code}?format=j1"
+        params = {
+            "latitude": place["lat"],
+            "longitude": place["lon"],
+            "current": (
+                "temperature_2m,relative_humidity_2m,apparent_temperature,"
+                "weather_code,wind_speed_10m,wind_direction_10m"
+            ),
+            "temperature_unit": "fahrenheit",
+            "wind_speed_unit": "mph",
+            "precipitation_unit": "inch",
+            "timezone": "auto",
+        }
+        url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
         data = _fetch_json(url)
-        
-        current = data["current_condition"][0]
-        area = data["nearest_area"][0]
 
-        # Prefer the authoritative ZIP lookup (zippopotam.us, the same source
-        # the forecast tools use) for the place label so the displayed city
-        # matches the real ZIP city rather than wttr.in's nearest-area guess.
-        # If that lookup fails (offline / unknown ZIP), degrade gracefully to
-        # wttr.in's nearest_area label and still return the weather.
-        try:
-            place = _lookup_zip(zip_code)
-            city = place["city"]
-            region = place["region"]
-        except Exception:
-            city = area["areaName"][0]["value"]
-            region = area["region"][0]["value"]
+        cur = data.get("current") or {}
+        temp_f = cur.get("temperature_2m")
+        feels_f = cur.get("apparent_temperature")
+        desc = _wmo_desc(cur.get("weather_code"))
+        humidity = cur.get("relative_humidity_2m")
+        wind_mph = cur.get("wind_speed_10m")
+        wind_dir = _wind_compass(cur.get("wind_direction_10m"))
 
-        temp_f = current["temp_F"]
-        temp_c = current["temp_C"]
-        desc = current["weatherDesc"][0]["value"]
-        humidity = current["humidity"]
-        wind_mph = current["windspeedMiles"]
-        wind_dir = current["winddir16Point"]
-        feels_like_f = current["FeelsLikeF"]
-        
+        def _f(v):
+            return f"{round(v)}" if isinstance(v, (int, float)) else "?"
+
+        temp_c = (
+            f"{round((temp_f - 32) * 5 / 9)}"
+            if isinstance(temp_f, (int, float)) else "?"
+        )
+
         return (
-            f"Weather for {city}, {region} ({zip_code}):\n"
+            f"Weather for {place['label']}:\n"
             f"  Conditions: {desc}\n"
-            f"  Temperature: {temp_f}°F ({temp_c}°C)\n"
-            f"  Feels like: {feels_like_f}°F\n"
-            f"  Humidity: {humidity}%\n"
-            f"  Wind: {wind_mph} mph {wind_dir}"
+            f"  Temperature: {_f(temp_f)}°F ({temp_c}°C)\n"
+            f"  Feels like: {_f(feels_f)}°F\n"
+            f"  Humidity: {_f(humidity)}%\n"
+            f"  Wind: {_f(wind_mph)} mph {wind_dir}".rstrip()
         )
     except Exception as e:
         return f"Error fetching weather: {str(e)}"
 
 
-def _forecast_for_zip(zip_code: str) -> tuple[dict, dict]:
-    place = _lookup_zip(zip_code)
+def _forecast_for_place(place: dict) -> dict:
     params = {
         "latitude": place["lat"],
         "longitude": place["lon"],
@@ -136,12 +141,11 @@ def _forecast_for_zip(zip_code: str) -> tuple[dict, dict]:
         "forecast_days": 8,
     }
     url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
-    return place, _fetch_json(url, timeout=15)
+    return _fetch_json(url, timeout=15)
 
 
-def _hourly_forecast_for_zip(zip_code: str) -> tuple[dict, dict]:
+def _hourly_forecast_for_place(place: dict) -> dict:
     """Fetch a richer hourly forecast for the next ~48 hours."""
-    place = _lookup_zip(zip_code)
     params = {
         "latitude": place["lat"],
         "longitude": place["lon"],
@@ -157,12 +161,11 @@ def _hourly_forecast_for_zip(zip_code: str) -> tuple[dict, dict]:
         "forecast_days": 3,
     }
     url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
-    return place, _fetch_json(url, timeout=15)
+    return _fetch_json(url, timeout=15)
 
 
-def _daily_forecast_for_zip(zip_code: str, days: int) -> tuple[dict, dict]:
+def _daily_forecast_for_place(place: dict, days: int) -> dict:
     """Fetch a multi-day daily forecast (highs/lows, precip, conditions, wind)."""
-    place = _lookup_zip(zip_code)
     params = {
         "latitude": place["lat"],
         "longitude": place["lon"],
@@ -178,7 +181,7 @@ def _daily_forecast_for_zip(zip_code: str, days: int) -> tuple[dict, dict]:
         "forecast_days": days,
     }
     url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
-    return place, _fetch_json(url, timeout=15)
+    return _fetch_json(url, timeout=15)
 
 
 # Open-Meteo / WMO weather codes. Trimmed to the buckets that matter for
@@ -314,8 +317,8 @@ def _fmt_date(day: date) -> str:
     return f"{day.strftime('%a %b')} {day.day}"
 
 
-def get_rain_chance_by_zip(zip_code: str = "", period: str = "today") -> str:
-    """Get the chance of rain for a US ZIP code over a natural-language period.
+def get_rain_chance_by_zip(location: str = "", period: str = "today") -> str:
+    """Get the chance of rain for a location over a natural-language period.
 
     Use this for questions about rain probability or precipitation chance,
     especially phrases like "chance of rain overnight", "will it rain today",
@@ -325,8 +328,9 @@ def get_rain_chance_by_zip(zip_code: str = "", period: str = "today") -> str:
     context, not the headline answer, unless the user explicitly asks for it.
 
     Args:
-        zip_code: US ZIP code (e.g., "90210", "60601"). Optional — if omitted,
-            uses the configured default ZIP (Settings → System → Default ZIP code).
+        location: Optional. The home location is used when none is given; you
+            may pass any international place name (e.g. "Lyon, France") or a
+            "postal,country" (e.g. "SW1A 1AA, UK").
         period: Natural-language period. Supported examples: "overnight",
             "tonight", "today", "tomorrow", "next 24 hours", "next 3 days",
             "next week", or "over the next week".
@@ -336,15 +340,12 @@ def get_rain_chance_by_zip(zip_code: str = "", period: str = "today") -> str:
 
     Ack: Checking rain chances...
     """
-    zip_code = _resolve_zip(zip_code)
-    if not zip_code:
-        return _NO_ZIP_MSG
-    error = _validate_zip(zip_code)
-    if error:
-        return error
+    place, err = _resolve_place(location)
+    if err:
+        return err
 
     try:
-        place, forecast = _forecast_for_zip(zip_code)
+        forecast = _forecast_for_place(place)
         now = _local_now(forecast)
         start, end, label = _period_window(period, now)
         hours = [row for row in _hourly_rows(forecast) if start <= row["time"] < end]
@@ -357,7 +358,7 @@ def get_rain_chance_by_zip(zip_code: str = "", period: str = "today") -> str:
         rainy_hours = sum(1 for row in hours if row["probability"] >= 30 or row["precipitation"] > 0)
 
         lines = [
-            f"Rain chance for {place['city']}, {place['region']} ({zip_code}) — {label}:",
+            f"Rain chance for {place['label']} — {label}:",
             f"  Highest chance: {max_hour['probability']}% around {_fmt_time(max_hour['time'])}",
             f"  Average chance: {avg_probability}%",
             f"  Forecast precipitation: {total_precip:.2f} in",
@@ -374,14 +375,14 @@ def get_rain_chance_by_zip(zip_code: str = "", period: str = "today") -> str:
                         f" ({day['precipitation']:.2f} in)"
                     )
 
-        lines.append("  Source: Open-Meteo forecast via ZIP lookup.")
+        lines.append("  Source: Open-Meteo forecast.")
         return "\n".join(lines)
     except Exception as e:
         return f"Error fetching rain forecast: {str(e)}"
 
 
-def get_hourly_forecast_by_zip(zip_code: str = "", hours: int = 12) -> str:
-    """Get an hour-by-hour weather forecast for a US ZIP code.
+def get_hourly_forecast_by_zip(location: str = "", hours: int = 12) -> str:
+    """Get an hour-by-hour weather forecast for a location.
 
     Returns temperature, conditions, precipitation chance, and wind for each
     of the next N hours (default 12, max 48). Use this for questions like
@@ -389,21 +390,19 @@ def get_hourly_forecast_by_zip(zip_code: str = "", hours: int = 12) -> str:
     "what will it be like later today".
 
     Args:
-        zip_code: US ZIP code (e.g., "90210", "72956"). Optional — if omitted,
-            uses the configured default ZIP (Settings → System → Default ZIP code).
+        location: Optional. The home location is used when none is given; you
+            may pass any international place name (e.g. "Lyon, France") or a
+            "postal,country" (e.g. "SW1A 1AA, UK").
         hours: How many hours ahead to report (1-48). Defaults to 12.
 
     Returns:
-        Formatted hourly forecast pulled from Open-Meteo via ZIP lookup.
+        Formatted hourly forecast pulled from Open-Meteo.
 
     Ack: Pulling the hourly forecast...
     """
-    zip_code = _resolve_zip(zip_code)
-    if not zip_code:
-        return _NO_ZIP_MSG
-    error = _validate_zip(zip_code)
-    if error:
-        return error
+    place, err = _resolve_place(location)
+    if err:
+        return err
 
     try:
         n = max(1, min(int(hours or 12), 48))
@@ -411,11 +410,11 @@ def get_hourly_forecast_by_zip(zip_code: str = "", hours: int = 12) -> str:
         n = 12
 
     try:
-        place, forecast = _hourly_forecast_for_zip(zip_code)
+        forecast = _hourly_forecast_for_place(place)
         hourly = forecast.get("hourly") or {}
         times = hourly.get("time") or []
         if not times:
-            return f"No hourly forecast was available for {zip_code}."
+            return f"No hourly forecast was available for {place['label']}."
 
         temps = hourly.get("temperature_2m") or []
         feels = hourly.get("apparent_temperature") or []
@@ -451,11 +450,10 @@ def get_hourly_forecast_by_zip(zip_code: str = "", hours: int = 12) -> str:
                 break
 
         if not rows:
-            return f"No upcoming hourly forecast hours were available for {zip_code}."
+            return f"No upcoming hourly forecast hours were available for {place['label']}."
 
         lines = [
-            f"Hourly forecast for {place['city']}, {place['region']} "
-            f"({zip_code}) — next {len(rows)} hour(s):"
+            f"Hourly forecast for {place['label']} — next {len(rows)} hour(s):"
         ]
         for r in rows:
             temp_str = f"{round(r['temp'])}°F" if r["temp"] is not None else "?"
@@ -491,14 +489,14 @@ def get_hourly_forecast_by_zip(zip_code: str = "", hours: int = 12) -> str:
 
             lines.append(f"  {_fmt_time(r['time'])}: " + " | ".join(parts))
 
-        lines.append("  Source: Open-Meteo hourly forecast via ZIP lookup.")
+        lines.append("  Source: Open-Meteo hourly forecast.")
         return "\n".join(lines)
     except Exception as e:
         return f"Error fetching hourly forecast: {str(e)}"
 
 
-def get_daily_forecast_by_zip(zip_code: str = "", days: int = 7) -> str:
-    """Get a multi-day daily forecast (high/low per day) for a US ZIP code.
+def get_daily_forecast_by_zip(location: str = "", days: int = 7) -> str:
+    """Get a multi-day daily forecast (high/low per day) for a location.
 
     Returns one line per day with the high/low temperature, conditions, rain
     chance, precipitation total, and peak wind. Use this for questions like
@@ -506,21 +504,19 @@ def get_daily_forecast_by_zip(zip_code: str = "", days: int = 7) -> str:
     "highs and lows", "extended forecast", or "forecast for the next few days".
 
     Args:
-        zip_code: US ZIP code (e.g., "90210", "72956"). Optional — if omitted,
-            uses the configured default ZIP (Settings → System → Default ZIP code).
+        location: Optional. The home location is used when none is given; you
+            may pass any international place name (e.g. "Lyon, France") or a
+            "postal,country" (e.g. "SW1A 1AA, UK").
         days: How many days ahead to report (1-16). Defaults to 7.
 
     Returns:
-        Formatted day-by-day forecast pulled from Open-Meteo via ZIP lookup.
+        Formatted day-by-day forecast pulled from Open-Meteo.
 
     Ack: Pulling the daily forecast...
     """
-    zip_code = _resolve_zip(zip_code)
-    if not zip_code:
-        return _NO_ZIP_MSG
-    error = _validate_zip(zip_code)
-    if error:
-        return error
+    place, err = _resolve_place(location)
+    if err:
+        return err
 
     try:
         n = max(1, min(int(days or 7), 16))
@@ -528,11 +524,11 @@ def get_daily_forecast_by_zip(zip_code: str = "", days: int = 7) -> str:
         n = 7
 
     try:
-        place, forecast = _daily_forecast_for_zip(zip_code, n)
+        forecast = _daily_forecast_for_place(place, n)
         daily = forecast.get("daily") or {}
         times = daily.get("time") or []
         if not times:
-            return f"No daily forecast was available for {zip_code}."
+            return f"No daily forecast was available for {place['label']}."
 
         codes = daily.get("weathercode") or []
         tmax = daily.get("temperature_2m_max") or []
@@ -543,8 +539,7 @@ def get_daily_forecast_by_zip(zip_code: str = "", days: int = 7) -> str:
         wind_dir = daily.get("wind_direction_10m_dominant") or []
 
         lines = [
-            f"Daily forecast for {place['city']}, {place['region']} "
-            f"({zip_code}) — next {min(n, len(times))} day(s):"
+            f"Daily forecast for {place['label']} — next {min(n, len(times))} day(s):"
         ]
         for i, ts in enumerate(times[:n]):
             try:
@@ -570,7 +565,7 @@ def get_daily_forecast_by_zip(zip_code: str = "", days: int = 7) -> str:
                 parts.append(wind_str)
             lines.append(f"  {_fmt_date(day)}: " + " | ".join(parts))
 
-        lines.append("  Source: Open-Meteo daily forecast via ZIP lookup.")
+        lines.append("  Source: Open-Meteo daily forecast.")
         return "\n".join(lines)
     except Exception as e:
         return f"Error fetching daily forecast: {str(e)}"

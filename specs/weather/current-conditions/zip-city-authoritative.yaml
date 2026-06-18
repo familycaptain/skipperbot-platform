@@ -1,32 +1,41 @@
 kind: specification
 id: weather.current-conditions.zip-city-authoritative
-title: Current-weather tool labels the city from the authoritative ZIP lookup, not wttr.in's
-  nearest-area
+title: Current-weather tool labels the place from the platform location service, identical
+  across surfaces
 state: live
-behavior: When a user asks for current weather by US ZIP code, the formatted result's city/region
-  label is derived from the authoritative ZIP lookup (`_lookup_zip` → zippopotam.us, the same
-  source the forecast tools use), so the displayed place matches the real ZIP city — ZIP 72956
-  yields "Van Buren, AR", not wttr.in's nearest-area label "Rena". The weather conditions/temperature
-  data still come from wttr.in. If `_lookup_zip` fails (offline or unknown ZIP), the tool
-  degrades gracefully by falling back to wttr.in's `nearest_area` areaName/region and still
-  returns the weather rather than erroring.
+verified: true
+behavior: >
+  Weather tools (apps/weather/tools.py) and the dashboard data layer
+  (apps/weather/data.py) resolve the location through the platform service
+  app_platform.location (resolve_location / display_label) — they no longer carry any
+  local postal lookup. Current conditions and all forecasts call Open-Meteo by lat/lon
+  (current conditions use Open-Meteo current-weather). The displayed place label is the
+  platform's ONE canonical "City, Region, CountryName" (display_label), so current
+  conditions and the forecast tools agree on the place name and it is identical across
+  chat, voice, and the weather dashboard. Each tool takes an OPTIONAL international
+  `location` override (a place name like "Lyon, France" or a "<postal>, <country>");
+  with no override the configured home location is used; with neither, a clear
+  Settings-pointing message is returned (no crash). NWS severe-weather alerts remain
+  US-only — for a non-US resolved location the alerts path returns an explicit
+  "Severe-weather alerts are US-only; current conditions and forecast still work."
+  rather than a silent empty result.
 implements:
 - apps/weather/tools.py::get_current_weather_by_zip
-- apps/weather/tools.py::_lookup_zip
+- apps/weather/tools.py::_resolve_place
+- apps/weather/data.py::nws_alerts
 tests:
 - type: unit
-  path: test_weather_tools.py
-  rubric: 'Offline/deterministic. Mock both outbound fetches in apps/weather/tools.py: stub
-    _lookup_zip (or the zippopotam _fetch_json call) to return city=''Van Buren'', region=''AR''
-    for ''72956'', and stub the wttr.in _fetch_json to return a valid current_condition payload
-    whose nearest_area areaName is ''Rena''/region ''AR''. Assert get_current_weather_by_zip(''72956'')
-    returns a string containing ''Van Buren, AR'' and NOT ''Rena''. Add a second case: when
-    _lookup_zip raises an exception, assert the result still contains wttr.in''s fallback
-    area label and the temperature/conditions (no ''Error fetching weather'' returned).'
-- type: unit
-  path: test_weather_tools.py
-  rubric: 'Consistency check: for a mocked ZIP, assert the city/region in get_current_weather_by_zip''s
-    output equals the city/region returned by _lookup_zip for that same ZIP, proving current-weather
-    and forecast tools agree on the place name.'
+  path: ../../../tests/evolve/weather/test_weather_tools.py
+  rubric: >
+    Offline/deterministic. Stub app_platform.location.resolve_location to a London
+    record {display_label='London, England, United Kingdom', lat, lon,
+    country_code='GB'} and stub the Open-Meteo current-weather fetch. Assert
+    get_current_weather_by_zip() (no override) labels "London, England, United Kingdom"
+    and the data comes from Open-Meteo current-weather (the only weather source).
+    Assert passing location='Lyon, France' flows through to
+    resolve_location(override='Lyon, France'). Assert a no-location result returns the
+    Settings-pointing message. For NWS alerts: a non-US (country_code='GB') resolved
+    location returns the explicit "Severe-weather alerts are US-only..." message; a US
+    location fetches alerts normally.
 links: {}
 notes: ''
