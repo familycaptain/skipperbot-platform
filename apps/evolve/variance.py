@@ -90,9 +90,9 @@ def baseline_for(record: Record, *, repo_root: str) -> dict[str, str]:
 if __name__ == "__main__":
     import sys
     from apps.evolve import schema
-    root = sys.argv[1] if len(sys.argv) > 1 else "specs/evolve"
+    root = sys.argv[1] if len(sys.argv) > 1 else "apps/evolve/specs"
     recs, _ = schema.load_and_validate(root, repo_root=os.getcwd(),
-                                       capability=os.path.basename(root.rstrip("/")))
+                                       capability=schema.capability_from_root(root))
     vs = detect(recs, repo_root=os.getcwd())
     print(f"{len(vs)} variances:")
     for v in vs:

@@ -18,7 +18,7 @@ from apps.evolve.workspace import WorkspaceManager, git
 from tests.evolve.test_workspace import init_box1
 
 REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-SDLC = os.path.join(REPO, "specs", "evolve", "sdlc.yaml")
+SDLC = os.path.join(REPO, "apps", "evolve", "specs", "sdlc.yaml")
 
 # canned reasoning outputs keyed by AGENT name (happy path: feature, fits, surface, clean)
 FAKE = {
@@ -96,7 +96,7 @@ class TestGatedPipeline(unittest.TestCase):
         self.assertIs(self.pipe.packet(inst)["validation"]["passed"], True)
         inst = self.pipe.approve(inst.id, "approve")          # gate 2
         self.assertEqual(inst.status, DONE)
-        self.assertTrue(self._release_has("specs/demo/area/thing.yaml"))   # spec merged
+        self.assertTrue(self._release_has("apps/demo/specs/area/thing.yaml"))   # spec merged
         self.assertTrue(self._release_has("apps/demo/thing.py"))           # code merged
 
     def test_packet_always_carries_a_recommendation(self):
@@ -270,7 +270,7 @@ class TestSpecAwareTriage(unittest.TestCase):
             wm = WorkspaceManager(repo, worktrees_dir=os.path.join(tmp, "wt"))
             from apps.evolve import store as cfsstore
             cfs = cfsstore.Store(cfsstore.InMemoryBackend())
-            cfs.boot_sync(os.path.join(REPO, "specs", "evolve"), repo_root=REPO,
+            cfs.boot_sync(os.path.join(REPO, "apps", "evolve", "specs"), repo_root=REPO,
                           capability="evolve", on_main=True, bootstrap=True)
             captured = {}
 

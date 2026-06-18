@@ -39,15 +39,29 @@ def _slug(item_id: str) -> str:
     return "".join(c if c.isalnum() or c in "-_." else "-" for c in item_id)
 
 
+# Capabilities whose specs live at the repo-level specs/ tree (platform-wide, not owned by
+# any app). Everything else is an APP capability whose specs live at apps/<cap>/specs/ —
+# including optional apps shipped from their own repo (cloned into apps/<cap>/), which carry
+# their specs/ tree in exactly this layout. Deterministic (no filesystem probing) so it works
+# for not-yet-created and optional apps alike.
+PLATFORM_CAPS = {"platform"}
+
+
+def specs_root_for(cap: str) -> str:
+    """Repo-relative root of a capability's C/F/S tree (apps/<cap>/specs, or specs/<cap> for
+    platform-wide capabilities)."""
+    return f"specs/{cap}" if cap in PLATFORM_CAPS else f"apps/{cap}/specs"
+
+
 def spec_relpath(record: dict) -> str:
     """The repo-relative file path a C/F/S record serializes to (mirror of §4 layout)."""
     parts = record["id"].split(".")
-    cap = parts[0]
+    root = specs_root_for(parts[0])
     if record["kind"] == "capability":
-        return f"specs/{cap}/_capability.yaml"
+        return f"{root}/_capability.yaml"
     if record["kind"] == "feature":
-        return f"specs/{cap}/{parts[1]}/_feature.yaml"
-    return f"specs/{cap}/{parts[1]}/{parts[2]}.yaml"
+        return f"{root}/{parts[1]}/_feature.yaml"
+    return f"{root}/{parts[1]}/{parts[2]}.yaml"
 
 
 @dataclass

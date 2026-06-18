@@ -51,7 +51,7 @@ class TestBuildLoop(unittest.TestCase):
         self.assertTrue(res.ok, res.detail)
         self.assertEqual(res.stage, "merged")
         # both the spec file and the implemented code reached release
-        self.assertTrue(self._release_has("specs/demo/area/thing.yaml"))
+        self.assertTrue(self._release_has("apps/demo/specs/area/thing.yaml"))
         self.assertTrue(self._release_has("apps/demo/thing.py"))
 
     def test_validation_failure_stops_before_merge(self):
@@ -99,7 +99,7 @@ class TestBoundTestSelection(unittest.TestCase):
         for p in ("tests/weather/test_zip.py", "apps/weather/test_tools.py",
                   "apps/x/tests/test_y.py", "foo_test.py"):
             self.assertTrue(build_loop.is_test_file(p), p)
-        for p in ("apps/weather/tools.py", "specs/weather/spec.yaml",
+        for p in ("apps/weather/tools.py", "apps/weather/specs/spec.yaml",
                   "tests/weather/fixtures.json", "README.md"):
             self.assertFalse(build_loop.is_test_file(p), p)
 

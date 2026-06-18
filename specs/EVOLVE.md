@@ -117,7 +117,8 @@ index.)
 
 Sync model:
 
-- **Boot: files → DB.** On startup the brain scans `specs/**/*.yaml`, checksums
+- **Boot: files → DB.** On startup the brain scans each app's `apps/*/specs/**/*.yaml`
+  tree plus `specs/platform/**/*.yaml`, checksums
   each, and upserts into the DB (mirrors how the platform migration runner tracks
   `migrations/*` in `public.platform_migrations`). The DB now mirrors committed
   truth and is queryable for the Evolve UI.
@@ -136,7 +137,7 @@ baseline.** In-flight *proposals* and *variances* live in the DB
 (status: proposed/implementing); the committed YAML on `main` is the "HEAD" desired
 state; a merge promotes a proposal into the files. You get a git-like staging area
 for *requirements* — and history/diff/blame come **free** because the specs live in
-the repo (`git log specs/recipes/` = "how Recipes' behavior changed over time").
+the repo (`git log apps/recipes/specs/` = "how Recipes' behavior changed over time").
 
 ### The record schema (finalized)
 
@@ -151,7 +152,7 @@ fields.
 **Capability** — a whole app/area:
 
 ```yaml
-# specs/recipes/_capability.yaml
+# apps/recipes/specs/_capability.yaml
 kind: capability
 id: recipes
 title: Recipes
@@ -169,7 +170,7 @@ notes: ""
 **Feature** — a screen or sub-area:
 
 ```yaml
-# specs/recipes/recipe-detail/_feature.yaml
+# apps/recipes/specs/recipe-detail/_feature.yaml
 kind: feature
 id: recipes.recipe-detail
 title: Recipe detail screen
@@ -181,7 +182,7 @@ notes: ""
 **Specification** — one atomic behavior, bound to its tests:
 
 ```yaml
-# specs/recipes/recipe-detail/edit-button.yaml
+# apps/recipes/specs/recipe-detail/edit-button.yaml
 kind: specification
 id: recipes.recipe-detail.edit-button
 title: Edit button on recipe detail
@@ -217,22 +218,32 @@ mechanical, atomic refactor it performs in one commit (re-id the moved subtree +
 update every `links`/`related`/test reference). Renames are rare; the maintainer
 isn't doing them by hand.
 
-### File layout under `specs/`
+### File layout — each app carries its own `specs/`
+
+Every app's C/F/S tree lives **co-located with the app**, at `apps/<capability>/specs/`.
+This is the same layout an **optional app** ships in its own repo (`specs/` at the repo
+root, mounted at `apps/<app>/specs/`), so an app's specs travel with it whether it's
+in-repo or external.
 
 ```
-specs/
-  <capability>/
-    _capability.yaml                # the Capability record
-    <feature>/
-      _feature.yaml                 # the Feature record
-      <spec>.yaml                   # one Specification each
+apps/<capability>/specs/
+  _capability.yaml                # the Capability record
+  <feature>/
+    _feature.yaml                 # the Feature record
+    <spec>.yaml                   # one Specification each
 ```
 
 The marker files (`_capability.yaml` / `_feature.yaml`) sort first and hold the
 parent records; every other `*.yaml` in a feature dir is a spec. A spec that belongs
-to no particular screen lives under a catch-all feature (e.g. `recipes/core/`).
-Evolve is itself a capability (`specs/evolve/…`, the recursive bootstrap, §12) and
-coexists with the design docs in the same tree — the `kind:` contract disambiguates.
+to no particular screen lives under a catch-all feature (e.g. `apps/recipes/specs/core/`).
+Evolve is itself a capability (`apps/evolve/specs/…`, the recursive bootstrap, §12),
+which also carries its process model (`sdlc.yaml`/`sdlc.md`) — the `kind:` contract
+disambiguates C/F/S records from those docs.
+
+**Platform-wide** capabilities that aren't owned by any app stay under the top-level
+`specs/` tree: `specs/platform/` (the C/F/S for the platform core) plus the cross-cutting
+design docs (`CHARTER.md`, `EVOLVE.md`, `APP_PACKAGES.md`, …). Resolution is deterministic:
+`platform` → `specs/platform/`; everything else → `apps/<cap>/specs/`.
 
 ### Lifecycle — a loop, not a funnel
 
@@ -266,7 +277,7 @@ that any `live` spec may be reconsidered tomorrow.
 ### What is deliberately NOT in the file
 
 Files carry **intent**; the DB and git carry **runtime + history**. So a spec file
-has **no** `created`/`updated` timestamps (git is the history — `git log specs/recipes/`),
+has **no** `created`/`updated` timestamps (git is the history — `git log apps/recipes/specs/`),
 **no** per-test pass/fail status (runtime state, a DB projection), and **no** content
 checksum (the loader computes it at boot for variance tracking). This keeps the
 file a clean declaration that diffs cleanly.
@@ -1304,7 +1315,7 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   off-charter → off-vision). Remaining: keep per-Capability `scope` fields filled as
   the reverse-engineered trees land.
 - **The first SDLC process flow — DRAFTED.** v0.3 in the decided format:
-  `specs/evolve/sdlc.yaml` (model = truth) + `specs/evolve/sdlc.md` (generated
+  `apps/evolve/specs/sdlc.yaml` (model = truth) + `apps/evolve/specs/sdlc.md` (generated
   Mermaid view — open in GitHub to see the graph). 39 nodes / 54 edges; the **four
   intake lanes** (issues, PRs, the proactive Design agent, and the proactive QA
   sweep = variance ∥ regression ∥ code-audit ∥ spec-audit) → triage/vision →
@@ -1313,7 +1324,7 @@ of an empty shell is gold. Same script, two entry points: `--demo` (onboarding),
   fast-path. Next: refine it, then attach C/F/S state to each step + name which agent
   owns each transition.
 - **Spec-file schema — FINALIZED** (§4): the three `kind:` records, dotted
-  hierarchy-encoding readable IDs, the `specs/<cap>/<feat>/<spec>.yaml` layout, the
+  hierarchy-encoding readable IDs, the `apps/<cap>/specs/<feat>/<spec>.yaml` layout, the
   `main`-only-holds-`live`/`deprecated` invariant, and loader validation. Remaining:
   author a JSON-Schema/validator and wire it into the boot files→DB scan.
 - **The Evolve app — DESIGNED** (§10): the four surfaces (work queue / C/F/S

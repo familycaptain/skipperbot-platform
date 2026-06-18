@@ -92,7 +92,7 @@ def gate_notify(pkt):
 
 def build_pipeline():
     os.makedirs(os.path.dirname(STATE_DB), exist_ok=True)
-    model = M.load("specs/evolve/sdlc.yaml")
+    model = M.load("apps/evolve/specs/sdlc.yaml")
     ledger = CostLedger()
     runner = Runner(AnthropicBackend(), dict(ROSTER), ledger=ledger,
                     monthly_limit_usd=MONTHLY_CAP, budget_usd=20.0)

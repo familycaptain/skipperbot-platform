@@ -117,7 +117,7 @@ def parse_file(path: str) -> Record:
 
 def path_derived_id(path: str, specs_root: str, capability: str) -> str:
     """The id a file's *location* implies, e.g.
-    specs/evolve/cfs-store/boot-sync.yaml -> '<capability>.cfs-store.boot-sync'.
+    apps/evolve/specs/cfs-store/boot-sync.yaml -> '<capability>.cfs-store.boot-sync'.
     The marker files map to the capability/feature id themselves.
     """
     rel = os.path.relpath(os.path.abspath(path), os.path.abspath(specs_root))
@@ -230,14 +230,23 @@ def load_and_validate(specs_root: str, *, repo_root: str, capability: str,
     return records, rep
 
 
+def capability_from_root(specs_root: str) -> str:
+    """The capability id for a specs-tree root. apps/<cap>/specs -> <cap> (the app layout);
+    specs/<cap> -> <cap> (platform-wide). Lets callers derive the capability from the path."""
+    parts = os.path.normpath(specs_root).split(os.sep)
+    if len(parts) >= 2 and parts[-1] == "specs":
+        return parts[-2]
+    return parts[-1] if parts else specs_root
+
+
 # --------------------------------------------------------------------------- #
 # CLI: `python3 -m apps.evolve.schema [specs_root]` — validate a corpus
 # --------------------------------------------------------------------------- #
 if __name__ == "__main__":
     import sys
-    root = sys.argv[1] if len(sys.argv) > 1 else "specs/evolve"
+    root = sys.argv[1] if len(sys.argv) > 1 else "apps/evolve/specs"
     repo = os.getcwd()
-    recs, report = load_and_validate(root, repo_root=repo, capability=os.path.basename(root.rstrip("/")))
+    recs, report = load_and_validate(root, repo_root=repo, capability=capability_from_root(root))
     caps = sum(r.kind == "capability" for r in recs)
     feats = sum(r.kind == "feature" for r in recs)
     specs = sum(r.kind == "specification" for r in recs)

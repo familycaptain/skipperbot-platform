@@ -2,7 +2,7 @@
 node (EVOLVE.md §7/§10; spec evolve.process-engine.mermaid-render).
 
 This is the live, per-instance render for the Activity view. The static, hand-tuned
-view lives in specs/evolve/sdlc.md; this is generated straight from the model so it
+view lives in apps/evolve/specs/sdlc.md; this is generated straight from the model so it
 can never drift from what the engine actually walks.
 """
 from __future__ import annotations
@@ -58,5 +58,5 @@ def render(model: Model, highlight: str | list[str] | None = None) -> str:
 if __name__ == "__main__":
     import sys
     from apps.evolve.engine import model as M
-    m = M.load(sys.argv[1] if len(sys.argv) > 1 else "specs/evolve/sdlc.yaml")
+    m = M.load(sys.argv[1] if len(sys.argv) > 1 else "apps/evolve/specs/sdlc.yaml")
     print(render(m, highlight=sys.argv[2] if len(sys.argv) > 2 else None))
