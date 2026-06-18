@@ -19,7 +19,17 @@ from app_platform.prompt_context import collect_prompt_context
 
 
 GLOBAL_CATEGORIES = {"core", "utility", "web", "knowledge", "filesystem", "timers"}
-HOME_VOICE_DEFAULT_CATEGORIES = {"automation"}
+
+# Curated VOICE-CORE categories: app tools ALWAYS loaded at the start of EVERY voice
+# session, so the most common quick asks work WITHOUT first saying "open the <app> app"
+# ("what's the weather", "remind me…", "turn on the lights", "any notifications?").
+# Keep this list SMALL and curated — every category here adds tools to the always-on
+# voice prompt, which is exactly what the open-the-XYZ-app JIT loading exists to avoid.
+# Everything NOT listed stays behind request_tools / "open the <app> app" (auto, medical,
+# home-maintenance, etc.). Tune to the most common voice use cases.
+VOICE_CORE_CATEGORIES = {"weather", "automation", "reminders", "notifications"}
+
+HOME_VOICE_DEFAULT_CATEGORIES = {"automation"}  # extra categories for home voice devices
 BASE_DIR = Path(__file__).resolve().parent
 APPS_DIR = BASE_DIR / "apps"
 
@@ -590,9 +600,11 @@ def build_voice_memory_rules(user_id: str = "", device_info: dict | None = None)
 
 
 def get_default_categories(device_info: dict | None) -> set[str]:
+    # The curated voice-core loads for EVERY voice session; home voice devices add theirs.
+    cats = set(VOICE_CORE_CATEGORIES)
     if is_home_voice_device(device_info):
-        return set(HOME_VOICE_DEFAULT_CATEGORIES)
-    return set()
+        cats |= set(HOME_VOICE_DEFAULT_CATEGORIES)
+    return cats
 
 
 def is_home_voice_device(device_info: dict | None) -> bool:
