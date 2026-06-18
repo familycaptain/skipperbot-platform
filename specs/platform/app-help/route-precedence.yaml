@@ -15,18 +15,18 @@ implements:
 tests:
 - type: unit
   path: tests/evolve/platform/test_app_help_route.py
-  rubric: 'FastAPI TestClient with the app manifests made available WITHOUT the full lifespan
-    (monkeypatch/populate get_loaded_apps so api_app_help''s ''Unknown app'' guard passes
-    — do NOT spin up MCP/DB/Discord). STRUCTURAL precedence assertion: iterate get_loaded_apps()
-    and for EVERY loaded app that ships an apps/<id>/help.md, assert GET /api/apps/<id>/help
-    returns 200 with {help} equal to that file (so it reached the help handler, not the entity
-    /{param} handler) — this auto-covers the 8 shadowed apps AND any future app, so a new
-    /{param} route can''t silently re-shadow. Regression guards: (a) GET /api/apps/lists/help
-    is NOT served by the entity handler; (b) a normal entity id still routes to the entity
-    handler (e.g. /api/apps/lists/<real_or_dummy_id> does not hit the help handler); (c) GET
-    /api/apps/<unknown>/help returns 404 (pins the module-level HTTPException import from
-    b940941, so the unknown-app path 404s rather than 500s). Fails on baseline (help shadowed
-    for the 8 apps) and passes after the reorder.'
+  rubric: 'Deterministic/offline AST source-order analysis of agent.py (no app import, no
+    HTTP, no DB — same approach as test_agent_no_app_imports.py; a runtime TestClient is not
+    viable offline here because the global auth middleware + the app-loading lifespan would
+    block/!404 a bare request). Asserts: (1) exactly one GET /api/apps/{app_id}/help route;
+    (2) its decorator line precedes EVERY per-app GET /api/apps/<app>/{param} route whose
+    {param} is the final segment (the precise shape that shadows /api/apps/<app>/help) — so
+    help wins for ALL current AND future apps, not just the 8 named (a new app''s /{param}
+    route registered before help would fail this); (3) each reported app (goals, documents,
+    images, lists, brainstorming, backups, schedules, folders) actually exposes such a /{param}
+    GET (premise guard); (4) each ships a non-empty apps/<id>/help.md so real content renders
+    once routed. Fails on baseline (help registered after the per-app routes -> 9 offenders)
+    and passes after the reorder (0 offenders).'
 - type: acceptance
   path: 'live: in-app Help for shadowed apps'
   rubric: 'Driving the live web UI: open two formerly-shadowed apps with DIFFERENT entity-id
@@ -42,4 +42,8 @@ notes: 'Single-file route-precedence fix in agent.py, following the file''s exis
   (2) is STRUCTURAL — iterates every loaded app with a help.md so future apps are covered,
   not just the 8 named, and (3) asserts the unknown-app path 404s (pinning the b940941 HTTPException-import
   fix). Build base = release b940941 (operator''s HTTPException fix already merged). UX''s
-  ''coming soon'' empty-state reword is a noted OUT-OF-SCOPE follow-up.'
+  ''coming soon'' empty-state reword is a noted OUT-OF-SCOPE follow-up. | BUILT: the bound
+  test is realized as a deterministic AST source-order check (chosen over a runtime TestClient,
+  which the offline auth middleware + app-loading lifespan would block); it is structural
+  (covers all current+future apps) and verified GREEN on box 2 (4/4; red on baseline).'
+verified: true
