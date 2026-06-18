@@ -1,0 +1,45 @@
+kind: specification
+id: platform.app-help.route-precedence
+title: In-app help route resolves for every app
+state: live
+autonomy: gated
+behavior: GET /api/apps/<app_id>/help returns the app's help.md markdown (HTTP 200, non-empty
+  {help} when the file exists) for EVERY loaded app, including those that also expose a per-app
+  GET /api/apps/<app_id>/{param} route (goals, documents, images, lists, brainstorming, backups,
+  schedules, folders). The help route is registered ahead of the per-app parametric routes
+  so the literal 'help' segment is never captured as an entity id. The per-app {param} entity
+  endpoints continue to work unchanged for all non-'help' ids. help.md content, the web Help
+  panel, and the handler body are unchanged; this is purely route precedence.
+implements:
+- agent.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_app_help_route.py
+  rubric: 'FastAPI TestClient with the app manifests made available WITHOUT the full lifespan
+    (monkeypatch/populate get_loaded_apps so api_app_help''s ''Unknown app'' guard passes
+    — do NOT spin up MCP/DB/Discord). STRUCTURAL precedence assertion: iterate get_loaded_apps()
+    and for EVERY loaded app that ships an apps/<id>/help.md, assert GET /api/apps/<id>/help
+    returns 200 with {help} equal to that file (so it reached the help handler, not the entity
+    /{param} handler) — this auto-covers the 8 shadowed apps AND any future app, so a new
+    /{param} route can''t silently re-shadow. Regression guards: (a) GET /api/apps/lists/help
+    is NOT served by the entity handler; (b) a normal entity id still routes to the entity
+    handler (e.g. /api/apps/lists/<real_or_dummy_id> does not hit the help handler); (c) GET
+    /api/apps/<unknown>/help returns 404 (pins the module-level HTTPException import from
+    b940941, so the unknown-app path 404s rather than 500s). Fails on baseline (help shadowed
+    for the 8 apps) and passes after the reorder.'
+- type: acceptance
+  path: 'live: in-app Help for shadowed apps'
+  rubric: 'Driving the live web UI: open two formerly-shadowed apps with DIFFERENT entity-id
+    shapes (e.g. Lists and Goals), click the (?) help icon — each renders the real help.md
+    guide, NOT ''help is coming soon''.'
+links: {}
+notes: 'Single-file route-precedence fix in agent.py, following the file''s existing ''moved
+  above to avoid route conflict'' precedent. Recommended design fork A (accept that ''help''
+  is reserved for these apps'' path segment; entity ids are numeric/uuid). Out of scope: the
+  already-fixed HTTPException 500 (b940941). Spec unverified until the bound test passes on
+  box 2. | REVISED (r1) per spec-audit + architecture: the bound test now (1) loads/monkeypatches
+  get_loaded_apps so it exercises route PRECEDENCE rather than tripping the manifest 404 guard,
+  (2) is STRUCTURAL — iterates every loaded app with a help.md so future apps are covered,
+  not just the 8 named, and (3) asserts the unknown-app path 404s (pinning the b940941 HTTPException-import
+  fix). Build base = release b940941 (operator''s HTTPException fix already merged). UX''s
+  ''coming soon'' empty-state reword is a noted OUT-OF-SCOPE follow-up.'
