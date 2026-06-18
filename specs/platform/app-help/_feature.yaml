@@ -1,0 +1,7 @@
+kind: feature
+id: platform.app-help
+title: In-app help
+state: live
+links: {}
+notes: 'Per-app user help: each app ships apps/<id>/help.md, served by GET /api/apps/<id>/help
+  and rendered in the web Help panel.'
