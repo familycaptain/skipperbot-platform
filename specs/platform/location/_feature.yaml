@@ -1,0 +1,10 @@
+kind: feature
+id: platform.location
+title: Home-location resolver & geocoder
+state: live
+links: {}
+notes: >
+  app_platform/location.py — the single shared home-location service. Resolves the
+  cached platform setting default_location (no per-request geocoding), geocodes an
+  explicit override on demand via Open-Meteo geocoding, and owns the canonical place
+  label. Apps (weather, voice, …) consume it; it imports nothing from apps/*.

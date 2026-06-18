@@ -1,9 +1,9 @@
 // =============================================================================
 // Weather — local forecast dashboard, three tabs
 // =============================================================================
-// Current | Forecast (12-hour hourly + 10-day daily) | Radar (~100-mi map) for a
-// US ZIP (defaults to the configured home ZIP). One fetch to
-// GET /api/apps/weather/summary. The agent can deep-link to a tab via
+// Current | Forecast (12-hour hourly + 10-day daily) | Radar (~100-mi map) for
+// any international location (defaults to the configured home location). One
+// fetch to GET /api/apps/weather/summary. The agent can deep-link to a tab via
 // open_app(app_type="weather", tab="radar") — see ui/index.js `tabs`.
 // =============================================================================
 
@@ -65,19 +65,19 @@ export default function WeatherApp({ context = {} }) {
   // React to deep-link re-opens (weather is a singleton — context updates in place).
   useEffect(() => { if (validTab(context.tab)) setTab(context.tab); }, [context.tab]);
 
-  const [zip, setZip] = useState("");
+  const [query, setQuery] = useState("");
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  const load = useCallback(async (z) => {
+  const load = useCallback(async (q) => {
     setLoading(true);
     setErr("");
     try {
-      const res = await fetch(`${API}/summary?zip=${encodeURIComponent(z || "")}&hours=12&days=10`);
+      const res = await fetch(`${API}/summary?location=${encodeURIComponent(q || "")}&hours=12&days=10`);
       const j = await res.json();
       if (j.error) { setErr(j.error); setData(null); }
-      else { setData(j); if (j.place?.zip) setZip(j.place.zip); }
+      else { setData(j); if (j.place?.display_label) setQuery(j.place.display_label); }
     } catch {
       setErr("Couldn't reach the weather service.");
       setData(null);
@@ -88,7 +88,7 @@ export default function WeatherApp({ context = {} }) {
 
   useEffect(() => { load(""); }, [load]);
 
-  const submit = (e) => { e.preventDefault(); load(zip.trim()); };
+  const submit = (e) => { e.preventDefault(); load(query.trim()); };
 
   return (
     <div className="h-full overflow-y-auto bg-gradient-to-b from-sky-950 to-slate-950 text-slate-100">
@@ -100,15 +100,15 @@ export default function WeatherApp({ context = {} }) {
             <div className="relative">
               <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
-                value={zip}
-                onChange={(e) => setZip(e.target.value)}
-                placeholder="ZIP"
-                inputMode="numeric"
-                className="w-28 rounded bg-slate-900 border border-slate-700 pl-7 pr-2 py-1.5 text-sm focus:border-sky-500 focus:outline-none"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="City or postal,country"
+                title="e.g. Austin, Texas, US  —or—  SW1A 1AA, UK"
+                className="w-48 rounded bg-slate-900 border border-slate-700 pl-7 pr-2 py-1.5 text-sm focus:border-sky-500 focus:outline-none"
               />
             </div>
             <button type="submit" className="rounded bg-sky-600 hover:bg-sky-500 px-3 py-1.5 text-sm font-medium">Go</button>
-            <button type="button" onClick={() => load(zip.trim())} title="Refresh" className="text-slate-400 hover:text-white p-1.5">
+            <button type="button" onClick={() => load(query.trim())} title="Refresh" className="text-slate-400 hover:text-white p-1.5">
               <RefreshCw size={15} />
             </button>
           </form>
@@ -142,7 +142,7 @@ export default function WeatherApp({ context = {} }) {
             {/* ── Current ── */}
             {tab === "current" && (
               <div className="rounded-2xl border border-sky-800/40 bg-sky-900/20 p-5 mb-5">
-                <div className="text-sm text-slate-400">{data.place.city}, {data.place.region} · {data.place.zip}</div>
+                <div className="text-sm text-slate-400">{data.place.display_label}</div>
                 <div className="flex items-center gap-4 mt-2">
                   <div className="text-6xl leading-none">{ICON(data.current.code)}</div>
                   <div>

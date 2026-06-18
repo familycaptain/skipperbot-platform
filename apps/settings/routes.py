@@ -48,8 +48,11 @@ PLATFORM_PANELS: dict[str, dict] = {
             {"key": "timezone", "type": "string", "label": "Timezone",
              "description": "Used everywhere times are shown. Stored as the IANA name.",
              "default": "", "choices_provider": "timezones"},
-            {"key": "default_zip", "type": "string", "label": "Default ZIP code",
-             "description": "US ZIP used for weather when none is given. Chat, Discord, and voice all use it by default.",
+            {"key": "default_location", "type": "string", "label": "Location",
+             "description": "Your home location for weather and other location lookups. "
+                            "Enter any place name or postal,country — it's geocoded and stored. "
+                            "Chat, Discord, and voice all use it by default.",
+             "placeholder": "e.g. Austin, Texas, US  —or—  SW1A 1AA, UK",
              "default": ""},
             {"key": "smart_model", "type": "string", "label": "Smart model",
              "description": "Model for complex reasoning.", "default": "", "requires_restart": True},
@@ -137,6 +140,7 @@ def _panel_field_json(f: dict, *, include_set: bool) -> dict:
     out = {
         "key": f["key"], "type": f.get("type", "string"),
         "label": f.get("label", f["key"]), "description": f.get("description", ""),
+        "placeholder": f.get("placeholder", ""),
         "secret": bool(f.get("secret", False)),
         "default": f.get("default"), "choices": _resolve_choices(f),
         "requires_restart": bool(f.get("requires_restart", False)),
@@ -144,6 +148,21 @@ def _panel_field_json(f: dict, *, include_set: bool) -> dict:
     if include_set and out["secret"]:
         out["set"] = platform_settings.is_configured(f["key"], scope="platform")
     return out
+
+
+def _default_location_label() -> str:
+    """The canonical label for the stored home location, or '' if unset.
+
+    Reads the cached record only (no geocoding); a legacy default_zip surfaces
+    via the resolver's lazy migration / fallback path."""
+    try:
+        from app_platform.location import resolve_location
+        record = resolve_location()
+        if record.get("configured"):
+            return record.get("display_label") or ""
+    except Exception:
+        logger.warning("settings: default_location label lookup failed", exc_info=True)
+    return ""
 
 
 def _panel_payload(panel_id: str) -> dict | None:
@@ -155,6 +174,10 @@ def _panel_payload(panel_id: str) -> dict | None:
         schema.append(_panel_field_json(f, include_set=True))
         if f.get("secret"):
             values[f["key"]] = ""   # never expose a secret to the client
+        elif f["key"] == "default_location":
+            # Stored as a JSON record; show the canonical matched label so the
+            # free-text field round-trips to a human-readable place name.
+            values[f["key"]] = _default_location_label()
         else:
             values[f["key"]] = platform_settings.get(
                 f["key"], scope="platform", default=f.get("default"))
@@ -422,7 +445,27 @@ async def api_patch_panel(panel_id: str, req: PlatformSettingsPatch, request: Re
     def _do():
         for key, value in req.values.items():
             f = by_key[key]
-            if f.get("secret"):
+            if key == "default_location":
+                # RESOLVE-AND-STORE: geocode once and persist the matched record.
+                # No-match → 'location not found'; offline → transient; previous
+                # value kept on either. Blank is ignored (no clearing here).
+                from app_platform import location as _loc
+                q = str(value or "").strip()
+                if not q:
+                    continue
+                try:
+                    _loc.save_default_location(q)
+                except _loc.LocationNotFound as exc:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Location not found. Try a place name or postal,country.",
+                    ) from exc
+                except _loc.GeocoderUnavailable as exc:
+                    raise HTTPException(
+                        status_code=503,
+                        detail="The location service is temporarily unavailable. Please try again.",
+                    ) from exc
+            elif f.get("secret"):
                 # Blank means "keep the existing secret" (the GET never sent it).
                 if value in (None, ""):
                     continue

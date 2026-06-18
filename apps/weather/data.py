@@ -1,8 +1,11 @@
 """Weather app — structured forecast data for the dashboard UI.
 
-Wraps the same keyless public APIs the chat weather tools use (zippopotam for
-ZIP -> lat/lon, open-meteo for forecast), but returns structured JSON for the
-UI instead of the formatted strings the MCP tools return. No data is stored.
+Location is resolved by the platform service (``app_platform.location``); the
+forecast comes from Open-Meteo by lat/lon. Returns structured JSON for the UI
+instead of the formatted strings the MCP tools return. No data is stored.
+
+NWS severe-weather alerts are US-only; for a non-US location the alerts call
+returns an explicit message rather than a silent empty result.
 """
 
 from __future__ import annotations
@@ -11,6 +14,13 @@ import json
 import urllib.parse
 import urllib.request
 from datetime import date, datetime
+
+from app_platform.location import (
+    resolve_location,
+    display_label,
+    LocationNotFound,
+    GeocoderUnavailable,
+)
 
 # WMO weather-code -> short description (mirrors apps/weather/tools.py).
 _WMO = {
@@ -26,6 +36,10 @@ _WMO = {
     95: "Thunderstorm", 96: "Thunderstorm w/ hail", 99: "Severe thunderstorm",
 }
 
+_ALERTS_NON_US_MSG = (
+    "Severe-weather alerts are US-only; current conditions and forecast still work."
+)
+
 
 def _desc(code) -> str:
     try:
@@ -34,17 +48,31 @@ def _desc(code) -> str:
         return "unknown"
 
 
-def _clean_zip(zip_code) -> str:
-    return str(zip_code or "").strip().split("-")[0]
+def _resolve(location: str = ""):
+    """Resolve a place via the platform service.
 
-
-def _default_zip() -> str:
-    """The configured default ZIP (Settings -> System -> Default ZIP code), or ''."""
+    Returns (place_dict_or_None, error_message_or_None). ``place`` carries
+    {display_label, lat, lon, country_code}.
+    """
+    override = (location or "").strip() or None
     try:
-        from app_platform import settings as _settings
-        return _clean_zip(_settings.get("default_zip", scope="platform", default="") or "")
+        record = resolve_location(override=override)
+    except LocationNotFound:
+        return None, "Couldn't find that location. Try a place name or postal,country."
+    except GeocoderUnavailable:
+        return None, "The location service is temporarily unavailable. Please try again."
     except Exception:
-        return ""
+        return None, "Couldn't resolve that location."
+    if not record.get("configured"):
+        return None, record.get("message") or "No location configured (Settings → System → Location)."
+    if record.get("lat") is None or record.get("lon") is None:
+        return None, "Your home location couldn't be resolved to coordinates. Re-save it in Settings."
+    return {
+        "display_label": record.get("display_label") or display_label(record),
+        "lat": record.get("lat"),
+        "lon": record.get("lon"),
+        "country_code": record.get("country_code") or "",
+    }, None
 
 
 def _fetch_json(url: str, timeout: int = 12) -> dict:
@@ -53,28 +81,15 @@ def _fetch_json(url: str, timeout: int = 12) -> dict:
         return json.loads(resp.read().decode())
 
 
-def _lookup_zip(zip_code: str) -> dict:
-    data = _fetch_json(f"https://api.zippopotam.us/us/{zip_code}")
-    place = data["places"][0]
-    return {
-        "city": place["place name"],
-        "region": place["state abbreviation"],
-        "lat": float(place["latitude"]),
-        "lon": float(place["longitude"]),
-    }
-
-
 def _val(arr, i):
     return arr[i] if isinstance(arr, list) and i < len(arr) else None
 
 
-def weather_summary(zip_code: str = "", hours: int = 12, days: int = 10) -> dict:
+def weather_summary(location: str = "", hours: int = 12, days: int = 10) -> dict:
     """Return {place, current, hourly[], daily[]} for the dashboard, or {error}."""
-    zc = _clean_zip(zip_code) or _default_zip()
-    if not zc:
-        return {"error": "No ZIP provided and no default configured (Settings -> System -> Default ZIP code)."}
-    if not zc.isdigit() or len(zc) != 5:
-        return {"error": f"'{zc}' is not a valid 5-digit US ZIP code."}
+    place, err = _resolve(location)
+    if err:
+        return {"error": err}
 
     try:
         hours = max(1, min(int(hours), 48))
@@ -84,11 +99,6 @@ def weather_summary(zip_code: str = "", hours: int = 12, days: int = 10) -> dict
         days = max(1, min(int(days), 16))
     except (TypeError, ValueError):
         days = 10
-
-    try:
-        place = _lookup_zip(zc)
-    except Exception as e:
-        return {"error": f"Couldn't look up ZIP {zc}: {e}"}
 
     params = {
         "latitude": place["lat"],
@@ -165,27 +175,32 @@ def weather_summary(zip_code: str = "", hours: int = 12, days: int = 10) -> dict
         })
 
     return {
-        "place": {"city": place["city"], "region": place["region"], "zip": zc,
-                  "lat": place["lat"], "lon": place["lon"]},
+        "place": {"display_label": place["display_label"],
+                  "lat": place["lat"], "lon": place["lon"],
+                  "country_code": place["country_code"]},
         "current": current,
         "hourly": hourly,
         "daily": daily,
     }
 
 
-def nws_alerts(zip_code: str = "") -> dict:
-    """Active NWS severe-weather alerts near the ZIP, as GeoJSON.
+def nws_alerts(location: str = "") -> dict:
+    """Active NWS severe-weather alerts near the location, as GeoJSON.
 
-    Fetched server-side because the NWS API expects a descriptive User-Agent
-    (browsers can't set one). Returns a GeoJSON FeatureCollection trimmed to
-    what the map needs; empty features on any error (alerts are best-effort).
+    NWS alerts are US-only: for a non-US location, return an explicit message
+    (never a silent empty result). Fetched server-side because the NWS API
+    expects a descriptive User-Agent (browsers can't set one). Returns a
+    GeoJSON FeatureCollection trimmed to what the map needs.
     """
-    zc = _clean_zip(zip_code) or _default_zip()
     empty = {"type": "FeatureCollection", "features": []}
-    if not zc or not zc.isdigit() or len(zc) != 5:
-        return empty
+    place, err = _resolve(location)
+    if err:
+        return {**empty, "message": err}
+
+    if (place.get("country_code") or "").upper() != "US":
+        return {**empty, "us_only": True, "message": _ALERTS_NON_US_MSG}
+
     try:
-        place = _lookup_zip(zc)
         url = f"https://api.weather.gov/alerts/active?point={place['lat']},{place['lon']}"
         req = urllib.request.Request(url, headers={
             "User-Agent": "SkipperBot Weather app (self-hosted)",

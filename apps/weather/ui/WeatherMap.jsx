@@ -7,7 +7,7 @@
 // Plain Leaflet (no marker-image icons) to sidestep bundler icon-path issues.
 // =============================================================================
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -23,12 +23,14 @@ function sevColor(sev) {
 export default function WeatherMap({ place }) {
   const elRef = useRef(null);
   const mapRef = useRef(null);
+  const [alertNote, setAlertNote] = useState("");
 
   useEffect(() => {
     const el = elRef.current;
     if (!el || !place || place.lat == null || place.lon == null) return;
+    setAlertNote("");
 
-    // Re-create cleanly if the ZIP changed.
+    // Re-create cleanly if the location changed.
     if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
 
     const map = L.map(el, { scrollWheelZoom: false }).setView([place.lat, place.lon], 7);
@@ -61,25 +63,36 @@ export default function WeatherMap({ place }) {
     // Home location marker (circleMarker = SVG, no icon image needed).
     L.circleMarker([place.lat, place.lon], {
       radius: 5, color: "#38bdf8", fillColor: "#38bdf8", fillOpacity: 1, weight: 2,
-    }).addTo(map).bindPopup(`${place.city}, ${place.region}`);
+    }).addTo(map).bindPopup(place.display_label || "Home");
 
     L.control.layers(null, { "Radar (NEXRAD)": radar, "Severe alerts": alerts }, { collapsed: false }).addTo(map);
 
     let dead = false;
-    fetch(`${API}/alerts?zip=${encodeURIComponent(place.zip || "")}`)
+    // NWS severe-weather alerts are US-only; the server gates non-US locations
+    // and returns an explicit message we surface instead of a silent empty.
+    fetch(`${API}/alerts?location=${encodeURIComponent(place.display_label || "")}`)
       .then((r) => r.json())
-      .then((gj) => { if (!dead && gj && Array.isArray(gj.features)) alerts.addData(gj); })
+      .then((gj) => {
+        if (dead || !gj) return;
+        if (gj.us_only && gj.message) { setAlertNote(gj.message); return; }
+        if (Array.isArray(gj.features)) alerts.addData(gj);
+      })
       .catch(() => {});
 
     // Leaflet needs a sizing nudge when it mounts inside a flex/async layout.
     const t = setTimeout(() => map.invalidateSize(), 120);
 
     return () => { dead = true; clearTimeout(t); map.remove(); mapRef.current = null; };
-  }, [place && place.lat, place && place.lon, place && place.zip, place && place.city, place && place.region]);
+  }, [place && place.lat, place && place.lon, place && place.display_label, place && place.country_code]);
 
   return (
-    <div className="rounded-xl overflow-hidden border border-slate-700/50" style={{ height: 360 }}>
-      <div ref={elRef} style={{ height: "100%", width: "100%" }} />
+    <div>
+      <div className="rounded-xl overflow-hidden border border-slate-700/50" style={{ height: 360 }}>
+        <div ref={elRef} style={{ height: "100%", width: "100%" }} />
+      </div>
+      {alertNote && (
+        <div className="mt-2 text-xs text-amber-300/90">{alertNote}</div>
+      )}
     </div>
   );
 }

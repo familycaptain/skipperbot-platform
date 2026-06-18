@@ -322,24 +322,25 @@ def build_current_time_context() -> str:
 
 
 def build_voice_location_context() -> str:
-    """Inject the user's home ZIP so voice can answer weather/location queries.
+    """Inject the user's home location so voice can answer weather/location queries.
 
     Mirrors the web chat's dynamic context (config.get_dynamic_system_context):
-    read live from Settings -> System -> Default ZIP code. The stored value can
-    come back as an int (e.g. 72956) — coerce to str before stripping, since
-    int.strip() raises. Best-effort; never break prompt assembly over it.
+    resolved live via the platform location service (the canonical
+    'City, Region, CountryName' label, no per-call geocoding). Best-effort;
+    never break prompt assembly over it.
     """
     try:
-        from app_platform import settings as _settings
+        from app_platform.location import resolve_location, display_label
 
-        zip_code = str(_settings.get("default_zip", scope="platform", default="") or "").strip()
+        record = resolve_location()
+        label = display_label(record) if record.get("configured") else ""
     except Exception:
         return ""
-    if not zip_code:
+    if not label:
         return ""
     return (
         "\n## Home Location\n"
-        f"- The user's home ZIP code is {zip_code}. Use it for weather and other "
+        f"- The user's home location is {label}. Use it for weather and other "
         "location lookups when they don't specify one — never invent a location.\n"
     )
 

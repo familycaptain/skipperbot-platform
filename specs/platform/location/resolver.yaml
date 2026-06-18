@@ -1,0 +1,71 @@
+kind: specification
+id: platform.location.resolver
+title: Shared home-location resolver, geocoder, and label formatter
+state: live
+autonomy: gated
+behavior: >
+  app_platform/location.py is the single platform-core location service consumed by
+  apps (weather, voice, …); it imports nothing from apps/*.
+
+  resolve_location(override=None): with no override, returns the cached platform setting
+  default_location performing NO geocoding at request time — the cached record is
+  VALIDATED on read (numeric lat/lon in range, expected keys) and fails safe (a
+  corrupted record never crashes). An explicit override (a place name like "Lyon,
+  France", PRIMARY for chat/voice, or a "<postal>,<country>" string) is geocoded ON
+  DEMAND (the only per-request external call) with its own offline/no-match/timeout
+  path and NEVER silently substitutes the cached default. Nothing configured and no
+  override → a clear "no location configured — set it in Settings" result (no crash).
+
+  save_default_location(query): geocodes EXACTLY ONCE via Open-Meteo geocoding
+  (https://geocoding-api.open-meteo.com/v1/search), URL-encoding every user component;
+  takes the TOP-ranked result (country-filtered when a country is given, top-ranked
+  overall otherwise); stores default_location = {query, display_name, region,
+  country_code, country_name, lat, lon} via app_platform.settings (scope='platform')
+  and returns the resolved record (RESOLVE-AND-STORE). No match → "location not found"
+  error, previous kept. Geocoder unreachable (offline/timeout/HTTP error, distinct from
+  no-match) → transient "try again" error, previous kept. Never stores a
+  partial/empty record.
+
+  display_label(record): the ONE canonical formatter — "City, Region, CountryName";
+  drops a region that is empty OR redundant with city/country; never a bare ISO code, a
+  US state abbreviation, or a "(zip)" suffix.
+
+  Migration: a legacy default_zip (US postal) is migrated to default_location lazily on
+  first read when default_location is absent — geocoded once (idempotent, validated +
+  URL-encoded), written back, default_zip retained. If the migration geocode fails,
+  default_location stays unset and resolve_location still returns a usable legacy
+  result (never the Settings error).
+
+  Privacy & HTTP: the home location is NOT logged at INFO and never echoed into an
+  error string returned to the agent/UI (generic message; details only at DEBUG). HTTP
+  goes through a small inline helper — https-only, redirects disabled, hard timeout, UA
+  "SkipperBot/0.1"; weather's _fetch_json is not imported (that would invert the layer).
+implements:
+- app_platform/location.py
+tests:
+- type: unit
+  path: ../../../tests/evolve/platform/test_location_service.py
+  rubric: >
+    Offline (mock all network). (1) resolve_location() with a cached default_location
+    {lat,lon,display_name='London',region='England',country_name='United
+    Kingdom',country_code='GB'} returns those coords + label "London, England, United
+    Kingdom" WITHOUT invoking the geocoder; display_label drops empty AND redundant
+    regions; a corrupted cached record (non-numeric lat/lon) fails safe (no crash). (2)
+    save_default_location via a stubbed Open-Meteo returning multiple ranked results
+    caches the top-ranked country-filtered match; no-match → rejected (previous
+    preserved); geocoder error → transient reject (previous preserved); every user
+    component URL-encoded (a place with a space/'&' is percent-encoded); returns the
+    resolved display_label. (3) Migration: default_location absent + default_zip='78704'
+    → lazy one-time migrate (stubbed US geocode), idempotent; migration geocode failure
+    → default_location stays unset and resolve_location still returns a usable legacy
+    result. (4) Override: a place name and a "<postal>,<country>" both resolve (non-US
+    postal accepted, no 5-digit assumption); empty + no default → Settings-pointing
+    message; override never substitutes the cached default; the override request
+    URL-encodes input and the home location is NOT in any returned error string.
+- type: unit
+  path: ../../../tests/evolve/platform/test_location_layering.py
+  rubric: >
+    ast.walk / import-closure check: import app_platform.location and assert NONE of its
+    module-level imports reference apps.* (the service stands alone).
+links: {}
+notes: ''
