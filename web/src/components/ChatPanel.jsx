@@ -60,9 +60,13 @@ export default function ChatPanel({
 
   return (
     <div className="flex flex-col flex-1 min-h-0 min-w-0">
-      {/* Messages area */}
+      {/* Messages area — aria-live so the deferred greeting and new messages are
+          announced to assistive tech when they appear (issue #16). */}
       <div
         ref={scrollRef}
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
         className="flex-1 overflow-y-auto px-4 py-4 space-y-3 chat-scroll"
       >
         {messages.map((msg, i) => {
