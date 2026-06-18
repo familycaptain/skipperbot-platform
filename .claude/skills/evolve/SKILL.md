@@ -59,9 +59,18 @@ GitHub issue stays OPEN until verified — an open issue means "not confirmed wo
   actionable. **Route on the returned `gate`** (`gate1`/`gate2`/`gate3`), NOT the local phase — the UI
   gate is authoritative; a re-opened `done` item comes back as a decided `gate3`. Reconcile
   `state.json` `phase` to match the gate before running the segment (`gate3` → `verify`).
-- **b. Else a new open issue** — not in `~/.evolve-poc/seen.json` and with no `~/.evolve-poc/<n>/`
+- **b. Else an item stranded MID-SEGMENT** — a `state.json` `phase` of **`new`** or **`build`** with NO
+  pending decision means a pass was interrupted before that segment finished (the session ended or hit a
+  usage limit mid-work), so the item is stuck — e.g. a run frozen at `building` after the build pass
+  died mid-`implement`. **RESUME it from its files** (don't wait for anything): `phase=new` → re-run the
+  **FUNNEL / SPEC PHASE** from its saved artifacts; `phase=build` → re-locate (or re-cut) the worktree
+  and re-run **implement → isolation check → dep-guard → validate → push Gate 2**. (WORKING phases only:
+  `gate1`/`gate2`/`verify` with no decision are correctly **PARKED on the operator** — never "resume"
+  those, you'd duplicate a gate. This is the "resumes from files" guarantee — without it an interrupted
+  build strands at `building` forever, invisible to both (a) and (c).)
+- **c. Else a new open issue** — not in `~/.evolve-poc/seen.json` and with no `~/.evolve-poc/<n>/`
   dir: `python3 -c "import apps.evolve.github_connector as g; [print(i['number'], i['title']) for i in g.list_open_issues()]"`.
-- **c. Nothing ready** → say so and **END the pass** (the loop idles; the next pass re-checks).
+- **d. Nothing ready** → say so and **END the pass** (the loop idles; the next pass re-checks).
 
 Pick **ONE** item, run its segment below, then **END the pass** (do not start a second item).
 
