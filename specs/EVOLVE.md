@@ -987,6 +987,36 @@ issue / PR / proactive design proposal / QA bug-finding   (four intake sources)
 Every box is either deterministic machinery or a fast human review — never the
 human reading raw code.
 
+### The decision assistant — Claude explains a gate (RECOMMENDED workflow)
+
+A gate review packet is **high-detail but low-context**: it states a recommendation and
+terse options ("approve / option A / option B"), but the wording often doesn't carry enough
+for the operator to *understand what is actually being decided* or *how to choose*. Reading
+the full spec + four reviewer outputs to recover that context is exactly the labor the gates
+are meant to avoid.
+
+**The recommended workflow: use Claude as a decision assistant.** The operator gives Claude an
+**Evolve item id + a question** ("explain ev-13", "what's the real difference between option A
+and B on poc-1?", "why does the architecture reviewer object?"), and Claude looks the item up
+live and **translates it**: what's actually being decided and why it matters, what each option
+concretely means and its real tradeoff, what the packet underplays (a placement / dependency-rule
+risk, a spec↔option mismatch, a required user action, a cross-item conflict), and a recommendation
+with reasoning — leaving the decision to the operator, who acts in the UI. Claude is **read-only
+here; it never decides a gate.** This keeps the human as the judgment layer (the design target,
+§1) while removing the "I don't have enough context to decide" friction.
+
+This is delivered as **repo skills, on purpose**:
+- **`evolve-explain`** (`.claude/skills/evolve-explain/`) — the assistant role: look an item up
+  and explain it. Backed by **`scripts/evolve_explain.py`**, a read-only fetch of the live gate
+  packet / run / activity from the operator's platform (`GET /api/apps/evolve/...`).
+- Because it ships in `.claude/`, it **travels with the clone** (§6): any self-hoster's own Claude
+  Code picks up the same skill and can assist *their* Evolve queue — and any agent (the in-session
+  `/loop` engine included) can invoke it. The capability is shared and reusable, not a one-off.
+
+It's the interim, conversational form of an assistant that may later be **integrated directly into
+the Evolve app** (an "explain this gate" affordance beside the decision buttons) once the manual
+workflow proves its value.
+
 ---
 
 ## 10. The Evolve app — your work queue + observability
