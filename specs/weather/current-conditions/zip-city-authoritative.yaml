@@ -3,6 +3,7 @@ id: weather.current-conditions.zip-city-authoritative
 title: Current-weather tool labels the place from the platform location service, identical
   across surfaces
 state: live
+verified: true
 behavior: >
   Weather tools (apps/weather/tools.py) and the dashboard data layer
   (apps/weather/data.py) resolve the location through the platform service
