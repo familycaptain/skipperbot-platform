@@ -620,10 +620,13 @@ def build_voice_memory_rules(user_id: str = "", device_info: dict | None = None)
 
 def get_default_categories(device_info: dict | None) -> set[str]:
     # The curated voice-core loads for EVERY voice session; home voice devices add theirs.
-    cats = set(VOICE_CORE_CATEGORIES)
+    # Resolve friendly names ("weather") to their REAL categories ("app:weather") — the same
+    # resolution switch_voice_app uses — so the tools actually load (a bare name matches no
+    # category and silently loads nothing).
+    names = set(VOICE_CORE_CATEGORIES)
     if is_home_voice_device(device_info):
-        cats |= set(HOME_VOICE_DEFAULT_CATEGORIES)
-    return cats
+        names |= set(HOME_VOICE_DEFAULT_CATEGORIES)
+    return {resolve_app_category(name) or name for name in names}
 
 
 def is_home_voice_device(device_info: dict | None) -> bool:
