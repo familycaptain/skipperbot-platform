@@ -25,6 +25,19 @@ Check:
   to offer tool schemas — not to decide intent.
 - **Downstream impact + portability.** Migrations, entity prefixes, event contracts;
   and that it works for any self-hoster (no machine-specific assumptions).
+- **Cross-repo / companion-client contracts (HIGH-RISK — Evolve can't see the other side).**
+  Several platform interfaces are consumed by COMPANION apps in SEPARATE repos that Evolve
+  cannot see, build, or test: the voice satellite (`skipperbot-voice`), the mobile app
+  (`skipperbot-mobile`), Discord, future ones. A change to a SHARED CONTRACT — the WS auth
+  transport (token in a header vs the URL), the service-token scheme, the audio/relay protocol,
+  an API request/response shape, an event/payload format, a session-handshake step — can
+  **silently break those out-of-tree clients even when the in-repo change is correct and every
+  in-repo test passes.** When a change touches such a contract: name the contract, **enumerate the
+  likely external consumers**, and set the fix's `belongs_to` to include those repos so the operator
+  coordinates a matching client change (and ideally verifies the companion live at Gate 3). Treat a
+  silent cross-repo break as a **high-severity** miss. (Real example: **poc-7** moved the WS bearer
+  token out of the `?token=` URL — a correct, secure fix — but broke the voice satellite + mobile app,
+  which still spoke the old transport; nothing in-repo caught it.)
 
 Emit `approve` (false if a boundary/dep-rule violation) and `concerns` (each with
 `severity` + a concrete `detail`).

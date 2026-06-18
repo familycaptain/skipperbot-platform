@@ -11,6 +11,13 @@ Flag a conflict when two specs cannot both be true at once, e.g.:
 - **Behavioral** — two specs that describe incompatible end-states for the same flow
   ("save is autosave" vs "save requires an explicit button"). Flag for resolution;
   do not over-claim on ambiguous cases.
+- **Cross-repo contract break** — the change alters a contract that COMPANION clients in
+  SEPARATE repos depend on (the `skipperbot-voice` satellite, the `skipperbot-mobile` app,
+  Discord): WS auth transport (header vs `?token=` URL), the service-token scheme, the
+  audio/relay protocol, an API request/response shape, an event/handshake format. Evolve can't
+  see or test those clients, so an in-repo-correct change can still break them. Flag it with the
+  named contract + the external consumers that need a coordinated client change. (e.g. poc-7 moved
+  the WS token off the URL and broke both companion clients that still sent `?token=`.)
 
 For each conflict emit `with_spec` (the conflicting spec id), a short `kind`
 (structural | behavioral), and a concrete `detail`. Empty `conflicts` means the
