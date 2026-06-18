@@ -14,6 +14,7 @@ from datetime import date, datetime, time, timedelta
 from statistics import mean
 from zoneinfo import ZoneInfo
 
+from app_platform import config
 from app_platform.time import get_timezone
 from app_platform.location import (
     resolve_location,
@@ -21,6 +22,19 @@ from app_platform.location import (
     LocationNotFound,
     GeocoderUnavailable,
 )
+from apps.weather.cache import cached_fetch, effective_ttl
+
+
+def _cache_settings() -> tuple[bool, int]:
+    """(enabled, ttl_seconds) from Settings → Weather, interval clamped.
+
+    Read per tool call (a plain synchronous DB read, safe in the threadpool)
+    and per background pass. Scope is passed explicitly so the background
+    module — whose calling module path differs — resolves the same app scope.
+    """
+    enabled = config.get("enable_caching", True, scope="app:weather")
+    interval = config.get("refresh_interval_minutes", 5, scope="app:weather")
+    return bool(enabled), effective_ttl(interval)
 
 
 # Shown when no location was provided and none is configured.
@@ -69,6 +83,35 @@ def _fetch_json(url: str, timeout: int = 10) -> dict:
         return json.loads(resp.read().decode())
 
 
+def _current_weather_url(place: dict) -> str:
+    """Build the current-conditions Open-Meteo URL for a resolved place.
+
+    SHARED by ``get_current_weather_by_zip`` and the background pre-warm loop so
+    both address the SAME cache entry (byte-identical URL — same param keys and
+    order).
+    """
+    params = {
+        "latitude": place["lat"],
+        "longitude": place["lon"],
+        "current": (
+            "temperature_2m,relative_humidity_2m,apparent_temperature,"
+            "weather_code,wind_speed_10m,wind_direction_10m"
+        ),
+        "temperature_unit": "fahrenheit",
+        "wind_speed_unit": "mph",
+        "precipitation_unit": "inch",
+        "timezone": "auto",
+    }
+    return "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
+
+
+def _fetch_current(place: dict) -> dict:
+    """Current-conditions fetch routed through the freshness cache."""
+    url = _current_weather_url(place)
+    enabled, ttl = _cache_settings()
+    return cached_fetch(url, lambda: _fetch_json(url), ttl, enabled)
+
+
 def get_current_weather_by_zip(location: str = "") -> str:
     """
     Get the current weather for a location.
@@ -86,20 +129,7 @@ def get_current_weather_by_zip(location: str = "") -> str:
         return err
 
     try:
-        params = {
-            "latitude": place["lat"],
-            "longitude": place["lon"],
-            "current": (
-                "temperature_2m,relative_humidity_2m,apparent_temperature,"
-                "weather_code,wind_speed_10m,wind_direction_10m"
-            ),
-            "temperature_unit": "fahrenheit",
-            "wind_speed_unit": "mph",
-            "precipitation_unit": "inch",
-            "timezone": "auto",
-        }
-        url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
-        data = _fetch_json(url)
+        data = _fetch_current(place)
 
         cur = data.get("current") or {}
         temp_f = cur.get("temperature_2m")
@@ -141,7 +171,8 @@ def _forecast_for_place(place: dict) -> dict:
         "forecast_days": 8,
     }
     url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
-    return _fetch_json(url, timeout=15)
+    enabled, ttl = _cache_settings()
+    return cached_fetch(url, lambda: _fetch_json(url, timeout=15), ttl, enabled)
 
 
 def _hourly_forecast_for_place(place: dict) -> dict:
@@ -161,7 +192,8 @@ def _hourly_forecast_for_place(place: dict) -> dict:
         "forecast_days": 3,
     }
     url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
-    return _fetch_json(url, timeout=15)
+    enabled, ttl = _cache_settings()
+    return cached_fetch(url, lambda: _fetch_json(url, timeout=15), ttl, enabled)
 
 
 def _daily_forecast_for_place(place: dict, days: int) -> dict:
@@ -181,7 +213,8 @@ def _daily_forecast_for_place(place: dict, days: int) -> dict:
         "forecast_days": days,
     }
     url = "https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params)
-    return _fetch_json(url, timeout=15)
+    enabled, ttl = _cache_settings()
+    return cached_fetch(url, lambda: _fetch_json(url, timeout=15), ttl, enabled)
 
 
 # Open-Meteo / WMO weather codes. Trimmed to the buckets that matter for

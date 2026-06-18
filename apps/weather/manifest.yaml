@@ -78,6 +78,16 @@ tool_category:
     get_rain_chance_by_zip: "Checking the chance of rain..."
     get_daily_forecast_by_zip: "Pulling the daily forecast..."
 
-config: []
+config:
+  - key: enable_caching
+    type: boolean
+    default: true
+    label: "Cache weather data"
+    description: "Reuse recent weather for a few minutes so answers come back instantly. Recommended on."
+  - key: refresh_interval_minutes
+    type: integer
+    default: 5
+    label: "Refresh every (minutes)"
+    description: "How often weather is refreshed in the background, and how long a cached answer is reused. Default 5; values under 30 seconds are floored."
 thinking: []
 job_types: []
