@@ -34,7 +34,14 @@ gate — you record state and return; a later pass picks up the operator's decis
 
 ## Per-item state — the backbone
 `~/.evolve-poc/<n>/state.json` (n = GitHub issue #) tracks one item:
-`{ "issue": n, "title", "source", "from_operator", "phase", "feature_branch" }`
+`{ "issue": n, "instance_id", "title", "source", "from_operator", "phase", "feature_branch" }`
+**The run id is `ev-<issue#>`** — write it as `instance_id` when you create the item and reuse that
+EXACT value on every later pass (one item, one id for life). Read the id from `state.json.instance_id`;
+do NOT reconstruct it. **Legacy items created before the `poc-`→`ev-` rename keep their `poc-` id** —
+their `state.json` either carries it as `instance_id` or, if absent, defaults to `poc-<n>`; honor
+whatever they already use so an in-flight item is never orphaned by the rename. (The state dir
+`~/.evolve-poc/` and the `scripts/evolve_poc.py` helper keep their names — internal plumbing; only the
+operator-visible run id changed.)
 `phase` ∈ `new` → `gate1` → `build` → `gate2` → **`verify`** → `done` (terminal: also `rejected` /
 `parked`). The phase tells the next pass which segment to run. Artifacts (`triage.json`,
 `grounding.json`, `design.json`, `spec*.json`, reviews, `lead.json`, the gate packets) live beside it.
@@ -46,8 +53,9 @@ GitHub issue stays OPEN until verified — an open issue means "not confirmed wo
 ## Each pass: advance ONE item by ONE segment, then END
 **1. Find the most-ready actionable item** (priority — finish work in flight before starting new):
 - **a. A decided gate.** For **every** item dir under `~/.evolve-poc/*/` — *including `done` ones*, a
-  done item can be re-opened at the verify gate from the UI ("Didn't work") — check ONCE:
-  `python3 scripts/evolve_poc.py decision poc-<n>`. If it returns a non-null `decision`, that item is
+  done item can be re-opened at the verify gate from the UI ("Didn't work") — check ONCE using the
+  item's stored id: `python3 scripts/evolve_poc.py decision <state.json instance_id>` (an `ev-<n>`, or a
+  legacy `poc-<n>`). If it returns a non-null `decision`, that item is
   actionable. **Route on the returned `gate`** (`gate1`/`gate2`/`gate3`), NOT the local phase — the UI
   gate is authoritative; a re-opened `done` item comes back as a decided `gate3`. Reconcile
   `state.json` `phase` to match the gate before running the segment (`gate3` → `verify`).
@@ -59,8 +67,8 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
 
 **2. Run the segment for that item's phase / decision:**
 
-- **New item (no state):** report the run (`run poc-<n> --title … --source … --status running`).
-  Run the **FUNNEL**: `evolve-triage`. **Operator-authored items (`from_operator`) are NEVER
+- **New item (no state):** write `state.json` with `instance_id: "ev-<n>"`, then report the run
+  (`run ev-<n> --title … --source … --status running`). Run the **FUNNEL**: `evolve-triage`. **Operator-authored items (`from_operator`) are NEVER
   rejected — the operator is the authority.** Even if triage flags `duplicate`/`invalid`/out-of-scope,
   do NOT reject: proceed, and carry triage's `summary`/`rationale` forward as a prominent
   operator-facing note so it surfaces at **Gate 1** for the operator to decide (redirect, accept an
@@ -88,8 +96,8 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   `evolve-implement` as a build hint. The SPEC stays authoritative (it was written for the
   recommended option); the note refines it. ⚠ If the note's answer plainly CONTRADICTS the spec's
   chosen option, the operator likely meant `change`, not `approve` — build the spec as-written but
-  flag the mismatch in the Gate-2 packet so they catch it. `resolve poc-<n> cleared`, then
-  **IMMEDIATELY** `run poc-<n> --status building --phase build` so the UI shows it ACTIVELY building
+  flag the mismatch in the Gate-2 packet so they catch it. `resolve ev-<n> cleared`, then
+  **IMMEDIATELY** `run ev-<n> --status building --phase build` so the UI shows it ACTIVELY building
   (not stuck on the operator-side "queued/approved" chip) — do this BEFORE any build work. **BUILD:**
   cut the feature worktree (mechanics), serialize the spec, `evolve-implement` **inside the worktree**,
   run the **isolation check** (main checkout dirty → `git checkout -- .` + FAIL). **Then the
@@ -103,11 +111,11 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   code+test) — that graduates it from unverified baseline to an authoritative, code-governing contract.
   Push **Gate 2** (diff + validation + the dep-check result), `phase=gate2`, **END**.
   - decision=`change` → re-run the spec phase with the operator's note, re-push Gate 1, **END**.
-  - decision=`reject` → `resolve poc-<n> rejected` (clears gate + sets run rejected), teardown the
+  - decision=`reject` → `resolve ev-<n> rejected` (clears gate + sets run rejected), teardown the
     worktree, `phase=rejected`, add to `seen.json`, **END**.
 
 - **`phase=gate2`, decision=`approve`:** Merge feature → release (mechanics), then
-  **`resolve poc-<n> shipped`** (clears the gate + flips the run to **waiting / verify**). Push a
+  **`resolve ev-<n> shipped`** (clears the gate + flips the run to **waiting / verify**). Push a
   **Gate 3 (verify)** packet — `recommendation` = {action:`verify`, why: "Merged to release as
   `<sha>`. Deploy to your Pi (`skipper update`) and test issue #<n>: <what to check>", current,
   after} — set `state.json` `phase=verify`, **END**. (The GitHub issue stays OPEN; do NOT mark done
@@ -118,18 +126,18 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   forward; if the diff touches auth/cookies/session, login, config schema, or the web bundle, name the
   step explicitly.
   - decision=`change` → re-implement, re-push Gate 2, **END**.
-  - decision=`reject` → teardown, then `resolve poc-<n> rejected` (clears gate + sets run rejected),
+  - decision=`reject` → teardown, then `resolve ev-<n> rejected` (clears gate + sets run rejected),
     `phase=rejected`, add to `seen.json`, **END**.
 
 - **`phase=verify`, decision=`approve` (✓ it works):** the loop is done. `python3
-  scripts/evolve_poc.py close poc-<n> "Verified working — closing. (Evolve)"` (closes the GitHub
-  issue), then `resolve poc-<n> merged` (clears gate + flips run to **merged / done**), set
+  scripts/evolve_poc.py close ev-<n> "Verified working — closing. (Evolve)"` (closes the GitHub
+  issue), then `resolve ev-<n> merged` (clears gate + flips run to **merged / done**), set
   `state.json` `phase=done`, add to `seen.json`, **END**.
   - decision=`change` (✗ still broken): the decision `note` is the operator's failure report. **RESUME
     THE SAME CONVERSATION** (re-load this item's grounding/design/spec/build artifacts; do NOT
     re-ground from scratch). **First judge the DEPTH of the fix** (act as Design/Lead) — this decides
     where it re-enters:
-    - **Localized bug** — the approach + spec are still right, the *code* was wrong. `resolve poc-<n>
+    - **Localized bug** — the approach + spec are still right, the *code* was wrong. `resolve ev-<n>
       cleared`, re-cut/locate the worktree, `evolve-implement` the fix, **update the spec's
       `behavior`/`tests` if the behavior shifted at all** (the spec must always match what's built),
       isolation check, `evolve-validate`, re-push **Gate 2**, `phase=gate2`, **END**.
@@ -147,7 +155,7 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
     choice** → it's a new approach → spec phase + **Gate 1**. Only a code-level bug *under an unchanged
     spec* skips ahead to re-implement → Gate 2. **Never leave the spec describing a way you no longer
     build** — a stale spec is itself a defect (the architecture reviewer will flag it).
-  - decision=`reject` (abandon): `resolve poc-<n> rejected`, teardown, `phase=rejected`, seen, **END**.
+  - decision=`reject` (abandon): `resolve ev-<n> rejected`, teardown, `phase=rejected`, seen, **END**.
     (Leave the GitHub issue open or comment — do not close an abandoned item as resolved.)
 
 ## At a gate (push it, then END — NEVER poll)
@@ -173,31 +181,32 @@ shape the UI panels render** (so the operator sees the ACTUAL spec + reviews, no
   whose `why` tells the operator exactly what to deploy + test (`gate: "gate3"`). The UI relabels
   the buttons to ✓Works / Still-broken / Abandon automatically.
 Then:
-1. `python3 scripts/evolve_poc.py run poc-<n> --status waiting`
-2. `python3 scripts/evolve_poc.py gate poc-<n> <gate1|gate2> ~/.evolve-poc/<n>/<gate>.json`  → shows in the UI.
+1. `python3 scripts/evolve_poc.py run ev-<n> --status waiting`
+2. `python3 scripts/evolve_poc.py gate ev-<n> <gate1|gate2> ~/.evolve-poc/<n>/<gate>.json`  → shows in the UI.
 3. Set the item's `phase` in `state.json` and **END the pass.** Do NOT wait, sleep, or poll — the
    operator decides on their own time, and a *future* pass (step 1a) picks the decision up. After you
-   act on a decision, `resolve poc-<n> <merged|rejected|cleared>` to clear the gate. Never approve your own gate.
+   act on a decision, `resolve ev-<n> <merged|rejected|cleared>` to clear the gate. Never approve your own gate.
 
 ## Show it in the Evolve UI (report as you go)
-The operator watches the **Evolve app**. Report at each step (run id = **`poc-<issue#>`**; the `poc-`
-prefix keeps the production poller out of your gates) via `python3 scripts/evolve_poc.py …`:
-- **run:** `run poc-<n> --title "<t>" --source "<s>" --phase <p> --status <running|building|waiting|merged|rejected>`
-- **agent step:** START `event poc-<n> <agent> agent_start "<agent> · poc"`, END
-  `event poc-<n> <agent> agent_end "<✓/✗> <one-line>"`; stream notable lines (`tool`/`info`/`emit`).
+The operator watches the **Evolve app**. Report at each step (run id = **`ev-<issue#>`**; the `ev-`
+prefix keeps the production poller out of your gates — legacy `poc-` ids are also excluded) via
+`python3 scripts/evolve_poc.py …`:
+- **run:** `run ev-<n> --title "<t>" --source "<s>" --phase <p> --status <running|building|waiting|merged|rejected>`
+- **agent step:** START `event ev-<n> <agent> agent_start "<agent> · evolve"`, END
+  `event ev-<n> <agent> agent_end "<✓/✗> <one-line>"`; stream notable lines (`tool`/`info`/`emit`).
   `<agent>` = the role: triage, vision, prio, grounding, design, spec-author, code-scout, spec-audit,
   security/architecture/interop/ux, lead, implement, validate.
 - **show the ACTUAL work, not just a one-liner.** The log renders full, untruncated text — so after
   a substantive step, `emit` its FULL content: after `spec-author` (AND each revise round) the
   complete spec (behavior + every test + notes); after each reviewer its full findings; after `lead`
   the full recommendation; the build diff. e.g.
-  `event poc-<n> spec-author emit "<the whole spec text>"`. Never summarize the detail away.
+  `event ev-<n> spec-author emit "<the whole spec text>"`. Never summarize the detail away.
 
 ## Mechanics (deterministic — call these, don't reason them)
 Reuse the EXISTING modules read-only (never modify them), from the repo root on box 1:
 - **ensure baseline / cut worktree / serialize / merge / diff:** `apps.evolve.workspace.WorkspaceManager`
   (`ensure_baseline()` resets ROOT to pristine), e.g.
-  `python3 -c "from apps.evolve.workspace import WorkspaceManager as W; w=W('.'); print(w.start_feature('poc-<n>'))"`
+  `python3 -c "from apps.evolve.workspace import WorkspaceManager as W; w=W('.'); print(w.start_feature('ev-<n>'))"`
 - **box-2 validate:** `apps.evolve.build_loop.remote_validate` + `RemoteBox2`.
 - **canonical role instructions + schemas:** `apps/evolve/agents/prompts/<role>.md` + the `*_OUT`
   shapes in `apps/evolve/agents/registry.py`.

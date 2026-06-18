@@ -1,14 +1,15 @@
 #!/usr/bin/env python
-"""POC reporting bridge — let the in-session `/loop` Evolve (the `evolve` skill) surface its run,
-per-agent activity, and gates in the SAME Evolve UI as production. Thin wrapper over
-platform_bridge so the skill can report with one-line CLI calls. POC ids are prefixed `poc-` so the
-production poller ignores them (the POC session owns its own gate loop).
+"""Evolve `/loop` reporting bridge — let the in-session `/loop` Evolve (the `evolve` skill) surface its
+run, per-agent activity, and gates in the SAME Evolve UI as production. Thin wrapper over
+platform_bridge so the skill can report with one-line CLI calls. Run ids are prefixed `ev-` (legacy
+`poc-`) so the production poller ignores them (the in-session engine owns its own gate loop). The id
+is opaque to this script — it's passed in; the filename stays `evolve_poc.py` for call-compat.
 
-    python scripts/evolve_poc.py run poc-3 --title "Add doc for Backup setup" --source github:..#3 --status running
-    python scripts/evolve_poc.py event poc-3 triage agent_end "✓ proceed · feature"
-    python scripts/evolve_poc.py gate  poc-3 gate1 ~/.evolve-poc/3/gate1.json
-    python scripts/evolve_poc.py decision poc-3        # -> {"decision": "approve"|null, "note": ...}
-    python scripts/evolve_poc.py resolve poc-3 merged  # clear the gate after acting on the decision
+    python scripts/evolve_poc.py run ev-3 --title "Add doc for Backup setup" --source github:..#3 --status running
+    python scripts/evolve_poc.py event ev-3 triage agent_end "✓ proceed · feature"
+    python scripts/evolve_poc.py gate  ev-3 gate1 ~/.evolve-poc/3/gate1.json
+    python scripts/evolve_poc.py decision ev-3        # -> {"decision": "approve"|null, "note": ...}
+    python scripts/evolve_poc.py resolve ev-3 merged  # clear the gate after acting on the decision
 """
 import argparse
 import json
