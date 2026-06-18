@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Component } from "react";
 import { Workflow, Loader2, CheckCircle2, XCircle, RefreshCw, GitBranch, FlaskConical, Activity, Circle, ChevronDown, ChevronRight, Archive, ArchiveRestore } from "lucide-react";
 import { hasAnyRole } from "../../../web/src/utils/roles";
 
@@ -157,7 +157,34 @@ function AgentLog({ name, events, active, done, expandAll }) {
   );
 }
 
-export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
+// One malformed gate packet (e.g. a non-array `spec_tree`) must never blank the whole app.
+// This boundary catches a render error, shows a recoverable message + the reason, and lets
+// the operator reset to the runs list instead of staring at an empty screen.
+class EvolveBoundary extends Component {
+  constructor(props) { super(props); this.state = { err: null }; }
+  static getDerivedStateFromError(err) { return { err }; }
+  componentDidCatch(err, info) { console.error("Evolve render error:", err, info); }
+  render() {
+    if (this.state.err) {
+      return (
+        <div className="flex flex-col items-center justify-center h-full w-full bg-zinc-950 text-zinc-100 p-6 text-center">
+          <div className="text-amber-300 font-medium mb-1">Evolve hit a render error</div>
+          <div className="text-xs text-slate-400 max-w-md mb-3 font-mono break-words">{String(this.state.err?.message || this.state.err)}</div>
+          <button onClick={() => this.setState({ err: null })}
+            className="px-3 py-1.5 rounded-md bg-slate-700 hover:bg-slate-600 text-sm">Reload the view</button>
+          <div className="text-[11px] text-slate-600 mt-2">A single bad run/packet won't take down the rest — pick a different run if this one keeps erroring.</div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function EvolveApp(props) {
+  return <EvolveBoundary><EvolveAppInner {...props} /></EvolveBoundary>;
+}
+
+function EvolveAppInner({ userId, userRole, refreshKey, onTitle }) {
   const isParent = hasAnyRole(userRole, ["admin", "parent"]);
   const [runs, setRuns] = useState([]);
   const [sel, setSel] = useState(null);
@@ -621,7 +648,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
                   <Section title="Planned code changes (read-only sketch — no code written yet)">
                     {codePlan.summary && <div className="text-sm text-slate-200 mb-1">{codePlan.summary}</div>}
                     {codePlan.approach && <div className="text-xs text-slate-400 mb-2 whitespace-pre-wrap">{codePlan.approach}</div>}
-                    {codePlan.changes?.length > 0 && (
+                    {Array.isArray(codePlan.changes) && codePlan.changes.length > 0 && (
                       <div className="space-y-1 mb-2">
                         {codePlan.changes.map((c, i) => (
                           <div key={i} className="text-xs flex gap-1.5 items-baseline">
@@ -632,13 +659,13 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
                         ))}
                       </div>
                     )}
-                    {codePlan.new_modules?.length > 0 && (
+                    {Array.isArray(codePlan.new_modules) && codePlan.new_modules.length > 0 && (
                       <div className="text-xs text-slate-400 mb-1.5">
                         <span className="text-slate-500">new modules: </span>
                         {codePlan.new_modules.map((m, i) => <span key={i} className="font-mono text-emerald-300 mr-2">{m}</span>)}
                       </div>
                     )}
-                    {codePlan.placement_notes?.length > 0 && (
+                    {Array.isArray(codePlan.placement_notes) && codePlan.placement_notes.length > 0 && (
                       <div className="border border-amber-700/40 bg-amber-900/15 rounded p-2 mb-1.5">
                         <div className="text-[11px] text-amber-300 font-medium mb-0.5">Placement / dependency-rule notes</div>
                         <ul className="list-disc ml-4 text-xs text-slate-300 space-y-0.5">
@@ -646,12 +673,12 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
                         </ul>
                       </div>
                     )}
-                    {codePlan.risks?.length > 0 && (
+                    {Array.isArray(codePlan.risks) && codePlan.risks.length > 0 && (
                       <div className="text-xs mb-1"><span className="text-slate-500">risks: </span>
                         <ul className="list-disc ml-4 text-slate-300 space-y-0.5">{codePlan.risks.map((r, i) => <li key={i}>{r}</li>)}</ul>
                       </div>
                     )}
-                    {codePlan.open_questions?.length > 0 && (
+                    {Array.isArray(codePlan.open_questions) && codePlan.open_questions.length > 0 && (
                       <div className="text-xs"><span className="text-slate-500">open questions: </span>
                         <ul className="list-disc ml-4 text-slate-400 space-y-0.5">{codePlan.open_questions.map((q, i) => <li key={i}>{q}</li>)}</ul>
                       </div>
@@ -659,7 +686,7 @@ export default function EvolveApp({ userId, userRole, refreshKey, onTitle }) {
                   </Section>
                 )}
 
-                {pkt.spec_tree?.length > 1 && (
+                {Array.isArray(pkt.spec_tree) && pkt.spec_tree.length > 1 && (
                   <Section title={`Spec tree (${pkt.spec_tree.length} specs)`}>
                     {pkt.spec_tree.map((s, i) => (
                       <div key={i} className="text-xs mb-1.5">

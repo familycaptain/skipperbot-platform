@@ -157,7 +157,9 @@ shape the UI panels render** (so the operator sees the ACTUAL spec + reviews, no
 - `recommendation` {action: approve|change|reject, current, after, why} — the Lead's call.
 - `proposal` — the spec-author's FULL output object: {spec_id, title, behavior, implements,
   tests:[{type, path, rubric}], notes}. The **"Proposed spec"** panel renders this verbatim.
-- `spec_tree` — the list of specs when design decomposed (omit / `[proposal]` if single).
+- `spec_tree` — a JSON **array** of specs `[{spec_id, title, summary}, …]` when the design
+  decomposed into a tree. For a single spec, **OMIT the key entirely** — do NOT write a string
+  (e.g. `"[proposal]"`); the UI calls `.map()` on it and a string crashes the panel.
 - `code_plan` — the Code Scout's read-only sketch: {summary, approach, changes:[{path, action, what}],
   new_modules, placement_notes, risks, open_questions}. The **"Planned code changes"** panel renders it
   so the operator sees the change's code footprint (which files, add/modify/**rewrite**, where new logic
