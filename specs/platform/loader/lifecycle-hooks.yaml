@@ -1,0 +1,117 @@
+kind: specification
+id: platform.loader.lifecycle-hooks
+title: Apps register lifecycle/background-task hooks; the platform never imports an app to
+  start it
+state: live
+autonomy: gated
+behavior: "The platform core (agent.py) starts and stops APP background workers WITHOUT importing\
+  \ any apps.* module, using a load-time registry that follows the EXISTING inversion pattern\
+  \ (apps' hooks.py register_hooks() calling platform register_* functions, as nag_registry\
+  \ / prioritize.register_backlog_provider already do).\n1. REGISTRY (app_platform/lifecycle.py):\
+  \ in-memory registry.\n   - register_background_task(task_id, task_factory): task_factory\
+  \ is a ZERO-ARG callable that RETURNS a fresh worker coroutine (NOT a coroutine object).\
+  \ It MUST reject being handed a coroutine/awaitable directly — raise TypeError('pass the\
+  \ worker function, not its result') immediately — so the classic 'coroutine never awaited'\
+  \ mistake fails loudly at registration. app_id is INFERRED from the caller's module (task_factory.__module__,\
+  \ like events.subscribe), not passed positionally. A duplicate task_id from the SAME app\
+  \ is a harmless overwrite (hot-reload); a collision across different apps is logged and\
+  \ skipped (never silent last-writer-wins).\n   - register_shutdown_hook(fn): sync or async;\
+  \ app_id inferred.\n   - start_background_tasks() -> dict{'<app_id>:<task_id>': asyncio.Task}:\
+  \ creates one task per factory, attaches task.add_done_callback that logs any non-CancelledError\
+  \ (so a worker dying on its first await is visible, not silent), logs ONE boot line listing\
+  \ the count + names started, and is GUARDED against being called twice (a second call is\
+  \ a no-op returning the same tasks — no duplicate live workers).\n   - run_shutdown_hooks():\
+  \ runs every registered shutdown hook, each wrapped in try/except + logged.\n   - reset():\
+  \ clears all registry state (for test isolation / clean re-boot).\n   Every invocation is\
+  \ failure-isolated: one app's failing hook/factory never aborts platform startup or shutdown.\
+  \ The module imports NOTHING from apps.*.\n2. REGISTRATION AT LOAD TIME: NEW hooks.py files\
+  \ (none exist today) for the three apps, each defining register_hooks() (invoked by app_platform/loader.py:_load_hooks\
+  \ during load_all_apps(), which runs BEFORE the lifespan starts workers):\n   - apps/reminders/hooks.py:\
+  \ register_background_task('scheduler', start_reminder_scheduler) AND register_shutdown_hook(request_shutdown).\n\
+  \   - apps/jobs/hooks.py: register_background_task('runner', start_job_runner). (jobs has\
+  \ NO graceful shutdown today; stop is task cancellation only — no shutdown hook.)\n   -\
+  \ apps/timers/hooks.py: register_shutdown_hook(shutdown_all_timers) ONLY. Timers has NO\
+  \ startup/background worker to invert: timers are created on demand by the start_timer tool\
+  \ (per-timer asyncio tasks); the platform's only coupling was the shutdown import. (Corrected:\
+  \ timers is NOT @subscribe('timer.created')-driven.)\n3. AGENT.PY INVERSION (the lifespan\
+  \ handler), with NO change to the running set of workers, only the wiring:\n   - REMOVE\
+  \ the three offending imports: 'from apps.reminders.scheduler import start_reminder_scheduler'\
+  \ (agent.py:30), 'from apps.jobs.runner import start_job_runner' (agent.py:32), and the\
+  \ lazy 'from apps.timers.scheduler import shutdown_all_timers' (agent.py:128).\n   - REMOVE\
+  \ the matching startup lines (the asyncio.create_task(start_reminder_scheduler()) ~106 and\
+  \ asyncio.create_task(start_job_runner()) ~108/109) AND their shutdown .cancel() lines (~118,\
+  \ ~120) AND the lazy timers-shutdown block (~128) — so each worker is started EXACTLY ONCE\
+  \ (no double-start) and stopped through the registry.\n   - After load_all_apps() (preserving\
+  \ its current position relative to the Discord-ready await) and AFTER register_all_handlers()\
+  \ (so the platform dispatcher still starts with handlers registered), call lifecycle.start_background_tasks()\
+  \ and retain the returned tasks.\n   - On shutdown: FIRST await lifecycle.run_shutdown_hooks()\
+  \ (graceful: e.g. reminders' request_shutdown sets its flag), THEN cancel the registry's\
+  \ tasks — the whole shutdown sequence bounded by asyncio.wait_for/wait(timeout=...) that\
+  \ logs a timeout and proceeds regardless, so a wedged worker can never stall shutdown (preserving\
+  \ today's fire-and-forget non-hang behavior). Both request_shutdown and cancel are idempotent\
+  \ (admin /restart may have already called a shutdown).\n4. UNCHANGED (NOT apps.* — not rule\
+  \ violations, left exactly as today): app_platform.jobs.start_dispatcher, trello_sync.start_trello_sync,\
+  \ thinking_scheduler.start_thinking_scheduler, discord_bot. apps/automation/hooks.py keeps\
+  \ managing its OWN daemon thread (threads-you-own remain valid; the registry is for asyncio\
+  \ tasks the platform owns).\n5. DOCS: add one worked example (a lifecycle hooks.py) and\
+  \ update specs/APP_PACKAGES.md's hooks.py description (~line 135) to include background\
+  \ tasks, so future apps follow the pattern instead of agent.py re-accreting create_task\
+  \ calls.\nINVARIANT: agent.py contains NO import (top-level OR function-local) of apps.reminders,\
+  \ apps.jobs, or apps.timers; scripts/evolve_dep_check.py reports no platform->app violation\
+  \ for these three; the FULL set of background workers that runs is IDENTICAL to before (reminders\
+  \ scheduler, job runner via the registry; dispatcher/trello/thinking/discord via their existing\
+  \ direct calls) — each started exactly once; shutdown is ordered (graceful then cancel)\
+  \ and cannot hang; a failing/missing app registration is logged and skipped, never crashing\
+  \ boot, and a task that dies is logged via its done-callback."
+implements:
+- app_platform/lifecycle.py
+- agent.py
+- apps/reminders/hooks.py
+- apps/jobs/hooks.py
+- apps/timers/hooks.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_lifecycle_registry.py
+  rubric: 'Registry mechanics (no real workers): register_background_task with a dummy zero-arg
+    factory; start_background_tasks() returns a dict with one scheduled asyncio.Task per registration
+    and logs the started names; calling start_background_tasks() a SECOND time is a no-op
+    (no duplicate tasks). register_background_task rejects a coroutine/awaitable argument
+    with TypeError (the footgun guard). A factory whose coroutine raises on first step is
+    caught by a done-callback (logged, other tasks unaffected). register_shutdown_hook with
+    a sync AND an async fn; run_shutdown_hooks() invokes both and a raising hook is isolated.
+    Duplicate task_id across different apps is logged+skipped. reset() clears state (isolation).'
+- type: unit
+  path: tests/evolve/platform/test_lifecycle_registry.py
+  rubric: 'App registration (workers referenced, not run; lifecycle spied/stubbed): apps/reminders/hooks.py
+    register_hooks() registers a background task whose factory is start_reminder_scheduler
+    AND a shutdown hook (request_shutdown); apps/jobs/hooks.py register_hooks() registers
+    a background task for start_job_runner and NO shutdown hook; apps/timers/hooks.py register_hooks()
+    registers a shutdown hook for shutdown_all_timers and NO background task.'
+- type: unit
+  path: tests/evolve/platform/test_agent_no_app_imports.py
+  rubric: 'Dependency-rule guard: ast-parse agent.py and assert NO Import/ImportFrom node
+    — at module level OR nested inside ANY function body — references apps.reminders, apps.jobs,
+    or apps.timers. (The current violation at line 128 is function-local, so the walk must
+    include function bodies.) Equivalent to scripts/evolve_dep_check.py finding no platform->app
+    violation for these three.'
+- type: unit
+  path: tests/evolve/platform/test_agent_no_app_imports.py
+  rubric: 'No double-start: ast-scan agent.py for asyncio.create_task(...) calls and assert
+    none wrap start_reminder_scheduler or start_job_runner (those now start exactly once via
+    the registry); the registry remains the single start path for the inverted workers.'
+links: {}
+notes: '[revise-1 resolves: audit-HIGH/arch-MED/interop-MED timers factual error (now shutdown-only,
+  on-demand tool-created, not @subscribe); interop-HIGH double-start (remove create_task +
+  .cancel pairs, assert one start); ux-HIGH coro_factory footgun (TypeError guard + inferred
+  app_id + worked example); ux-HIGH migration scope (enumerate workers; trello/thinking are
+  repo-root non-violations and stay; new hooks.py files); sec-MED timeout-bounded shutdown
+  (no hang regression) + ordered graceful-then-cancel; sec-MED/ux-MED observe dead tasks (done-callback)
+  + boot log; sec-LOW/arch-LOW idempotent registry + reset() + duplicate-key policy; arch-MED
+  record remaining goals/lists/todo debt; ux-MED naming (drop positional app_id); ux-LOW APP_PACKAGES
+  doc; ux-LOW admin /restart-/deploy drain = follow-up.] Reuses the existing hooks.py/register_hooks
+  load path (loader.py:225,537) and the nag_registry/backlog-provider inversion convention.
+  Scope = the 3 lifecycle imports only (decision fork 1=A). Non-app workers stay (fork 2=A).
+  KNOWN REMAINING DEBT (out of #11 scope, candidate follow-up): agent.py still imports apps.goals/apps.lists/apps.todo
+  for tool/route handlers — a separate tool-routing inversion. Sibling cluster: #12 capabilities,
+  #13 prompt-context reuse this register-at-load pattern.'
+verified: true

@@ -132,7 +132,7 @@ registration. A file's mere presence wires it in:
 | `tools.py` | for any app with chat tools | Public functions → MCP tools (docstring → schema). May expose `get_guide_context()` for dynamic guide injection. |
 | `routes.py` | if the app has a REST API | Must export `router` (a bare `APIRouter`); mounted at `/api/apps/<id>/`. |
 | `handlers.py` | optional | `@subscribe`-decorated event handlers and `job_types` handlers. |
-| `hooks.py` | optional | A `register_hooks()` function called on load to register platform provider slots (backlog/activity/nag providers, schedule claims) — so the platform never imports the app. |
+| `hooks.py` | optional | A `register_hooks()` function called on load to register platform provider slots (backlog/activity/nag providers, schedule claims) and lifecycle entries — background workers via `app_platform.lifecycle.register_background_task(task_id, factory)` (factory = the worker function, not its result) and graceful shutdown via `register_shutdown_hook(fn)` — so the platform never imports the app. |
 | `guide.md` | for any app with tools | Agent-facing guide, loaded into context when the app's tool category is active. |
 | `help.md` | yes (any app a user interacts with) | **User-facing manual**, shown via the in-app **?** button and returned by the `get_app_help` chat tool. Distinct from `guide.md`. |
 | `ui/index.js` | for any app with a UI | Default-exports the launcher registry array (see UI Collector). |
