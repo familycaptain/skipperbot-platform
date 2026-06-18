@@ -378,20 +378,55 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             await _create_response()
             _spawn(_finalize_user_transcript(item_id))
 
+        async def _attribute_turn(pcm: bytes) -> None:
+            """Background speaker-ID for a turn that was ALREADY answered: embed, set/adapt
+            the session lock, resolve identity. This runs OFF the reply path on purpose —
+            the first resemblyzer embed is ~10-20s on a Pi CPU, so blocking the response on
+            it is exactly the stall we're fixing. Identity it resolves applies to the
+            session going forward (subsequent turns / tools / personal data)."""
+            if not speaker_id.available():
+                return
+            vec = await _embed(pcm)
+            if vec is None:
+                return
+            if lock["vec"] is None:
+                lock["vec"] = vec
+                lock["n"] = 1
+                try:
+                    name, score = await asyncio.to_thread(speaker_id.identify_vec, vec)
+                except Exception:
+                    name, score = None, 0.0
+                await _set_locked_identity(name, score, relock=True)
+                return
+            sim = speaker_id.cosine(vec, lock["vec"])
+            if sim >= _LOCK_THRESHOLD:
+                n = lock["n"]
+                lock["vec"] = [(o * n + x) / (n + 1) for o, x in zip(lock["vec"], vec)]
+                lock["n"] = n + 1
+                if lock["name"] is None:
+                    await _adopt_name_if_unidentified(vec)
+            debug_log.record(f"attribution: sim {sim:.2f} → user_id={lock['name'] or 'unidentified'}",
+                             session=session_id[:12], kind="attr")
+
         async def _on_user_turn(pcm: bytes) -> None:
             """Drive the turn's reply (server-VAD create_response is off, so we own it).
 
-            First utterance establishes the session voice-lock and replies. Later turns
-            reply ONLY if their voiceprint matches the lock; any other voice (background,
-            adjacent rooms, other people) is ignored and its stray turn is deleted from
-            the model's context (and never written to chat history). The lock holds until
-            the session ends ("goodbye").
+            DEFAULT (fail-open): reply IMMEDIATELY, then run speaker-ID ATTRIBUTION in the
+            background — so the multi-second first embed never stalls the response. Identity
+            lags at most the very first turn, then holds for the session. STRICT mode
+            (VOICE_SPEAKER_LOCK_STRICT) keeps the old embed-gate-before-reply path (only the
+            locked voice is answered), accepting the latency.
 
-            Serialized via turn_lock so rapid/overlapping turns (e.g. the wake-word
-            pre-roll burst) can't race response.create against each other.
+            turn_lock serializes the reply path so rapid/overlapping turns (e.g. the
+            wake-word pre-roll burst) can't race response.create against each other.
             """
+            if _LOCK_STRICT:
+                async with turn_lock:
+                    await _handle_turn(pcm)
+                return
             async with turn_lock:
-                await _handle_turn(pcm)
+                await _accept_and_reply(pcm)
+            _spawn(_attribute_turn(pcm))
 
         async def _handle_turn(pcm: bytes) -> None:
             if not speaker_id.available():

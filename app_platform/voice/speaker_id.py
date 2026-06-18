@@ -71,6 +71,14 @@ def warm() -> None:
     def _load():
         try:
             _get_encoder()
+            # Loading the encoder is cheap; the FIRST embed inference is the expensive
+            # part (~10-20s on a Pi CPU — torch/model warmup). Pay it HERE, in the
+            # background, on a throwaway noise sample, so the first real turn is fast.
+            import numpy as np
+            sr = 16000
+            noise = (np.random.randn(sr * 2) * 200.0).astype(np.int16).tobytes()
+            embed(noise, sr)
+            logger.info("SPEAKER-ID: warm inference done")
         except Exception as exc:
             logger.warning("SPEAKER-ID: warm failed: %s", exc)
 
