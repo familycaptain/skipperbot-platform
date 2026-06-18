@@ -197,10 +197,13 @@ prefix keeps the production poller out of your gates — legacy `poc-` ids are a
   `<agent>` = the role: triage, vision, prio, grounding, design, spec-author, code-scout, spec-audit,
   security/architecture/interop/ux, lead, implement, validate.
 - **show the ACTUAL work, not just a one-liner.** The log renders full, untruncated text — so after
-  a substantive step, `emit` its FULL content: after `spec-author` (AND each revise round) the
+  a substantive step, surface its FULL content: after `spec-author` (AND each revise round) the
   complete spec (behavior + every test + notes); after each reviewer its full findings; after `lead`
-  the full recommendation; the build diff. e.g.
-  `event ev-<n> spec-author emit "<the whole spec text>"`. Never summarize the detail away.
+  the full recommendation; the build diff. Never summarize the detail away.
+  - **Emit big content BY FILE, not inline** (token economy): you already wrote these as artifacts in
+    `~/.evolve-poc/<n>/` — surface them with `emit-file` so the full text is read+posted by the script
+    and does NOT also sit in your conversation context: `python3 scripts/evolve_poc.py emit-file ev-<n>
+    spec-author ~/.evolve-poc/<n>/spec.json`. Reserve inline `event … emit "<text>"` for short notes.
 
 ## Mechanics (deterministic — call these, don't reason them)
 Reuse the EXISTING modules read-only (never modify them), from the repo root on box 1:
@@ -214,6 +217,16 @@ Reuse the EXISTING modules read-only (never modify them), from the repo root on 
 ## Operating rules
 - **Subscription, not API.** This session runs on the Claude subscription — that's the whole point.
 - **One segment per pass, then END.** Never block; gates and "nothing ready" both just end the pass.
+- **Token economy — the conversation is disposable between passes.** Files are truth (invariant #1): a
+  pass re-hydrates everything it needs from `~/.evolve-poc/<n>/`, so the chat history carried between
+  passes is a *cache, not the source*. Keep each pass lean: load ONLY what THIS segment needs, surface
+  big artifacts with `emit-file` (not inline), and don't re-read items/artifacts you aren't acting on.
+  - **Compaction is automatic** (`autoCompactEnabled` is on — pinned in `.claude/settings.json`); the
+    model cannot self-trigger `/compact` and `/loop` has no per-iteration reset, so auto-compaction is
+    the safety net. For a *hard, lossless* reset the **operator** can, between passes, run `/clear`
+    then re-invoke `/loop` at this skill — the loop rebuilds state from files (nothing is lost), or
+    `/compact` to keep a summary. This is the lowest-token way to run long sessions; it's an operator
+    action, not something a pass does to itself.
 - **Pace.** If you hit a usage limit, checkpoint `state.json` and end cleanly — the next pass resumes
   from files; nothing is lost.
 - **Report honestly.** A step that fails surfaces + stops that item; never fake a green.

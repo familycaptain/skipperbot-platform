@@ -7,6 +7,7 @@ is opaque to this script — it's passed in; the filename stays `evolve_poc.py` 
 
     python scripts/evolve_poc.py run ev-3 --title "Add doc for Backup setup" --source github:..#3 --status running
     python scripts/evolve_poc.py event ev-3 triage agent_end "✓ proceed · feature"
+    python scripts/evolve_poc.py emit-file ev-3 spec-author ~/.evolve-poc/3/spec.json  # post a big artifact by PATH (keeps it out of the loop's context)
     python scripts/evolve_poc.py gate  ev-3 gate1 ~/.evolve-poc/3/gate1.json
     python scripts/evolve_poc.py decision ev-3        # -> {"decision": "approve"|null, "note": ...}
     python scripts/evolve_poc.py resolve ev-3 merged  # clear the gate after acting on the decision
@@ -37,6 +38,12 @@ def main():
         r.add_argument(f"--{opt}", default="")
     e = sub.add_parser("event")
     e.add_argument("iid"); e.add_argument("agent"); e.add_argument("kind"); e.add_argument("message")
+    # emit-file: post a (large) artifact's contents to the UI log WITHOUT the orchestrator carrying
+    # the full text in its context — it passes a PATH; this script reads + posts it. Use for the big
+    # emits (full spec, reviewer findings, the diff) you already wrote to ~/.evolve-poc/<n>/.
+    ef = sub.add_parser("emit-file")
+    ef.add_argument("iid"); ef.add_argument("agent"); ef.add_argument("file")
+    ef.add_argument("--kind", default="emit")
     g = sub.add_parser("gate")
     g.add_argument("iid"); g.add_argument("gate"); g.add_argument("packet_file")
     d = sub.add_parser("decision"); d.add_argument("iid")
@@ -50,6 +57,10 @@ def main():
     elif a.cmd == "event":
         print(bridge.report_run(a.iid, current_agent=a.agent,
                                 events=[{"agent": a.agent, "kind": a.kind, "message": a.message}]))
+    elif a.cmd == "emit-file":
+        text = open(os.path.expanduser(a.file)).read()
+        print(bridge.report_run(a.iid, current_agent=a.agent,
+                                events=[{"agent": a.agent, "kind": a.kind, "message": text}]))
     elif a.cmd == "gate":
         packet = json.load(open(os.path.expanduser(a.packet_file)))
         packet["instance"] = a.iid
