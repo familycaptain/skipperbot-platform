@@ -100,9 +100,21 @@ def cleanup_stale():
 
 
 def seed_weather():
+    import json
     from app_platform import settings
-    settings.set("default_zip", "78704", scope="platform")   # so weather renders out of the box
-    _bump("weather_zip")
+    # Home location is a platform-core service (app_platform.location). Write the
+    # default_location record directly so weather renders out of the box.
+    record = {
+        "query": "Austin, Texas, US",
+        "display_name": "Austin",
+        "region": "Texas",
+        "country_code": "US",
+        "country_name": "United States",
+        "lat": 30.26715,
+        "lon": -97.74306,
+    }
+    settings.set("default_location", json.dumps(record), scope="platform")
+    _bump("weather_location")
 
 
 def seed_lists():
