@@ -236,6 +236,13 @@ Reuse the EXISTING modules read-only (never modify them), from the repo root on 
   So a Pi outage only pauses *gated-item advancement* for a minute — new GitHub issues still come from
   GitHub and can be worked (box 1 + box 2 need no Pi until reporting, which buffers). **Never stop or
   crash the loop because the Pi is down** — degrade, keep going, reconcile on a later pass.
+  - **Flush-first every pass.** The decided-gate scan at the start of a pass (step 1a, `decision …`)
+    now **drains the outbox before reading** (`list_decided` calls `_flush` first). This guarantees a
+    report buffered while the Pi was down goes out on the very next pass **even for a PARKED item whose
+    own pass does no write** — e.g. a Gate-2 push buffered mid-`skipper update`, where the item is then
+    parked at Gate 2 and the loop goes idle. Without this, that report could strand until some *other*
+    item happened to write. If you ever see a run stuck mid-segment on the Pi after a restart while box
+    1 is actually done, force it: `python3 scripts/evolve_poc.py flush`.
 
 ## Launch
 On box 1: `cd ~/repos/skipperbot-platform && claude` (logged into the subscription), then drive with

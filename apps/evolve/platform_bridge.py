@@ -135,7 +135,14 @@ def push_gate(packet: dict, token: str | None = None) -> dict:
 def list_decided(token: str | None = None) -> list[dict]:
     """Gates the operator has decided in the UI (for the resume poller). If the Pi is unreachable
     (e.g. mid `skipper update`), return [] — no decisions are visible right now; the loop keeps
-    working new GitHub issues and reconciles once the Pi is back. Never let a Pi outage crash it."""
+    working new GitHub issues and reconciles once the Pi is back. Never let a Pi outage crash it.
+
+    FLUSH-FIRST: the loop calls this at the START of every pass (its decided-gate scan), so draining
+    the outbox here guarantees buffered reports go out even for a PARKED item whose own pass does no
+    `_send` — otherwise a terminal report buffered during a Pi restart (e.g. a Gate-2 push) could
+    strand until some *other* item happened to write. `_flush` is a no-op when the outbox is empty and
+    self-handles a still-down Pi (keeps the queue), so this is cheap and safe every pass."""
+    _flush()
     try:
         return _get("/api/apps/evolve/gates?status=decided", token or auth()).get("gates", [])
     except Exception as e:

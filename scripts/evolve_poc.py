@@ -49,6 +49,7 @@ def main():
     d = sub.add_parser("decision"); d.add_argument("iid")
     rs = sub.add_parser("resolve"); rs.add_argument("iid"); rs.add_argument("status")
     c = sub.add_parser("close"); c.add_argument("iid"); c.add_argument("comment", nargs="?", default="")
+    sub.add_parser("flush")   # drain the offline outbox to the Pi now (no-op if empty / Pi down)
     a = ap.parse_args()
 
     if a.cmd == "run":
@@ -89,6 +90,11 @@ def main():
         from apps.evolve import github_connector as gh
         num = int(str(a.iid).split("-")[-1])
         print(gh.close_issue(num, comment=a.comment))
+    elif a.cmd == "flush":
+        n = len(open(bridge._OUTBOX).read().splitlines()) if os.path.exists(bridge._OUTBOX) else 0
+        bridge._flush()
+        left = len(open(bridge._OUTBOX).read().splitlines()) if os.path.exists(bridge._OUTBOX) else 0
+        print(json.dumps({"buffered": n, "remaining": left, "sent": n - left}))
 
 
 if __name__ == "__main__":
