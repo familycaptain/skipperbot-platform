@@ -15,6 +15,7 @@ from typing import Iterable
 
 from config import PROMPTS_DIR, apply_prompt_templates
 from app_platform.time import get_timezone
+from app_platform.prompt_context import collect_prompt_context
 
 
 GLOBAL_CATEGORIES = {"core", "utility", "web", "knowledge", "filesystem", "timers"}
@@ -175,13 +176,9 @@ def build_app_voice_payload(
     # aliases so the model knows which friendly names are real callable
     # targets — prevents the "what's the temperature outside" hallucination
     # where it didn't realize a sensor named "outside" actually exists.
-    extra_blocks = ""
-    if app_key == "automation":
-        try:
-            from apps.automation.devices import build_voice_alias_block
-            extra_blocks = build_voice_alias_block()
-        except Exception:
-            extra_blocks = ""
+    extra_blocks = collect_prompt_context(
+        "voice", app_key=app_key, user_id=user_id, device_info=device_info
+    )
 
     instructions = (
         f"{personality}\n\n"

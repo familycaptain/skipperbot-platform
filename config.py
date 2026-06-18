@@ -396,4 +396,13 @@ def get_dynamic_system_context(user_id: str = "") -> str:
     except Exception:
         logger.warning("dynamic context: primary_user lookup failed", exc_info=True)
 
+    # App-contributed chat context (register-at-load providers; the platform
+    # never imports app code). Chat passes NO app_key, so only user-scoped
+    # providers (surface 'chat'/'all', app=None) fire here. Only append when
+    # non-empty so we never leave a dangling separator.
+    from app_platform.prompt_context import collect_prompt_context
+    _app_ctx = collect_prompt_context("chat", user_id=user_id)
+    if _app_ctx:
+        parts.append(_app_ctx)
+
     return "\n".join(parts)
