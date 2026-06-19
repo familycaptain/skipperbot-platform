@@ -104,7 +104,7 @@ class TestCurrentConditionsLabel(unittest.TestCase):
             cur = tools.get_current_weather()
         with mock.patch.object(tools, "resolve_location", return_value=_LONDON), \
                 mock.patch.object(tools, "_fetch_json", return_value=forecast_payload):
-            daily = tools.get_daily_forecast_by_zip()
+            daily = tools.get_daily_forecast()
         label = "London, England, United Kingdom"
         self.assertIn(label, cur)
         self.assertIn(label, daily)
