@@ -1,0 +1,35 @@
+kind: specification
+id: platform.memory.digest-noise-filter
+title: Digest excludes volatile bookkeeping state (no sync clocks in memories)
+state: live
+autonomy: gated
+behavior: 'Before digest_record hands a record to the extractor, it removes volatile bookkeeping
+  fields by NAME from a concrete volatile-key set — today''s _SKIP_FIELDS (created_at, updated_at,
+  recipe_doc_id, sort_order) PLUS last_sync (and sibling per-write sync-clock keys synced_at,
+  last_synced) — applied RECURSIVELY into nested dicts so a nested block''s last_sync is dropped
+  without the platform referencing any app-specific block name. After stripping, the existing
+  empty/None/[]/{} pruning and the <2-meaningful-fields skip-trivial guard run unchanged:
+  a record whose only non-skip content was the stripped bookkeeping falls below the threshold
+  and yields NO memory, while digest_record itself is still invoked (so the platform.memory.digest-record
+  contract holds). Substantive fields (name, items, aliases, notes, etc.) are untouched and
+  digest normally. No app-specific literal (e.g. ''trello'') appears in the platform code;
+  the rule is purely key-name based.'
+implements:
+- app_platform/memory.py
+tests:
+- type: unit
+  path: tests/platform/test_digest_noise_filter.py
+  rubric: _strip_for_digest on {id, name:'Lowes', items:[...], trello:{board:'shopping', list_name:'Lowes',
+    last_sync:'2026-06-18T19:33:26-05:00'}} returns a dict containing name and items, with
+    last_sync removed from the nested trello block (board/list_name may remain; last_sync
+    must be gone). A record whose only non-skip content is a block carrying just last_sync
+    falls below the meaningful-field threshold so _run_digest returns without extracting (assert
+    save_memory not called). A record with a real name+items change passes through with those
+    fields intact. Assert no literal 'trello' string is required — passing a nested block
+    under any key with a last_sync still strips last_sync.
+links: {}
+notes: 'Generic key-name strip (no app coupling — resolves the architecture + spec-audit findings).
+  Durable cross-app guard. Extends, not replaces, _SKIP_FIELDS. Pairs with lists.trello-boards.sync-list
+  (source-side no-op skip) — together: no-op syncs don''t write, and any digest that does
+  fire carries no sync clock.'
+verified: true

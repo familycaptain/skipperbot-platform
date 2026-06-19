@@ -655,6 +655,18 @@ def show_all_lists(user_id: str = "") -> str:
 # Trello sync (pull from Trello → update local cache)
 # ---------------------------------------------------------------------------
 
+def _list_item_signature(items: list[dict]) -> list[tuple]:
+    """Memory-worthy signature of a list's ACTIVE items: ordered (text, trello_card_id)
+    pairs. Ignores volatile per-item fields (added_at/added_by) so a no-op Trello poll —
+    same cards, only dateLastActivity moved — compares equal and the sync skips the write
+    (issue #24). Order-sensitive: a reorder counts as a real change."""
+    return [
+        (it.get("text", ""), it.get("trello_card_id", ""))
+        for it in items
+        if not it.get("archived")
+    ]
+
+
 def sync_from_trello(list_id: str) -> str:
     """Pull latest cards from Trello and replace local items.
 
@@ -701,7 +713,22 @@ def sync_from_trello(list_id: str) -> str:
                 "trello_card_id": card["id"],
             })
 
-        old_count = len([i for i in lst.get("items", []) if not i.get("archived")])
+        old_active = [i for i in lst.get("items", []) if not i.get("archived")]
+        old_count = len(old_active)
+
+        # Idempotent: a poll that pulls an item set identical to what we already have
+        # (same text, membership, and order — ignoring volatile added_at) writes NOTHING
+        # and does not bump last_sync, so the ~30s background poller stops churning memory
+        # (issue #24). A real change (add/remove/rename/reorder, or a genuine emptying)
+        # still re-saves and re-digests. The fetch already succeeded here (past get_cards),
+        # so a zero-card pull that differs from a non-empty list is a real emptying.
+        if _list_item_signature(old_active) == _list_item_signature(new_items):
+            return (
+                f"Synced '{lst['name']}' from Trello ({board}/{trello_list}).\n"
+                f"  No changes ({old_count} items).\n"
+                f"  Last sync: {lst['trello'].get('last_sync', '')[:16]}"
+            )
+
         lst["items"] = new_items
         lst["trello"]["last_sync"] = _now_iso()
         _save_list(lst)

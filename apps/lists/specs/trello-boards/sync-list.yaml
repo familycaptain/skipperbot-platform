@@ -1,11 +1,34 @@
 kind: specification
 id: lists.trello-boards.sync-list
-title: Sync a Trello list
+title: Sync a Trello list (idempotent — no write on a no-op poll)
 state: live
 autonomy: gated
-behavior: Syncing forces a Trello-linked list to re-pull from Trello, the source of truth.
+behavior: 'Syncing forces a Trello-linked list to re-pull from Trello, the source of truth.
+  A sync that changes nothing must not write: when the cards pulled produce an item set identical
+  to the list''s current items — compared on text, active membership, and order, IGNORING
+  volatile per-item fields (added_at, which comes from Trello dateLastActivity) — sync_from_trello
+  returns its summary WITHOUT calling _save_list and WITHOUT bumping trello.last_sync. No
+  CRUD occurs, so no digest is generated (this is why the ~30s poller stops churning memory).
+  A zero-card pull counts as a real change (the list was emptied) ONLY when the fetch succeeded;
+  on a fetch error sync_from_trello returns its existing error string and never treats the
+  failure as ''emptied'' (the list is not wiped). Genuine changes (added/removed/renamed items,
+  alias edit, rename) still re-save and re-digest normally. This leaf does NOT alter save_list''s
+  digest behavior — digest_record still fires on every real CRUD (the platform.memory.digest-record
+  contract is preserved); the no-sync-clock-in-memory guarantee is owned by platform.memory.digest-noise-filter.'
 implements:
-- apps/lists/tools.py
-tests: []
+- apps/lists/store.py
+tests:
+- type: unit
+  path: apps/lists/tests/test_sync_idempotent.py
+  rubric: Patch trello_client.get_cards. (1) First sync with new cards calls _save_list once
+    and sets last_sync. (2) A SECOND sync returning the IDENTICAL card set (even with different
+    dateLastActivity/added_at values) performs NO _save_list call and does not change trello.last_sync.
+    (3) A third sync whose cards differ (one card added) saves again. (4) A sync where get_cards
+    raises returns the error string and does NOT call _save_list (list not wiped). (5) A sync
+    that legitimately returns zero cards after the list had items DOES save (real emptying).
 links: {}
-notes: ''
+notes: Reuses the existing trello_card_id keying in sync_from_trello (L683-705). Pairs with
+  platform.memory.digest-noise-filter. The issue's literal fix 1b (skip the digest CALL in
+  save_list) was intentionally NOT adopted — it breaks the live 'every CRUD digests' contract;
+  spec2 delivers the same outcome contract-compliantly.
+verified: true
