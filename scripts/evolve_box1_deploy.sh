@@ -16,6 +16,21 @@ cd "$(dirname "$0")/.."
 git fetch origin
 git checkout release
 git merge --no-edit origin/release    # pull shared release (engine + others' pushes); keep local merges
+
+# Brain dependencies — make a deploy self-sufficient: a pull that brings in code needing a new
+# dep installs it here, no separate manual pip step. SCOPED to the brain's needs
+# (apps/evolve/requirements-spec-index.txt), NOT the full base requirements.txt: box 1 is
+# deliberately lean (no torch, no full platform stack), and base would drag in heavy deps it
+# never runs. Non-fatal — if the install fails the loop still runs (Phase-2 spec retrieval just
+# degrades to the Phase-1 capability-scoped read).
+PYBIN="./.venv/bin/python"; [ -x "$PYBIN" ] || PYBIN="python3"
+REQ="apps/evolve/requirements-spec-index.txt"
+if [ -f "$REQ" ]; then
+    echo "Installing brain dependencies ($REQ)…"
+    "$PYBIN" -m pip install -q -r "$REQ" \
+        || echo "WARN: brain dependency install failed — Phase-2 spec retrieval degrades to Phase-1; run by hand: $PYBIN -m pip install -r $REQ"
+fi
+
 git push origin release || true       # republish the reconciled release (no-op if read-only)
 echo "deployed: release synced with origin/release"
 git log --oneline -4
