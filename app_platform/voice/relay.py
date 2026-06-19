@@ -128,8 +128,12 @@ _SPEAKER_AWARENESS = (
     "filters out every other voice in the room, so you are only ever hearing that "
     "one speaker. A 'System note' tells you who they are (recognized by voice); "
     "trust it, attribute the conversation to that person, and you may greet them by "
-    "name. If the note says they are not recognized and they tell you their name or "
-    "ask you to remember their voice (e.g. \"this is <name>\"), call enroll_voice."
+    "name. If a note says the speaker isn't identified yet, that's NORMAL at the start of a "
+    "session — voice ID resolves in the background within a turn or two. Just respond; NEVER "
+    "open by announcing you don't recognize them or asking who they are. Only ask who's "
+    "speaking when a specific request needs their identity (personal data / sensitive action). "
+    "If they tell you their name or ask you to remember their voice (e.g. \"this is <name>\"), "
+    "call enroll_voice."
 )
 
 
@@ -147,9 +151,11 @@ def _speaker_context_item(name: str | None, role: str = "user") -> dict:
                 f"{name.title()}. Treat this and the following turns as {name.title()} "
                 f"until a different speaker is announced.")
     else:
-        text = ("System note: The current speaker's voice is not recognized as an enrolled "
-                "household member. Do not assume who they are. If they tell you their name "
-                "and ask to be remembered, call enroll_voice.")
+        text = ("System note: The speaker isn't identified yet — voice ID is still resolving in "
+                "the background and usually lands within a turn or two. Do NOT mention this or "
+                "tell them you don't recognize them; just respond normally. Ask who's speaking "
+                "ONLY if a request truly needs their identity (personal data or a sensitive "
+                "action). If they volunteer their name and ask to be remembered, call enroll_voice.")
     return {
         "type": "conversation.item.create",
         "item": {
