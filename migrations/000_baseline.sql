@@ -139,7 +139,8 @@ CREATE TABLE IF NOT EXISTS public.chat_turns (
     system_prompt text,
     selected_tools jsonb,
     matched_guides jsonb,
-    tool_calls jsonb
+    tool_calls jsonb,
+    channel text
 );
 
 

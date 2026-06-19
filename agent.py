@@ -944,7 +944,7 @@ async def chat(request: ChatRequest):
 
 
 @app.get("/api/chat/history")
-async def chat_history(request: Request, limit: int = 20, tz: str = ""):
+async def chat_history(request: Request, limit: int = 20, tz: str = "", channel: str = ""):
     """Recent conversation turns for the authed user — lets the web client
     resume a session on page load instead of starting cold.
 
@@ -954,14 +954,22 @@ async def chat_history(request: Request, limit: int = 20, tz: str = ""):
     the model made that turn, then the assistant reply. Bot-initiated turns
     (proactive DMs / fired notifications, stored with a ``[marker]`` pseudo
     user_message) render as notifications so they don't look like the user typed.
+
+    ``channel`` is optional and OPT-IN (issue #23): omitted → ALL of the user's
+    turns (the historical contract, so companion clients — the mobile app, the
+    voice satellite — keep their full history). The in-repo web client passes
+    ``channel=web`` to scope its reload to web-originated turns (voice/discord
+    excluded). Memory/recall and session continuity are unaffected — only this
+    display read narrows.
     """
     principal = require_user(request)
     user_id = (principal["name"] or "").lower().strip()
     limit = max(1, min(limit, 50))
+    channel = (channel or "").strip().lower() or None
 
     def _load():
         from data_layer.chatlogs import get_recent_turns
-        return get_recent_turns(user_id, limit=limit)
+        return get_recent_turns(user_id, limit=limit, channel=channel)
 
     turns = await asyncio.to_thread(_load)
 
