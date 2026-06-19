@@ -102,6 +102,6 @@ thinking: []
 # dispatcher (see apps/folders/handlers.py).
 job_types:
   - type: folder_intelligence
-    handler: intelligence.process_folder_item
+    handler: handlers._handle_folder_intelligence   # (job, ctx) wrapper — NOT process_folder_item(folder_id, entity_id) directly
     max_concurrent: 2
     cancel_on_shutdown: true
