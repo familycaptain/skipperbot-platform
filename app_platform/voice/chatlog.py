@@ -142,6 +142,7 @@ def _persist_voice_turn_sync(
             user_message=user_message,
             assistant_message=assistant_message,
             turn_id=turn_id,
+            channel="voice",  # tag the surface so voice turns are excluded from the web reload (issue #23)
         )
     except Exception as exc:
         logger.error("VOICE_CHATLOG: Failed to save turn %s for %s: %s", turn_id, user_id, exc)

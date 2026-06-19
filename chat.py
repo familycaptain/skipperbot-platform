@@ -201,6 +201,7 @@ async def process_chat(
                 selected_tools=getattr(result, "selected_tools", None) or None,
                 matched_guides=getattr(result, "matched_guides", None) or None,
                 tool_calls=_tool_calls or None,
+                channel=channel,  # 'web' | 'discord' | … — tags the turn's surface (issue #23)
             )
         except Exception as e:
             logger.error("CHATLOG: Failed to save turn for '%s': %s", user_id, str(e))
