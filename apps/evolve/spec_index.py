@@ -90,6 +90,11 @@ _DEFAULT_CACHE = os.path.expanduser("~/.evolve-poc/spec_index_cache.json")
 # re-embeds automatically on a model-name change.
 _EMBED_MODEL = "BAAI/bge-small-en-v1.5"
 
+# Cosine floor for a "relevant" match. bge-small has a HIGH similarity baseline (~0.6 even for
+# unrelated text), so a generic 0.5 admits noise; live data shows real matches sit at 0.70+ and
+# everything <=0.65 is filler. Calibrated to this model — revisit if _EMBED_MODEL changes.
+_DEFAULT_FLOOR = 0.70
+
 
 def _all_records(repo_root: str = ".") -> list[tuple[str, "schema.Record"]]:
     """Every C/F/S record across all app trees + specs/platform, tagged with its capability."""
@@ -157,7 +162,7 @@ def _save_cache(path: str, cache: dict) -> None:
         logger.warning("SPEC-INDEX: cache save failed (%s): %s", path, exc)
 
 
-def search_specs(query: str, *, top_k: int = 15, floor: float = 0.5, repo_root: str = ".",
+def search_specs(query: str, *, top_k: int = 15, floor: float = _DEFAULT_FLOOR, repo_root: str = ".",
                  embedder=None, cache_path: str | None = None) -> list[dict]:
     """Top-K existing specs most similar to `query` across the WHOLE corpus, for triage's
     cross-corpus dedup. Returns ``[{id, kind, capability, behavior, score}]`` (bounded).
