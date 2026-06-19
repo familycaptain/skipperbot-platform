@@ -6,9 +6,8 @@
 # distributed self-hoster). spec_index lazy-imports this; if it's absent, cross-corpus
 # retrieval is skipped and the Phase-1 capability-scoped read still applies.
 #
-# No torch (box1 is lean — no torch installed). fastembed uses onnxruntime.
-fastembed>=0.3            # ONNX runtime, no torch; ships BAAI/bge-small-en-v1.5 (384-d)
-
-# Lighter alternative (numpy-only, no onnxruntime) — pick ONE; if you prefer this, install
-# it instead of fastembed and spec_index will use it automatically:
-#   model2vec        # static distilled embeddings (minishlab/potion-base-8M)
+# ONE pinned model, no fallback, so every install lands in the SAME vector space and the
+# embedding cache is predictable/portable. The model name is pinned in code (`_EMBED_MODEL`
+# in apps/evolve/spec_index.py = BAAI/bge-small-en-v1.5); change both together if it ever
+# moves. fastembed = ONNX runtime, no torch.
+fastembed>=0.3,<0.6

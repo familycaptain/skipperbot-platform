@@ -83,7 +83,12 @@ logger = logging.getLogger("evolve.spec_index")
 # Cache of spec vectors on box1 (keyed by record_id + content_hash; model-pinned). JSON,
 # alongside the loop's ~/.evolve-poc state. Env override for tests/other hosts.
 _DEFAULT_CACHE = os.path.expanduser("~/.evolve-poc/spec_index_cache.json")
-_FASTEMBED_MODEL = "BAAI/bge-small-en-v1.5"
+
+# THE pinned local embedding model — ONE model, no fallback chain, so every install lands in
+# the SAME vector space and the cache is portable/predictable. fastembed = ONNX, no torch.
+# To change it, edit this AND apps/evolve/requirements-spec-index.txt together; the cache
+# re-embeds automatically on a model-name change.
+_EMBED_MODEL = "BAAI/bge-small-en-v1.5"
 
 
 def _all_records(repo_root: str = ".") -> list[tuple[str, "schema.Record"]]:
@@ -116,31 +121,20 @@ def _cosine(a: list[float], b: list[float]) -> float:
 
 
 def _default_embedder():
-    """Lazily build a LOCAL, no-torch embedder. Returns a callable
-    ``embed(texts) -> list[list[float]]`` with a ``.model_name``, or None if no backend is
-    installed. Never raises — absence just disables cross-corpus retrieval."""
+    """Build THE pinned local embedder (fastembed / `_EMBED_MODEL`, 384-d, no torch). Returns a
+    callable ``embed(texts) -> list[list[float]]`` with a ``.model_name``, or None if fastembed
+    isn't installed — cross-corpus retrieval then degrades to the Phase-1 scoped read. One model,
+    no fallback: predictable across installs."""
     try:
         from fastembed import TextEmbedding
-        model = TextEmbedding(_FASTEMBED_MODEL)
-
-        def _embed(texts):
-            return [list(map(float, v)) for v in model.embed(list(texts))]
-        _embed.model_name = f"fastembed:{_FASTEMBED_MODEL}"
-        return _embed
     except Exception:
-        pass
-    try:
-        from model2vec import StaticModel
-        model = StaticModel.from_pretrained("minishlab/potion-base-8M")
+        return None
+    model = TextEmbedding(_EMBED_MODEL)
 
-        def _embed(texts):
-            arr = model.encode(list(texts))
-            return [list(map(float, row)) for row in (arr.tolist() if hasattr(arr, "tolist") else arr)]
-        _embed.model_name = "model2vec:potion-base-8M"
-        return _embed
-    except Exception:
-        pass
-    return None
+    def _embed(texts):
+        return [list(map(float, v)) for v in model.embed(list(texts))]
+    _embed.model_name = f"fastembed:{_EMBED_MODEL}"
+    return _embed
 
 
 def _load_cache(path: str, model_name: str) -> dict:
