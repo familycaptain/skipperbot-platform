@@ -17,6 +17,15 @@ Given the work item (a bug or feature), explore the repo and map the area it tou
   same thing: error handling, settings access, store calls, test layout).
 - **`entry_points`** — where behavior is wired (routes, the MCP tool registry, UI mount
   points, migrations) so the change reaches every surface it should.
+- **`capability` + `existing_specs`** — the team must SEE what's already specified here, not
+  just the code, so it extends/places rather than duplicates. Identify the **target
+  capability** (the app under `apps/<cap>/` this change touches; `platform` for the core),
+  then read that capability's **existing C/F/S tree**: run
+  `python3 -m apps.evolve.spec_index <cap>` (bounded — one line per record) and emit those
+  records as `existing_specs` (id, kind, behavior). Pick the primary capability if it spans
+  several. A brand-new/unspecified capability returns none — emit the `capability` and an
+  empty `existing_specs`. (This is the ONE place the spec corpus is read; downstream agents
+  rely on it, so don't skip it.)
 
 How you work: grep/`rg` to locate, read the few files that matter, follow the imports. Be
 thorough about the *relevant* area and ignore the rest — you are drawing the map for this one

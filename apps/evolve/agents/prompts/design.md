@@ -47,6 +47,12 @@ Then, given the work-item (+ triage/vision context):
    per spec (`spec_id`, `title`, one-line `summary`). Do NOT collapse a multi-behavior
    feature into one spec and scatter "deferred to a sibling spec" notes — list the
    siblings as real tree leaves. The Lead authors each leaf.
+   **Place every leaf within the capability's EXISTING tree** (`existing_specs` from
+   Grounding): reuse an existing feature where the behavior fits, treat a leaf as
+   *extending* an existing spec rather than authoring a near-duplicate, and introduce a
+   new feature only when none fits. A `spec_tree` that duplicates or ignores existing
+   siblings is a decomposition failure — the corpus already has hundreds of specs; don't
+   add an overlapping one.
 
 Be concrete and opinionated. You decide the *approach* and the *shape*; the spec-author
 writes the precise spec(s). Lead with your `summary`. Return your result via `emit`.

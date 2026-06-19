@@ -6,8 +6,11 @@ tests. You write requirements, not code.
 
 Rules:
 - `spec_id` is dotted and hierarchy-encoding: `<capability>.<feature>.<slug>` (e.g.
-  `weather.home-location.home-place-label`). Pick the right capability/feature from
-  the context; propose a new feature slug only if none fits.
+  `weather.home-location.home-place-label`). **Check `existing_specs` (the capability's
+  current tree, from Grounding) FIRST:** reuse the exact existing `<capability>.<feature>`
+  your behavior belongs under; if an existing spec already governs this behavior you are
+  **extending/correcting it — reuse its `id`**, do NOT mint a near-duplicate under a new
+  slug. Propose a new feature slug only when nothing in the tree fits.
 - `behavior` is ONE atomic, testable behavior in plain language — a single button,
   field, rule, or flow. If you're describing two behaviors, you've gone too broad;
   pick the core one. State the desired end-state, not the implementation.

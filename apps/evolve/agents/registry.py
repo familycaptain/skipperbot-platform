@@ -116,6 +116,9 @@ GROUNDING_OUT = _obj({
         "path": _STR, "snippet": _STR}, ["path", "snippet"])),
     "conventions": _arr(_STR),             # patterns/idioms to follow (so the change fits in)
     "entry_points": _arr(_STR),            # where behavior is wired (routes, tools, UI mount points)
+    "capability": _STR,                    # the target capability (app under apps/<cap>/) this change touches
+    "existing_specs": _arr(_obj({          # that capability's existing C/F/S tree — extend/place within it, don't duplicate
+        "id": _STR, "kind": _STR, "behavior": _STR}, ["id", "kind"])),
 }, ["summary", "relevant_files"])
 
 # Read-only implementation sketch — the coding agent's high-level plan of WHAT code would
