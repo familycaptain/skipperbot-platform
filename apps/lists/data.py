@@ -78,8 +78,11 @@ BACKFILL_ENTITIES = [
 # ---------------------------------------------------------------------------
 
 def save_list(lst: dict):
-    """Insert or update a list. Fires a digest_record."""
-    is_new = get_list_row(lst["id"]) is None
+    """Insert or update a list. Memorializes the list's IDENTITY (name/aliases) only on
+    create or a real rename — NOT on every item/sync save (item changes are memorialized
+    per-item), which previously re-created duplicate "X is a list named Y" memories."""
+    prior = get_list_row(lst["id"])
+    is_new = prior is None
     with scoped_conn(SCHEMA) as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -102,7 +105,9 @@ def save_list(lst: dict):
             )
         conn.commit()
     saved = get_list(lst["id"])
-    if saved:
+    identity_changed = is_new or (prior or {}).get("name") != lst.get("name") or \
+        sorted((prior or {}).get("aliases") or []) != sorted(lst.get("aliases") or [])
+    if saved and identity_changed:
         digest_record(
             app_id="lists",
             entity_type="list",
