@@ -1191,7 +1191,7 @@ INSERT INTO public.thinking_domains (name, description, observe_tool, evaluate_t
      '', '', '', '[]'::jsonb, '{"trigger": "queue"}'::jsonb, 'high', true, ''),
     ('document',
      'Knowledge Organization — reflect on memories and organize into readable documents.',
-     '', '', '', '[]'::jsonb, '{"trigger": "schedule", "cron": "0 3 * * *"}'::jsonb, 'low', false, ''),
+     '', '', '', '[]'::jsonb, '{"trigger": "schedule", "cron": "0 3 * * *"}'::jsonb, 'low', true, ''),
     ('self',
      'Self-awareness — cross-domain observations, self-directed thinking.',
      '', '', '', '[]'::jsonb, '{"trigger": "schedule", "cron": "0 */6 * * *"}'::jsonb, 'low', false, '')
