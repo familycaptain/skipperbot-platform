@@ -651,6 +651,13 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                         except json.JSONDecodeError:
                             args = {}
                         logger.info("VOICE-RELAY: tool %s(%s) [session %s]", name, list(args.keys()), session_id[:12])
+                        # Mirror the tool call + full params to the satellite so it prints
+                        # them in its own console (the voice-1 container log).
+                        try:
+                            await satellite_ws.send_text(json.dumps(
+                                {"type": "tool_call", "name": name, "args": args}))
+                        except Exception:
+                            pass
                         if name == "enroll_voice":
                             # Enrollment needs the audio, which only the relay has —
                             # use the just-spoken utterance. Handled here, not tool_runtime.
