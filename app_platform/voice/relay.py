@@ -66,13 +66,6 @@ _LOCK_THRESHOLD = float(os.getenv("VOICE_SPEAKER_LOCK_THRESHOLD", "0.65"))
 # cosine similarity dipped (the "listening/thinking, no You:" bug), so it's off by default.
 _LOCK_STRICT = os.getenv("VOICE_SPEAKER_LOCK_STRICT", "").strip().lower() in ("1", "true", "yes", "on")
 
-# Sticky identity ACROSS sessions (process-level): the last voice the relay confidently
-# identified. A new session seeds its lock from this so the FIRST turn already has a
-# provisional user_id (e.g. "what's on my todo list" works without waiting for a fresh
-# embed); the background attribution then confirms or corrects it. None until the first
-# ID of the process lifetime (a truly fresh start has a null speaker, as it should).
-_LAST_SPEAKER: dict = {"name": None, "vec": None}
-
 # Deterministic ack: how long to wait after a tool dispatches (with no spoken audio) before
 # voicing a filler. Fast/local tools return before this and never trigger it; slow/external
 # tools (weather, search) are still running, so the filler covers their dead air.
@@ -274,16 +267,10 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         # The session voice-lock: the reference voiceprint (adapted toward the speaker
         # as accepted turns come in, so it stabilizes), the resolved identity, and the
         # number of turns blended into the reference.
+        # Identity is PER-SESSION: every session starts unidentified and is resolved by the
+        # in-session background attribution. No cross-session carryover — a new session is a new
+        # conversation, possibly a different person, so it must never inherit the last speaker.
         lock = {"vec": None, "name": None, "n": 0}
-        # Sticky: seed identity from the last speaker this process identified, so the FIRST
-        # turn already has a provisional user_id (background attribution confirms/corrects).
-        if _LAST_SPEAKER.get("name"):
-            lock["name"] = _LAST_SPEAKER["name"]
-            lock["vec"] = _LAST_SPEAKER["vec"]
-            lock["n"] = 1
-            session["user_id"] = _LAST_SPEAKER["name"]
-            debug_log.record(f"provisional identity (sticky from last session): {_LAST_SPEAKER['name']}",
-                             session=session_id[:12], kind="attr")
         last_item = {"id": None}            # id of the latest committed user item (for delete)
         # item_id -> Future[transcript]. The user transcript arrives on its own event,
         # but we only persist it once the turn is ACCEPTED — so the transcription
@@ -443,27 +430,24 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             except Exception:
                 name, score = None, 0.0
             if name:
-                # Confident enrolled match → set/switch identity (sticky to whoever matches).
+                # Confident enrolled match → set/switch identity (to whoever matches this session).
                 if name != lock["name"]:
                     await _set_locked_identity(name, score, relock=(lock["name"] is None))
                 lock["vec"] = vec
                 lock["n"] = (lock["n"] or 0) + 1
-                _LAST_SPEAKER["name"] = name
-                _LAST_SPEAKER["vec"] = vec
             elif lock["vec"] is None:
                 # Nothing matched and nothing locked yet → lock to this (unnamed) voice.
                 lock["vec"] = vec
                 lock["n"] = 1
                 await _set_locked_identity(None, score, relock=True)
             elif speaker_id.cosine(vec, lock["vec"]) >= _LOCK_THRESHOLD:
-                # Same voice as the current lock → adapt the reference (identity stays sticky).
+                # Same voice as the current lock → adapt the reference (identity stays sticky
+                # WITHIN this session).
                 n = lock["n"] or 1
                 lock["vec"] = [(o * n + x) / (n + 1) for o, x in zip(lock["vec"], vec)]
                 lock["n"] = n + 1
-                if lock["name"]:
-                    _LAST_SPEAKER["vec"] = lock["vec"]
-            # else: an unrecognized voice while we already have an identity → keep it
-            # (STICKY — never revert a known speaker to null on one uncertain turn).
+            # else: an unrecognized voice while we already have an identity → keep it for the
+            # rest of THIS session (never revert a known speaker on one uncertain turn).
             debug_log.record(f"attribution: score {score:.2f} → user_id={lock['name'] or 'unidentified'}",
                              session=session_id[:12], kind="attr")
 
