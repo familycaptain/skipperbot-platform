@@ -370,8 +370,13 @@ def build_voice_location_context() -> str:
         return ""
     return (
         "\n## Home Location\n"
-        f"- The user's home location is {label}. Use it for weather and other "
-        "location lookups when they don't specify one — never invent a location.\n"
+        f"- The user's home location is {label}, and it is already saved with coordinates.\n"
+        "- For the user's local weather — or any time they don't name a place — call weather "
+        "tools with NO location argument. The saved home location is used automatically "
+        "(instant, no lookup). Do NOT pass the home city as a location; that forces a slower, "
+        "failure-prone geocode of a place we already have.\n"
+        "- Pass a location argument ONLY when the user explicitly asks about a DIFFERENT city. "
+        "Never invent a location.\n"
     )
 
 
