@@ -62,4 +62,4 @@ notes: 'Issue #23 (operator-reported). Decision at Gate 1: web-only (the web cli
   clients keep all-turns until they choose to opt in. Memory/recall and session continuity are
   out of scope (must NOT be filtered). Pure helpers live in chatlog_channels.py (DB-free) so the
   bound test runs on box-2''s stdlib venv.'
-verified: false
+verified: true
