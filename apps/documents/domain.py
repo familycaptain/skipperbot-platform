@@ -60,9 +60,11 @@ _NOISE_PATTERNS = [
 ]
 
 
-# Memories created by this domain are tagged with this saved_by value
-# so the pre-filter can skip them (prevents feedback loop)
-DOMAIN_SAVED_BY = "document_domain"
+# Memories created by this domain are tagged with this saved_by value so the pre-filter can
+# skip them (read-side loop guard). It's ALSO forced as created_by on every doc the domain
+# authors, so the documents app skips digesting those docs back into memories (write-side
+# loop guard). Canonical definition lives in store so both sides share one value.
+from apps.documents.store import DOMAIN_AUTHOR as DOMAIN_SAVED_BY
 
 
 def _is_noise_memory(m: dict) -> bool:

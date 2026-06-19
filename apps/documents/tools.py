@@ -28,6 +28,7 @@ from apps.documents.store import (
     update_doc_meta as _update_doc_meta,
     delete_doc as _delete_doc,
     format_doc_list as _format_doc_list,
+    DOMAIN_AUTHOR,
 )
 
 
@@ -85,7 +86,10 @@ def create_doc(
         tag_display = f"\n  Tags: {', '.join(doc.get('tags', []))}" if doc.get("tags") else ""
         link_display = f"\n  Linked to: {doc.get('related_entity_id')}" if doc.get("related_entity_id") else ""
         try:
-            digest_record("docs", "document", "created", doc["id"], doc, by=created_by.strip())
+            # Folder-intelligence docs (curated FROM memories by the document domain) must NOT
+            # digest back into memories — that's the curation loop. User/other docs DO digest.
+            if created_by.strip() != DOMAIN_AUTHOR:
+                digest_record("docs", "document", "created", doc["id"], doc, by=created_by.strip())
         except Exception:
             pass
         return (
@@ -180,7 +184,9 @@ def update_doc(
             return result  # error
 
         try:
-            digest_record("docs", "document", "updated", result["id"], result, by=updated_by.strip())
+            # Folder-intelligence doc updates must not loop back into memories; user docs do.
+            if updated_by.strip() != DOMAIN_AUTHOR:
+                digest_record("docs", "document", "updated", result["id"], result, by=updated_by.strip())
         except Exception:
             pass
         return (
@@ -230,7 +236,9 @@ def append_to_doc(
             return result  # error
 
         try:
-            digest_record("docs", "document", "updated", result["id"], result, by=updated_by.strip())
+            # Folder-intelligence doc updates must not loop back into memories; user docs do.
+            if updated_by.strip() != DOMAIN_AUTHOR:
+                digest_record("docs", "document", "updated", result["id"], result, by=updated_by.strip())
         except Exception:
             pass
         return (
@@ -351,7 +359,9 @@ def update_doc_meta(
         tags_display = f"\n  Tags: {', '.join(result.get('tags', []))}" if result.get("tags") else ""
         link_display = f"\n  Linked to: {result.get('related_entity_id')}" if result.get("related_entity_id") else ""
         try:
-            digest_record("docs", "document", "updated", result["id"], result, by=updated_by.strip())
+            # Folder-intelligence doc updates must not loop back into memories; user docs do.
+            if updated_by.strip() != DOMAIN_AUTHOR:
+                digest_record("docs", "document", "updated", result["id"], result, by=updated_by.strip())
         except Exception:
             pass
         return (
@@ -382,7 +392,10 @@ def delete_doc(doc_id: str) -> str:
         success = _delete_doc(doc_id.strip())
         if success:
             try:
-                digest_record("docs", "document", "deleted", doc_id.strip(), record, by=record.get("created_by", ""))
+                # Don't memorialize deletion of a folder-intelligence doc (it never created a
+                # memory); a user doc's deletion does digest, mirroring its creation.
+                if (record.get("created_by") or "") != DOMAIN_AUTHOR:
+                    digest_record("docs", "document", "deleted", doc_id.strip(), record, by=record.get("created_by", ""))
             except Exception:
                 pass
             return f"Document '{doc_id}' deleted."
