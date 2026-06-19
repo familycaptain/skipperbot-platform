@@ -159,37 +159,27 @@ These are the operator's standing non-functional requirements; honor them by def
   suffices — don't build parallel telemetry. Every **spec** must state WHAT is observable and
   HOW the operator confirms it at Gate 3, and the **build** must actually emit it. "How will
   the operator know this is working?" is a question spec and build must both answer.
-- **Guard the context window — inject just-in-time, never bloat the prompt.** The model's
-  context is finite, costly, and attention-diluting: stuffing it *lowers* quality because
-  the instruction that matters gets buried. A capability must load its tools, behavioral
-  guidance (`guide.md`), and memory **on demand and scoped to relevance** — the tool router
-  injects only the matched categories (not the whole catalog), a guide rides *with* its tool,
-  and memory recall surfaces only the relevant memories, not the whole store. **Never append a
-  feature's tools/prompt to the always-on system prompt because it's convenient**; wire it to
-  load conditionally, with an explicit "ask for more" path (`request_tools`, `search_memories`).
-  This is a balance, not a race to the smallest prompt: "lean" means *defer and scope*, never
-  *omit* — include everything needed for correct behavior, delivered at the right time to the
-  right agent. A bloated prompt ("add everything from everywhere") is as much a defect as a
-  missing instruction. *(See [ARCHITECTURE.md → Context economy](ARCHITECTURE.md#core-principle-context-economy-assemble-context-just-in-time).)*
-- **The LLM determines intent — NEVER string-match chat.** Do not infer what a user wants, or
-  trigger behavior, by matching hardcoded words/phrases against their chat message
-  (`if "stop onboarding" in text: ...`). People say the same thing hundreds of ways; phrase-matching
-  is brittle and **wrong** as an intent mechanism — it will miss most of how real users actually talk.
-  Expose the capability as an **MCP tool** with a clear docstring and let the **model** decide when to
-  call it; that is the entire point of the tool layer. If a behavior needs to fire from conversation,
-  give the model a tool to fire it — don't intercept the text. *(The tool router's keyword routing is
-  the one sanctioned use of keywords, and only as a recall **optimization** that chooses which tool
-  schemas to OFFER the model — it never decides intent and never invokes anything, and `request_tools`
-  lets the model pull more. Do not extend keyword/string matching into intent or behavior decisions.)*
+- **Guard the context window — inject just-in-time, never bloat the prompt.** Context is finite
+  and attention-diluting: stuffing it *lowers* quality because the instruction that matters gets
+  buried. Load a capability's tools, `guide.md`, and memory **on demand, scoped to relevance** —
+  the router injects only matched categories, a guide rides *with* its tool, recall surfaces only
+  relevant memories — with an explicit "ask for more" path (`request_tools`, `search_memories`).
+  Never append a feature to the always-on prompt for convenience. But "lean" means *defer and
+  scope*, not *omit*: a bloated prompt and a missing instruction are equally defects. *(See
+  [ARCHITECTURE.md → Context economy](ARCHITECTURE.md#core-principle-context-economy-assemble-context-just-in-time).)*
+- **The LLM determines intent — NEVER string-match chat.** Don't infer what a user wants, or
+  trigger behavior, by matching hardcoded words/phrases against their message
+  (`if "stop onboarding" in text: ...`) — people say things hundreds of ways, so phrase-matching is
+  brittle and **wrong** as an intent mechanism. Expose the capability as an **MCP tool** with a clear
+  docstring and let the model decide when to call it; that's the point of the tool layer. *(The
+  router's keyword routing is the lone sanctioned keyword use, and only to choose which tool schemas
+  to OFFER the model — it never decides intent or invokes anything.)*
 - **Code is the truth until a spec is `verified` — never rewrite working code to match an unverified
-  spec.** Most of the C/F/S corpus was **bootstrapped from the current code** and is **not yet
-  verified** (`verified: false` / absent, `tests: []`): each such spec *describes what the code does*,
-  it is not yet a vetted contract. A spec earns authority over the code only by becoming **`verified:
-  true`** — which an agent sets once the spec has a **passing bound test** and has been through the
-  gates (a spec marked verified MUST have a bound test; the loader errors otherwise). So: a
-  **`verified: true`** spec is the contract — converge the code to satisfy it (desired-state). An
-  **unverified** spec is a baseline — the **running code is the source of truth**: if the code
-  diverges, the SPEC is the suspect → **update the spec to match the code** (a spec-only correction),
-  NEVER edit working code to match an unverified spec. And **code changes only ever happen to satisfy a
-  real reported bug or an approved feature** — never a bare spec-vs-code mismatch. When unsure which
-  way a divergence should reconcile, surface it to the operator; do not guess by editing code.
+  spec.** Most of the corpus was bootstrapped from the code and is **unverified** (`verified: false`,
+  `tests: []`): such a spec *describes* what the code does, it isn't a vetted contract. A spec earns
+  authority only by becoming **`verified: true`** — set once it has a passing bound test and has
+  cleared the gates (verified ⇒ MUST have a bound test; the loader errors otherwise). So a
+  **verified** spec is the contract → converge the code to it; an **unverified** spec is a baseline →
+  the **running code wins**: if they diverge, fix the SPEC to match the code, never the reverse. Code
+  changes only ever satisfy a real reported bug or an approved feature — never a bare spec-vs-code
+  mismatch. When unsure which way to reconcile, surface it to the operator; don't guess by editing code.
