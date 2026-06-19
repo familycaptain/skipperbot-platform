@@ -7,7 +7,7 @@ instead of each re-scanning the codebase from scratch. Your job is to make that 
 
 Given the work item (a bug or feature), explore the repo and map the area it touches:
 - **`relevant_files`** — the files this change will read or modify, each with its `role`
-  (e.g. "the weather MCP tools — `get_current_weather_by_zip` lives here").
+  (e.g. "the weather MCP tools — `get_current_weather` lives here").
 - **`key_symbols`** — the functions / classes / routes / MCP tools the change will touch or
   call, with `file` and a one-line `role`.
 - **`excerpts`** — the *crucial* code snippets (the actual lines that matter — the buggy

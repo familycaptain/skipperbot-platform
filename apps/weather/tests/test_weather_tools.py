@@ -69,7 +69,7 @@ class TestCurrentConditionsLabel(unittest.TestCase):
     def test_home_location_label_and_open_meteo_source(self):
         with mock.patch.object(tools, "resolve_location", return_value=_LONDON) as rl, \
                 mock.patch.object(tools, "_fetch_json", return_value=_OPEN_METEO_CURRENT):
-            out = tools.get_current_weather_by_zip()  # no override → home location
+            out = tools.get_current_weather()  # no override → home location
         rl.assert_called_once_with(override=None)
         self.assertIn("London, England, United Kingdom", out)
         # Open-Meteo WMO code 2 → "Partly cloudy"; not wttr/zippopotam.
@@ -84,13 +84,13 @@ class TestCurrentConditionsLabel(unittest.TestCase):
                     lat=45.76, lon=4.83)
         with mock.patch.object(tools, "resolve_location", return_value=lyon) as rl, \
                 mock.patch.object(tools, "_fetch_json", return_value=_OPEN_METEO_CURRENT):
-            out = tools.get_current_weather_by_zip(location="Lyon, France")
+            out = tools.get_current_weather(location="Lyon, France")
         rl.assert_called_once_with(override="Lyon, France")
         self.assertIn("Lyon, Auvergne-Rhône-Alpes, France", out)
 
     def test_no_location_returns_settings_message(self):
         with mock.patch.object(tools, "resolve_location", return_value=_NO_LOCATION):
-            out = tools.get_current_weather_by_zip()
+            out = tools.get_current_weather()
         self.assertIn("Settings", out)
 
     def test_current_and_forecast_agree_on_label(self):
@@ -101,7 +101,7 @@ class TestCurrentConditionsLabel(unittest.TestCase):
         }
         with mock.patch.object(tools, "resolve_location", return_value=_LONDON), \
                 mock.patch.object(tools, "_fetch_json", return_value=_OPEN_METEO_CURRENT):
-            cur = tools.get_current_weather_by_zip()
+            cur = tools.get_current_weather()
         with mock.patch.object(tools, "resolve_location", return_value=_LONDON), \
                 mock.patch.object(tools, "_fetch_json", return_value=forecast_payload):
             daily = tools.get_daily_forecast_by_zip()

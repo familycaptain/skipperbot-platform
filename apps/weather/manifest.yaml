@@ -73,7 +73,7 @@ tool_category:
     - multi day forecast
     - week forecast
   ack:
-    get_current_weather_by_zip: "Checking the current weather..."
+    get_current_weather: "Checking the current weather..."
     get_hourly_forecast_by_zip: "Pulling the hourly forecast..."
     get_rain_chance_by_zip: "Checking the chance of rain..."
     get_daily_forecast_by_zip: "Pulling the daily forecast..."

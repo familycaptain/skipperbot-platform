@@ -86,7 +86,7 @@ def _fetch_json(url: str, timeout: int = 10) -> dict:
 def _current_weather_url(place: dict) -> str:
     """Build the current-conditions Open-Meteo URL for a resolved place.
 
-    SHARED by ``get_current_weather_by_zip`` and the background pre-warm loop so
+    SHARED by ``get_current_weather`` and the background pre-warm loop so
     both address the SAME cache entry (byte-identical URL — same param keys and
     order).
     """
@@ -112,7 +112,7 @@ def _fetch_current(place: dict) -> dict:
     return cached_fetch(url, lambda: _fetch_json(url), ttl, enabled, label="current")
 
 
-def get_current_weather_by_zip(location: str = "") -> str:
+def get_current_weather(location: str = "") -> str:
     """
     Get the current weather for a location.
 
