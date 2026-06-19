@@ -2,7 +2,7 @@ kind: specification
 id: platform.onboarding.guided-agenda
 title: Guided conversational first-run agenda
 state: live
-verified: false
+verified: true
 behavior: >
   ensure_onboarding() seeds the one-time skipper-owned "Get started with Skipper"
   goal with an ORDERED agenda of setup topics, REPLACING (not duplicating) the old
