@@ -20,7 +20,12 @@ Usage:
 """
 
 import argparse
+import os
 import sys
+
+# Run standalone (`python scripts/cleanup_duplicate_memories.py`): the script's own dir is on
+# sys.path, not the repo root, so add the repo root to make `data_layer` importable.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Redundant copies = every row EXCEPT the oldest in each identical (about, content) group.
 _SELECT_REDUNDANT = """
