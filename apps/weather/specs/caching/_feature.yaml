@@ -1,0 +1,20 @@
+kind: feature
+id: weather.caching
+title: Weather caching — instant reads from a freshness cache, background-refreshed
+app: weather
+scope: >
+  The weather tools serve from an in-process freshness cache instead of hitting
+  Open-Meteo on every call, so common reads are instant. A background task
+  pre-warms the configured home location's standard lookups on an interval, and
+  a Settings → Weather tab controls the on/off toggle and the refresh interval.
+  Degrades to the last cached value on a fetch failure (stale-but-useful). In
+  scope: the cache layer, the background pre-warm loop, and the two settings.
+  NOT in scope: persisting the cache (in-memory only), changing tool output
+  formats, the location resolver, or the US-only NWS alerts path.
+autonomy: auto
+state: live
+links: {}
+notes: >
+  In-memory only (module-level dict + Lock); a process restart re-warms within
+  one interval. The refresh interval is BOTH the freshness window and the
+  background refresh period (one knob), floored at 30 seconds.

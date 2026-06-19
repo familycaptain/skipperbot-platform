@@ -1,0 +1,93 @@
+kind: specification
+id: weather.caching.serve-fresh-background-refresh
+title: Weather tools serve from a per-lookup freshness cache, background-refreshed on
+  an interval, controlled by Settings → Weather; degrade to stale-on-failure
+state: live
+verified: true
+behavior: >
+  The weather tools (apps/weather/tools.py) no longer hit Open-Meteo on every call.
+  All four live fetches — current conditions, the rain/precip forecast, the hourly
+  forecast, and the daily forecast — are routed through a single in-process cache
+  (apps/weather/cache.py) keyed by the Open-Meteo request URL, which embeds the
+  resolved lat/lon and that lookup's parameters. Cache identity tracks ONLY
+  parameters that enter the URL: each distinct URL caches INDEPENDENTLY and never
+  collides across lookups or locations; variants whose argument does not change the
+  URL share one entry (the hourly tool's `hours` is a post-fetch slice, so all
+  hourly reads for a location share one key), and variants that DO change the URL
+  key separately (the daily tool's `days` sets forecast_days). To guarantee the
+  background loop and the tools address the SAME entry, the current-conditions
+  request URL is built by a SHARED helper (_current_weather_url(place)) that both
+  get_current_weather_by_zip (via _fetch_current) and the background loop call — the
+  loop produces byte-identical URLs to the tools (same param keys and order). On a
+  tool call with caching ENABLED: if a cached entry for that URL exists and is within
+  the freshness window (age < effective_ttl), it is returned IMMEDIATELY with no
+  network call; otherwise the tool fetches live, stores (url -> (timestamp, value)),
+  and returns it. GRACEFUL DEGRADATION: if a live fetch raises, the cache returns the
+  last stored value for that URL when one exists (stale-but-useful, served
+  indefinitely per "stale beats nothing"); on a COLD miss (no stored value)
+  cached_fetch RE-RAISES the original exception (it must NOT return None) so the
+  tool's existing try/except emits its current error string unchanged. A background
+  async task — registered through apps/weather/hooks.py::register_hooks() via
+  app_platform.lifecycle.register_background_task (mirroring apps/reminders),
+  implemented as an async loop in apps/weather/background.py with its single pass
+  factored into a testable _refresh_once() helper — wakes every refresh interval and,
+  ONLY when caching is enabled AND a home location is configured (app_platform.location
+  resolves a configured record with coordinates), pre-warms the home location's four
+  standard lookups at their DEFAULT parameters through the same cache path; it no-ops
+  (just sleeps) when caching is off or no location is configured, and any fetch error
+  within an iteration is swallowed so the loop never dies. Two settings drive this,
+  declared in apps/weather/manifest.yaml config: and read via app_platform.config.get
+  with scope='app:weather': enable_caching (boolean, DEFAULT TRUE) and
+  refresh_interval_minutes (integer, DEFAULT 5), each carrying a human-readable label
+  + description so the auto-rendered Settings → Weather tab never shows raw keys. The
+  tools read config on each call (a plain synchronous DB read, safe in their
+  threadpool); the async background loop must NOT block the shared event loop — the
+  blocking config read and each Open-Meteo fetch inside _refresh_once run via
+  asyncio.to_thread. INTERVAL CLAMP: both the freshness window and the loop sleep use
+  effective_ttl = max(refresh_interval_minutes * 60, 30) seconds, so a 0/negative/
+  misconfigured interval can neither disable freshness-serving nor hot-spin the loop.
+  When enable_caching is FALSE the tools bypass the cache entirely (always live,
+  today's behavior) and the loop idles. The cache is in-memory only (no
+  DB/migrations); a process restart re-warms within one interval. Tool output formats,
+  the location resolver, and the US-only NWS alerts path are unchanged.
+implements:
+- apps/weather/cache.py::cached_fetch
+- apps/weather/cache.py::effective_ttl
+- apps/weather/tools.py::_current_weather_url
+- apps/weather/tools.py::_fetch_current
+- apps/weather/tools.py::_cache_settings
+- apps/weather/tools.py::get_current_weather_by_zip
+- apps/weather/tools.py::_forecast_for_place
+- apps/weather/tools.py::_hourly_forecast_for_place
+- apps/weather/tools.py::_daily_forecast_for_place
+- apps/weather/hooks.py::register_hooks
+- apps/weather/background.py::start_weather_cache_loop
+- apps/weather/background.py::_refresh_once
+- apps/weather/manifest.yaml::config
+tests:
+- type: unit
+  path: ../../../../tests/evolve/weather/test_weather_cache.py
+  rubric: >
+    Offline/deterministic — no real network, no real config backend; monkeypatch the
+    cache time source. (1) SERVE-IF-FRESH: a within-window second call returns the
+    same value and the fetcher ran ONCE. (2) STALE EXPIRY -> REFETCH past
+    effective_ttl. (3) INDEPENDENT KEYS: two urls cache separately. (4)
+    STALE-ON-FAILURE: after a value is cached, a raising fetcher returns the last
+    cached value. (5) COLD-MISS RE-RAISE: a raising fetcher with nothing cached
+    re-raises (does NOT return None / store). (6) DISABLED BYPASS: enabled=False
+    always fetches and never touches the store. (7) INTERVAL CLAMP: 0/negative/
+    non-numeric -> effective_ttl==30; 5 -> 300. (8) WARMED-KEY IDENTITY: the URL the
+    background _refresh_once warms for current conditions is byte-identical to
+    _current_weather_url(place). (9) BACKGROUND GATING: caching disabled -> no fetch;
+    enabled but no configured location -> no fetch; enabled + a stubbed home location
+    -> the four standard lookups fetched, and a raising fetcher does NOT propagate out
+    of _refresh_once.
+links: {}
+notes: >
+  In-memory cache (design fork 1) + pre-warm all four standard lookups (design fork 2),
+  both the recommended/approved options. UNBOUNDED stale-serve on outage is
+  intentional ("stale-but-useful beats nothing") — no max-stale cap. Thread-safety
+  (Lock around the dict; fetch outside the lock) rests on the architecture review, not
+  the offline rubric. USER ACTION after deploy: the Settings → Weather tab appears
+  automatically (defaults on / 5-min need no action); a UI hard-refresh may be needed
+  to see the new tab.
