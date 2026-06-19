@@ -26,7 +26,9 @@ Rules:
 - `implements`: the code path(s) this spec will govern (best guess from context).
 - `tests`: at least one bound test. Prefer a deterministic test (`type: playwright`
   or `type: unit` with a `path`); add an `type: agentic` test with a `rubric` only
-  when judgment is genuinely required. Every test must have a concrete oracle.
+  when judgment is genuinely required. Every test must have a concrete oracle. A `unit`
+  `path` lives in the app's own tree — `apps/<capability>/tests/…` (co-located so the app
+  is distributable) — not the top-level `tests/`.
 - Avoid the naive-spec traps the spec-audit agent hunts (1:1 over a many-to-many,
   missing empty/error states, ambiguous "the X"). Write it sound the first time.
 

@@ -9,6 +9,6 @@ implements:
 - apps/evolve/workspace.py
 tests:
 - type: unit
-  path: tests/evolve/test_workspace.py
+  path: apps/evolve/tests/test_workspace.py
 links: {}
 notes: ''

@@ -18,7 +18,7 @@ import sys
 import unittest
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__import__("repo_paths").ROOT)
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 

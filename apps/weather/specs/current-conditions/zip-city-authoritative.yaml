@@ -25,7 +25,7 @@ implements:
 - apps/weather/data.py::nws_alerts
 tests:
 - type: unit
-  path: ../../../tests/evolve/weather/test_weather_tools.py
+  path: apps/weather/tests/test_weather_tools.py
   rubric: >
     Offline/deterministic. Stub app_platform.location.resolve_location to a London
     record {display_label='London, England, United Kingdom', lat, lon,

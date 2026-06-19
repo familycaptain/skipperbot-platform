@@ -10,7 +10,7 @@ behavior: >
 implements:
   - apps/evolve/engine/mermaid.py
 tests:
-  - { type: unit, path: tests/evolve/process_engine/test_engine.py }
+  - { type: unit, path: apps/evolve/tests/process_engine/test_engine.py }
 autonomy: hands-on
 links: { related: [evolve.app-ui] }
 notes: "sdlc.md is the static generated view; this spec is the live per-instance render."

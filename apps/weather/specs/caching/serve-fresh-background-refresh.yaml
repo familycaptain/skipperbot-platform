@@ -79,7 +79,7 @@ implements:
 - apps/weather/manifest.yaml::config
 tests:
 - type: unit
-  path: ../../../../tests/evolve/weather/test_weather_cache.py
+  path: apps/weather/tests/test_weather_cache.py
   rubric: >
     Offline/deterministic — no real network, no real config backend; monkeypatch the
     cache time source. (1) SERVE-IF-FRESH: a within-window second call returns the

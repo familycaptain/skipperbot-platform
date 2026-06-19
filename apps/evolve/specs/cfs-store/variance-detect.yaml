@@ -11,7 +11,7 @@ behavior: >
 implements:
   - apps/evolve/variance.py
 tests:
-  - { type: unit, path: tests/evolve/cfs_store/test_variance.py }
+  - { type: unit, path: apps/evolve/tests/cfs_store/test_variance.py }
 autonomy: hands-on
 links: { related: [evolve.process-engine.instance-state] }
 notes: "Mostly mechanical (tests + checksums); the agentic fallback is the variance-detect / spec-audit agents."

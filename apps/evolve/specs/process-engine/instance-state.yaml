@@ -12,7 +12,7 @@ implements:
   - apps/evolve/engine/instance.py
   - apps/evolve/migrations/002_process_instances.sql
 tests:
-  - { type: unit, path: tests/evolve/process_engine/test_engine.py }
+  - { type: unit, path: apps/evolve/tests/process_engine/test_engine.py }
 autonomy: hands-on
 links: { related: [evolve.process-engine.walk-step] }
 notes: "The BPM 'process instance' = per-work-item C/F/S state (EVOLVE.md §7)."

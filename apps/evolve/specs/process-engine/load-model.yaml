@@ -11,7 +11,7 @@ behavior: >
 implements:
   - apps/evolve/engine/model.py
 tests:
-  - { type: unit, path: tests/evolve/process_engine/test_engine.py }
+  - { type: unit, path: apps/evolve/tests/process_engine/test_engine.py }
 autonomy: hands-on
 links: {}
 notes: "The model already exists at specs/evolve/sdlc.yaml (v0.3.2, 39 nodes / 54 edges)."
