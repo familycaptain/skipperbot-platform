@@ -10,6 +10,6 @@ implements:
 - apps/evolve/build_loop.py
 tests:
 - type: unit
-  path: tests/evolve/test_build_loop.py
+  path: apps/evolve/tests/test_build_loop.py
 links: {}
 notes: ''

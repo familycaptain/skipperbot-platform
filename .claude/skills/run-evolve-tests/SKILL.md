@@ -12,11 +12,11 @@ allowed-tools: Bash(python3 -m unittest*)
 Pure stdlib `unittest` — no installs, no DB, no network:
 
 ```bash
-python3 -m unittest discover -s tests/evolve
+python3 -m unittest discover -s apps/evolve/tests
 ```
 
-- A spec's bound `unit` tests live under `tests/evolve/<feature>/` (e.g.
-  `tests/evolve/cfs_store/`, `tests/evolve/process_engine/`).
+- A spec's bound `unit` tests live under `apps/evolve/tests/<feature>/` (e.g.
+  `apps/evolve/tests/cfs_store/`, `apps/evolve/tests/process_engine/`).
 - Exit code 0 / `OK` = green. `FAILED` lists the failing cases — report them as the
   variance signal (a red bound test means the spec is not satisfied, EVOLVE.md §3).
 - The live Anthropic test is gated behind `EVOLVE_LIVE_TESTS=1` and is skipped by

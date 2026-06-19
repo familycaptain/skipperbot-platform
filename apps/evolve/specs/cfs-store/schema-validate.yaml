@@ -13,7 +13,7 @@ implements:
   - apps/evolve/schema.py
   - apps/evolve/store.py
 tests:
-  - { type: unit, path: tests/evolve/cfs_store/test_schema_validate.py }
+  - { type: unit, path: apps/evolve/tests/cfs_store/test_schema_validate.py }
 autonomy: hands-on
 links: { related: [evolve.agents] }
 notes: >

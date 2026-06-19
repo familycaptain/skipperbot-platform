@@ -596,6 +596,7 @@ def create_app_skeleton(app_name: str, folder_name: str) -> None:
         "LICENSE": LICENSE,
         ".gitignore": GITIGNORE,
         "pyproject.toml": PYPROJECT,
+        "tests/__init__.py": "",          # tests/ is a package so it's discoverable when mounted at apps/<id>/tests
         "tests/test_smoke.py": TEST_SMOKE,
     }
 

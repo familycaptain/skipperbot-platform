@@ -123,6 +123,9 @@ apps/
       <feature>/           #   — Evolve's source of truth; travels WITH the app
         _feature.yaml      #     (in-repo or in the app's own repo), see EVOLVE.md §4
         <spec>.yaml
+    tests/                 # the app's OWN tests — co-located so they ship with the app
+      __init__.py          #   (makes it discoverable when mounted at apps/<id>/tests)
+      test_*.py            #   unit/smoke tests; a spec's `unit` bound test lives here
 ```
 
 The platform discovers capabilities by **well-known file names** — no central
@@ -144,6 +147,7 @@ registration. A file's mere presence wires it in:
 | `data.py` / `store.py` / `runner.py` | convention | App-internal data layer / business logic / background pipeline. Not discovered by name — imported by the app's own `tools.py`/`routes.py`. |
 | `specs/SPEC.md` | convention | The app's own prose design spec. |
 | `specs/**/*.yaml` | convention | The app's C/F/S tree (Evolve's source of truth), co-located so it travels with the app whether in-repo or in its own repo. See [EVOLVE.md §4](EVOLVE.md). |
+| `tests/**/*.py` | convention | The app's own tests, co-located so they ship with the app (a distributable app carries its tests). `tests/__init__.py` makes them discoverable when mounted at `apps/<id>/tests`. Platform/cross-cutting tests live in the top-level `tests/`. |
 
 > **`guide.md` vs `help.md` — ship both.** `guide.md` tells *the agent* how to
 > drive the tools (names, args, edge cases). `help.md` is a full *user manual*

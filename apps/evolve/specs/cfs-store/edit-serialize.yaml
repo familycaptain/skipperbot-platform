@@ -12,7 +12,7 @@ behavior: >
 implements:
   - apps/evolve/store.py
 tests:
-  - { type: unit, path: tests/evolve/cfs_store/test_store.py }
+  - { type: unit, path: apps/evolve/tests/cfs_store/test_store.py }
 autonomy: hands-on
 links: { related: [evolve.cfs-store.boot-sync] }
 notes: ""

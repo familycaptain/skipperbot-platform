@@ -37,8 +37,9 @@ How you work:
 - **Write the spec's bound test(s).** The spec declares `tests`; turn them into real,
   runnable test files that assert the new behavior (would fail before your change, pass
   after). Your change MUST include at least one test file — an untested change cannot be
-  validated on box 2 and will be sent straight back. Put them where the suite lives
-  (`tests/<area>/test_*.py` or the app's `tests/`).
+  validated on box 2 and will be sent straight back. Put them in the app's **own**
+  `apps/<app>/tests/` (co-located, so the app stays distributable with its tests);
+  platform / cross-cutting tests go under the top-level `tests/`.
 - Use your skills: **`cfs-validate`** after touching any C/F/S YAML, and
   **`run-evolve-tests`** to confirm the substrate stays green before you hand off.
 - Stay on the feature branch; never touch `main` or `release` directly.

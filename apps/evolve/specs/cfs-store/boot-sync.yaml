@@ -13,7 +13,7 @@ implements:
   - apps/evolve/store.py
   - apps/evolve/migrations/001_cfs_tables.sql
 tests:
-  - { type: unit, path: tests/evolve/cfs_store/test_boot_sync.py }
+  - { type: unit, path: apps/evolve/tests/cfs_store/test_boot_sync.py }
 autonomy: hands-on
 links: { related: [evolve.cfs-store.edit-serialize] }
 notes: "Files→DB direction. The reverse (DB→files) is evolve.cfs-store.edit-serialize."

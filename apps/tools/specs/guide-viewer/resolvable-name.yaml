@@ -43,7 +43,7 @@ implements:
 - apps/tools/ui/ToolsApp.jsx
 tests:
 - type: unit
-  path: tests/evolve/tools/test_tool_guide.py
+  path: apps/tools/tests/test_tool_guide.py
   rubric: 'Test seam: monkeypatch tool_router.TOOL_CATEGORIES with a packaged category keyed
     ''app:auto'' (auto has apps/auto/guide.md) plus one with no guide file, and (optionally)
     tmp files. GET /api/apps/tools/categories: the ''app:auto'' category''s guide == ''auto''
@@ -51,13 +51,13 @@ tests:
     category''s guide contains ''/'' or starts with ''/''. Assert two distinct PACKAGED categories
     with guides return DIFFERENT guide values (regression for the always-same-path symptom).'
 - type: unit
-  path: tests/evolve/tools/test_tool_guide.py
+  path: apps/tools/tests/test_tool_guide.py
   rubric: 'Round-trip: for each category whose guide is non-null from /categories, GET /api/apps/tools/guide/{guide}
     returns 200 with non-empty content (no 400 ''Invalid guide name'', no 404). A name containing
     ''/'' or an absolute path still 400s (the traversal guard is intact). A legacy guide value
     carrying ''.md'' (e.g. ''web.md'') is accepted verbatim and resolves.'
 - type: unit
-  path: tests/evolve/tools/test_tool_guide.py
+  path: apps/tools/tests/test_tool_guide.py
   rubric: 'Resolution parity / no-regression: GET /guide/<app_id> for a packaged app returns
     content from apps/<app_id>/guide.md (source ''apps/<app_id>/guide.md''); a nonexistent
     name returns 404. The internal _guide_path (absolute, used by get_guides_for_message)
