@@ -21,11 +21,9 @@ behavior: 'When the Compound-interest calculator solves for **Years** or **Annua
 
   Behavior and wording must match across both surfaces.'
 implements:
-- 'apps/calculators/ui/CalculatorsApp.jsx — solveCompound(): guard A<=P at the start of the field==="t"
-  and field==="rate" branches, before the Math.log / Math.pow computation.'
-- 'apps/calculators/tools.py — compound_interest(): same guard at the start of the field=="years"
-  and field=="annual_rate" branches, returning a plain-English string.'
-- apps/calculators/manifest.yaml — version bump.
+- apps/calculators/ui/CalculatorsApp.jsx::solveCompound
+- apps/calculators/tools.py::compound_interest
+- apps/calculators/manifest.yaml
 tests:
 - type: unit
   path: apps/calculators/tests/test_tools_compound.py
