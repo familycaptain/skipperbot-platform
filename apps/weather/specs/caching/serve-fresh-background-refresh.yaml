@@ -50,6 +50,19 @@ behavior: >
   today's behavior) and the loop idles. The cache is in-memory only (no
   DB/migrations); a process restart re-warms within one interval. Tool output formats,
   the location resolver, and the US-only NWS alerts path are unchanged.
+  OBSERVABILITY (charter "make it observable"): the cache and background loop emit
+  plain log lines where the action happens — no parallel telemetry — so the operator
+  can confirm the feature on a live box by reading the logs. cached_fetch logs at INFO
+  a fresh hit (`WEATHER-CACHE hit <label> age Ns`) and a miss → live fetch
+  (`WEATHER-CACHE miss <label> -> live fetch`), and at WARNING a stale-on-failure serve
+  (`WEATHER-CACHE stale-serve <label> (live fetch failed: ...)`); `<label>` is the
+  human-readable lookup name (current / rain-forecast / hourly / daily-Nd) passed by
+  each tool call site and does NOT affect cache identity (the URL stays the key).
+  _refresh_once logs at INFO one line per successful pass
+  (`WEATHER-REFRESH pre-warmed [...lookups] for <location>; next pass in Ns`) and at
+  WARNING per failed pre-warm fetch — previously the healthy loop logged nothing (only
+  a DEBUG line on failure), so it was invisible. INFO is the visible threshold the
+  operator confirms against at Gate 3.
 implements:
 - apps/weather/cache.py::cached_fetch
 - apps/weather/cache.py::effective_ttl
@@ -81,7 +94,12 @@ tests:
     _current_weather_url(place). (9) BACKGROUND GATING: caching disabled -> no fetch;
     enabled but no configured location -> no fetch; enabled + a stubbed home location
     -> the four standard lookups fetched, and a raising fetcher does NOT propagate out
-    of _refresh_once.
+    of _refresh_once. (10) OBSERVABILITY (assertLogs): a miss logs
+    `WEATHER-CACHE miss <label> -> live fetch` and a subsequent fresh read logs
+    `WEATHER-CACHE hit <label>` at INFO; a stale-on-failure serve logs
+    `WEATHER-CACHE stale-serve <label>` at WARNING (and still returns the stale value);
+    a successful _refresh_once pass logs one `WEATHER-REFRESH pre-warmed ... for
+    <location>` line at INFO.
 links: {}
 notes: >
   In-memory cache (design fork 1) + pre-warm all four standard lookups (design fork 2),
@@ -90,4 +108,10 @@ notes: >
   (Lock around the dict; fetch outside the lock) rests on the architecture review, not
   the offline rubric. USER ACTION after deploy: the Settings → Weather tab appears
   automatically (defaults on / 5-min need no action); a UI hard-refresh may be needed
-  to see the new tab.
+  to see the new tab. GATE-3 CONFIRMATION (how the operator verifies it live): tail the
+  Skipper logs at INFO and ask for the weather twice within the refresh window — the
+  first read logs `WEATHER-CACHE miss current -> live fetch`, the second logs
+  `WEATHER-CACHE hit current age Ns` (proves serve-from-cache); the background loop logs
+  `WEATHER-REFRESH pre-warmed [...] for <home>; next pass in 300s` every interval
+  (proves pre-warming). Observability was added in the verify round for ev-22 after the
+  first build worked functionally but could not be confirmed from the logs.

@@ -139,7 +139,7 @@ class BackgroundTests(unittest.TestCase):
     def test_warmed_key_identity(self):
         captured = []
 
-        def fake_cf(url, fetcher, ttl, enabled):
+        def fake_cf(url, fetcher, ttl, enabled, label=""):
             captured.append(url)
             return {"current": {}}
 
@@ -158,7 +158,7 @@ class BackgroundTests(unittest.TestCase):
     def test_background_gating(self):
         fetches = []
 
-        def record(url, f, ttl, en):
+        def record(url, f, ttl, en, label=""):
             fetches.append(url)
             return {"x": 1}
 
@@ -189,7 +189,7 @@ class BackgroundTests(unittest.TestCase):
         self.assertEqual(len(fetches), 4)
 
         # (d) a fetcher raising does NOT propagate out of _refresh_once
-        def boom(url, f, ttl, en):
+        def boom(url, f, ttl, en, label=""):
             raise RuntimeError("down")
 
         with mock.patch.object(tools, "cached_fetch", boom), \
@@ -197,6 +197,57 @@ class BackgroundTests(unittest.TestCase):
                 mock.patch.object(tools, "_cache_settings", lambda: (True, 300)), \
                 mock.patch.object(tools, "_resolve_place", lambda location="": (_PLACE, None)):
             background._refresh_once()  # must not raise
+
+
+class ObservabilityTests(unittest.TestCase):
+    """(10) The cache + background loop emit plain log lines at each decision
+    point so the operator can confirm the feature live (charter: make it
+    observable). These assert WHAT is logged, not just that nothing crashes."""
+
+    def setUp(self):
+        wcache.clear()
+        self.t = 1000.0
+        self._orig_now = wcache._now
+        wcache._now = lambda: self.t
+
+    def tearDown(self):
+        wcache._now = self._orig_now
+        wcache.clear()
+
+    # (10a) a miss logs "-> live fetch"; a subsequent fresh read logs "hit"
+    def test_logs_miss_then_hit(self):
+        with self.assertLogs("apps.weather.cache", level="INFO") as cm:
+            wcache.cached_fetch("u", lambda: "v", 300, True, label="current")
+            self.t += 10  # still fresh
+            wcache.cached_fetch("u", lambda: "v", 300, True, label="current")
+        joined = "\n".join(cm.output)
+        self.assertIn("WEATHER-CACHE miss current -> live fetch", joined)
+        self.assertIn("WEATHER-CACHE hit current", joined)
+
+    # (10b) serving a stale value after a live-fetch failure logs a WARNING
+    def test_logs_stale_serve_on_failure(self):
+        wcache.cached_fetch("u", lambda: "good", 300, True, label="current")
+        self.t += 10_000  # well past freshness
+
+        def boom():
+            raise RuntimeError("network down")
+
+        with self.assertLogs("apps.weather.cache", level="WARNING") as cm:
+            val = wcache.cached_fetch("u", boom, 300, True, label="current")
+        self.assertEqual(val, "good")  # graceful degradation still holds
+        self.assertIn("WEATHER-CACHE stale-serve current", "\n".join(cm.output))
+
+    # (10c) a successful background pass logs ONE INFO line (lookups + location)
+    def test_refresh_logs_pass(self):
+        with mock.patch.object(tools, "cached_fetch", lambda *a, **k: {"x": 1}), \
+                mock.patch.object(tools, "_fetch_json", lambda url, **k: {"x": 1}), \
+                mock.patch.object(tools, "_cache_settings", lambda: (True, 300)), \
+                mock.patch.object(tools, "_resolve_place", lambda location="": (_PLACE, None)), \
+                self.assertLogs("apps.weather.background", level="INFO") as cm:
+            background._refresh_once()
+        joined = "\n".join(cm.output)
+        self.assertIn("WEATHER-REFRESH pre-warmed", joined)
+        self.assertIn("Austin", joined)  # the home location label
 
 
 if __name__ == "__main__":

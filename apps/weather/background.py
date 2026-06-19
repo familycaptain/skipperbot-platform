@@ -30,7 +30,7 @@ def _refresh_once() -> None:
     """
     from apps.weather import tools
 
-    enabled, _ttl = tools._cache_settings()
+    enabled, ttl = tools._cache_settings()
     if not enabled:
         return
     place, err = tools._resolve_place()  # home location (no override)
@@ -41,16 +41,26 @@ def _refresh_once() -> None:
     # SAME cache path the tools use — identical URLs, so a warmed entry serves
     # the next real tool read.
     warmers = (
-        lambda: tools._fetch_current(place),
-        lambda: tools._forecast_for_place(place),
-        lambda: tools._hourly_forecast_for_place(place),
-        lambda: tools._daily_forecast_for_place(place, 7),
+        ("current", lambda: tools._fetch_current(place)),
+        ("rain-forecast", lambda: tools._forecast_for_place(place)),
+        ("hourly", lambda: tools._hourly_forecast_for_place(place)),
+        ("daily-7d", lambda: tools._daily_forecast_for_place(place, 7)),
     )
-    for warm in warmers:
+    warmed = []
+    for name, warm in warmers:
         try:
             warm()
+            warmed.append(name)
         except Exception as e:  # noqa: BLE001 — never let the loop die
-            logger.debug("weather pre-warm fetch failed: %r", e)
+            logger.warning("weather pre-warm fetch %s failed: %r", name, e)
+    # Observability: one INFO line per pass so the operator can confirm the
+    # background loop is actually pre-warming (which lookups, which location,
+    # when the next pass runs) — previously only a DEBUG line on failure, so a
+    # healthy loop was invisible.
+    logger.info(
+        "WEATHER-REFRESH pre-warmed %s for %s; next pass in %ds",
+        warmed or "nothing", place.get("label") or "home location", ttl,
+    )
 
 
 async def start_weather_cache_loop() -> None:

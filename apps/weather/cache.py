@@ -10,9 +10,12 @@ In-memory only (a module-level dict guarded by a Lock) — no DB, no migrations.
 A process restart simply re-warms within one refresh interval.
 """
 
+import logging
 import threading
 import time
 from typing import Any, Callable
+
+logger = logging.getLogger(__name__)
 
 # url -> (timestamp_seconds, value)
 _ENTRIES: dict[str, tuple[float, Any]] = {}
@@ -40,7 +43,13 @@ def effective_ttl(refresh_interval_minutes) -> int:
     return max(secs, _MIN_TTL_SECONDS)
 
 
-def cached_fetch(url: str, fetcher: Callable[[], Any], ttl_seconds: float, enabled: bool) -> Any:
+def cached_fetch(
+    url: str,
+    fetcher: Callable[[], Any],
+    ttl_seconds: float,
+    enabled: bool,
+    label: str = "",
+) -> Any:
     """Serve-if-fresh, else fetch live; degrade to stale on failure.
 
     - ``enabled=False`` bypasses the cache entirely (always live; no read, no
@@ -53,23 +62,36 @@ def cached_fetch(url: str, fetcher: Callable[[], Any], ttl_seconds: float, enabl
     - On a COLD miss (fetch raises, nothing stored) RE-RAISES the original
       exception (never returns ``None``) so the tool emits its existing error
       string unchanged.
+
+    OBSERVABILITY: emits a plain INFO log line at each decision point so the
+    operator can confirm caching live (a fresh hit, a miss → live fetch) and a
+    WARNING when a stale value is served because a live fetch failed. ``label``
+    is the human-readable lookup name shown in those lines (falls back to the
+    URL); it has no effect on cache identity (the URL remains the key).
     """
     if not enabled:
         return fetcher()
 
+    what = label or url
     now = _now()
     with _LOCK:
         entry = _ENTRIES.get(url)
     if entry is not None and (now - entry[0]) < ttl_seconds:
+        logger.info("WEATHER-CACHE hit %s age %.0fs", what, now - entry[0])
         return entry[1]  # fresh hit
 
     # Miss or stale — fetch live OUTSIDE the lock (network I/O must not block
     # other readers/writers).
+    logger.info("WEATHER-CACHE miss %s -> live fetch", what)
     try:
         value = fetcher()
-    except Exception:
+    except Exception as exc:
         if entry is not None:
-            return entry[1]  # graceful degradation: serve the last stored value
+            # graceful degradation: serve the last stored value
+            logger.warning(
+                "WEATHER-CACHE stale-serve %s (live fetch failed: %r)", what, exc
+            )
+            return entry[1]
         raise  # cold miss -> propagate so the tool's try/except handles it
     with _LOCK:
         _ENTRIES[url] = (now, value)
