@@ -150,6 +150,15 @@ These are the operator's standing non-functional requirements; honor them by def
   box. No assumptions about a specific host, path, or always-on network.
 - **Degrade gracefully and idempotently.** Define not-found / offline / invalid-input
   behavior explicitly; make operations safe to retry.
+- **Make it observable — the operator must be able to SEE it working.** A behavior that
+  works but leaves no trace can't be verified or trusted (a cache that never logs a hit; a
+  background loop that logs only on failure). Anything that runs in the background, serves
+  from a cache, takes a fallback, or acts without a direct user request must emit a signal
+  *where the action happens* — at minimum a log line (cache hit vs live fetch, a refresh pass
+  firing, a stale/fallback path taken, a background task's outcome). A plain log line usually
+  suffices — don't build parallel telemetry. Every **spec** must state WHAT is observable and
+  HOW the operator confirms it at Gate 3, and the **build** must actually emit it. "How will
+  the operator know this is working?" is a question spec and build must both answer.
 - **Guard the context window — inject just-in-time, never bloat the prompt.** The model's
   context is finite, costly, and attention-diluting: stuffing it *lowers* quality because
   the instruction that matters gets buried. A capability must load its tools, behavioral
