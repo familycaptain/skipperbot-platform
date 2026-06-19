@@ -471,6 +471,10 @@ async def document_domain_handler(domain: dict, budget_status: dict) -> dict:
         "memories_extracted": memory_updates,
         "model_used": model_tier,
         "tokens_used": tokens_used,
+        # Don't digest this cycle's reasoning back into memories — the domain READS memories
+        # to organize them; feeding its reflection back in is a noisy feedback loop. Its real
+        # output is the documents it creates, not new memories.
+        "digest_reasoning": False,
         "next_check_seconds": next_check,
     }
 

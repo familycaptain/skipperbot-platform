@@ -380,11 +380,14 @@ async def _run_domain_cycle(domain_name: str, domain: dict, budget_status: dict)
             tokens_used=result.get("tokens_used", 0),
         )
 
-        # Digest cycle reasoning into shared memories (fire-and-forget)
-        # Skip cycles that didn't actually run the LLM (model=skip)
+        # Digest cycle reasoning into shared memories (fire-and-forget).
+        # Skip cycles that didn't run the LLM (model=skip), and operational domains that
+        # opt out via digest_reasoning=False — their "reasoning" is status, not insight
+        # (e.g. the memory domain's "Drained N items from the queue" would otherwise become
+        # a memory, which is doubly silly for the domain whose job is making memories).
         model_used = result.get("model_used", "skip")
         reasoning = result.get("reasoning", "")
-        if model_used != "skip" and reasoning:
+        if model_used != "skip" and reasoning and result.get("digest_reasoning", True):
             log_id = log_entry.get("id", "") if log_entry else ""
             asyncio.create_task(_digest_cycle(
                 domain_name, reasoning,
