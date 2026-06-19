@@ -1,0 +1,9 @@
+kind: feature
+id: platform.onboarding
+title: First-run onboarding
+state: live
+links: {}
+notes: >
+  The one-time, skipper-owned setup experience seeded on a fresh install. Covers
+  the seeded onboarding goal/agenda the PM thinking domain walks; the wizard core
+  flow (account, timezone, key) is documented in specs/ONBOARDING.md.

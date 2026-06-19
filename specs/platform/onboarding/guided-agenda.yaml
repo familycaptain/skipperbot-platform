@@ -1,0 +1,70 @@
+kind: specification
+id: platform.onboarding.guided-agenda
+title: Guided conversational first-run agenda
+state: live
+verified: false
+behavior: >
+  ensure_onboarding() seeds the one-time skipper-owned "Get started with Skipper"
+  goal with an ORDERED agenda of setup topics, REPLACING (not duplicating) the old
+  "Get to know the family" + catch-all "Configure Skipper" projects. The agenda is
+  created in this order: (1) household/who's-using, (2) intent/goals ("how do you
+  want to use Skipper" — early, so the PM can tailor the rest), (3) location, (4)
+  Discord, (5) other integrations, FOLLOWED BY the existing per-app "Try the {app}"
+  tours (onboarding_tour apps only). Each agenda topic is a project+task pair whose
+  description (the unit the PM thinking domain reads — the goals store's task is
+  name-only) states the WHY (what it enables) and an ACCURATE WHERE: household and
+  intent are learned in chat (no Settings page); location -> "Settings -> System ->
+  Location" (a free-text place/postal field, not specifically "ZIP"); Discord
+  distinguishes enabling the bridge ("Settings -> Integrations") from a user linking
+  their own account ("Settings -> Members -> My Discord"); other integrations ->
+  "Settings -> Integrations". Each agenda description also says the topic is OPTIONAL
+  (skip gracefully — mark done, move on) and that any secrets/tokens are entered in
+  the Settings UI, never pasted into chat. Goal-level PM guidance: work the agenda IN
+  ORDER, one gentle nudge at a time, mark each topic done before the next (tracked +
+  resumable across sessions); PRUNE/prioritize the per-app tours to the user's stated
+  intent rather than walking every app; and honor an explicit "I'm good, I'll explore
+  myself" by backing off / closing the goal. The agenda is delivered conversationally
+  by the existing PM thinking-domain (which reads these descriptions) — NOT a
+  hardcoded dialog tree; descriptions guide, the model phrases and adapts. The seed
+  stays idempotent (_SEEDED_KEY) and is seeded from the first-run wizard after the
+  primary user exists (naming them). PRECONDITION: this shape applies to FRESH
+  installs (where _SEEDED_KEY is unset); already-onboarded installs are not migrated.
+  No change to the web wizard core flow, the PM engine, or the goals schema.
+  specs/ONBOARDING.md is updated to describe the new agenda shape.
+implements:
+- apps/goals/onboarding.py::ONBOARDING_AGENDA
+- apps/goals/onboarding.py::ensure_onboarding
+- specs/ONBOARDING.md
+tests:
+- type: unit
+  path: ../../../tests/evolve/goals/test_onboarding_agenda.py
+  rubric: >
+    Offline/stdlib unittest (stubbed store/apps_info/primary-user/config, no DB). Asserts:
+    agenda projects exist for household, intent, location, Discord, integrations; the seed
+    CREATION order is household->intent->location->discord->integrations and PRECEDES any
+    per-app "Try the {app}" tour; the old catch-all "Configure Skipper" and "Get to know the
+    family" projects are GONE and each agenda key is seeded EXACTLY ONCE (replace-not-
+    duplicate). PER-TOPIC where-oracle (not a blanket "Settings"): household/intent are
+    non-empty chat-learn prompts (need NOT mention Settings); location mentions Settings +
+    System + Location; Discord mentions Settings + Integrations + Members/My Discord;
+    integrations mentions Settings + Integrations. Each agenda description includes an
+    OPTIONAL/skip clause and the secrets-in-Settings note. Idempotent: a second call seeds
+    no duplicate goal (_SEEDED_KEY). NOTE: proves SEED order/shape only, not that the PM
+    walks it in order (Gate-3 live acceptance).
+- type: acceptance
+  path: "live: fresh-install first-run chat"
+  rubric: >
+    On a fresh install, the PM walks the agenda in order — household, then intent, then
+    location (-> Settings->System->Location), Discord (bridge vs personal link),
+    integrations — one warm nudge at a time with why+where, then prunes app tours to the
+    stated intent; each WHERE resolves to a real Settings destination; a topic can be
+    skipped gracefully; an "I'm good" exits onboarding; closing/reopening resumes. Operator
+    Gate-3 live verify.
+links: {}
+notes: >
+  Built to the recommended forks: order via description-guidance + creation order (no schema
+  change, fork 1=A) and keep per-app tours after the agenda, pruned to intent (fork 2=A).
+  Because the goals store's task is name-only, each topic's why+where lives on its PROJECT
+  description (what the PM reads); the bound test checks project descriptions accordingly.
+  ordering stays advisory (Gate-3 verifies the PM honors it); a priority field is the
+  backstop if it doesn't. Spec graduates to verified once the bound test passes on box 2.
