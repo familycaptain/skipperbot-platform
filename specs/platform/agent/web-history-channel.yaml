@@ -1,0 +1,65 @@
+kind: specification
+id: platform.agent.web-history-channel
+title: Web history reload is scoped to the web channel (opt-in, backward-compatible)
+state: live
+autonomy: gated
+behavior: 'Every persisted chat turn records the surface it originated on. chat_turns has a
+  ''channel'' text column (added idempotently via ensure_chatlog_schema() and present in the
+  baseline DDL); on first run existing rows with channel IS NULL are backfilled to ''web'' so
+  today''s web history is preserved. THREE SEAMS, each stated once:
+
+  (1) WRITE normalization (chatlog_channels.normalize_channel) — save_turn accepts a ''channel''
+  and normalizes None/'''' to ''web''; an explicit surface value is stored lowercased/trimmed.
+  The web/Discord path passes the value process_chat already carries (web->''web'',
+  discord->''discord''); the voice path (app_platform/voice/chatlog.py) persists ''voice'';
+  bot-initiated notifications and any untagged caller fall to the ''web'' default.
+
+  (2) READ visibility (chatlog_channels.is_web_visible; WEB_VISIBLE_SQL) — a turn is web-visible
+  iff channel = ''web'' OR channel IS NULL. The OR-NULL clause guarantees a migrated-but-not-yet
+  backfilled DB never hides legacy web history; every explicitly non-web surface (''voice'',
+  ''discord'', future ''mobile''/''chat'') is excluded. The predicate assumes values normalized
+  at rest by the WRITE seam, so it matches ''web'' exactly and does not re-normalize.
+
+  (3) ENDPOINT contract (BACKWARD-COMPATIBLE) — GET /api/chat/history accepts an OPTIONAL
+  ''channel'' query param. Omitted -> returns ALL of the principal''s turns exactly as before, so
+  companion clients in separate repos (skipperbot-mobile, skipperbot-voice) that call this single
+  history endpoint are UNCHANGED and never lose their own history. channel=web -> filtered to
+  web-visible turns. The in-repo web client (web/src/hooks/useSkipperSocket.js) requests
+  channel=web, so the web-UI reload no longer shows voice (or other non-web) turns.
+
+  The narrowing is the DISPLAY read ALONE and is opt-in per call: get_recent_turns gains an
+  OPTIONAL channel arg (default None = UNFILTERED) so session bootstrap (load_recent_turns),
+  semantic recall (search_turns), the thinking-loop read (get_turns_since), goal-app reads, and
+  memory ingestion all stay cross-surface — voice turns stay remembered and searchable, they
+  simply do not appear in the web scrollback.
+
+  INVARIANT: the channel filter lives in the ENDPOINT, never inside get_recent_turns (which
+  defaults unfiltered); the in-memory predicate (is_web_visible) and the SQL filter
+  (WEB_VISIBLE_SQL) agree (web + NULL visible); channel is set SERVER-SIDE from the code path,
+  never from a client-supplied request field.'
+implements:
+- chatlog_channels.py
+- data_layer/chatlogs.py
+- chatlog_store.py
+- chat.py
+- app_platform/voice/chatlog.py
+- agent.py
+- web/src/hooks/useSkipperSocket.js
+- migrations/000_baseline.sql
+tests:
+- type: unit
+  path: tests/webchat/test_chat_history_channel.py
+  rubric: 'Stdlib-only (no DB/network), mirrors tests/webchat/test_chat_history_render.py. (a)
+    normalize_channel: None/''''/whitespace -> ''web''; ''Voice''/'' voice '' -> ''voice'';
+    ''discord'' stays. (b) is_web_visible: True for ''web'' and None; False for ''voice''/''discord''/''mobile''.
+    (c) select_display_turns over a mixed list returns web+legacy in original order, drops
+    voice/discord; a non-web display channel returns all (default-all-turns contract). (d) the
+    SQL filter constant equals "(channel = ''web'' OR channel IS NULL)" so the in-DB filter and
+    the in-memory predicate cannot drift.'
+links: {}
+notes: 'Issue #23 (operator-reported). Decision at Gate 1: web-only (the web client opts into
+  channel=web, hiding voice AND Discord from the web scrollback). Filtering is opt-in so companion
+  clients keep all-turns until they choose to opt in. Memory/recall and session continuity are
+  out of scope (must NOT be filtered). Pure helpers live in chatlog_channels.py (DB-free) so the
+  bound test runs on box-2''s stdlib venv.'
+verified: true

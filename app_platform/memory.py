@@ -98,6 +98,29 @@ _SKIP_FIELDS = frozenset({
     "sort_order",
 })
 
+# Volatile bookkeeping/sync-clock keys that must never reach a memory — stripped by
+# NAME at ANY depth so a memory never contains a sync clock (issue #24). App-agnostic:
+# the rule is purely key-name based (no app-specific block names like 'trello').
+_VOLATILE_FIELDS = _SKIP_FIELDS | frozenset({
+    "last_sync",
+    "synced_at",
+    "last_synced",
+})
+
+
+def _strip_for_digest(record: dict) -> dict:
+    """Recursively drop volatile bookkeeping fields (by name) from a record before it is
+    digested, so per-write sync clocks (e.g. a nested ``trello.last_sync``) can't churn
+    memory. Returns a cleaned copy; empty/None pruning + the skip-trivial guard run after
+    (in _run_digest), unchanged."""
+    def _clean(value):
+        if isinstance(value, dict):
+            return {k: _clean(v) for k, v in value.items() if k not in _VOLATILE_FIELDS}
+        if isinstance(value, list):
+            return [_clean(v) for v in value]
+        return value
+    return _clean(record)
+
 
 # ---------------------------------------------------------------------------
 # Public API
@@ -264,12 +287,14 @@ def _run_digest(
     context_hint: str,
 ) -> None:
     """Core: build prompt → call LLM → parse facts → save memories."""
-    # Strip internal/noise fields
+    # Strip volatile bookkeeping/sync-clock fields recursively (issue #24), THEN prune
+    # empties — so a record whose only non-skip content was a sync clock falls below the
+    # skip-trivial threshold and yields no memory.
+    stripped = _strip_for_digest(record)
     clean = {
         k: v
-        for k, v in record.items()
-        if k not in _SKIP_FIELDS
-        and v is not None
+        for k, v in stripped.items()
+        if v is not None
         and v != ""
         and v != []
         and v != {}

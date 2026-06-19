@@ -119,7 +119,9 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
     (async () => {
       let hist = [];
       try {
-        const res = await fetch(`/api/chat/history?limit=20&tz=${encodeURIComponent(browserTz())}`);
+        // channel=web scopes the reload to web-originated turns so voice/Discord
+        // conversations don't bleed into the web chat scrollback (issue #23).
+        const res = await fetch(`/api/chat/history?limit=20&channel=web&tz=${encodeURIComponent(browserTz())}`);
         if (res.ok) {
           const data = await res.json();
           // Server returns ts on each message + date_separator rows (issue #8).

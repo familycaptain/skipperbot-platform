@@ -1,0 +1,34 @@
+kind: specification
+id: platform.memory.purge-sync-noise
+title: One-time cleanup of accumulated sync-noise memories
+state: live
+autonomy: gated
+behavior: 'A one-time, idempotent maintenance script removes the historical Trello-sync bookkeeping
+  memories (~13.3k on the live instance) and thereby drains their queue/reprocessing backlog.
+  PRECONDITION: it is run only AFTER the source fix (lists.trello-boards.sync-list + platform.memory.digest-noise-filter)
+  is deployed — otherwise the poller regenerates noise between runs and the ''safe to re-run''
+  property does not hold. It selects ONLY sync-noise rows via a precise predicate requiring
+  BOTH (a) the bookkeeping phrasing ''synced to the Trello board'' AND (b) an ISO-8601 last_sync-style
+  timestamp in the content (regex: a date-time with a numeric UTC offset or Z, e.g. 2026-06-18T19:33:26-05:00).
+  It must NOT delete a legitimate list memory (e.g. ''Lowes is on the shopping list'', an
+  item/price note, or a memory that merely mentions a Trello board WITHOUT a sync clock).
+  It prints how many rows match (dry-run by DEFAULT) and deletes only with an explicit --apply
+  flag. Low recall against LLM-worded variants is acceptable: the source fix has already stopped
+  new noise, so any rows the predicate misses are bounded and harmless; the priority is zero
+  false-positives (no legit memory deleted).'
+implements:
+- scripts/cleanup_trello_sync_noise.py
+tests:
+- type: unit
+  path: tests/platform/test_cleanup_sync_noise.py
+  rubric: 'is_sync_noise_memory returns True for bookkeeping strings (e.g. "Lowes is synced
+    to the Trello board ''shopping'' with trello list name ''Lowes'' (last_sync 2026-06-18T19:33:26-05:00).")
+    and for the same phrasing with a Z-suffixed timestamp. Returns False for: ''Lowes is on
+    the shopping list'', ''Milk costs $4 at the store'', and ''The shopping list is synced
+    to the Trello board shopping'' WITHOUT any last_sync timestamp (phrasing present but no
+    clock → spared). Requires BOTH conditions so it cannot over-match.'
+links: {}
+notes: Predicate is intentionally stricter than the issue's raw ILIKE (which could delete
+  legit memories). Zero-false-positive is the design priority; low recall is fine. One-time;
+  not a recurring job; precondition = source fix already live.
+verified: true

@@ -53,6 +53,7 @@ def save_turn(
     selected_tools: Optional[list] = None,
     matched_guides: Optional[list] = None,
     tool_calls: Optional[list] = None,
+    channel: str = "web",
 ) -> dict:
     """
     Save a conversation turn (user + assistant) with an embedding.
@@ -65,6 +66,8 @@ def save_turn(
         system_prompt: Full system prompt sent to the model on this turn (debug).
         selected_tools: List of tool function-name dicts that were exposed to the model.
         matched_guides: Per-category match audit — see tool_router.get_match_debug_for_message.
+        channel: Originating surface (web/voice/discord/…). Defaults to 'web' so untagged
+            callers (incl. bot notifications) stay visible in the web history reload (issue #23).
 
     Returns:
         The saved turn record (without embedding for readability).
@@ -83,6 +86,7 @@ def save_turn(
         selected_tools=selected_tools,
         matched_guides=matched_guides,
         tool_calls=tool_calls,
+        channel=channel,
     )
 
     return {

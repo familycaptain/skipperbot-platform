@@ -24,6 +24,11 @@ def ensure_chatlog_schema() -> None:
     """
     from data_layer.db import execute
     execute("ALTER TABLE public.chat_turns ADD COLUMN IF NOT EXISTS tool_calls jsonb")
+    # channel = the surface a turn originated on (web/voice/discord/…), so the web
+    # history reload can show web-only turns (issue #23). Backfill legacy rows to
+    # 'web' so existing history is preserved; idempotent (no NULLs remain after).
+    execute("ALTER TABLE public.chat_turns ADD COLUMN IF NOT EXISTS channel text")
+    execute("UPDATE public.chat_turns SET channel = 'web' WHERE channel IS NULL")
 
 
 def save_turn(
@@ -36,6 +41,7 @@ def save_turn(
     selected_tools: Optional[list[Any]] = None,
     matched_guides: Optional[list[Any]] = None,
     tool_calls: Optional[list[Any]] = None,
+    channel: str = "web",
 ) -> dict:
     """Save a chat turn to Postgres.
 
@@ -45,12 +51,14 @@ def save_turn(
     the list of tools the model actually invoked this turn (name/args/result) —
     persisted so the web UI can replay them on session resume and for diagnostics.
     """
+    from chatlog_channels import normalize_channel
     record = {
         "id": turn_id or f"c-{uuid.uuid4().hex[:8]}",
         "user_id": user_id,
         "user_message": user_message,
         "assistant_message": assistant_message,
         "created_at": datetime.now(timezone.utc).isoformat(),
+        "channel": normalize_channel(channel),
     }
     emb_str = _vec(embedding) if embedding else None
     selected_tools_json = Json(selected_tools) if selected_tools is not None else None
@@ -63,28 +71,47 @@ def save_turn(
                 INSERT INTO chat_turns (id, user_id, user_message, assistant_message,
                                         embedding, created_at,
                                         system_prompt, selected_tools, matched_guides,
-                                        tool_calls)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                                        tool_calls, channel)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (id) DO NOTHING
             """, (
                 record["id"], record["user_id"],
                 record["user_message"], record["assistant_message"],
                 emb_str, record["created_at"],
                 system_prompt, selected_tools_json, matched_guides_json,
-                tool_calls_json,
+                tool_calls_json, record["channel"],
             ))
         conn.commit()
     return record
 
 
-def get_recent_turns(user_id: str, limit: int = 20) -> list[dict]:
-    """Get most recent chat turns for a user, oldest first."""
-    rows = fetch_all("""
-        SELECT * FROM (
-            SELECT * FROM chat_turns WHERE user_id = %s
-            ORDER BY created_at DESC LIMIT %s
-        ) sub ORDER BY created_at ASC
-    """, (user_id, limit))
+def get_recent_turns(user_id: str, limit: int = 20,
+                     channel: Optional[str] = None) -> list[dict]:
+    """Get most recent chat turns for a user, oldest first.
+
+    ``channel`` is optional and applied ONLY by the web history endpoint (issue
+    #23). Default None = NO filter — so session bootstrap, recall, the thinking
+    loop, and goal-app reads stay cross-surface. When channel == 'web', the read is
+    narrowed to web-visible turns (web + legacy/untagged); voice/discord/etc are
+    hidden from the web reload. Any other channel value is treated as no filter
+    (the endpoint's default-all-turns contract for companion clients).
+    """
+    from chatlog_channels import WEB, WEB_VISIBLE_SQL
+    if channel == WEB:
+        rows = fetch_all(f"""
+            SELECT * FROM (
+                SELECT * FROM chat_turns
+                WHERE user_id = %s AND {WEB_VISIBLE_SQL}
+                ORDER BY created_at DESC LIMIT %s
+            ) sub ORDER BY created_at ASC
+        """, (user_id, limit))
+    else:
+        rows = fetch_all("""
+            SELECT * FROM (
+                SELECT * FROM chat_turns WHERE user_id = %s
+                ORDER BY created_at DESC LIMIT %s
+            ) sub ORDER BY created_at ASC
+        """, (user_id, limit))
     return [_row(r) for r in rows]
 
 
@@ -145,4 +172,6 @@ def _row(row: dict) -> dict:
         "assistant_message": row.get("assistant_message") or "",
         # jsonb auto-decoded by psycopg2 → list of {name, args, result, id} (or None)
         "tool_calls": row.get("tool_calls") or [],
+        # originating surface (issue #23); legacy rows backfilled to 'web'
+        "channel": row.get("channel"),
     }
