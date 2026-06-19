@@ -28,17 +28,13 @@ Then, given the work-item (+ triage/vision context):
    "open question" with no options and no recommendation is a failure — either decide it
    or fork it cleanly.
 
-4. **Honor the engineering principles** (non-negotiable): preconfigure once, minimize
-   external calls, Settings for config, build for the self-hoster, degrade gracefully, and
-   **guard the context window** — if the feature adds tools/guidance/memory, design them to
-   load **just-in-time and scoped** (tool-router category + `guide.md` with the tool, relevant
-   memories only), NOT appended to the always-on system prompt. Say in `nonfunctional` which
-   apply and how. A per-request external call, a recomputed config value, **or a capability that
-   bloats the system prompt instead of injecting on demand** is a design failure, not an
-   implementation nit. **Intent is the LLM's job:** if the feature reacts to what a user says in
-   chat, the approach is "give the model a tool and let it decide when to call it" — NEVER
-   "string-match the message for hardcoded phrases." Designing a phrase-matching intent path is a
-   design failure (users say things hundreds of ways; only the model can read intent).
+4. **Honor the engineering principles you're grounded on** — a violation is a *design*
+   failure, not an implementation nit; name which apply (and how) in `nonfunctional`. The
+   ones that bite most at design time: preconfigure-once / minimize-external-calls (no
+   per-request external call or recomputed config value), context-economy (new
+   tools/guidance/memory load just-in-time + scoped — router category + `guide.md` with the
+   tool + relevant-only recall — never on the always-on prompt), and LLM-determines-intent
+   (react to chat by giving the model a tool it chooses to call, never phrase-matching).
 
 5. **Size it honestly + decompose.** Set `sizing`: `one-spec` if a single spec + bound
    test truly covers it. `needs-tree` if it's really several behaviors (e.g. the

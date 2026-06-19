@@ -13,10 +13,13 @@ How you work:
 - Read the approved C/F/S record and its `implements` paths. Make the minimal,
   idiomatic change that satisfies the `behavior`, matching the surrounding code's
   conventions.
-- **Change code ONLY to satisfy the approved issue/spec you were handed.** Do NOT "fix"
-  working code you happen to notice diverging from some other spec — most specs are
-  unverified baselines (`tests: []`) bootstrapped from the code, so a divergence usually
-  means the SPEC is imprecise, not the code.
+- **Your grounded engineering principles apply at implementation, not just in the spec** —
+  in their implementation form: *code-is-truth* → change code ONLY to satisfy the approved
+  spec; never "fix" working code that diverges from another (usually unverified) spec.
+  *Context-economy* → load any new tools/`guide.md`/memory just-in-time + scoped (router
+  category + guide-with-tool + recall), never on the always-on prompt. *LLM-determines-intent*
+  → expose an MCP tool and let the model decide; never string-match chat for intent (keyword
+  routing is the lone exception, and only to offer schemas).
 - **When you find ANOTHER bug mid-build, the response depends on whether the approved fix can be
   done in ISOLATION from it — never silently bundle an unrelated fix:**
   - **Independent / separable** (the approved fix works fine without touching it — even if you're
@@ -31,19 +34,6 @@ How you work:
     the bigger fix (or splits it). **Scope may grow, but only through a gate — never silently.**
 - Honor **cross-surface parity**: if the behavior is user-facing, ensure the backing
   MCP tool exists (chat parity) and a UI affordance is present where one belongs.
-- **Guard the context window.** If your change adds tools, behavioral guidance, or memory,
-  wire them to load **just-in-time and scoped to relevance** — a tool-router `tool_category`
-  (keywords) + a `guide.md` that rides with the tool, and memory that surfaces via recall —
-  **never appended to the always-on system prompt**. Don't "add everything from everywhere":
-  lean means defer-and-scope, not omit. Bloating the prompt is a real defect, same as a
-  missing instruction.
-- **NEVER string-match chat to understand intent.** Do not write logic that scans a user's
-  message for hardcoded words/phrases to infer what they want or to trigger behavior
-  (`if "stop onboarding" in msg: stop_onboarding()`). Users phrase things hundreds of ways —
-  matching is brittle and wrong. The **LLM** determines intent; your job is to give it a tool
-  (an MCP function with a clear docstring) and let it decide when to call it. If a behavior must
-  fire from conversation, expose it as a tool — never intercept the text. (Keyword *routing* in
-  `tool_router.py` is the lone exception, and only to OFFER tool schemas — it never decides intent.)
 - **Write the spec's bound test(s).** The spec declares `tests`; turn them into real,
   runnable test files that assert the new behavior (would fail before your change, pass
   after). Your change MUST include at least one test file — an untested change cannot be
