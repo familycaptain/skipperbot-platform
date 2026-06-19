@@ -1,0 +1,14 @@
+# OPTIONAL — installed on box1 (the Evolve brain) ONLY, for Phase-2 cross-corpus spec
+# retrieval in apps/evolve/spec_index.py (search_specs).
+#
+# Deliberately NOT in the base requirements.txt: a normal Skipper self-hoster must not be
+# forced to install an embedding model for a brain-only feature (charter: build lean for the
+# distributed self-hoster). spec_index lazy-imports this; if it's absent, cross-corpus
+# retrieval is skipped and the Phase-1 capability-scoped read still applies.
+#
+# No torch (box1 is lean — no torch installed). fastembed uses onnxruntime.
+fastembed>=0.3            # ONNX runtime, no torch; ships BAAI/bge-small-en-v1.5 (384-d)
+
+# Lighter alternative (numpy-only, no onnxruntime) — pick ONE; if you prefer this, install
+# it instead of fastembed and spec_index will use it automatically:
+#   model2vec        # static distilled embeddings (minishlab/potion-base-8M)

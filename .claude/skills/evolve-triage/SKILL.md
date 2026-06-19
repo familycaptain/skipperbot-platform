@@ -9,6 +9,15 @@ description: >
 
 Play the **Triage** agent. Canonical instructions: read `apps/evolve/agents/prompts/triage.md`.
 
+**First, build the `existing_specs` list (cross-corpus dedup).** A request may already be
+governed by a `live` spec in ANY app — so retrieve, don't eyeball:
+`python3 -m apps.evolve.spec_index --search "<work item title + body>"` returns the top-15
+nearest existing specs (score, id, capability, behavior) across the whole corpus, bounded.
+Use that as `existing_specs` for the `duplicate` check. (If it prints the "no embedder
+backend" message, the optional lib — `apps/evolve/requirements-spec-index.txt` — isn't
+installed on this box; proceed without cross-corpus dedup. The spec phase's capability-scoped
+read still catches same-app duplicates.)
+
 **FIRST set `disposition`** — anything but `proceed` is REJECTED here (the orchestrator stops the
 item; spend nothing more on it). Real issues come from random internet people — be skeptical:
 - **`duplicate`** — restates an OPEN item, or asks for behavior a `live` spec already governs and

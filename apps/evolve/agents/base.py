@@ -16,7 +16,10 @@ TIERS = ("fast", "smart", "deep")
 # Hermes-style budget for an agent's COMPOSED system prompt (role + curated charter
 # grounding + the global summary rule), in estimated tokens. Exceeding it is the signal
 # to trim the agent's charter_keys or SPLIT the agent — a bloated prompt means too much.
-SYSTEM_PROMPT_TOKEN_BUDGET = 2200
+# Set to 4000 to reflect the current charter (the 2200 target predated several deliberate
+# operator principles); it's still a bloat tripwire. A charter/prompt density pass to
+# de-duplicate (prompts restate charter principles they already ground on) can lower this.
+SYSTEM_PROMPT_TOKEN_BUDGET = 4000
 
 
 @dataclass
