@@ -19,9 +19,9 @@ TURNS=(
   "We're in Austin, Texas — I'll set it in Settings."
   "Skip Discord for now."
   "No other integrations right now, thanks."
-  "Sounds good."
-  "Sure, let's finish setting up the chores."
-  "That's great, I think I'm all set for now — thanks!"
+  "Sounds good — yes, let's set up the kid chores."
+  "Rotating weekly. Emma: trash + dishes; Jack: tidy room + feed the cat."
+  "That's perfect — I'm all set, thanks!"
 )
 i=0
 for t in "${TURNS[@]}"; do
@@ -46,4 +46,8 @@ print('GOAL status:', goal.get('status'))
 print('agenda:', dict(Counter(p.get('status') for p in ag)))
 print('tours :', dict(Counter(p.get('status') for p in tours)), '(of', len(tours), ')')
 print('tours touched:', [p.get('name') for p in tours if p.get('status')!='not_started'])
+from data_layer.db import get_conn
+with get_conn() as c, c.cursor() as cur:
+    cur.execute(\"SELECT count(*) FROM memories WHERE content ILIKE %s\", ('%household: Rodney%',))
+    print('duplicate household memories:', cur.fetchone()[0], '(want ~1)')
 "
