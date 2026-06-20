@@ -180,15 +180,64 @@ SCRIPTS = {
         "ok now go ahead and do the chores thing we talked about",
         "and remind me trash night every Wednesday at 7pm",
     ],
+    # One turn that legitimately needs THREE categories — does 2 slots cope (swap mid-turn) or choke?
+    "three_in_one_turn": [
+        "Add milk to my shopping list, remind me to buy it tomorrow at 5pm, and save a quick recipe that uses milk (pancakes).",
+    ],
+    # Back-reference AFTER the category was evicted, where a real ACTION is needed (not just status).
+    "backref_after_evict": [
+        "set up a chore: feed the dog every morning",
+        "now save my taco recipe: tortillas, beef, cheese",
+        "what's the weather?",
+        "go back to chores and add another one: take out recycling on Saturdays",
+    ],
+    # Ambiguous 'set that up' with two live topics in play — pick the right one or ask, not guess.
+    "ambiguous_that": [
+        "I'm thinking about meal planning, and also a reminder for soccer practice Tuesdays at 4.",
+        "yeah, set that up",
+    ],
+    # Rapid topic flips — swap cleanly, stay flat, don't accumulate.
+    "rapid_flips": [
+        "what's the weather today?",
+        "add a chore: water the plants on Sundays",
+        "is it going to rain this week?",
+        "save a recipe: grilled cheese — bread, butter, cheese",
+        "add bananas to the shopping list",
+    ],
+    # Pure chitchat / questions needing NO tools — should load nothing, stay tiny.
+    "no_tools_needed": [
+        "hey what can you help me with?",
+        "cool. what's the difference between a goal and a project here?",
+        "ok thanks",
+    ],
+    # Deep single-category task across many turns — keep the one category sticky, don't re-load each turn.
+    "deep_single_task": [
+        "let's build out the kids' chores",
+        "add: make bed, daily",
+        "add: dishes after dinner, daily",
+        "add: vacuum living room, Saturdays",
+        "actually make the dishes one weekdays only",
+        "and add feed the cat every morning",
+    ],
 }
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--slots", type=int, default=2)
-    ap.add_argument("--script", default="onboarding_then_switch")
+    ap.add_argument("--script", default="")
+    ap.add_argument("--all", action="store_true")
     args = ap.parse_args()
-    run_script(args.script, SCRIPTS[args.script], args.slots)
+    if args.all or not args.script:
+        results = {}
+        for name, turns in SCRIPTS.items():
+            results[name] = run_script(name, turns, args.slots)
+        print("\n" + "=" * 78)
+        print(f"SUMMARY (slots={args.slots}) — max prompt tokens per script (eager router was ~173,000):")
+        for name, mx in results.items():
+            print(f"  {name:<24} {mx:>7,} tok")
+    else:
+        run_script(args.script, SCRIPTS[args.script], args.slots)
 
 
 if __name__ == "__main__":
