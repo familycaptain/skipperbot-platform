@@ -151,8 +151,11 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     if _is_onboarding:
         extra_categories.add("app:goals")
 
-    # Reply-to-proactive-DM continuity: if a thinking domain DM'd this user and
-    # it's still unresolved, flag it so a reply gets the sender's intent/cadence.
+    # Reply-to-proactive-DM continuity: if a background Skipper process DM'd this user and it's
+    # still unresolved, flag it so a reply gets the sender's intent (generic pattern, used by
+    # reminders/goals/etc.). When the pending DM IS the onboarding nudge, the function coordinates
+    # with onboarding (which already owns the conversation) instead of issuing a competing
+    # greeting/resume — see _inject_proactive_dm_context.
     dynamic_context, _has_pending_dm = await _inject_proactive_dm_context(
         dynamic_context, req.user_id)
 
@@ -953,10 +956,13 @@ async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
             "\n\n## You are ONBOARDING this user RIGHT NOW (active — not background work)\n"
             "This is your live first-run setup. Walk the agenda below IN ORDER, ONE gentle nudge "
             "at a time.\n"
-            "- ADVANCE: the moment a topic is covered in conversation, call "
+            "- ADVANCE: the moment a topic is genuinely covered, call "
             "update_item(item_id, status=\"done\") for that agenda project, THEN move to the next "
             "⬜ topic in the SAME reply. Do NOT keep re-drilling a topic you've already covered — "
-            "advancing the agenda matters more than exhaustively configuring one area.\n"
+            "advancing the agenda matters more than exhaustively configuring one area. A topic is "
+            "'covered' ONLY when the user actually PROVIDED its info (named the household, stated "
+            "their intent, gave a location…); a bare greeting/'hey'/'ok'/'thanks' covers NOTHING — "
+            "greet or re-ask the current topic, never mark it done.\n"
             "- CAPTURE, don't configure: remember household members + their stated intent so you "
             "can personalize — but remember each fact ONCE; don't re-save the household roster or "
             "intent every turn (it's already saved). Do NOT do deep app setup during the agenda (no full chore "
@@ -1019,6 +1025,34 @@ async def _inject_proactive_dm_context(system_prompt: str, user_id: str) -> tupl
     kind = top.get("kind", "goal")
     sent_at = (top.get("sent_at", "") or "")[:16].replace("T", " ")
     dm_text = (top.get("dm_text", "") or "").strip()
+
+    # COORDINATE WITH ONBOARDING. If the most-recent pending DM is the first-run onboarding goal's
+    # OWN nudge, onboarding (`_inject_onboarding_context`) already owns this conversation. Issuing
+    # the generic "you're continuing the thread / call get_proactive_reply_guide" framing here too
+    # made the user's first reply get a SECOND greeting + a false "picking up where we left off"
+    # resume (GitHub #33/#34). Keep the pending-DM INFO (so a reply isn't read cold) but defer the
+    # framing to onboarding and do NOT force the generic resume guide. The generic pattern is
+    # unchanged for every other background DM (reminders/goals/etc.).
+    try:
+        from app_platform import config as _pc
+        _onb_goal = (_pc.get("onboarding_seeded", scope="app:goals") or {}).get("goal_id")
+    except Exception:
+        _onb_goal = None
+    if _onb_goal and (top.get("domain") or "") == _onb_goal:
+        system_prompt += (
+            "\n\n## You have a pending onboarding nudge out\n"
+            "You reached out to start onboarding and haven't heard back yet; your most recent "
+            f"onboarding message was:\n  “{dm_text}”\n"
+            "Handle the user's message INSIDE your onboarding flow above — ONE response, in your "
+            "onboarding voice, and NEVER also add a \"picking up where we left off\" resume:\n"
+            "- If it actually ANSWERS the current topic (a name, their stated intent, a location…) "
+            "→ capture it and advance per the agenda.\n"
+            "- If it's just a greeting or acknowledgment (\"hey\", \"hi\", \"ok\", \"thanks\") → greet "
+            "back warmly ONCE and ask the CURRENT onboarding topic. Do NOT mark any topic done and "
+            "do NOT skip ahead — a greeting answers nothing."
+        )
+        return system_prompt, False
+
     extra = ""
     if len(pending) > 1:
         extra = f" (and {len(pending) - 1} other pending message(s))"
