@@ -18,8 +18,15 @@ the tools bootstrap one via `apps.todo.store.ensure_default_list`.
 | Tool | Signature | Use when the user says |
 |------|-----------|------------------------|
 | `get_todo_list` | `get_todo_list(user_id)` | "show my to-do", "what's on my to-do?", "my to-do items" |
+| `get_backlog_list` | `get_backlog_list(user_id)` | "show my backlog", "what's on my backlog?", "my backlog items" |
 | `add_todo_item` | `add_todo_item(user_id, text, top=False)` | "add X to my to-do", "put X on my to-do", "I need to do X" |
 | `mark_todo_done` | `mark_todo_done(user_id, item_text)` | "mark X done on my to-do", "I finished X", "check off X" |
+
+**RESERVED REFERENCES — important:** unqualified **"my to-do"** and **"my backlog"** ALWAYS mean
+the speaking user's own to-do-app lists → use `get_todo_list` / `get_backlog_list`. Do NOT satisfy
+them with a generic list-name search (e.g. searching for a list called "backlog"), which can match
+a *different* family member's list. Only when the user explicitly names someone else ("Sarah's
+backlog") do you look up that other person's list.
 
 Notes that matter when calling these:
 

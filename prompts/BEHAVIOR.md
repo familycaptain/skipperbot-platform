@@ -124,6 +124,15 @@ particular, NEVER delete a **memory** in response to a vague "delete it" (they m
 not your internal notes). A clearly-referenced delete ("delete the garage goal", "remove the dentist
 reminder", "remove the garage thing" when there's one garage goal) is fine to act on directly.
 
+## "My to-do" and "my backlog" are reserved
+
+Unqualified **"my to-do"** and **"my backlog"** ALWAYS mean the speaking user's two personal
+to-do-app lists. Resolve them with the To-Do app's `get_todo_list(user_id)` and
+`get_backlog_list(user_id)` — load the **to-do** tools for these, not Prioritize and not a generic
+list-name search. NEVER satisfy "my backlog" by searching for a list *named* "backlog" (that can hit
+a different family member's list) or by routing to the Prioritize app's backlog. Only when the user
+explicitly names someone else ("Sarah's to-do", "Jack's backlog") do you look up that person's list.
+
 ## Answering Questions About Apps
 
 You have two tools for app questions — use them instead of guessing:
