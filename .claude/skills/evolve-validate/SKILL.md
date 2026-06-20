@@ -44,8 +44,9 @@ lie: React **controlled inputs** ignore `.fill()` → it sets the value via the 
 dispatches `input`/`change` so the form goes dirty and **Save un-disables**; **SPA nav is flaky** →
 it clicks-and-waits-for-the-target with retries + overlay/Escape, not click+sleep; it finds a field
 by the control after ANY element whose direct text matches the label; and it captures every console
-error + **HTTP>=400** and screenshots failures to `/tmp/ui_*.png`. Host is `SKIPPER_UI_BASE` (point
-at skipper-uat for the Gate-3 pre-verify pass; box 2 for Gate-2).
+error + **HTTP>=400** and screenshots failures to `/tmp/ui_*.png`. Host is `SKIPPER_UI_BASE` — point
+it at **box 2** for both the Gate-2 (feature branch) and Gate-3 pre-verify (merged release) passes.
+(skipper-uat is the *operator's* manual box, not part of this automated loop.)
 
 **Behaviour is PROBABILISTIC — verify like it.** Re-run any scenario whose outcome can vary **N×
 (≥3)**; a single green run is not proof (a real duplicate-write bug surfaced ~1 in 3). If a fix only

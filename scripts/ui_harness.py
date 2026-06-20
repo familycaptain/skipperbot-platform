@@ -22,8 +22,8 @@ Usage (async):
 import asyncio, os
 from playwright.async_api import async_playwright, TimeoutError as PWTimeout
 
-# Target host. Defaults to the local instance (box2 dev), but Gate-3 live validation points this
-# at skipper-uat (the dedicated UAT box) via SKIPPER_UI_BASE.
+# Target host via SKIPPER_UI_BASE. Box 1's automated validation (Gate-2 AND Gate-3 pre-verify) drives
+# box 2; the operator's own manual testing is on skipper-uat. Defaults to the local instance.
 BASE = os.environ.get("SKIPPER_UI_BASE", "http://localhost:8000")
 
 
