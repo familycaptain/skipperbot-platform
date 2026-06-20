@@ -98,8 +98,10 @@ ONBOARDING_AGENDA = [
         "project": "Set up other integrations",
         "task": "Ask {who} whether they'd like to connect other integrations in Settings → Integrations.",
         "desc": (
-            "PM: ask {who} whether they want to connect other integrations — e.g. Trello for "
-            "lists/boards, or notification channels. Where: Settings → Integrations."
+            "PM: ask {who} whether they want to connect other integrations. Platform integrations "
+            "(web search, notification channels, etc.) live in Settings → Integrations. NOTE: "
+            "Trello for lists/boards is set up in the Lists app's OWN settings (its Trello tab), "
+            "not the Integrations panel — point them there for Trello specifically."
         ),
     },
 ]
