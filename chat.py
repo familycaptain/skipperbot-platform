@@ -18,6 +18,11 @@ from typing import Optional, Callable, Awaitable
 
 sessions: dict[str, list[dict]] = {}
 
+# Tool-router SLOTS per user: the categories the model has request_tools'd, kept across turns
+# so a focused task's tools stay loaded (sticky) without re-routing the whole conversation.
+# Passed by reference into ChatRequest.loaded_categories so in-turn loads/evictions persist.
+session_slots: dict[str, list[str]] = {}
+
 # Sliding window: max conversation turns kept in session (1 turn = user + assistant)
 # 50 turns = 100 messages ≈ safe for most context windows. Resolved from the
 # System settings panel (scope=platform) → MAX_SESSION_TURNS env → default 50;
@@ -110,6 +115,7 @@ async def process_chat(
     # /clear — wipe session history so the next message relies on memory/knowledge only
     if user_message.strip().lower().startswith("/clear"):
         sessions[user_id] = []
+        session_slots[user_id] = []
         logger.info("SESSION: Cleared session for '%s'", user_id)
         if send_progress:
             try:
@@ -165,6 +171,7 @@ async def process_chat(
         app_context=app_context,
         send_progress=send_progress,
         send_event=send_event,
+        loaded_categories=session_slots.setdefault(user_id, []),
     )
 
     result = await dispatch_chat(request)

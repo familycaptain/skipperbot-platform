@@ -381,24 +381,26 @@ async def handle_local_tool(tool_name: str, tool_args: dict, from_user: str) -> 
         return list_all_tools_text()
 
     elif tool_name == "request_tools":
-        # The actual tool injection is handled in chat.py's tool loop.
-        # This handler returns confirmation + the guide content if available.
+        # The actual tool injection (adding the category to a slot) is handled in the chat tool
+        # loop. This handler returns a DEFINITIVE result so the model never spins:
+        #   - category resolves to tools  -> "loaded" + its guide (or "no guide, use descriptions")
+        #   - category resolves to NOTHING -> "no such toolset, do NOT retry" + the valid list
+        # Validate + fetch via the RESOLVER functions (they read tool_router's CURRENT
+        # TOOL_CATEGORIES, which includes app:<id> categories) — NOT a stale imported dict ref.
         category = tool_args.get("category", "")
-        from tool_router import TOOL_CATEGORIES, GUIDES_DIR
+        from tool_router import get_category_tool_names, get_guides_for_categories, list_categories_text
         cat = category.lower().strip()
-        if cat not in TOOL_CATEGORIES:
-            available = ", ".join(TOOL_CATEGORIES.keys())
-            return f"Unknown category '{category}'. Available: {available}"
-        msg = f"Tools from category '{category}' are now loaded and available. Proceed immediately to use them — do not ask the user for permission."
-        # Include the guide content so the agent gets behavioral guidance too
-        guide_file = TOOL_CATEGORIES[cat].get("guide")
-        if guide_file:
-            import os
-            guide_path = os.path.join(GUIDES_DIR, guide_file)
-            if os.path.exists(guide_path):
-                with open(guide_path, "r", encoding="utf-8") as f:
-                    guide_content = f.read().strip()
-                msg += f"\n\n--- Guide: {guide_file} ---\n{guide_content}"
+        if not get_category_tool_names(cat):
+            return (f"There is no '{category}' toolset (it has no tools). Do NOT keep trying to "
+                    f"load it — pick a valid category or proceed without one.\n\n{list_categories_text()}")
+        msg = (f"Tools from '{category}' are now loaded and available. Proceed immediately to use "
+               f"them — do not ask the user for permission.")
+        guide = get_guides_for_categories({cat})
+        if guide:
+            msg += f"\n\n--- Guide for {category} ---\n{guide}"
+        else:
+            msg += (f"\n\n(No usage guide is registered for '{category}'; rely on the tool "
+                    f"descriptions, and do not request this category again.)")
         return msg
 
     elif tool_name == "open_app":
