@@ -855,6 +855,12 @@ async def _inject_skipper_work_context(system_prompt: str) -> str:
     try:
         # goals is a required app; data layer moved here in the packaging chunk.
         import apps.goals.data as _dl_goals
+        from app_platform import config as _platform_config
+
+        # The onboarding goal is rendered concisely (and actively) by
+        # _inject_onboarding_context — exclude it here so its full 27-project agenda+tour
+        # tree isn't ALSO dumped verbatim every turn (that re-added ~24k tokens onboarding).
+        _onb_goal_id = (_platform_config.get("onboarding_seeded", scope="app:goals") or {}).get("goal_id")
 
         def _fetch():
             all_goals = _dl_goals.list_entities("g-")
@@ -862,6 +868,7 @@ async def _inject_skipper_work_context(system_prompt: str) -> str:
                 g for g in all_goals
                 if "skipper" in (g.get("owners") or [])
                 and g.get("status") not in ("done", "archived")
+                and g.get("id") != _onb_goal_id
             ]
             if not my_goals:
                 return None
@@ -939,7 +946,8 @@ async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
         focus = (
             f"Current focus: **{current['name']}** ({current['id']}).\n"
             if current else
-            "All agenda topics are done — move to the pruned app tours, or wrap up if they're set.\n"
+            "All agenda topics are done — now move to the per-app tours (pruned HARD to their "
+            "intent). Do NOT close the goal until those are done or they say they're all set.\n"
         )
         system_prompt += (
             "\n\n## You are ONBOARDING this user RIGHT NOW (active — not background work)\n"
@@ -958,7 +966,24 @@ async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
             "includes kids; for a couple or a single person, match what you suggest to who's there. "
             "Read the household FIRST and let it decide what's even relevant before going down an "
             "app's path.\n"
-            "- Each topic is OPTIONAL — if it doesn't apply, mark it done and move on gracefully.\n"
+            "- SKIPPING A TOPIC IS NOT QUITTING. If they skip or decline ONE topic (e.g. 'skip "
+            "Discord'), mark just THAT topic done and CONTINUE to the next ⬜ — do NOT close, "
+            "cancel, or pause the whole onboarding. Only end onboarding entirely if they clearly "
+            "want to stop ALL setup (e.g. 'I'm good, I'll explore on my own').\n"
+            "- AGENDA DONE ≠ ONBOARDING DONE. When every agenda topic is done, do NOT close the "
+            "goal yet — the per-app tours are the rest of it. PRUNE the tours HARD to their stated "
+            "intent: proactively walk only the few apps that match how they want to use Skipper "
+            "(e.g. Chores, Reminders) and don't bother walking the rest. Do NOT repeat anything "
+            "onboarding already covered — if they already engaged an app (gave chore details, set "
+            "reminders), acknowledge and BUILD ON it ('we already started your chores — want me to "
+            "finish the rotation?'), never re-introduce it from scratch. Close the goal as COMPLETE "
+            "(done, not cancelled) ONLY after the relevant tours are done or they say they're all "
+            "set — then they can explore the rest on their own.\n"
+            "- HOW to close: when they've done the essentials and are SATISFIED ('I'm all set', "
+            "'that's all I need'), mark the onboarding goal DONE (update_item status=\"done\") — a "
+            "successful finish. Use stop_onboarding ONLY when they want you to stop reaching out "
+            "before they're set ('I'll explore on my own', 'stop asking') — it records a CANCEL, so "
+            "don't use it for a happy 'all set'.\n"
             f"Agenda ({len(done)}/{len(agenda)} done):\n{rows}\n{focus}"
         )
         return system_prompt, True
