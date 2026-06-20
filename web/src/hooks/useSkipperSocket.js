@@ -273,6 +273,17 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
           }, nextId));
           break;
 
+        case "tool_slot":
+          setMessages((prev) => appendLive(prev, {
+            id: nextId(),
+            role: "tool_slot",
+            loaded: data.loaded,
+            unloaded: data.unloaded,
+            slots: data.slots || [],
+            ts: data.ts,
+          }, nextId));
+          break;
+
         case "idea_edit_proposal":
           if (onEditProposalRef.current) onEditProposalRef.current(data);
           break;

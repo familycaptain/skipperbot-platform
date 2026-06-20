@@ -23,7 +23,7 @@ from knowledge_store import get_relevant_knowledge, format_knowledge_for_context
 from app_platform.folders import get_relevant_folder_knowledge, format_folder_knowledge_for_context
 from tool_router import (
     get_tools_for_message, get_guides_for_message, get_category_tool_names,
-    get_match_debug_for_message,
+    get_guides_for_categories, get_match_debug_for_message,
     META_TOOL_NAMES, DISABLED_CHAT_TOOLS, reload_routes, get_ack_template, TOOL_CATEGORIES,
 )
 import agent_loop
@@ -80,6 +80,10 @@ class ChatRequest:
     app_context: dict | None = None
     send_progress: Optional[Callable[[str], Awaitable[None]]] = None
     send_event: Optional[Callable[[dict], Awaitable[None]]] = None
+    # Tool-router SLOTS: categories the model has request_tools'd, persisted across turns by
+    # the session layer (chat.py owns the per-user list and passes it by reference, so in-turn
+    # loads/evictions survive to the next turn). NOT the pinned voice/app-context categories.
+    loaded_categories: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -164,13 +168,13 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     context_text = req.user_message + "\n" + "\n".join(
         m["content"] for m in context_window if m.get("content")
     )
-    routed_tool_names = get_tools_for_message(context_text)
+    # SLOT MODEL (replaces the eager `get_tools_for_message(context_text)` load that exploded
+    # the prompt). Always-on: the 'core' category + META tools. The model loads what it needs
+    # into a small set of swap SLOTS via request_tools (each load auto-evicts the oldest).
+    # PINNED (never evicted) = extra_categories: voice channel defaults + the web app-context
+    # entity. (context_text above is kept only for the keyword audit column.)
+    routed_tool_names = get_category_tool_names("core")
 
-    # Deterministically expose the reply-guide tool when a proactive DM is pending.
-    if _has_pending_dm:
-        routed_tool_names.add("get_proactive_reply_guide")
-
-    # Force-include tools for active app context
     if req.channel == "web" and req.app_context:
         _ctx_entity_type = req.app_context.get("entityType", "")
         if _ctx_entity_type == "idea":
@@ -179,18 +183,48 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
             extra_categories.add("documents")
         elif _ctx_entity_type in ("goal", "project", "task"):
             extra_categories.add("goals")
-    if extra_categories:
-        for _cat in extra_categories:
-            _cat_info = TOOL_CATEGORIES.get(_cat)
-            if _cat_info:
-                routed_tool_names.update(_cat_info["tools"])
 
-    # Inject guides (after tool routing so guide keywords are available)
-    guide_content = get_guides_for_message(context_text)
+    SLOT_CAPACITY = 2
+    slots: list[str] = req.loaded_categories  # persisted across turns (mutated in place)
+
+    def _loaded_categories() -> set[str]:
+        """Everything currently exposed: pinned (extra_categories) + the swap slots."""
+        return set(extra_categories) | set(slots)
+
+    def _load_slot(category: str) -> tuple:
+        """Load a category into a slot; auto-evict the oldest when full. Returns (loaded, evicted)."""
+        category = (category or "").lower().strip()
+        # Validate via the RESOLVER (handles the 'app:<id>' prefix + normalization), NOT a raw
+        # TOOL_CATEGORIES dict-key check — that rejected valid app categories and spun the loop.
+        if not category or not get_category_tool_names(category):
+            return None, None
+        if category in extra_categories or category in slots:
+            return None, None  # already available
+        evicted = slots.pop(0) if len(slots) >= SLOT_CAPACITY else None
+        slots.append(category)
+        return category, evicted
+
+    # Deterministically expose the reply-guide tool when a proactive DM is pending.
+    if _has_pending_dm:
+        routed_tool_names.add("get_proactive_reply_guide")
+
+    # Dynamic slot state + how to load more (cheap; the category catalog itself is in BEHAVIOR.md).
+    _loaded_now = sorted(_loaded_categories())
+    dynamic_context += (
+        "\n\n## Tool categories (slots)\n"
+        f"Loaded now: {', '.join(_loaded_now) if _loaded_now else 'core only'} "
+        f"(you have {SLOT_CAPACITY} swap slots, {len(slots)} used).\n"
+        "To act in an area whose tools you don't see, call request_tools(category) — it loads that "
+        "category's tools AND its guide into a slot (auto-unloads your oldest slot if full). Choose "
+        "the right category from the conversation (incl. back-references like 'do it'); never invent "
+        "a tool you haven't loaded.\n"
+    )
+
+    # Inject guides for the LOADED categories only (tools + guide travel together).
+    guide_content = get_guides_for_categories(_loaded_categories())
     if guide_content:
         dynamic_context += "\n\n" + guide_content
-        logger.debug("GUIDES: Injected contextual guides for message: %s",
-                     req.user_message[:80])
+        logger.debug("GUIDES: injected guides for loaded categories: %s", _loaded_now)
 
     # Capture per-category routing audit for the chat_turns debug columns.
     # This is computed once on the same context_text used above so it reflects
@@ -220,8 +254,8 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
         MAX_TOOLS = 128
 
         allowed = routed_tool_names | META_TOOL_NAMES
-        # Add any dynamically requested categories
-        for cat in extra_categories:
+        # Add the loaded categories: pinned (voice/app-context) + the swap slots.
+        for cat in _loaded_categories():
             allowed |= get_category_tool_names(cat)
 
         # Never offer the disabled (code-authoring / shell / MCP-control) tools to
@@ -254,7 +288,7 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
             # requested/context categories (extra_categories), then the rest.
             # extra_categories tools MUST survive — the LLM was told they're available.
             priority_names = META_TOOL_NAMES | get_category_tool_names("core")
-            for _cat in extra_categories:
+            for _cat in _loaded_categories():
                 priority_names |= get_category_tool_names(_cat)
             priority = [t for t in combined if t["function"]["name"] in priority_names]
             rest = [t for t in combined if t["function"]["name"] not in priority_names]
@@ -379,9 +413,19 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
         if tool_name == "request_tools":
             category = tool_args.get("category", "").lower().strip()
             if category:
-                extra_categories.add(category)
+                loaded, evicted = _load_slot(category)
+                # ALWAYS rebuild after a request_tools call so a rejected/empty category can't
+                # leave the model with no new tools and spin (the runaway we hit).
                 needs_tool_rebuild = True
-                logger.debug("TOOL ROUTER: Category '%s' dynamically added", category)
+                if loaded:
+                    logger.info("TOOL SLOTS: loaded [%s]%s (slots=%s)", loaded,
+                                f" evicted [{evicted}]" if evicted else "", slots)
+                    if req.send_event:  # Phase 2B: UI tool-bubble
+                        try:
+                            await req.send_event({"type": "tool_slot", "loaded": loaded,
+                                                  "unloaded": evicted, "slots": list(slots)})
+                        except Exception:
+                            pass
 
         return result
 
