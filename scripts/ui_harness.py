@@ -19,10 +19,12 @@ Usage (async):
     print(await ui.get_field("Location"))
     await ui.close()
 """
-import asyncio
+import asyncio, os
 from playwright.async_api import async_playwright, TimeoutError as PWTimeout
 
-BASE = "http://localhost:8000"
+# Target host. Defaults to the local instance (box2 dev), but Gate-3 live validation points this
+# at skipper-uat (the dedicated UAT box) via SKIPPER_UI_BASE.
+BASE = os.environ.get("SKIPPER_UI_BASE", "http://localhost:8000")
 
 
 class UIError(Exception):

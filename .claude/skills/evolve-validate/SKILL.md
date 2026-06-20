@@ -38,6 +38,20 @@ reusable harness scripts on box 2 do the heavy lifting (drive them over ssh from
    with per-step pass/fail and the captured evidence (answer + `tool_calls` from `/api/chat/history`).
 5. **Judge** the report. Cap scenarios (~5–10 chat turns — bounded; box 2's agent spends API credits).
 
+**Driving the real UI — use the hardened harness, not naive Playwright.** For UI steps prefer
+`scripts/ui_harness.py` (the `UI` class), which encodes the friction that makes naive automation
+lie: React **controlled inputs** ignore `.fill()` → it sets the value via the native setter +
+dispatches `input`/`change` so the form goes dirty and **Save un-disables**; **SPA nav is flaky** →
+it clicks-and-waits-for-the-target with retries + overlay/Escape, not click+sleep; it finds a field
+by the control after ANY element whose direct text matches the label; and it captures every console
+error + **HTTP>=400** and screenshots failures to `/tmp/ui_*.png`. Host is `SKIPPER_UI_BASE` (point
+at skipper-uat for the Gate-3 pre-verify pass; box 2 for Gate-2).
+
+**Behaviour is PROBABILISTIC — verify like it.** Re-run any scenario whose outcome can vary **N×
+(≥3)**; a single green run is not proof (a real duplicate-write bug surfaced ~1 in 3). If a fix only
+holds 2/3, it's **not** green — escalate. **Bug-scout:** if you trip over a bug unrelated to this
+change, do NOT fix it — **file a GitHub issue** and keep going.
+
 **Fail closed (either layer):**
 - A change with **no bound test** → NOT green.
 - Any **red** bound test, OR any **failed acceptance scenario** (wrong tool fired / answer or UI
