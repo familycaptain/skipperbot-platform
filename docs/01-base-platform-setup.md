@@ -53,28 +53,41 @@ The Docker path bundles **everything** — Postgres 18, the pgvector extension, 
 
 1. **Install Docker.**
 
-   - **macOS / Windows:** install Docker Desktop from <https://docs.docker.com/desktop/>. It bundles `docker` and `docker compose` together. On Windows pick the WSL2 backend when prompted.
-   - **Linux (Ubuntu / Debian / Raspberry Pi OS, including Pi 4 and Pi 5 on 64-bit):**
+   - **macOS / Windows:** install Docker Desktop from <https://docs.docker.com/desktop/>. It bundles `docker` and `docker compose` together and starts the Docker engine for you. On Windows pick the WSL2 backend when prompted. Then skip to **Verify** below.
+   - **Linux (Ubuntu / Debian / Raspberry Pi OS, including Pi 4 and Pi 5 on 64-bit):** run these three steps **in order** — the install script alone is not enough; you must also start the daemon and add yourself to the `docker` group.
 
      ```bash
-     # Use Docker's official one-shot install script — handles apt sources,
-     # GPG keys, and arch (amd64 / arm64) automatically. The Debian
-     # `docker` package does NOT exist; `docker.io` is usually stale.
+     # 1) Install Docker via the official one-shot script — handles apt sources,
+     #    GPG keys, and arch (amd64 / arm64) automatically. (The Debian `docker`
+     #    package does NOT exist; `docker.io` is usually stale, so use this.)
      curl -fsSL https://get.docker.com -o get-docker.sh
      sudo sh get-docker.sh
 
-     # Let your user run docker without sudo.
-     sudo usermod -aG docker $USER
-     newgrp docker            # apply the group in this shell without a logout
-     ```
-   - **Linux (Fedora / RHEL / openSUSE):** the same install script (`curl -fsSL https://get.docker.com | sudo sh`) handles these too. Or follow the per-distro instructions at <https://docs.docker.com/engine/install/>.
+     # 2) Start the Docker daemon NOW and enable it on every boot. The install
+     #    script does not always start it; skipping this is what causes
+     #    "Cannot connect to the Docker daemon ... is the docker daemon running?"
+     sudo systemctl enable --now docker
 
-   Verify:
+     # 3) Let your user run docker WITHOUT sudo. Skipping this causes
+     #    "permission denied while trying to connect to ... /var/run/docker.sock".
+     sudo usermod -aG docker $USER
+     newgrp docker            # applies the new group in THIS shell, no logout
+     ```
+
+     > `newgrp docker` only affects the current shell. *New* terminals / SSH sessions pick up the group automatically once you **log out and back in a single time**.
+
+   - **Linux (Fedora / RHEL / openSUSE):** the install script handles these too — run the same three steps (`curl -fsSL https://get.docker.com | sudo sh`, then `sudo systemctl enable --now docker`, then `sudo usermod -aG docker $USER && newgrp docker`). Or follow the per-distro instructions at <https://docs.docker.com/engine/install/>.
+
+   **Verify** — `docker ps` is the quickest check that Docker is installed, the daemon is running, *and* you can reach it without sudo. It should print an empty table (just the header) with **no error**:
 
    ```bash
-   docker run --rm hello-world
+   docker ps                         # OK = header row, no error
    docker compose version            # compose v2 ships as a built-in plugin
    ```
+
+   If `docker ps` errors:
+   - `permission denied while trying to connect to ... docker.sock` → the group change hasn't taken effect. Re-run `newgrp docker` (step 3), or log out and back in.
+   - `Cannot connect to the Docker daemon` → the daemon isn't running. Run `sudo systemctl enable --now docker` (step 2), then `sudo systemctl status docker --no-pager` to confirm it shows `active (running)`.
 
    > **Raspberry Pi note.** Pi 4 (4GB or more) and Pi 5 (any RAM size) are supported.
    > Must be running a **64-bit** OS — `uname -m` should report `aarch64` (or
@@ -332,6 +345,8 @@ If all four work, you're set up.
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | Docker: `db` container exits immediately | `POSTGRES_PASSWORD` not set in `.env` | Set it; `docker compose down -v` (the `-v` wipes the empty volume); `docker compose up`. |
+| Docker: `permission denied while trying to connect to ... /var/run/docker.sock` (e.g. when pulling `pgvector/pgvector`) | Your user isn't in the `docker` group, or the group hasn't applied to this shell yet | `sudo usermod -aG docker $USER`, then `newgrp docker` (or log out and back in). `docker ps` should then run without sudo. |
+| Docker: `Cannot connect to the Docker daemon ... is the docker daemon running?` | The Docker daemon isn't started (the get-docker.sh script doesn't always start it) | `sudo systemctl enable --now docker`, then confirm with `sudo systemctl status docker --no-pager` (want `active (running)`). Non-systemd hosts: `sudo service docker start`. |
 | Docker: agent can't connect to db | `SKIPPERBOT_DB_DSN` says `host=localhost` instead of `host=db` | Inside the container, the Postgres service is reachable at hostname `db`, not `localhost`. Fix in `.env`. |
 | Native: `psql: error: connection refused` | Postgres not running | Linux: `sudo systemctl start postgresql`. macOS: `brew services start postgresql@18`. Windows: start from `services.msc`. |
 | Native: `psql: FATAL: password authentication failed` | Wrong password in `.env` | Re-set in psql: `ALTER USER skipperbot_user WITH PASSWORD '...';` and update `.env`. |
