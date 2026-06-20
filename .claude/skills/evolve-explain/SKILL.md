@@ -15,7 +15,7 @@ doesn't convey enough to actually decide. They hand you an **id + a question**; 
 explain it. (Background: [interim manual version of the "assistant in the Evolve app" idea].)
 
 ## Look it up (read-only, from the Pi)
-Use the helper — it fetches the live packet from `skipper-pi.local:8000` (override `EVOLVE_PI_URL`):
+Use the helper — it fetches the live packet from the operator platform (the Pi) via `$EVOLVE_PI_URL` (or `$EVOLVE_PLATFORM_URL`):
 
 ```
 python3 scripts/evolve_explain.py list            # all runs + which gates are WAITING ON YOU

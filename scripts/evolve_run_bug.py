@@ -11,7 +11,7 @@ Staged so each real (paid) step is observable:
 
 Reasoning agents run on Opus via AnthropicBackend (shared cost ledger + $500/mo kill-switch).
 The `implement` agent runs as a tool-use code-actor rooted in an isolated feature worktree
-off `release`; `validate` deploys that branch to box 2 (evolve-test.local) and runs the
+off `release`; `validate` deploys that branch to box 2 ($EVOLVE_BOX2_HOST) and runs the
 bound test there. State is durable (SQLite), so the stages can run as separate invocations.
 """
 import argparse
@@ -43,7 +43,7 @@ STATE_DB = os.path.expanduser("~/.evolve/weather_run.sqlite")
 IID_FILE = os.path.expanduser("~/.evolve/weather_run.iid")
 DEEP = os.getenv("EVOLVE_MODEL_DEEP", "claude-opus-4-8")
 MONTHLY_CAP = float(os.getenv("EVOLVE_MONTHLY_CAP", "500"))
-BOX2_HOST = os.getenv("EVOLVE_BOX2_HOST", "evolve-test.local")
+BOX2_HOST = os.getenv("EVOLVE_BOX2_HOST", "box2.local")
 BOX2_REPO = os.getenv("EVOLVE_BOX2_REPO", "/home/skipper/repos/skipperbot-platform")
 
 WORK_ITEM = {

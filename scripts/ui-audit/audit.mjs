@@ -4,7 +4,7 @@
  * screenshot each, and flag pages that render empty / broken when they should
  * show data.
  *
- *   node audit.mjs --base http://evolve-test.local:8000 --user david --pass david1234
+ *   node audit.mjs --base http://localhost:8000 --user david --pass david1234
  *
  * Output (under --out, default ./_audit):
  *   - report.json / report.md   findings (status per app/tab)
@@ -21,7 +21,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { argv } from "node:process";
 
 const arg = (n, d) => { const i = argv.indexOf("--" + n); return i >= 0 && argv[i + 1] ? argv[i + 1] : d; };
-const BASE = arg("base", "http://evolve-test.local:8000").replace(/\/$/, "");
+const BASE = arg("base", process.env.SKIPPER_UI_BASE || process.env.AUDIT_BASE || "http://localhost:8000").replace(/\/$/, "");
 const USER = arg("user", "david");
 const PASS = arg("pass", "david1234");
 const OUT = arg("out", "./_audit");

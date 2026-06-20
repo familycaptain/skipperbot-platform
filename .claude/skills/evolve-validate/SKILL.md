@@ -10,7 +10,7 @@ description: >
 # Validate (on box 2)
 
 Play the **Validate** agent. Canonical instructions: read `apps/evolve/agents/prompts/validate.md`.
-Box 1 never validates itself — everything here runs on **box 2** (`evolve-test.local`), which runs
+Box 1 never validates itself — everything here runs on **box 2** (the test host), which runs
 the live dockerized Skipper.
 
 ## A) Bound tests (existing)

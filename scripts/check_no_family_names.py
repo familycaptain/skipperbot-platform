@@ -42,8 +42,7 @@ FORBIDDEN_NAMES_SUBSTRING = [
     "elijah",
     "caleb",
     "attune",
-    "burton",
-    "burtonhome",
+    "burton",  # substring match also covers private domains built from this name
 ]
 
 # Legacy obfuscated placeholders — matched on whole-word boundaries only,

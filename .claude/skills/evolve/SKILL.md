@@ -143,7 +143,7 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   **waiting / verify**).
 
   **PRE-VERIFY LIVE ACCEPTANCE (automated, on BOX 2 — BEFORE pushing the gate):** prove it works on
-  the merged release before the operator ever tests by hand. Box 1 drives **box 2** (`evolve-test.local`,
+  the merged release before the operator ever tests by hand. Box 1 drives **box 2** (the test host,
   its disposable automated test box) for ALL automated testing — Gate-2 (the feature branch) AND this
   Gate-3 pre-verify (the merged `release`). Deploy release to box 2 (`box2_live.py deploy release`),
   then run `evolve-validate`'s **LIVE acceptance with the spec as oracle**: drive the real UI with the

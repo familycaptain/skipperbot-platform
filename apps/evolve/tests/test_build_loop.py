@@ -75,7 +75,7 @@ class TestBuildLoop(unittest.TestCase):
         # smoke: the adapters build without invoking Claude / box 2
         self.assertTrue(callable(build_loop.local_validate(self.wm, self.box2)))
         self.assertTrue(callable(build_loop.implement_with_agent({}, SPEC, model="claude-x")))
-        box2 = build_loop.RemoteBox2("evolve-test.local", "repos/skipperbot-platform")
+        box2 = build_loop.RemoteBox2("test-host.local", "repos/skipperbot-platform")
         self.assertTrue(callable(build_loop.remote_validate(box2)))
 
     def test_local_validate_runs_and_merges(self):
