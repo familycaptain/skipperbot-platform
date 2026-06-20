@@ -333,11 +333,12 @@ def stop_onboarding(requested_by: str) -> str:
 
     Call this when the primary user asks to stop, end, skip, or be done with the
     onboarding — AFTER you have confirmed they want to set it aside (see the
-    proactive reply guide). This durably closes the onboarding goal out: it marks
-    the onboarding goal and all its still-open projects/tasks as cancelled,
-    disables the goal's thinking domain, and clears its pending PM nudges, so
-    Skipper stops reaching out about onboarding. This is the correct action — do
-    NOT just record a memory, which leaves the onboarding running.
+    proactive reply guide). This durably closes the onboarding goal out: it closes
+    the onboarding goal and all its still-open projects/tasks (marking them DONE if
+    the agenda was completed, or cancelled if stopped early), disables the goal's
+    thinking domain, and clears its pending PM nudges, so Skipper stops reaching out
+    about onboarding. This is the correct action — do NOT just record a memory,
+    which leaves the onboarding running.
 
     The onboarding goal is resolved internally from the platform's seed config;
     this tool deliberately takes NO goal id, so it can only ever close onboarding.
@@ -360,11 +361,23 @@ def stop_onboarding(requested_by: str) -> str:
             return ("There's nothing to stop — onboarding isn't set up "
                     "(no onboarding goal exists).")
 
+        # Derive the close-out status from whether the core agenda was actually completed,
+        # NOT from how the user phrased it. Finishing the ordered agenda (the non-tour projects)
+        # and opting out of the optional app tours is a SUCCESSFUL onboarding → done. Bailing
+        # before finishing the agenda → cancelled.
+        agenda = [p for p in _get_projects_for_goal(goal_id)
+                  if not (p.get("name") or "").startswith("Try the")]
+        agenda_complete = bool(agenda) and all(p.get("status") == "done" for p in agenda)
+        status = "done" if agenda_complete else "cancelled"
+        reason = ("Onboarding agenda complete — user is all set."
+                  if agenda_complete else
+                  "User asked to stop onboarding before finishing — closing it out.")
+
         return _close_out_goal(
             goal_id,
             by=requested_by.strip().lower(),
-            status="cancelled",
-            reason="User asked to stop onboarding — closing it out.",
+            status=status,
+            reason=reason,
         )
     except Exception as e:
         return f"Error in stop_onboarding: {str(e)}"

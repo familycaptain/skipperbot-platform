@@ -144,6 +144,12 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     # turn. The scrum app will register its own prompt-extender hook
     # when it lands as a separate package in Phase 1c.
     dynamic_context = await _inject_skipper_work_context(dynamic_context)
+    # When first-run onboarding is live, re-frame it as the agent's ACTIVE script to walk
+    # (gently, in order, capture-don't-configure) instead of background work — and PIN the goals
+    # tools so it can mark each agenda topic done (update_item) and actually advance.
+    dynamic_context, _is_onboarding = await _inject_onboarding_context(dynamic_context)
+    if _is_onboarding:
+        extra_categories.add("app:goals")
 
     # Reply-to-proactive-DM continuity: if a thinking domain DM'd this user and
     # it's still unresolved, flag it so a reply gets the sender's intent/cadence.
@@ -849,6 +855,12 @@ async def _inject_skipper_work_context(system_prompt: str) -> str:
     try:
         # goals is a required app; data layer moved here in the packaging chunk.
         import apps.goals.data as _dl_goals
+        from app_platform import config as _platform_config
+
+        # The onboarding goal is rendered concisely (and actively) by
+        # _inject_onboarding_context — exclude it here so its full 27-project agenda+tour
+        # tree isn't ALSO dumped verbatim every turn (that re-added ~24k tokens onboarding).
+        _onb_goal_id = (_platform_config.get("onboarding_seeded", scope="app:goals") or {}).get("goal_id")
 
         def _fetch():
             all_goals = _dl_goals.list_entities("g-")
@@ -856,6 +868,7 @@ async def _inject_skipper_work_context(system_prompt: str) -> str:
                 g for g in all_goals
                 if "skipper" in (g.get("owners") or [])
                 and g.get("status") not in ("done", "archived")
+                and g.get("id") != _onb_goal_id
             ]
             if not my_goals:
                 return None
@@ -887,6 +900,98 @@ async def _inject_skipper_work_context(system_prompt: str) -> str:
         logger.debug("SKIPPER_WORK: Could not load active work: %s", e)
 
     return system_prompt
+
+
+async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
+    """If the one-time first-run onboarding goal is still active, steer the CHAT agent to
+    actively WALK its agenda — rather than treat it as background work and dive into deep app
+    setup on the user's first stated intent. Returns (prompt, is_onboarding); the caller pins
+    the goals tool category when onboarding so the agent can update_item to mark agenda progress
+    (without it the agenda never advances — observed live: 0 update_item calls, every topic stuck
+    not_started, so it just kept re-drilling the first intent).
+
+    Why this exists: `_inject_skipper_work_context` frames Skipper's goals as autonomous
+    background work ("refer to these when asked what you're working on"). For onboarding that's
+    wrong — it's the agent's live script. Live testing showed that without this, on "I want help
+    with chores" the agent built out full chore zones/rotations (~20 tool calls) and never walked
+    household → intent → location → Discord → integrations.
+    """
+    try:
+        from app_platform import config as platform_config
+        seeded = platform_config.get("onboarding_seeded", scope="app:goals") or {}
+        goal_id = seeded.get("goal_id")
+        if not goal_id:
+            return system_prompt, False
+
+        import apps.goals.data as _dl_goals
+
+        def _fetch():
+            goal = next((g for g in _dl_goals.list_entities("g-") if g.get("id") == goal_id), None)
+            if not goal or goal.get("status") in ("done", "archived"):
+                return None
+            projects = _dl_goals.get_projects_for_goal(goal_id)
+            # Agenda topics are the ordered non-tour projects; tours start with "Try the ".
+            return [p for p in projects if not (p.get("name") or "").startswith("Try the ")]
+
+        agenda = await asyncio.to_thread(_fetch)
+        if not agenda:
+            return system_prompt, False
+
+        done = [p for p in agenda if p.get("status") == "done"]
+        current = next((p for p in agenda if p.get("status") != "done"), None)
+        rows = "\n".join(
+            f"  {'✅' if p.get('status') == 'done' else '⬜'} {p.get('name')} ({p.get('id')})"
+            for p in agenda
+        )
+        focus = (
+            f"Current focus: **{current['name']}** ({current['id']}).\n"
+            if current else
+            "All agenda topics are done — now move to the per-app tours (pruned HARD to their "
+            "intent). Do NOT close the goal until those are done or they say they're all set.\n"
+        )
+        system_prompt += (
+            "\n\n## You are ONBOARDING this user RIGHT NOW (active — not background work)\n"
+            "This is your live first-run setup. Walk the agenda below IN ORDER, ONE gentle nudge "
+            "at a time.\n"
+            "- ADVANCE: the moment a topic is covered in conversation, call "
+            "update_item(item_id, status=\"done\") for that agenda project, THEN move to the next "
+            "⬜ topic in the SAME reply. Do NOT keep re-drilling a topic you've already covered — "
+            "advancing the agenda matters more than exhaustively configuring one area.\n"
+            "- CAPTURE, don't configure: remember household members + their stated intent so you "
+            "can personalize — but remember each fact ONCE; don't re-save the household roster or "
+            "intent every turn (it's already saved). Do NOT do deep app setup during the agenda (no full chore "
+            "rotations/zones/schedules now — that's the per-app tour later, or when they explicitly "
+            "ask). A couple of tool calls, not twenty.\n"
+            "- TAILOR to the household you actually learn — do NOT assume there are children. Only "
+            "pursue child-specific setup (kid chores, school reminders) if the family really "
+            "includes kids; for a couple or a single person, match what you suggest to who's there. "
+            "Read the household FIRST and let it decide what's even relevant before going down an "
+            "app's path.\n"
+            "- SKIPPING A TOPIC IS NOT QUITTING. If they skip or decline ONE topic (e.g. 'skip "
+            "Discord'), mark just THAT topic done and CONTINUE to the next ⬜ — do NOT close, "
+            "cancel, or pause the whole onboarding. Only end onboarding entirely if they clearly "
+            "want to stop ALL setup (e.g. 'I'm good, I'll explore on my own').\n"
+            "- AGENDA DONE ≠ ONBOARDING DONE. When every agenda topic is done, do NOT close the "
+            "goal yet — the per-app tours are the rest of it. PRUNE the tours HARD to their stated "
+            "intent: proactively walk only the few apps that match how they want to use Skipper "
+            "(e.g. Chores, Reminders) and don't bother walking the rest. Do NOT repeat anything "
+            "onboarding already covered — if they already engaged an app (gave chore details, set "
+            "reminders), acknowledge and BUILD ON it ('we already started your chores — want me to "
+            "finish the rotation?'), never re-introduce it from scratch. Close the goal as COMPLETE "
+            "(done, not cancelled) ONLY after the relevant tours are done or they say they're all "
+            "set — then they can explore the rest on their own.\n"
+            "- HOW to close: to END onboarding (they're all set, or want to stop), call "
+            "stop_onboarding — it closes things out properly (turns off the onboarding nudges) and "
+            "records a successful DONE if they finished the agenda, or cancelled if they bailed "
+            "early. Don't close the whole goal by hand or with a memory. (update_item is only for "
+            "marking individual agenda TOPICS done as you go.)\n"
+            f"Agenda ({len(done)}/{len(agenda)} done):\n{rows}\n{focus}"
+        )
+        return system_prompt, True
+    except Exception as e:
+        logger.debug("ONBOARDING_CTX: %s", e)
+
+    return system_prompt, False
 
 
 async def _inject_proactive_dm_context(system_prompt: str, user_id: str) -> tuple[str, bool]:
