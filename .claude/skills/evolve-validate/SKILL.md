@@ -53,8 +53,22 @@ it at **box 2** for both the Gate-2 (feature branch) and Gate-3 pre-verify (merg
 holds 2/3, it's **not** green — escalate. **Bug-scout:** if you trip over a bug unrelated to this
 change, do NOT fix it — **file a GitHub issue** and keep going.
 
+**If it CAN be checked in the real UI, you MUST check it in the real UI — a bound/unit test never
+substitutes.** Decide per change: does it alter anything a person sees or clicks (a `web/` or
+`apps/*/ui/` file, a new control, a visible state/behaviour)? If yes, the live acceptance MUST
+exercise that exact thing in the running UI — click the real control, drive the real flow, and assert
+the rendered result the user would see (not just that a function returns the right value). A green
+unit/bound test for UI behaviour is necessary but **NOT sufficient**: a change that touches the UI and
+was validated only by unit tests is **NOT green**. For visual/appearance changes (themes, layout,
+states), additionally **capture screenshots of the before/after states** (e.g. via `ui.shot(...)`) —
+always, not only on failure — and surface them as artifacts so the operator can eyeball the actual
+look at verify. Don't shrink scope to what's easy to assert headlessly; if the user can see it, prove
+it in the UI.
+
 **Fail closed (either layer):**
 - A change with **no bound test** → NOT green.
+- A **UI-affecting** change with no live-UI acceptance step that drives the real control → NOT green
+  (unit tests alone don't count for UI behaviour).
 - Any **red** bound test, OR any **failed acceptance scenario** (wrong tool fired / answer or UI
   doesn't reflect the change) → NOT green; report it as the variance signal → back to implement.
 - Only all-green (bound tests + acceptance) is green → Gate 2.

@@ -61,18 +61,35 @@ Go back and forth for as long as they want; your goal is to land **clear, builda
 - Maintain a running **requirements delta** in the conversation — capture every decision/change the
   operator makes so nothing is lost across the back-and-forth.
 
-## 4. Land it — hand the operator a clean decision
-When they're ready, summarize crisply for them to act on **in the Evolve UI**:
-- **Approve** → restate the confirmed scope in one short paragraph (grounds the build), or
-- **Request changes** → a tight, ordered list of the requirement revisions, written so the spec
-  phase can re-run directly on it (it becomes the gate feedback), or
-- **Reject** → the reason, in one line.
+## 4. Land it — operate the gate on the operator's say-so
+The whole point: the operator decides by talking to YOU, not by wrestling the gate UI (the packet's
+terse questions, and copy/paste between screens, are exactly the friction this replaces). When
+they're ready, restate the decision crisply and **echo the exact note you'll submit**, then ask for a
+one-word go:
+- **Approve** → the confirmed scope in one short paragraph (it grounds the build), or
+- **Change** → a tight, ordered list of requirement revisions, written so the spec phase can re-run
+  directly on it, or
+- **Reject** → the reason in one line.
+
+On their explicit go, submit it FOR them:
+```
+python3 scripts/evolve_decide.py <id> approve|change|reject "the note you just echoed"
+```
+This records the decision as the operator (the parent `EVOLVE_DECIDE_TOKEN`). The operator's answers
+to the packet's "decisions for you" go INTO that note — they never type them into the UI. After it
+posts, confirm it landed and say what's next (the loop picks it up on its next pass; for a build, it
+goes on to box-2 validation then Gate-3 verify).
 
 ## Boundaries
-- **You do NOT decide the gate.** The operator approves / changes / rejects in the Evolve UI — that's
-  their authority, and the engine treats operator items as authoritative. Your output is the
-  well-formed decision + requirements they carry into that click. Do NOT call
-  `evolve_poc.py decision/resolve` or any mutating gate endpoint.
+- **You operate the gate ONLY on the operator's explicit, per-item instruction** — and only after
+  you've echoed the exact decision + note and they've given a clear go ("yes, approve it"). Never
+  decide autonomously, never to clear a backlog, never inferred from a passing "sounds good." The
+  authority is the operator's; you are their hands, replacing a painful UI step. If you're unsure
+  whether they meant "submit it," ask.
+- **The autonomous Evolve agents/loop CANNOT decide gates** — that's the whole point. The parent
+  `EVOLVE_DECIDE_TOKEN` lives ONLY on the operator's assistant machine (this one), never on box 1
+  where the loop runs; the loop holds only the service token, which the decision endpoint rejects.
+  (Marking a gate `resolve`d *after* a build is still the engine's job, not part of deciding.)
 - **Never embed the Pi URL or any credential** in this skill, in commands you suggest, or in output —
   always via `$EVOLVE_PI_URL` / `.env`. Keep it clean for public distribution.
 - One item per conversation. If they switch ids, re-fetch from scratch and start a fresh delta.
