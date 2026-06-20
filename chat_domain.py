@@ -144,6 +144,9 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     # turn. The scrum app will register its own prompt-extender hook
     # when it lands as a separate package in Phase 1c.
     dynamic_context = await _inject_skipper_work_context(dynamic_context)
+    # When first-run onboarding is live, re-frame it as the agent's ACTIVE script to walk
+    # (gently, in order, capture-don't-configure) instead of background work.
+    dynamic_context = await _inject_onboarding_context(dynamic_context)
 
     # Reply-to-proactive-DM continuity: if a thinking domain DM'd this user and
     # it's still unresolved, flag it so a reply gets the sender's intent/cadence.
@@ -885,6 +888,68 @@ async def _inject_skipper_work_context(system_prompt: str) -> str:
             )
     except Exception as e:
         logger.debug("SKIPPER_WORK: Could not load active work: %s", e)
+
+    return system_prompt
+
+
+async def _inject_onboarding_context(system_prompt: str) -> str:
+    """If the one-time first-run onboarding goal is still active, steer the CHAT agent to
+    actively WALK its agenda — rather than treat it as background work and dive into deep app
+    setup on the user's first stated intent.
+
+    Why this exists: `_inject_skipper_work_context` frames Skipper's goals as autonomous
+    background work ("refer to these when asked what you're working on"). For onboarding that's
+    wrong — it's the agent's live script. Live testing showed that without this, on "I want help
+    with chores" the agent built out full chore zones/rotations (~20 tool calls) and never walked
+    household → intent → location → Discord → integrations. This re-frames it: walk in order, one
+    gentle nudge, capture-don't-configure, keep moving.
+    """
+    try:
+        from app_platform import config as platform_config
+        seeded = platform_config.get("onboarding_seeded", scope="app:goals") or {}
+        goal_id = seeded.get("goal_id")
+        if not goal_id:
+            return system_prompt
+
+        import apps.goals.data as _dl_goals
+
+        def _fetch():
+            goal = next((g for g in _dl_goals.list_entities("g-") if g.get("id") == goal_id), None)
+            if not goal or goal.get("status") in ("done", "archived"):
+                return None
+            projects = _dl_goals.get_projects_for_goal(goal_id)
+            # Agenda topics are the ordered non-tour projects; tours start with "Try the ".
+            return [p for p in projects if not (p.get("name") or "").startswith("Try the ")]
+
+        agenda = await asyncio.to_thread(_fetch)
+        if not agenda:
+            return system_prompt
+
+        done = [p for p in agenda if p.get("status") == "done"]
+        todo = [p for p in agenda if p.get("status") != "done"]
+        current = todo[0]["name"] if todo else None
+        rows = "\n".join(
+            f"  {'✅' if p.get('status') == 'done' else '⬜'} {p.get('name')}" for p in agenda
+        )
+        focus = (
+            f"Current focus: **{current}** — nudge them about THIS one, then advance.\n"
+            if current else "Agenda done — move to the pruned app tours, or wrap up if they're set.\n"
+        )
+        system_prompt += (
+            "\n\n## You are ONBOARDING this user RIGHT NOW (this is active — not background work)\n"
+            "This is your live first-run setup conversation. Walk the agenda below IN ORDER, ONE "
+            "gentle nudge at a time — finish (mark done with update_item) each topic before the "
+            "next, and never dump the whole list at once.\n"
+            "Keep onboarding LIGHT and MOVING. CAPTURE, don't configure: remember household members "
+            "and their stated intent so you can personalize — but do NOT do deep app setup during "
+            "the agenda. When they mention an area (e.g. chores), note it and move on; do NOT build "
+            "out full rotations/zones/schedules now — that belongs to the per-app tour later, or "
+            "when they explicitly ask to set it up. A couple of tool calls, not twenty. Each topic "
+            "is optional — if it doesn't apply, mark it done and move on gracefully.\n"
+            f"Agenda ({len(done)}/{len(agenda)} done):\n{rows}\n{focus}"
+        )
+    except Exception as e:
+        logger.debug("ONBOARDING_CTX: %s", e)
 
     return system_prompt
 
