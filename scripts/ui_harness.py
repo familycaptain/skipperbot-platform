@@ -114,6 +114,35 @@ class UI:
         await self.page.click(f'button:has-text("{text}")', timeout=8000)
         await self.page.wait_for_timeout(wait)
 
+    async def app_tiles(self):
+        """Names of the desktop app tiles (for sweeping every app)."""
+        return await self.page.evaluate(
+            """()=>[...document.querySelectorAll('button[title*="hide from your desktop"]')]
+                   .map(b=>(b.innerText||'').trim()).filter(Boolean)""")
+
+    async def open_app(self, name):
+        sel = f'button[title*="hide from your desktop"]:has-text("{name}")'
+        for _ in range(3):
+            try:
+                loc = self.page.locator(sel).first
+                await loc.scroll_into_view_if_needed(timeout=3000)
+                await loc.click(timeout=5000)
+                await self.page.wait_for_timeout(2200)
+                return
+            except Exception:
+                if await self._blockers():
+                    await self.page.keyboard.press("Escape")
+                await self.page.wait_for_timeout(700)
+        raise UIError(f"open_app({name}) blocked; blockers={await self._blockers()}")
+
+    async def desktop(self):
+        """Return to the apps desktop."""
+        try:
+            await self.page.click('button:has-text("Apps")', timeout=5000)
+            await self.page.wait_for_timeout(700)
+        except Exception:
+            await self.page.keyboard.press("Escape"); await self.page.wait_for_timeout(500)
+
     async def _tag_field(self, label):
         # Find the first form control AFTER an element whose OWN direct text includes the label.
         # Works whether the label is a <label> (System panel) or a header/div (Members panel),
