@@ -145,8 +145,11 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     # when it lands as a separate package in Phase 1c.
     dynamic_context = await _inject_skipper_work_context(dynamic_context)
     # When first-run onboarding is live, re-frame it as the agent's ACTIVE script to walk
-    # (gently, in order, capture-don't-configure) instead of background work.
-    dynamic_context = await _inject_onboarding_context(dynamic_context)
+    # (gently, in order, capture-don't-configure) instead of background work — and PIN the goals
+    # tools so it can mark each agenda topic done (update_item) and actually advance.
+    dynamic_context, _is_onboarding = await _inject_onboarding_context(dynamic_context)
+    if _is_onboarding:
+        extra_categories.add("app:goals")
 
     # Reply-to-proactive-DM continuity: if a thinking domain DM'd this user and
     # it's still unresolved, flag it so a reply gets the sender's intent/cadence.
@@ -892,24 +895,26 @@ async def _inject_skipper_work_context(system_prompt: str) -> str:
     return system_prompt
 
 
-async def _inject_onboarding_context(system_prompt: str) -> str:
+async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
     """If the one-time first-run onboarding goal is still active, steer the CHAT agent to
     actively WALK its agenda — rather than treat it as background work and dive into deep app
-    setup on the user's first stated intent.
+    setup on the user's first stated intent. Returns (prompt, is_onboarding); the caller pins
+    the goals tool category when onboarding so the agent can update_item to mark agenda progress
+    (without it the agenda never advances — observed live: 0 update_item calls, every topic stuck
+    not_started, so it just kept re-drilling the first intent).
 
     Why this exists: `_inject_skipper_work_context` frames Skipper's goals as autonomous
     background work ("refer to these when asked what you're working on"). For onboarding that's
     wrong — it's the agent's live script. Live testing showed that without this, on "I want help
     with chores" the agent built out full chore zones/rotations (~20 tool calls) and never walked
-    household → intent → location → Discord → integrations. This re-frames it: walk in order, one
-    gentle nudge, capture-don't-configure, keep moving.
+    household → intent → location → Discord → integrations.
     """
     try:
         from app_platform import config as platform_config
         seeded = platform_config.get("onboarding_seeded", scope="app:goals") or {}
         goal_id = seeded.get("goal_id")
         if not goal_id:
-            return system_prompt
+            return system_prompt, False
 
         import apps.goals.data as _dl_goals
 
@@ -923,35 +928,44 @@ async def _inject_onboarding_context(system_prompt: str) -> str:
 
         agenda = await asyncio.to_thread(_fetch)
         if not agenda:
-            return system_prompt
+            return system_prompt, False
 
         done = [p for p in agenda if p.get("status") == "done"]
-        todo = [p for p in agenda if p.get("status") != "done"]
-        current = todo[0]["name"] if todo else None
+        current = next((p for p in agenda if p.get("status") != "done"), None)
         rows = "\n".join(
-            f"  {'✅' if p.get('status') == 'done' else '⬜'} {p.get('name')}" for p in agenda
+            f"  {'✅' if p.get('status') == 'done' else '⬜'} {p.get('name')} ({p.get('id')})"
+            for p in agenda
         )
         focus = (
-            f"Current focus: **{current}** — nudge them about THIS one, then advance.\n"
-            if current else "Agenda done — move to the pruned app tours, or wrap up if they're set.\n"
+            f"Current focus: **{current['name']}** ({current['id']}).\n"
+            if current else
+            "All agenda topics are done — move to the pruned app tours, or wrap up if they're set.\n"
         )
         system_prompt += (
-            "\n\n## You are ONBOARDING this user RIGHT NOW (this is active — not background work)\n"
-            "This is your live first-run setup conversation. Walk the agenda below IN ORDER, ONE "
-            "gentle nudge at a time — finish (mark done with update_item) each topic before the "
-            "next, and never dump the whole list at once.\n"
-            "Keep onboarding LIGHT and MOVING. CAPTURE, don't configure: remember household members "
-            "and their stated intent so you can personalize — but do NOT do deep app setup during "
-            "the agenda. When they mention an area (e.g. chores), note it and move on; do NOT build "
-            "out full rotations/zones/schedules now — that belongs to the per-app tour later, or "
-            "when they explicitly ask to set it up. A couple of tool calls, not twenty. Each topic "
-            "is optional — if it doesn't apply, mark it done and move on gracefully.\n"
+            "\n\n## You are ONBOARDING this user RIGHT NOW (active — not background work)\n"
+            "This is your live first-run setup. Walk the agenda below IN ORDER, ONE gentle nudge "
+            "at a time.\n"
+            "- ADVANCE: the moment a topic is covered in conversation, call "
+            "update_item(item_id, status=\"done\") for that agenda project, THEN move to the next "
+            "⬜ topic in the SAME reply. Do NOT keep re-drilling a topic you've already covered — "
+            "advancing the agenda matters more than exhaustively configuring one area.\n"
+            "- CAPTURE, don't configure: remember household members + their stated intent so you "
+            "can personalize, but do NOT do deep app setup during the agenda (no full chore "
+            "rotations/zones/schedules now — that's the per-app tour later, or when they explicitly "
+            "ask). A couple of tool calls, not twenty.\n"
+            "- TAILOR to the household you actually learn — do NOT assume there are children. Only "
+            "pursue child-specific setup (kid chores, school reminders) if the family really "
+            "includes kids; for a couple or a single person, match what you suggest to who's there. "
+            "Read the household FIRST and let it decide what's even relevant before going down an "
+            "app's path.\n"
+            "- Each topic is OPTIONAL — if it doesn't apply, mark it done and move on gracefully.\n"
             f"Agenda ({len(done)}/{len(agenda)} done):\n{rows}\n{focus}"
         )
+        return system_prompt, True
     except Exception as e:
         logger.debug("ONBOARDING_CTX: %s", e)
 
-    return system_prompt
+    return system_prompt, False
 
 
 async def _inject_proactive_dm_context(system_prompt: str, user_id: str) -> tuple[str, bool]:
