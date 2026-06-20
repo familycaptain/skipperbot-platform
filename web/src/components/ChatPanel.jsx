@@ -84,9 +84,9 @@ export default function ChatPanel({
             );
           }
           // Show the time only on the last of a run of same-sender, same-minute
-          // messages (collapse consecutive); never on tool_call rows.
+          // messages (collapse consecutive); never on tool_call / tool_slot rows.
           const next = messages[i + 1];
-          const showTime = msg.role !== "tool_call" && !(
+          const showTime = msg.role !== "tool_call" && msg.role !== "tool_slot" && !(
             next && next.role === msg.role && sameMinute(next.ts, msg.ts)
           );
           return <ChatMessage key={msg.id} message={msg} showTime={showTime} />;
