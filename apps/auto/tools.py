@@ -51,7 +51,7 @@ def create_vehicle(
     The display name is auto-generated from year, make, model, trim_level, and color.
 
     Args:
-        created_by: Who is creating it (e.g. "alice").
+        created_by: Who is creating it (a person's name).
         make: Vehicle make (e.g. "Ford", "Honda").
         model: Vehicle model (e.g. "F-150", "Civic").
         trim_level: Trim level (e.g. "SL", "EX-L", "XLT").
@@ -60,7 +60,7 @@ def create_vehicle(
         vin: VIN number (optional).
         license_plate: License plate (optional).
         odometer: Current odometer reading. 0 = not specified.
-        owner: Vehicle owner (e.g. "alice"). Gets escalation notifications. Empty = defaults to created_by.
+        owner: Vehicle owner (a person's name). Gets escalation notifications. Empty = defaults to created_by.
         notes: Additional notes.
 
     Returns:

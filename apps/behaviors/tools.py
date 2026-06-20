@@ -46,7 +46,7 @@ def add_behavior(
     Do NOT ask for confirmation — just create it and confirm in your response.
 
     Args:
-        user_id: The user this behavior belongs to (e.g. "alice").
+        user_id: The user this behavior belongs to (a person's name).
         trigger_description: When to apply this behavior. Natural language
             description of the condition (e.g. "When the user says they did
             something or completed an activity").
@@ -84,7 +84,7 @@ def list_behaviors(user_id: str, scope: str = "") -> str:
     Returns the user's own behaviors plus all system-wide behaviors by default.
 
     Args:
-        user_id: The user whose behaviors to list (e.g. "alice").
+        user_id: The user whose behaviors to list (a person's name).
         scope: Optional filter — 'user' (personal only), 'system' (global only),
                or '' (both, default).
 

@@ -57,7 +57,7 @@ def create_doc(
 
     Args:
         title: Document title (e.g. "Solar Panel Research", "Meeting Notes 2026-02-08").
-        created_by: Who is creating it (e.g. "alice").
+        created_by: Who is creating it (a person's name).
         content: Initial markdown content. If empty, a heading is auto-generated.
         tags: Comma-separated tags for categorization (e.g. "research,solar,home").
         related_entity_id: Optional entity to link to (e.g. "p-abc123" for a project).
@@ -289,7 +289,7 @@ def list_docs(
 
     Args:
         tag: Filter by tag (e.g. "research").
-        created_by: Filter by creator (e.g. "alice").
+        created_by: Filter by creator (a person's name).
         related_entity_id: Filter by linked entity (e.g. "p-abc123").
 
     Returns:
