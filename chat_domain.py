@@ -930,7 +930,9 @@ async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
 
         def _fetch():
             goal = next((g for g in _dl_goals.list_entities("g-") if g.get("id") == goal_id), None)
-            if not goal or goal.get("status") in ("done", "archived"):
+            # Terminal onboarding goal => not onboarding. "cancelled" is what stop_onboarding sets
+            # when the user bails early; without it here, a stopped onboarding keeps re-injecting.
+            if not goal or goal.get("status") in ("done", "archived", "cancelled"):
                 return None
             projects = _dl_goals.get_projects_for_goal(goal_id)
             # Agenda topics are the ordered non-tour projects; tours start with "Try the ".
@@ -940,10 +942,17 @@ async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
         if not agenda:
             return system_prompt, False
 
-        done = [p for p in agenda if p.get("status") == "done"]
-        current = next((p for p in agenda if p.get("status") != "done"), None)
+        # A topic is resolved if it's done OR was skipped (cancelled); only a genuinely pending
+        # topic is "current". Without excluding cancelled, a skipped topic gets re-asked forever.
+        _RESOLVED = ("done", "cancelled")
+        done = [p for p in agenda if p.get("status") in _RESOLVED]
+        current = next((p for p in agenda if p.get("status") not in _RESOLVED), None)
+        # Every topic resolved but NONE actually completed (all skipped/cancelled) => the user
+        # abandoned onboarding, didn't finish it — don't re-inject the agenda.
+        if current is None and not any(p.get("status") == "done" for p in agenda):
+            return system_prompt, False
         rows = "\n".join(
-            f"  {'✅' if p.get('status') == 'done' else '⬜'} {p.get('name')} ({p.get('id')})"
+            f"  {'✅' if p.get('status') == 'done' else ('⏭️' if p.get('status') == 'cancelled' else '⬜')} {p.get('name')} ({p.get('id')})"
             for p in agenda
         )
         focus = (
@@ -1018,6 +1027,22 @@ async def _inject_proactive_dm_context(system_prompt: str, user_id: str) -> tupl
         logger.debug("PROACTIVE_REPLY: Could not load pending DMs: %s", e)
         return system_prompt, False
 
+    if not pending:
+        return system_prompt, False
+
+    # Drop STALE DMs whose goal/domain has since been closed or cancelled. A proactive nudge tied to
+    # a terminal goal — e.g. the onboarding tour after the user told Skipper to stop — must not
+    # resurface as if it were still live. Without this, a cancelled onboarding kept re-nudging the
+    # Arcade tour (and tripping the onboarding-coordination block below). Non-goal DMs are kept.
+    try:
+        _goals_by_id = {g.get("id"): g for g in await asyncio.to_thread(_dl_goals.list_entities, "g-")}
+        pending = [
+            p for p in pending
+            if (_goals_by_id.get(p.get("domain") or "") or {}).get("status")
+            not in ("done", "cancelled", "archived")
+        ]
+    except Exception as e:
+        logger.debug("PROACTIVE_REPLY: terminal-goal filter skipped: %s", e)
     if not pending:
         return system_prompt, False
 
