@@ -3,10 +3,11 @@
 The engine pushes a parked gate's review packet to the platform over HTTP (POST /gates),
 where the operator sees it and decides; a poller reads decided rows back so the engine
 can resume. This is the box-1 -> platform side of EVOLVE.md §9 (the work queue). stdlib
-only. Config via env:
-    EVOLVE_PLATFORM_URL    default http://evolve-test.local:8000
-    EVOLVE_PLATFORM_USER   default admin
-    EVOLVE_PLATFORM_PASS   default admin1234
+only. Config via env (set in .env — no operator-specific host or credential is committed):
+    EVOLVE_PLATFORM_URL    the operator platform (Pi) base URL; defaults to localhost only
+    EVOLVE_PLATFORM_TOKEN  long-lived service token (preferred auth)
+    EVOLVE_PLATFORM_USER   admin username for the local-dev login fallback
+    EVOLVE_PLATFORM_PASS   admin password for the local-dev login fallback (no default)
 """
 import json
 import os
@@ -16,7 +17,7 @@ _token_cache = {"tok": None}
 
 
 def _base() -> str:
-    return (os.getenv("EVOLVE_PLATFORM_URL") or "http://evolve-test.local:8000").rstrip("/")
+    return (os.getenv("EVOLVE_PLATFORM_URL") or "http://localhost:8000").rstrip("/")
 
 
 def _post(path: str, body: dict, token: str | None = None) -> dict:
@@ -47,7 +48,9 @@ def auth() -> str:
         _token_cache["tok"] = svc
         return svc
     user = os.getenv("EVOLVE_PLATFORM_USER", "admin")
-    pw = os.getenv("EVOLVE_PLATFORM_PASS", "admin1234")
+    pw = os.getenv("EVOLVE_PLATFORM_PASS", "")  # no committed default credential
+    if not pw:
+        raise RuntimeError("set EVOLVE_PLATFORM_TOKEN (preferred) or EVOLVE_PLATFORM_PASS in .env")
     try:
         _post("/auth/login", {"username": user})  # step 1: existence/typo check
     except Exception:
