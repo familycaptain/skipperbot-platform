@@ -168,8 +168,17 @@ def attach_image_to_issue(number: int, image_path: str, caption: str = "",
                 "has issues:write — add Contents:Read+Write to the fine-grained PAT to enable evidence "
                 "attachment.") from e
         raise
-    url = put["content"]["download_url"]
-    body = f"**Validation evidence** — {caption or name}\n\n![{caption or name}]({url})"
+    raw_url = put["content"]["download_url"]
+    blob_url = f"https://github.com/{r}/blob/{EVIDENCE_BRANCH}/{urllib.parse.quote(path)}"
+    # Inline ![](raw) images only render on a PUBLIC repo. On a PRIVATE repo the raw.githubusercontent
+    # URL 404s for any viewer (even GitHub's own image proxy can't auth to it), so link to the rendered
+    # blob view instead — an authenticated viewer sees the image there. Auto-switches to inline once the
+    # repo goes public.
+    private = bool(_request("GET", f"/repos/{r}", token).get("private", True))
+    if private:
+        body = f"**Validation evidence** — {caption or name}\n\n[📷 View screenshot]({blob_url})"
+    else:
+        body = f"**Validation evidence** — {caption or name}\n\n![{caption or name}]({raw_url})"
     return post_comment(number, body, repo=r, token=token)
 
 
