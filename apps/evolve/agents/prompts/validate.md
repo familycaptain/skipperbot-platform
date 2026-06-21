@@ -65,8 +65,9 @@ rendered black — all while computed values "matched"). So whenever the change 
 
 Name each screenshot uniquely (e.g. `ev<n>-<app>-before-light.png`) so the issue accrues the real
 before/after trail. For a multi-app job like the design-system migration (#38), this means a BEFORE and
-an AFTER per app (35 apps → ≥70 screenshots), in both light and dark where relevant — proof for EVERY
-app, not a spot-check.
+an AFTER per app, in both light and dark where relevant — proof for EVERY app, not a spot-check.
+**Enumerate the apps live** (`ls -d apps/*/ui`) and cover whatever exists (N apps → ≥2N screenshots);
+never target a count copied from an issue — if the repo has 38 apps, all 38 get migrated + evidenced.
 
 **If you CAN'T run the validation, that is a FAILURE — never a skip.** If the tests/acceptance can't
 actually execute — the build/test tooling is missing (e.g. **no node to build the web bundle**, no
