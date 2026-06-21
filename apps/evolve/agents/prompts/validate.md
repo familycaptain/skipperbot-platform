@@ -22,3 +22,15 @@ tests, and do NOT hand it forward with a soft "verify later" note. A change that
 whose live UI acceptance could not be run is **not green**. Unable-to-validate fails the gate exactly
 like a red test — the resolution is to get the tool/target and re-run, not to wave it through. Flag
 the missing capability loudly so it gets fixed.
+
+**Incidental bug-scout — an UNRELATED bug you trip over → file a GitHub issue, don't fail this gate.**
+While validating you may notice a bug that has NOTHING to do with the change under test — the change
+itself still works, and this other bug would be there with or without it. Do NOT fix it, and do NOT
+fail THIS validation for it (that would wrongly block a sound change for an unrelated problem). File
+it as its own GitHub issue so it enters the queue and gets triaged on its own merits:
+```
+python3 -c "import apps.evolve.github_connector as g; print(g.create_issue('<short title>', '<1-3 line desc + where you saw it + \'found while validating ev-<n>\'>', labels=['evolve-incidental']))"
+```
+Note the new issue # in your `notes`, then keep validating THIS change. (Contrast: if the bug means
+the change UNDER TEST doesn't actually work, that's a validation **FAILURE** — `passed:false` — not an
+incidental issue. The test is: does this bug affect whether the thing you're validating works?)

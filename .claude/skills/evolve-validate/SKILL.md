@@ -50,8 +50,11 @@ it at **box 2** for both the Gate-2 (feature branch) and Gate-3 pre-verify (merg
 
 **Behaviour is PROBABILISTIC — verify like it.** Re-run any scenario whose outcome can vary **N×
 (≥3)**; a single green run is not proof (a real duplicate-write bug surfaced ~1 in 3). If a fix only
-holds 2/3, it's **not** green — escalate. **Bug-scout:** if you trip over a bug unrelated to this
-change, do NOT fix it — **file a GitHub issue** and keep going.
+holds 2/3, it's **not** green — escalate. **Bug-scout:** if you trip over a bug **unrelated** to this
+change (the change under test still works; this bug is independent), do NOT fix it and do NOT fail this
+gate for it — **file it as its own GitHub issue** and keep going:
+`python3 -c "import apps.evolve.github_connector as g; print(g.create_issue('<short title>', '<1-3 line desc + found while validating ev-<n>>', labels=['evolve-incidental']))"` — note the # in your output.
+(If instead the bug means the change UNDER TEST doesn't work → that's `passed:false`, not an incidental.)
 
 **If it CAN be checked in the real UI, you MUST check it in the real UI — a bound/unit test never
 substitutes.** Decide per change: does it alter anything a person sees or clicks (a `web/` or
