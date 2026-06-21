@@ -1,10 +1,68 @@
 # Evolve — Self-Maintaining Skipper (Design)
 
-> **Status:** Design / brainstorm capture (2026-06-13). Not yet built. This
-> document captures the full vision and architecture so any new conversation can
-> pick up with the same context. The next concrete artifact after this doc is the
-> first **Capability/Feature/Specification (C/F/S)** tree — and the first one we
-> write describes Evolve itself.
+> **Status:** Original design / brainstorm capture (2026-06-13), now **substantially BUILT and
+> running**. This document is the full vision + architecture; **§0 below records the current
+> implementation and is authoritative** where it differs from the design sections that follow (which
+> remain the original plan and may lag the running system).
+
+---
+
+## 0. Implementation status — the current reality (read this first)
+
+**Engine.** The canonical engine is the in-session **`/loop`** (a Claude Code subscription loop on
+**box 1**); run ids are **`ev-<n>`** (was `poc-<n>`). The earlier Agent-SDK/API engine is
+soft-deprecated behind `EVOLVE_SDK_ENABLE`; `sdlc.yaml` is reference-only. Each issue has **ONE**
+loop/session for its whole life — ground once, resume on every change/build/review (never restart).
+
+**Intake.** GitHub issues are the tracker (no in-app Issues app): the connector ingests **open** issues
+→ triage → grounding → design (decompose into a spec tree) → parks at **Gate 1**. Closing an issue
+removes it from intake. Operator-authored issues skip vision-fit (their request IS the vision).
+
+**Three gates** (the operator reviews recommendations, never blank choices):
+- **Gate 1 — approve the intent/spec** (before build). Shape requirements here.
+- **Gate 2 — approve the result** (the validated build) → merge `feature → release`.
+- **Gate 3 — verify** *(added since the original design)*: after merge, the operator tests the change
+  **live** and ✓ closes the issue, or ✗ resumes the same session for a re-fix. **Merge ≠ done.**
+  (Promoting `release → main` — publishing to the world — remains a separate *batch* release gate the
+  operator owns; see §5.)
+
+**Operator interface = two repo slash-commands + the Evolve app on the Pi:**
+- **`/chat-ev <n>`** — the **Gate-1 requirements partner**. Fetches the live packet
+  (`scripts/evolve_explain.py`), pressure-tests/clarifies the spec in conversation, and — **on the
+  operator's explicit, per-item say-so** — **operates the gate** (approve / change / reject) via
+  `scripts/evolve_decide.py`. Replaces wrestling the terse gate UI. (`.claude/skills/chat-ev/`)
+- **`/evolve-assistant`** — rebuilds, in a fresh session, the durable summary of the **operator's-
+  assistant role** (gate review + operate, fleet topology, the fix/harden loop, design-with-the-operator,
+  the engine invariants). Use it to restore the role if a working conversation is lost.
+  (`.claude/skills/evolve-assistant/`)
+- `evolve-explain` remains the underlying **read-only** live fetch the others build on.
+- **Gate-decision authority:** decisions are recorded with the **parent `EVOLVE_DECIDE_TOKEN`**, which
+  lives ONLY on the operator's assistant machine — **the autonomous loop/agents CANNOT decide gates**
+  (the decision endpoint rejects the service token). The assistant is the operator's hands, never an
+  autonomous approver.
+
+**Validation (box 2, always MOCK data).** The `validate` agent drives box 2's live UI (Playwright via
+the shared `scripts/ui_harness.py`) and judges on captured behavior. Hard rules now in the agent prompts:
+- **Can't-validate = a FAIL**, never a skip — un-run/blocked validation returns `passed:false` naming the
+  blocker; a clean lint / dep-check does not substitute for running the real tests.
+- **Screenshot evidence:** for any visible change, screenshot the fixed view → **LOOK at it** to confirm
+  it's fixed *in the pixels* → attach it to the issue. Evidence is **as many screenshots as it takes**
+  (before/after, every view/theme), not one — posted **inline** to the GitHub issue via **catbox.moe**
+  (`attach_image_to_issue`; the image is NOT committed to the repo). If the screenshot shows it isn't
+  fixed, loop back and re-fix.
+- **Comprehensive, one-shot fixes** (`specs/ARCHITECTURE.md`): a fix covers **every instance of its root
+  cause** across platform AND apps; "fixed in one place" while the same defect remains elsewhere is
+  `passed:false`. No partial fixes, no repeat issues for the same thing, no lingering technical debt.
+- **Issue size is unbounded** — a one-line fix and a platform-wide refactor are both valid single issues;
+  size the spec tree to the work, never the work to a comfortable size.
+- The agent also **files a GitHub issue** for any *unrelated* bug it trips over (the incidental scout),
+  but the **same** defect in sibling sites is part of THIS fix, not a separate issue.
+
+**Fleet.** **box 1** (`evolve-brain.local`) runs the loop + builds in git worktrees; **box 2**
+(`evolve-test.local`) is the disposable validation target (mock data); the **Pi** (`skipper-pi`) is the
+operator's review surface + family production; a dedicated **skipper-uat** VM is planned as the Gate-3
+verify target so production stays undisturbed (task #48). Promotion: feature(box 1) → `release` (pushed
+to `origin/release`) → Pi/uat tests → operator merges `release → main` (the world).
 
 ---
 
@@ -682,6 +740,18 @@ Evolve workflow. (Note: shipping hooks/MCP in `.claude/` is executable config an
 a supply-chain consideration for a public repo; plain command/skill markdown is
 low-risk.)
 
+**Shipping today** (`.claude/skills/<name>/` → invocable as `/name`):
+- **`/chat-ev <n>`** — Gate-1 requirements partner; refine the spec in conversation and **operate the
+  gate** (approve / change / reject via `evolve_decide.py`) on the operator's explicit say-so (§0).
+- **`/evolve-assistant`** — rebuild the operator's-assistant role + context in a fresh session.
+- **`/evolve`** — the loop engine's own skill (runs an `ev-<n>` through the pipeline).
+- **`evolve-explain`** — the read-only live packet fetch (`evolve_explain.py`) the above build on.
+- **`evolve-validate`** / **`run-evolve-tests`** / **`cfs-validate`** — the validation + bound-test
+  drivers the `validate` agent uses on box 2.
+- **`evolve-{grounding, design, lead, spec-author, spec-audit, implement, review, triage, vision-fit,
+  code-scout, prioritize}`** — one skill per pipeline agent role (the `/loop` engine grounds each phase
+  in its skill).
+
 ---
 
 ## 7. Runtime — how the agents actually run
@@ -932,7 +1002,7 @@ What replaces it — minimal:
 
 ---
 
-## 9. The approval flow — two gates, then auto-merge
+## 9. The approval flow — two build gates (+ a Gate-3 verify, see §0)
 
 **Nothing reaches the human without a recommendation.** Every touchpoint — a gate, a
 steer, an escalation, a spec-conflict adjudication — leads with the agent's
@@ -1027,6 +1097,14 @@ This is delivered as **repo skills, on purpose**:
 It's the interim, conversational form of an assistant that may later be **integrated directly into
 the Evolve app** (an "explain this gate" affordance beside the decision buttons) once the manual
 workflow proves its value.
+
+> **Update (current — see §0):** this matured into **`/chat-ev <n>`**. The assistant still *explains*,
+> but — on the operator's explicit, per-item say-so — it now also **operates the gate** (approve /
+> change / reject), submitting via `scripts/evolve_decide.py` authed by the **parent
+> `EVOLVE_DECIDE_TOKEN`** (assistant-machine-only). So the "read-only, never decides" rule above now
+> applies to the **autonomous loop/agents** (which still cannot decide a gate — the decision endpoint
+> rejects the service token), not to the operator acting *through* the assistant. **`/evolve-assistant`**
+> carries the broader operator's-assistant role.
 
 ---
 
