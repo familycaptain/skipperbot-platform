@@ -67,6 +67,12 @@ it in the UI.
 
 **Fail closed (either layer):**
 - A change with **no bound test** → NOT green.
+- **Validation that couldn't RUN is a FAIL, not a skip.** If the tests/acceptance can't execute —
+  missing build/test tooling (e.g. no node to build the web bundle, no Playwright), or the box-2
+  target unavailable/occupied (e.g. uncommitted work you must not destroy) — emit `passed: false`
+  with the blocker as the reason. Never proceed as if validated, never let a clean lint/dep-check/
+  isolation result substitute, never hand it forward with a soft "verify later." Get the tool/target
+  and re-run; flag the missing capability loudly.
 - A **UI-affecting** change with no live-UI acceptance step that drives the real control → NOT green
   (unit tests alone don't count for UI behaviour).
 - Any **red** bound test, OR any **failed acceptance scenario** (wrong tool fired / answer or UI
