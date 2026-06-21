@@ -107,9 +107,11 @@ html[data-theme="light"] :is([class*="bg-slate-900\/"],[class*="bg-slate-800\/6"
 /* bg-white must stay WHITE (it resolves via --color-white, which we remapped to dark for text). */
 html[data-theme="light"] .bg-white { background-color:#ffffff; }
 
-/* Brand logo: the 'S' lives in an indigo->purple gradient and inherits text-white (now dark) — keep
- * it white inside the solid gradient square. */
-html[data-theme="light"] .bg-gradient-to-br.from-indigo-500 { --color-white:#ffffff; }
+/* Brand logo: the 'S' has no text-white of its own — it INHERITS the shell's color, which already
+ * resolved to the dark text value (re-scoping --color-white here does nothing, since inheritance
+ * passes the computed color, not the var). Set `color` directly on the gradient square so the S is
+ * white. */
+html[data-theme="light"] .bg-gradient-to-br.from-indigo-500 { color:#ffffff; }
 
 /* User chat bubble: solid indigo-600 reads too stark on the warm light theme — soften a notch
  * (still passes white-text contrast). Targets the user bubble's unique rounded-br-md + indigo. */
