@@ -136,6 +136,7 @@ async def memory_domain_handler(domain: dict, budget_status: dict) -> dict:
         "memories_extracted": [],   # saved directly by digesters
         "model_used":        "cheap" if actions else "skip",
         "tokens_used":       0,     # tracked inside each digester, not here
+        "digest_reasoning":  False, # "Drained N items…" is operational status, never a memory
         "next_check_seconds": 5 if remaining > 0 else 30,
     }
 

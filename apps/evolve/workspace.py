@@ -86,8 +86,28 @@ class WorkspaceManager:
         slug = _slug(item_id)
         branch = f"feature/{slug}"
         path = os.path.join(self.worktrees_dir, slug)
+        self._sync_release()
         git(self.repo, "worktree", "add", "-b", branch, path, self.release)
         return Feature(item_id, branch, path)
+
+    def _sync_release(self) -> None:
+        """Fast-forward the local `release` branch to origin/<release> BEFORE cutting a worktree, so
+        the loop never builds on a stale base when a dev/operator pushes straight to the shared
+        staging branch out-of-band (the failure that left box 1 building 47 commits behind origin).
+
+        FAST-FORWARD ONLY + fully non-fatal:
+        - If local release has its own unpushed feature merges (diverged from origin), the FF safely
+          no-ops and reconciliation is left to evolve_box1_deploy.sh (a real merge) — we never
+          fabricate a merge or clobber local work here.
+        - A fetch/FF hiccup (offline, etc.) must never block a build, so every call is check=False.
+        Works whether or not `release` is the checked-out branch in the main repo."""
+        git(self.repo, "fetch", "origin", self.release, check=False)
+        on_release = git(self.repo, "rev-parse", "--abbrev-ref", "HEAD", check=False) == self.release
+        if on_release:
+            git(self.repo, "merge", "--ff-only", f"origin/{self.release}", check=False)
+        else:
+            # release isn't checked out → ff the ref directly (fetch refuses a non-ff update by default)
+            git(self.repo, "fetch", "origin", f"{self.release}:{self.release}", check=False)
 
     def write_file(self, feature: Feature, relpath: str, content: str) -> str:
         """Write a file inside the feature worktree (bounded to it)."""

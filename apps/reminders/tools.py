@@ -50,7 +50,7 @@ def set_reminder(
     This tool requires a concrete remind_at datetime.
 
     Args:
-        user_id: Who this reminder is for (e.g. "alice", "bob").
+        user_id: Who this reminder is for (a person's name).
         message: The reminder text (what to remind them about).
         remind_at: When to first fire, as ISO datetime with timezone
                    (e.g. "2026-02-10T09:00:00-06:00"). For recurring reminders
@@ -240,7 +240,7 @@ def set_nag(user_id: str, message: str, time_slot: str = "") -> str:
     The nag continues daily until cancelled with cancel_reminder_by_id.
 
     Args:
-        user_id: Who to nag (e.g. "alice", "bob").
+        user_id: Who to nag (a person's name).
         message: What to nag them about.
         time_slot: Optional. "morning", "afternoon", "evening", or "night".
                    Constrains the random nag time to that window.

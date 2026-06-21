@@ -51,9 +51,18 @@ Your job now is to report on the RESULT:
   now that it's built (what the operator is shipping).
 - `why`: one-line headline for the action — past tense ("built and validated; the city now
   resolves from the authoritative lookup").
-- `action`: `approve` (built, validated, sound — ship it to `release`), or `change` (a
-  reviewer found a real problem in the diff, or validation did not pass — say what, send
-  back to implement). Never `approve` over red validation or an unresolved reviewer blocker.
+- `action`: `approve` (built, **validation actually RAN and passed green**, sound — ship it to
+  `release`), or `change` (a reviewer found a real problem in the diff, OR validation did not pass —
+  say what, send back to implement). Never `approve` over red validation or an unresolved reviewer
+  blocker.
+- **"Couldn't validate" is NOT a pass — it is a FAIL.** If validation did not actually execute and go
+  green — it failed, OR it could not be run at all (the bound test/acceptance was skipped, the
+  build/test tooling was missing, e.g. **no node to build the web bundle**, or the **box-2 target was
+  unavailable/occupied**) — you MUST recommend `change`, and the `why` must name the exact blocker
+  (which tool/target was missing) so it goes back to get unblocked and re-validated. NEVER recommend
+  `approve` with a "verify it later at Gate-3" caveat: a build that was never built-tested or run is
+  UNPROVEN, not shippable. A clean lint / dep-check / isolation result does NOT substitute for running
+  the actual tests. "We built it but couldn't test it" → `change`, never `approve`.
 - **Incidental bugs found mid-build** (see implement.md's three-way): if implement hit a
   **coupled/blocking** finding (it returned `ok:false` because the approved fix can't be done in
   isolation), do NOT `approve` a half-fix — recommend `change` and frame the now-larger scope, so it

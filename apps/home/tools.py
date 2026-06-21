@@ -30,7 +30,7 @@ def create_home_task(
 
     Args:
         name: Task name (e.g. "Clean A/C filter", "Septic tank treatment").
-        created_by: Who is creating the task (e.g. "alice").
+        created_by: Who is creating the task (a person's name).
         task_type: "recurring" for repeating tasks, "adhoc" for one-time tasks.
         interval_days: For recurring tasks, days between each completion (e.g. 90 for quarterly, 30 for monthly). 0 = not set.
         category: Task category — HVAC, Plumbing, Exterior, Electrical, Pest Control, General, etc.
@@ -172,7 +172,7 @@ def complete_home_task(
 
     Args:
         task_id: Task ID (e.g. "hmt-abc12345").
-        completed_by: Who completed it (e.g. "alice"). Empty = system.
+        completed_by: Who completed it (a person's name). Empty = system.
         completed_at: Date completed (YYYY-MM-DD). Empty = today.
         notes: Any notes about this completion (e.g. "Used MERV-13 filter").
 

@@ -73,6 +73,9 @@ export default function App() {
   // app's backend stays loaded.
   const [disabledReady, setDisabledReady] = useState(false);
   useEffect(() => {
+    // These endpoints require auth — wait until the user is logged in (the token is set), or the
+    // mount-time fetches fire before login and 401 (and never retry). Re-runs when the user logs in.
+    if (!user) return;
     let cancelled = false;
     (async () => {
       try {
@@ -94,7 +97,7 @@ export default function App() {
       finally { if (!cancelled) setDisabledReady(true); }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [user?.name]);
 
   const userId = user?.name || null;
 

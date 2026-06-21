@@ -242,9 +242,16 @@ Submit posts to `POST /api/onboarding/create-user` with
   this row (per-process cache, invalidated when Settings rewrites it).
 - Seeds the onboarding **goal** now that the primary user exists — best-effort
   `apps.goals.onboarding.ensure_onboarding()`, which creates a `skipper`-owned
-  goal with a project per installed user-facing app (so the PM thinking domain
-  nudges the family to try each one). A failure here never blocks account
-  creation.
+  goal carrying an **ordered setup agenda** — household → how they want to use
+  Skipper → location → Discord → other integrations (see `ONBOARDING_AGENDA`) —
+  **followed by** a per-app "Try the {app}" tour for each opt-in app. Each agenda
+  project's description states the topic's *why* and an accurate *where* (a real
+  Settings destination, e.g. Settings → System → Location, or that it's learned
+  in chat), marks the topic optional, and notes that secrets go in the Settings
+  UI (never chat). The PM thinking domain walks the agenda **in order**, one
+  gentle nudge at a time, and prunes the app tours to the user's stated intent.
+  The goal performs no setup itself — it points to where each thing is done. A
+  failure here never blocks account creation.
 - Issues a session token and returns `{ ok, user, token }`. If the auth signing
   key is unavailable the account is still created but the response is
   `{ ok: false }` with a clear "set `SKIPPERBOT_SECRET_KEY` and restart" message
@@ -285,7 +292,8 @@ first run:
   Discord account afterward from the Settings app.
 - **No household-members step.** Only the primary admin is created at
   onboarding. Add the rest of the household later (Settings → Members, or by
-  chat) — the onboarding goal explicitly nudges toward "get to know the family."
+  chat) — the onboarding goal's first agenda topic ("get to know the household")
+  has the PM learn about the family in chat.
 - **No `/api/onboarding/save` or `.env`-from-web writing.** There is no endpoint
   that rewrites `.env` from the browser and no self-restart endpoint. The OpenAI
   key is set in `.env` by the operator before boot; if it's wrong, the fix is a

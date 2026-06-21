@@ -23,7 +23,7 @@ from knowledge_store import get_relevant_knowledge, format_knowledge_for_context
 from app_platform.folders import get_relevant_folder_knowledge, format_folder_knowledge_for_context
 from tool_router import (
     get_tools_for_message, get_guides_for_message, get_category_tool_names,
-    get_match_debug_for_message,
+    get_guides_for_categories, get_match_debug_for_message,
     META_TOOL_NAMES, DISABLED_CHAT_TOOLS, reload_routes, get_ack_template, TOOL_CATEGORIES,
 )
 import agent_loop
@@ -80,6 +80,10 @@ class ChatRequest:
     app_context: dict | None = None
     send_progress: Optional[Callable[[str], Awaitable[None]]] = None
     send_event: Optional[Callable[[dict], Awaitable[None]]] = None
+    # Tool-router SLOTS: categories the model has request_tools'd, persisted across turns by
+    # the session layer (chat.py owns the per-user list and passes it by reference, so in-turn
+    # loads/evictions survive to the next turn). NOT the pinned voice/app-context categories.
+    loaded_categories: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -140,9 +144,18 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     # turn. The scrum app will register its own prompt-extender hook
     # when it lands as a separate package in Phase 1c.
     dynamic_context = await _inject_skipper_work_context(dynamic_context)
+    # When first-run onboarding is live, re-frame it as the agent's ACTIVE script to walk
+    # (gently, in order, capture-don't-configure) instead of background work — and PIN the goals
+    # tools so it can mark each agenda topic done (update_item) and actually advance.
+    dynamic_context, _is_onboarding = await _inject_onboarding_context(dynamic_context)
+    if _is_onboarding:
+        extra_categories.add("app:goals")
 
-    # Reply-to-proactive-DM continuity: if a thinking domain DM'd this user and
-    # it's still unresolved, flag it so a reply gets the sender's intent/cadence.
+    # Reply-to-proactive-DM continuity: if a background Skipper process DM'd this user and it's
+    # still unresolved, flag it so a reply gets the sender's intent (generic pattern, used by
+    # reminders/goals/etc.). When the pending DM IS the onboarding nudge, the function coordinates
+    # with onboarding (which already owns the conversation) instead of issuing a competing
+    # greeting/resume — see _inject_proactive_dm_context.
     dynamic_context, _has_pending_dm = await _inject_proactive_dm_context(
         dynamic_context, req.user_id)
 
@@ -164,13 +177,13 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     context_text = req.user_message + "\n" + "\n".join(
         m["content"] for m in context_window if m.get("content")
     )
-    routed_tool_names = get_tools_for_message(context_text)
+    # SLOT MODEL (replaces the eager `get_tools_for_message(context_text)` load that exploded
+    # the prompt). Always-on: the 'core' category + META tools. The model loads what it needs
+    # into a small set of swap SLOTS via request_tools (each load auto-evicts the oldest).
+    # PINNED (never evicted) = extra_categories: voice channel defaults + the web app-context
+    # entity. (context_text above is kept only for the keyword audit column.)
+    routed_tool_names = get_category_tool_names("core")
 
-    # Deterministically expose the reply-guide tool when a proactive DM is pending.
-    if _has_pending_dm:
-        routed_tool_names.add("get_proactive_reply_guide")
-
-    # Force-include tools for active app context
     if req.channel == "web" and req.app_context:
         _ctx_entity_type = req.app_context.get("entityType", "")
         if _ctx_entity_type == "idea":
@@ -179,18 +192,48 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
             extra_categories.add("documents")
         elif _ctx_entity_type in ("goal", "project", "task"):
             extra_categories.add("goals")
-    if extra_categories:
-        for _cat in extra_categories:
-            _cat_info = TOOL_CATEGORIES.get(_cat)
-            if _cat_info:
-                routed_tool_names.update(_cat_info["tools"])
 
-    # Inject guides (after tool routing so guide keywords are available)
-    guide_content = get_guides_for_message(context_text)
+    SLOT_CAPACITY = 2
+    slots: list[str] = req.loaded_categories  # persisted across turns (mutated in place)
+
+    def _loaded_categories() -> set[str]:
+        """Everything currently exposed: pinned (extra_categories) + the swap slots."""
+        return set(extra_categories) | set(slots)
+
+    def _load_slot(category: str) -> tuple:
+        """Load a category into a slot; auto-evict the oldest when full. Returns (loaded, evicted)."""
+        category = (category or "").lower().strip()
+        # Validate via the RESOLVER (handles the 'app:<id>' prefix + normalization), NOT a raw
+        # TOOL_CATEGORIES dict-key check — that rejected valid app categories and spun the loop.
+        if not category or not get_category_tool_names(category):
+            return None, None
+        if category in extra_categories or category in slots:
+            return None, None  # already available
+        evicted = slots.pop(0) if len(slots) >= SLOT_CAPACITY else None
+        slots.append(category)
+        return category, evicted
+
+    # Deterministically expose the reply-guide tool when a proactive DM is pending.
+    if _has_pending_dm:
+        routed_tool_names.add("get_proactive_reply_guide")
+
+    # Dynamic slot state + how to load more (cheap; the category catalog itself is in BEHAVIOR.md).
+    _loaded_now = sorted(_loaded_categories())
+    dynamic_context += (
+        "\n\n## Tool categories (slots)\n"
+        f"Loaded now: {', '.join(_loaded_now) if _loaded_now else 'core only'} "
+        f"(you have {SLOT_CAPACITY} swap slots, {len(slots)} used).\n"
+        "To act in an area whose tools you don't see, call request_tools(category) — it loads that "
+        "category's tools AND its guide into a slot (auto-unloads your oldest slot if full). Choose "
+        "the right category from the conversation (incl. back-references like 'do it'); never invent "
+        "a tool you haven't loaded.\n"
+    )
+
+    # Inject guides for the LOADED categories only (tools + guide travel together).
+    guide_content = get_guides_for_categories(_loaded_categories())
     if guide_content:
         dynamic_context += "\n\n" + guide_content
-        logger.debug("GUIDES: Injected contextual guides for message: %s",
-                     req.user_message[:80])
+        logger.debug("GUIDES: injected guides for loaded categories: %s", _loaded_now)
 
     # Capture per-category routing audit for the chat_turns debug columns.
     # This is computed once on the same context_text used above so it reflects
@@ -220,8 +263,8 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
         MAX_TOOLS = 128
 
         allowed = routed_tool_names | META_TOOL_NAMES
-        # Add any dynamically requested categories
-        for cat in extra_categories:
+        # Add the loaded categories: pinned (voice/app-context) + the swap slots.
+        for cat in _loaded_categories():
             allowed |= get_category_tool_names(cat)
 
         # Never offer the disabled (code-authoring / shell / MCP-control) tools to
@@ -254,7 +297,7 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
             # requested/context categories (extra_categories), then the rest.
             # extra_categories tools MUST survive — the LLM was told they're available.
             priority_names = META_TOOL_NAMES | get_category_tool_names("core")
-            for _cat in extra_categories:
+            for _cat in _loaded_categories():
                 priority_names |= get_category_tool_names(_cat)
             priority = [t for t in combined if t["function"]["name"] in priority_names]
             rest = [t for t in combined if t["function"]["name"] not in priority_names]
@@ -379,9 +422,19 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
         if tool_name == "request_tools":
             category = tool_args.get("category", "").lower().strip()
             if category:
-                extra_categories.add(category)
+                loaded, evicted = _load_slot(category)
+                # ALWAYS rebuild after a request_tools call so a rejected/empty category can't
+                # leave the model with no new tools and spin (the runaway we hit).
                 needs_tool_rebuild = True
-                logger.debug("TOOL ROUTER: Category '%s' dynamically added", category)
+                if loaded:
+                    logger.info("TOOL SLOTS: loaded [%s]%s (slots=%s)", loaded,
+                                f" evicted [{evicted}]" if evicted else "", slots)
+                    if req.send_event:  # Phase 2B: UI tool-bubble
+                        try:
+                            await req.send_event({"type": "tool_slot", "loaded": loaded,
+                                                  "unloaded": evicted, "slots": list(slots)})
+                        except Exception:
+                            pass
 
         return result
 
@@ -805,6 +858,12 @@ async def _inject_skipper_work_context(system_prompt: str) -> str:
     try:
         # goals is a required app; data layer moved here in the packaging chunk.
         import apps.goals.data as _dl_goals
+        from app_platform import config as _platform_config
+
+        # The onboarding goal is rendered concisely (and actively) by
+        # _inject_onboarding_context — exclude it here so its full 27-project agenda+tour
+        # tree isn't ALSO dumped verbatim every turn (that re-added ~24k tokens onboarding).
+        _onb_goal_id = (_platform_config.get("onboarding_seeded", scope="app:goals") or {}).get("goal_id")
 
         def _fetch():
             all_goals = _dl_goals.list_entities("g-")
@@ -812,6 +871,7 @@ async def _inject_skipper_work_context(system_prompt: str) -> str:
                 g for g in all_goals
                 if "skipper" in (g.get("owners") or [])
                 and g.get("status") not in ("done", "archived")
+                and g.get("id") != _onb_goal_id
             ]
             if not my_goals:
                 return None
@@ -845,6 +905,110 @@ async def _inject_skipper_work_context(system_prompt: str) -> str:
     return system_prompt
 
 
+async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
+    """If the one-time first-run onboarding goal is still active, steer the CHAT agent to
+    actively WALK its agenda — rather than treat it as background work and dive into deep app
+    setup on the user's first stated intent. Returns (prompt, is_onboarding); the caller pins
+    the goals tool category when onboarding so the agent can update_item to mark agenda progress
+    (without it the agenda never advances — observed live: 0 update_item calls, every topic stuck
+    not_started, so it just kept re-drilling the first intent).
+
+    Why this exists: `_inject_skipper_work_context` frames Skipper's goals as autonomous
+    background work ("refer to these when asked what you're working on"). For onboarding that's
+    wrong — it's the agent's live script. Live testing showed that without this, on "I want help
+    with chores" the agent built out full chore zones/rotations (~20 tool calls) and never walked
+    household → intent → location → Discord → integrations.
+    """
+    try:
+        from app_platform import config as platform_config
+        seeded = platform_config.get("onboarding_seeded", scope="app:goals") or {}
+        goal_id = seeded.get("goal_id")
+        if not goal_id:
+            return system_prompt, False
+
+        import apps.goals.data as _dl_goals
+
+        def _fetch():
+            goal = next((g for g in _dl_goals.list_entities("g-") if g.get("id") == goal_id), None)
+            # Terminal onboarding goal => not onboarding. "cancelled" is what stop_onboarding sets
+            # when the user bails early; without it here, a stopped onboarding keeps re-injecting.
+            if not goal or goal.get("status") in ("done", "archived", "cancelled"):
+                return None
+            projects = _dl_goals.get_projects_for_goal(goal_id)
+            # Agenda topics are the ordered non-tour projects; tours start with "Try the ".
+            return [p for p in projects if not (p.get("name") or "").startswith("Try the ")]
+
+        agenda = await asyncio.to_thread(_fetch)
+        if not agenda:
+            return system_prompt, False
+
+        # A topic is resolved if it's done OR was skipped (cancelled); only a genuinely pending
+        # topic is "current". Without excluding cancelled, a skipped topic gets re-asked forever.
+        _RESOLVED = ("done", "cancelled")
+        done = [p for p in agenda if p.get("status") in _RESOLVED]
+        current = next((p for p in agenda if p.get("status") not in _RESOLVED), None)
+        # Every topic resolved but NONE actually completed (all skipped/cancelled) => the user
+        # abandoned onboarding, didn't finish it — don't re-inject the agenda.
+        if current is None and not any(p.get("status") == "done" for p in agenda):
+            return system_prompt, False
+        rows = "\n".join(
+            f"  {'✅' if p.get('status') == 'done' else ('⏭️' if p.get('status') == 'cancelled' else '⬜')} {p.get('name')} ({p.get('id')})"
+            for p in agenda
+        )
+        focus = (
+            f"Current focus: **{current['name']}** ({current['id']}).\n"
+            if current else
+            "All agenda topics are done — now move to the per-app tours (pruned HARD to their "
+            "intent). Do NOT close the goal until those are done or they say they're all set.\n"
+        )
+        system_prompt += (
+            "\n\n## You are ONBOARDING this user RIGHT NOW (active — not background work)\n"
+            "This is your live first-run setup. Walk the agenda below IN ORDER, ONE gentle nudge "
+            "at a time.\n"
+            "- ADVANCE: the moment a topic is genuinely covered, call "
+            "update_item(item_id, status=\"done\") for that agenda project, THEN move to the next "
+            "⬜ topic in the SAME reply. Do NOT keep re-drilling a topic you've already covered — "
+            "advancing the agenda matters more than exhaustively configuring one area. A topic is "
+            "'covered' ONLY when the user actually PROVIDED its info (named the household, stated "
+            "their intent, gave a location…); a bare greeting/'hey'/'ok'/'thanks' covers NOTHING — "
+            "greet or re-ask the current topic, never mark it done.\n"
+            "- CAPTURE, don't configure: remember household members + their stated intent so you "
+            "can personalize — but remember each fact ONCE; don't re-save the household roster or "
+            "intent every turn (it's already saved). Do NOT do deep app setup during the agenda (no full chore "
+            "rotations/zones/schedules now — that's the per-app tour later, or when they explicitly "
+            "ask). A couple of tool calls, not twenty.\n"
+            "- TAILOR to the household you actually learn — do NOT assume there are children. Only "
+            "pursue child-specific setup (kid chores, school reminders) if the family really "
+            "includes kids; for a couple or a single person, match what you suggest to who's there. "
+            "Read the household FIRST and let it decide what's even relevant before going down an "
+            "app's path.\n"
+            "- SKIPPING A TOPIC IS NOT QUITTING. If they skip or decline ONE topic (e.g. 'skip "
+            "Discord'), mark just THAT topic done and CONTINUE to the next ⬜ — do NOT close, "
+            "cancel, or pause the whole onboarding. Only end onboarding entirely if they clearly "
+            "want to stop ALL setup (e.g. 'I'm good, I'll explore on my own').\n"
+            "- AGENDA DONE ≠ ONBOARDING DONE. When every agenda topic is done, do NOT close the "
+            "goal yet — the per-app tours are the rest of it. PRUNE the tours HARD to their stated "
+            "intent: proactively walk only the few apps that match how they want to use Skipper "
+            "(e.g. Chores, Reminders) and don't bother walking the rest. Do NOT repeat anything "
+            "onboarding already covered — if they already engaged an app (gave chore details, set "
+            "reminders), acknowledge and BUILD ON it ('we already started your chores — want me to "
+            "finish the rotation?'), never re-introduce it from scratch. Close the goal as COMPLETE "
+            "(done, not cancelled) ONLY after the relevant tours are done or they say they're all "
+            "set — then they can explore the rest on their own.\n"
+            "- HOW to close: to END onboarding (they're all set, or want to stop), call "
+            "stop_onboarding — it closes things out properly (turns off the onboarding nudges) and "
+            "records a successful DONE if they finished the agenda, or cancelled if they bailed "
+            "early. Don't close the whole goal by hand or with a memory. (update_item is only for "
+            "marking individual agenda TOPICS done as you go.)\n"
+            f"Agenda ({len(done)}/{len(agenda)} done):\n{rows}\n{focus}"
+        )
+        return system_prompt, True
+    except Exception as e:
+        logger.debug("ONBOARDING_CTX: %s", e)
+
+    return system_prompt, False
+
+
 async def _inject_proactive_dm_context(system_prompt: str, user_id: str) -> tuple[str, bool]:
     """Flag when the user may be replying to a proactive DM Skipper sent.
 
@@ -866,10 +1030,54 @@ async def _inject_proactive_dm_context(system_prompt: str, user_id: str) -> tupl
     if not pending:
         return system_prompt, False
 
+    # Drop STALE DMs whose goal/domain has since been closed or cancelled. A proactive nudge tied to
+    # a terminal goal — e.g. the onboarding tour after the user told Skipper to stop — must not
+    # resurface as if it were still live. Without this, a cancelled onboarding kept re-nudging the
+    # Arcade tour (and tripping the onboarding-coordination block below). Non-goal DMs are kept.
+    try:
+        _goals_by_id = {g.get("id"): g for g in await asyncio.to_thread(_dl_goals.list_entities, "g-")}
+        pending = [
+            p for p in pending
+            if (_goals_by_id.get(p.get("domain") or "") or {}).get("status")
+            not in ("done", "cancelled", "archived")
+        ]
+    except Exception as e:
+        logger.debug("PROACTIVE_REPLY: terminal-goal filter skipped: %s", e)
+    if not pending:
+        return system_prompt, False
+
     top = pending[0]
     kind = top.get("kind", "goal")
     sent_at = (top.get("sent_at", "") or "")[:16].replace("T", " ")
     dm_text = (top.get("dm_text", "") or "").strip()
+
+    # COORDINATE WITH ONBOARDING. If the most-recent pending DM is the first-run onboarding goal's
+    # OWN nudge, onboarding (`_inject_onboarding_context`) already owns this conversation. Issuing
+    # the generic "you're continuing the thread / call get_proactive_reply_guide" framing here too
+    # made the user's first reply get a SECOND greeting + a false "picking up where we left off"
+    # resume (GitHub #33/#34). Keep the pending-DM INFO (so a reply isn't read cold) but defer the
+    # framing to onboarding and do NOT force the generic resume guide. The generic pattern is
+    # unchanged for every other background DM (reminders/goals/etc.).
+    try:
+        from app_platform import config as _pc
+        _onb_goal = (_pc.get("onboarding_seeded", scope="app:goals") or {}).get("goal_id")
+    except Exception:
+        _onb_goal = None
+    if _onb_goal and (top.get("domain") or "") == _onb_goal:
+        system_prompt += (
+            "\n\n## You have a pending onboarding nudge out\n"
+            "You reached out to start onboarding and haven't heard back yet; your most recent "
+            f"onboarding message was:\n  “{dm_text}”\n"
+            "Handle the user's message INSIDE your onboarding flow above — ONE response, in your "
+            "onboarding voice, and NEVER also add a \"picking up where we left off\" resume:\n"
+            "- If it actually ANSWERS the current topic (a name, their stated intent, a location…) "
+            "→ capture it and advance per the agenda.\n"
+            "- If it's just a greeting or acknowledgment (\"hey\", \"hi\", \"ok\", \"thanks\") → greet "
+            "back warmly ONCE and ask the CURRENT onboarding topic. Do NOT mark any topic done and "
+            "do NOT skip ahead — a greeting answers nothing."
+        )
+        return system_prompt, False
+
     extra = ""
     if len(pending) > 1:
         extra = f" (and {len(pending) - 1} other pending message(s))"

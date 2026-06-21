@@ -10,7 +10,8 @@ decides, resolves, or mutates a gate.
     python3 scripts/evolve_explain.py poc-1 --json     # raw packet JSON (everything)
 
 The GET endpoints need no auth; EVOLVE_PLATFORM_TOKEN (from .env) is sent as Bearer if present —
-never printed. Pi URL: $EVOLVE_PI_URL (default http://skipper-pi.local:8000).
+never printed. The platform (Pi) base URL comes from $EVOLVE_PI_URL (or $EVOLVE_PLATFORM_URL); set
+it in .env — there is no operator-specific default committed.
 """
 import argparse
 import json
@@ -26,7 +27,7 @@ for _l in (open(_envf) if os.path.exists(_envf) else []):
         _k, _v = _l.split("=", 1)
         os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
 
-BASE = (os.getenv("EVOLVE_PI_URL") or "http://skipper-pi.local:8000").rstrip("/")
+BASE = (os.getenv("EVOLVE_PI_URL") or os.getenv("EVOLVE_PLATFORM_URL") or "http://localhost:8000").rstrip("/")
 API = BASE + "/api/apps/evolve"
 TOK = os.getenv("EVOLVE_PLATFORM_TOKEN")
 

@@ -21,7 +21,7 @@ def list_focus(user_id: str) -> str:
     Ack: Checking focus priorities...
 
     Args:
-        user_id: Canonical user name (e.g. "alice").
+        user_id: Canonical user name (a person's name).
 
     Returns:
         Formatted list of the user's focus slots (up to 3).

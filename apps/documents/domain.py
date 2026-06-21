@@ -60,9 +60,11 @@ _NOISE_PATTERNS = [
 ]
 
 
-# Memories created by this domain are tagged with this saved_by value
-# so the pre-filter can skip them (prevents feedback loop)
-DOMAIN_SAVED_BY = "document_domain"
+# Memories created by this domain are tagged with this saved_by value so the pre-filter can
+# skip them (read-side loop guard). It's ALSO forced as created_by on every doc the domain
+# authors, so the documents app skips digesting those docs back into memories (write-side
+# loop guard). Canonical definition lives in store so both sides share one value.
+from apps.documents.store import DOMAIN_AUTHOR as DOMAIN_SAVED_BY
 
 
 def _is_noise_memory(m: dict) -> bool:
@@ -471,6 +473,10 @@ async def document_domain_handler(domain: dict, budget_status: dict) -> dict:
         "memories_extracted": memory_updates,
         "model_used": model_tier,
         "tokens_used": tokens_used,
+        # Don't digest this cycle's reasoning back into memories — the domain READS memories
+        # to organize them; feeding its reflection back in is a noisy feedback loop. Its real
+        # output is the documents it creates, not new memories.
+        "digest_reasoning": False,
         "next_check_seconds": next_check,
     }
 

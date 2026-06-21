@@ -40,9 +40,9 @@ def post_to_timeline(
 
     Args:
         body: The post content (markdown supported).
-        author_id: Who is posting (e.g. "alice", "carol"). Required.
+        author_id: Who is posting (a person's name). Required.
         title: Optional headline for the post.
-        tags: Comma-separated tags (e.g. "vacation, family, bob").
+        tags: Comma-separated tags (e.g. "vacation, family, summer").
         source_app: If auto-posted from another app (e.g. "auto", "recipes").
         source_entity_id: ID of the originating record if auto-posted.
         source_label: Human-readable description of the source.

@@ -86,7 +86,7 @@ def _fetch_json(url: str, timeout: int = 10) -> dict:
 def _current_weather_url(place: dict) -> str:
     """Build the current-conditions Open-Meteo URL for a resolved place.
 
-    SHARED by ``get_current_weather_by_zip`` and the background pre-warm loop so
+    SHARED by ``get_current_weather`` and the background pre-warm loop so
     both address the SAME cache entry (byte-identical URL — same param keys and
     order).
     """
@@ -112,7 +112,7 @@ def _fetch_current(place: dict) -> dict:
     return cached_fetch(url, lambda: _fetch_json(url), ttl, enabled, label="current")
 
 
-def get_current_weather_by_zip(location: str = "") -> str:
+def get_current_weather(location: str = "") -> str:
     """
     Get the current weather for a location.
 
@@ -350,7 +350,7 @@ def _fmt_date(day: date) -> str:
     return f"{day.strftime('%a %b')} {day.day}"
 
 
-def get_rain_chance_by_zip(location: str = "", period: str = "today") -> str:
+def get_rain_chance(location: str = "", period: str = "today") -> str:
     """Get the chance of rain for a location over a natural-language period.
 
     Use this for questions about rain probability or precipitation chance,
@@ -414,7 +414,7 @@ def get_rain_chance_by_zip(location: str = "", period: str = "today") -> str:
         return f"Error fetching rain forecast: {str(e)}"
 
 
-def get_hourly_forecast_by_zip(location: str = "", hours: int = 12) -> str:
+def get_hourly_forecast(location: str = "", hours: int = 12) -> str:
     """Get an hour-by-hour weather forecast for a location.
 
     Returns temperature, conditions, precipitation chance, and wind for each
@@ -528,7 +528,7 @@ def get_hourly_forecast_by_zip(location: str = "", hours: int = 12) -> str:
         return f"Error fetching hourly forecast: {str(e)}"
 
 
-def get_daily_forecast_by_zip(location: str = "", days: int = 7) -> str:
+def get_daily_forecast(location: str = "", days: int = 7) -> str:
     """Get a multi-day daily forecast (high/low per day) for a location.
 
     Returns one line per day with the high/low temperature, conditions, rain

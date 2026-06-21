@@ -7,6 +7,9 @@ tool calls through this module so policy and app switching stay consistent.
 
 from __future__ import annotations
 
+import json
+import time
+
 from config import logger
 
 
@@ -19,6 +22,17 @@ async def handle_voice_tool_call(
 ) -> list[dict]:
     """Execute a voice tool call and return sideband-style events."""
     arguments = arguments or {}
+
+    # Console-log EVERY voice tool call with its full parameters. Uses the VOICE prefix so
+    # it also surfaces in the /api/voice/debug stream. Truncated to keep log lines sane.
+    try:
+        _args_json = json.dumps(arguments, default=str)
+    except Exception:
+        _args_json = repr(arguments)
+    if len(_args_json) > 800:
+        _args_json = _args_json[:800] + "…"
+    logger.info("VOICE-TOOL call=%s session=%s args=%s", tool_name, session_id, _args_json)
+    _t0 = time.monotonic()
 
     try:
         from app_platform.voice.prompting import is_exit_app_name
@@ -76,6 +90,9 @@ async def handle_voice_tool_call(
         else:
             output = await tool_dispatch.call_tool(tool_name, arguments)
 
+        logger.info("VOICE-TOOL done=%s %.0fms result=%s", tool_name,
+                    (time.monotonic() - _t0) * 1000.0,
+                    str(output)[:300].replace("\n", " "))
         return [tool_result(call_id, output)]
 
     except Exception as exc:

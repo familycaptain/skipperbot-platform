@@ -36,7 +36,7 @@ def create_recipe(
 
     Args:
         title: Recipe title (e.g. "Salsa", "Chicken Tikka Masala").
-        created_by: Who is creating it (e.g. "alice").
+        created_by: Who is creating it (a person's name).
         ingredients: JSON array of ingredient objects, each with "item", "quantity", "unit".
                      Example: '[{"item": "Crushed tomatoes", "quantity": "1", "unit": "large can"}]'
         steps: JSON array of instruction strings.
@@ -139,7 +139,7 @@ def list_recipes(category: str = "", created_by: str = "") -> str:
 
     Args:
         category: Filter by category name (e.g. "Mexican"). Empty = all recipes.
-        created_by: Filter by creator (e.g. "alice"). Empty = all users.
+        created_by: Filter by creator (a person's name). Empty = all users.
 
     Returns:
         Formatted list of recipes with basic metadata.
@@ -427,7 +427,7 @@ def print_recipe(
 
     Args:
         recipe_id: The recipe ID to print (e.g. "re-abc12345").
-        requested_by: Who is requesting the print (e.g. "alice").
+        requested_by: Who is requesting the print (a person's name).
         copies: Number of copies to print, 1-10. Defaults to "1".
 
     Returns:

@@ -34,7 +34,7 @@ def get_recent_notifications(
     or "show me notifications for this reminder".
 
     Args:
-        recipient: Optional filter by person name (e.g. "alice").
+        recipient: Optional filter by person name (a person's name).
         source_type: Optional filter: "reminder", "job", "system", "agent".
         source_id: Optional filter by source entity ID (e.g. "r-abc123").
         limit: Max results to return. Default 20.

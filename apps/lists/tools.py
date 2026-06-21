@@ -39,7 +39,7 @@ def _try_trello_match(name: str) -> tuple[str, str] | None:
       'vegetable aisle walmart' -> ('walmart', 'Vegetable Aisle')
       'walmart vegetable aisle' -> ('walmart', 'Vegetable Aisle')
       'mom walmart'             -> ('walmart', "Mom's List")
-      'bob todo myproject'      -> ('myproject', 'Bob TODO')
+      'name todo myproject'     -> ('myproject', 'Name TODO')
 
     Returns:
         (board_name, trello_list_name) or None if no match.
@@ -306,10 +306,10 @@ def add_list_item(
     """Add an item to a list.
 
     Examples:
-      add_list_item('walmart vegetable aisle', 'lettuce', 'alice')
-      add_list_item('shopping grocerystore', 'milk', 'carol')
-      add_list_item('myproject backlog', 'Lighting overhaul', 'bob')
-      add_list_item('Weekend To-Do', 'mow the lawn', 'alice')
+      add_list_item('walmart vegetable aisle', 'lettuce', 'a-name')
+      add_list_item('shopping grocerystore', 'milk', 'a-name')
+      add_list_item('myproject backlog', 'Lighting overhaul', 'a-name')
+      add_list_item('Weekend To-Do', 'mow the lawn', 'a-name')
 
     Args:
         list_name: The list to add to. Use 'board listname' format for

@@ -1,13 +1,17 @@
 """
 Onboarding seed — the one-time welcome goal for a fresh install.
 
-Run once when the database is first initialised (scripts/init_db.py), after the
-`skipper` bot user exists. Creates a goal owned by `skipper` with a project per
-installed user-facing app, plus get-to-know-the-family and configure-Skipper
-projects. Because the goal is owned by `skipper`, the normal PM thinking domain
-picks it up (see lifecycle._skipper_owns_anything_in_goal) and works the items
-at its usual cadence — nudging the family to try each app and closing items out
-as they're done (or when the user says they're not interested).
+Seeded once on a fresh install (from the first-run wizard, after the primary
+user exists). Creates a goal owned by `skipper` carrying an ORDERED setup agenda
+— household → how they want to use Skipper → location → Discord → other
+integrations (see ONBOARDING_AGENDA) — FOLLOWED BY a per-app "Try the {app}"
+tour for each opt-in app. Each agenda project's description states the topic's
+WHY and an accurate WHERE (a real Settings destination, or that it's learned in
+chat). Because the goal is owned by `skipper`, the normal PM thinking domain
+picks it up (see lifecycle._skipper_owns_anything_in_goal) and walks the agenda
+in order at its usual cadence — one gentle nudge at a time, pruning the app
+tours to the user's stated intent, and closing items out as they're done (or
+when the user says they're not interested).
 
 Idempotent: guarded by a `config` flag so re-running init_db never duplicates it.
 """
@@ -29,6 +33,78 @@ _SEEDED_KEY = "onboarding_seeded"
 # Platform-infra / admin apps don't get a "try this app" onboarding project —
 # they're not a feature the family "starts using" the way Recipes or Chores are.
 _INFRA_APPS = {"settings", "system", "tools", "finder", "jobs", "notifications", "timeline"}
+
+# Appended to every agenda topic's description so the PM treats each as skippable
+# and never asks for secrets in chat. ({who} is filled at seed time.)
+_OPTIONAL_NOTE = (
+    "OPTIONAL: if {who} isn't interested or it doesn't apply, mark this done and "
+    "move on gracefully — no pressure."
+)
+_SECRETS_NOTE = (
+    "Any secrets or tokens are entered in the Settings UI, never pasted into chat."
+)
+
+# The ORDERED first-run setup agenda. The PM thinking domain reads each project's
+# description (its WHY + accurate WHERE) and works them IN ORDER, one gentle nudge
+# at a time, BEFORE the per-app tours. Household + intent come first so the PM can
+# tailor the rest (and prune the app tours) to what the user actually wants.
+# Order is conveyed by creation order + the goal-level guidance (no schema change).
+ONBOARDING_AGENDA = [
+    {
+        "key": "household",
+        "project": "Get to know the household",
+        "task": "Ask {who} about their household — who's in the family and what each person would like help with.",
+        "desc": (
+            "PM: in friendly chat with {who}, learn about their household — who's in the "
+            "family and what each person might want help with — so Skipper can personalize "
+            "reminders, chores, and notifications. This is learned in chat; there is no "
+            "Settings page for it. Ask a little at a time, never interrogate."
+        ),
+    },
+    {
+        "key": "intent",
+        "project": "How {who} wants to use Skipper",
+        "task": "Ask {who} what they most want Skipper to help with.",
+        "desc": (
+            "PM: early on, ask {who} how they want to use Skipper — what they most want help "
+            "with (e.g. reminders, chores, meal planning, family notifications). Ask this "
+            "EARLY so the rest of onboarding — and which app tours to prioritize — can be "
+            "tailored to their answer. Learned in chat; no Settings page."
+        ),
+    },
+    {
+        "key": "location",
+        "project": "Set the home location",
+        "task": "Help {who} set the home location in Settings → System → Location.",
+        "desc": (
+            "PM: help {who} set their home location so weather, daylight, and time-of-day "
+            "features work. Where: Settings → System → Location — a free-text place or postal "
+            "field (e.g. \"Austin, Texas, US\" or \"SW1A 1AA, UK\"), not specifically a ZIP code."
+        ),
+    },
+    {
+        "key": "discord",
+        "project": "Connect Discord",
+        "task": "Offer to help {who} connect Discord — the household bridge and/or a personal account link.",
+        "desc": (
+            "PM: offer to connect Discord so the family can chat with Skipper there. Two "
+            "DIFFERENT things: enabling the Discord BRIDGE for the household is in "
+            "Settings → Integrations; an individual LINKING THEIR OWN Discord account is in "
+            "Settings → Members → My Discord."
+        ),
+    },
+    {
+        "key": "integrations",
+        "project": "Set up other integrations",
+        "task": "Ask {who} whether they'd like to connect other integrations in Settings → Integrations.",
+        "desc": (
+            "PM: ask {who} whether they want to connect other integrations. Platform integrations "
+            "(web search, notification channels, etc.) live in Settings → Integrations. NOTE: "
+            "Trello for lists/boards is set up in the Lists app's OWN settings (its Trello tab), "
+            "not the Integrations panel — point them there for Trello specifically."
+        ),
+    },
+]
 
 
 def _enumerate_apps() -> list[dict]:
@@ -104,14 +180,19 @@ def ensure_onboarding(apps_info: list[dict] | None = None) -> str:
             "onboarding every family member.\n\n"
             "PM guidance (how to work this goal): act like a warm, encouraging "
             f"friend showing {chat_with} around a brand-new program — proactive "
-            "and helpful, but never naggy. Engage them directly in chat at the "
-            "normal PM cadence, one gentle nudge at a time (don't dump everything "
-            "at once). For each app project below, introduce the app to them, ask "
-            "if they've tried it yet, and offer a concrete tip or two. Mark an "
-            "item done once they've engaged with it — or, if they're not "
-            "interested, drop that item gracefully without pushing.\n\n"
-            f"Success looks like: {chat_with} knows Skipper, has configured "
-            "what they need, and has tried each installed app at least once."
+            "and helpful, but never naggy. Work the SETUP AGENDA projects below IN "
+            "ORDER (household → how they want to use Skipper → location → Discord → "
+            "other integrations), one gentle nudge at a time; finish (mark done) "
+            "each topic before moving to the next, and don't dump everything at "
+            "once. Each topic is OPTIONAL — if a topic doesn't apply or they're not "
+            "interested, mark it done and move on gracefully. AFTER the agenda, the "
+            f"'Try the …' app tours follow: PRUNE and prioritize those to {chat_with}'s "
+            "stated intent rather than walking every app blindly. Progress is "
+            "tracked by marking tasks done, so this is resumable across sessions. "
+            f"If {chat_with} says \"I'm good, I'll explore on my own,\" back off and "
+            "close the goal — don't keep nudging.\n\n"
+            f"Success looks like: {chat_with} knows Skipper, has set up what they "
+            "actually need, and has tried the apps that match how they want to use it."
         ),
         owners=[SKIPPER_USER],
         # 1-month onboarding window — the goal-worker auto-closes it as-is after this.
@@ -127,22 +208,17 @@ def ensure_onboarding(apps_info: list[dict] | None = None) -> str:
         if project:
             store.create_task(project["id"], name, SKIPPER_USER, assigned_to=[SKIPPER_USER])
 
-    fam = _project(
-        "Get to know the family",
-        f"PM: in friendly chat with {chat_with}, learn about their household "
-        "— who's in the family and what each person might want help with — so "
-        "Skipper can personalize reminders, chores, and notifications. Ask "
-        f"{chat_with} a little at a time; never interrogate.",
-    )
-    _task(fam, f"Ask {chat_with} about their household — family members' names and what they'd like Skipper to help each person with.")
-
-    cfg = _project(
-        "Configure Skipper",
-        f"PM: gently guide {chat_with} through configuring Skipper. Point them to "
-        "Settings → System (timezone, ZIP code), Integrations, and each app's own "
-        "settings, and offer to help with anything they're unsure about.",
-    )
-    _task(cfg, f"Encourage {chat_with} to open Settings and set timezone, ZIP code, integrations, and per-app options — and offer to walk them through it.")
+    # The ordered setup agenda — one project + task per topic, created IN ORDER
+    # and BEFORE the per-app tours. Replaces the old 'Get to know the family' +
+    # catch-all 'Configure Skipper' projects (no catch-all anymore).
+    for item in ONBOARDING_AGENDA:
+        desc = (
+            item["desc"].format(who=chat_with)
+            + "\n\n" + _OPTIONAL_NOTE.format(who=chat_with)
+            + " " + _SECRETS_NOTE
+        )
+        proj = _project(item["project"].format(who=chat_with), desc)
+        _task(proj, item["task"].format(who=chat_with))
 
     n_apps = 0
     for app in sorted(apps_info, key=lambda a: (a.get("name") or a.get("id") or "").lower()):

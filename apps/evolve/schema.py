@@ -13,6 +13,7 @@ from __future__ import annotations
 import os
 import glob
 import hashlib
+import re
 from dataclasses import dataclass, field
 
 import yaml
@@ -84,6 +85,27 @@ class Record:
 # --------------------------------------------------------------------------- #
 def is_cfs_doc(doc) -> bool:
     return isinstance(doc, dict) and doc.get("kind") in KINDS
+
+
+def _symbol_defined(abs_path: str, symbol: str) -> bool:
+    """Best-effort textual check that ``symbol`` is defined in the file. Lets the implements
+    check catch a genuinely renamed/moved function (real drift) without false-positiving on
+    one that's present. Python: a def/async def/class or a module-level assignment. YAML: a
+    key. Other files: a plain mention. Code-as-text — no import/parse."""
+    try:
+        with open(abs_path, encoding="utf-8") as fh:
+            text = fh.read()
+    except OSError:
+        return False
+    name = re.escape(symbol)
+    if abs_path.endswith(".py"):
+        return bool(
+            re.search(rf"^\s*(?:async\s+def|def|class)\s+{name}\b", text, re.M)
+            or re.search(rf"^\s*{name}\s*[:=]", text, re.M)
+        )
+    if abs_path.endswith((".yaml", ".yml")):
+        return bool(re.search(rf"^\s*{name}\s*:", text, re.M))
+    return symbol in text
 
 
 def scan_paths(specs_root: str) -> list[str]:
@@ -205,8 +227,15 @@ def validate(
             if not r.behavior:
                 rep.errors.append(f"{r.id}: specification has no `behavior`")
             for p in r.implements:
-                if not os.path.exists(os.path.join(repo_root, p)):
+                # implements paths are "<file>" or "<file>::<symbol>" — check the FILE
+                # exists (don't os.path.exists the whole "file::symbol" string, which never
+                # does), then that the symbol is still defined (so a move/rename is caught).
+                file_part, _, symbol = str(p).partition("::")
+                abs_path = os.path.join(repo_root, file_part)
+                if not os.path.exists(abs_path):
                     rep.warnings.append(f"{r.id}: implements path missing (drift/not-built): {p}")
+                elif symbol and not _symbol_defined(abs_path, symbol):
+                    rep.warnings.append(f"{r.id}: implements symbol missing (drift/not-built): {p}")
             if not r.tests:
                 rep.warnings.append(f"{r.id}: untested variance (no bound tests)")
             if r.verified and not r.tests:

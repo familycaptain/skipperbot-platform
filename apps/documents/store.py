@@ -31,6 +31,15 @@ from link_registry import create_link, delete_links_for_entity
 from apps.documents import data as _dl_doc
 
 
+# Author sentinel for documents the document DOMAIN (folder intelligence) curates FROM
+# memories. tools.py skips the content→memory digest for these: curation stops at the
+# document — re-digesting would loop (memories → curated doc → memories → re-curated …).
+# Documents authored by a real user (or any other caller) DO digest into memories, because
+# chat recall relies on memory recall, not document semantic search. Must match
+# domain.DOMAIN_SAVED_BY (which forces this as created_by on every doc the domain writes).
+DOMAIN_AUTHOR = "document_domain"
+
+
 # ---------------------------------------------------------------------------
 # Embedding helper — compute & store document embeddings for semantic search
 # ---------------------------------------------------------------------------

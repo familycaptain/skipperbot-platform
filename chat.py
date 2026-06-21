@@ -18,6 +18,11 @@ from typing import Optional, Callable, Awaitable
 
 sessions: dict[str, list[dict]] = {}
 
+# Tool-router SLOTS per user: the categories the model has request_tools'd, kept across turns
+# so a focused task's tools stay loaded (sticky) without re-routing the whole conversation.
+# Passed by reference into ChatRequest.loaded_categories so in-turn loads/evictions persist.
+session_slots: dict[str, list[str]] = {}
+
 # Sliding window: max conversation turns kept in session (1 turn = user + assistant)
 # 50 turns = 100 messages ≈ safe for most context windows. Resolved from the
 # System settings panel (scope=platform) → MAX_SESSION_TURNS env → default 50;
@@ -110,6 +115,7 @@ async def process_chat(
     # /clear — wipe session history so the next message relies on memory/knowledge only
     if user_message.strip().lower().startswith("/clear"):
         sessions[user_id] = []
+        session_slots[user_id] = []
         logger.info("SESSION: Cleared session for '%s'", user_id)
         if send_progress:
             try:
@@ -165,6 +171,7 @@ async def process_chat(
         app_context=app_context,
         send_progress=send_progress,
         send_event=send_event,
+        loaded_categories=session_slots.setdefault(user_id, []),
     )
 
     result = await dispatch_chat(request)
@@ -175,7 +182,22 @@ async def process_chat(
         _thinking_task.cancel()
 
     # --- Session management ---
-    sessions[user_id].append({"role": "assistant", "content": response_text or ""})
+    # Record completed WRITE actions in the stored history so the model has a CONCRETE signal
+    # they already ran. Without this, on a later low-signal turn ("hey there") it sometimes
+    # re-executes the previous turn's write tool (e.g. re-adding a to-do). Pairs with the
+    # "Don't Repeat Completed Actions" rule in BEHAVIOR.md.
+    _stored = response_text or ""
+    try:
+        _WRITE_PREFIXES = ("add_", "create_", "send_", "update_", "set_", "log_", "delete_",
+                           "remove_", "save_", "mark_", "schedule_", "connect_", "revise_")
+        _writes = sorted({tc.name for tc in (result.tool_calls_made or [])
+                          if any(tc.name.startswith(p) for p in _WRITE_PREFIXES)})
+        if _writes:
+            _stored += ("\n\n[✓ Completed this turn — already done; do NOT repeat these on a "
+                        "later turn: " + ", ".join(_writes) + "]")
+    except Exception:
+        pass
+    sessions[user_id].append({"role": "assistant", "content": _stored})
 
     # Sliding window: trim to last MAX_SESSION_TURNS turns (each turn = 2 messages)
     max_messages = MAX_SESSION_TURNS * 2

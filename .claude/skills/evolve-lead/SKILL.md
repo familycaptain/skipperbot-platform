@@ -20,5 +20,12 @@ You own the spec phase you just ran. Two jobs:
 If any **required review didn't complete**, do NOT recommend a clean `approve` — name the missing
 review and force `change` (a half-reviewed change can't ship).
 
+The SAME bar applies to VALIDATION at Gate 2: recommend `approve` ONLY when validation actually RAN
+and passed green. If it failed, OR **could not run at all** (skipped, missing build/test tooling — e.g.
+no node to build the web bundle — or the box-2 target unavailable/occupied), that is NOT a pass — force
+`change` and make `why` name the exact blocker. NEVER `approve` with a "verify later at Gate-3" caveat:
+a build that was never built-tested or run is unproven, not shippable. "Built it but couldn't test it"
+→ `change`.
+
 Save to `~/.evolve-poc/<id>/lead.json` (shape: `LEAD_OUT` in `apps/evolve/agents/registry.py`). The
 orchestrator presents this at Gate 1.

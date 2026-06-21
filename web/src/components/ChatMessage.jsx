@@ -1,11 +1,11 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Bell, Clock, FileText, Wrench } from "lucide-react";
+import { Bell, Clock, FileText, Layers, Wrench } from "lucide-react";
 
 /**
  * Single chat message bubble.
  *
- * Roles: "user" | "bot" | "notification" | "tool_call"
+ * Roles: "user" | "bot" | "notification" | "tool_call" | "tool_slot"
  * Bot messages render markdown. User messages render plain text.
  * Notifications get a colored badge based on source.
  * Tool calls show tool name + args with a wrench icon.
@@ -111,6 +111,25 @@ export default function ChatMessage({ message, showTime = false }) {
               ))}
             </div>
           )}
+        </div>
+      </div>
+    );
+  }
+
+  // ── Tool-category slot load/unload (observability for the slot-based tool router) ──
+  if (role === "tool_slot") {
+    const { loaded, unloaded, slots } = message;
+    return (
+      <div className="flex justify-start pl-1">
+        <div className="max-w-[85%] md:max-w-[70%] px-3 py-1.5 rounded-xl rounded-bl-sm bg-emerald-900/25 border border-emerald-700/40 text-xs">
+          <div className="flex items-center gap-2 flex-wrap font-mono">
+            <Layers size={11} className="text-emerald-400 shrink-0" />
+            {loaded && <span className="text-emerald-300">＋ {loaded}</span>}
+            {unloaded && <span className="text-slate-500">－ {unloaded}</span>}
+            {Array.isArray(slots) && (
+              <span className="text-slate-500">slots: [{slots.join(", ") || "—"}]</span>
+            )}
+          </div>
         </div>
       </div>
     );

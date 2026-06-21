@@ -54,7 +54,7 @@ def create_goal(
 
     Args:
         name: Name of the goal.
-        created_by: Who is creating this goal (person name, e.g. "alice").
+        created_by: Who is creating this goal (a person's name).
         owners: Comma-separated list of people who own this goal.
                 Defaults to created_by if empty.
         initial_notes: Optional initial content for the goal's notes document.
@@ -273,8 +273,8 @@ def update_item(
                      Examples:
                        '{"name": "New task name"}'
                        '{"priority": "high", "due_date": "2026-03-01"}'
-                       '{"assigned_to": "carol,alice"}'
-                       '{"owners": "alice"}'
+                       '{"assigned_to": "name1,name2"}'
+                       '{"owners": "a-name"}'
                        '{"definition_of_done": "All tests pass and PR approved"}'
                        '{"pm_cadence_minutes": 1440}'  (projects only — PM check-in interval in minutes, null to reset to default)
 
@@ -333,11 +333,12 @@ def stop_onboarding(requested_by: str) -> str:
 
     Call this when the primary user asks to stop, end, skip, or be done with the
     onboarding — AFTER you have confirmed they want to set it aside (see the
-    proactive reply guide). This durably closes the onboarding goal out: it marks
-    the onboarding goal and all its still-open projects/tasks as cancelled,
-    disables the goal's thinking domain, and clears its pending PM nudges, so
-    Skipper stops reaching out about onboarding. This is the correct action — do
-    NOT just record a memory, which leaves the onboarding running.
+    proactive reply guide). This durably closes the onboarding goal out: it closes
+    the onboarding goal and all its still-open projects/tasks (marking them DONE if
+    the agenda was completed, or cancelled if stopped early), disables the goal's
+    thinking domain, and clears its pending PM nudges, so Skipper stops reaching out
+    about onboarding. This is the correct action — do NOT just record a memory,
+    which leaves the onboarding running.
 
     The onboarding goal is resolved internally from the platform's seed config;
     this tool deliberately takes NO goal id, so it can only ever close onboarding.
@@ -360,11 +361,23 @@ def stop_onboarding(requested_by: str) -> str:
             return ("There's nothing to stop — onboarding isn't set up "
                     "(no onboarding goal exists).")
 
+        # Derive the close-out status from whether the core agenda was actually completed,
+        # NOT from how the user phrased it. Finishing the ordered agenda (the non-tour projects)
+        # and opting out of the optional app tours is a SUCCESSFUL onboarding → done. Bailing
+        # before finishing the agenda → cancelled.
+        agenda = [p for p in _get_projects_for_goal(goal_id)
+                  if not (p.get("name") or "").startswith("Try the")]
+        agenda_complete = bool(agenda) and all(p.get("status") == "done" for p in agenda)
+        status = "done" if agenda_complete else "cancelled"
+        reason = ("Onboarding agenda complete — user is all set."
+                  if agenda_complete else
+                  "User asked to stop onboarding before finishing — closing it out.")
+
         return _close_out_goal(
             goal_id,
             by=requested_by.strip().lower(),
-            status="cancelled",
-            reason="User asked to stop onboarding — closing it out.",
+            status=status,
+            reason=reason,
         )
     except Exception as e:
         return f"Error in stop_onboarding: {str(e)}"
@@ -376,7 +389,7 @@ def get_goals_summary(user_id: str) -> str:
     ALWAYS pass the requesting user's name as user_id — never leave it empty.
 
     Args:
-        user_id: The person's name (e.g. "alice"). Required — filters to goals
+        user_id: The person's name. Required — filters to goals
                  this person owns or has tasks in.
 
     Returns:
@@ -459,7 +472,7 @@ def get_my_tasks(user_id: str, status_filter: str = "") -> str:
     """Get all tasks assigned to a person across all goals and projects.
 
     Args:
-        user_id: Whose tasks to show (e.g. "alice", "carol").
+        user_id: Whose tasks to show (a person's name).
         status_filter: Optional. A specific status like "in_progress" or "blocked".
                        Default shows all tasks except 'done'.
                        Use "all" to include done tasks too.
@@ -565,7 +578,7 @@ def append_entity_note(
     Args:
         item_id: Entity ID or rank reference (e.g. "g-a1b2c3d4", "G3", "P2", "T5").
         note: The note text to append (markdown supported).
-        author: Who is writing this note (e.g. "PM Review", "alice").
+        author: Who is writing this note (e.g. "PM Review", or a person's name).
 
     Returns:
         Confirmation.
@@ -812,7 +825,7 @@ def enable_project_nag(
 
     Args:
         project_id: The project to nag about (e.g. "p-abc123").
-        user_id: Who to nag (e.g. "alice").
+        user_id: Who to nag (a person's name).
 
     Returns:
         Confirmation with the current nag task.
@@ -1087,7 +1100,7 @@ def link_project_to_trello(
         user_lists_json: Optional. DO NOT guess or fabricate this value.
                          If omitted, user lists are auto-detected by matching
                          board list names to known family members (e.g. a list
-                         named "Bob TODO" is automatically mapped to user bob).
+                         named "<Name> TODO" is automatically mapped to that user).
                          Only provide this if the user explicitly specifies
                          custom mappings. Format: JSON object mapping usernames
                          to exact Trello list names.

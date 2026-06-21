@@ -140,11 +140,30 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   sides), do NOT guess: abort the merge, set the Lead note to explain the collision, re-push **Gate 2**
   as `change` so the operator decides — never ship a hand-merged code resolution unreviewed. After a
   clean (or trivially-resolved) merge: **`resolve ev-<n> shipped`** (clears the gate + flips the run to
-  **waiting / verify**). Push a
+  **waiting / verify**).
+
+  **PRE-VERIFY LIVE ACCEPTANCE (automated, on BOX 2 — BEFORE pushing the gate):** prove it works on
+  the merged release before the operator ever tests by hand. Box 1 drives **box 2** (the test host,
+  its disposable automated test box) for ALL automated testing — Gate-2 (the feature branch) AND this
+  Gate-3 pre-verify (the merged `release`). Deploy release to box 2 (`box2_live.py deploy release`),
+  then run `evolve-validate`'s **LIVE acceptance with the spec as oracle**: drive the real UI with the
+  robust `scripts/ui_harness.py` (React-safe value-set so Save un-disables, retrying wait-for-target
+  nav, screenshots + HTTP>=400 capture) and chat with VARIED phrasing — judging on **hard evidence**
+  (captured `tool_calls`, DB state, screenshots), never vibes. Behaviour is **probabilistic**: repeat
+  any flaky scenario **N× (≥3)** — one green run is not proof, and escalate a fix that's only partially
+  reliable. If you stumble on UNRELATED bugs, **do NOT fix them — file a GitHub issue (be a bug-scout)**
+  and carry on. (`SKIPPER_UI_BASE` / `QA_BASE` point the harness at box 2. **skipper-uat is NOT in the
+  automated loop** — it's the *operator's* own manual test box, named in the packet below.)
+  - **RED** (acceptance fails on the merged release): do NOT push the verify gate — never hand the
+    operator a known-broken build. Treat it as a verify `change`: **RESUME THE SAME CONVERSATION**,
+    judge the depth (localized bug → re-implement → Gate 2; new approach → re-spec → Gate 1), fix,
+    re-validate. **END.**
+  - **GREEN:** push the
   **Gate 3 (verify)** packet — `recommendation` = {action:`verify`, why: "Merged to release as
-  `<sha>`. Deploy to your Pi (`skipper update`) and test issue #<n>: <what to check>", current,
-  after} — set `state.json` `phase=verify`, **END**. (The GitHub issue stays OPEN; do NOT mark done
-  or seen yet.) **ALWAYS spell out any USER ACTION required to observe the fix** in the `why` — a
+  `<sha>`; **automated live acceptance on box 2 PASSED** (<scenarios + key evidence>). Deploy to
+  **skipper-uat** (your manual test box, `skipper update`) and confirm issue #<n>: <what to check>",
+  current, after} + a `validation` {passed:true, reason, evidence} block — set `state.json`
+  `phase=verify`, **END**. (The GitHub issue stays OPEN; do NOT mark done or seen yet.) **ALWAYS spell out any USER ACTION required to observe the fix** in the `why` — a
   correct change can look broken until the operator does it: **re-login** (auth/session/cookie changes —
   a stale browser session won't have the new cookie), **reconfigure** a Setting, **clear cache / hard
   refresh** (UI bundle), reinstall an app package, etc. The implement/lead notes should carry this

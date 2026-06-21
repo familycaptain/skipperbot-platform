@@ -30,7 +30,7 @@ from app_platform.memory import digest_record
 from apps.lists.data import archive_item, get_list
 from apps.lists.store import add_item as _add_item
 from apps.todo.data import get_config
-from apps.todo.store import ensure_default_list, get_todo_items
+from apps.todo.store import ensure_default_list, get_todo_items, get_backlog_items
 
 
 def get_todo_list(user_id: str) -> str:
@@ -78,6 +78,43 @@ def get_todo_list(user_id: str) -> str:
 
     except Exception as e:
         return f"Error in get_todo_list: {str(e)}"
+
+
+def get_backlog_list(user_id: str) -> str:
+    """Show the user's BACKLOG list (the to-do app's optional 'someday/later' second list).
+
+    RESERVED REFERENCE: "my backlog" (and an unqualified "backlog") ALWAYS means the speaking
+    user's own to-do-app backlog. Use THIS tool for it — do NOT search for a list named
+    "backlog", which could match a different family member's list. (Likewise "my to-do" →
+    get_todo_list.) Only when the user explicitly names someone else ("Sarah's backlog") would
+    you look up that other person's backlog.
+
+    Use when the user says: "show my backlog", "what's on my backlog?", "my backlog items".
+
+    Args:
+        user_id: The person whose backlog to show.
+
+    Returns:
+        Formatted backlog list, or a note that no backlog is set up.
+    """
+    try:
+        if not user_id or not user_id.strip():
+            return "Error: user_id is required."
+        uid = user_id.strip().lower()
+        result = get_backlog_items(uid)
+        if not result:
+            return ("You don't have a backlog list set up yet — it's an optional second to-do "
+                    "list for 'someday/later' items. Want me to create one?")
+        active = [i for i in result["items"] if not i.get("archived")]
+        if not active:
+            return f"📋 {result['list_name']} is empty."
+        lines = [f"📋 {result['list_name']} ({len(active)} item{'s' if len(active) != 1 else ''}):"]
+        for idx, item in enumerate(active):
+            lines.append(f"  {idx + 1}. {item['text']}")
+        lines.append(f"\n  List ID: {result['list_id']}")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error in get_backlog_list: {str(e)}"
 
 
 def add_todo_item(user_id: str, text: str, top: bool = False) -> str:

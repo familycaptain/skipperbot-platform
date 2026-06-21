@@ -733,6 +733,29 @@ def sync_from_trello(list_id: str) -> str:
         lst["trello"]["last_sync"] = _now_iso()
         _save_list(lst)
 
+        # Memorialize the REAL item changes exactly as a UI edit would: log_entity_change
+        # writes the same recallable memory store.add_item / remove_item write, so adding or
+        # removing a card in Trello is recallable in chat (and flows to document curation) —
+        # "treat sync like the user typed it in the app." No-op syncs already returned above;
+        # here we diff the actual cards by trello_card_id and log only the real changes.
+        old_by_card = {i["trello_card_id"]: i for i in old_active if i.get("trello_card_id")}
+        new_by_card = {i["trello_card_id"]: i for i in new_items if i.get("trello_card_id")}
+        for cid, n in new_by_card.items():
+            old = old_by_card.get(cid)
+            if old is None:
+                log_entity_change("added_item", n["id"], "list_item",
+                                  f"'{n['text']}' added to list '{lst['name']}'",
+                                  by="trello_sync", related_entities=[list_id])
+            elif (old.get("text") or "") != (n.get("text") or ""):
+                log_entity_change("edited_item", n["id"], "list_item",
+                                  f"'{old['text']}' renamed to '{n['text']}' in list '{lst['name']}'",
+                                  by="trello_sync", related_entities=[list_id])
+        for cid, old in old_by_card.items():
+            if cid not in new_by_card:
+                log_entity_change("removed_item", old["id"], "list_item",
+                                  f"'{old['text']}' removed from list '{lst['name']}'",
+                                  by="trello_sync", related_entities=[list_id])
+
         # Record card titles in item history if tracking is enabled
         if lst["trello"].get("track_items"):
             try:

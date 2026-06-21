@@ -4,7 +4,7 @@ For one-off paid tasks see the Bounties app — these tools are for the
 *recurring weekly* chore rotation only.
 
 Every tool that mutates data accepts `acted_by` (the caller's username).
-Parents (alice, bob) can act on anyone; kids can only check off
+Parents can act on anyone; kids can only check off
 their own chores. Kid/zone/chore CRUD is parent-only.
 """
 
@@ -34,7 +34,7 @@ def _resolve_kid(identifier: str) -> dict | None:
         if kid:
             return kid
 
-    # 2. user_id (e.g., "kid1") — exact match
+    # 2. user_id (e.g., a kid's username) — exact match
     kid = _dl.get_kid_by_user(ident.lower())
     if kid:
         return kid
@@ -102,7 +102,7 @@ def get_chores_today(kid: str = "", date: str = "") -> str:
     """List today's chore assignments.
 
     Args:
-        kid: Optional kid (kid-id, username like 'kid1', or display name). Empty = all kids.
+        kid: Optional kid (kid-id, a username, or display name). Empty = all kids.
         date: Optional date YYYY-MM-DD, or "today" / "yesterday" / "tomorrow". Default: today.
 
     Returns:
@@ -520,7 +520,7 @@ def add_zone(name: str, acted_by: str, rotation_start: str = "",
         rotation_start: YYYY-MM-DD anchor for rotation math. Default: today.
         description: Optional.
         member_kids: Comma-separated list of kid identifiers in rotation order.
-            E.g. "kid1, kid2, kid3".
+            E.g. "kid-id1, kid-id2, kid-id3".
 
     Ack: Creating zone...
     """

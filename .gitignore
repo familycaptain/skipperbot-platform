@@ -167,3 +167,6 @@ apps/*
 
 # C/F/S specs for the Backups app are real source, not backup artifacts
 !specs/backups/
+
+# UI-audit generated artifacts (throwaway audit outputs, not source)
+scripts/ui-audit/_audit_*/

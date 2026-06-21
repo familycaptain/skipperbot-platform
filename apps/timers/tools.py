@@ -36,7 +36,7 @@ async def start_timer(
 
     Args:
         user_id: Canonical user id of the person who asked for the timer
-                 (e.g. "alice", "carol"). Required.
+                 (a person's name). Required.
         seconds: Seconds component of the duration. Default 0.
         minutes: Minutes component of the duration. Default 0.
         name: Optional label (e.g. "eggs", "laundry", "pasta"). Used in the
@@ -86,7 +86,7 @@ def list_timers(user_id: str = "") -> str:
     """List active timers currently running in the background.
 
     Args:
-        user_id: Optional canonical user id to filter by (e.g. "alice").
+        user_id: Optional canonical user id to filter by (a person's name).
                  Leave empty to list all active timers across all users.
 
     Returns:

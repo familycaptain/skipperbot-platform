@@ -22,8 +22,13 @@ Usage:
 """
 
 import argparse
+import os
 import re
 import sys
+
+# Standalone run puts the script's dir on sys.path, not the repo root — add the repo root
+# so `data_layer` imports resolve (`python scripts/cleanup_trello_sync_noise.py`).
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # (a) bookkeeping phrasing (case-insensitive)
 _SYNC_PHRASE = "synced to the trello board"

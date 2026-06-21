@@ -11,7 +11,7 @@ Staged so each real (paid) step is observable:
 
 Reasoning agents run on Opus via AnthropicBackend (shared cost ledger + $500/mo kill-switch).
 The `implement` agent runs as a tool-use code-actor rooted in an isolated feature worktree
-off `release`; `validate` deploys that branch to box 2 (evolve-test.local) and runs the
+off `release`; `validate` deploys that branch to box 2 ($EVOLVE_BOX2_HOST) and runs the
 bound test there. State is durable (SQLite), so the stages can run as separate invocations.
 """
 import argparse
@@ -43,7 +43,7 @@ STATE_DB = os.path.expanduser("~/.evolve/weather_run.sqlite")
 IID_FILE = os.path.expanduser("~/.evolve/weather_run.iid")
 DEEP = os.getenv("EVOLVE_MODEL_DEEP", "claude-opus-4-8")
 MONTHLY_CAP = float(os.getenv("EVOLVE_MONTHLY_CAP", "500"))
-BOX2_HOST = os.getenv("EVOLVE_BOX2_HOST", "evolve-test.local")
+BOX2_HOST = os.getenv("EVOLVE_BOX2_HOST", "box2.local")
 BOX2_REPO = os.getenv("EVOLVE_BOX2_REPO", "/home/skipper/repos/skipperbot-platform")
 
 WORK_ITEM = {
@@ -52,11 +52,11 @@ WORK_ITEM = {
         "Asking Skipper's chat weather tools for the current weather at ZIP 72956 reports the "
         "city as 'Rena, AR' (the user saw 'Reno'). The correct city for 72956 is Van Buren, AR. "
         "Right ZIP, wrong city.\n\n"
-        "Root cause: get_current_weather_by_zip() in apps/weather/tools.py fetches from wttr.in and "
+        "Root cause: get_current_weather() in apps/weather/tools.py fetches from wttr.in and "
         "reads the city from nearest_area.areaName, which is wrong for this ZIP. Every OTHER weather "
         "tool (rain/hourly/daily) resolves the city via _lookup_zip() -> api.zippopotam.us, which "
         "correctly returns 'Van Buren'.\n\n"
-        "Fix: make get_current_weather_by_zip() derive the displayed city/region from the "
+        "Fix: make get_current_weather() derive the displayed city/region from the "
         "authoritative ZIP lookup (_lookup_zip / zippopotam) rather than trusting wttr.in's area "
         "name, so all weather tools report a consistent, correct city. Keep using wttr.in for the "
         "live conditions if convenient, but the place name must come from the ZIP lookup.\n\n"

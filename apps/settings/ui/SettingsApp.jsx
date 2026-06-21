@@ -273,6 +273,7 @@ function ConfigInput({ field, value, onChange }) {
         type="number"
         className="w-32 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100"
         value={value ?? ""}
+        placeholder={field.placeholder || ""}
         onChange={(e) => {
           const raw = e.target.value;
           onChange(raw === "" ? null : Number.parseInt(raw, 10));
@@ -293,7 +294,7 @@ function ConfigInput({ field, value, onChange }) {
         type={showSecret ? "text" : "password"}
         className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono"
         value={value ?? ""}
-        placeholder={secretPlaceholder}
+        placeholder={secretPlaceholder || field.placeholder || ""}
         onChange={(e) => onChange(e.target.value)}
       />
       {secret && (

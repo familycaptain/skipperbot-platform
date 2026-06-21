@@ -39,7 +39,7 @@ STATE_DB = os.path.expanduser("~/.evolve/instances.sqlite")  # ONE store for all
 SEEN = os.path.expanduser("~/.evolve/github_ingested.json")
 DEEP = os.getenv("EVOLVE_MODEL_DEEP", "claude-opus-4-8")
 CAP = float(os.getenv("EVOLVE_MONTHLY_CAP", "500"))
-BOX2_HOST = os.getenv("EVOLVE_BOX2_HOST", "evolve-test.local")
+BOX2_HOST = os.getenv("EVOLVE_BOX2_HOST", "box2.local")
 BOX2_REPO = os.getenv("EVOLVE_BOX2_REPO", "/home/skipper/repos/skipperbot-platform")
 
 

@@ -17,7 +17,7 @@ behavior: >
   key separately (the daily tool's `days` sets forecast_days). To guarantee the
   background loop and the tools address the SAME entry, the current-conditions
   request URL is built by a SHARED helper (_current_weather_url(place)) that both
-  get_current_weather_by_zip (via _fetch_current) and the background loop call — the
+  get_current_weather (via _fetch_current) and the background loop call — the
   loop produces byte-identical URLs to the tools (same param keys and order). On a
   tool call with caching ENABLED: if a cached entry for that URL exists and is within
   the freshness window (age < effective_ttl), it is returned IMMEDIATELY with no
@@ -69,7 +69,7 @@ implements:
 - apps/weather/tools.py::_current_weather_url
 - apps/weather/tools.py::_fetch_current
 - apps/weather/tools.py::_cache_settings
-- apps/weather/tools.py::get_current_weather_by_zip
+- apps/weather/tools.py::get_current_weather
 - apps/weather/tools.py::_forecast_for_place
 - apps/weather/tools.py::_hourly_forecast_for_place
 - apps/weather/tools.py::_daily_forecast_for_place

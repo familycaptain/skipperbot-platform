@@ -11,7 +11,7 @@ def add_medical_member(name: str, notes: str = "") -> dict:
     """Add a family member to the medical tracker.
 
     Args:
-        name: First name or identifier ("alice", "bob", "kid1")
+        name: First name or identifier (a person's name).
         notes: Optional notes about this member
 
     Ack: Adding "{name}" to medical members...
@@ -52,7 +52,7 @@ def add_medication(
     """Track a medication for a family member.
 
     Args:
-        member_name: Family member name (e.g. "alice")
+        member_name: Family member name (a person's name)
         name: Medication name and dosage (e.g. "Lisinopril 10mg")
         dosage_notes: How to take it (e.g. "1 tablet daily in the morning")
         last_dose_date: Date they will run out / take the last pill (YYYY-MM-DD)
@@ -541,7 +541,7 @@ def get_lab_results_by_date(result_date: str, member_name: str = "", event_id: s
 
     Args:
         result_date: Exact blood draw/result date (YYYY-MM-DD)
-        member_name: Filter by family member (optional, e.g. "alice")
+        member_name: Filter by family member (optional, a person's name)
         event_id: Optional lab event ID to narrow to a specific draw
 
     Ack: Loading all lab results for {result_date}...
@@ -636,7 +636,7 @@ def list_medical_equipment(member_name: str = "", include_inactive: bool = False
     the equipment but you do not know its equipment_id.
 
     Args:
-        member_name: Optional member name, e.g. "alice".
+        member_name: Optional member name (a person's name).
         include_inactive: Include inactive equipment too.
 
     Ack: Loading medical equipment...

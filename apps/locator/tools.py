@@ -33,7 +33,7 @@ def create_located_item(
 
     Args:
         name: Item name (e.g. "Camping Gear", "Christmas Decorations", "Power Drill").
-        created_by: Who is creating it (e.g. "alice").
+        created_by: Who is creating it (a person's name).
         location: Where the item is (e.g. "Garage", "Attic", "Master Closet").
         sub_location: More specific spot (e.g. "Top shelf", "Bin #3", "Under workbench").
         category: Item category (e.g. "Seasonal", "Tools", "Sports", "Kitchen").
