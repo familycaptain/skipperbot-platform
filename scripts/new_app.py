@@ -404,13 +404,15 @@ export default function __COMPONENT__App() {
   }, []);
 
   return (
-    <div className="flex flex-col h-full w-full bg-zinc-950 text-zinc-100">
-      <div className="shrink-0 px-4 py-3 border-b border-zinc-800 font-semibold">
+    // Semantic design-system classes only — NO raw Tailwind color scales (issue #38).
+    // surface-page sets the themed background + text; see specs/APP_PACKAGES.md "Styling / Theme".
+    <div className="flex flex-col h-full w-full surface-page">
+      <div className="shrink-0 px-4 py-3 border-b border-subtle font-semibold">
         __APP_NAME__
       </div>
       <div className="flex-1 min-h-0 overflow-y-auto p-4">
         {items.length === 0 ? (
-          <p className="text-zinc-500">No items yet.</p>
+          <p className="empty-state">No items yet.</p>
         ) : (
           <ul className="space-y-1">
             {items.map((it) => (
@@ -423,6 +425,26 @@ export default function __COMPONENT__App() {
   );
 }
 """
+
+import re as _re
+
+# Raw color classes forbidden in scaffolded UI (issue #38) — see scripts/check-no-raw-tokens.mjs.
+_RAW_UI = _re.compile(
+    r"\b(?:bg|text|border|ring|from|to|via)-(?:slate|gray|zinc|neutral|stone|cyan|teal|sky)-\d{2,3}(?:/\d{1,3})?\b"
+    r"|\b(?:bg|text)-(?:white|black)\b"
+    r"|\b(?:bg|text|border)-\[#[0-9a-fA-F]{3,8}\]"
+)
+
+
+def _assert_semantic_ui(rendered_ui: str) -> None:
+    hits = sorted({m.group(0) for m in _RAW_UI.finditer(rendered_ui)})
+    if hits:
+        raise SystemExit(
+            "scaffold smoke check FAILED (#38): generated UI contains raw color classes: "
+            + ", ".join(hits)
+            + " — use semantic classes (surface-*/text-*/btn-*/…, see specs/APP_PACKAGES.md Styling/Theme)."
+        )
+
 
 SPEC = """# __APP_NAME__ — Spec
 
@@ -602,6 +624,10 @@ def create_app_skeleton(app_name: str, folder_name: str) -> None:
 
     for rel, template in files.items():
         write_file(app_dir / rel, render(template, tokens))
+
+    # Scaffold smoke check (issue #38): the generated UI must use ONLY semantic
+    # design-system classes — no raw Tailwind color scales / hex / white-black.
+    _assert_semantic_ui(render(UI_APP, tokens))
 
     # Ship the canonical app contract alongside the app so the repo is
     # self-sufficient for AI-assisted development.
