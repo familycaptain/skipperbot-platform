@@ -82,6 +82,11 @@ async def lifespan(app: FastAPI):
     # include_router must run on the main thread for Starlette to pick
     # up the new routes before the server starts accepting requests.
     from pathlib import Path
+    # Register the bundled model providers (issue #39). Belt-and-suspenders: the registry
+    # also self-registers lazily on first use, so this is not load-order-critical (the P3
+    # plugin loader for external connectors layers on top here later).
+    from providers.registry import register_builtin_providers
+    register_builtin_providers()
     apps_dir = Path(__file__).parent / "apps"
     load_all_apps(apps_dir, app, None)
 

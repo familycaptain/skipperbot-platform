@@ -10,7 +10,6 @@ from logging.handlers import TimedRotatingFileHandler
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
-from openai import OpenAI
 
 load_dotenv()
 
@@ -86,7 +85,23 @@ pm_audit_logger.propagate = False  # don't duplicate to main log
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROMPTS_DIR = os.path.join(BASE_DIR, "prompts")
 
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# The platform routes all model calls through providers/ (issue #39). The eager
+# module-level OpenAI singleton is gone so the agent imports config WITHOUT building a
+# client (a step toward keyless boot). `config.openai_client` remains available as a
+# LAZY accessor (built on first attribute access, then cached) purely for out-of-scope
+# dev/test harnesses (test_chat.py, scripts/tool_policy_harness.py) — product code uses
+# the provider, never this.
+_lazy_openai_client = None
+
+
+def __getattr__(name):
+    global _lazy_openai_client
+    if name == "openai_client":
+        if _lazy_openai_client is None:
+            from openai import OpenAI
+            _lazy_openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        return _lazy_openai_client
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def _as_bool(v) -> bool:
