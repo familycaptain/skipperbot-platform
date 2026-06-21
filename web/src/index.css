@@ -51,17 +51,17 @@ html[data-theme="light"] {
    * (950) are white. This is the "warm-not-cold gray, crisp but less saturated" direction. */
   --color-slate-50:#1a1714;  --color-slate-100:#272320; --color-slate-200:#3a352f;
   --color-slate-300:#564f47; --color-slate-400:#7c756b; --color-slate-500:#a39c91;
-  --color-slate-600:#cbc4b8; --color-slate-700:#e4ded4; --color-slate-800:#fbfaf7;
+  --color-slate-600:#cbc4b8; --color-slate-700:#e4ded4; --color-slate-800:#f7f4ee;
   --color-slate-900:#f4f1ea; --color-slate-950:#ffffff;
 
   --color-gray-50:#1a1714;  --color-gray-100:#272320; --color-gray-200:#3a352f;
   --color-gray-300:#564f47; --color-gray-400:#7c756b; --color-gray-500:#a39c91;
-  --color-gray-600:#cbc4b8; --color-gray-700:#e4ded4; --color-gray-800:#fbfaf7;
+  --color-gray-600:#cbc4b8; --color-gray-700:#e4ded4; --color-gray-800:#f7f4ee;
   --color-gray-900:#f4f1ea; --color-gray-950:#ffffff;
 
   --color-zinc-50:#1a1714;  --color-zinc-100:#272320; --color-zinc-200:#3a352f;
   --color-zinc-300:#564f47; --color-zinc-400:#7c756b; --color-zinc-500:#a39c91;
-  --color-zinc-600:#cbc4b8; --color-zinc-700:#e4ded4; --color-zinc-800:#fbfaf7;
+  --color-zinc-600:#cbc4b8; --color-zinc-700:#e4ded4; --color-zinc-800:#f7f4ee;
   --color-zinc-900:#f4f1ea; --color-zinc-950:#ffffff;
 
   /* Bare `text-white` sits mostly on neutral surfaces that are now light -> warm near-black. */
@@ -99,6 +99,50 @@ html[data-theme="light"] :is(.border-slate-700,.border-slate-800) { border-color
  * desktop columns + dialogs (not every tiny badge) via the rounded/border panel pattern. */
 html[data-theme="light"] :is([class*="bg-slate-900\/"],[class*="bg-slate-800\/6"]) {
   box-shadow: inset 0 0 0 1px rgba(70,58,46,.04);
+}
+
+/* bg-white must stay WHITE (it resolves via --color-white, which we remapped to dark for text). */
+html[data-theme="light"] .bg-white { background-color:#ffffff; }
+
+/* Brand logo: the 'S' lives in an indigo->purple gradient and inherits text-white (now dark) — keep
+ * it white inside the solid gradient square. */
+html[data-theme="light"] .bg-gradient-to-br.from-indigo-500 { --color-white:#ffffff; }
+
+/* User chat bubble: solid indigo-600 reads too stark on the warm light theme — soften a notch
+ * (still passes white-text contrast). Targets the user bubble's unique rounded-br-md + indigo. */
+html[data-theme="light"] .rounded-br-md.bg-indigo-600 { background-color:#6366f1; }
+
+/* Markdown code/pre inside chat bubbles assume a dark surface — fix for light. */
+html[data-theme="light"] .markdown-body code { background:rgba(60,50,40,.07); }
+html[data-theme="light"] .markdown-body pre { background:rgba(60,50,40,.06); }
+
+/* ── Accent colors in light mode ─────────────────────────────────────────────
+ * Accent scales aren't neutral-remapped, so (a) bright accent TEXT (text-X-200/300/400) on a now-light
+ * surface is low-contrast and (b) dark accent TINT bgs (bg-X-900/30) go muddy — the same failure the
+ * teal tiles had ("bright green on dark green"). Per accent: darken the bright-text tokens, lighten the
+ * dark-tint tokens. Solid buttons (X-500/600) keep their hue; white-on-accent text handled above. */
+html[data-theme="light"] {
+  --color-emerald-200:#047857; --color-emerald-300:#047857; --color-emerald-400:#059669;
+  --color-emerald-800:#d1fae5; --color-emerald-900:#ecfdf5;
+  --color-green-200:#15803d;   --color-green-300:#15803d;   --color-green-400:#16a34a;
+  --color-green-800:#dcfce7;   --color-green-900:#f0fdf4;
+  --color-red-200:#b91c1c;     --color-red-300:#b91c1c;     --color-red-400:#dc2626;
+  --color-red-800:#fee2e2;     --color-red-900:#fef2f2;
+  --color-rose-200:#be123c;    --color-rose-300:#be123c;    --color-rose-400:#e11d48;
+  --color-rose-800:#ffe4e6;    --color-rose-900:#fff1f2;
+  --color-orange-200:#c2410c;  --color-orange-300:#c2410c;  --color-orange-400:#ea580c;
+  --color-orange-800:#ffedd5;  --color-orange-900:#fff7ed;
+  --color-sky-200:#0369a1;     --color-sky-300:#0369a1;     --color-sky-400:#0284c7;
+  --color-sky-800:#e0f2fe;     --color-sky-900:#f0f9ff;
+  --color-blue-200:#1d4ed8;    --color-blue-300:#1d4ed8;    --color-blue-400:#2563eb;
+  --color-blue-800:#dbeafe;    --color-blue-900:#eff6ff;
+  --color-cyan-200:#0e7490;    --color-cyan-300:#0e7490;    --color-cyan-400:#0891b2;
+  --color-cyan-800:#cffafe;    --color-cyan-900:#ecfeff;
+  --color-indigo-200:#4338ca;  --color-indigo-300:#4338ca;  --color-indigo-400:#4f46e5;
+  --color-violet-200:#6d28d9;  --color-violet-300:#6d28d9;  --color-violet-400:#7c3aed;
+  --color-violet-800:#ede9fe;  --color-violet-900:#f5f3ff;
+  --color-purple-200:#7e22ce;  --color-purple-300:#7e22ce;  --color-purple-400:#9333ea;
+  --color-purple-800:#f3e8ff;  --color-purple-900:#faf5ff;
 }
 
 html, body, #root {
