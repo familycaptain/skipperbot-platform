@@ -18,6 +18,13 @@ past it. Test scaffolding (your acceptance scenario + how it authenticates) = YO
 the gates exist to stop; an unrelated PRODUCT fix/redesign is a separate item needing the operator's
 **Gate-1**.
 
+**Put REUSABLE test scaffolding in the SHARED harness, not a one-off.** When you build something the
+next validation will also need — a robust login, a wait helper, a UI-driving utility — add it to the
+shared `scripts/ui_harness.py` (the `UI` class) so it's there for every future item, instead of
+burying it in this one item's acceptance script where it gets re-derived from scratch next time.
+(Concrete example: the programmatic-login path now lives in `ui_harness.login()`; drive the real form
+only via `login_via_form()` when login itself is under test.) Harness improvements should COMPOUND.
+
 Two duties at a blocker:
 1. **If it might be a REAL product bug — not merely test flakiness — FILE a GitHub issue even if you
    work around it in the test.** Do not wave a possible real bug off as "just a test artifact." (That

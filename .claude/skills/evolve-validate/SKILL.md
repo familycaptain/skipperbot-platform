@@ -56,6 +56,11 @@ by the control after ANY element whose direct text matches the label; and it cap
 error + **HTTP>=400** and screenshots failures to `/tmp/ui_*.png`. Host is `SKIPPER_UI_BASE` — point
 it at **box 2** for both the Gate-2 (feature branch) and Gate-3 pre-verify (merged release) passes.
 (skipper-uat is the *operator's* manual box, not part of this automated loop.)
+**Reusable scaffolding goes IN the harness, not a one-off.** If you build something future validations
+will also need (a robust login, a wait/utility helper), add it to `ui_harness.py` (the `UI` class) so it
+compounds — don't bury it in this item's acceptance script to be re-derived next time. E.g. robust auth
+is already `ui_harness.login()` (programmatic); `login_via_form()` drives the real form only when login
+itself is under test.
 
 **Behaviour is PROBABILISTIC — verify like it.** Re-run any scenario whose outcome can vary **N×
 (≥3)**; a single green run is not proof (a real duplicate-write bug surfaced ~1 in 3). If a fix only
