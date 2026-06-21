@@ -40,6 +40,17 @@ Report the truth: `passed` (true only if every bound test is green), the list of
 (screenshots/observations for the Gate-2 packet). A red bound test means the spec is
 **not** satisfied — never pass a spec on partial or hand-waved evidence.
 
+**For a change to a core runtime PATH (the chat loop, auth, embeddings, the websocket, the tool-call
+flow), a green unit/deterministic suite is necessary but NOT sufficient — you MUST drive the real path
+END-TO-END, LIVE, on box 2.** Byte-equality / scripted-provider / golden-payload unit tests prove the
+*pieces*; only a live run proves the rewired path actually works. Concretely, for a **chat-path** change
+(e.g. an `agent_loop` / provider rewrite): **log into the running Skipper on box 2 (the real UI) and have
+an actual multi-turn chat that includes at least one tool call** — confirm the assistant responds
+correctly, the tool runs, the response renders, and the loop's mid-flight side-effects fire (app
+open/refresh, tool-slot bubble, direct-display). A backend refactor claiming "zero behavior change" is
+*exactly* the case where this matters most: the unit suite can be green while the live chat is broken.
+**"Suite green + path never driven live" = `passed: false`.**
+
 **For any VISIBLE change: screenshot it, LOOK at it, then attach it — or loop.** A green selector/value
 check is NOT proof a UI change looks right; a test can pass while the pixels are still wrong (this
 project shipped "fixed" backgrounds that were beige in the actual render, and white-text buttons that
