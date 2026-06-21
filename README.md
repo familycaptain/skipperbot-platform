@@ -201,6 +201,10 @@ walkthrough — installing PostgreSQL + pgvector, creating the database, and
 configuring `.env` by hand — see
 [**docs/01-base-platform-setup.md**](docs/01-base-platform-setup.md).
 
+> **Building on a Raspberry Pi from bare hardware?** Start with
+> [**docs/00-pi-hardware-and-setup.md**](docs/00-pi-hardware-and-setup.md) — what
+> to buy and how to boot from an NVMe SSD — then come back to 01 for the software.
+
 ### Path 3: Just exploring
 
 See [docs/architecture.md](docs/architecture.md) for the high-level design,

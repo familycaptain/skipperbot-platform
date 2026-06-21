@@ -17,6 +17,11 @@ Both paths end with the **first-run web onboarding wizard** (set your name, time
 
 ## Pre-requirements (both paths)
 
+> **On a Raspberry Pi, starting from bare hardware?** Do
+> [**00-pi-hardware-and-setup.md**](00-pi-hardware-and-setup.md) first (what to
+> buy, and how to boot from an NVMe SSD), then return here. Already on a working
+> machine? Ignore this and continue.
+
 - **Computer:** Linux, macOS, or Windows 10/11 (WSL2 strongly recommended on Windows).
 - **8 GB RAM** minimum, **4 GB free disk space**.
 - **Internet connection**.
