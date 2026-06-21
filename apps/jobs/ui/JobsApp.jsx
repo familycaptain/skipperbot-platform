@@ -115,7 +115,7 @@ export default function JobsApp({ userId, context, refreshKey }) {
   // If viewing a detail, show that
   if (selectedJob) {
     return (
-      <div className="h-full flex flex-col bg-gray-900 text-gray-100">
+      <div className="h-full w-full flex flex-col bg-gray-900 text-gray-100">
         <JobDetail
           job={selectedJob}
           userId={userId}
@@ -129,7 +129,7 @@ export default function JobsApp({ userId, context, refreshKey }) {
   }
 
   return (
-    <div className="h-full flex flex-col bg-gray-900 text-gray-100">
+    <div className="h-full w-full flex flex-col bg-gray-900 text-gray-100">
       {/* Header */}
       <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
         <div className="flex items-center gap-3">

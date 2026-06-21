@@ -376,7 +376,7 @@ export default function NotificationsApp({ userId }) {
   });
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 text-white">
+    <div className="flex flex-col h-full w-full bg-slate-950 text-white">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/60 shrink-0">
         <div className="flex items-center gap-2">

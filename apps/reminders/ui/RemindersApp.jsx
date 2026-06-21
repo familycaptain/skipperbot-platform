@@ -128,7 +128,7 @@ export default function RemindersApp({ userId, refreshKey, sendChat, context = {
   ];
 
   return (
-    <div className="flex flex-col h-full text-sm text-gray-200 overflow-hidden">
+    <div className="flex flex-col h-full w-full text-sm text-gray-200 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 shrink-0">
         <div className="flex items-center gap-3">
