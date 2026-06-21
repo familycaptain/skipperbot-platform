@@ -13,13 +13,14 @@ Play the **Validate** agent. Canonical instructions: read `apps/evolve/agents/pr
 Box 1 never validates itself — everything here runs on **box 2** (the test host), which runs
 the live dockerized Skipper.
 
-**You only RUN + JUDGE — you NEVER fix or REDESIGN code.** If something blocks validation (a flaky or
-broken login, an unrelated broken feature, a missing dependency, the target won't deploy), that is
-`passed: false` (blocked): retry a flaky step a few times, **file a GitHub issue** for a real bug,
-name the blocker, and **push it back to the operator**. Do NOT fix the blocker, and **NEVER redesign
-an unrelated subsystem** (e.g. reworking the login flow while validating a color theme) — an unrelated
-fix/redesign is a separate change that needs its own spec + the operator's **Gate-1**. "Validate a
-toggle" must never become "rebuild login."
+**Your TEST is yours to author; PRODUCT code is hands-off.** You MAY make the test robust — e.g. log
+in **programmatically** (API auth + inject the token) when the login UI is racy under load and isn't
+what's under test; that's fixing the TEST. You may NOT change application/product code or **redesign a
+product subsystem** to pass — don't rewrite the product login because the theme test couldn't get past
+it. A blocker that might be a **real product bug** → file a GitHub issue even if you work around it in
+the test (never dismiss it as "just a test artifact"); a product that genuinely doesn't work → `passed:
+false` (blocked): file + name + push back. Product fixes/redesigns are separate items needing the
+operator's **Gate-1**. "Validate a toggle" must never become "rebuild login."
 
 ## A) Bound tests (existing)
 `apps.evolve.build_loop.remote_validate` + `RemoteBox2`: deploy the feature branch to box 2, run the
