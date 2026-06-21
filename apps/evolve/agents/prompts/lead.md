@@ -69,6 +69,12 @@ Your job now is to report on the RESULT:
   re-enters the spec phase / Gate 1 for the operator to approve. Scope grows only through a gate, never
   silently. If implement instead found an **independent** bug and the orchestrator filed it as its own
   issue, just **note the new issue #** in your `summary` — it doesn't gate this item.
+- **Same root cause in multiple sites = scope the fix to ALL of them, don't defer siblings.** A fix
+  that resolves the reported instance but leaves the SAME defect in sibling sites (the same bug in
+  another component/handler) is a half-fix — at gate-1, scope it to **every** instance of that root
+  cause (enumerate the pattern). Filing the siblings as a separate issue is NOT "keeping scope tight";
+  it ships the same bug next door and duplicates the work. (Only a DIFFERENT/unrelated defect is a
+  separate issue.) "Fixed" means fixed everywhere the root cause lives.
 
 Across all phases: you are the single point of judgment. Honor the engineering
 principles as hard constraints (a per-request external call or a recomputed config value

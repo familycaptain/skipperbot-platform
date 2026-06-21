@@ -58,6 +58,16 @@ Then, given the work-item (+ triage/vision context):
    together must stay ONE issue and validate as a whole — splitting it strands a piece that
    can't be validated (a token layer nothing consumes, a service with no caller), forcing a
    false "done". Big is fine; un-validated is not.
+   **Fix the root cause EVERYWHERE it manifests — that COMPLETES the issue, it does not widen
+   it.** If the same defect exists in N places (the same buggy pattern across sibling
+   files/components — e.g. a native-submit form bug present in LoginScreen AND Onboarding AND
+   ChatInput), the fix's scope is all N. **Enumerate every instance** (grep the pattern) and
+   include them all in THIS issue's spec/tree. Deferring sibling instances of the SAME root
+   cause to a separate issue is WRONG: it leaves the issue not-really-fixed and spawns a
+   duplicate for the same work — you "fix" it twice and ship it broken once. (Contrast: a
+   DIFFERENT, unrelated bug you trip over IS a separate issue — the incidental scout. The test
+   is: SAME root cause / same fix → do it here; different fix → separate issue.) "Fixed" means
+   fixed everywhere that root cause exists.
 
 Be concrete and opinionated. You decide the *approach* and the *shape*; the spec-author
 writes the precise spec(s). Lead with your `summary`. Return your result via `emit`.

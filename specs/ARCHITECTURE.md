@@ -69,6 +69,34 @@ everywhere") is as much a defect as a missing instruction.
 
 ---
 
+## Core principle: comprehensive fixes, no lingering debt
+
+When you fix or change something, do it **comprehensively and in one shot** — across the
+**entire platform AND every app**, covering **all areas the change touches** — and **validate
+all of them**. The default is *thorough*, not *minimal*.
+
+- **A fix covers every instance of its root cause.** If the same defect/pattern exists in N
+  places (a native-submit form bug in three components, a missing guard in five handlers, a
+  raw color class in every app), the fix is all N — found by enumerating the pattern (grep it),
+  not by patching the one reported site. Fixing one and filing the rest "for later" is not a
+  tighter scope; it ships the same bug elsewhere and **spawns a duplicate issue for the same
+  work**.
+- **"Fixed" means fixed everywhere it lives, and proven.** Validate every area the change
+  touches — not a spot-check. An instance left unfixed (or unverified) means the issue is **not
+  done**: say so and widen the scope; never close it green.
+- **No lingering technical debt; no repeat/follow-up issue for the same thing.** A change that
+  knowingly leaves the same class of problem behind is incomplete by definition.
+- This is **distinct from** an *unrelated* bug tripped over in passing — that genuinely is its
+  own issue. The test: **SAME root cause / same fix → do it here; a DIFFERENT fix → separate
+  issue.** And it is **not** a license to widen into unrelated work or gold-plate — it is:
+  finish the job for the actual root cause, everywhere it manifests, the first time.
+
+Sizing follows from this, never the reverse: an issue is as large as completing its fix
+honestly requires — a one-line change or a platform-wide sweep are both valid; a *partial* fix
+is not.
+
+---
+
 ## Layered architecture
 
 Every feature follows a strict bottom-up layering. The same shape applies

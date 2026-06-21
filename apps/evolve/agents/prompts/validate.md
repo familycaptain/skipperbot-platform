@@ -91,3 +91,11 @@ python3 -c "import apps.evolve.github_connector as g; print(g.create_issue('<sho
 Note the new issue # in your `notes`, then keep validating THIS change. (Contrast: if the bug means
 the change UNDER TEST doesn't actually work, that's a validation **FAILURE** — `passed:false` — not an
 incidental issue. The test is: does this bug affect whether the thing you're validating works?)
+
+**"Fixed in one place" is NOT fixed — the SAME root cause elsewhere is part of THIS change, not an
+incidental.** Distinct from the scout above: if the SAME defect the change targets also lives in
+sibling sites (the same native-submit form bug in another component, the same missing guard in another
+handler), those are NOT separate issues and NOT incidental — they are the same fix, and the issue is
+not done until **every** instance is fixed and verified. Enumerate the pattern (grep it); if an
+instance remains, return `passed: false` (the spec under-scoped — push back to widen it), do NOT pass
+green and file a new issue for it. You fixed nothing if the same bug still ships next door.
