@@ -42,12 +42,18 @@ tests:
     NEGATIVE CONTROL first: inject a real <button type=submit> in a <form>, click it, and assert a
     window sentinel IS cleared (proves the oracle detects a reload). Then, for each positive scenario,
     set window.__noReload before the primary-button click and assert it SURVIVES (a reload wipes window
-    globals): (1) LoginScreen — click Continue advances to the password step with no reload, and Enter
-    on the username input does the same; repeat >=3x. (2) ChatInput — after a real form login, clicking
-    Send (and Enter) sends without a reload; repeat >=3x. Green only if the negative control fires AND
-    all positives survive. Onboarding is verified by the static guardrail (box 2 is already onboarded,
-    so /api/onboarding/create-user is closed and the form does not render live); confirm Onboarding on
-    a fresh skipper-uat at verify.'
+    globals). ALL THREE forms are exercised LIVE on a FRESH (pre-onboarding) box 2 — run
+    scripts/box2_fresh_install.sh feature/<branch> first so the account-creation form renders: (1)
+    ONBOARDING (the most-changed form: new explicit Enter onKeyDown) — navigate the wizard to the
+    create-account step; assert clicking Create performs the SPA action with NO reload (>=3x), Enter in
+    EACH multi-input field (username/display_name/password) submits via the onKeyDown with no reload, a
+    same-tick double-click issues at most ONE create-user request (in-flight guard), and a final REAL
+    create advances to done with no reload. The real create seeds the QA admin, after which (2)
+    LoginScreen — click Continue advances to the password step with no reload, and Enter on the
+    username input does the same (>=3x); and (3) ChatInput — after a real form login, clicking Send
+    (and Enter) sends without a reload (>=3x). Green only if the negative control fires AND all three
+    forms survive. On an already-onboarded box the onboarding form cannot render -> the script reports
+    CANNOT VALIDATE (never a silent static-only pass).'
 links: {}
 notes: 'Pure CSR app (createRoot, no SSR), React 19. Re-specced from the operator''s Gate-1 COMBINE
   decision: apply the native-submit fix to EVERY web form as ONE comprehensive deliverable (CHARTER
@@ -55,6 +61,9 @@ notes: 'Pure CSR app (createRoot, no SSR), React 19. Re-specced from the operato
   No new dependencies; web/ has no eslint, so the guardrail is a committed prebuild script rather than
   a lint rule. VERIFY USER ACTION: hard-refresh / reinstall the PWA so the new bundle is served (a
   cached old bundle keeps the old forms); the service-worker controllerchange reload (main.jsx) is a
-  SEPARATE path and must not be conflated with a native submit. Box-2 live acceptance passed 3x for
-  Login + Chat with the negative control proving the oracle.'
+  SEPARATE path and must not be conflated with a native submit. Box-2 live acceptance passed on a FRESH
+  box for ALL THREE forms — Onboarding (click 3x + Enter per multi-input field + no-duplicate-submit +
+  real create), Login (3x), Chat (3x) — with the negative control proving the oracle. (Gate-2 pushback:
+  Onboarding was originally static-only; it is now fully live-exercised since it is the form with the
+  most behavioral change.)'
 verified: true
