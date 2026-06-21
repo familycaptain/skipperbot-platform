@@ -1,0 +1,70 @@
+kind: specification
+id: platform.webui.theme
+title: Web UI light/dark theme with top-right toggle
+state: live
+autonomy: gated
+behavior: 'The web desktop UI is themeable via CSS custom properties exposed to Tailwind v4
+  through @theme in web/src/index.css. Tailwind v4 compiles color utilities to var(--color-*)
+  references, so the theme is switched by REDEFINING those color variables (the neutral scale
+  — slate/gray/zinc — plus the surface/content/border/accent values the UI uses) under a single
+  document-root selector: dark values are the default (:root); the light set lives under html[data-theme=''light''].
+  Because every existing utility already resolves a var(), the ENTIRE desktop — the shell
+  AND the in-DOM app panels (which render as React components in the same document, not iframes)
+  — recolors together when the root attribute flips, so there is NO light-shell/dark-panel
+  seam. Cases that don''t invert cleanly get explicit light-mode overrides: foreground-on-accent
+  (text-white on colored buttons must stay legible), low-opacity gradients (e.g. the assistant-bubble
+  indigo/purple at 20%), and markdown/code blocks. A control in the Shell header''s top-right
+  cluster — an accessible icon button with an aria-label naming the action (''Switch to light/dark
+  theme'') and aria-pressed reflecting state, showing the icon for the theme it will switch
+  TO (sun/moon) — toggles the theme; on click the document root''s data-theme attribute is
+  set explicitly in both directions (data-theme=''light'' | data-theme=''dark'') and the UI
+  recolors INSTANTLY without a reload or navigation. The selected theme persists per browser
+  in localStorage ''skipperbot_theme'' (''dark''|''light''); the value is CLAMPED to that
+  enum on read (any missing/corrupted/non-''light'' value falls back to the dark default).
+  FOUC is prevented by a SYNCHRONOUS inline <script> in web/index.html <head> that sets data-theme
+  from localStorage BEFORE the React bundle (a deferred module like main.jsx is too late);
+  the same path updates the <meta name=''theme-color''> so the mobile browser chrome matches.
+  DEFAULT: a fresh browser with no saved preference starts dark. ACCESSIBILITY: both themes
+  must meet WCAG AA contrast (4.5:1 body, 3:1 large) for chat bubbles, markdown, code blocks,
+  and the focus banner — verified in the acceptance test.'
+implements:
+- web/src/index.css
+- web/src/utils/theme.js
+- web/index.html
+- web/src/main.jsx
+- web/src/components/Shell.jsx
+tests:
+- type: acceptance
+  path: scripts/p2_theme_acceptance.py
+  rubric: 'Drive the LIVE web UI: (1) log in; assert the theme toggle is present top-right
+    in the Shell header with an aria-label. (2) Fresh browser (no saved pref) defaults to
+    dark; assert document root has no light theme and a representative shell surface AND an
+    open app-panel surface both render DARK token colors. (3) Click the toggle; WITHOUT a
+    reload assert document root flips to data-theme=''light'' and BOTH the shell surface and
+    the app-panel surface recolor to LIGHT values (whole-desktop switch, no seam). (4) Spot-check
+    contrast in light mode: assert chat-bubble text and at least one app-panel text meet AA
+    (computed color vs background, >=4.5:1). (5) Reload; assert theme persists as ''light''
+    with NO flash of dark before paint (data-theme already set on first paint) and the theme-color
+    meta reflects light. (6) Toggle back to dark, reload; assert persisted dark. Green only
+    if the whole desktop switches instantly, persists with no flash, and light mode passes
+    the AA spot-check.'
+links: {}
+notes: 'MECHANISM PIVOT (in response to the Gate-1 UX blocker): app panels render in the SAME
+  DOM as the shell (not iframes), so a core-first partial migration produces a visibly broken
+  light-shell/dark-panel seam. The chosen approach therefore redefines Tailwind v4''s color
+  CSS-variables under the light selector so the WHOLE desktop recolors with near-zero per-file
+  edits, plus targeted overrides for the cases that don''t invert cleanly (foreground-on-accent
+  text-white [~619 sites — handled by NOT remapping white globally and instead scoping it
+  / using a content token], low-opacity gradients, code blocks). No JS unit runner exists
+  in web/, so client logic is proven by the live Playwright acceptance; keep theme.js logic
+  pure (resolveInitialTheme/nextTheme) for future vitest coverage. Gate-1 decisions: (A) scope/mechanism
+  — full coverage via palette/var inversion [recommended] vs core-first clean semantic tokens
+  (smaller diff but mixed seam) vs full semantic migration (~58 files, cleanest, largest);
+  (B) fresh-browser default — always dark [recommended] vs honor prefers-color-scheme. Build
+  requirements folded from reviews: clamp localStorage to enum (security); synchronous inline
+  head script + dynamic theme-color meta (UX/FOUC); preserve the #8 date-separator/timestamp
+  rows and the greeting-typing-beat elements when restyling ChatPanel/ChatMessage (interop);
+  document the canonical theme token/variable contract (architecture); optionally also expose
+  theme in the Settings app (UX). Out of scope: server/account theme storage, cross-device
+  sync, the separate voice/mobile companion apps.'
+verified: false

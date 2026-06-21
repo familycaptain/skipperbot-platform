@@ -1,0 +1,6 @@
+kind: feature
+id: platform.webui
+title: Web desktop UI
+state: live
+links: {}
+notes: The React + Vite + Tailwind v4 web desktop (web/). Presentation/UX of the platform's web surface.

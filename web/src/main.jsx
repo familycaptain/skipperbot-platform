@@ -3,10 +3,15 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { installAuthFetch } from "./utils/api";
+import { applyTheme, getStoredTheme } from "./utils/theme";
 
 // Attach the bearer token to every same-origin API/ws request (and handle 401 →
 // logout). Must run before any component fires a fetch.
 installAuthFetch();
+
+// Apply the saved theme on bootstrap (belt-and-suspenders with the inline
+// pre-paint script in index.html). Dark is the default. Issue #26.
+applyTheme(getStoredTheme());
 
 // Auto-reload when a new service worker takes over (prevents stale chunk errors).
 // Skip if we just did an intentional update-reload (Shell "Update Available" button)

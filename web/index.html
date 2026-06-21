@@ -8,6 +8,21 @@
     <meta name="theme-color" content="#0f172a" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- Apply the saved theme BEFORE the React bundle so there is no flash of
+         the wrong theme on reload (issue #26). Synchronous + inline by design;
+         a deferred module would paint first. Dark is the default for any
+         missing/invalid value. Mirrors web/src/utils/theme.js. -->
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem("skipperbot_theme");
+          t = t === "light" ? "light" : "dark";
+          document.documentElement.setAttribute("data-theme", t);
+          var m = document.querySelector('meta[name="theme-color"]');
+          if (m) m.setAttribute("content", t === "light" ? "#f1f5f9" : "#0f172a");
+        } catch (e) { /* default dark */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

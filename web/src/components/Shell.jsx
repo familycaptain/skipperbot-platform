@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import { LogOut, Wifi, WifiOff, Star, Target, FolderKanban, CheckSquare, Bell, BellRing, Car, RefreshCw, Bug, Power, Mail, PanelRightClose, PanelRightOpen, Info, LayoutGrid, MessageSquare, Settings } from "lucide-react";
+import { LogOut, Wifi, WifiOff, Star, Target, FolderKanban, CheckSquare, Bell, BellRing, Car, RefreshCw, Bug, Power, Mail, PanelRightClose, PanelRightOpen, Info, LayoutGrid, MessageSquare, Settings, Sun, Moon } from "lucide-react";
 import { hasRole } from "../utils/roles";
+import { useTheme } from "../utils/theme";
 
 const API = window.__API_BASE ?? "";
 
@@ -29,6 +30,7 @@ const FOCUS_COLORS = {
  * On mobile (<768px), the app panel is hidden and chat fills 100%.
  */
 export default function Shell({ displayName, userRole, connected, updateAvailable, onLogout, onGoHome, userId, onOpenApp, focusRefreshKey = 0, chatCollapsed = false, onToggleChat, mobileView = "chat", onSetMobileView, children }) {
+  const { theme, toggle: toggleTheme } = useTheme();  // light/dark (issue #26)
   const [focusSlots, setFocusSlots] = useState([]);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [restarting, setRestarting] = useState(false);
@@ -144,6 +146,17 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
               {connected ? "Connected" : "Reconnecting…"}
             </span>
           </div>
+          {/* Light/dark theme toggle (issue #26). Shows the icon for the theme
+              you'll switch TO; aria-pressed reflects light mode. */}
+          <button
+            onClick={toggleTheme}
+            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+            title={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
+            aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
+            aria-pressed={theme === "light"}
+          >
+            {theme === "light" ? <Moon size={14} /> : <Sun size={14} />}
+          </button>
           {updateAvailable && (
             <button
               onClick={() => {
