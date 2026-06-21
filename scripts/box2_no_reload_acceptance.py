@@ -275,12 +275,15 @@ def main():
         try:
             page0 = browser.new_page()
             nc = negative_control(page0); results.append(nc); page0.close()
-            results.append(test_login(browser))
             if fresh:
-                # Onboarding live (creates USER/PW), THEN chat (logs in as that user).
+                # On a fresh box the app renders Onboarding, NOT Login. Onboarding FIRST
+                # (its final real create makes USER/PW the admin -> box onboarded), THEN
+                # the Login + Chat forms exist and can be exercised.
                 results.append(test_onboarding(browser))
+                results.append(test_login(browser))
                 results.append(test_chat(browser))
             else:
+                results.append(test_login(browser))
                 results.append(test_chat(browser))
                 results.append({"scenario": "onboarding_no_reload", "passed": False,
                                 "detail": "CANNOT VALIDATE: box 2 is already onboarded so the "
