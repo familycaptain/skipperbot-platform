@@ -1,0 +1,60 @@
+kind: specification
+id: platform.webui.forms-no-native-submit
+title: No web SPA form can cause a native page navigation
+state: live
+autonomy: gated
+behavior: 'Across the entire web SPA, no <form> can ever trigger a native HTML form submission
+  / full-page navigation. The primary action button of every form is type="button" with an
+  onClick that runs the form''s submit handler (never type="submit"), so a click cannot perform
+  a default form submit even before/while React is wiring up (the issue #36 hydration race: under
+  load the native submit could fire a default GET / full-page reload before React''s onSubmit
+  preventDefault was in control, wiping SPA state). Each <form> retains onSubmit bound to the
+  same handler so the Enter key still works: single-input-per-step forms (LoginScreen) submit via
+  browser implicit submission; the chat textarea and the multi-input Onboarding form (which has no
+  submit control once the button is type="button") submit via an explicit onKeyDown handler that
+  skips while IME-composing. Every handler calls e?.preventDefault?.() before any work. Forms whose
+  handler fires an async request (LoginScreen handleCheckUser/handleLogin -> /auth/login; Onboarding
+  submit -> /api/onboarding/create-user) carry a synchronous useRef in-flight guard set ONLY after
+  the synchronous validation early-returns and cleared in the finally, so rapid taps issue at most
+  one request and an invalid tap never locks the form. ChatInput needs no ref guard (onSend is the
+  parent''s concern; handleSubmit clears the text synchronously and the parent disabled gates).
+  Onboarding''s credential inputs carry autoComplete (username / new-password) + name so removing
+  the submit button does not weaken the browser save-password heuristic. A committed guardrail
+  (web/scripts/check-no-native-submit.mjs, wired into the web prebuild) fails the build if any
+  type="submit" reappears anywhere under web/src. Folds in issue #40.'
+implements:
+- web/src/components/LoginScreen.jsx
+- web/src/components/ChatInput.jsx
+- web/src/pages/Onboarding.jsx
+- web/scripts/check-no-native-submit.mjs
+- web/package.json
+tests:
+- type: static
+  path: web/scripts/check-no-native-submit.mjs
+  rubric: 'Repeatable, grep-decidable guardrail wired into the web prebuild: exits non-zero if any
+    type="submit" appears under web/src. Proves the operator''s "grep proves zero native-submit path"
+    done-criterion and blocks regressions. (The finer per-file properties — button-inside-a-form,
+    onSubmit retained, preventDefault guarded, ref cleared on all paths — are asserted by code review
+    of the three files, since JSX nesting / handler bodies are not grep-decidable.)'
+- type: acceptance
+  path: scripts/box2_no_reload_acceptance.py
+  rubric: 'Drive the REAL forms on box 2 (not the token-inject login bypass), no service worker.
+    NEGATIVE CONTROL first: inject a real <button type=submit> in a <form>, click it, and assert a
+    window sentinel IS cleared (proves the oracle detects a reload). Then, for each positive scenario,
+    set window.__noReload before the primary-button click and assert it SURVIVES (a reload wipes window
+    globals): (1) LoginScreen — click Continue advances to the password step with no reload, and Enter
+    on the username input does the same; repeat >=3x. (2) ChatInput — after a real form login, clicking
+    Send (and Enter) sends without a reload; repeat >=3x. Green only if the negative control fires AND
+    all positives survive. Onboarding is verified by the static guardrail (box 2 is already onboarded,
+    so /api/onboarding/create-user is closed and the form does not render live); confirm Onboarding on
+    a fresh skipper-uat at verify.'
+links: {}
+notes: 'Pure CSR app (createRoot, no SSR), React 19. Re-specced from the operator''s Gate-1 COMBINE
+  decision: apply the native-submit fix to EVERY web form as ONE comprehensive deliverable (CHARTER
+  "gate the deliverable, not internal steps"; ARCHITECTURE "comprehensive fixes, no lingering debt").
+  No new dependencies; web/ has no eslint, so the guardrail is a committed prebuild script rather than
+  a lint rule. VERIFY USER ACTION: hard-refresh / reinstall the PWA so the new bundle is served (a
+  cached old bundle keeps the old forms); the service-worker controllerchange reload (main.jsx) is a
+  SEPARATE path and must not be conflated with a native submit. Box-2 live acceptance passed 3x for
+  Login + Chat with the negative control proving the oracle.'
+verified: true
