@@ -61,7 +61,8 @@ def _request(method: str, path: str, token: str, body: dict | None = None) -> di
     })
     try:
         with urllib.request.urlopen(req, timeout=20) as r:
-            return json.loads(r.read().decode())
+            raw = r.read().decode()
+            return json.loads(raw) if raw.strip() else {}  # DELETE etc. return empty 204
     except urllib.error.HTTPError as e:
         detail = e.read().decode()[:200]
         raise RuntimeError(f"GitHub {method} {path} -> HTTP {e.code}: {detail}") from e
@@ -114,72 +115,41 @@ def post_comment(number: int, body: str, repo: str | None = None, token: str | N
     return _request("POST", f"/repos/{_repo(repo)}/issues/{number}/comments", token, {"body": body})
 
 
-EVIDENCE_BRANCH = "evolve-evidence"
-
-
-def _ensure_evidence_branch(token: str, repo: str) -> None:
-    """Create the `evolve-evidence` branch (off the default branch) if missing — keeps screenshot
-    binaries OFF main/release while still giving GitHub a raw URL to render them inline in a comment."""
-    r = _repo(repo)
-    try:
-        _request("GET", f"/repos/{r}/git/ref/heads/{EVIDENCE_BRANCH}", token)
-        return  # already exists
-    except RuntimeError:
-        pass
-    default = _request("GET", f"/repos/{r}", token)["default_branch"]
-    sha = _request("GET", f"/repos/{r}/git/ref/heads/{default}", token)["object"]["sha"]
-    try:
-        _request("POST", f"/repos/{r}/git/refs", token,
-                 {"ref": f"refs/heads/{EVIDENCE_BRANCH}", "sha": sha})
-    except RuntimeError:
-        pass  # raced with a concurrent create — fine
+def _catbox_upload(image_path: str) -> str:
+    """Upload a file to catbox.moe and return its public URL (e.g. https://files.catbox.moe/abc.png).
+    stdlib-only multipart POST (no `requests`)."""
+    name = os.path.basename(image_path)
+    with open(image_path, "rb") as fh:
+        data = fh.read()
+    boundary = "----skipperevolve" + os.urandom(12).hex()
+    body = b"".join([
+        f"--{boundary}\r\nContent-Disposition: form-data; name=\"reqtype\"\r\n\r\nfileupload\r\n".encode(),
+        (f"--{boundary}\r\nContent-Disposition: form-data; name=\"fileToUpload\"; filename=\"{name}\"\r\n"
+         f"Content-Type: application/octet-stream\r\n\r\n").encode(),
+        data,
+        f"\r\n--{boundary}--\r\n".encode(),
+    ])
+    req = urllib.request.Request("https://catbox.moe/user/api.php", data=body, method="POST", headers={
+        "Content-Type": f"multipart/form-data; boundary={boundary}",
+        "User-Agent": "skipper-evolve",
+    })
+    with urllib.request.urlopen(req, timeout=45) as r:
+        url = r.read().decode().strip()
+    if not url.startswith("http"):
+        raise RuntimeError(f"catbox upload failed: {url[:200]}")
+    return url
 
 
 def attach_image_to_issue(number: int, image_path: str, caption: str = "",
                           repo: str | None = None, token: str | None = None) -> dict:
-    """Upload a validation screenshot and post it as an INLINE image comment on the issue.
-
-    The PNG is committed to the `evolve-evidence` branch (NOT main/release, so binaries don't bloat the
-    code branches) and linked by its raw download URL so GitHub renders it in the comment. Requires a
-    token with contents:write (the same PAT that files issues). Give each screenshot a UNIQUE filename
-    per attempt (e.g. `ev42-medical-try2.png`) so a re-validation ADDS a new image instead of colliding
-    with a prior one. Returns the created comment.
-    """
-    token = token or _token()
-    if not token:
-        raise RuntimeError("GITHUB_TOKEN is not set")
-    r = _repo(repo)
-    _ensure_evidence_branch(token, r)
-    with open(image_path, "rb") as fh:
-        content = base64.b64encode(fh.read()).decode()
+    """Upload a validation screenshot to catbox.moe (an external public image host — fine because
+    validation always runs on MOCK data) and post it as an INLINE image comment on the issue. No repo,
+    no branch: the catbox URL is public, so GitHub renders it inline even on a private repo. Returns the
+    created comment."""
+    url = _catbox_upload(image_path)
     name = os.path.basename(image_path)
-    path = f"evidence/issue-{number}/{name}"
-    try:
-        put = _request("PUT", f"/repos/{r}/contents/{urllib.parse.quote(path)}", token, {
-            "message": f"evidence: issue #{number} — {name}",
-            "content": content,
-            "branch": EVIDENCE_BRANCH,
-        })
-    except RuntimeError as e:
-        if "403" in str(e):
-            raise RuntimeError(
-                "attach_image_to_issue needs a GitHub token with contents:write on the repo (the "
-                "evidence is committed to the evolve-evidence branch). The current GITHUB_TOKEN only "
-                "has issues:write — add Contents:Read+Write to the fine-grained PAT to enable evidence "
-                "attachment.") from e
-        raise
-    raw_url = put["content"]["download_url"]
-    blob_url = f"https://github.com/{r}/blob/{EVIDENCE_BRANCH}/{urllib.parse.quote(path)}"
-    # Inline ![](raw) images only render on a PUBLIC repo. On a PRIVATE repo the raw.githubusercontent
-    # URL 404s for any viewer (even GitHub's own image proxy can't auth to it), so link to the rendered
-    # blob view instead — an authenticated viewer sees the image there. Auto-switches to inline once the
-    # repo goes public.
-    private = bool(_request("GET", f"/repos/{r}", token).get("private", True))
-    if private:
-        body = f"**Validation evidence** — {caption or name}\n\n[📷 View screenshot]({blob_url})"
-    else:
-        body = f"**Validation evidence** — {caption or name}\n\n![{caption or name}]({raw_url})"
-    return post_comment(number, body, repo=r, token=token)
+    body = f"**Validation evidence** — {caption or name}\n\n![{caption or name}]({url})"
+    return post_comment(number, body, repo=repo, token=token)
 
 
 def create_issue(title: str, body: str = "", labels: list[str] | None = None,
