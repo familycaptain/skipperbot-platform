@@ -79,9 +79,10 @@ html[data-theme="light"] :is(
   .bg-indigo-700,.bg-indigo-600,.bg-indigo-500,.bg-blue-700,.bg-blue-600,.bg-blue-500,
   .bg-violet-700,.bg-violet-600,.bg-violet-500,.bg-purple-700,.bg-purple-600,.bg-purple-500,
   .bg-emerald-700,.bg-emerald-600,.bg-emerald-500,.bg-green-700,.bg-green-600,.bg-green-500,
-  .bg-red-700,.bg-red-600,.bg-red-500,.bg-rose-600,.bg-rose-500,
+  .bg-red-800,.bg-red-700,.bg-red-600,.bg-red-500,.bg-rose-600,.bg-rose-500,
   .bg-sky-700,.bg-sky-600,.bg-sky-500,.bg-cyan-700,.bg-cyan-600,.bg-cyan-500,
-  .bg-teal-600,.bg-teal-500,.bg-orange-600,.bg-orange-500,.bg-amber-600,.bg-amber-500
+  .bg-teal-600,.bg-teal-500,.bg-orange-600,.bg-orange-500,.bg-amber-700,.bg-amber-600,.bg-amber-500,
+  .bg-slate-600
 ) { --color-white:#ffffff; }
 
 /* Packaged-app launcher tiles use teal accent classes (NOT neutral-remapped), so in light mode the
@@ -106,6 +107,13 @@ html[data-theme="light"] :is([class*="bg-slate-900\/"],[class*="bg-slate-800\/6"
 
 /* bg-white must stay WHITE (it resolves via --color-white, which we remapped to dark for text). */
 html[data-theme="light"] .bg-white { background-color:#ffffff; }
+
+/* Bounties leaderboard podium: in light mode the global amber-900 remap (#fcd34d) turns the BRONZE
+ * tile (bg-amber-900/20) bright yellow, while the un-remapped GOLD tile (bg-yellow-900/30) reads as a
+ * muddy brown — so 1st looked brown and 3rd looked gold. Pin each podium tile to its true medal tint
+ * in light mode (dark mode keeps the stock JSX classes). */
+html[data-theme="light"] .bg-yellow-900\/30 { background-color:#fef9c3; }  /* gold (1st)   */
+html[data-theme="light"] .bg-amber-900\/20  { background-color:#fde8cf; }  /* bronze (3rd) */
 
 /* Brand logo: the 'S' has no text-white of its own — it INHERITS the shell's color, which already
  * resolved to the dark text value (re-scoping --color-white here does nothing, since inheritance
@@ -139,6 +147,11 @@ html[data-theme="light"] {
   --color-orange-800:#ffedd5;  --color-orange-900:#fff7ed;
   --color-sky-200:#0369a1;     --color-sky-300:#0369a1;     --color-sky-400:#0284c7;
   --color-sky-800:#e0f2fe;     --color-sky-900:#f0f9ff;
+  /* Weather app's full-page gradient is from-sky-950 -> to-slate-950. slate-950 (neutral) remaps light,
+   * but sky-950 (accent) stays near-black, so in light mode the page is dark-blue at the top while the
+   * neutral text has remapped to dark grey -> grey-on-dark, unreadable. Lighten the blue end so the whole
+   * surface is light and the dark text reads. (Dark mode keeps the stock dark sky-950.) */
+  --color-sky-950:#e0f2fe;
   --color-blue-200:#1d4ed8;    --color-blue-300:#1d4ed8;    --color-blue-400:#2563eb;
   --color-blue-800:#dbeafe;    --color-blue-900:#eff6ff;
   /* cyan reads poorly on warm light (links/verse#s/tabs) -> shift to a readable BLUE, incl. 500/600. */

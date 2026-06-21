@@ -307,7 +307,7 @@ export default function BehaviorsApp({ userId }) {
   const systemBehaviors = behaviors.filter(b => b.scope === "system");
 
   return (
-    <div className="h-full overflow-y-auto bg-zinc-900 text-zinc-100">
+    <div className="h-full w-full overflow-y-auto bg-zinc-900 text-zinc-100">
       <div className="max-w-2xl mx-auto px-5 py-6">
 
         {/* Header */}

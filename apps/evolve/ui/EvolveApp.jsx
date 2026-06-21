@@ -575,13 +575,13 @@ function EvolveAppInner({ userId, userRole, refreshKey, onTitle }) {
                 {isParent ? (
                   <>
                     <div className="flex gap-2">
-                      <button disabled={!!busy} onClick={() => decide("approve")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-sm disabled:opacity-50">
+                      <button disabled={!!busy} onClick={() => decide("approve")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-emerald-700 hover:bg-emerald-600 text-white text-sm disabled:opacity-50">
                         {busy === "approve" ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} {gate3 ? "✓ Works — close it out" : gate2 ? "Approve & merge → release" : "Approve"}
                       </button>
-                      <button disabled={!!busy} onClick={() => decide("change")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-700 hover:bg-amber-600 text-sm disabled:opacity-50">
+                      <button disabled={!!busy} onClick={() => decide("change")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-700 hover:bg-amber-600 text-white text-sm disabled:opacity-50">
                         {busy === "change" ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} {gate3 ? "Still broken — send back" : "Change & send answers"}
                       </button>
-                      <button disabled={!!busy} onClick={() => decide("reject")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-800 hover:bg-red-700 text-sm disabled:opacity-50">
+                      <button disabled={!!busy} onClick={() => decide("reject")} className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-red-800 hover:bg-red-700 text-white text-sm disabled:opacity-50">
                         {busy === "reject" ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} />} {gate3 ? "Abandon" : "Reject"}
                       </button>
                     </div>
