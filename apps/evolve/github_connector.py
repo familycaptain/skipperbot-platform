@@ -20,7 +20,28 @@ API = "https://api.github.com"
 DEFAULT_REPO = "familycaptain/skipperbot-platform"
 
 
+def _load_dotenv_once() -> None:
+    """Load repo-root .env into os.environ (setdefault — never clobber a real env var). The loop's
+    process env does NOT carry GITHUB_TOKEN, and a bare `python3 -c "import github_connector; ...
+    create_issue(...)"` (how the bug-scout one-liner runs) wouldn't otherwise see it — so the
+    documented file-an-issue mechanism would silently fail with 'GITHUB_TOKEN is not set'. Load it
+    here so create_issue works regardless of how it's invoked."""
+    if getattr(_load_dotenv_once, "_done", False):
+        return
+    _load_dotenv_once._done = True
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    envf = os.path.join(root, ".env")
+    if not os.path.exists(envf):
+        return
+    for line in open(envf):
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
+
+
 def _token() -> str:
+    _load_dotenv_once()
     return (os.getenv("GITHUB_TOKEN") or os.getenv("GH_TOKEN") or "").strip()
 
 
