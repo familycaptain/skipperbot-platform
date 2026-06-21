@@ -11,7 +11,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 const THEME_KEY = "skipperbot_theme";
-const THEME_COLOR = { dark: "#0f172a", light: "#f4f1ea" };
+const THEME_COLOR = { dark: "#0f172a", light: "#fcfaf6" };
 
 // Clamp any stored/incoming value to the known set. Anything that is not
 // exactly "light" (missing, corrupted, legacy) resolves to the dark default,
