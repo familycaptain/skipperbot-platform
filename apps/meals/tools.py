@@ -4,6 +4,7 @@ Meals are built from reusable components (proteins, starches, sauces, etc.)
 and classified by effort and tags (cuisine is a tag, e.g. 'american', 'mexican').
 """
 
+from providers.compat import chat_completion
 import json
 import random
 import re
@@ -619,7 +620,7 @@ def _match_meal_with_llm(main_name: str, side_names: list[str], candidates: list
     described main dish, and returns the matched meal dict.
     Returns None if the LLM decides this is a new meal (no match found).
     """
-    from config import openai_client, DUMB_MODEL
+    from config import DUMB_MODEL
 
     if candidates is None:
         candidates = [{"meal": m, "sources": ["component library"], "score": 0.0}
@@ -649,7 +650,7 @@ def _match_meal_with_llm(main_name: str, side_names: list[str], candidates: list
     )
 
     try:
-        response = openai_client.chat.completions.create(
+        response = chat_completion(
             model=DUMB_MODEL,
             messages=[
                 {"role": "system", "content": _MEAL_MATCH_SYSTEM},
@@ -657,7 +658,7 @@ def _match_meal_with_llm(main_name: str, side_names: list[str], candidates: list
             ],
             max_completion_tokens=256,
         )
-        raw = (response.choices[0].message.content or "").strip()
+        raw = (response.content or "").strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]
             if raw.startswith("json"):

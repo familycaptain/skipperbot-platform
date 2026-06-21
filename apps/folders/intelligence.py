@@ -24,7 +24,8 @@ import logging
 import re
 from typing import Optional
 
-from config import openai_client, DUMB_MODEL
+from config import DUMB_MODEL
+from providers.compat import chat_completion
 import apps.folders.data as _dl_folders
 import app_platform.documents as _dl_doc
 
@@ -219,7 +220,7 @@ def _extract_facts(content: str, title: str) -> list[dict]:
     )
 
     try:
-        completion = openai_client.chat.completions.create(
+        completion = chat_completion(
             model=_extraction_model(),
             messages=[
                 {"role": "system", "content": FOLDER_DIGEST_PROMPT},
@@ -228,7 +229,7 @@ def _extract_facts(content: str, title: str) -> list[dict]:
             max_completion_tokens=max_tokens,
         )
 
-        raw = completion.choices[0].message.content
+        raw = completion.content
         if not raw:
             logger.warning("FOLDER_INTEL: Empty response from model")
             return []

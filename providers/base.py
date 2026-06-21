@@ -77,6 +77,30 @@ class ModelCapabilities:
     pricing: dict | None = None
 
 
+def from_openai_messages(messages: list[dict]) -> list["Turn"]:
+    """Convert OpenAI-format chat message dicts to neutral Turns. Shared by the
+    one-shot call-site shim (providers.compat) so every caller neutralizes identically."""
+    import json as _json
+    turns: list[Turn] = []
+    for m in messages:
+        tcs = None
+        if m.get("tool_calls"):
+            tcs = []
+            for tc in m["tool_calls"]:
+                fn = tc["function"]
+                args = fn["arguments"]
+                if isinstance(args, str):
+                    try:
+                        args = _json.loads(args)
+                    except Exception:
+                        args = {}
+                tcs.append(ToolCall(id=tc["id"], name=fn["name"], arguments=args or {}))
+        turns.append(Turn(role=m.get("role"), content=m.get("content"),
+                          tool_calls=tcs, tool_call_id=m.get("tool_call_id"),
+                          name=m.get("name")))
+    return turns
+
+
 @runtime_checkable
 class ChatProvider(Protocol):
     """Vendor-agnostic multi-turn chat with tool-calling."""

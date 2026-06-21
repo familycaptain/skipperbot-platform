@@ -25,7 +25,8 @@ from data_layer.brainstorming import (
     get_part as _get_part,
 )
 
-from config import openai_client, SMART_MODEL, logger
+from config import SMART_MODEL, logger
+from providers.compat import chat_completion
 import diff_match_patch as dmp_module
 
 
@@ -455,7 +456,7 @@ def revise_idea_document(
         )
 
         logger.info("BRAINSTORM: Generating revision for %s part %s: %s", idea_id, part_id, instruction[:80])
-        response = openai_client.chat.completions.create(
+        response = chat_completion(
             model=SMART_MODEL,
             messages=[
                 {"role": "system", "content": "You are a creative writing assistant helping revise brainstorming documents. Output only the revised document content, nothing else."},
@@ -464,7 +465,7 @@ def revise_idea_document(
             temperature=0.7,
             max_completion_tokens=8000,
         )
-        revised = response.choices[0].message.content.strip()
+        revised = response.content.strip()
 
         # Strip any accidental code fences the LLM might wrap
         if revised.startswith("```") and revised.endswith("```"):

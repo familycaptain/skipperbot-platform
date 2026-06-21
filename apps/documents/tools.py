@@ -16,7 +16,8 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from app_platform.memory import digest_record
-from config import openai_client, DUMB_MODEL, logger
+from config import DUMB_MODEL, logger
+from providers.compat import chat_completion
 from apps.documents.store import (
     create_doc as _create_doc,
     get_doc as _get_doc,
@@ -449,7 +450,7 @@ def _plan_enhancements(sections: list[dict], instructions: str) -> dict:
             section_index += f"  [{s['index']}] {prefix} {s['heading']} ({word_count} words)\n"
 
     try:
-        resp = openai_client.chat.completions.create(
+        resp = chat_completion(
             model=_enhance_model(),
             messages=[
                 {
@@ -482,7 +483,7 @@ def _plan_enhancements(sections: list[dict], instructions: str) -> dict:
             ],
             max_completion_tokens=1000,
         )
-        raw = resp.choices[0].message.content.strip()
+        raw = resp.content.strip()
         if raw.startswith("```"):
             raw = re.sub(r"^```\w*\n?", "", raw)
             raw = re.sub(r"\n?```$", "", raw)
@@ -502,7 +503,7 @@ def _plan_enhancements(sections: list[dict], instructions: str) -> dict:
 def _enhance_section(section_body: str, section_heading: str, instructions: str, full_doc_context: str) -> str:
     """Enhance a single section using LLM. The rest of the doc is provided as read-only context."""
     try:
-        resp = openai_client.chat.completions.create(
+        resp = chat_completion(
             model=_enhance_model(),
             messages=[
                 {
@@ -532,7 +533,7 @@ def _enhance_section(section_body: str, section_heading: str, instructions: str,
             ],
             max_completion_tokens=4000,
         )
-        return resp.choices[0].message.content.strip()
+        return resp.content.strip()
     except Exception as e:
         logger.error("ENHANCE_DOC: Failed to enhance section '%s': %s", section_heading, e)
         return section_body
@@ -541,7 +542,7 @@ def _enhance_section(section_body: str, section_heading: str, instructions: str,
 def _generate_new_section(heading: str, instructions: str, full_doc_context: str) -> str:
     """Generate a brand-new section to insert into the document."""
     try:
-        resp = openai_client.chat.completions.create(
+        resp = chat_completion(
             model=_enhance_model(),
             messages=[
                 {
@@ -568,7 +569,7 @@ def _generate_new_section(heading: str, instructions: str, full_doc_context: str
             ],
             max_completion_tokens=3000,
         )
-        return resp.choices[0].message.content.strip()
+        return resp.content.strip()
     except Exception as e:
         logger.error("ENHANCE_DOC: Failed to create section '%s': %s", heading, e)
         return f"## {heading}\n\n*Section generation failed.*\n"

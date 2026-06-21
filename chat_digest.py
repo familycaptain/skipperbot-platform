@@ -9,7 +9,8 @@ Called by chat.py after each turn completes.
 import json
 import re
 
-from config import logger, openai_client, DUMB_MODEL
+from config import logger, DUMB_MODEL
+from providers.compat import chat_completion
 from memory_store import save_memory
 
 # Entity ID pattern — used to extract related entities from extracted facts
@@ -79,7 +80,7 @@ def digest_turn(
     max_tokens = min(visible_tokens + reasoning_overhead, 16000)
 
     try:
-        completion = openai_client.chat.completions.create(
+        completion = chat_completion(
             model=DUMB_MODEL,
             messages=[
                 {"role": "system", "content": DIGEST_SYSTEM_PROMPT},
@@ -88,12 +89,10 @@ def digest_turn(
             max_completion_tokens=max_tokens,
         )
 
-        raw = completion.choices[0].message.content
+        raw = completion.content
         if not raw:
             # Model returned None/empty content (possibly a refusal)
-            refusal = getattr(completion.choices[0].message, "refusal", None)
-            logger.warning("DIGEST: Empty response from model (refusal=%s, finish_reason=%s)",
-                           refusal, completion.choices[0].finish_reason)
+            logger.warning("DIGEST: Empty response from model")
             return []
 
         raw = raw.strip()

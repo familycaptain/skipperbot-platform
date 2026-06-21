@@ -44,6 +44,7 @@ searchable memories in the shared memory store.
 - Never raises — all errors are logged and swallowed
 """
 
+from providers.compat import chat_completion
 import json
 import logging
 import re
@@ -329,10 +330,10 @@ def _run_digest(
     user_prompt = "\n".join(prompt_lines)
 
     # Late import to avoid circular imports at module load time
-    from config import openai_client, DUMB_MODEL
+    from config import DUMB_MODEL
 
     try:
-        completion = openai_client.chat.completions.create(
+        completion = chat_completion(
             model=DUMB_MODEL,
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
@@ -340,7 +341,7 @@ def _run_digest(
             ],
             max_completion_tokens=4000,
         )
-        raw = (completion.choices[0].message.content or "").strip()
+        raw = (completion.content or "").strip()
     except Exception as exc:
         logger.error(
             "APP_MEMORY[%s]: LLM call failed for %s: %s", app_id, entity_id, exc
