@@ -16,7 +16,7 @@
 //
 // Styling matches LoginScreen — dark background, centered card.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { setToken } from "../utils/api";
 import {
   ArrowRight, ArrowLeft, Check, Loader2, AlertCircle, KeyRound, User as UserIcon, ShieldCheck,
@@ -248,6 +248,8 @@ function CreatePrimaryUser({ onCreated, onBack }) {
   const [tz, setTz] = useState(detected);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Synchronous in-flight guard against rapid double-taps (issue #36).
+  const inFlightRef = useRef(false);
 
   // Surface the browser-detected zone in the dropdown even if it's
   // not in COMMON_TIMEZONES.
@@ -271,6 +273,10 @@ function CreatePrimaryUser({ onCreated, onBack }) {
       setError("A password is required and must be at least 8 characters.");
       return;
     }
+    // In-flight guard set only after the synchronous validation early-returns,
+    // so an invalid tap never locks the form (the finally below always clears it).
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setSaving(true);
     try {
       const res = await fetch(`${API}/api/onboarding/create-user`, {
@@ -294,6 +300,18 @@ function CreatePrimaryUser({ onCreated, onBack }) {
       setError(String(e.message || e));
     } finally {
       setSaving(false);
+      inFlightRef.current = false;
+    }
+  };
+
+  // Explicit Enter handler for the text inputs: this multi-input form has no
+  // submit control after the button became type="button" (issue #36), so browser
+  // implicit submission no longer fires. Skip while IME-composing.
+  const onInputKeyDown = (e) => {
+    if (e.isComposing || e.keyCode === 229) return;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      submit();
     }
   };
 
@@ -310,9 +328,12 @@ function CreatePrimaryUser({ onCreated, onBack }) {
           <label className="text-sm text-zinc-300">Username</label>
           <input
             autoFocus
+            name="username"
+            autoComplete="username"
             className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 placeholder-zinc-500 font-mono text-sm"
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
+            onKeyDown={onInputKeyDown}
             placeholder="alice"
             spellCheck={false}
           />
@@ -321,9 +342,12 @@ function CreatePrimaryUser({ onCreated, onBack }) {
         <div>
           <label className="text-sm text-zinc-300">Display name</label>
           <input
+            name="display_name"
+            autoComplete="name"
             className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 placeholder-zinc-500 text-sm"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
+            onKeyDown={onInputKeyDown}
             placeholder={username ? username.charAt(0).toUpperCase() + username.slice(1) : "Alice"}
           />
           <p className="mt-1 text-xs text-zinc-500">Shown in the UI. Defaults to your username with a capital first letter.</p>
@@ -332,9 +356,12 @@ function CreatePrimaryUser({ onCreated, onBack }) {
           <label className="text-sm text-zinc-300">Password</label>
           <input
             type="password"
+            name="password"
+            autoComplete="new-password"
             className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 text-sm"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={onInputKeyDown}
             required
             minLength={8}
             placeholder="at least 8 characters"
@@ -364,8 +391,13 @@ function CreatePrimaryUser({ onCreated, onBack }) {
         >
           <ArrowLeft size={14} /> Back
         </button>
+        {/* Controlled button (type=button + onClick), never a native submit button,
+            so a native form submit can never fire a full-page reload under load
+            (issue #36). Enter is handled by onInputKeyDown on the text inputs;
+            <form onSubmit> kept as a backstop. */}
         <button
-          type="submit"
+          type="button"
+          onClick={submit}
           className="inline-flex items-center gap-2 rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:bg-zinc-700 disabled:cursor-not-allowed"
           disabled={saving || !usernameOk || !passwordOk}
         >

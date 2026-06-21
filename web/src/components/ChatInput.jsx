@@ -29,6 +29,9 @@ export default function ChatInput({ onSend, disabled, placeholder }) {
   }
 
   function handleKeyDown(e) {
+    // Skip while IME-composing (e.isComposing / keyCode 229) so CJK users
+    // pressing Enter to confirm a composition don't send a half-composed message.
+    if (e.isComposing || e.keyCode === 229) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
@@ -58,8 +61,13 @@ export default function ChatInput({ onSend, disabled, placeholder }) {
         rows={1}
         className="flex-1 resize-none rounded-xl bg-slate-800 text-sm text-slate-100 placeholder-slate-500 px-4 py-2.5 outline-none focus:ring-1 focus:ring-indigo-500/50 disabled:opacity-50 leading-relaxed"
       />
+      {/* Controlled button (type=button + onClick), never a native submit button,
+          so a native form submit can never fire a full-page reload under load
+          (issue #36). Enter is handled by the textarea onKeyDown above; the
+          <form onSubmit> is kept as a backstop. */}
       <button
-        type="submit"
+        type="button"
+        onClick={handleSubmit}
         disabled={disabled || !text.trim()}
         className="shrink-0 w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white flex items-center justify-center transition-colors"
       >

@@ -10,7 +10,8 @@
     "emit-app-sources": "node packaged-app-deps.mjs --emit-sources",
     "predev": "node packaged-app-deps.mjs --emit-sources",
     "dev": "vite",
-    "prebuild": "node packaged-app-deps.mjs --emit-sources",
+    "check:no-native-submit": "node scripts/check-no-native-submit.mjs",
+    "prebuild": "node scripts/check-no-native-submit.mjs && node packaged-app-deps.mjs --emit-sources",
     "build": "vite build",
     "preview": "vite preview"
   },
