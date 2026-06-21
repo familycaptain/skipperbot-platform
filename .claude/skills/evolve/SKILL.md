@@ -118,6 +118,13 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
       the **SPEC PHASE** with the coupling as input (so the now-larger fix is specced + re-reviewed) and
       re-push **Gate 1** for the operator to approve the bigger scope; `phase=gate1`, **END**. Scope may
       grow, but only through a gate.
+  - **The SAME never-silently-expand rule binds VALIDATE and every role.** A blocker hit while
+    VALIDATING — a flaky/broken login, an unrelated broken feature, a missing dependency — is
+    `passed:false` (**blocked**): file the bug as its own GitHub issue, name the blocker, and push it
+    back. **NEVER fix or REDESIGN the blocker, and never redesign an unrelated subsystem to make
+    validation pass** (e.g. reworking login while validating a color theme). Your mandate is the
+    APPROVED item only; an unrelated fix/redesign is a separate item that requires the operator's
+    Gate-1 — the agent never widens its own scope. "We have to be involved with these designs."
   - **Then the
   dependency-rule guard:** `python3 scripts/evolve_dep_check.py <worktree-path> release` — if it
   reports violations (the change made the **platform import an app**, or **one app import another**),

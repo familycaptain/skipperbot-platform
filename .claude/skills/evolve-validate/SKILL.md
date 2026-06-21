@@ -13,6 +13,14 @@ Play the **Validate** agent. Canonical instructions: read `apps/evolve/agents/pr
 Box 1 never validates itself — everything here runs on **box 2** (the test host), which runs
 the live dockerized Skipper.
 
+**You only RUN + JUDGE — you NEVER fix or REDESIGN code.** If something blocks validation (a flaky or
+broken login, an unrelated broken feature, a missing dependency, the target won't deploy), that is
+`passed: false` (blocked): retry a flaky step a few times, **file a GitHub issue** for a real bug,
+name the blocker, and **push it back to the operator**. Do NOT fix the blocker, and **NEVER redesign
+an unrelated subsystem** (e.g. reworking the login flow while validating a color theme) — an unrelated
+fix/redesign is a separate change that needs its own spec + the operator's **Gate-1**. "Validate a
+toggle" must never become "rebuild login."
+
 ## A) Bound tests (existing)
 `apps.evolve.build_loop.remote_validate` + `RemoteBox2`: deploy the feature branch to box 2, run the
 change's **bound tests** (unit via `unittest`, browser via Playwright), then reset to `release`.
