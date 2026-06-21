@@ -268,6 +268,14 @@ Reuse the EXISTING modules read-only (never modify them), from the repo root on 
   shapes in `apps/evolve/agents/registry.py`.
 
 ## Operating rules
+- **Verify LIVE state — never act on remembered state.** Your memory of run phases, ev-ids, branch
+  SHAs, what's merged, and gate decisions goes STALE: the operator (and their assistant) are editing the
+  DB, deciding gates, and pushing branches **concurrently with you**. Before you act on any state,
+  re-read the source of truth — run/gate state from its `~/.evolve-poc/<n>/` files + the live decided-gate
+  scan, and **branch/merge state from git** (`git fetch` then check `origin/release`, not your local
+  checkout or your memory; your local `release` can be behind origin — it self-syncs before each build,
+  but re-check). A SHA or "this is already merged/approved" you remember from earlier in the session may
+  no longer be true. Verify, don't remember.
 - **Subscription, not API.** This session runs on the Claude subscription — that's the whole point.
 - **One segment per pass, then END.** Never block; gates and "nothing ready" both just end the pass.
 - **Token economy — the conversation is disposable between passes.** Files are truth (invariant #1): a
