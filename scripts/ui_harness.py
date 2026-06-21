@@ -67,6 +67,43 @@ class UI:
         }""")
 
     async def login(self, user, pw):
+        """Robust auth for tests that are NOT about login itself: call the same /auth/login API the app
+        uses, then inject the returned token + user into localStorage (the app's real bootstrap path) and
+        load signed in. This avoids driving the two-step LoginScreen form, which races/reloads under load
+        — a native form submit can fire before React's preventDefault (GH #36). For a test where the login
+        UI ITSELF is what's under test, use login_via_form() instead."""
+        import re
+        await self.page.goto(BASE, wait_until="domcontentloaded")
+        if await self.page.query_selector('button[title="Settings"]'):
+            return  # already authenticated
+        body = None
+        for attempt in range(3):
+            r = await self.page.request.post(f"{BASE}/auth/login", data={"username": user, "password": pw})
+            body = await r.json()
+            if body.get("ok"):
+                break
+            err = body.get("error", "")
+            # the endpoint rate-limits with HTTP 200 + an in-body error, not 429 — handle the BODY
+            if "Too many login attempts" in err and attempt < 2:
+                m = re.search(r"~(\d+)\s*s", err)
+                await self.page.wait_for_timeout(min((int(m.group(1)) if m else 70) + 3, 80) * 1000)
+                continue
+            raise RuntimeError(f"auth failed: {body}")
+        if not body or not body.get("ok"):
+            raise RuntimeError(f"auth failed after retries: {body}")
+        # App.jsx boots signed-in only when BOTH the token AND the user object are stored
+        # (a stored user with no token is treated as a broken session).
+        await self.page.evaluate(
+            """(s) => { localStorage.setItem('skipperbot_token', s.token);
+                        localStorage.setItem('skipperbot_user', JSON.stringify(s.user)); }""",
+            {"token": body["token"], "user": body["user"]})
+        await self.page.reload(wait_until="domcontentloaded")  # now signed in
+        await self.page.wait_for_selector('button[title="Settings"]', timeout=20000)
+        await self.page.wait_for_timeout(1500)  # let initial data settle
+
+    async def login_via_form(self, user, pw):
+        """Drive the REAL two-step LoginScreen UI. Use ONLY when the login flow itself is under test;
+        otherwise prefer login() (programmatic, robust under load — this path can be flaky, GH #36)."""
         await self.page.goto(BASE, wait_until="domcontentloaded")
         try:
             await self.page.wait_for_selector('input[placeholder="Username"]', timeout=8000)

@@ -13,6 +13,15 @@ Play the **Validate** agent. Canonical instructions: read `apps/evolve/agents/pr
 Box 1 never validates itself — everything here runs on **box 2** (the test host), which runs
 the live dockerized Skipper.
 
+**Your TEST is yours to author; PRODUCT code is hands-off.** You MAY make the test robust — e.g. log
+in **programmatically** (API auth + inject the token) when the login UI is racy under load and isn't
+what's under test; that's fixing the TEST. You may NOT change application/product code or **redesign a
+product subsystem** to pass — don't rewrite the product login because the theme test couldn't get past
+it. A blocker that might be a **real product bug** → file a GitHub issue even if you work around it in
+the test (never dismiss it as "just a test artifact"); a product that genuinely doesn't work → `passed:
+false` (blocked): file + name + push back. Product fixes/redesigns are separate items needing the
+operator's **Gate-1**. "Validate a toggle" must never become "rebuild login."
+
 ## A) Bound tests (existing)
 `apps.evolve.build_loop.remote_validate` + `RemoteBox2`: deploy the feature branch to box 2, run the
 change's **bound tests** (unit via `unittest`, browser via Playwright), then reset to `release`.
@@ -47,11 +56,19 @@ by the control after ANY element whose direct text matches the label; and it cap
 error + **HTTP>=400** and screenshots failures to `/tmp/ui_*.png`. Host is `SKIPPER_UI_BASE` — point
 it at **box 2** for both the Gate-2 (feature branch) and Gate-3 pre-verify (merged release) passes.
 (skipper-uat is the *operator's* manual box, not part of this automated loop.)
+**Reusable scaffolding goes IN the harness, not a one-off.** If you build something future validations
+will also need (a robust login, a wait/utility helper), add it to `ui_harness.py` (the `UI` class) so it
+compounds — don't bury it in this item's acceptance script to be re-derived next time. E.g. robust auth
+is already `ui_harness.login()` (programmatic); `login_via_form()` drives the real form only when login
+itself is under test.
 
 **Behaviour is PROBABILISTIC — verify like it.** Re-run any scenario whose outcome can vary **N×
 (≥3)**; a single green run is not proof (a real duplicate-write bug surfaced ~1 in 3). If a fix only
-holds 2/3, it's **not** green — escalate. **Bug-scout:** if you trip over a bug unrelated to this
-change, do NOT fix it — **file a GitHub issue** and keep going.
+holds 2/3, it's **not** green — escalate. **Bug-scout:** if you trip over a bug **unrelated** to this
+change (the change under test still works; this bug is independent), do NOT fix it and do NOT fail this
+gate for it — **file it as its own GitHub issue** and keep going:
+`python3 -c "import apps.evolve.github_connector as g; print(g.create_issue('<short title>', '<1-3 line desc + found while validating ev-<n>>', labels=['evolve-incidental']))"` — note the # in your output.
+(If instead the bug means the change UNDER TEST doesn't work → that's `passed:false`, not an incidental.)
 
 **If it CAN be checked in the real UI, you MUST check it in the real UI — a bound/unit test never
 substitutes.** Decide per change: does it alter anything a person sees or clicks (a `web/` or

@@ -118,6 +118,15 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
       the **SPEC PHASE** with the coupling as input (so the now-larger fix is specced + re-reviewed) and
       re-push **Gate 1** for the operator to approve the bigger scope; `phase=gate1`, **END**. Scope may
       grow, but only through a gate.
+  - **The SAME never-silently-expand rule binds VALIDATE and every role.** Making your TEST robust is
+    fine (e.g. authenticate programmatically when a login form is racy under load and isn't what's
+    under test). But you **NEVER change PRODUCT code or redesign a product subsystem to unblock
+    yourself** (e.g. reworking the product login while validating a color theme). A blocker that's a
+    real product problem → `passed:false` (**blocked**): file it as its own GitHub issue (even if you
+    work around it in the test — don't call a possible real bug "just a test artifact"), name it, push
+    back. Your mandate is the APPROVED item only; an unrelated PRODUCT fix/redesign is a separate item
+    needing the operator's Gate-1 — the agent never widens its own scope. "We have to be involved with
+    these designs."
   - **Then the
   dependency-rule guard:** `python3 scripts/evolve_dep_check.py <worktree-path> release` — if it
   reports violations (the change made the **platform import an app**, or **one app import another**),
