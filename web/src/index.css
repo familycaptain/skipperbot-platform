@@ -45,26 +45,60 @@
 html[data-theme="light"] {
   color-scheme: light;
 
-  --color-slate-50:#020617;  --color-slate-100:#0f172a; --color-slate-200:#1e293b;
-  --color-slate-300:#334155; --color-slate-400:#475569; --color-slate-500:#64748b;
-  --color-slate-600:#94a3b8; --color-slate-700:#cbd5e1; --color-slate-800:#e2e8f0;
-  --color-slate-900:#f1f5f9; --color-slate-950:#f8fafc;
+  /* WARM "paper" neutral scale (not a cold blue-slate flip). Low tokens = warm near-black text;
+   * high tokens = warm off-white surfaces. Hierarchy: page bg (900) is a warm gray, panels/cards
+   * (800) sit slightly whiter so they lift off it, borders (600/700) are warm + visible, inputs
+   * (950) are white. This is the "warm-not-cold gray, crisp but less saturated" direction. */
+  --color-slate-50:#1a1714;  --color-slate-100:#272320; --color-slate-200:#3a352f;
+  --color-slate-300:#564f47; --color-slate-400:#7c756b; --color-slate-500:#a39c91;
+  --color-slate-600:#cbc4b8; --color-slate-700:#e4ded4; --color-slate-800:#fbfaf7;
+  --color-slate-900:#f4f1ea; --color-slate-950:#ffffff;
 
-  --color-gray-50:#030712;  --color-gray-100:#111827; --color-gray-200:#1f2937;
-  --color-gray-300:#374151; --color-gray-400:#4b5563; --color-gray-500:#6b7280;
-  --color-gray-600:#9ca3af; --color-gray-700:#d1d5db; --color-gray-800:#e5e7eb;
-  --color-gray-900:#f3f4f6; --color-gray-950:#f9fafb;
+  --color-gray-50:#1a1714;  --color-gray-100:#272320; --color-gray-200:#3a352f;
+  --color-gray-300:#564f47; --color-gray-400:#7c756b; --color-gray-500:#a39c91;
+  --color-gray-600:#cbc4b8; --color-gray-700:#e4ded4; --color-gray-800:#fbfaf7;
+  --color-gray-900:#f4f1ea; --color-gray-950:#ffffff;
 
-  --color-zinc-50:#09090b;  --color-zinc-100:#18181b; --color-zinc-200:#27272a;
-  --color-zinc-300:#3f3f46; --color-zinc-400:#52525b; --color-zinc-500:#71717a;
-  --color-zinc-600:#a1a1aa; --color-zinc-700:#d4d4d8; --color-zinc-800:#e4e4e7;
-  --color-zinc-900:#f4f4f5; --color-zinc-950:#fafafa;
+  --color-zinc-50:#1a1714;  --color-zinc-100:#272320; --color-zinc-200:#3a352f;
+  --color-zinc-300:#564f47; --color-zinc-400:#7c756b; --color-zinc-500:#a39c91;
+  --color-zinc-600:#cbc4b8; --color-zinc-700:#e4ded4; --color-zinc-800:#fbfaf7;
+  --color-zinc-900:#f4f1ea; --color-zinc-950:#ffffff;
 
-  /* Bulk fix for `text-white` (used heavily on dark neutral surfaces that are
-   * now light): treat a bare white foreground as near-black in light mode.
-   * Accent buttons set their own background hue, so this stays legible there;
-   * per-spot accent-foreground polish (if any) is an additive follow-up. */
-  --color-white:#0f172a;
+  /* Bare `text-white` sits mostly on neutral surfaces that are now light -> warm near-black. */
+  --color-white:#3a352f;
+
+  /* Amber anchors: the focus banner's dark-amber gradient + bright goal-status text go muddy/faint on
+   * light. Remap the very-dark amber to a light tint (clean banner) and bright amber text to dark. */
+  --color-amber-950:#fef3c7; --color-amber-900:#fcd34d;
+  --color-amber-400:#b45309; --color-amber-300:#b45309;
+}
+
+/* But on SOLID accent buttons/badges (which keep their saturated hue) text must stay white —
+ * re-scope --color-white back to white inside them so their labels/icons read correctly. */
+html[data-theme="light"] :is(
+  .bg-indigo-600,.bg-indigo-500,.bg-blue-600,.bg-blue-500,.bg-violet-600,.bg-violet-500,
+  .bg-emerald-600,.bg-emerald-500,.bg-green-600,.bg-green-500,.bg-red-600,.bg-red-500,
+  .bg-sky-600,.bg-amber-500,.bg-purple-600
+) { --color-white:#ffffff; }
+
+/* Packaged-app launcher tiles use teal accent classes (NOT neutral-remapped), so in light mode the
+ * dark-teal tile + bright-teal text/icon go muddy and low-contrast. Give them a clean light-teal tile
+ * with a darker teal icon + label. (Darkening bright teal-200/400 text is correct for light anyway.) */
+html[data-theme="light"] .bg-teal-900\/30 { background-color:#effdfb; }
+html[data-theme="light"] .hover\:bg-teal-900\/50:hover { background-color:#d6f7ef; }
+html[data-theme="light"] .border-teal-700\/40 { border-color:#bdeee2; }
+html[data-theme="light"] .hover\:border-teal-600\/60:hover { border-color:#7ad8c6; }
+html[data-theme="light"] .text-teal-400 { color:#0d9488; }
+html[data-theme="light"] .text-teal-200 { color:#115e59; }
+
+/* Structural borders (border-slate-700/800) resolve to near-white surfaces now and disappear — give
+ * the border utilities a visible warm line so panels and cards read as real edges, not one flat plane. */
+html[data-theme="light"] :is(.border-slate-700,.border-slate-800) { border-color:#e6e0d6; }
+
+/* Subtle elevation so the larger surfaces read as layered on the warm page, not flat. Scoped to the
+ * desktop columns + dialogs (not every tiny badge) via the rounded/border panel pattern. */
+html[data-theme="light"] :is([class*="bg-slate-900\/"],[class*="bg-slate-800\/6"]) {
+  box-shadow: inset 0 0 0 1px rgba(70,58,46,.04);
 }
 
 html, body, #root {
