@@ -51,7 +51,11 @@ rendered black — all while computed values "matched"). So whenever the change 
    sidesteps the SW; if in doubt, confirm the deployed dist actually contains your change).
 2. **Open the screenshot and look at it with your own eyes.** Judge it against what the issue actually
    asked for — is it genuinely fixed in the pixels, not merely that a class/value changed?
-3. **If the screenshot shows it IS fixed →** attach it to the GitHub issue as evidence and note it:
+3. **If the screenshots show it IS fixed →** attach them to the GitHub issue as evidence. Post **as many
+   screenshots as proper evidence requires — 1, 2, or 10 — never a token single shot.** One screenshot is
+   rarely enough: include every view / state / theme the change touches, and for a refactor or migration
+   a clear **BEFORE and AFTER**. Under-evidencing is as bad as not validating. Call the helper once per
+   image (it uploads to catbox and posts an inline image — no repo/branch):
    ```
    python3 -c "import apps.evolve.github_connector as g; g.attach_image_to_issue(<issue#>, '<path.png>', '<what this shows>')"
    ```
@@ -59,8 +63,10 @@ rendered black — all while computed values "matched"). So whenever the change 
    to box 2, re-screenshot, and look again. Loop until the pixels match the requirement. NEVER report
    `passed: true` on a visible change whose own evidence screenshot doesn't show the fix.
 
-Name each screenshot uniquely per attempt (e.g. `ev<n>-<slug>-try2.png`) so the issue accrues the real
-before/after trail. (Applies to the design-system work #38 and every visual fix.)
+Name each screenshot uniquely (e.g. `ev<n>-<app>-before-light.png`) so the issue accrues the real
+before/after trail. For a multi-app job like the design-system migration (#38), this means a BEFORE and
+an AFTER per app (35 apps → ≥70 screenshots), in both light and dark where relevant — proof for EVERY
+app, not a spot-check.
 
 **If you CAN'T run the validation, that is a FAILURE — never a skip.** If the tests/acceptance can't
 actually execute — the build/test tooling is missing (e.g. **no node to build the web bundle**, no
