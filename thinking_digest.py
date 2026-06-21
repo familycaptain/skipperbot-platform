@@ -15,7 +15,8 @@ Called by thinking_scheduler.py after each non-skip cycle completes.
 import json
 import re
 
-from config import logger, openai_client, DUMB_MODEL
+from config import logger, DUMB_MODEL
+from providers.compat import chat_completion
 from memory_store import save_memory
 
 # Entity ID pattern — used to extract related entities from extracted facts
@@ -113,7 +114,7 @@ def digest_thinking_cycle(
     max_tokens = min(visible_tokens + reasoning_overhead, 10000)
 
     try:
-        completion = openai_client.chat.completions.create(
+        completion = chat_completion(
             model=DUMB_MODEL,
             messages=[
                 {"role": "system", "content": THINKING_DIGEST_PROMPT},
@@ -122,11 +123,9 @@ def digest_thinking_cycle(
             max_completion_tokens=max_tokens,
         )
 
-        raw = completion.choices[0].message.content
+        raw = completion.content
         if not raw:
-            refusal = getattr(completion.choices[0].message, "refusal", None)
-            logger.warning("THINKING_DIGEST[%s]: Empty response (refusal=%s, finish=%s)",
-                           domain, refusal, completion.choices[0].finish_reason)
+            logger.warning("THINKING_DIGEST[%s]: Empty response", domain)
             return []
 
         raw = raw.strip()

@@ -10,7 +10,6 @@ import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from openai import OpenAI
 from dotenv import load_dotenv
 
 from app_platform.time import get_timezone
@@ -21,16 +20,14 @@ load_dotenv()
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIM = 1536
 
-_openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-
 def _get_embedding(text: str) -> list[float]:
-    """Get an embedding vector from OpenAI."""
-    response = _openai_client.embeddings.create(
-        model=EMBEDDING_MODEL,
-        input=text[:8000]
-    )
-    return response.data[0].embedding
+    """Get an embedding vector via the vendor-neutral provider (issue #39).
+
+    Truncation + model string stay caller-side so vectors are unchanged; the
+    provider never truncates or rewrites the model."""
+    from providers.registry import get_embedding_provider
+    vecs = get_embedding_provider().embed(texts=[text[:8000]], model=EMBEDDING_MODEL)
+    return vecs[0]
 
 
 # ---------------------------------------------------------------------------

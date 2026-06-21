@@ -12,7 +12,6 @@ from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
-from openai import OpenAI
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -28,16 +27,14 @@ CHUNK_SIZE = 500        # target tokens per chunk (approx 4 chars per token)
 CHUNK_OVERLAP = 50      # overlap tokens between chunks
 CHARS_PER_TOKEN = 4     # rough approximation
 
-_openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
-
 def _get_embedding(text: str) -> list[float]:
-    """Get an embedding vector from OpenAI for a piece of text."""
-    response = _openai_client.embeddings.create(
-        model=EMBEDDING_MODEL,
-        input=text
-    )
-    return response.data[0].embedding
+    """Get an embedding vector via the vendor-neutral provider (issue #39).
+
+    No truncation here (knowledge chunks are pre-sized via CHARS_PER_TOKEN) — the
+    provider never truncates or rewrites the model, so vectors are unchanged."""
+    from providers.registry import get_embedding_provider
+    vecs = get_embedding_provider().embed(texts=[text], model=EMBEDDING_MODEL)
+    return vecs[0]
 
 
 # ---------------------------------------------------------------------------

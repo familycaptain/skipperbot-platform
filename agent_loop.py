@@ -16,7 +16,9 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable, Awaitable, Optional
 
-from config import logger, openai_client, OPENAI_MODEL
+from config import logger, OPENAI_MODEL
+from providers.registry import get_chat_provider
+from providers.base import Turn, ToolCall
 
 
 # ---------------------------------------------------------------------------
@@ -66,6 +68,51 @@ class LoopHooks:
 
 
 # ---------------------------------------------------------------------------
+# Neutral-turn bridge (issue #39)
+#
+# The loop's PUBLIC contract stays OpenAI-dict-shaped: callers pass OpenAI-format
+# `messages`, LoopHooks.after_round exchanges OpenAI dicts, and AgentResult.messages
+# is OpenAI dicts. Neutralization is INTERNAL — we convert the dict messages to
+# neutral Turns only at the moment of the provider call, and append OpenAI-format
+# dicts back onto `messages`. So behavior + the caller contract are unchanged; only
+# the LLM call now routes through the vendor-neutral provider.
+# ---------------------------------------------------------------------------
+
+def _messages_to_turns(messages: list[dict]) -> list[Turn]:
+    turns: list[Turn] = []
+    for m in messages:
+        tcs = None
+        if m.get("tool_calls"):
+            tcs = []
+            for tc in m["tool_calls"]:
+                fn = tc["function"]
+                args = fn["arguments"]
+                if isinstance(args, str):
+                    try:
+                        args = json.loads(args)
+                    except Exception:
+                        args = {}
+                tcs.append(ToolCall(id=tc["id"], name=fn["name"], arguments=args or {}))
+        turns.append(Turn(role=m.get("role"), content=m.get("content"),
+                          tool_calls=tcs, tool_call_id=m.get("tool_call_id"),
+                          name=m.get("name")))
+    return turns
+
+
+def _assistant_dict(chat_result) -> dict:
+    """Reconstruct the OpenAI-format assistant message dict from a neutral ChatResult,
+    so `messages` stays uniformly dict-shaped (the public contract)."""
+    msg: dict = {"role": "assistant", "content": chat_result.message.content}
+    if chat_result.tool_calls:
+        msg["tool_calls"] = [
+            {"id": tc.id, "type": "function",
+             "function": {"name": tc.name, "arguments": json.dumps(tc.arguments)}}
+            for tc in chat_result.tool_calls
+        ]
+    return msg
+
+
+# ---------------------------------------------------------------------------
 # Core loop
 # ---------------------------------------------------------------------------
 
@@ -95,51 +142,49 @@ async def run(
     """
     model = model or OPENAI_MODEL
     hooks = hooks or LoopHooks()
+    provider = get_chat_provider()
     result = AgentResult(response_text=None, messages=messages)
 
     total_tool_calls = 0
 
     for turn in range(max_turns):
         t_start = time.monotonic()
-        completion = await asyncio.to_thread(
-            openai_client.chat.completions.create,
-            model=model,
-            messages=messages,
+        chat_result = await asyncio.to_thread(
+            provider.chat,
+            turns=_messages_to_turns(messages),
             tools=tools if tools else None,
+            model=model,
         )
         elapsed = time.monotonic() - t_start
         logger.info("AGENT_LOOP: turn=%d llm_call=%.2fs", turn + 1, elapsed)
 
-        if completion.usage:
-            result.prompt_tokens += completion.usage.prompt_tokens
-            result.completion_tokens += completion.usage.completion_tokens
-            # Log prompt cache stats (OpenAI auto-caches identical prompt prefixes)
-            ptd = getattr(completion.usage, "prompt_tokens_details", None)
-            cached = getattr(ptd, "cached_tokens", 0) if ptd else 0
-            if cached:
-                pct = round(100 * cached / completion.usage.prompt_tokens) if completion.usage.prompt_tokens else 0
-                logger.info("AGENT_LOOP: turn=%d prompt=%d cached=%d (%d%%) completion=%d",
-                            turn + 1, completion.usage.prompt_tokens, cached, pct,
-                            completion.usage.completion_tokens)
-            else:
-                logger.info("AGENT_LOOP: turn=%d prompt=%d (no cache hit) completion=%d",
-                            turn + 1, completion.usage.prompt_tokens,
-                            completion.usage.completion_tokens)
+        usage = chat_result.usage
+        result.prompt_tokens += usage.prompt_tokens
+        result.completion_tokens += usage.completion_tokens
+        # Log prompt cache stats (OpenAI auto-caches identical prompt prefixes)
+        cached = usage.cached_tokens
+        if cached:
+            pct = round(100 * cached / usage.prompt_tokens) if usage.prompt_tokens else 0
+            logger.info("AGENT_LOOP: turn=%d prompt=%d cached=%d (%d%%) completion=%d",
+                        turn + 1, usage.prompt_tokens, cached, pct, usage.completion_tokens)
+        else:
+            logger.info("AGENT_LOOP: turn=%d prompt=%d (no cache hit) completion=%d",
+                        turn + 1, usage.prompt_tokens, usage.completion_tokens)
 
-        assistant_message = completion.choices[0].message
         result.turns = turn + 1
+        tool_calls = chat_result.tool_calls
 
         # No tool calls → final response
-        if not assistant_message.tool_calls:
-            result.response_text = assistant_message.content
+        if not tool_calls:
+            result.response_text = chat_result.content
             break
 
         # --- Tool execution round ---
-        messages.append(assistant_message)
+        messages.append(_assistant_dict(chat_result))
 
-        for tool_call in assistant_message.tool_calls:
-            tool_name = tool_call.function.name
-            tool_args = json.loads(tool_call.function.arguments)
+        for tool_call in tool_calls:
+            tool_name = tool_call.name
+            tool_args = tool_call.arguments
             tool_call_id = tool_call.id
 
             logger.debug("AGENT_LOOP: tool_call %s(%s)", tool_name,
@@ -190,7 +235,7 @@ async def run(
         # message sequence stays valid (every tool_call_id needs a response).
         executed_ids = {m["tool_call_id"] for m in messages
                         if isinstance(m, dict) and m.get("role") == "tool"}
-        for tc in assistant_message.tool_calls:
+        for tc in tool_calls:
             if tc.id not in executed_ids:
                 messages.append({
                     "role": "tool",
@@ -208,29 +253,29 @@ async def run(
 
         if total_tool_calls >= max_tool_calls:
             # Force a final response with no tools
-            completion = await asyncio.to_thread(
-                openai_client.chat.completions.create,
+            final = await asyncio.to_thread(
+                provider.chat,
+                turns=_messages_to_turns(messages),
+                tools=None,
                 model=model,
-                messages=messages,
             )
-            if completion.usage:
-                result.prompt_tokens += completion.usage.prompt_tokens
-                result.completion_tokens += completion.usage.completion_tokens
-            result.response_text = completion.choices[0].message.content
+            result.prompt_tokens += final.usage.prompt_tokens
+            result.completion_tokens += final.usage.completion_tokens
+            result.response_text = final.content
             result.turns += 1
             break
     else:
         # max_turns exhausted — force final response with no tools
         logger.warning("AGENT_LOOP: max_turns (%d) reached, forcing final response", max_turns)
-        completion = await asyncio.to_thread(
-            openai_client.chat.completions.create,
+        final = await asyncio.to_thread(
+            provider.chat,
+            turns=_messages_to_turns(messages),
+            tools=None,
             model=model,
-            messages=messages,
         )
-        if completion.usage:
-            result.prompt_tokens += completion.usage.prompt_tokens
-            result.completion_tokens += completion.usage.completion_tokens
-        result.response_text = completion.choices[0].message.content
+        result.prompt_tokens += final.usage.prompt_tokens
+        result.completion_tokens += final.usage.completion_tokens
+        result.response_text = final.content
         result.turns += 1
 
     result.messages = messages

@@ -21,7 +21,8 @@ import urllib.request
 from datetime import datetime
 from html.parser import HTMLParser
 
-from config import logger, openai_client, SMART_MODEL, DUMB_MODEL
+from config import logger, SMART_MODEL, DUMB_MODEL
+from providers.compat import chat_completion
 from app_platform.time import get_timezone
 
 # Max chars of page text to send to the LLM for summarization
@@ -178,7 +179,7 @@ def _summarize_source(title: str, url: str, page_text: str, research_query: str)
         return f"*Could not extract meaningful content from this page.*"
 
     try:
-        resp = openai_client.chat.completions.create(
+        resp = chat_completion(
             model=DUMB_MODEL,
             messages=[
                 {
@@ -202,7 +203,7 @@ def _summarize_source(title: str, url: str, page_text: str, research_query: str)
             ],
             max_completion_tokens=4500,
         )
-        return resp.choices[0].message.content.strip()
+        return resp.content.strip()
     except Exception as e:
         logger.error("RESEARCH: LLM summarization failed for %s: %s", url, e)
         return f"*Summarization failed: {str(e)[:100]}*"
@@ -230,7 +231,7 @@ def _synthesize_doc(query: str, sources: list[dict],
     user_message = "\n\n".join(user_parts)
 
     try:
-        resp = openai_client.chat.completions.create(
+        resp = chat_completion(
             model=SMART_MODEL,
             messages=[
                 {
@@ -270,7 +271,7 @@ def _synthesize_doc(query: str, sources: list[dict],
             ],
             max_completion_tokens=16000,
         )
-        return resp.choices[0].message.content.strip()
+        return resp.content.strip()
     except Exception as e:
         logger.error("RESEARCH: LLM synthesis failed: %s", e)
         # Fallback: just concatenate summaries
@@ -371,7 +372,7 @@ def _plan_research(query: str, num_sources: int,
     context_block = "\n\n".join(context_parts)
 
     try:
-        resp = openai_client.chat.completions.create(
+        resp = chat_completion(
             model=SMART_MODEL,
             messages=[
                 {
@@ -410,7 +411,7 @@ def _plan_research(query: str, num_sources: int,
             ],
             max_completion_tokens=2000,
         )
-        raw = resp.choices[0].message.content.strip()
+        raw = resp.content.strip()
         # Strip markdown code fences if present
         if raw.startswith("```"):
             raw = re.sub(r"^```\w*\n?", "", raw)
@@ -805,7 +806,7 @@ def _generate_refine_queries(original_content: str, instructions: str, num_queri
     then produces targeted search queries to find additional information.
     """
     try:
-        resp = openai_client.chat.completions.create(
+        resp = chat_completion(
             model=DUMB_MODEL,
             messages=[
                 {
@@ -834,7 +835,7 @@ def _generate_refine_queries(original_content: str, instructions: str, num_queri
             ],
             max_completion_tokens=1000,
         )
-        raw = resp.choices[0].message.content.strip()
+        raw = resp.content.strip()
         # Parse the JSON array of queries
         queries = json.loads(raw)
         if isinstance(queries, list):
@@ -911,7 +912,7 @@ def _identify_target_sections(
             section_index += f"  [{s['index']}] {prefix} {s['heading']} ({word_count} words)\n"
 
     try:
-        resp = openai_client.chat.completions.create(
+        resp = chat_completion(
             model=DUMB_MODEL,
             messages=[
                 {
@@ -946,7 +947,7 @@ def _identify_target_sections(
             ],
             max_completion_tokens=1000,
         )
-        raw = resp.choices[0].message.content.strip()
+        raw = resp.content.strip()
         # Strip markdown code fences if present
         if raw.startswith("```"):
             raw = re.sub(r"^```\w*\n?", "", raw)
@@ -974,7 +975,7 @@ def _revise_section(
     Only this section's content is regenerated — all other sections stay untouched.
     """
     try:
-        resp = openai_client.chat.completions.create(
+        resp = chat_completion(
             model=DUMB_MODEL,
             messages=[
                 {
@@ -1004,7 +1005,7 @@ def _revise_section(
             ],
             max_completion_tokens=4000,
         )
-        return resp.choices[0].message.content.strip()
+        return resp.content.strip()
     except Exception as e:
         logger.error("REFINE: Failed to revise section '%s': %s", section_heading, e)
         return section_body  # return unchanged on failure
@@ -1013,7 +1014,7 @@ def _revise_section(
 def _create_new_section(heading: str, instructions: str, sources_text: str) -> str:
     """Generate a brand-new section to be inserted into the document."""
     try:
-        resp = openai_client.chat.completions.create(
+        resp = chat_completion(
             model=DUMB_MODEL,
             messages=[
                 {
@@ -1040,7 +1041,7 @@ def _create_new_section(heading: str, instructions: str, sources_text: str) -> s
             ],
             max_completion_tokens=3000,
         )
-        return resp.choices[0].message.content.strip()
+        return resp.content.strip()
     except Exception as e:
         logger.error("REFINE: Failed to create new section '%s': %s", heading, e)
         return f"## {heading}\n\n*Section generation failed. Source material is available in the refinement job.*\n"
