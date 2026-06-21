@@ -10,6 +10,7 @@ stdlib-only (urllib) so it runs in the minimal box-1 venv. Config via env:
     GITHUB_TOKEN   — a PAT that can READ issues on GITHUB_REPO
     GITHUB_REPO    — owner/repo (default: familycaptain/skipperbot-platform)
 """
+import base64
 import json
 import os
 import urllib.error
@@ -111,6 +112,65 @@ def post_comment(number: int, body: str, repo: str | None = None, token: str | N
     Requires a token with Issues:write. Never called automatically."""
     token = token or _token()
     return _request("POST", f"/repos/{_repo(repo)}/issues/{number}/comments", token, {"body": body})
+
+
+EVIDENCE_BRANCH = "evolve-evidence"
+
+
+def _ensure_evidence_branch(token: str, repo: str) -> None:
+    """Create the `evolve-evidence` branch (off the default branch) if missing — keeps screenshot
+    binaries OFF main/release while still giving GitHub a raw URL to render them inline in a comment."""
+    r = _repo(repo)
+    try:
+        _request("GET", f"/repos/{r}/git/ref/heads/{EVIDENCE_BRANCH}", token)
+        return  # already exists
+    except RuntimeError:
+        pass
+    default = _request("GET", f"/repos/{r}", token)["default_branch"]
+    sha = _request("GET", f"/repos/{r}/git/ref/heads/{default}", token)["object"]["sha"]
+    try:
+        _request("POST", f"/repos/{r}/git/refs", token,
+                 {"ref": f"refs/heads/{EVIDENCE_BRANCH}", "sha": sha})
+    except RuntimeError:
+        pass  # raced with a concurrent create — fine
+
+
+def attach_image_to_issue(number: int, image_path: str, caption: str = "",
+                          repo: str | None = None, token: str | None = None) -> dict:
+    """Upload a validation screenshot and post it as an INLINE image comment on the issue.
+
+    The PNG is committed to the `evolve-evidence` branch (NOT main/release, so binaries don't bloat the
+    code branches) and linked by its raw download URL so GitHub renders it in the comment. Requires a
+    token with contents:write (the same PAT that files issues). Give each screenshot a UNIQUE filename
+    per attempt (e.g. `ev42-medical-try2.png`) so a re-validation ADDS a new image instead of colliding
+    with a prior one. Returns the created comment.
+    """
+    token = token or _token()
+    if not token:
+        raise RuntimeError("GITHUB_TOKEN is not set")
+    r = _repo(repo)
+    _ensure_evidence_branch(token, r)
+    with open(image_path, "rb") as fh:
+        content = base64.b64encode(fh.read()).decode()
+    name = os.path.basename(image_path)
+    path = f"evidence/issue-{number}/{name}"
+    try:
+        put = _request("PUT", f"/repos/{r}/contents/{urllib.parse.quote(path)}", token, {
+            "message": f"evidence: issue #{number} — {name}",
+            "content": content,
+            "branch": EVIDENCE_BRANCH,
+        })
+    except RuntimeError as e:
+        if "403" in str(e):
+            raise RuntimeError(
+                "attach_image_to_issue needs a GitHub token with contents:write on the repo (the "
+                "evidence is committed to the evolve-evidence branch). The current GITHUB_TOKEN only "
+                "has issues:write — add Contents:Read+Write to the fine-grained PAT to enable evidence "
+                "attachment.") from e
+        raise
+    url = put["content"]["download_url"]
+    body = f"**Validation evidence** — {caption or name}\n\n![{caption or name}]({url})"
+    return post_comment(number, body, repo=r, token=token)
 
 
 def create_issue(title: str, body: str = "", labels: list[str] | None = None,

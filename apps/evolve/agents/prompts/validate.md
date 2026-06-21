@@ -40,6 +40,28 @@ Report the truth: `passed` (true only if every bound test is green), the list of
 (screenshots/observations for the Gate-2 packet). A red bound test means the spec is
 **not** satisfied — never pass a spec on partial or hand-waved evidence.
 
+**For any VISIBLE change: screenshot it, LOOK at it, then attach it — or loop.** A green selector/value
+check is NOT proof a UI change looks right; a test can pass while the pixels are still wrong (this
+project shipped "fixed" backgrounds that were beige in the actual render, and white-text buttons that
+rendered black — all while computed values "matched"). So whenever the change has a visible result:
+1. After it's deployed to box 2, **capture a screenshot of the actual fixed view** (the screen the
+   issue is about) — `scripts/ui_harness.py` + Playwright `page.screenshot(path=...)`. Screenshot the
+   real build, not a fresh dev context only — and remember box 2 is a PWA: its **service worker can
+   serve a stale cached bundle**, so verify you're looking at the new build (Playwright's fresh context
+   sidesteps the SW; if in doubt, confirm the deployed dist actually contains your change).
+2. **Open the screenshot and look at it with your own eyes.** Judge it against what the issue actually
+   asked for — is it genuinely fixed in the pixels, not merely that a class/value changed?
+3. **If the screenshot shows it IS fixed →** attach it to the GitHub issue as evidence and note it:
+   ```
+   python3 -c "import apps.evolve.github_connector as g; g.attach_image_to_issue(<issue#>, '<path.png>', '<what this shows>')"
+   ```
+4. **If the screenshot shows it is NOT actually fixed →** it is not done. Go back to the code, redeploy
+   to box 2, re-screenshot, and look again. Loop until the pixels match the requirement. NEVER report
+   `passed: true` on a visible change whose own evidence screenshot doesn't show the fix.
+
+Name each screenshot uniquely per attempt (e.g. `ev<n>-<slug>-try2.png`) so the issue accrues the real
+before/after trail. (Applies to the design-system work #38 and every visual fix.)
+
 **If you CAN'T run the validation, that is a FAILURE — never a skip.** If the tests/acceptance can't
 actually execute — the build/test tooling is missing (e.g. **no node to build the web bundle**, no
 Playwright), the **box-2 target is unavailable or occupied** (e.g. uncommitted work you must not
