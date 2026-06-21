@@ -28,6 +28,9 @@ export default function LoginScreen({ onLogin }) {
   const [userInfo, setUserInfo] = useState(null); // { name, display_name }
 
   const passwordRef = useRef(null);
+  // Synchronous in-flight guard: closes the rapid-double-tap window the async
+  // `loading` disabled state can lose to a render race (issue #36).
+  const inFlightRef = useRef(false);
 
   // Auto-focus password field when step changes
   useEffect(() => {
@@ -37,11 +40,15 @@ export default function LoginScreen({ onLogin }) {
   }, [step]);
 
   async function handleCheckUser(e) {
-    e.preventDefault();
+    e?.preventDefault?.();
     setError("");
     const name = username.trim();
     if (!name) return;
 
+    // Set the in-flight guard only after the synchronous validation early-return,
+    // so an invalid tap never locks the form (the finally below always clears it).
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
@@ -68,14 +75,17 @@ export default function LoginScreen({ onLogin }) {
       setError("Cannot reach server.");
     } finally {
       setLoading(false);
+      inFlightRef.current = false;
     }
   }
 
   async function handleLogin(e) {
-    e.preventDefault();
+    e?.preventDefault?.();
     setError("");
     if (!password) return;
 
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
@@ -95,6 +105,7 @@ export default function LoginScreen({ onLogin }) {
       setError("Cannot reach server.");
     } finally {
       setLoading(false);
+      inFlightRef.current = false;
     }
   }
 
@@ -165,8 +176,14 @@ export default function LoginScreen({ onLogin }) {
           <p className="text-sm text-red-400 text-center">{error}</p>
         )}
 
+        {/* Controlled button (type=button + onClick), never a native submit button:
+            a native submit can fire a full-page reload before React's onSubmit
+            preventDefault is in control under load (issue #36). The <form onSubmit>
+            above is kept purely as the Enter-key path (single input per step ->
+            browser implicit submission). */}
         <button
-          type="submit"
+          type="button"
+          onClick={onSubmit}
           disabled={buttonDisabled}
           className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold text-sm transition-colors"
         >
