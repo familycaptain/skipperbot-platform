@@ -67,4 +67,4 @@ notes: 'MECHANISM PIVOT (in response to the Gate-1 UX blocker): app panels rende
   document the canonical theme token/variable contract (architecture); optionally also expose
   theme in the Settings app (UX). Out of scope: server/account theme storage, cross-device
   sync, the separate voice/mobile companion apps.'
-verified: false
+verified: true

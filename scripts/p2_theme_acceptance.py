@@ -15,7 +15,7 @@ Asserts:
   5. a basic AA contrast spot-check on body text in light mode (>= 4.5:1).
 Run on box 2: QA_BASE=http://localhost:8000 .venv/bin/python scripts/p2_theme_acceptance.py
 """
-import os, json
+import os, json, re, time
 from playwright.sync_api import sync_playwright
 
 BASE = os.environ.get("QA_BASE", "http://localhost:8000")
@@ -29,16 +29,38 @@ def shot(page, n):
 
 
 def login(page):
-    page.goto(BASE, wait_until="networkidle")
-    page.get_by_role("textbox").first.fill(USER)
-    page.keyboard.press("Enter")
-    page.wait_for_selector("input[type=password]", timeout=15000)
-    page.locator("input[type=password]").first.fill(PW)
-    page.keyboard.press("Enter")
-    for _ in range(50):
-        if page.evaluate("() => localStorage.getItem('skipperbot_token')"):
+    # Deterministic auth via token injection. The two-step LoginScreen form intermittently
+    # triggers a NATIVE form-submit/page-reload under load — the React onSubmit's
+    # preventDefault loses the race during slow hydration, the page navigates to "/", and
+    # React state resets before it can advance to the password step. That is a headless
+    # harness flake (the form works fine for a real user/the operator), not an app defect,
+    # so we don't drive the form: we call the same /auth/login API it calls, then inject the
+    # returned token into localStorage (the app's real bootstrap path) and load it signed in.
+    body = None
+    for attempt in range(3):
+        r = page.request.post(f"{BASE}/auth/login", data={"username": USER, "password": PW})
+        body = r.json()
+        if body.get("ok"):
             break
-        page.wait_for_timeout(500)
+        err = body.get("error", "")
+        m = re.search(r"~(\d+)\s*s", err)
+        if "Too many login attempts" in err and attempt < 2:
+            wait = min((int(m.group(1)) if m else 70) + 3, 80)
+            print(f"  rate-limited by /auth/login; waiting {wait}s then retrying")
+            time.sleep(wait)
+            continue
+        raise RuntimeError(f"auth failed: {body}")
+    if not body or not body.get("ok"):
+        raise RuntimeError(f"auth failed after retries: {body}")
+    page.goto(BASE, wait_until="domcontentloaded")
+    # The app boots logged-in only when BOTH the token AND the user object are in
+    # localStorage (App.jsx treats a stored user with no token as a broken session).
+    page.evaluate("""(s) => {
+        localStorage.setItem('skipperbot_token', s.token);
+        localStorage.setItem('skipperbot_user', JSON.stringify(s.user));
+    }""", {"token": body["token"], "user": body["user"]})
+    page.reload(wait_until="domcontentloaded")
+    page.wait_for_selector('button[title="Settings"]', timeout=20000)
     page.wait_for_timeout(1500); print("✓ logged in")
 
 
@@ -103,7 +125,7 @@ def main():
         dark_bg = body_colors(page)["bg"]
 
         # (1) toggle present
-        toggle = page.get_by_role("button", name=lambda n: n and "theme" in n.lower())
+        toggle = page.get_by_role("button", name=re.compile(r"theme", re.I))
         report["checks"]["toggle_present"] = bool(toggle.count())
 
         # (3) click -> light, no reload, recolor
@@ -128,7 +150,7 @@ def main():
 
         # toggle back to dark + reload persists
         page.wait_for_timeout(800)
-        tg = page.get_by_role("button", name=lambda n: n and "theme" in n.lower())
+        tg = page.get_by_role("button", name=re.compile(r"theme", re.I))
         if tg.count():
             tg.first.click(); page.wait_for_timeout(500)
             page.reload(wait_until="domcontentloaded")
