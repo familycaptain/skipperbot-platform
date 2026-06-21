@@ -49,6 +49,15 @@ Then, given the work-item (+ triage/vision context):
    new feature only when none fits. A `spec_tree` that duplicates or ignores existing
    siblings is a decomposition failure — the corpus already has hundreds of specs; don't
    add an overlapping one.
+   **Sizing has NO upper bound — fit the tree to the WORK, never the work to a comfortable
+   size.** Issues are wildly non-uniform: one is a one-line fix (`one-spec`); the next is a
+   whole new app built from scratch, or a platform-wide refactor (a `spec_tree` with dozens
+   of leaves — e.g. a leaf per app for a cross-codebase change). Do NOT balk at, shrink, or
+   under-scope a large issue to make it feel manageable, and do NOT push leaves out into
+   SEPARATE GitHub issues to shrink this one. A change whose pieces can only be PROVEN
+   together must stay ONE issue and validate as a whole — splitting it strands a piece that
+   can't be validated (a token layer nothing consumes, a service with no caller), forcing a
+   false "done". Big is fine; un-validated is not.
 
 Be concrete and opinionated. You decide the *approach* and the *shape*; the spec-author
 writes the precise spec(s). Lead with your `summary`. Return your result via `emit`.
