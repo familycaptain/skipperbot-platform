@@ -40,7 +40,7 @@ export default function EmailApp({ appId, userId, isActive }) {
   }
 
   return (
-    <div className="h-full flex flex-col bg-slate-900 text-white">
+    <div className="h-full w-full flex flex-col bg-slate-900 text-white">
       {/* Tab bar */}
       <div className="flex items-center gap-1 px-4 pt-3 pb-2 border-b border-slate-800">
         {TABS.map(t => (
