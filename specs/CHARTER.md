@@ -125,6 +125,19 @@ The charter also bounds Evolve's own autonomy (EVOLVE.md §11):
   to. Never unattended.
 - **The human owns the vision.** Evolve may propose, surface, and implement; it never
   redefines what Skipper *is*. That decision is always the maintainer's.
+- **Gate the operator on the DELIVERABLE, not the agents' internal steps.** The human gates are
+  judgment points — *approve the intent, verify the result* — never a per-task drip. A large or
+  comprehensive issue that the agents decompose into many internal units (a spec tree: a foundation
+  + N per-app migrations, a service + its callers, etc.) is **gated ONCE as one deliverable, not once
+  per unit.** The operator approves the *approach* (Gate 1); the engine then **autonomously builds AND
+  validates the WHOLE thing** — each internal unit still fully built + box-2-validated, no quality loss,
+  but the **decomposition/sequencing is the engine's concern, not the operator's** — and surfaces a
+  **single** result gate (Gate 2, then Gate 3) carrying the *complete* evidence (e.g. the lint clean
+  platform-wide **and** every app's before/after light+dark screenshots). Flooding the operator with a
+  gate per leaf — dozens of near-identical "approve this app's migration?" touchpoints — defeats the
+  whole *review-not-labor* bet and is itself a defect. Comprehensive, one-shot fixes (see
+  [ARCHITECTURE.md](ARCHITECTURE.md#core-principle-comprehensive-fixes-no-lingering-debt)) are reviewed
+  comprehensively and **once**.
 
 ## Engineering principles (non-functional)
 
