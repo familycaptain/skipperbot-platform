@@ -1121,6 +1121,81 @@ style. You don't set this flag yourself — it's injected automatically.
 
 ---
 
+## Styling / Theme — the semantic design system (issue #38)
+
+Skipper has a light and a dark theme. **Never hardcode raw Tailwind color scales**
+(`bg-slate-800`, `text-gray-400`, `text-cyan-500`, `text-white`, `#1e293b`, …) in app
+UI — they don't adapt correctly across both themes and they make the same element look
+different in every app. Instead use the **semantic classes**, defined once for both
+themes in `web/src/index.css`. A `check-no-raw-tokens` lint enforces this (it fails the
+build on any raw color class), and the scaffolder emits semantic-only UI.
+
+**The rule:** use a semantic class; if you need something the set lacks (e.g. a new
+status color), **add a semantic token** to `index.css` for BOTH themes — never reach for
+a raw scale.
+
+### Class list (when to use each)
+
+| Role | Class | Use for |
+|---|---|---|
+| Surfaces | `surface-page` | the outermost app background |
+| | `surface-panel` | a panel/column within the app |
+| | `surface-card` | a card / list container |
+| | `surface-raised` | an elevated element (gets a shadow) |
+| | `surface-overlay` | modal/dropdown scrim |
+| Text | `text-default` | primary body text |
+| | `text-muted` | secondary text |
+| | `text-faint` | tertiary / hints |
+| | `text-on-accent` | text on a colored/accent background |
+| | `link` | hyperlinks (hover underline) |
+| Borders | `border-subtle` / `border-strong` | dividers / emphasis borders |
+| Buttons | `btn-primary` / `btn-success` / `btn-danger` / `btn-ghost` | actions — **foreground is baked in** (text never renders black-on-accent), incl. `:disabled` |
+| Forms | `input` | text inputs / textareas / selects (bg+border+placeholder) |
+| | `field-label` | a field's label |
+| | `focus-ring` | add to any focusable element for an AA-visible keyboard focus ring |
+| Badges | `pill` + `pill-success` / `pill-warn` / `pill-danger` / `pill-neutral` (or `status-pill`) | status chips |
+| **Composites** (one definition so the SAME element looks identical in every app) | `tab` / `tab-active` | a tab / segmented-control row |
+| | `list-row` | a row in a list (hover state included) |
+| | `section-header` | an uppercase section label |
+| | `empty-state` | the "nothing here yet" placeholder |
+
+**Map each element to its CORRECT role** — a tab is `tab` (not just "some semantic
+class"), a card is `surface-card`, a list row is `list-row`. The lint proves you used no
+raw color; using the *right* semantic role is reviewed.
+
+### Before → after
+
+```jsx
+// BEFORE — raw scales, breaks in light mode, inconsistent across apps
+<div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
+  <h3 className="text-xs uppercase text-slate-500">Tasks</h3>
+  <button className="bg-indigo-600 text-white px-3 py-1.5 rounded">Add</button>
+</div>
+
+// AFTER — semantic, correct in both themes, consistent everywhere
+<div className="surface-card border border-subtle rounded-xl p-4">
+  <h3 className="section-header">Tasks</h3>
+  <button className="btn-primary px-3 py-1.5 rounded focus-ring">Add</button>
+</div>
+```
+
+### Adding a token you don't have (escape hatch)
+
+If the set genuinely lacks a role you need (say a distinct "category" color), add it to
+**both** theme blocks in `web/src/index.css` and expose a class — don't reach for a raw
+scale:
+
+```css
+:root            { --ds-category-bg:#3b0764; --ds-category-fg:#e9d5ff; }
+html[data-theme="light"] { --ds-category-bg:#f3e8ff; --ds-category-fg:#7e22ce; }
+@layer components { .pill-category { background-color:var(--ds-category-bg); color:var(--ds-category-fg); } }
+```
+
+Dark is the default and must stay byte-stable; choose light values that are AA-legible
+(≥4.5:1 body, ≥3:1 large/UI) and consistent with the warm/clean reference look.
+
+---
+
 ## Event Bus: delivery model (synchronous best-effort today)
 
 > **Reality:** the bus is **synchronous best-effort**, NOT at-least-once. The
