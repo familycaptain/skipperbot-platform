@@ -50,18 +50,18 @@ html[data-theme="light"] {
    * (800) sit slightly whiter so they lift off it, borders (600/700) are warm + visible, inputs
    * (950) are white. This is the "warm-not-cold gray, crisp but less saturated" direction. */
   --color-slate-50:#1a1714;  --color-slate-100:#272320; --color-slate-200:#3a352f;
-  --color-slate-300:#564f47; --color-slate-400:#7c756b; --color-slate-500:#a39c91;
-  --color-slate-600:#cbc4b8; --color-slate-700:#e4ded4; --color-slate-800:#f7f4ee;
+  --color-slate-300:#564f47; --color-slate-400:#7c756b; --color-slate-500:#8a8175;
+  --color-slate-600:#8f8678; --color-slate-700:#e4ded4; --color-slate-800:#f7f4ee;
   --color-slate-900:#f4f1ea; --color-slate-950:#ffffff;
 
   --color-gray-50:#1a1714;  --color-gray-100:#272320; --color-gray-200:#3a352f;
-  --color-gray-300:#564f47; --color-gray-400:#7c756b; --color-gray-500:#a39c91;
-  --color-gray-600:#cbc4b8; --color-gray-700:#e4ded4; --color-gray-800:#f7f4ee;
+  --color-gray-300:#564f47; --color-gray-400:#7c756b; --color-gray-500:#8a8175;
+  --color-gray-600:#8f8678; --color-gray-700:#e4ded4; --color-gray-800:#f7f4ee;
   --color-gray-900:#f4f1ea; --color-gray-950:#ffffff;
 
   --color-zinc-50:#1a1714;  --color-zinc-100:#272320; --color-zinc-200:#3a352f;
-  --color-zinc-300:#564f47; --color-zinc-400:#7c756b; --color-zinc-500:#a39c91;
-  --color-zinc-600:#cbc4b8; --color-zinc-700:#e4ded4; --color-zinc-800:#f7f4ee;
+  --color-zinc-300:#564f47; --color-zinc-400:#7c756b; --color-zinc-500:#8a8175;
+  --color-zinc-600:#8f8678; --color-zinc-700:#e4ded4; --color-zinc-800:#f7f4ee;
   --color-zinc-900:#f4f1ea; --color-zinc-950:#ffffff;
 
   /* Bare `text-white` sits mostly on neutral surfaces that are now light -> warm near-black. */
@@ -76,9 +76,12 @@ html[data-theme="light"] {
 /* But on SOLID accent buttons/badges (which keep their saturated hue) text must stay white —
  * re-scope --color-white back to white inside them so their labels/icons read correctly. */
 html[data-theme="light"] :is(
-  .bg-indigo-600,.bg-indigo-500,.bg-blue-600,.bg-blue-500,.bg-violet-600,.bg-violet-500,
-  .bg-emerald-600,.bg-emerald-500,.bg-green-600,.bg-green-500,.bg-red-600,.bg-red-500,
-  .bg-sky-600,.bg-amber-500,.bg-purple-600
+  .bg-indigo-700,.bg-indigo-600,.bg-indigo-500,.bg-blue-700,.bg-blue-600,.bg-blue-500,
+  .bg-violet-700,.bg-violet-600,.bg-violet-500,.bg-purple-700,.bg-purple-600,.bg-purple-500,
+  .bg-emerald-700,.bg-emerald-600,.bg-emerald-500,.bg-green-700,.bg-green-600,.bg-green-500,
+  .bg-red-700,.bg-red-600,.bg-red-500,.bg-rose-600,.bg-rose-500,
+  .bg-sky-700,.bg-sky-600,.bg-sky-500,.bg-cyan-700,.bg-cyan-600,.bg-cyan-500,
+  .bg-teal-600,.bg-teal-500,.bg-orange-600,.bg-orange-500,.bg-amber-600,.bg-amber-500
 ) { --color-white:#ffffff; }
 
 /* Packaged-app launcher tiles use teal accent classes (NOT neutral-remapped), so in light mode the
