@@ -1,4 +1,4 @@
-# Evolve — SDLC process flow (v0.6.0)
+# Evolve — SDLC process flow (v0.7.0)
 
 > **Generated view.** The source of truth is [`sdlc.yaml`](./sdlc.yaml); this
 > Mermaid is the picture of it. Open this file in GitHub (or VS Code preview /
@@ -92,7 +92,15 @@ flowchart TD
   merge --> resync[["Re-sync files to DB"]]:::sys
   resync --> e_done(["Merged to release — awaiting operator publish"]):::event
 
+  %% The operator's ASSISTANT — the human-in-the-loop's AI partner, present at EVERY gate.
+  %% Distinct from the autonomous swarm: it reads each packet, surfaces the real decision, pushes
+  %% back, and OPERATES the gate on the operator's explicit say-so (the agents cannot decide).
+  assistant{{"🤖 Operator's assistant — reads every packet · surfaces the real decision in plain language · pushes back on thin validation / code-read-not-reproduced conclusions · answers questions · OPERATES the gate on the operator's explicit say-so (agents CANNOT decide) · runs the watcher that keeps items moving"}}:::asst
+  assistant -. "review + operate · on say-so" .-> gate1
+  assistant -. "review + operate · on say-so" .-> gate2
+
   classDef event fill:#e8eef7,stroke:#5b7aa7,color:#1b2b44;
+  classDef asst fill:#eef0ff,stroke:#6a5acd,color:#1e1a44,stroke-width:2px;
   classDef agent fill:#eaf6ec,stroke:#4c9a5a,color:#16331e;
   classDef sys fill:#f3eefc,stroke:#8a6bbf,color:#2c1f44;
   classDef gate fill:#fdf1d6,stroke:#caa23a,color:#4a3a0e;
@@ -157,6 +165,20 @@ flowchart TD
   branch → **box 2** validates with Playwright → loop **failing→retry** / **stuck→
   escalate** / **green→packet** → **Gate 2** → **auto-merge to the `release` branch**
   → **re-sync**. Both gates can **bounce back** ("change this").
+- **Every gate has a human-in-the-loop *and their assistant*.** A gate is not the operator alone
+  clicking approve/change/reject — between the swarm's packet and the decision sits the **operator's
+  assistant** (a Claude instance on the operator's machine). It **reads each packet**, restates the
+  *real* decision in plain language (not the terse button labels), **flags what the packet underplays**
+  (thin or un-reproduced validation, a placement/dependency risk, a cross-item conflict), **answers the
+  operator's questions** grounded in the live code, and **pushes the agents back** when a conclusion was
+  read from code instead of reproduced, or when evidence is missing. Crucially it **operates the gate
+  FOR the operator** (`evolve_decide approve|change|reject`) — but **only on the operator's explicit,
+  per-item say-so**, using a parent decide-token that lives **only on the operator's machine**: the
+  autonomous swarm holds only the service token and **cannot decide its own gates**. It also runs a
+  **watcher loop** that catches each gate as it appears and keeps items moving — auto-reviewing, pushing
+  back, or approving on the operator's standing instruction, and surfacing genuine forks. (`/chat-ev <n>`
+  is the gate-1 requirements-partner form of this role; `/evolve-assistant` rebuilds it in a fresh
+  session.)
 - **Gate 3 — verify (acceptance): merge is NOT done.** A newer **acceptance loop** sits *after*
   merge — see [§ Gate 3 below](#gate-3--verify-acceptance-loop). It is **live in the subscription
   `/loop` POC engine today**; the production graph above (which `pipeline.py` walks at runtime) still
