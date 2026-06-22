@@ -3,7 +3,7 @@ id: platform.webui.notification-markdown
 title: Notification chat bubbles render sanitized markdown like bot bubbles (line breaks preserved)
 state: live
 autonomy: gated
-verified: false
+verified: true
 behavior: >
   In the web UI, a NOTIFICATION chat bubble (web/src/components/ChatMessage.jsx,
   role='notification' — proactive/background messages pushed as {type:'notification'}
