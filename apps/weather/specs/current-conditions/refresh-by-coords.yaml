@@ -3,7 +3,7 @@ id: weather.current-conditions.refresh-by-coords
 title: Refreshing the current weather location refetches by stored coordinates without re-geocoding
 state: live
 autonomy: gated
-verified: false
+verified: true
 behavior: >
   Refresh of the location already on screen is coordinate-based across the whole
   dashboard. GET /api/apps/weather/summary and GET /api/apps/weather/alerts each
