@@ -336,7 +336,7 @@ html[data-theme="light"] {
   --ds-neutral-bg:#ececec; --ds-neutral-fg:#57534e;
 }
 
-@layer components {
+/* Design-system component classes — top-level (matching this file's convention). */
   /* surfaces */
   .surface-page   { background-color:var(--ds-page);   color:var(--ds-text); }
   .surface-panel  { background-color:var(--ds-panel);  color:var(--ds-text); }
@@ -395,4 +395,3 @@ html[data-theme="light"] {
   .dot { background-color:var(--ds-muted); }
   /* thin divider line (a bg hairline, e.g. date separators) */
   .divider { background-color:var(--ds-border); }
-}
