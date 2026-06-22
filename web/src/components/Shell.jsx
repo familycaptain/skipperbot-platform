@@ -95,26 +95,26 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-950 text-white">
+    <div className="flex flex-col h-full surface-page">
       {/* ── Top Bar ── */}
-      <header className="flex items-center justify-between px-4 h-12 bg-slate-900/80 border-b border-slate-800 shrink-0">
+      <header className="flex items-center justify-between px-4 h-12 surface-panel border-b border-subtle shrink-0">
         {/* Left: Brand */}
         <button onClick={onGoHome} className="flex items-center gap-2 hover:opacity-80 transition-opacity">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold">
             S
           </div>
-          <span className="text-sm font-semibold text-slate-200">SkipperBot</span>
+          <span className="text-sm font-semibold text-default">SkipperBot</span>
         </button>
 
         {/* Mobile-only: Apps/Chat segmented toggle */}
         {onSetMobileView && (
-          <div className="md:hidden flex items-center bg-slate-800/70 border border-slate-700 rounded-full p-0.5 text-xs">
+          <div className="md:hidden flex items-center surface-card border border-subtle rounded-full p-0.5 text-xs">
             <button
               onClick={() => onSetMobileView("apps")}
               className={`flex items-center gap-1 px-3 py-1 rounded-full transition-colors ${
                 mobileView === "apps"
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-indigo-600 text-on-accent"
+                  : "icon-btn"
               }`}
               aria-pressed={mobileView === "apps"}
             >
@@ -124,8 +124,8 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
               onClick={() => onSetMobileView("chat")}
               className={`flex items-center gap-1 px-3 py-1 rounded-full transition-colors ${
                 mobileView === "chat"
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-indigo-600 text-on-accent"
+                  : "icon-btn"
               }`}
               aria-pressed={mobileView === "chat"}
             >
@@ -150,7 +150,7 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
               you'll switch TO; aria-pressed reflects light mode. */}
           <button
             onClick={toggleTheme}
-            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+            className="p-1 rounded icon-btn transition-colors"
             title={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
             aria-label={theme === "light" ? "Switch to dark theme" : "Switch to light theme"}
             aria-pressed={theme === "light"}
@@ -172,7 +172,7 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
                   window.location.reload();
                 }
               }}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-600/80 hover:bg-indigo-500 text-white text-xs font-medium animate-pulse hover:animate-none transition-all"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-600/80 hover:bg-indigo-500 text-on-accent text-xs font-medium animate-pulse hover:animate-none transition-all"
               title="New version available — click to refresh"
             >
               <RefreshCw size={12} />
@@ -182,7 +182,7 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
           {onToggleChat && (
             <button
               onClick={onToggleChat}
-              className="hidden md:inline p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+              className="hidden md:inline p-1 rounded icon-btn transition-colors"
               title={chatCollapsed ? "Show chat panel" : "Hide chat panel (full-width apps)"}
             >
               {chatCollapsed ? <PanelRightOpen size={14} /> : <PanelRightClose size={14} />}
@@ -190,21 +190,21 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
           )}
           <button
             onClick={() => onOpenApp?.("notifications")}
-            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-sky-400 transition-colors"
+            className="p-1 rounded icon-btn transition-colors"
             title="Notifications"
           >
             <Mail size={14} />
           </button>
           <button
             onClick={() => onOpenApp?.("issues")}
-            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-red-400 transition-colors"
+            className="p-1 rounded icon-btn hover:text-red-400 transition-colors"
             title="Report an issue"
           >
             <Bug size={14} />
           </button>
           <button
             onClick={() => onOpenApp?.("settings")}
-            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+            className="p-1 rounded icon-btn transition-colors"
             title="Settings"
           >
             <Settings size={14} />
@@ -213,25 +213,25 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
             href="https://skipperbot.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-indigo-400 transition-colors"
+            className="p-1 rounded icon-btn hover:text-indigo-400 transition-colors"
             title="About Skipper"
           >
             <Info size={14} />
           </a>
-          <span className="hidden md:inline text-xs text-slate-400">{displayName}</span>
+          <span className="hidden md:inline text-xs text-muted">{displayName}</span>
           <button
             onClick={onLogout}
-            className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
+            className="p-1 rounded icon-btn transition-colors"
             title="Log out"
           >
             <LogOut size={14} />
           </button>
           {isAdmin && (
             <>
-              <div className="w-px h-4 bg-slate-700/60 mx-1" />
+              <div className="w-px h-4 divider mx-1" />
               <button
                 onClick={() => setShowRestartConfirm(true)}
-                className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-red-400 transition-colors"
+                className="p-1 rounded icon-btn hover:text-red-400 transition-colors"
                 title="Restart agent"
               >
                 <Power size={14} />
@@ -249,7 +249,7 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
       )}
 
       {/* ── Focus Banner ── */}
-      <div className="flex flex-wrap items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-amber-950/30 via-slate-900/60 to-slate-900/60 border-b border-amber-900/20 shrink-0">
+      <div className="flex flex-wrap items-center gap-2 px-4 py-1.5 bg-gradient-to-r from-amber-950/30 via-[var(--ds-panel)] to-[var(--ds-panel)] border-b border-amber-900/20 shrink-0">
         {/* Prioritize app launcher */}
         <button
           onClick={() => onOpenApp?.("prioritize")}
@@ -262,17 +262,17 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
         {focusSlots.map((slot, idx) => {
           const item = slot.item || {};
           const Icon = FOCUS_ICONS[slot.source_type] || Star;
-          const color = FOCUS_COLORS[slot.source_type] || "text-slate-400";
+          const color = FOCUS_COLORS[slot.source_type] || "text-muted";
           return (
             <button
               key={slot.id}
               onClick={() => openSource(slot.source_type, slot.source_id, item)}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-2xl bg-slate-800/60 hover:bg-slate-700/60 border border-slate-700/50 hover:border-amber-700/40 transition-all text-xs group"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-2xl surface-card hover:bg-[var(--ds-raised)] border border-subtle hover:border-amber-700/40 transition-all text-xs group"
               title={`#${idx + 1}: ${item.title || slot.source_id}`}
             >
               <span className="text-amber-500/60 font-bold text-[10px]">{idx + 1}</span>
               <Icon size={10} className={color} />
-              <span className="text-slate-300 group-hover:text-white transition-colors">
+              <span className="text-default transition-colors">
                 {item.title || slot.source_id}
               </span>
             </button>
@@ -294,23 +294,23 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
 
       {/* ── Restart Confirm ── */}
       {showRestartConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-5 shadow-xl max-w-xs w-full text-center space-y-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center surface-overlay">
+          <div className="surface-card border border-subtle rounded-lg p-5 shadow-xl max-w-xs w-full text-center space-y-3">
             <Power size={28} className="mx-auto text-red-400" />
-            <p className="text-sm text-slate-200">Restart the agent?</p>
-            <p className="text-xs text-slate-500">In-flight work is drained first, then the agent restarts on the current code. This does not pull or update — it's back in under a minute.</p>
+            <p className="text-sm text-default">Restart the agent?</p>
+            <p className="text-xs text-faint">In-flight work is drained first, then the agent restarts on the current code. This does not pull or update — it's back in under a minute.</p>
             <div className="flex justify-center gap-2 pt-1">
               <button
                 onClick={() => setShowRestartConfirm(false)}
                 disabled={restarting}
-                className="px-4 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded"
+                className="px-4 py-1.5 text-xs btn-secondary rounded"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRestart}
                 disabled={restarting}
-                className="px-4 py-1.5 text-xs bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded font-medium"
+                className="px-4 py-1.5 text-xs btn-danger disabled:opacity-50 rounded font-medium"
               >
                 {restarting ? "Restarting..." : "Restart"}
               </button>

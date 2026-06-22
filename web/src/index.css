@@ -339,9 +339,11 @@ html[data-theme="light"] {
   .text-accent  { color:var(--ds-accent); }
   .link { color:var(--ds-link); cursor:pointer; }
   .link:hover { color:var(--ds-link-hover); text-decoration:underline; }
-  /* muted icon/text button that brightens to primary text on hover */
+  /* muted icon/text button that brightens (and gains a raised hover bg) on hover.
+     Tailwind hover: utilities still override (e.g. hover:text-red-400) since they
+     sit in a higher layer than @layer components. */
   .icon-btn { color:var(--ds-muted); }
-  .icon-btn:hover { color:var(--ds-text); }
+  .icon-btn:hover { color:var(--ds-text); background-color:var(--ds-raised); }
   /* borders */
   .border-subtle { border-color:var(--ds-border); }
   .border-strong { border-color:var(--ds-border-strong); }
@@ -354,6 +356,8 @@ html[data-theme="light"] {
   .btn-danger:hover { background-color:var(--ds-danger-hover); }
   .btn-ghost { background-color:transparent; color:var(--ds-text); }
   .btn-ghost:hover { background-color:var(--ds-raised); }
+  .btn-secondary { background-color:var(--ds-raised); color:var(--ds-text); }
+  .btn-secondary:hover { background-color:var(--ds-border-strong); }
   .btn-primary:disabled,.btn-success:disabled,.btn-danger:disabled,.btn-ghost:disabled {
     background-color:var(--ds-disabled-bg); color:var(--ds-disabled-fg); cursor:not-allowed; }
   /* form fields + focus + disabled */
