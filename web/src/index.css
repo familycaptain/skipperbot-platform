@@ -390,4 +390,6 @@ html[data-theme="light"] {
   .section-header { color:var(--ds-faint); font-size:.75rem; font-weight:600;
                     text-transform:uppercase; letter-spacing:.05em; }
   .empty-state { color:var(--ds-faint); text-align:center; padding:2rem 1rem; }
+  /* small neutral dot (e.g. typing indicator, status dots) — themed both ways */
+  .dot { background-color:var(--ds-muted); }
 }
