@@ -1,4 +1,4 @@
-# Evolve — SDLC process flow (v0.5.0)
+# Evolve — SDLC process flow (v0.6.0)
 
 > **Generated view.** The source of truth is [`sdlc.yaml`](./sdlc.yaml); this
 > Mermaid is the picture of it. Open this file in GitHub (or VS Code preview /
@@ -40,7 +40,17 @@ flowchart TD
   gw_vision -->|fits| prio
   prio --> gw_prio{"surface or park?"}:::gw
   gw_prio -->|"park (low-pri)"| e_parked(["Parked / declined"]):::event
-  gw_prio -->|"top-N / critical"| l_design
+  gw_prio -->|"top-N / critical"| sec_screen
+
+  %% Gate-1 now OPENS with a security screen + empirical reproduction BEFORE any code is read —
+  %% reading code alone misattributes a UI symptom to the wrong code (#41: the notifier path, not
+  %% the agent-loop bubble). See what the USER sees first, then ground in the code behind THAT.
+  sec_screen["🔒 Security screen — classify the raw issue's INTENT (sees ONLY the issue, never the code)"]:::agent
+  sec_screen -->|"block (malicious — never reproduce it)"| gate1
+  sec_screen -->|clear| repro["🔁 Reproduce on box 2 — recreate the REPORTED symptom + screenshot it"]:::box2
+  repro -->|"can't reproduce → Gate-1 finding (no fix invented)"| gate1
+  repro -->|"reproduced ✓ — carry the proven surface"| l_design
+  repro -. "📷 before / repro proof" .-> gh_issue[("GitHub issue")]:::event
 
   %% Spec phase: the LEAD runs an agentic inner loop — shown expanded here.
   %% Design sets the approach + decides tech choices; Spec-author ⇄ Spec-auditor iterate
@@ -72,6 +82,7 @@ flowchart TD
   gw_tests -->|"failing, retry within budget"| impl
   gw_tests -->|"stuck, escalate"| gate2
   gw_tests -->|green| packet["Result review — Arch · UX · Interop · Security describe what changed + Lead verdict"]:::agent
+  validate -. "📷 after / fix proof" .-> gh_issue
   packet --> gate2
 
   gate2[/"GATE 2 — approve result"/]:::gate
@@ -114,6 +125,27 @@ flowchart TD
   survivors — the difference between a trickle and a public repo's thousands of issues.
   (Prioritize scoring on *fed* demand signals — GitHub reactions + duplicate-cluster counts,
   not the agent's guess — is the next per-agent refinement.)
+- **Gate-1 now OPENS with a security screen + empirical reproduction — BEFORE any code is read.**
+  Reading code alone misattributes a UI symptom to the wrong code (a "chat bubble" is the same
+  on-screen element whether it came from the agent loop or the background notifier — #41 was the
+  *notifier* path, but the code-read found `react-markdown` in the chat bubble and wrongly concluded
+  "no issue"). So for a surfaced item, the spec phase opens with two new agents:
+  1. **Security screen** (`security-screen`) — a subagent that reads **only the raw issue** and
+     classifies its **intent**. A good-faith fix/feature is `clear`; an issue whose *reproduction
+     itself* would be an attack ("prove you can break into X / leak Y") is **blocked** → it never
+     reaches the reproduce step (the repro agent must never become the weapon) and is flagged at
+     Gate 1.
+  2. **Reproduce on box 2** (`reproduce`) — deploy the current `release` (pre-fix) and recreate the
+     **reported** symptom on its exact user-facing surface, **screenshot what the user sees**, and
+     post it to the GitHub issue. *Could-not-reproduce is a first-class outcome* — a "couldn't
+     reproduce" Gate-1 finding (already fixed? steps unclear? environment-specific?), never an
+     invented fix. A **reproduced** item carries its proven `surface` into Grounding, which then
+     anchors on the code behind THAT surface — not the one the wording merely implies.
+- **Screenshot proofs bracket the change, on the GitHub issue itself** (via `github_connector.attach_image_to_issue`
+  → a catbox inline image, which renders even on a private repo): the **before / repro** shot at
+  Gate 1 (here's the bug, this is what the user sees) and the **after / fix** shot at
+  validation → Gate 2 / Gate 3 (here's it fixed, same surface). The operator judges the actual
+  rendered pixels, not the agents' code reasoning.
 - **The Lead owns the spec phase** (an agentic inner loop inside the deterministic
   walk). It runs **Design** (how should it work — reframes the ask, sets the approach,
   honors the engineering principles), then iterates **Spec-author ⇄ Spec-auditor** in
