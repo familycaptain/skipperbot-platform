@@ -338,6 +338,9 @@ html[data-theme="light"] {
   .text-accent  { color:var(--ds-accent); }
   .link { color:var(--ds-link); cursor:pointer; }
   .link:hover { color:var(--ds-link-hover); text-decoration:underline; }
+  /* muted icon/text button that brightens to primary text on hover */
+  .icon-btn { color:var(--ds-muted); }
+  .icon-btn:hover { color:var(--ds-text); }
   /* borders */
   .border-subtle { border-color:var(--ds-border); }
   .border-strong { border-color:var(--ds-border-strong); }

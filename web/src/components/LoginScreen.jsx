@@ -131,19 +131,19 @@ export default function LoginScreen({ onLogin }) {
     (step === "password" && !password);
 
   return (
-    <div className="flex items-center justify-center h-full bg-slate-950">
+    <div className="flex items-center justify-center h-full surface-page">
       <form
         onSubmit={onSubmit}
         className="flex flex-col items-center gap-5 px-8 py-10 max-w-sm w-full"
       >
         {/* Avatar */}
-        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg shadow-indigo-500/20">
+        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-on-accent text-4xl font-bold shadow-lg shadow-indigo-500/20">
           S
         </div>
 
         <div className="text-center">
-          <h1 className="text-xl font-semibold text-white">SkipperBot</h1>
-          <p className="text-sm text-slate-400 mt-1">{subtitle}</p>
+          <h1 className="text-xl font-semibold text-default">SkipperBot</h1>
+          <p className="text-sm text-muted mt-1">{subtitle}</p>
         </div>
 
         {/* Step 1: Username */}
@@ -155,7 +155,7 @@ export default function LoginScreen({ onLogin }) {
             placeholder="Username"
             autoFocus
             autoComplete="username"
-            className="w-full px-4 py-3 rounded-xl bg-slate-800 text-sm text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="w-full px-4 py-3 rounded-xl input text-sm outline-none focus:ring-2 focus:ring-indigo-500/50"
           />
         )}
 
@@ -168,7 +168,7 @@ export default function LoginScreen({ onLogin }) {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             autoComplete="current-password"
-            className="w-full px-4 py-3 rounded-xl bg-slate-800 text-sm text-white placeholder-slate-500 outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="w-full px-4 py-3 rounded-xl input text-sm outline-none focus:ring-2 focus:ring-indigo-500/50"
           />
         )}
 
@@ -185,7 +185,7 @@ export default function LoginScreen({ onLogin }) {
           type="button"
           onClick={onSubmit}
           disabled={buttonDisabled}
-          className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white font-semibold text-sm transition-colors"
+          className="w-full py-3 rounded-xl btn-primary font-semibold text-sm transition-colors"
         >
           {loading ? "..." : buttonLabel}
         </button>
@@ -194,7 +194,7 @@ export default function LoginScreen({ onLogin }) {
           <button
             type="button"
             onClick={handleBack}
-            className="text-sm text-slate-500 hover:text-slate-300 transition-colors"
+            className="text-sm icon-btn transition-colors"
           >
             Back
           </button>
@@ -204,7 +204,7 @@ export default function LoginScreen({ onLogin }) {
           href="https://skipperbot.com"
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs text-slate-500 hover:text-indigo-400 transition-colors mt-2"
+          className="text-xs link transition-colors mt-2"
         >
           What is Skipper? →
         </a>
