@@ -90,7 +90,23 @@ Pick **ONE** item, run its segment below, then **END the pass** (do not start a 
   reframe instead, or drop it); `phase=gate1`, **END**. Only items whose fix is `platform` continue.
   Proceeding: bug **or** operator-authored → skip vision; external feature →
   `evolve-vision-fit` (`off-vision` → rejected, **END**, *public items only*). Then
-  `evolve-prioritize` → `park` → `phase=parked`, **END**; `surface` → run the **SPEC PHASE**:
+  `evolve-prioritize` → `park` → `phase=parked`, **END**; `surface` → run the **SPEC PHASE**, which now
+  OPENS with empirical reproduction (reading code alone misattributes UI symptoms to the wrong code — a
+  "chat bubble" looks identical whether it came from the agent loop or the notifier, #41; so we see what
+  the USER sees FIRST, then ground in the code behind THAT):
+  **(0a) SPAWN `evolve-security-screen`** (forked subagent, sees ONLY the raw issue — never the
+  codebase): classify intent. `verdict=block` → do NOT reproduce; push a **Gate 1** packet flagging the
+  security concern for the operator (never auto-reproduce a blocked item; never silently reject an
+  operator-authored one), `phase=gate1`, **END**. `verdict=clear` (carry any `repro_constraints`
+  forward) →
+  **(0b) `evolve-reproduce`** (orchestrator drives box 2, like validate): `box2_live.py deploy release`
+  (current pre-fix state, mock data), reproduce the reported symptom on the EXACT surface the issue
+  names, `page.screenshot`, then `attach_image_to_issue(<n>, …)` to post it to the GitHub issue.
+  `reproduced=no`/`inconclusive` → do NOT spec / do NOT invent a fix; push a **Gate 1** packet
+  ("could not reproduce" + the evidence) for the operator (already fixed? steps unclear?
+  environment-specific?), `phase=gate1`, **END**. `reproduced=yes` → carry `surface` (the PROVEN
+  user-facing surface) forward and continue the spec phase, grounding in the code behind THAT surface —
+  not the one the issue's wording merely implies:
   `evolve-grounding` → `evolve-design` → `evolve-spec-author` → **`evolve-code-scout`**
   (read-only: sketch WHAT code would change — files/areas, add/modify/rewrite, where new logic lives —
   writing NO code; save as `code_plan.json`) then SPAWN subagent `evolve-spec-audit`

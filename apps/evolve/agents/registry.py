@@ -43,6 +43,26 @@ TRIAGE_OUT = _obj({
     "rationale": _STR,
 }, ["summary", "kind", "rationale"])               # spec_status + belongs_to prompt-mandated; optional in schema
 
+# Gate-1 issue-intent screen — runs FIRST (before reproduction), classifies the raw issue's intent so a
+# maliciously-worded issue can never weaponize the reproduce step.
+SECURITY_SCREEN_OUT = _obj({
+    "summary": _STR,
+    "verdict": {"type": "string", "enum": ["clear", "block"]},   # block -> SKIP reproduce, flag at Gate-1
+    "reason": _STR,
+    "repro_constraints": _STR,                     # optional guardrails for reproduce when 'clear' (else "")
+}, ["summary", "verdict", "reason"])
+
+# Gate-1 empirical reproduction — runs after the screen clears, BEFORE any code is read. Proves/disproves
+# the issue on box 2 with a screenshot posted to the GH issue, and names the REAL surface for grounding.
+REPRODUCE_OUT = _obj({
+    "summary": _STR,
+    "reproduced": {"type": "string", "enum": ["yes", "no", "inconclusive"]},  # no/inconclusive -> Gate-1, no fix invented
+    "evidence": _arr(_STR),                        # catbox URL(s) + one line each
+    "observed": _STR,                              # what happened vs what the issue claims
+    "surface": _STR,                               # the precise user-facing surface (so grounding targets the right code)
+    "notes": _STR,
+}, ["summary", "reproduced", "surface"])
+
 VISION_OUT = _obj({
     "summary": _STR,
     "verdict": {"type": "string", "enum": ["fits", "off-vision", "needs-charter-change"]},
@@ -183,6 +203,12 @@ ROSTER: dict[str, AgentSpec] = {
     "triage": AgentSpec(
         "triage", "Classify a work item (bug vs feature), dedup, link to C/F/S.",
         TRIAGE_OUT, prompt_file="triage.md", tier="fast"),
+    "security-screen": AgentSpec(
+        "security-screen", "Screen a raw issue's INTENT before reproduction — clear vs block (malicious).",
+        SECURITY_SCREEN_OUT, prompt_file="security-screen.md", tier="deep", charter_keys=["non-goals"]),
+    "reproduce": AgentSpec(
+        "reproduce", "Reproduce the reported issue on box 2 + screenshot it to the GH issue, before any code is read.",
+        REPRODUCE_OUT, prompt_file="reproduce.md", tier="deep", requires_tools=True),
     "vision-fit": AgentSpec(
         "vision-fit", "Judge a feature against the charter + Capability scope.",
         VISION_OUT, prompt_file="vision-fit.md", tier="deep",
