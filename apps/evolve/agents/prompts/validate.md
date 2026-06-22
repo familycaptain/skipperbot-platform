@@ -74,6 +74,14 @@ rendered black — all while computed values "matched"). So whenever the change 
    to box 2, re-screenshot, and look again. Loop until the pixels match the requirement. NEVER report
    `passed: true` on a visible change whose own evidence screenshot doesn't show the fix.
 
+**Pair the AFTER with the gate-1 BEFORE.** If gate-1's `reproduce` step posted a **before / repro**
+screenshot (the bug as the user saw it), you MUST post the matching **after / fix** screenshot of the
+**same surface** to the same issue — a NEW image, not the repro URL re-cited — **even for a behavior
+fix where the symptom is an error disappearing** (capture the surface now working: the refresh that no
+longer errors, the notification that now renders). The before/after pair on the issue IS the proof the
+operator reviews; passing request/selector checks are necessary but are NOT a substitute for showing
+the fixed surface. Label it so it reads as the back half of the pair (e.g. `after/fix: <surface> — …`).
+
 Name each screenshot uniquely (e.g. `ev<n>-<app>-before-light.png`) so the issue accrues the real
 before/after trail. For a multi-app job like the design-system migration (#38), this means a BEFORE and
 an AFTER per app, in both light and dark where relevant — proof for EVERY app, not a spot-check.
