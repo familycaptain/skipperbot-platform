@@ -76,7 +76,7 @@ function EditableNode({ id, data }) {
           if (e.key === "Enter") commit();
           if (e.key === "Escape") { setLabel(data.label); setEditing(false); }
         }}
-        className="bg-slate-700 text-white text-xs px-2 py-1 rounded border border-indigo-500 outline-none w-full text-center"
+        className="surface-raised text-xs px-2 py-1 rounded border border-indigo-500 outline-none w-full text-center"
         style={{ minWidth: 60 }}
       />
     );
@@ -85,14 +85,14 @@ function EditableNode({ id, data }) {
   return (
     <div
       onDoubleClick={() => setEditing(true)}
-      className="px-3 py-1.5 text-xs text-white cursor-pointer select-none text-center truncate"
+      className="px-3 py-1.5 text-xs text-default cursor-pointer select-none text-center truncate"
       title="Double-click to edit"
       style={{ maxWidth: NODE_WIDTH - 20 }}
     >
-      <Handle id="top" type="target" position={Position.Top} className="!w-2 !h-2 !bg-slate-500 !border-slate-400" />
-      <Handle id="bottom" type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-slate-500 !border-slate-400" />
-      <Handle id="left" type="target" position={Position.Left} className="!w-2 !h-2 !bg-slate-500 !border-slate-400" />
-      <Handle id="right" type="source" position={Position.Right} className="!w-2 !h-2 !bg-slate-500 !border-slate-400" />
+      <Handle id="top" type="target" position={Position.Top} className="!w-2 !h-2 !bg-[var(--ds-muted)] !border-[var(--ds-faint)]" />
+      <Handle id="bottom" type="source" position={Position.Bottom} className="!w-2 !h-2 !bg-[var(--ds-muted)] !border-[var(--ds-faint)]" />
+      <Handle id="left" type="target" position={Position.Left} className="!w-2 !h-2 !bg-[var(--ds-muted)] !border-[var(--ds-faint)]" />
+      <Handle id="right" type="source" position={Position.Right} className="!w-2 !h-2 !bg-[var(--ds-muted)] !border-[var(--ds-faint)]" />
       {data.label || "Node"}
     </div>
   );
@@ -301,21 +301,21 @@ export default function FlowchartEditor({ meta, onMetaChange, readOnly = false }
           <Panel position="top-right" className="flex items-center gap-1">
             <button
               onClick={handleAddNode}
-              className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+              className="flex items-center gap-1 px-2 py-1 rounded text-xs btn-secondary border border-subtle transition-colors"
               title="Add node"
             >
               <Plus size={12} /> Node
             </button>
             <button
               onClick={handleAutoLayout}
-              className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+              className="flex items-center gap-1 px-2 py-1 rounded text-xs btn-secondary border border-subtle transition-colors"
               title="Auto-layout"
             >
               <LayoutGrid size={12} /> Layout
             </button>
             <button
               onClick={handleDeleteSelected}
-              className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-slate-800 border border-slate-700 text-slate-300 hover:bg-red-900/60 hover:text-red-300 transition-colors"
+              className="flex items-center gap-1 px-2 py-1 rounded text-xs btn-secondary border border-subtle hover:bg-red-900/60 hover:text-red-300 transition-colors"
               title="Delete selected"
             >
               <Trash2 size={12} />
