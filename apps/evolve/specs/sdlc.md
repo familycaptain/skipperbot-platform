@@ -1,4 +1,4 @@
-# Evolve — SDLC process flow (v0.7.0)
+# Evolve — SDLC process flow (v0.8.0)
 
 > **Generated view.** The source of truth is [`sdlc.yaml`](./sdlc.yaml); this
 > Mermaid is the picture of it. Open this file in GitHub (or VS Code preview /
@@ -90,7 +90,12 @@ flowchart TD
   gate2 -->|reject| e_rejected
   gate2 -->|approve| merge[["Auto-merge to release branch"]]:::sys
   merge --> resync[["Re-sync files to DB"]]:::sys
-  resync --> e_done(["Merged to release — awaiting operator publish"]):::event
+  resync --> g3deploy[["skipper-uat: deploy release (skipper update)"]]:::sys
+  g3deploy --> gate3[/"GATE 3 — verify: operator + assistant test it live on skipper-uat"/]:::gate
+  gate3 -->|"✓ works"| close[["Close the GitHub issue"]]:::sys
+  close --> e_done(["Verified + issue closed — per-change done"]):::event
+  gate3 -->|"✗ code bug (spec still valid) → resume"| impl
+  gate3 -->|"✗ approach wrong → rewrite spec → re-review"| l_design
 
   %% The operator's ASSISTANT — the human-in-the-loop's AI partner, present at EVERY gate.
   %% Distinct from the autonomous swarm: it reads each packet, surfaces the real decision, pushes
@@ -98,6 +103,7 @@ flowchart TD
   assistant{{"🤖 Operator's assistant — reads every packet · surfaces the real decision in plain language · pushes back on thin validation / code-read-not-reproduced conclusions · answers questions · OPERATES the gate on the operator's explicit say-so (agents CANNOT decide) · runs the watcher that keeps items moving"}}:::asst
   assistant -. "review + operate · on say-so" .-> gate1
   assistant -. "review + operate · on say-so" .-> gate2
+  assistant -. "verify + operate · on say-so" .-> gate3
 
   classDef event fill:#e8eef7,stroke:#5b7aa7,color:#1b2b44;
   classDef asst fill:#eef0ff,stroke:#6a5acd,color:#1e1a44,stroke-width:2px;
@@ -179,10 +185,15 @@ flowchart TD
   back, or approving on the operator's standing instruction, and surfacing genuine forks. (`/chat-ev <n>`
   is the gate-1 requirements-partner form of this role; `/evolve-assistant` rebuilds it in a fresh
   session.)
-- **Gate 3 — verify (acceptance): merge is NOT done.** A newer **acceptance loop** sits *after*
-  merge — see [§ Gate 3 below](#gate-3--verify-acceptance-loop). It is **live in the subscription
-  `/loop` POC engine today**; the production graph above (which `pipeline.py` walks at runtime) still
-  ends at `e_done`, and adopts the verify gate as a tracked follow-up.
+- **Gate 3 — verify (acceptance): merge is NOT done.** Auto-merge ships a *candidate* to `release`;
+  "shipped" ≠ "works." So the canonical `/loop` flow continues *past* merge into a **`verify`** phase
+  (now shown in the main graph above): `release` is deployed to **skipper-uat** (`skipper update`), the
+  **operator + their assistant test it live**, and only then — `✓ works` **closes the GitHub issue**
+  (per-change done), or `✗ broken` resumes the SAME conversation: a localized **code bug** →
+  re-implement → Gate 2; a **wrong approach** → re-design → rewrite spec → re-review → Gate 1. See
+  [§ Gate 3 below](#gate-3--verify-acceptance-loop) for the close-up. (skipper-uat — a dedicated
+  mock-data box — replaced testing on the family's production Pi, so verifying never disturbs the live
+  home.)
 - **The build half fails closed (#29).** A change reaches a *green* Gate 2 only when the
   implement agent actually changed code **and** included a runnable **bound test**, and
   box 2 ran *that* test (not the engine's own suite) and it passed. A failed/empty/untested
@@ -208,12 +219,13 @@ flowchart TD
 ### Gate 3 — verify (acceptance loop)
 
 **Merge is not done.** Auto-merge ships a *candidate* to `release`, but "shipped" ≠ "works." So
-after merge an item enters a **`verify`** phase: the operator deploys to their Pi (`skipper update`),
-tests it live, and only then confirms.
+after merge an item enters a **`verify`** phase: `release` is deployed to **skipper-uat** (a dedicated
+mock-data box, `skipper update`), the **operator and their assistant test it live** (the assistant
+operates the gate on the operator's explicit say-so), and only then confirm.
 
 ```mermaid
 flowchart LR
-  merged(["Merged to release"]):::event --> verify[/"GATE 3 — verify (operator tested it on the Pi)"/]:::gate
+  merged(["Merged to release"]):::event --> verify[/"GATE 3 — verify (operator + assistant test live on skipper-uat)"/]:::gate
   verify -->|"✓ works"| close[["Close the GitHub issue"]]:::sys --> done(["Verified + closed"]):::event
   verify -->|"✗ broken — code bug, spec still valid"| reimpl["Re-implement → Gate 2"]:::agent
   verify -->|"✗ broken — approach was wrong"| respec["Re-design → REWRITE spec → re-review → Gate 1"]:::agent
