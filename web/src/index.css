@@ -304,6 +304,9 @@ html, body, #root {
   --ds-warn-bg:#713f12; --ds-warn-fg:#fcd34d;
   --ds-err-bg:#7f1d1d;  --ds-err-fg:#fca5a5;
   --ds-neutral-bg:#334155; --ds-neutral-fg:#cbd5e1;
+  /* packaged-app tiles keep a distinct (teal) accent vs built-in — a deliberate
+     second accent for the appPackage distinction (feature), semantic + both-theme. */
+  --ds-pkg:#2dd4bf; --ds-pkg-bg:rgba(19,78,74,.30); --ds-pkg-border:rgba(15,118,110,.40);
 }
 html[data-theme="light"] {
   /* LIGHT — independent literals matching the tuned warm/clean reference */
@@ -321,6 +324,7 @@ html[data-theme="light"] {
   --ds-warn-bg:#fef3c7; --ds-warn-fg:#b45309;
   --ds-err-bg:#fee2e2;  --ds-err-fg:#b91c1c;
   --ds-neutral-bg:#ececec; --ds-neutral-fg:#57534e;
+  --ds-pkg:#0d9488; --ds-pkg-bg:#effdfb; --ds-pkg-border:#bdeee2;
 }
 
 @layer components {
@@ -390,4 +394,10 @@ html[data-theme="light"] {
   .dot { background-color:var(--ds-muted); }
   /* thin divider line (a bg hairline, e.g. date separators) */
   .divider { background-color:var(--ds-border); }
+  /* app launcher tiles — built-in vs packaged (distinct accent) */
+  .text-pkg { color:var(--ds-pkg); }
+  .app-tile { background-color:var(--ds-card); border:1px solid var(--ds-border); color:var(--ds-muted); }
+  .app-tile:hover { background-color:var(--ds-raised); border-color:var(--ds-border-strong); }
+  .app-tile-pkg { background-color:var(--ds-pkg-bg); border:1px solid var(--ds-pkg-border); color:var(--ds-pkg); }
+  .app-tile-pkg:hover { filter:brightness(1.08); }
 }
