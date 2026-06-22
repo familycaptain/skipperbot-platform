@@ -114,6 +114,11 @@ def seed_weather():
         "lon": -97.74306,
     }
     settings.set("default_location", json.dumps(record), scope="platform")
+    # Austin is Central. Onboarding normally sets the timezone; a mock box skips
+    # onboarding, so without this the platform falls back to Etc/UTC and the thinking
+    # / nag schedulers gate on the wrong hours (they sleep during the household's
+    # actual waking hours). Match the mock family's location.
+    settings.set("timezone", "America/Chicago", scope="platform")
     _bump("weather_location")
 
 
