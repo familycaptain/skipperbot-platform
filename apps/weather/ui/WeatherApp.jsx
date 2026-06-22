@@ -70,11 +70,18 @@ export default function WeatherApp({ context = {} }) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
-  const load = useCallback(async (q) => {
+  // load(q): geocode/resolve the place string `q` (blank = configured home).
+  // load("", coords): refetch by KNOWN coordinates — no geocoding — used when
+  // the user refreshes the place already shown (the box is unchanged).
+  const load = useCallback(async (q, coords) => {
     setLoading(true);
     setErr("");
     try {
-      const res = await fetch(`${API}/summary?location=${encodeURIComponent(q || "")}&hours=12&days=10`);
+      const params = coords
+        ? `lat=${encodeURIComponent(coords.lat)}&lon=${encodeURIComponent(coords.lon)}` +
+          `&label=${encodeURIComponent(coords.label || "")}&cc=${encodeURIComponent(coords.cc || "")}`
+        : `location=${encodeURIComponent(q || "")}`;
+      const res = await fetch(`${API}/summary?${params}&hours=12&days=10`);
       const j = await res.json();
       if (j.error) { setErr(j.error); setData(null); }
       else { setData(j); if (j.place?.display_label) setQuery(j.place.display_label); }
@@ -88,7 +95,21 @@ export default function WeatherApp({ context = {} }) {
 
   useEffect(() => { load(""); }, [load]);
 
-  const submit = (e) => { e.preventDefault(); load(query.trim()); };
+  // Go/Refresh: if the box is UNCHANGED from the place already shown, the user is
+  // refreshing — refetch by the stored lat/lon (no re-geocoding the verbose
+  // display_label). If the box was changed to a different place, geocode it.
+  const submitQuery = (q) => {
+    const t = (q || "").trim();
+    const cur = (data?.place?.display_label || "").trim();
+    if (data?.place && t === cur) {
+      load("", { lat: data.place.lat, lon: data.place.lon,
+                 label: data.place.display_label, cc: data.place.country_code });
+    } else {
+      load(t);
+    }
+  };
+
+  const submit = (e) => { e.preventDefault(); submitQuery(query); };
 
   return (
     <div className="h-full overflow-y-auto surface-page text-default">
@@ -108,7 +129,7 @@ export default function WeatherApp({ context = {} }) {
               />
             </div>
             <button type="submit" className="rounded btn-primary px-3 py-1.5 text-sm font-medium">Go</button>
-            <button type="button" onClick={() => load(query.trim())} title="Refresh" className="icon-btn p-1.5">
+            <button type="button" onClick={() => submitQuery(query)} title="Refresh" className="icon-btn p-1.5">
               <RefreshCw size={15} />
             </button>
           </form>

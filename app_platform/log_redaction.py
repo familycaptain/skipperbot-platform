@@ -16,12 +16,19 @@ _TOKEN_QS_RE = re.compile(r"((?:access_token|api_token|token)=)[^&\s\"']+")
 # Mask the ENTIRE query string of any /ws upgrade line — the only place a token
 # legitimately appeared in a URL here — so a future/renamed param can't re-leak.
 _WS_QS_RE = re.compile(r"(/ws[^\s?\"']*)\?[^\s\"']*")
+# Mask home-location query params (lat/lon/location) so the home location is
+# never written to uvicorn.access — matching app_platform.location's guarantee
+# that the home location is not logged. The leading lookbehind avoids matching a
+# longer word ending in lat/lon (e.g. ``flat=``). The location string is already
+# percent-encoded in the request line, so ``[^&\s"']+`` captures the whole value.
+_GEO_QS_RE = re.compile(r"(?<![A-Za-z])((?:lat|lon|location)=)[^&\s\"']+")
 
 
 def redact_access_log_line(text: str) -> str:
-    """Mask any auth token in an access-log request line."""
+    """Mask any auth token OR home-location param in an access-log request line."""
     text = _WS_QS_RE.sub(r"\1?***", text)
     text = _TOKEN_QS_RE.sub(r"\1***", text)
+    text = _GEO_QS_RE.sub(r"\1***", text)
     return text
 
 

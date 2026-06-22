@@ -70,7 +70,10 @@ export default function WeatherMap({ place }) {
     let dead = false;
     // NWS severe-weather alerts are US-only; the server gates non-US locations
     // and returns an explicit message we surface instead of a silent empty.
-    fetch(`${API}/alerts?location=${encodeURIComponent(place.display_label || "")}`)
+    // Fetch by the coordinates we already hold — never re-geocode the verbose
+    // display_label (which the geocoder can't parse back; issue #42).
+    fetch(`${API}/alerts?lat=${encodeURIComponent(place.lat)}&lon=${encodeURIComponent(place.lon)}` +
+          `&cc=${encodeURIComponent(place.country_code || "")}`)
       .then((r) => r.json())
       .then((gj) => {
         if (dead || !gj) return;
