@@ -12,8 +12,14 @@ behavior: 'The web desktop UI is themeable via CSS custom properties exposed to 
   AND the in-DOM app panels (which render as React components in the same document, not iframes)
   — recolors together when the root attribute flips, so there is NO light-shell/dark-panel
   seam. Cases that don''t invert cleanly get explicit light-mode overrides: foreground-on-accent
-  (text-white on colored buttons must stay legible), low-opacity gradients (e.g. the assistant-bubble
-  indigo/purple at 20%), and markdown/code blocks. A control in the Shell header''s top-right
+  (text-white on colored buttons must stay legible) and low-opacity gradients (e.g. the
+  assistant-bubble indigo/purple at 20%). Markdown/code styling (the shared .markdown-body used by
+  bot bubbles, notification bubbles, and app panels) is TOKEN-DRIVEN — code/pre background, links,
+  blockquote, and GFM table borders/header resolve --ds-* tokens (e.g. --ds-raised, --ds-link,
+  --ds-border, --ds-muted) so it recolors with the theme flip and needs NO per-element
+  html[data-theme=light] override; every markdown element must be distinguishable from AND meet
+  WCAG AA against its host surface (bot surface-card, the notification gradient bubble, and the app
+  surface-panel) in BOTH themes. A control in the Shell header''s top-right
   cluster — an accessible icon button with an aria-label naming the action (''Switch to light/dark
   theme'') and aria-pressed reflecting state, showing the icon for the theme it will switch
   TO (sun/moon) — toggles the theme; on click the document root''s data-theme attribute is

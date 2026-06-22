@@ -1,5 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
 import { Bell, Clock, FileText, Layers, Wrench } from "lucide-react";
 
 /**
@@ -81,7 +82,12 @@ export default function ChatMessage({ message, showTime = false }) {
       <div className="flex flex-col items-start">
         <div className="max-w-[85%] md:max-w-[70%] px-4 py-2.5 rounded-2xl rounded-bl-md bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-default text-sm leading-relaxed flex items-start gap-2">
           <Icon size={16} className="text-indigo-400 mt-0.5 shrink-0" />
-          <span className="whitespace-pre-wrap">{content}</span>
+          {/* Render markdown like bot bubbles (sanitized: react-markdown escapes HTML,
+              no rehype-raw). remark-breaks keeps single newlines as line breaks so a
+              plain multi-line notification doesn't collapse (was whitespace-pre-wrap). */}
+          <div className="markdown-body min-w-0 flex-1">
+            <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{content}</ReactMarkdown>
+          </div>
         </div>
         {showTime && <MessageTime ts={ts} align="start" />}
       </div>

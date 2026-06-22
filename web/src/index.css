@@ -125,9 +125,6 @@ html[data-theme="light"] .bg-gradient-to-br.from-indigo-500 { color:#ffffff; }
  * (still passes white-text contrast). Targets the user bubble's unique rounded-br-md + indigo. */
 html[data-theme="light"] .rounded-br-md.bg-indigo-600 { background-color:#6366f1; }
 
-/* Markdown code/pre inside chat bubbles assume a dark surface — fix for light. */
-html[data-theme="light"] .markdown-body code { background:rgba(60,50,40,.07); }
-html[data-theme="light"] .markdown-body pre { background:rgba(60,50,40,.06); }
 
 /* ── Accent colors in light mode ─────────────────────────────────────────────
  * Accent scales aren't neutral-remapped, so (a) bright accent TEXT (text-X-200/300/400) on a now-light
@@ -216,13 +213,15 @@ html, body, #root {
   margin-bottom: 0.125rem;
 }
 .markdown-body code {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--ds-raised);
   padding: 0.1rem 0.35rem;
   border-radius: 0.25rem;
   font-size: 0.85em;
+  overflow-wrap: anywhere;
 }
 .markdown-body pre {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--ds-raised);
+  border: 1px solid var(--ds-border);
   padding: 0.75rem;
   border-radius: 0.5rem;
   overflow-x: auto;
@@ -245,33 +244,36 @@ html, body, #root {
   margin-top: 0;
 }
 .markdown-body blockquote {
-  border-left: 3px solid rgba(255, 255, 255, 0.2);
+  border-left: 3px solid var(--ds-border);
   padding-left: 0.75rem;
   margin: 0.5rem 0;
-  opacity: 0.8;
+  color: var(--ds-muted);
 }
 .markdown-body strong {
   font-weight: 600;
 }
 .markdown-body a {
-  color: #93c5fd;
-  text-decoration: none;
+  color: var(--ds-link);
+  text-decoration: underline;
+  overflow-wrap: anywhere;
 }
 .markdown-body a:hover {
-  text-decoration: underline;
+  color: var(--ds-link-hover);
 }
 .markdown-body table {
+  display: block;
+  overflow-x: auto;
   border-collapse: collapse;
   margin: 0.5rem 0;
   font-size: 0.85em;
 }
 .markdown-body th,
 .markdown-body td {
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--ds-border);
   padding: 0.25rem 0.5rem;
 }
 .markdown-body th {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--ds-raised);
   font-weight: 600;
 }
 

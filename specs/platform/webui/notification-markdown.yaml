@@ -1,0 +1,51 @@
+kind: specification
+id: platform.webui.notification-markdown
+title: Notification chat bubbles render sanitized markdown like bot bubbles (line breaks preserved)
+state: live
+autonomy: gated
+verified: true
+behavior: >
+  In the web UI, a NOTIFICATION chat bubble (web/src/components/ChatMessage.jsx,
+  role='notification' — proactive/background messages pushed as {type:'notification'}
+  and the same role on history replay) renders its content as MARKDOWN using the same
+  sanitized renderer the bot bubble uses (react-markdown + remark-gfm), inside the
+  existing .markdown-body, replacing the previous plain whitespace-pre-wrap text node.
+  remark-breaks preserves single newlines as line breaks so a multi-line PLAIN-text
+  notification does not collapse to one line. The notification chrome is preserved: the
+  source icon (Bell etc.), the indigo/purple gradient bubble, start alignment, spacing,
+  and the icon+content flex row (a fenced code block or GFM table stays within the bubble
+  beside the icon — markdown-body is min-w-0 flex-1, tables scroll). USER bubbles remain
+  PLAIN text; bot bubbles unchanged. SECURITY: rendering stays HTML-escaped — no
+  rehype-raw, no dangerouslySetInnerHTML — and react-markdown's default urlTransform
+  (neutralizing javascript:/data: link URLs) is preserved, so a notification containing
+  raw <script>/<img onerror> or a javascript: link is inert. Rendering markdown does make
+  links in notifications clickable <a> (the same property bot bubbles already have) — an
+  accepted, benign affordance. The shared .markdown-body VISUAL STYLING (token-driven,
+  host-relative WCAG-AA in both themes across bot/notification/app surfaces) is governed by
+  platform.webui.theme (amended by this change).
+implements:
+- web/src/components/ChatMessage.jsx
+- web/src/index.css
+tests:
+- type: acceptance
+  path: scripts/ui_harness.py
+  rubric: >
+    LIVE on box 2 (web built with packaged-app-deps --install). Inject a notification
+    whose message contains bold, a list, inline + fenced code, a heading, a link, and a
+    GFM table, AND a separate plain multi-line notification. In BOTH dark and light:
+    (1) the markdown notification bubble contains real <strong>/<ul>/<li>/<code>/<pre>/<h2>/<a>/<table>
+    elements, NOT literal '**'/'`'/'## '/'|' markers (the inverse of the gate-1 repro);
+    (2) the plain multi-line notification keeps its line breaks (multiple lines, not one);
+    (3) the source icon + gradient bubble + alignment are intact and a code block / GFM table
+    stay within the bubble; (4) bot bubble still renders markdown; a user message stays plain;
+    (5) code/pre background, link, blockquote, and GFM table border/header are token-driven and
+    meet WCAG AA against the notification gradient surface in both themes; (6) an injected
+    <script>/<img onerror>/[x](javascript:...) renders inert/escaped.
+links: {}
+notes: >
+  Issue #41 (corrected scope after box-2 reproduction; before/after screenshots on the
+  issue). Reuses the bot-bubble renderer (adds remark-breaks for soft line breaks). The
+  .markdown-body token/AA styling is recorded as an amendment to platform.webui.theme so the
+  markdown-AA contract lives in one spec. No user-bubble markdown. JS/CSS-only surface (no JS
+  unit harness) so the bound proof is the live box-2 acceptance; must be built on box 2
+  (Tailwind v4 / Lightning CSS var() gotcha).
