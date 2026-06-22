@@ -1,0 +1,68 @@
+kind: specification
+id: weather.current-conditions.refresh-by-coords
+title: Refreshing the current weather location refetches by stored coordinates without re-geocoding
+state: live
+autonomy: gated
+verified: false
+behavior: >
+  Refresh of the location already on screen is coordinate-based across the whole
+  dashboard. GET /api/apps/weather/summary and GET /api/apps/weather/alerts each
+  accept optional lat & lon (plus an echoed display label and country_code). When
+  BOTH lat and lon are present AND valid — each a finite float, lat in [-90,90],
+  lon in [-180,180] — apps/weather/data.py fetches Open-Meteo (forecast) / NWS
+  (alerts) by those coordinates and does NOT call app_platform.location
+  (resolve_location / the geocoder) at all; place is built from the passed
+  lat/lon/label/country_code (country_code normalized to ISO alpha-2, else '').
+  If lat/lon are absent, partial, non-finite, or out of range, the call DEGRADES
+  to the existing location-string resolve path (no crash, no garbage point).
+  The dashboard (apps/weather/ui/WeatherApp.jsx) gates Go and Refresh on the box:
+  if the trimmed box text EXACTLY equals the resolved place.display_label (the UI
+  re-seeds that canonical label, so anything not byte-identical is a new search)
+  it refetches /summary by the held lat/lon — ZERO geocoding; otherwise it
+  geocodes the typed text as before. The Radar map (apps/weather/ui/WeatherMap.jsx)
+  fetches /alerts by the held place.lat/lon, never the verbose display_label.
+  A different city never reuses the stored coordinates; the initial empty-box load
+  resolves the configured home by string. PRIVACY: home lat/lon (and the location
+  string) on the weather endpoints are masked by app_platform/log_redaction so the
+  home location is not written to uvicorn.access. No change to display_label, the
+  Open-Meteo/NWS request shapes, or the tools/chat/voice resolution governed by
+  weather.current-conditions.zip-city-authoritative.
+implements:
+- apps/weather/routes.py::api_summary
+- apps/weather/routes.py::api_alerts
+- apps/weather/data.py::weather_summary
+- apps/weather/data.py::nws_alerts
+- apps/weather/data.py::_valid_coords
+- apps/weather/data.py::_place_from_coords
+- apps/weather/data.py::_norm_cc
+- apps/weather/ui/WeatherApp.jsx
+- apps/weather/ui/WeatherMap.jsx
+- app_platform/log_redaction.py
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_data.py
+  rubric: >
+    Offline. Coords supplied to weather_summary -> place from coords/label/cc and
+    resolve_location is NOT called; a location string still resolves; partial /
+    NaN / inf / out-of-range coords degrade to the string path. nws_alerts by US
+    coords fetches NWS by point with no geocode; non-US / empty / odd cc returns
+    the explicit US-only message without crashing; a location string still
+    resolves. _norm_cc uppercases a 2-letter code and blanks anything else.
+    log_redaction masks lat=/lon=/location= on a weather access-log line without
+    clobbering unrelated params ending in lat/lon.
+- type: acceptance
+  path: scripts/ui_harness.py
+  rubric: >
+    LIVE on box 2. Unchanged-box Go/Refresh re-renders with no error and the
+    /summary request carries lat/lon (no geocode), repeated >=3x; the Radar tab
+    loads alerts with no error and /alerts carries lat/lon; a different typed city
+    geocodes and shows that city; the box label equals the rendered
+    place.display_label. Screenshot unchanged-refresh, Radar, changed-search in
+    light+dark.
+links: {}
+notes: >
+  Issue #42. Refresh-by-coords gated on the box being unchanged; fixes both the
+  /summary and Radar /alerts surfaces (symmetric). Sibling of
+  weather.current-conditions.zip-city-authoritative (search/tools/chat/voice
+  resolution unchanged). verified flips true once the box-2 acceptance + unit
+  test pass.

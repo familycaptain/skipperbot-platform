@@ -48,6 +48,52 @@ def _desc(code) -> str:
         return "unknown"
 
 
+def _norm_cc(cc) -> str:
+    """Normalize a country code to an ISO alpha-2 (uppercase), else ''.
+
+    Anything that is not exactly two letters (empty / 3-letter / garbage)
+    becomes '' — which the NWS gate treats as non-US, degrading safely rather
+    than crashing or mis-gating.
+    """
+    s = str(cc or "").strip().upper()
+    return s if (len(s) == 2 and s.isalpha()) else ""
+
+
+def _valid_coords(lat, lon):
+    """Return (lat, lon) as finite floats in range, or None.
+
+    Both must be present and parse to finite floats with lat in [-90, 90] and
+    lon in [-180, 180]; otherwise None so the caller degrades to the
+    location-string resolve path (never fetch a garbage point).
+    """
+    if lat is None or lon is None:
+        return None
+    try:
+        la, lo = float(lat), float(lon)
+    except (TypeError, ValueError):
+        return None
+    import math
+    if not (math.isfinite(la) and math.isfinite(lo)):
+        return None
+    if not (-90.0 <= la <= 90.0 and -180.0 <= lo <= 180.0):
+        return None
+    return la, lo
+
+
+def _place_from_coords(lat: float, lon: float, label: str = "", cc: str = "") -> dict:
+    """Build the place dict directly from known coordinates — NO geocoding.
+
+    Used when refreshing a location the UI already resolved (it holds the
+    coords), so the verbose display_label is never re-geocoded.
+    """
+    return {
+        "display_label": (label or "").strip() or "Current location",
+        "lat": lat,
+        "lon": lon,
+        "country_code": _norm_cc(cc),
+    }
+
+
 def _resolve(location: str = ""):
     """Resolve a place via the platform service.
 
@@ -85,9 +131,19 @@ def _val(arr, i):
     return arr[i] if isinstance(arr, list) and i < len(arr) else None
 
 
-def weather_summary(location: str = "", hours: int = 12, days: int = 10) -> dict:
-    """Return {place, current, hourly[], daily[]} for the dashboard, or {error}."""
-    place, err = _resolve(location)
+def weather_summary(location: str = "", hours: int = 12, days: int = 10,
+                    lat=None, lon=None, label: str = "", cc: str = "") -> dict:
+    """Return {place, current, hourly[], daily[]} for the dashboard, or {error}.
+
+    When valid lat/lon are supplied (a refresh of a location the UI already
+    resolved), fetch by those coordinates and SKIP geocoding entirely; otherwise
+    resolve ``location`` via the platform service as before.
+    """
+    coords = _valid_coords(lat, lon)
+    if coords:
+        place, err = _place_from_coords(coords[0], coords[1], label, cc), None
+    else:
+        place, err = _resolve(location)
     if err:
         return {"error": err}
 
@@ -184,16 +240,24 @@ def weather_summary(location: str = "", hours: int = 12, days: int = 10) -> dict
     }
 
 
-def nws_alerts(location: str = "") -> dict:
+def nws_alerts(location: str = "", lat=None, lon=None, cc: str = "") -> dict:
     """Active NWS severe-weather alerts near the location, as GeoJSON.
 
     NWS alerts are US-only: for a non-US location, return an explicit message
     (never a silent empty result). Fetched server-side because the NWS API
     expects a descriptive User-Agent (browsers can't set one). Returns a
     GeoJSON FeatureCollection trimmed to what the map needs.
+
+    When valid lat/lon are supplied (a refresh from the Radar map, which already
+    holds the coords), use them and SKIP geocoding; the US-only gate uses the
+    normalized ``cc`` (empty/odd -> treated non-US, degrades safely).
     """
     empty = {"type": "FeatureCollection", "features": []}
-    place, err = _resolve(location)
+    coords = _valid_coords(lat, lon)
+    if coords:
+        place, err = _place_from_coords(coords[0], coords[1], "", cc), None
+    else:
+        place, err = _resolve(location)
     if err:
         return {**empty, "message": err}
 
