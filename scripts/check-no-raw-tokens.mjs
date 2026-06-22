@@ -68,6 +68,10 @@ function scan(dir) {
   for (const entry of readdirSync(dir)) {
     const p = join(dir, entry);
     const st = statSync(p);
+    // EXEMPT: game canvases (e.g. apps/arcade/ui/games/*) use intentional, game-specific
+    // palettes (card suits, boards, sprites) that are NOT part of the neutral light/dark
+    // design system — migrating them to semantic neutrals would break the games (issue #38).
+    if (st.isDirectory() && entry === "games") continue;
     if (st.isDirectory()) { scan(p); continue; }
     if (!/\.(jsx?|tsx?)$/.test(entry)) continue;
     readFileSync(p, "utf8").split("\n").forEach((line, i) => {
