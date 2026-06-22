@@ -90,8 +90,8 @@ flowchart TD
   gate2 -->|reject| e_rejected
   gate2 -->|approve| merge[["Auto-merge to release branch"]]:::sys
   merge --> resync[["Re-sync files to DB"]]:::sys
-  resync --> g3deploy[["skipper-uat: deploy release (skipper update)"]]:::sys
-  g3deploy --> gate3[/"GATE 3 — verify: operator + assistant test it live on skipper-uat"/]:::gate
+  resync --> g3deploy[["UAT server (tracks origin/release): deploy release via skipper update"]]:::sys
+  g3deploy --> gate3[/"GATE 3 — verify: operator + assistant test it live on the UAT server"/]:::gate
   gate3 -->|"✓ works"| close[["Close the GitHub issue"]]:::sys
   close --> e_done(["Verified + issue closed — per-change done"]):::event
   gate3 -->|"✗ code bug (spec still valid) → resume"| impl
@@ -187,13 +187,13 @@ flowchart TD
   session.)
 - **Gate 3 — verify (acceptance): merge is NOT done.** Auto-merge ships a *candidate* to `release`;
   "shipped" ≠ "works." So the canonical `/loop` flow continues *past* merge into a **`verify`** phase
-  (now shown in the main graph above): `release` is deployed to **skipper-uat** (`skipper update`), the
-  **operator + their assistant test it live**, and only then — `✓ works` **closes the GitHub issue**
-  (per-change done), or `✗ broken` resumes the SAME conversation: a localized **code bug** →
-  re-implement → Gate 2; a **wrong approach** → re-design → rewrite spec → re-review → Gate 1. See
-  [§ Gate 3 below](#gate-3--verify-acceptance-loop) for the close-up. (skipper-uat — a dedicated
-  mock-data box — replaced testing on the family's production Pi, so verifying never disturbs the live
-  home.)
+  (now shown in the main graph above): `release` is deployed to a **separate UAT server that tracks
+  `origin/release`**, the **operator + their assistant test it live**, and only then — `✓ works`
+  **closes the GitHub issue** (per-change done), or `✗ broken` resumes the SAME conversation: a
+  localized **code bug** → re-implement → Gate 2; a **wrong approach** → re-design → rewrite spec →
+  re-review → Gate 1. See [§ Gate 3 below](#gate-3--verify-acceptance-loop) for the close-up. (The UAT
+  server runs mock data and is separate from any production deployment, so verifying never disturbs a
+  live instance.)
 - **The build half fails closed (#29).** A change reaches a *green* Gate 2 only when the
   implement agent actually changed code **and** included a runnable **bound test**, and
   box 2 ran *that* test (not the engine's own suite) and it passed. A failed/empty/untested
@@ -201,7 +201,7 @@ flowchart TD
   recommendation that names the reason, so a broken build can't be auto-approved.
 - **The per-change process ends at `release`, not `main`.** Promotion `release →
   main` (publish to the world) is a separate, operator-owned **release gate** —
-  batched over many completed instances and canaried on the Pi — so it lives outside
+  batched over many completed instances and verified on the UAT server — so it lives outside
   this per-change graph (EVOLVE.md §5/§9).
 - **Where the branches live (Option A — build on box 1):**
   - The **implement agent builds on box 1**, in an isolated worktree on a `feature/*`
@@ -210,8 +210,8 @@ flowchart TD
     tests — it never builds or merges.
   - On Gate-2 approve, box 1 merges `feature → release` (local) and **pushes
     `origin/release`** — the staging branch.
-  - The **Pi tracks `origin/release`**: `skipper update` (a plain `git pull`) deploys the
-    candidate so the operator canary-tests *exactly what will ship*.
+  - A **separate UAT server tracks `origin/release`**: `skipper update` (a plain `git pull`) deploys
+    the candidate so the operator + assistant verify *exactly what will ship*.
   - The operator then merges **`release → main`** (the publish gate; `main` is
     branch-protected). `main` is the world — nothing reaches it except that deliberate
     merge, so box 1 / the agents can never touch production directly.
@@ -219,13 +219,14 @@ flowchart TD
 ### Gate 3 — verify (acceptance loop)
 
 **Merge is not done.** Auto-merge ships a *candidate* to `release`, but "shipped" ≠ "works." So
-after merge an item enters a **`verify`** phase: `release` is deployed to **skipper-uat** (a dedicated
-mock-data box, `skipper update`), the **operator and their assistant test it live** (the assistant
-operates the gate on the operator's explicit say-so), and only then confirm.
+after merge an item enters a **`verify`** phase: `release` is deployed to a **separate UAT server that
+tracks `origin/release`** (a dedicated mock-data box, `skipper update`), the **operator and their
+assistant test it live** (the assistant operates the gate on the operator's explicit say-so), and only
+then confirm.
 
 ```mermaid
 flowchart LR
-  merged(["Merged to release"]):::event --> verify[/"GATE 3 — verify (operator + assistant test live on skipper-uat)"/]:::gate
+  merged(["Merged to release"]):::event --> verify[/"GATE 3 — verify (operator + assistant test live on the UAT server)"/]:::gate
   verify -->|"✓ works"| close[["Close the GitHub issue"]]:::sys --> done(["Verified + closed"]):::event
   verify -->|"✗ broken — code bug, spec still valid"| reimpl["Re-implement → Gate 2"]:::agent
   verify -->|"✗ broken — approach was wrong"| respec["Re-design → REWRITE spec → re-review → Gate 1"]:::agent
