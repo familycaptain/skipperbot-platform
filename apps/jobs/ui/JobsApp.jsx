@@ -13,7 +13,7 @@ function StatusBadge({ status }) {
     queued:    { color: "text-yellow-400 bg-yellow-900/40 border-yellow-700/50", icon: Clock },
     completed: { color: "text-emerald-400 bg-emerald-900/40 border-emerald-700/50", icon: CheckCircle2 },
     failed:    { color: "text-red-400 bg-red-900/40 border-red-700/50", icon: XCircle },
-    cancelled: { color: "text-gray-400 bg-gray-800/40 border-gray-600/50", icon: XCircle },
+    cancelled: { color: "text-muted surface-card border-subtle", icon: XCircle },
     active:    { color: "text-purple-400 bg-purple-900/40 border-purple-700/50", icon: Calendar },
     paused:    { color: "text-orange-400 bg-orange-900/40 border-orange-700/50", icon: Pause },
   };
@@ -37,7 +37,7 @@ function fmtTime(v) {
 
 function ProgressBar({ pct }) {
   return (
-    <div className="w-full bg-gray-700 rounded-full h-1.5">
+    <div className="w-full surface-raised rounded-full h-1.5">
       <div
         className="bg-blue-500 h-1.5 rounded-full transition-all duration-300"
         style={{ width: `${Math.min(pct || 0, 100)}%` }}
@@ -115,7 +115,7 @@ export default function JobsApp({ userId, context, refreshKey }) {
   // If viewing a detail, show that
   if (selectedJob) {
     return (
-      <div className="h-full w-full flex flex-col bg-gray-900 text-gray-100">
+      <div className="h-full w-full flex flex-col surface-panel text-default">
         <JobDetail
           job={selectedJob}
           userId={userId}
@@ -129,29 +129,29 @@ export default function JobsApp({ userId, context, refreshKey }) {
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-gray-900 text-gray-100">
+    <div className="h-full w-full flex flex-col surface-panel text-default">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-700 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-subtle flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Briefcase size={18} className="text-blue-400" />
           <span className="font-semibold text-sm">Jobs</span>
-          <span className="text-[10px] text-gray-500">{jobs.length} total</span>
+          <span className="text-[10px] text-faint">{jobs.length} total</span>
         </div>
-        <button onClick={loadJobs} className="p-1 rounded hover:bg-gray-700 transition-colors">
-          <RotateCcw size={14} className={loading ? "animate-spin text-gray-400" : "text-gray-400"} />
+        <button onClick={loadJobs} className="p-1 rounded hover:bg-[var(--ds-raised)] transition-colors">
+          <RotateCcw size={14} className={loading ? "animate-spin text-muted" : "text-muted"} />
         </button>
       </div>
 
       {/* Filter bar */}
-      <div className="px-4 py-2 border-b border-gray-700/50 flex items-center gap-1.5 overflow-x-auto">
+      <div className="px-4 py-2 border-b border-subtle flex items-center gap-1.5 overflow-x-auto">
         {["all", "running", "queued", "completed", "failed"].map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
             className={`px-2 py-1 text-[10px] font-medium rounded transition-colors ${
               filter === f
-                ? "bg-blue-600 text-white"
-                : "bg-gray-800 text-gray-400 hover:bg-gray-700"
+                ? "bg-[var(--ds-accent)] text-on-accent"
+                : "surface-card text-muted hover:bg-[var(--ds-raised)]"
             }`}
           >
             {f.charAt(0).toUpperCase() + f.slice(1)}
@@ -167,25 +167,25 @@ export default function JobsApp({ userId, context, refreshKey }) {
       {/* Job list */}
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-gray-500 text-xs">
+          <div className="flex items-center justify-center h-32 text-faint text-xs">
             No jobs found
           </div>
         ) : (
-          <div className="divide-y divide-gray-800">
+          <div className="divide-y divide-[var(--ds-border)]">
             {filtered.map(job => (
               <button
                 key={job.id}
                 onClick={() => selectJob(job)}
-                className="w-full text-left px-4 py-2.5 hover:bg-gray-800/50 transition-colors"
+                className="w-full text-left px-4 py-2.5 hover:bg-[var(--ds-card)] transition-colors"
               >
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center gap-2 min-w-0">
                     <StatusBadge status={job.status} />
-                    <span className="text-xs font-medium text-gray-200 truncate">{job.name}</span>
+                    <span className="text-xs font-medium text-default truncate">{job.name}</span>
                   </div>
-                  <ChevronRight size={12} className="text-gray-600 flex-shrink-0" />
+                  <ChevronRight size={12} className="text-faint flex-shrink-0" />
                 </div>
-                <div className="flex items-center justify-between text-[10px] text-gray-500">
+                <div className="flex items-center justify-between text-[10px] text-faint">
                   <div className="flex items-center gap-3">
                     <span>{job.job_type}</span>
                     <span>{job.id}</span>
@@ -195,7 +195,7 @@ export default function JobsApp({ userId, context, refreshKey }) {
                 {job.status === "running" && (
                   <div className="mt-1.5 flex items-center gap-2">
                     <ProgressBar pct={job.progress_pct} />
-                    <span className="text-[10px] text-gray-400 flex-shrink-0">{job.progress_pct}%</span>
+                    <span className="text-[10px] text-muted flex-shrink-0">{job.progress_pct}%</span>
                   </div>
                 )}
               </button>
@@ -263,14 +263,14 @@ function JobDetail({ job: initialJob, userId, onBack, onCancel, onRerun, apiFetc
   return (
     <>
       {/* Header */}
-      <div className="px-4 py-3 border-b border-gray-700">
+      <div className="px-4 py-3 border-b border-subtle">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <button onClick={onBack} className="p-1 rounded hover:bg-gray-700">
-              <ChevronLeft size={14} className="text-gray-400" />
+            <button onClick={onBack} className="p-1 rounded hover:bg-[var(--ds-raised)]">
+              <ChevronLeft size={14} className="text-muted" />
             </button>
             <StatusBadge status={job.status} />
-            <span className="text-sm font-semibold text-gray-200 truncate">{job.name}</span>
+            <span className="text-sm font-semibold text-default truncate">{job.name}</span>
           </div>
           <div className="flex items-center gap-1.5">
             {isRunning && (
@@ -293,24 +293,24 @@ function JobDetail({ job: initialJob, userId, onBack, onCancel, onRerun, apiFetc
         </div>
 
         {/* Meta row */}
-        <div className="flex items-center gap-4 text-[10px] text-gray-500 flex-wrap">
+        <div className="flex items-center gap-4 text-[10px] text-faint flex-wrap">
           <span>{job.id}</span>
-          <span>Type: <span className="text-gray-300">{job.job_type}</span></span>
-          {job.created_by && <span>By: <span className="text-gray-300">{job.created_by}</span></span>}
-          {job.run_count > 0 && <span>Runs: <span className="text-gray-300">{job.run_count}</span></span>}
+          <span>Type: <span className="text-default">{job.job_type}</span></span>
+          {job.created_by && <span>By: <span className="text-default">{job.created_by}</span></span>}
+          {job.run_count > 0 && <span>Runs: <span className="text-default">{job.run_count}</span></span>}
         </div>
 
         {/* Progress bar */}
         {isRunning && (
           <div className="mt-2 flex items-center gap-2">
             <ProgressBar pct={job.progress_pct} />
-            <span className="text-[10px] text-gray-400 flex-shrink-0">{job.progress_pct}%</span>
-            <span className="text-[10px] text-gray-500 truncate">{job.progress}</span>
+            <span className="text-[10px] text-muted flex-shrink-0">{job.progress_pct}%</span>
+            <span className="text-[10px] text-faint truncate">{job.progress}</span>
           </div>
         )}
 
         {/* Timestamps */}
-        <div className="mt-1.5 flex items-center gap-4 text-[10px] text-gray-500">
+        <div className="mt-1.5 flex items-center gap-4 text-[10px] text-faint">
           <span>Created: {fmtTime(job.created_at)}</span>
           {job.started_at && <span>Started: {fmtTime(job.started_at)}</span>}
           {job.completed_at && <span>Finished: {fmtTime(job.completed_at)}</span>}
@@ -328,7 +328,7 @@ function JobDetail({ job: initialJob, userId, onBack, onCancel, onRerun, apiFetc
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-700">
+      <div className="flex border-b border-subtle">
         {[
           { id: "logs", label: "Logs", icon: Terminal },
           { id: "config", label: "Config", icon: Settings2 },
@@ -339,7 +339,7 @@ function JobDetail({ job: initialJob, userId, onBack, onCancel, onRerun, apiFetc
             className={`flex items-center gap-1.5 px-4 py-2 text-xs font-medium transition-colors ${
               activeTab === t.id
                 ? "text-blue-400 border-b-2 border-blue-400"
-                : "text-gray-500 hover:text-gray-300"
+                : "text-faint hover:text-[var(--ds-text)]"
             }`}
           >
             <t.icon size={12} />
@@ -366,24 +366,24 @@ function JobDetail({ job: initialJob, userId, onBack, onCancel, onRerun, apiFetc
 function LogsPanel({ logs, isRunning, logEndRef }) {
   if (logs.length === 0 && !isRunning) {
     return (
-      <div className="flex items-center justify-center h-32 text-gray-500 text-xs">
+      <div className="flex items-center justify-center h-32 text-faint text-xs">
         No logs captured for this job
       </div>
     );
   }
 
   const levelColor = {
-    INFO: "text-gray-300",
+    INFO: "text-default",
     WARNING: "text-yellow-400",
     ERROR: "text-red-400",
-    DEBUG: "text-gray-500",
+    DEBUG: "text-faint",
   };
 
   return (
-    <div className="font-mono text-[11px] leading-relaxed p-3 bg-gray-950/50">
+    <div className="font-mono text-[11px] leading-relaxed p-3 surface-page">
       {logs.map((log, i) => (
-        <div key={log.id || i} className="flex gap-2 hover:bg-gray-800/30 px-1 rounded">
-          <span className="text-gray-600 flex-shrink-0 select-none">
+        <div key={log.id || i} className="flex gap-2 hover:bg-[var(--ds-card)] px-1 rounded">
+          <span className="text-faint flex-shrink-0 select-none">
             {new Date(log.ts).toLocaleTimeString("en-US", { hour12: false })}
           </span>
           <span className={`${levelColor[log.level] || levelColor.INFO} break-all`}>
@@ -392,7 +392,7 @@ function LogsPanel({ logs, isRunning, logEndRef }) {
         </div>
       ))}
       {isRunning && (
-        <div className="flex items-center gap-2 text-gray-500 mt-1">
+        <div className="flex items-center gap-2 text-faint mt-1">
           <Loader2 size={10} className="animate-spin" />
           <span>Streaming...</span>
         </div>
@@ -409,8 +409,8 @@ function ConfigPanel({ config, output, job }) {
     <div className="p-4 space-y-4">
       {/* Config */}
       <div>
-        <h4 className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">Configuration</h4>
-        <pre className="text-[11px] text-gray-300 bg-gray-800/50 rounded p-3 overflow-x-auto whitespace-pre-wrap">
+        <h4 className="text-xs font-semibold text-muted mb-2 uppercase tracking-wide">Configuration</h4>
+        <pre className="text-[11px] text-default surface-card rounded p-3 overflow-x-auto whitespace-pre-wrap">
           {JSON.stringify(config, null, 2)}
         </pre>
       </div>
@@ -418,8 +418,8 @@ function ConfigPanel({ config, output, job }) {
       {/* Output */}
       {Object.keys(output).length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">Output</h4>
-          <pre className="text-[11px] text-gray-300 bg-gray-800/50 rounded p-3 overflow-x-auto whitespace-pre-wrap">
+          <h4 className="text-xs font-semibold text-muted mb-2 uppercase tracking-wide">Output</h4>
+          <pre className="text-[11px] text-default surface-card rounded p-3 overflow-x-auto whitespace-pre-wrap">
             {JSON.stringify(output, null, 2)}
           </pre>
         </div>
@@ -428,8 +428,8 @@ function ConfigPanel({ config, output, job }) {
       {/* Last result */}
       {job.last_result && (
         <div>
-          <h4 className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">Last Result</h4>
-          <div className="text-xs text-gray-300 bg-gray-800/50 rounded p-3">
+          <h4 className="text-xs font-semibold text-muted mb-2 uppercase tracking-wide">Last Result</h4>
+          <div className="text-xs text-default surface-card rounded p-3">
             {job.last_result}
           </div>
         </div>
@@ -438,8 +438,8 @@ function ConfigPanel({ config, output, job }) {
       {/* Description */}
       {job.description && (
         <div>
-          <h4 className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">Description</h4>
-          <div className="text-xs text-gray-300">{job.description}</div>
+          <h4 className="text-xs font-semibold text-muted mb-2 uppercase tracking-wide">Description</h4>
+          <div className="text-xs text-default">{job.description}</div>
         </div>
       )}
     </div>

@@ -67,12 +67,12 @@ export default function ToolsApp({ appId, userId, onTitle, refreshKey }) {
   return (
     <div className="flex flex-col h-full w-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
-        <div className="flex items-center gap-1.5 text-sm text-slate-300">
-          <Wrench size={14} className="text-slate-500" />
-          <span className="text-slate-200">Tools</span>
+      <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
+        <div className="flex items-center gap-1.5 text-sm text-default">
+          <Wrench size={14} className="text-faint" />
+          <span className="text-default">Tools</span>
           {categories && (
-            <span className="text-xs text-slate-500 ml-1">
+            <span className="text-xs text-faint ml-1">
               {categories.length} categories · {categories.reduce((n, c) => n + c.tools.length, 0)} tools
             </span>
           )}
@@ -80,7 +80,7 @@ export default function ToolsApp({ appId, userId, onTitle, refreshKey }) {
         <button
           onClick={() => { loadCategories(); setSelectedCat(null); setGuide(null); }}
           disabled={loading}
-          className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+          className="p-1 rounded icon-btn transition-colors"
           title="Refresh"
         >
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -91,16 +91,16 @@ export default function ToolsApp({ appId, userId, onTitle, refreshKey }) {
       {error && (
         <div className="px-3 py-1.5 bg-red-900/30 border-b border-red-800/50 text-xs text-red-300 flex items-center justify-between">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={12} /></button>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-[var(--ds-text)]"><X size={12} /></button>
         </div>
       )}
 
       {/* Main content: sidebar + detail */}
       <div className="flex-1 min-h-0 flex">
         {/* Sidebar — Category list */}
-        <div className="w-56 shrink-0 border-r border-slate-800 overflow-y-auto bg-slate-900/20">
+        <div className="w-56 shrink-0 border-r border-subtle overflow-y-auto surface-panel">
           {loading && !categories ? (
-            <div className="flex items-center justify-center h-32 text-slate-400">
+            <div className="flex items-center justify-center h-32 text-muted">
               <Loader2 size={16} className="animate-spin mr-2" /> Loading...
             </div>
           ) : categories && categories.length > 0 ? (
@@ -112,20 +112,20 @@ export default function ToolsApp({ appId, userId, onTitle, refreshKey }) {
                   className={`w-full text-left px-3 py-2 flex items-center gap-2 transition-colors ${
                     selectedCat?.id === cat.id
                       ? "bg-indigo-600/20 border-l-2 border-indigo-500 text-indigo-300"
-                      : "border-l-2 border-transparent text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
+                      : "border-l-2 border-transparent text-muted hover:bg-[var(--ds-card)] hover:text-[var(--ds-text)]"
                   }`}
                 >
                   <CategoryIcon catId={cat.id} />
                   <div className="flex-1 min-w-0">
                     <div className="text-xs font-medium truncate capitalize">{cat.id.replace(/_/g, " ")}</div>
-                    <div className="text-[10px] text-slate-500">{cat.tools.length} tools</div>
+                    <div className="text-[10px] text-faint">{cat.tools.length} tools</div>
                   </div>
-                  {cat.guide && <BookOpen size={10} className="text-slate-600 shrink-0" />}
+                  {cat.guide && <BookOpen size={10} className="text-faint shrink-0" />}
                 </button>
               ))}
             </div>
           ) : (
-            <div className="flex items-center justify-center h-32 text-slate-500 text-xs">
+            <div className="flex items-center justify-center h-32 text-faint text-xs">
               No categories
             </div>
           )}
@@ -136,8 +136,8 @@ export default function ToolsApp({ appId, userId, onTitle, refreshKey }) {
           {selectedCat ? (
             <CategoryDetail cat={selectedCat} guide={guide} guideLoading={guideLoading} />
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-slate-500">
-              <Wrench size={32} className="text-slate-600 mb-2" />
+            <div className="flex flex-col items-center justify-center h-full text-faint">
+              <Wrench size={32} className="text-faint mb-2" />
               <p className="text-sm">Select a category to view its tools</p>
             </div>
           )}
@@ -156,16 +156,16 @@ function CategoryDetail({ cat, guide, guideLoading }) {
     <div className="p-4 space-y-4">
       {/* Header */}
       <div>
-        <h2 className="text-lg font-semibold text-slate-100 capitalize flex items-center gap-2">
+        <h2 className="text-lg font-semibold text-default capitalize flex items-center gap-2">
           <CategoryIcon catId={cat.id} size={18} />
           {cat.id.replace(/_/g, " ")}
         </h2>
-        <p className="text-sm text-slate-400 mt-1">{cat.description}</p>
+        <p className="text-sm text-muted mt-1">{cat.description}</p>
       </div>
 
       {/* Tools list */}
       <div>
-        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+        <h3 className="text-xs font-semibold text-faint uppercase tracking-wider mb-2 flex items-center gap-1.5">
           <Box size={12} />
           Tools ({cat.tools.length})
         </h3>
@@ -173,7 +173,7 @@ function CategoryDetail({ cat, guide, guideLoading }) {
           {cat.tools.map((tool) => (
             <div
               key={tool}
-              className="px-3 py-2 rounded-lg bg-slate-800/50 border border-slate-700/40 text-sm text-slate-300 font-mono"
+              className="px-3 py-2 rounded-lg surface-card border border-subtle text-sm text-default font-mono"
             >
               {tool}
             </div>
@@ -184,7 +184,7 @@ function CategoryDetail({ cat, guide, guideLoading }) {
       {/* Keywords */}
       {cat.keywords && cat.keywords.length > 0 && (
         <div>
-          <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+          <h3 className="text-xs font-semibold text-faint uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Tag size={12} />
             Keywords
           </h3>
@@ -192,7 +192,7 @@ function CategoryDetail({ cat, guide, guideLoading }) {
             {cat.keywords.map((kw) => (
               <span
                 key={kw}
-                className="px-2 py-0.5 rounded-full bg-slate-800/60 border border-slate-700/40 text-[11px] text-slate-400"
+                className="px-2 py-0.5 rounded-full surface-card border border-subtle text-[11px] text-muted"
               >
                 {kw}
               </span>
@@ -206,33 +206,33 @@ function CategoryDetail({ cat, guide, guideLoading }) {
         <div>
           <button
             onClick={() => setShowGuide(!showGuide)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 hover:text-slate-300 transition-colors"
+            className="flex items-center gap-1.5 text-xs font-semibold text-faint uppercase tracking-wider mb-2 hover:text-[var(--ds-text)] transition-colors"
           >
             <BookOpen size={12} />
             Guide
             <ChevronRight size={12} className={`transition-transform ${showGuide ? "rotate-90" : ""}`} />
           </button>
           {showGuide && (
-            <div className="rounded-lg bg-slate-800/40 border border-slate-700/40 p-4 overflow-x-auto">
+            <div className="rounded-lg surface-card border border-subtle p-4 overflow-x-auto">
               {guideLoading ? (
-                <div className="flex items-center text-slate-400 text-sm">
+                <div className="flex items-center text-muted text-sm">
                   <Loader2 size={14} className="animate-spin mr-2" /> Loading guide...
                 </div>
               ) : guide === "__GUIDE_LOAD_ERROR__" ? (
                 <p className="text-sm text-amber-400/80 italic">This guide could not be loaded.</p>
               ) : guide ? (
                 <div className="prose prose-invert prose-sm max-w-none
-                  prose-headings:text-slate-200 prose-p:text-slate-300
-                  prose-strong:text-slate-200 prose-code:text-indigo-300
-                  prose-code:bg-slate-700/50 prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-                  prose-pre:bg-slate-900/60 prose-pre:border prose-pre:border-slate-700/50
-                  prose-a:text-indigo-400 prose-li:text-slate-300
-                  prose-th:text-slate-300 prose-td:text-slate-400
-                  prose-hr:border-slate-700">
+                  prose-headings:text-[var(--ds-text)] prose-p:text-[var(--ds-text)]
+                  prose-strong:text-[var(--ds-text)] prose-code:text-indigo-300
+                  prose-code:bg-[var(--ds-raised)] prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                  prose-pre:bg-[var(--ds-panel)] prose-pre:border prose-pre:border-[var(--ds-border)]
+                  prose-a:text-indigo-400 prose-li:text-[var(--ds-text)]
+                  prose-th:text-[var(--ds-text)] prose-td:text-[var(--ds-muted)]
+                  prose-hr:border-[var(--ds-border)]">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>{guide}</ReactMarkdown>
                 </div>
               ) : (
-                <p className="text-sm text-slate-500 italic">No guide content</p>
+                <p className="text-sm text-faint italic">No guide content</p>
               )}
             </div>
           )}
@@ -272,5 +272,5 @@ function CategoryIcon({ catId, size = 14 }) {
   if (emoji) {
     return <span style={{ fontSize: size * 0.85 }}>{emoji}</span>;
   }
-  return <Wrench size={size} className="text-slate-500" />;
+  return <Wrench size={size} className="text-faint" />;
 }

@@ -46,7 +46,7 @@ export default function ImageViewer({ appId, userId, context = {}, onTitle, onOp
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-400">
+      <div className="flex items-center justify-center h-full text-muted">
         <Loader2 size={18} className="animate-spin mr-2" /> Loading image...
       </div>
     );
@@ -54,7 +54,7 @@ export default function ImageViewer({ appId, userId, context = {}, onTitle, onOp
 
   if (!image) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-500 text-sm">
+      <div className="flex items-center justify-center h-full text-faint text-sm">
         <ImageIcon size={24} className="mr-2 opacity-40" /> Image not found.
       </div>
     );
@@ -63,9 +63,9 @@ export default function ImageViewer({ appId, userId, context = {}, onTitle, onOp
   return (
     <div className="flex flex-col h-full w-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
-        <div className="flex items-center gap-2 text-sm text-slate-300 min-w-0">
-          <ImageIcon size={14} className="text-slate-500 shrink-0" />
+      <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
+        <div className="flex items-center gap-2 text-sm text-default min-w-0">
+          <ImageIcon size={14} className="text-faint shrink-0" />
           {editingTitle ? (
             <form onSubmit={(e) => { e.preventDefault(); handleRenameTitle(titleDraft); }} className="flex items-center gap-1">
               <input
@@ -74,12 +74,12 @@ export default function ImageViewer({ appId, userId, context = {}, onTitle, onOp
                 onChange={(e) => setTitleDraft(e.target.value)}
                 onBlur={() => handleRenameTitle(titleDraft)}
                 onKeyDown={(e) => { if (e.key === "Escape") setEditingTitle(false); }}
-                className="bg-slate-800 text-white text-sm px-1.5 py-0.5 rounded border border-slate-600 outline-none w-48"
+                className="surface-card text-sm px-1.5 py-0.5 rounded border border-subtle outline-none w-48"
               />
             </form>
           ) : (
             <button onClick={() => { setTitleDraft(image.title || image.filename || ""); setEditingTitle(true); }}
-              className="truncate hover:text-white transition-colors" title="Click to rename">
+              className="truncate hover:text-[var(--ds-text)] transition-colors" title="Click to rename">
               {image.title || image.filename || "Untitled"}
             </button>
           )}
@@ -87,7 +87,7 @@ export default function ImageViewer({ appId, userId, context = {}, onTitle, onOp
       </div>
 
       {/* Image */}
-      <div className="flex-1 flex items-center justify-center bg-black/20 p-4 overflow-auto">
+      <div className="flex-1 flex items-center justify-center surface-page p-4 overflow-auto">
         <img
           src={`/${image.storage_path}`}
           alt={image.title || image.filename}

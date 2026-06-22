@@ -32,22 +32,22 @@ function fmtDate(iso) {
   } catch { return iso; }
 }
 
-function StatCard({ icon: Icon, label, value, sub, color = "text-gray-300" }) {
+function StatCard({ icon: Icon, label, value, sub, color = "text-default" }) {
   return (
-    <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-3 flex items-center gap-3">
-      <div className={`p-2 rounded-lg bg-gray-700/50 ${color}`}>
+    <div className="surface-card rounded-lg border border-subtle p-3 flex items-center gap-3">
+      <div className={`p-2 rounded-lg surface-raised ${color}`}>
         <Icon size={16} />
       </div>
       <div className="min-w-0">
-        <div className="text-lg font-semibold text-gray-200">{value}</div>
-        <div className="text-[10px] text-gray-500 truncate">{label}</div>
-        {sub && <div className="text-[10px] text-gray-600">{sub}</div>}
+        <div className="text-lg font-semibold text-default">{value}</div>
+        <div className="text-[10px] text-faint truncate">{label}</div>
+        {sub && <div className="text-[10px] text-faint">{sub}</div>}
       </div>
     </div>
   );
 }
 
-function SectionHeader({ icon: Icon, title, color = "text-gray-400" }) {
+function SectionHeader({ icon: Icon, title, color = "text-muted" }) {
   return (
     <div className="flex items-center gap-2 mb-2">
       <Icon size={14} className={color} />
@@ -60,12 +60,12 @@ function StatusBadge({ status }) {
   if (!status) return null;
   const styles = {
     completed: "bg-emerald-900/30 text-emerald-400 border-emerald-800",
-    running: "bg-sky-900/30 text-sky-400 border-sky-800",
+    running: "surface-card text-accent border-subtle",
     failed: "bg-red-900/30 text-red-400 border-red-800",
     queued: "bg-amber-900/30 text-amber-400 border-amber-800",
   };
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${styles[status] || "bg-gray-800 text-gray-500 border-gray-700"}`}>
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${styles[status] || "surface-card text-faint border-subtle"}`}>
       {status}
     </span>
   );
@@ -112,14 +112,14 @@ export default function SystemApp({ appId, userId, isActive }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 size={24} className="animate-spin text-gray-500" />
+        <Loader2 size={24} className="animate-spin text-faint" />
       </div>
     );
   }
 
   if (!data) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-500 text-sm">
+      <div className="flex items-center justify-center h-full text-faint text-sm">
         Failed to load system metrics.
       </div>
     );
@@ -133,12 +133,12 @@ export default function SystemApp({ appId, userId, isActive }) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Server size={18} className="text-cyan-400" />
-          <h1 className="text-base font-bold text-gray-200">System</h1>
+          <Server size={18} className="text-accent" />
+          <h1 className="text-base font-bold text-default">System</h1>
         </div>
         <div className="flex items-center gap-2">
           {agentStatus && (
-            <span className="text-[10px] text-gray-500">
+            <span className="text-[10px] text-faint">
               up {fmtDuration(agentStatus.uptime_seconds)}
               {agentStatus.env === "dev" && <span className="ml-1 px-1 py-0.5 rounded bg-amber-900/40 text-amber-400 font-bold">DEV</span>}
             </span>
@@ -146,8 +146,8 @@ export default function SystemApp({ appId, userId, isActive }) {
           {confirmRestart ? (
             <span className="flex items-center gap-1">
               <span className="text-[10px] text-amber-400">Restart agent?</span>
-              <button onClick={handleRestart} className="px-1.5 py-0.5 text-[10px] rounded bg-red-700 hover:bg-red-600 text-white">Yes</button>
-              <button onClick={() => setConfirmRestart(false)} className="px-1.5 py-0.5 text-[10px] rounded bg-gray-700 hover:bg-gray-600 text-gray-300">No</button>
+              <button onClick={handleRestart} className="px-1.5 py-0.5 text-[10px] rounded btn-danger">Yes</button>
+              <button onClick={() => setConfirmRestart(false)} className="px-1.5 py-0.5 text-[10px] rounded surface-raised hover:bg-[var(--ds-raised)] text-default">No</button>
             </span>
           ) : restarting || agentStatus?.shutting_down ? (
             <span className="flex items-center gap-1 text-[10px] text-amber-400">
@@ -164,7 +164,7 @@ export default function SystemApp({ appId, userId, isActive }) {
           <button
             onClick={() => { loadData(true); loadAgentStatus(); }}
             disabled={refreshing}
-            className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-gray-300 transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded surface-raised hover:bg-[var(--ds-raised)] disabled:opacity-50 text-default transition-colors"
           >
             {refreshing ? <Loader2 size={10} className="animate-spin" /> : <RefreshCw size={10} />}
             Refresh
@@ -174,9 +174,9 @@ export default function SystemApp({ appId, userId, isActive }) {
 
       {/* Server Health */}
       <div>
-        <SectionHeader icon={Activity} title="Server Health" color="text-cyan-400" />
+        <SectionHeader icon={Activity} title="Server Health" color="text-accent" />
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <StatCard icon={Clock} label="Uptime" value={fmtDuration(sys.uptime_seconds)} color="text-cyan-400" />
+          <StatCard icon={Clock} label="Uptime" value={fmtDuration(sys.uptime_seconds)} color="text-accent" />
           <StatCard icon={Server} label="Memory" value={`${sys.memory_mb || 0} MB`} color="text-purple-400" />
           <StatCard icon={Database} label="Database" value={data.database?.size || "?"} color="text-emerald-400" />
           <StatCard icon={Activity} label="Python" value={sys.python || "?"} sub={`PID ${sys.pid || "?"}`} color="text-amber-400" />
@@ -197,13 +197,13 @@ export default function SystemApp({ appId, userId, isActive }) {
           />
           <StatCard icon={FileText} label="Documents" value={fmtNum(c.documents)} color="text-blue-400" />
           <StatCard icon={Bell} label="Reminders" value={fmtNum(c.reminders)} sub={`${fmtNum(c.reminders_active)} active`} color="text-amber-400" />
-          <StatCard icon={MessageSquare} label="Chat Turns" value={fmtNum(c.chat_turns)} color="text-sky-400" />
+          <StatCard icon={MessageSquare} label="Chat Turns" value={fmtNum(c.chat_turns)} color="text-accent" />
           <StatCard icon={Target} label="Goals" value={fmtNum(c.goals)} color="text-rose-400" />
           <StatCard icon={FolderKanban} label="Projects" value={fmtNum(c.projects)} color="text-orange-400" />
-          <StatCard icon={CheckSquare} label="Tasks" value={fmtNum(c.tasks)} color="text-teal-400" />
-          <StatCard icon={List} label="Lists" value={fmtNum(c.lists)} sub={`${fmtNum(c.list_items)} items`} color="text-sky-400" />
+          <StatCard icon={CheckSquare} label="Tasks" value={fmtNum(c.tasks)} color="text-accent" />
+          <StatCard icon={List} label="Lists" value={fmtNum(c.lists)} sub={`${fmtNum(c.list_items)} items`} color="text-accent" />
           <StatCard icon={Image} label="Images" value={fmtNum(c.images)} color="text-pink-400" />
-          <StatCard icon={Link} label="Links" value={fmtNum(c.links)} color="text-gray-400" />
+          <StatCard icon={Link} label="Links" value={fmtNum(c.links)} color="text-muted" />
           <StatCard icon={FileText} label="Artifacts" value={fmtNum(c.artifacts)} color="text-violet-400" />
           <StatCard icon={Bell} label="Notifications" value={fmtNum(c.notifications)} color="text-amber-400" />
         </div>
@@ -231,20 +231,20 @@ export default function SystemApp({ appId, userId, isActive }) {
             return (
               <div className="space-y-3">
                 {/* Progress bar */}
-                <div className="bg-gray-800/50 rounded-lg border border-gray-700 p-3">
+                <div className="surface-card rounded-lg border border-subtle p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs text-gray-400">
+                    <span className="text-xs text-muted">
                       {fmtNum(dc.cursor_position)} / {fmtNum(dc.total_memories)} memories processed
                     </span>
                     <span className="text-xs font-semibold text-indigo-400">{pct}%</span>
                   </div>
-                  <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+                  <div className="w-full h-2 surface-raised rounded-full overflow-hidden">
                     <div
                       className="h-full bg-indigo-500 rounded-full transition-all duration-500"
                       style={{ width: `${pct}%` }}
                     />
                   </div>
-                  <div className="mt-2 text-[10px] text-gray-500">
+                  <div className="mt-2 text-[10px] text-faint">
                     {fmtNum(dc.remaining)} remaining
                     {dc.remaining > 500 && (
                       <span className="ml-1 px-1 py-0.5 rounded bg-amber-900/40 text-amber-400 font-bold">
@@ -256,15 +256,15 @@ export default function SystemApp({ appId, userId, isActive }) {
 
                 {/* Last cycle info */}
                 {lc && (
-                  <div className="bg-gray-800/30 rounded border border-gray-700/50 px-3 py-2">
-                    <div className="text-xs text-gray-400 flex items-center justify-between">
+                  <div className="surface-card rounded border border-subtle px-3 py-2">
+                    <div className="text-xs text-muted flex items-center justify-between">
                       <span>
-                        <span className="text-gray-500">Last cycle:</span>{" "}
+                        <span className="text-faint">Last cycle:</span>{" "}
                         {lc.processed_count != null && (
-                          <span className="text-gray-300">{lc.processed_count} processed</span>
+                          <span className="text-default">{lc.processed_count} processed</span>
                         )}
                         {lc.offered_count != null && (
-                          <span className="text-gray-500"> / {lc.offered_count} offered</span>
+                          <span className="text-faint"> / {lc.offered_count} offered</span>
                         )}
                         {lc.all_processed && (
                           <span className="ml-1 px-1 py-0.5 rounded text-[10px] bg-emerald-900/30 text-emerald-400 border border-emerald-800">all done</span>
@@ -273,7 +273,7 @@ export default function SystemApp({ appId, userId, isActive }) {
                           <span className="ml-1 px-1 py-0.5 rounded text-[10px] bg-amber-900/30 text-amber-400 border border-amber-800">auto-advanced</span>
                         )}
                       </span>
-                      <span className="text-[10px] text-gray-600">{fmtDate(lc.processed_at)}</span>
+                      <span className="text-[10px] text-faint">{fmtDate(lc.processed_at)}</span>
                     </div>
                   </div>
                 )}
@@ -288,45 +288,45 @@ export default function SystemApp({ appId, userId, isActive }) {
         <SectionHeader icon={Briefcase} title="Jobs & Services" color="text-amber-400" />
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           <StatCard icon={Briefcase} label="Total Jobs" value={fmtNum(c.jobs)} color="text-amber-400" />
-          <StatCard icon={Activity} label="Running" value={fmtNum(c.jobs_running)} color="text-sky-400" />
-          <StatCard icon={Clock} label="Queued" value={fmtNum(c.jobs_queued)} color="text-gray-400" />
-          <StatCard icon={HardDrive} label="Backups" value={fmtNum(c.backups)} color="text-cyan-400" />
+          <StatCard icon={Activity} label="Running" value={fmtNum(c.jobs_running)} color="text-accent" />
+          <StatCard icon={Clock} label="Queued" value={fmtNum(c.jobs_queued)} color="text-muted" />
+          <StatCard icon={HardDrive} label="Backups" value={fmtNum(c.backups)} color="text-accent" />
         </div>
 
         {/* Latest activity cards */}
         <div className="mt-3 space-y-2">
           {data.latest_job && (
-            <div className="bg-gray-800/30 rounded border border-gray-700/50 px-3 py-2 flex items-center justify-between">
-              <div className="text-xs text-gray-400">
-                <span className="text-gray-500">Last job:</span>{" "}
-                <span className="text-gray-300">{data.latest_job.name}</span>{" "}
+            <div className="surface-card rounded border border-subtle px-3 py-2 flex items-center justify-between">
+              <div className="text-xs text-muted">
+                <span className="text-faint">Last job:</span>{" "}
+                <span className="text-default">{data.latest_job.name}</span>{" "}
                 <StatusBadge status={data.latest_job.status} />
               </div>
-              <div className="text-[10px] text-gray-600">{fmtDate(data.latest_job.last_run_at)}</div>
+              <div className="text-[10px] text-faint">{fmtDate(data.latest_job.last_run_at)}</div>
             </div>
           )}
           {data.latest_backup && (
-            <div className="bg-gray-800/30 rounded border border-gray-700/50 px-3 py-2 flex items-center justify-between">
-              <div className="text-xs text-gray-400">
-                <span className="text-gray-500">Last backup:</span>{" "}
+            <div className="surface-card rounded border border-subtle px-3 py-2 flex items-center justify-between">
+              <div className="text-xs text-muted">
+                <span className="text-faint">Last backup:</span>{" "}
                 <StatusBadge status={data.latest_backup.status} />
                 {data.latest_backup.duration_secs && (
-                  <span className="ml-1 text-gray-600">({Math.round(data.latest_backup.duration_secs)}s)</span>
+                  <span className="ml-1 text-faint">({Math.round(data.latest_backup.duration_secs)}s)</span>
                 )}
               </div>
-              <div className="text-[10px] text-gray-600">{fmtDate(data.latest_backup.started_at)}</div>
+              <div className="text-[10px] text-faint">{fmtDate(data.latest_backup.started_at)}</div>
             </div>
           )}
           {data.latest_investment && (
-            <div className="bg-gray-800/30 rounded border border-gray-700/50 px-3 py-2 flex items-center justify-between">
-              <div className="text-xs text-gray-400">
-                <span className="text-gray-500">Last analysis:</span>{" "}
+            <div className="surface-card rounded border border-subtle px-3 py-2 flex items-center justify-between">
+              <div className="text-xs text-muted">
+                <span className="text-faint">Last analysis:</span>{" "}
                 <StatusBadge status={data.latest_investment.status} />
                 {data.latest_investment.posture && (
-                  <span className="ml-1 text-gray-500">({data.latest_investment.posture})</span>
+                  <span className="ml-1 text-faint">({data.latest_investment.posture})</span>
                 )}
               </div>
-              <div className="text-[10px] text-gray-600">{fmtDate(data.latest_investment.created_at)}</div>
+              <div className="text-[10px] text-faint">{fmtDate(data.latest_investment.created_at)}</div>
             </div>
           )}
         </div>
