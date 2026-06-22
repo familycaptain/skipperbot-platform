@@ -193,12 +193,12 @@ export default function DocumentEditor({ appId, userId, context = {}, onTitle, o
   return (
     <div className="flex flex-col h-full w-full">
       {/* ── Toolbar ── */}
-      <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
-        <div className="flex items-center gap-1.5 text-sm text-slate-300 min-w-0">
-          <button onClick={() => onOpenApp?.("documents")} className="p-1 text-slate-500 hover:text-white transition-colors shrink-0" title="Back to document list">
+      <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
+        <div className="flex items-center gap-1.5 text-sm text-default min-w-0">
+          <button onClick={() => onOpenApp?.("documents")} className="p-1 text-faint hover:text-[var(--ds-text)] transition-colors shrink-0" title="Back to document list">
             <ArrowLeft size={14} />
           </button>
-          <FileText size={14} className="text-slate-500 shrink-0" />
+          <FileText size={14} className="text-faint shrink-0" />
           {editingTitle ? (
             <form onSubmit={(e) => { e.preventDefault(); handleRename(titleDraft); }} className="flex items-center gap-1">
               <input
@@ -207,13 +207,13 @@ export default function DocumentEditor({ appId, userId, context = {}, onTitle, o
                 onChange={(e) => setTitleDraft(e.target.value)}
                 onBlur={() => setEditingTitle(false)}
                 onKeyDown={(e) => { if (e.key === "Escape") setEditingTitle(false); }}
-                className="bg-slate-800 text-white text-sm px-1.5 py-0.5 rounded border border-slate-600 outline-none w-48"
+                className="surface-card text-default text-sm px-1.5 py-0.5 rounded border border-subtle outline-none w-48"
               />
             </form>
           ) : (
             <button
               onClick={() => { setTitleDraft(docMeta?.title || ""); setEditingTitle(true); }}
-              className="truncate hover:text-white transition-colors"
+              className="truncate hover:text-[var(--ds-text)] transition-colors"
               title="Click to rename"
             >
               {docMeta?.title || "Untitled"}
@@ -224,7 +224,7 @@ export default function DocumentEditor({ appId, userId, context = {}, onTitle, o
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => setPreview(!preview)}
-            className={`p-1 rounded text-xs transition-colors ${preview ? "text-indigo-400 bg-slate-700" : "text-slate-500 hover:text-white hover:bg-slate-700"}`}
+            className={`p-1 rounded text-xs transition-colors ${preview ? "text-indigo-400 surface-raised" : "text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)]"}`}
             title={preview ? "Edit" : "Preview"}
           >
             {preview ? <Edit3 size={14} /> : <Eye size={14} />}
@@ -232,39 +232,39 @@ export default function DocumentEditor({ appId, userId, context = {}, onTitle, o
           {hasSelection && !preview && (
             <button
               onMouseDown={(e) => { e.preventDefault(); handlePinSelection(); }}
-              className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-indigo-600 text-white hover:bg-indigo-500 transition-colors animate-pulse"
+              className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-indigo-600 text-on-accent hover:bg-indigo-500 transition-colors animate-pulse"
               title="Send selected text to Skipper"
             >
               <MessageSquareQuote size={12} />
               Quote to Chat
             </button>
           )}
-          <button onClick={handlePrint} className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700 transition-colors" title="Print">
+          <button onClick={handlePrint} className="p-1 rounded text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors" title="Print">
             <Printer size={14} />
           </button>
           <button
             onClick={handleSave}
             disabled={!dirty || saving}
-            className="flex items-center gap-1 px-2 py-1 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-30 disabled:cursor-default transition-colors"
+            className="flex items-center gap-1 px-2 py-1 rounded text-xs text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] disabled:opacity-30 disabled:cursor-default transition-colors"
           >
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
             Save
           </button>
           {!confirmDelete ? (
-            <button onClick={() => setConfirmDelete(true)} className="p-1 rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 transition-colors" title="Delete">
+            <button onClick={() => setConfirmDelete(true)} className="p-1 rounded text-faint hover:text-red-400 hover:bg-[var(--ds-raised)] transition-colors" title="Delete">
               <Trash2 size={14} />
             </button>
           ) : (
             <span className="flex items-center gap-1 text-xs">
               <span className="text-red-400">Delete?</span>
-              <button onClick={handleDelete} className="px-1.5 py-0.5 rounded bg-red-600 text-white text-xs hover:bg-red-500">Yes</button>
-              <button onClick={() => setConfirmDelete(false)} className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 text-xs hover:bg-slate-600">No</button>
+              <button onClick={handleDelete} className="px-1.5 py-0.5 rounded bg-red-600 text-on-accent text-xs hover:bg-red-500">Yes</button>
+              <button onClick={() => setConfirmDelete(false)} className="px-1.5 py-0.5 rounded surface-raised text-default text-xs hover:bg-[var(--ds-raised)]">No</button>
             </span>
           )}
           <button
             onClick={() => docId && loadDoc(docId)}
             disabled={loading}
-            className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+            className="p-1 rounded text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors"
             title="Refresh"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -283,9 +283,9 @@ export default function DocumentEditor({ appId, userId, context = {}, onTitle, o
           <MessageSquareQuote size={14} className="text-indigo-400 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <div className="text-xs text-indigo-400 font-medium mb-0.5">Quoted to Skipper</div>
-            <div className="text-xs text-slate-400 line-clamp-3 font-mono whitespace-pre-wrap">{pinnedSelection}</div>
+            <div className="text-xs text-muted line-clamp-3 font-mono whitespace-pre-wrap">{pinnedSelection}</div>
           </div>
-          <button onClick={handleClearPin} className="text-indigo-400/60 hover:text-white shrink-0" title="Clear quote">
+          <button onClick={handleClearPin} className="text-indigo-400/60 hover:text-[var(--ds-text)] shrink-0" title="Clear quote">
             <X size={12} />
           </button>
         </div>
@@ -295,7 +295,7 @@ export default function DocumentEditor({ appId, userId, context = {}, onTitle, o
       {error && (
         <div className="px-3 py-1.5 bg-red-900/30 border-b border-red-800/50 text-xs text-red-300 flex items-center justify-between">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={12} /></button>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-[var(--ds-text)]"><X size={12} /></button>
         </div>
       )}
 
@@ -312,7 +312,7 @@ export default function DocumentEditor({ appId, userId, context = {}, onTitle, o
           />
         ) : (
           <div
-            className="p-4 markdown-body text-sm text-slate-200 max-w-none overflow-auto"
+            className="p-4 markdown-body text-sm text-default max-w-none overflow-auto"
             dangerouslySetInnerHTML={{ __html: markdownToHtml(content) }}
           />
         )}
@@ -392,18 +392,18 @@ function DocMetaBar({ docMeta, docId, userId, onUpdate }) {
   }
 
   return (
-    <div className="px-3 py-1.5 bg-slate-900/20 border-b border-slate-800/50 flex flex-wrap items-center gap-2 text-xs text-slate-500">
+    <div className="px-3 py-1.5 surface-panel border-b border-subtle flex flex-wrap items-center gap-2 text-xs text-faint">
       {/* Doc ID */}
-      <span className="text-slate-600 font-mono select-all">{docId}</span>
+      <span className="text-faint font-mono select-all">{docId}</span>
 
-      <span className="text-slate-700 mx-1">|</span>
+      <span className="text-default mx-1">|</span>
 
       {/* Tags */}
       <Tag size={10} className="shrink-0" />
       {tags.map((t) => (
-        <span key={t} className="flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-800 rounded text-slate-400">
+        <span key={t} className="flex items-center gap-0.5 px-1.5 py-0.5 surface-card rounded text-muted">
           {t}
-          <button onClick={() => handleRemoveTag(t)} className="hover:text-white"><X size={8} /></button>
+          <button onClick={() => handleRemoveTag(t)} className="hover:text-[var(--ds-text)]"><X size={8} /></button>
         </span>
       ))}
       {editingTags ? (
@@ -415,24 +415,24 @@ function DocMetaBar({ docMeta, docId, userId, onUpdate }) {
             onBlur={() => { if (!tagDraft) setEditingTags(false); }}
             onKeyDown={(e) => { if (e.key === "Escape") setEditingTags(false); }}
             placeholder="tag"
-            className="bg-slate-800 text-slate-300 text-xs px-1.5 py-0.5 rounded border border-slate-700 outline-none w-20"
+            className="surface-card text-default text-xs px-1.5 py-0.5 rounded border border-subtle outline-none w-20"
           />
         </form>
       ) : (
-        <button onClick={() => setEditingTags(true)} className="text-slate-600 hover:text-slate-300">+ tag</button>
+        <button onClick={() => setEditingTags(true)} className="text-faint hover:text-[var(--ds-text)]">+ tag</button>
       )}
 
-      <span className="text-slate-700 mx-1">|</span>
+      <span className="text-default mx-1">|</span>
 
       {/* Links */}
       <Link size={10} className="shrink-0" />
       {linkedEntities.length === 0 && !linking && (
-        <span className="text-slate-600">no links</span>
+        <span className="text-faint">no links</span>
       )}
       {linkedEntities.map((eid) => (
-        <span key={eid} className="flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-800 rounded text-indigo-400/70">
+        <span key={eid} className="flex items-center gap-0.5 px-1.5 py-0.5 surface-card rounded text-indigo-400/70">
           {eid}
-          <button onClick={() => handleUnlink(eid)} className="hover:text-white"><X size={8} /></button>
+          <button onClick={() => handleUnlink(eid)} className="hover:text-[var(--ds-text)]"><X size={8} /></button>
         </span>
       ))}
       {linking ? (
@@ -444,11 +444,11 @@ function DocMetaBar({ docMeta, docId, userId, onUpdate }) {
             onBlur={() => { if (!linkDraft) setLinking(false); }}
             onKeyDown={(e) => { if (e.key === "Escape") setLinking(false); }}
             placeholder="entity ID (e.g. p-xxx)"
-            className="bg-slate-800 text-slate-300 text-xs px-1.5 py-0.5 rounded border border-slate-700 outline-none w-36"
+            className="surface-card text-default text-xs px-1.5 py-0.5 rounded border border-subtle outline-none w-36"
           />
         </form>
       ) : (
-        <button onClick={() => setLinking(true)} className="text-slate-600 hover:text-slate-300">+ link</button>
+        <button onClick={() => setLinking(true)} className="text-faint hover:text-[var(--ds-text)]">+ link</button>
       )}
     </div>
   );

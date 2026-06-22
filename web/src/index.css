@@ -284,3 +284,120 @@ html, body, #root {
 .task-flash {
   animation: task-flash-pulse 0.75s ease-in-out 2;
 }
+
+/* Design system — semantic tokens + component classes (issue #38).
+ * Independent literal values per theme; dark byte-stable, light reference feel. */
+:root {
+  /* DARK (default) — independent literals == current stock slate/indigo */
+  --ds-page:#020617; --ds-panel:#0f172a; --ds-card:#1e293b; --ds-raised:#334155;
+  --ds-overlay:rgba(2,6,23,.72);
+  --ds-text:#f1f5f9; --ds-muted:#94a3b8; --ds-faint:#64748b; --ds-on-accent:#ffffff;
+  --ds-border:#334155; --ds-border-strong:#475569;
+  --ds-accent:#4f46e5; --ds-accent-hover:#6366f1; --ds-accent-fg:#ffffff;
+  --ds-success:#16a34a; --ds-success-hover:#22c55e; --ds-danger:#dc2626; --ds-danger-hover:#ef4444;
+  --ds-link:#818cf8; --ds-link-hover:#a5b4fc;
+  --ds-field-bg:#1e293b; --ds-field-border:#334155; --ds-field-ph:#64748b;
+  --ds-focus:#6366f1; --ds-disabled-bg:#1e293b; --ds-disabled-fg:#475569;
+  --ds-elevation:0 1px 2px rgba(0,0,0,.4), 0 2px 8px rgba(0,0,0,.30);
+  /* status tints (bg/text) */
+  --ds-ok-bg:#064e3b;  --ds-ok-fg:#6ee7b7;
+  --ds-warn-bg:#713f12; --ds-warn-fg:#fcd34d;
+  --ds-err-bg:#7f1d1d;  --ds-err-fg:#fca5a5;
+  --ds-neutral-bg:#334155; --ds-neutral-fg:#cbd5e1;
+  /* packaged-app tiles keep a distinct (teal) accent vs built-in — a deliberate
+     second accent for the appPackage distinction (feature), semantic + both-theme. */
+  --ds-pkg:#2dd4bf; --ds-pkg-bg:rgba(19,78,74,.30); --ds-pkg-border:rgba(15,118,110,.40);
+}
+html[data-theme="light"] {
+  /* LIGHT — independent literals matching the tuned warm/clean reference */
+  --ds-page:#fafafa; --ds-panel:#ffffff; --ds-card:#ffffff; --ds-raised:#f4f4f5;
+  --ds-overlay:rgba(40,34,28,.32);
+  --ds-text:#1a1714; --ds-muted:#57534e; --ds-faint:#8a8175; --ds-on-accent:#ffffff;
+  --ds-border:#e2e0dd; --ds-border-strong:#cfccc7;
+  --ds-accent:#6366f1; --ds-accent-hover:#4f46e5; --ds-accent-fg:#ffffff;
+  --ds-success:#15803d; --ds-success-hover:#16a34a; --ds-danger:#b91c1c; --ds-danger-hover:#dc2626;
+  --ds-link:#4f46e5; --ds-link-hover:#4338ca;
+  --ds-field-bg:#ffffff; --ds-field-border:#cfccc7; --ds-field-ph:#8a8175;
+  --ds-focus:#4f46e5; --ds-disabled-bg:#f0efed; --ds-disabled-fg:#b8b3ab;
+  --ds-elevation:0 1px 2px rgba(60,50,40,.06), 0 2px 8px rgba(60,50,40,.08);
+  --ds-ok-bg:#d1fae5;  --ds-ok-fg:#047857;
+  --ds-warn-bg:#fef3c7; --ds-warn-fg:#b45309;
+  --ds-err-bg:#fee2e2;  --ds-err-fg:#b91c1c;
+  --ds-neutral-bg:#ececec; --ds-neutral-fg:#57534e;
+  --ds-pkg:#0d9488; --ds-pkg-bg:#effdfb; --ds-pkg-border:#bdeee2;
+}
+
+@layer components {
+/* Design-system component classes — top-level (matching this file's convention). */
+  /* surfaces */
+  .surface-page   { background-color:var(--ds-page);   color:var(--ds-text); }
+  .surface-panel  { background-color:var(--ds-panel);  color:var(--ds-text); }
+  .surface-card   { background-color:var(--ds-card);   color:var(--ds-text); }
+  .surface-raised { background-color:var(--ds-raised); color:var(--ds-text); }
+  .surface-overlay{ background-color:var(--ds-overlay); }
+  /* text */
+  .text-default { color:var(--ds-text); }
+  .text-muted   { color:var(--ds-muted); }
+  .text-faint   { color:var(--ds-faint); }
+  .text-on-accent { color:var(--ds-on-accent); }
+  .text-accent  { color:var(--ds-accent); }
+  .link { color:var(--ds-link); cursor:pointer; }
+  .link:hover { color:var(--ds-link-hover); text-decoration:underline; }
+  /* muted icon/text button that brightens (and gains a raised hover bg) on hover.
+     Tailwind hover: utilities still override (e.g. hover:text-red-400) since they
+     sit in a higher layer than @layer components. */
+  .icon-btn { color:var(--ds-muted); }
+  .icon-btn:hover { color:var(--ds-text); background-color:var(--ds-raised); }
+  /* borders */
+  .border-subtle { border-color:var(--ds-border); }
+  .border-strong { border-color:var(--ds-border-strong); }
+  /* buttons (foreground baked in so text never renders black-on-accent) */
+  .btn-primary { background-color:var(--ds-accent); color:var(--ds-accent-fg); }
+  .btn-primary:hover { background-color:var(--ds-accent-hover); }
+  .btn-success { background-color:var(--ds-success); color:#fff; }
+  .btn-success:hover { background-color:var(--ds-success-hover); }
+  .btn-danger { background-color:var(--ds-danger); color:#fff; }
+  .btn-danger:hover { background-color:var(--ds-danger-hover); }
+  .btn-ghost { background-color:transparent; color:var(--ds-text); }
+  .btn-ghost:hover { background-color:var(--ds-raised); }
+  .btn-secondary { background-color:var(--ds-raised); color:var(--ds-text); }
+  .btn-secondary:hover { background-color:var(--ds-border-strong); }
+  .btn-primary:disabled,.btn-success:disabled,.btn-danger:disabled,.btn-ghost:disabled {
+    background-color:var(--ds-disabled-bg); color:var(--ds-disabled-fg); cursor:not-allowed; }
+  /* form fields + focus + disabled */
+  .input { background-color:var(--ds-field-bg); color:var(--ds-text);
+           border:1px solid var(--ds-field-border); border-radius:.5rem; }
+  .input::placeholder { color:var(--ds-field-ph); }
+  .input:disabled { background-color:var(--ds-disabled-bg); color:var(--ds-disabled-fg); cursor:not-allowed; }
+  .field-label { color:var(--ds-muted); font-size:.875rem; }
+  .focus-ring:focus-visible { outline:2px solid var(--ds-focus); outline-offset:2px; }
+  /* badges / status pills */
+  .pill { display:inline-flex; align-items:center; gap:.25rem; border-radius:9999px;
+          padding:.125rem .5rem; font-size:.75rem; background-color:var(--ds-neutral-bg); color:var(--ds-neutral-fg); }
+  .pill-success { background-color:var(--ds-ok-bg);  color:var(--ds-ok-fg); }
+  .pill-warn    { background-color:var(--ds-warn-bg); color:var(--ds-warn-fg); }
+  .pill-danger  { background-color:var(--ds-err-bg);  color:var(--ds-err-fg); }
+  .pill-neutral { background-color:var(--ds-neutral-bg); color:var(--ds-neutral-fg); }
+  .status-pill  { display:inline-flex; align-items:center; gap:.25rem; border-radius:9999px;
+                  padding:.125rem .5rem; font-size:.75rem; background-color:var(--ds-neutral-bg); color:var(--ds-neutral-fg); }
+  /* shared COMPOSITE patterns — one definition so apps render identically */
+  .tab { padding:.5rem .875rem; color:var(--ds-muted); border-bottom:2px solid transparent; cursor:pointer; }
+  .tab:hover { color:var(--ds-text); }
+  .tab-active { color:var(--ds-text); border-bottom-color:var(--ds-accent); }
+  .list-row { display:flex; align-items:center; gap:.75rem; padding:.625rem .75rem;
+              background-color:var(--ds-card); border-bottom:1px solid var(--ds-border); }
+  .list-row:hover { background-color:var(--ds-raised); }
+  .section-header { color:var(--ds-faint); font-size:.75rem; font-weight:600;
+                    text-transform:uppercase; letter-spacing:.05em; }
+  .empty-state { color:var(--ds-faint); text-align:center; padding:2rem 1rem; }
+  /* small neutral dot (e.g. typing indicator, status dots) — themed both ways */
+  .dot { background-color:var(--ds-muted); }
+  /* thin divider line (a bg hairline, e.g. date separators) */
+  .divider { background-color:var(--ds-border); }
+  /* app launcher tiles — built-in vs packaged (distinct accent) */
+  .text-pkg { color:var(--ds-pkg); }
+  .app-tile { background-color:var(--ds-card); border:1px solid var(--ds-border); color:var(--ds-muted); }
+  .app-tile:hover { background-color:var(--ds-raised); border-color:var(--ds-border-strong); }
+  .app-tile-pkg { background-color:var(--ds-pkg-bg); border:1px solid var(--ds-pkg-border); color:var(--ds-pkg); }
+  .app-tile-pkg:hover { filter:brightness(1.08); }
+}

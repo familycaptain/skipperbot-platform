@@ -129,7 +129,7 @@ export default function LocatorDetailApp({ appId, userId, context = {}, onTitle,
 
   if (!itemId) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-500 text-sm">
+      <div className="flex items-center justify-center h-full text-faint text-sm">
         No item selected.
       </div>
     );
@@ -137,7 +137,7 @@ export default function LocatorDetailApp({ appId, userId, context = {}, onTitle,
 
   if (loading || !item) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-400">
+      <div className="flex items-center justify-center h-full text-muted">
         <Loader2 size={18} className="animate-spin mr-2" /> Loading item...
       </div>
     );
@@ -146,39 +146,39 @@ export default function LocatorDetailApp({ appId, userId, context = {}, onTitle,
   return (
     <div className="flex flex-col h-full w-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
+      <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
         <div className="flex items-center gap-2 min-w-0">
-          <h2 className="text-sm font-medium text-white truncate">
+          <h2 className="text-sm font-medium text-default truncate">
             {editing ? "Editing" : ""} {item.name || "Untitled"}
           </h2>
         </div>
         <div className="flex items-center gap-1.5">
           {editing ? (
             <>
-              <button onClick={handleCancel} className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors">
+              <button onClick={handleCancel} className="flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] rounded transition-colors">
                 <RotateCcw size={12} /> Cancel
               </button>
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors disabled:opacity-50"
+                className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-on-accent rounded transition-colors disabled:opacity-50"
               >
                 <Save size={12} /> {saving ? "Saving..." : "Save"}
               </button>
             </>
           ) : (
             <>
-              <button onClick={() => setEditing(true)} className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-colors">
+              <button onClick={() => setEditing(true)} className="flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] rounded transition-colors">
                 <Edit3 size={12} /> Edit
               </button>
               {confirmDelete ? (
                 <div className="flex items-center gap-1">
                   <span className="text-xs text-red-400">Delete?</span>
-                  <button onClick={handleDelete} className="px-2 py-0.5 text-xs bg-red-600 hover:bg-red-500 text-white rounded">Yes</button>
-                  <button onClick={() => setConfirmDelete(false)} className="px-2 py-0.5 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded">No</button>
+                  <button onClick={handleDelete} className="px-2 py-0.5 text-xs bg-red-600 hover:bg-red-500 text-on-accent rounded">Yes</button>
+                  <button onClick={() => setConfirmDelete(false)} className="px-2 py-0.5 text-xs surface-raised hover:bg-[var(--ds-raised)] text-default rounded">No</button>
                 </div>
               ) : (
-                <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-red-400 hover:bg-slate-700 rounded transition-colors">
+                <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-red-400 hover:bg-[var(--ds-raised)] rounded transition-colors">
                   <Trash2 size={12} />
                 </button>
               )}
@@ -194,56 +194,56 @@ export default function LocatorDetailApp({ appId, userId, context = {}, onTitle,
           <div className="space-y-4 max-w-lg">
             {/* Name */}
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Name</label>
+              <label className="block text-xs text-muted mb-1">Name</label>
               <input value={form.name} onChange={(e) => updateForm("name", e.target.value)}
-                className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none focus:border-indigo-500" />
+                className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none focus:border-indigo-500" />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Description</label>
+              <label className="block text-xs text-muted mb-1">Description</label>
               <textarea value={form.description} onChange={(e) => updateForm("description", e.target.value)} rows={3}
-                className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none focus:border-indigo-500 resize-none" />
+                className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none focus:border-indigo-500 resize-none" />
             </div>
 
             {/* Location + Sub-location */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Location</label>
+                <label className="block text-xs text-muted mb-1">Location</label>
                 <input value={form.location} onChange={(e) => updateForm("location", e.target.value)}
                   list="location-suggestions" placeholder="e.g. Garage, Attic"
-                  className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none focus:border-indigo-500" />
+                  className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none focus:border-indigo-500" />
                 <datalist id="location-suggestions">
                   {locations.map(l => <option key={l.id} value={l.name} />)}
                 </datalist>
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Sub-location</label>
+                <label className="block text-xs text-muted mb-1">Sub-location</label>
                 <input value={form.sub_location} onChange={(e) => updateForm("sub_location", e.target.value)}
                   placeholder="e.g. Top shelf, Bin #3"
-                  className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none focus:border-indigo-500" />
+                  className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none focus:border-indigo-500" />
               </div>
             </div>
 
             {/* Category + Quantity */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Category</label>
+                <label className="block text-xs text-muted mb-1">Category</label>
                 <input value={form.category} onChange={(e) => updateForm("category", e.target.value)}
                   placeholder="e.g. Tools, Seasonal"
-                  className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none focus:border-indigo-500" />
+                  className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none focus:border-indigo-500" />
               </div>
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Quantity</label>
+                <label className="block text-xs text-muted mb-1">Quantity</label>
                 <input type="number" value={form.quantity} onChange={(e) => updateForm("quantity", e.target.value)}
                   placeholder="Optional"
-                  className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none focus:border-indigo-500" />
+                  className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none focus:border-indigo-500" />
               </div>
             </div>
 
             {/* Tags */}
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Tags</label>
+              <label className="block text-xs text-muted mb-1">Tags</label>
               <div className="flex flex-wrap gap-1 mb-1">
                 {form.tags.map((tag, i) => (
                   <span key={i} className="flex items-center gap-1 px-2 py-0.5 bg-indigo-600/30 rounded-full text-xs text-indigo-300">
@@ -262,38 +262,38 @@ export default function LocatorDetailApp({ appId, userId, context = {}, onTitle,
                 }
               }} className="flex items-center gap-1">
                 <input name="newTag" placeholder="Add tag..."
-                  className="w-32 bg-slate-800 text-white text-xs px-2 py-1 rounded border border-slate-700 outline-none focus:border-indigo-500" />
-                <button type="submit" className="px-1.5 py-0.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded">+</button>
+                  className="w-32 surface-card text-default text-xs px-2 py-1 rounded border border-subtle outline-none focus:border-indigo-500" />
+                <button type="submit" className="px-1.5 py-0.5 bg-indigo-600 hover:bg-indigo-500 text-on-accent text-xs rounded">+</button>
               </form>
             </div>
 
             {/* Notes */}
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Notes</label>
+              <label className="block text-xs text-muted mb-1">Notes</label>
               <textarea value={form.notes} onChange={(e) => updateForm("notes", e.target.value)} rows={4}
-                className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none focus:border-indigo-500 resize-none" />
+                className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none focus:border-indigo-500 resize-none" />
             </div>
           </div>
         ) : (
           /* ── View Mode ── */
           <div className="space-y-4 max-w-lg">
             {/* Location card */}
-            <div className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-4">
+            <div className="surface-card border border-subtle rounded-lg p-4">
               <div className="flex items-center gap-2 text-indigo-300 mb-2">
                 <MapPin size={16} />
                 <span className="text-sm font-medium">
                   {item.location || "No location set"}
-                  {item.sub_location && <span className="text-slate-400"> &gt; {item.sub_location}</span>}
+                  {item.sub_location && <span className="text-muted"> &gt; {item.sub_location}</span>}
                 </span>
               </div>
               {item.category && (
-                <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
+                <div className="flex items-center gap-2 text-xs text-muted mt-1">
                   <Package size={12} />
                   {item.category}
                 </div>
               )}
               {item.quantity && (
-                <div className="text-xs text-slate-400 mt-1">
+                <div className="text-xs text-muted mt-1">
                   Quantity: {item.quantity}
                 </div>
               )}
@@ -302,18 +302,18 @@ export default function LocatorDetailApp({ appId, userId, context = {}, onTitle,
             {/* Description */}
             {item.description && (
               <div>
-                <h4 className="text-xs text-slate-500 uppercase tracking-wider mb-1">Description</h4>
-                <p className="text-sm text-slate-300 whitespace-pre-wrap">{item.description}</p>
+                <h4 className="text-xs text-faint uppercase tracking-wider mb-1">Description</h4>
+                <p className="text-sm text-default whitespace-pre-wrap">{item.description}</p>
               </div>
             )}
 
             {/* Tags */}
             {item.tags?.length > 0 && (
               <div>
-                <h4 className="text-xs text-slate-500 uppercase tracking-wider mb-1">Tags</h4>
+                <h4 className="text-xs text-faint uppercase tracking-wider mb-1">Tags</h4>
                 <div className="flex flex-wrap gap-1">
                   {item.tags.map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 bg-slate-800 rounded-full text-xs text-slate-300">
+                    <span key={tag} className="px-2 py-0.5 surface-card rounded-full text-xs text-default">
                       {tag}
                     </span>
                   ))}
@@ -324,13 +324,13 @@ export default function LocatorDetailApp({ appId, userId, context = {}, onTitle,
             {/* Notes */}
             {item.notes && (
               <div>
-                <h4 className="text-xs text-slate-500 uppercase tracking-wider mb-1">Notes</h4>
-                <p className="text-sm text-slate-300 whitespace-pre-wrap">{item.notes}</p>
+                <h4 className="text-xs text-faint uppercase tracking-wider mb-1">Notes</h4>
+                <p className="text-sm text-default whitespace-pre-wrap">{item.notes}</p>
               </div>
             )}
 
             {/* Meta */}
-            <div className="text-xs text-slate-600 pt-2 border-t border-slate-800">
+            <div className="text-xs text-faint pt-2 border-t border-subtle">
               Created by {item.created_by || "unknown"} &middot; {item.created_at ? new Date(item.created_at).toLocaleDateString() : ""}
             </div>
           </div>

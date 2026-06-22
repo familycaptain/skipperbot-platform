@@ -8,17 +8,17 @@ const STATUS_OPTIONS = ["idea", "exploring", "developing", "parked", "graduated"
 const PRIORITY_OPTIONS = ["high", "medium", "low"];
 
 const STATUS_COLORS = {
-  idea: "bg-sky-500/20 text-sky-400 border-sky-500/30",
+  idea: "bg-[var(--ds-accent)] text-accent border-subtle",
   exploring: "bg-amber-500/20 text-amber-400 border-amber-500/30",
   developing: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  parked: "bg-slate-500/20 text-slate-400 border-slate-500/30",
+  parked: "surface-raised text-muted border-subtle",
   graduated: "bg-purple-500/20 text-purple-400 border-purple-500/30",
 };
 
 const PRIORITY_DOTS = {
   high: "bg-red-400",
   medium: "bg-amber-400",
-  low: "bg-slate-500",
+  low: "surface-raised",
 };
 
 export default function BrainstormListApp({ appId, userId, context = {}, refreshKey, isActive, onOpenApp }) {
@@ -66,28 +66,28 @@ export default function BrainstormListApp({ appId, userId, context = {}, refresh
   return (
     <div className="flex flex-col h-full w-full">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
+      <div className="flex items-center gap-2 px-3 h-10 surface-panel border-b border-subtle shrink-0">
         <Lightbulb size={14} className="text-amber-400 shrink-0" />
-        <span className="text-sm font-medium text-slate-300">Ideas</span>
+        <span className="text-sm font-medium text-default">Ideas</span>
         <div className="flex-1" />
         <div className="relative">
-          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-faint" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search ideas..."
-            className="bg-slate-800 text-xs text-slate-300 pl-7 pr-2 py-1 rounded border border-slate-700 outline-none w-44 focus:border-amber-600"
+            className="surface-card text-xs text-default pl-7 pr-2 py-1 rounded border border-subtle outline-none w-44 focus:border-amber-600"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+            <button onClick={() => setSearchQuery("")} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-faint hover:text-[var(--ds-text)]">
               <X size={10} />
             </button>
           )}
         </div>
         <button
           onClick={() => setShowNew(!showNew)}
-          className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-amber-600/80 hover:bg-amber-500 text-white transition-colors"
+          className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-amber-600/80 hover:bg-amber-500 text-on-accent transition-colors"
         >
           <Plus size={12} />
           New Idea
@@ -95,10 +95,10 @@ export default function BrainstormListApp({ appId, userId, context = {}, refresh
       </div>
 
       {/* Status filter tabs */}
-      <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-900/20 border-b border-slate-800/50 shrink-0 overflow-x-auto">
+      <div className="flex items-center gap-1 px-3 py-1.5 surface-panel border-b border-subtle shrink-0 overflow-x-auto">
         <button
           onClick={() => setStatusFilter("")}
-          className={`px-2 py-0.5 rounded text-[11px] transition-colors ${!statusFilter ? "bg-slate-700 text-white" : "text-slate-500 hover:text-slate-300"}`}
+          className={`px-2 py-0.5 rounded text-[11px] transition-colors ${!statusFilter ? "surface-raised text-default" : "text-faint hover:text-[var(--ds-text)]"}`}
         >
           All
         </button>
@@ -106,7 +106,7 @@ export default function BrainstormListApp({ appId, userId, context = {}, refresh
           <button
             key={s}
             onClick={() => setStatusFilter(statusFilter === s ? "" : s)}
-            className={`px-2 py-0.5 rounded text-[11px] capitalize transition-colors ${statusFilter === s ? "bg-slate-700 text-white" : "text-slate-500 hover:text-slate-300"}`}
+            className={`px-2 py-0.5 rounded text-[11px] capitalize transition-colors ${statusFilter === s ? "surface-raised text-default" : "text-faint hover:text-[var(--ds-text)]"}`}
           >
             {s}
           </button>
@@ -121,11 +121,11 @@ export default function BrainstormListApp({ appId, userId, context = {}, refresh
       {/* Idea list */}
       <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
         {loading ? (
-          <div className="flex items-center justify-center py-8 text-slate-500">
+          <div className="flex items-center justify-center py-8 text-faint">
             <Loader2 size={16} className="animate-spin mr-2" /> Loading ideas...
           </div>
         ) : ideas.length === 0 ? (
-          <div className="text-center py-8 text-slate-600 text-sm">
+          <div className="text-center py-8 text-faint text-sm">
             {searchQuery || statusFilter ? "No ideas match your filters." : "No ideas yet. Click \"New Idea\" to get started!"}
           </div>
         ) : (
@@ -146,13 +146,13 @@ function IdeaCard({ idea, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left p-3 rounded-lg bg-slate-800/40 hover:bg-slate-800/70 border border-slate-700/30 hover:border-amber-700/30 transition-all group"
+      className="w-full text-left p-3 rounded-lg surface-card hover:bg-[var(--ds-card)] border border-subtle hover:border-amber-700/30 transition-all group"
     >
       <div className="flex items-start gap-2">
         <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${priorityDot}`} title={idea.priority} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-sm font-medium text-slate-200 group-hover:text-white truncate">
+            <span className="text-sm font-medium text-default group-hover:text-[var(--ds-text)] truncate">
               {idea.title}
             </span>
             <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${statusClass} capitalize shrink-0`}>
@@ -160,13 +160,13 @@ function IdeaCard({ idea, onClick }) {
             </span>
           </div>
           {idea.summary && (
-            <p className="text-xs text-slate-500 line-clamp-2 mb-1">{idea.summary}</p>
+            <p className="text-xs text-faint line-clamp-2 mb-1">{idea.summary}</p>
           )}
-          <div className="flex items-center gap-2 text-[10px] text-slate-600">
+          <div className="flex items-center gap-2 text-[10px] text-faint">
             {idea.tags?.length > 0 && (
               <span className="flex items-center gap-1">
                 {idea.tags.map((t) => (
-                  <span key={t} className="px-1 py-0 bg-slate-700/50 rounded text-slate-500">{t}</span>
+                  <span key={t} className="px-1 py-0 surface-raised rounded text-faint">{t}</span>
                 ))}
               </span>
             )}
@@ -200,32 +200,32 @@ function NewIdeaForm({ onSubmit, onCancel }) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Idea title..."
-        className="w-full bg-slate-800 text-sm text-white px-3 py-1.5 rounded border border-slate-700 outline-none focus:border-amber-600"
+        className="w-full surface-card text-sm text-default px-3 py-1.5 rounded border border-subtle outline-none focus:border-amber-600"
       />
       <input
         value={summary}
         onChange={(e) => setSummary(e.target.value)}
         placeholder="Brief summary (optional)..."
-        className="w-full bg-slate-800 text-xs text-slate-300 px-3 py-1.5 rounded border border-slate-700 outline-none focus:border-amber-600"
+        className="w-full surface-card text-xs text-default px-3 py-1.5 rounded border border-subtle outline-none focus:border-amber-600"
       />
       <div className="flex items-center gap-2">
         <select
           value={priority}
           onChange={(e) => setPriority(e.target.value)}
-          className="bg-slate-800 text-xs text-slate-300 px-2 py-1 rounded border border-slate-700 outline-none"
+          className="surface-card text-xs text-default px-2 py-1 rounded border border-subtle outline-none"
         >
           {PRIORITY_OPTIONS.map((p) => (
             <option key={p} value={p}>{p}</option>
           ))}
         </select>
         <div className="flex-1" />
-        <button type="button" onClick={onCancel} className="px-3 py-1 rounded text-xs text-slate-400 hover:text-white transition-colors">
+        <button type="button" onClick={onCancel} className="px-3 py-1 rounded text-xs text-muted hover:text-[var(--ds-text)] transition-colors">
           Cancel
         </button>
         <button
           type="submit"
           disabled={!title.trim()}
-          className="px-3 py-1 rounded text-xs bg-amber-600 text-white hover:bg-amber-500 disabled:opacity-30 transition-colors"
+          className="px-3 py-1 rounded text-xs bg-amber-600 text-on-accent hover:bg-amber-500 disabled:opacity-30 transition-colors"
         >
           Create
         </button>

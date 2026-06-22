@@ -33,7 +33,7 @@ export default function HomeApp({ appId, userId, context = {}, onTitle, onOpenAp
   return (
     <div className="flex flex-col h-full w-full">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0 overflow-x-auto">
+      <div className="flex items-center gap-1 px-3 h-10 surface-panel border-b border-subtle shrink-0 overflow-x-auto">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
@@ -43,8 +43,8 @@ export default function HomeApp({ appId, userId, context = {}, onTitle, onOpenAp
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md whitespace-nowrap transition-colors ${
                 active
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800"
+                  ? "bg-indigo-600 text-on-accent"
+                  : "text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-card)]"
               }`}
             >
               <Icon size={13} />
@@ -116,30 +116,30 @@ function taskStatus(task) {
 const STATUS_STYLES = {
   overdue:  { bg: "bg-red-500/10 border-red-500/30",  badge: "bg-red-500/20 text-red-400",  dot: "bg-red-500"  },
   due_soon: { bg: "bg-amber-500/10 border-amber-500/30", badge: "bg-amber-500/20 text-amber-400", dot: "bg-amber-400" },
-  ok:       { bg: "bg-slate-800/50 border-slate-700",  badge: "bg-green-500/20 text-green-400", dot: "bg-green-500" },
-  none:     { bg: "bg-slate-800/50 border-slate-700",  badge: "bg-slate-700 text-slate-400",   dot: "bg-slate-500" },
+  ok:       { bg: "surface-card border-subtle",  badge: "bg-green-500/20 text-green-400", dot: "bg-green-500" },
+  none:     { bg: "surface-card border-subtle",  badge: "surface-raised text-muted",   dot: "surface-raised" },
 };
 
 const COLOR_OPTIONS = {
   blue:   "bg-blue-500/20 text-blue-400",
-  cyan:   "bg-cyan-500/20 text-cyan-400",
+  cyan:   "bg-[var(--ds-accent)] text-accent",
   green:  "bg-green-500/20 text-green-400",
   orange: "bg-orange-500/20 text-orange-400",
   purple: "bg-purple-500/20 text-purple-400",
   red:    "bg-red-500/20 text-red-400",
   amber:  "bg-amber-500/20 text-amber-400",
-  slate:  "bg-slate-600/50 text-slate-300",
+  slate:  "surface-raised text-default",
 };
 
 const COLOR_DOTS = {
   blue:   "bg-blue-500",
-  cyan:   "bg-cyan-400",
+  cyan:   "bg-[var(--ds-accent)]",
   green:  "bg-green-500",
   orange: "bg-orange-500",
   purple: "bg-purple-500",
   red:    "bg-red-500",
   amber:  "bg-amber-400",
-  slate:  "bg-slate-500",
+  slate:  "surface-raised",
 };
 
 const CATEGORY_COLORS = {
@@ -152,7 +152,7 @@ const CATEGORY_COLORS = {
 };
 
 function CatBadge({ category, colorCls }) {
-  const cls = colorCls || CATEGORY_COLORS[category] || "bg-slate-600/50 text-slate-300";
+  const cls = colorCls || CATEGORY_COLORS[category] || "surface-raised text-default";
   return <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${cls}`}>{category || "General"}</span>;
 }
 
@@ -195,11 +195,11 @@ function AddTaskForm({ onSave, onCancel, catObjects = [] }) {
   }
 
   const cats = catObjects.length > 0 ? catObjects.map(c => c.name) : ["General", "HVAC", "Plumbing", "Exterior", "Electrical", "Pest Control"];
-  const inputCls = "w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500";
+  const inputCls = "w-full surface-panel border border-subtle rounded px-2.5 py-1.5 text-sm text-default focus:outline-none focus:border-indigo-500";
 
   return (
-    <form onSubmit={handleSubmit} className="bg-slate-800/60 border border-slate-700 rounded-lg p-4 space-y-3">
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">New Maintenance Task</p>
+    <form onSubmit={handleSubmit} className="surface-card border border-subtle rounded-lg p-4 space-y-3">
+      <p className="text-xs font-semibold text-muted uppercase tracking-wide">New Maintenance Task</p>
       <div className="grid grid-cols-2 gap-3">
         <div className="col-span-2">
           <input className={inputCls} placeholder="Task name (e.g. Clean A/C filter)" value={form.name}
@@ -223,7 +223,7 @@ function AddTaskForm({ onSave, onCancel, catObjects = [] }) {
           </div>
         )}
         <div>
-          <label className="block text-xs text-slate-500 mb-1">{form.task_type === "recurring" ? "First due date" : "Due date"}</label>
+          <label className="block text-xs text-faint mb-1">{form.task_type === "recurring" ? "First due date" : "Due date"}</label>
           <input className={inputCls} type="date" value={form.next_due_at} onChange={e => set("next_due_at", e.target.value)} />
         </div>
         <div className="col-span-2">
@@ -233,11 +233,11 @@ function AddTaskForm({ onSave, onCancel, catObjects = [] }) {
       </div>
       <div className="flex items-center justify-end gap-2">
         <button type="button" onClick={onCancel}
-          className="px-3 py-1.5 text-xs text-slate-400 hover:text-white transition-colors">
+          className="px-3 py-1.5 text-xs text-muted hover:text-[var(--ds-text)] transition-colors">
           Cancel
         </button>
         <button type="submit" disabled={saving || !form.name.trim()}
-          className="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded transition-colors">
+          className="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-on-accent rounded transition-colors">
           {saving ? "Saving..." : "Add Task"}
         </button>
       </div>
@@ -287,7 +287,7 @@ function EditTaskForm({ task, onSave, onCancel, catObjects = [] }) {
   }
 
   const cats = catObjects.length > 0 ? catObjects.map(c => c.name) : ["General", "HVAC", "Plumbing", "Exterior", "Electrical", "Pest Control"];
-  const inputCls = "w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500";
+  const inputCls = "w-full surface-panel border border-subtle rounded px-2 py-1 text-xs text-default focus:outline-none focus:border-indigo-500";
 
   return (
     <form onSubmit={handleSubmit} className="mt-2 space-y-2">
@@ -307,7 +307,7 @@ function EditTaskForm({ task, onSave, onCancel, catObjects = [] }) {
             value={form.interval_days} onChange={e => set("interval_days", e.target.value)} />
         )}
         <div>
-          <label className="block text-xs text-slate-500 mb-0.5">Next due</label>
+          <label className="block text-xs text-faint mb-0.5">Next due</label>
           <input className={inputCls} type="date" value={form.next_due_at} onChange={e => set("next_due_at", e.target.value)} />
         </div>
         <div className="col-span-2">
@@ -316,10 +316,10 @@ function EditTaskForm({ task, onSave, onCancel, catObjects = [] }) {
       </div>
       <div className="flex items-center gap-2">
         <button type="submit" disabled={saving}
-          className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded">
+          className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-on-accent rounded">
           {saving ? "Saving..." : "Save"}
         </button>
-        <button type="button" onClick={onCancel} className="px-3 py-1 text-xs text-slate-400 hover:text-white">Cancel</button>
+        <button type="button" onClick={onCancel} className="px-3 py-1 text-xs text-muted hover:text-[var(--ds-text)]">Cancel</button>
       </div>
     </form>
   );
@@ -348,19 +348,19 @@ function DoneModal({ task, onConfirm, onCancel }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 w-80 shadow-2xl">
-        <p className="text-sm font-medium text-white mb-1">Mark as done</p>
-        <p className="text-xs text-slate-400 mb-3">"{task.name}"</p>
+    <div className="fixed inset-0 surface-overlay flex items-center justify-center z-50">
+      <div className="surface-card border border-subtle rounded-xl p-5 w-80 shadow-2xl">
+        <p className="text-sm font-medium text-default mb-1">Mark as done</p>
+        <p className="text-xs text-muted mb-3">"{task.name}"</p>
         <textarea
-          className="w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none"
+          className="w-full surface-panel border border-subtle rounded px-2.5 py-1.5 text-xs text-default focus:outline-none focus:border-indigo-500 resize-none"
           rows={2} placeholder="Notes (optional, e.g. 'Used MERV-13 filter')"
           value={notes} onChange={e => setNotes(e.target.value)} autoFocus
         />
         <div className="flex items-center justify-end gap-2 mt-3">
-          <button onClick={onCancel} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white">Cancel</button>
+          <button onClick={onCancel} className="px-3 py-1.5 text-xs text-muted hover:text-[var(--ds-text)]">Cancel</button>
           <button onClick={handleConfirm} disabled={saving}
-            className="px-4 py-1.5 text-xs bg-green-600 hover:bg-green-500 disabled:opacity-50 text-white rounded flex items-center gap-1.5">
+            className="px-4 py-1.5 text-xs bg-green-600 hover:bg-green-500 disabled:opacity-50 text-on-accent rounded flex items-center gap-1.5">
             <CheckCircle size={12} />
             {saving ? "Saving..." : "Done"}
           </button>
@@ -391,25 +391,25 @@ function TaskCard({ task, expanded, onToggle, onComplete, onUpdate, onDelete, ca
         <span className={`w-2 h-2 rounded-full shrink-0 ${styles.dot}`} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-medium text-slate-100 truncate">{task.name}</span>
+            <span className="text-sm font-medium text-default truncate">{task.name}</span>
             <CatBadge category={task.category} colorCls={catColorMap[task.category]} />
             {task.task_type === "recurring" && task.interval_days && (
-              <span className="text-xs text-slate-500 flex items-center gap-1">
+              <span className="text-xs text-faint flex items-center gap-1">
                 <RotateCcw size={10} />{intervalLabel(task.interval_days)}
               </span>
             )}
             {task.task_type === "adhoc" && (
-              <span className="text-xs text-slate-600">one-time</span>
+              <span className="text-xs text-faint">one-time</span>
             )}
           </div>
-          <div className="flex items-center gap-3 mt-0.5 text-xs text-slate-500">
+          <div className="flex items-center gap-3 mt-0.5 text-xs text-faint">
             {task.last_done_at && <span>Last: {fmtDate(task.last_done_at)}</span>}
             {task.next_due_at && (
               <span className={diff !== null && diff < 0 ? "text-red-400 font-medium" : diff !== null && diff <= 7 ? "text-amber-400" : ""}>
                 {dueLabel()}
               </span>
             )}
-            {!task.next_due_at && !task.last_done_at && <span className="text-slate-600">No due date</span>}
+            {!task.next_due_at && !task.last_done_at && <span className="text-faint">No due date</span>}
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -422,7 +422,7 @@ function TaskCard({ task, expanded, onToggle, onComplete, onUpdate, onDelete, ca
           </button>
           <button
             onClick={() => { setEditing(false); onToggle(); }}
-            className="p-1.5 text-slate-500 hover:text-slate-300 rounded transition-colors"
+            className="p-1.5 text-faint hover:text-[var(--ds-text)] rounded transition-colors"
             title={expanded ? "Collapse" : "Expand"}
           >
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -431,7 +431,7 @@ function TaskCard({ task, expanded, onToggle, onComplete, onUpdate, onDelete, ca
       </div>
 
       {expanded && (
-        <div className="border-t border-slate-700/60 px-3 py-3">
+        <div className="border-t border-subtle px-3 py-3">
           {editing ? (
             <EditTaskForm
               task={task}
@@ -442,11 +442,11 @@ function TaskCard({ task, expanded, onToggle, onComplete, onUpdate, onDelete, ca
           ) : (
             <>
               {task.description && (
-                <p className="text-xs text-slate-400 mb-3">{task.description}</p>
+                <p className="text-xs text-muted mb-3">{task.description}</p>
               )}
               <div className="flex items-center gap-2 mb-3">
                 <button onClick={() => setEditing(true)}
-                  className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-white border border-slate-700 hover:border-slate-600 rounded transition-colors">
+                  className="flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-[var(--ds-text)] border border-subtle hover:border-[var(--ds-border)] rounded transition-colors">
                   <Edit2 size={11} /> Edit
                 </button>
                 <button onClick={() => onDelete(task.id)}
@@ -490,12 +490,12 @@ function CompletionLog({ taskId, log }) {
   }
 
   if (entries.length === 0) {
-    return <p className="text-xs text-slate-600 italic">No completions logged yet.</p>;
+    return <p className="text-xs text-faint italic">No completions logged yet.</p>;
   }
 
   return (
     <div>
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+      <p className="text-xs font-semibold text-faint uppercase tracking-wide mb-2">
         Completion History ({entries.length})
       </p>
       <div className="space-y-1">
@@ -503,9 +503,9 @@ function CompletionLog({ taskId, log }) {
           <div key={e.id} className="flex items-start gap-2 text-xs">
             <CheckCircle size={12} className="text-green-500 mt-0.5 shrink-0" />
             <div>
-              <span className="text-slate-300">{fmtDate(e.completed_at)}</span>
-              {e.completed_by && <span className="text-slate-500"> · {e.completed_by}</span>}
-              {e.notes && <span className="text-slate-400"> — {e.notes}</span>}
+              <span className="text-default">{fmtDate(e.completed_at)}</span>
+              {e.completed_by && <span className="text-faint"> · {e.completed_by}</span>}
+              {e.notes && <span className="text-muted"> — {e.notes}</span>}
             </div>
           </div>
         ))}
@@ -618,31 +618,31 @@ function MaintenanceTab({ userId }) {
   return (
     <div className="flex flex-col h-full">
       {/* Search + Add bar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-800 shrink-0">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-subtle shrink-0">
         <div className="relative flex-1">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-faint" />
           <input
-            className="w-full bg-slate-900 border border-slate-700 rounded pl-7 pr-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+            className="w-full surface-panel border border-subtle rounded pl-7 pr-2.5 py-1.5 text-xs text-default placeholder-slate-600 focus:outline-none focus:border-indigo-500"
             placeholder="Search tasks..."
             value={search}
             onChange={e => { setSearch(e.target.value); setFilterCat("All"); }}
           />
           {search && (
-            <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+            <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-faint hover:text-[var(--ds-text)]">
               <X size={12} />
             </button>
           )}
         </div>
         <button
           onClick={() => { setShowAdd(v => !v); setShowManage(false); }}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded transition-colors ${showAdd ? "bg-slate-700 text-white" : "bg-indigo-600 hover:bg-indigo-500 text-white"}`}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded transition-colors ${showAdd ? "surface-raised text-on-accent" : "bg-indigo-600 hover:bg-indigo-500 text-on-accent"}`}
         >
           {showAdd ? <X size={13} /> : <Plus size={13} />}
           {showAdd ? "Cancel" : "Add Task"}
         </button>
         <button
           onClick={() => { setShowManage(v => !v); setShowAdd(false); }}
-          className={`p-1.5 rounded transition-colors ${showManage ? "bg-slate-700 text-indigo-400" : "text-slate-500 hover:text-white hover:bg-slate-800"}`}
+          className={`p-1.5 rounded transition-colors ${showManage ? "surface-raised text-indigo-400" : "text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-card)]"}`}
           title="Manage categories"
         >
           <Settings size={14} />
@@ -651,15 +651,15 @@ function MaintenanceTab({ userId }) {
 
       {/* Category filter */}
       {!search && allCategories.length > 1 && (
-        <div className="flex items-center gap-1 px-3 py-1.5 border-b border-slate-800 shrink-0 overflow-x-auto">
+        <div className="flex items-center gap-1 px-3 py-1.5 border-b border-subtle shrink-0 overflow-x-auto">
           {allCategories.map(cat => (
             <button
               key={cat}
               onClick={() => setFilterCat(cat)}
               className={`px-2.5 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
                 filterCat === cat
-                  ? "bg-indigo-600 text-white"
-                  : "text-slate-400 hover:text-white hover:bg-slate-800"
+                  ? "bg-indigo-600 text-on-accent"
+                  : "text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-card)]"
               }`}
             >
               {cat}
@@ -693,14 +693,14 @@ function MaintenanceTab({ userId }) {
             )}
 
             {loading ? (
-              <div className="flex items-center justify-center h-32 text-slate-500 text-sm">Loading...</div>
+              <div className="flex items-center justify-center h-32 text-faint text-sm">Loading...</div>
             ) : tasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-48 text-slate-500">
-                <Wrench size={32} className="text-slate-700 mb-3" />
-                <p className="text-sm font-medium text-slate-400">
+              <div className="flex flex-col items-center justify-center h-48 text-faint">
+                <Wrench size={32} className="text-default mb-3" />
+                <p className="text-sm font-medium text-muted">
                   {search ? `No tasks matching "${search}"` : "No maintenance tasks yet"}
                 </p>
-                <p className="text-xs mt-1 text-slate-600">
+                <p className="text-xs mt-1 text-faint">
                   {!search && 'Click "Add Task" to get started'}
                 </p>
               </div>
@@ -712,7 +712,7 @@ function MaintenanceTab({ userId }) {
                   items={dueSoon} />
                 <StatusGroup label="On schedule" icon={CalendarCheck} color="text-green-400"
                   items={onSchedule} />
-                <StatusGroup label="No due date" icon={Wrench} color="text-slate-400"
+                <StatusGroup label="No due date" icon={Wrench} color="text-muted"
                   items={noDue} />
               </>
             )}
@@ -827,16 +827,16 @@ function CategoriesManager({ catObjects, onChanged }) {
     onChanged(newCats);
   }
 
-  const inCls = "bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-sm text-slate-200 focus:outline-none focus:border-indigo-500";
+  const inCls = "surface-panel border border-subtle rounded px-2.5 py-1.5 text-sm text-default focus:outline-none focus:border-indigo-500";
 
   return (
     <div>
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Manage Categories</p>
+      <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Manage Categories</p>
 
       <div className="space-y-1.5 mb-5">
         {cats.map(cat => (
-          <div key={cat.id} className="flex items-center gap-2 bg-slate-800/60 border border-slate-700/50 rounded-lg px-3 py-2">
-            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${COLOR_DOTS[cat.color] || "bg-slate-500"}`} />
+          <div key={cat.id} className="flex items-center gap-2 surface-card border border-subtle rounded-lg px-3 py-2">
+            <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${COLOR_DOTS[cat.color] || "surface-raised"}`} />
             {editId === cat.id ? (
               <>
                 <input
@@ -850,20 +850,20 @@ function CategoriesManager({ catObjects, onChanged }) {
                 <button
                   onClick={() => handleSaveEdit(cat.id)}
                   disabled={saving || !editName.trim()}
-                  className="px-2 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded"
+                  className="px-2 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-on-accent rounded"
                 >
                   Save
                 </button>
-                <button onClick={() => setEditId(null)} className="p-1 text-slate-500 hover:text-white">
+                <button onClick={() => setEditId(null)} className="p-1 text-faint hover:text-[var(--ds-text)]">
                   <X size={13} />
                 </button>
               </>
             ) : (
               <>
-                <span className="flex-1 text-sm text-slate-200">{cat.name}</span>
+                <span className="flex-1 text-sm text-default">{cat.name}</span>
                 <button
                   onClick={() => { setEditId(cat.id); setEditName(cat.name); setEditColor(cat.color || "slate"); }}
-                  className="p-1 text-slate-500 hover:text-slate-300 rounded"
+                  className="p-1 text-faint hover:text-[var(--ds-text)] rounded"
                   title="Edit"
                 >
                   <Edit2 size={13} />
@@ -880,13 +880,13 @@ function CategoriesManager({ catObjects, onChanged }) {
           </div>
         ))}
         {cats.length === 0 && (
-          <p className="text-xs text-slate-600 italic px-1">No categories yet.</p>
+          <p className="text-xs text-faint italic px-1">No categories yet.</p>
         )}
       </div>
 
       {/* Add form */}
-      <div className="border-t border-slate-700 pt-4">
-        <p className="text-xs font-medium text-slate-500 mb-2">Add Category</p>
+      <div className="border-t border-subtle pt-4">
+        <p className="text-xs font-medium text-faint mb-2">Add Category</p>
         <div className="flex items-center gap-2">
           <input
             className={`flex-1 min-w-0 ${inCls}`}
@@ -899,7 +899,7 @@ function CategoriesManager({ catObjects, onChanged }) {
           <button
             onClick={handleAdd}
             disabled={saving || !newName.trim()}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white rounded whitespace-nowrap"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-on-accent rounded whitespace-nowrap"
           >
             <Plus size={12} /> Add
           </button>
@@ -911,9 +911,9 @@ function CategoriesManager({ catObjects, onChanged }) {
 
 function AppliancesTab() {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-slate-500">
-      <ShoppingCart size={36} className="text-slate-600 mb-3" />
-      <p className="text-sm font-medium text-slate-400">Appliances</p>
+    <div className="flex flex-col items-center justify-center h-full text-faint">
+      <ShoppingCart size={36} className="text-faint mb-3" />
+      <p className="text-sm font-medium text-muted">Appliances</p>
       <p className="text-xs mt-1">Purchase history — coming soon</p>
     </div>
   );
@@ -921,9 +921,9 @@ function AppliancesTab() {
 
 function InsuranceTab() {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-slate-500">
-      <Shield size={36} className="text-slate-600 mb-3" />
-      <p className="text-sm font-medium text-slate-400">Insurance</p>
+    <div className="flex flex-col items-center justify-center h-full text-faint">
+      <Shield size={36} className="text-faint mb-3" />
+      <p className="text-sm font-medium text-muted">Insurance</p>
       <p className="text-xs mt-1">Valuations, coverage &amp; asset list — coming soon</p>
     </div>
   );
@@ -979,24 +979,24 @@ function IssueImageStrip({ issueId, entityType, images: initialImages, userId })
             <img
               src={imgSrc(img)}
               alt=""
-              className="w-16 h-16 object-cover rounded border border-slate-700 cursor-pointer"
+              className="w-16 h-16 object-cover rounded border border-subtle cursor-pointer"
               onClick={() => setLightbox(imgSrc(img))}
             />
             <button
               onClick={() => handleRemove(img.id)}
               className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             >
-              <X size={8} className="text-white" />
+              <X size={8} className="text-default" />
             </button>
           </div>
         ))}
         <label className={`flex flex-col items-center justify-center w-16 h-16 rounded border-2 border-dashed transition-colors cursor-pointer ${
-          uploading ? "border-slate-700 opacity-50" : "border-slate-600 hover:border-indigo-500"
+          uploading ? "border-subtle opacity-50" : "border-subtle hover:border-indigo-500"
         }`}>
           {uploading ? (
-            <span className="text-[9px] text-slate-500">...</span>
+            <span className="text-[9px] text-faint">...</span>
           ) : (
-            <Camera size={18} className="text-slate-500" />
+            <Camera size={18} className="text-faint" />
           )}
           <input ref={inputRef} type="file" accept="image/*" capture="environment" className="hidden"
             onChange={handleFileChange} disabled={uploading} />
@@ -1004,11 +1004,11 @@ function IssueImageStrip({ issueId, entityType, images: initialImages, userId })
       </div>
       {lightbox && (
         <div
-          className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 surface-overlay flex items-center justify-center p-4"
           onClick={() => setLightbox(null)}
         >
           <button
-            className="absolute top-4 right-4 text-white/70 hover:text-white"
+            className="absolute top-4 right-4 text-default/70 hover:text-[var(--ds-text)]"
             onClick={() => setLightbox(null)}
           >
             <X size={28} />
@@ -1028,10 +1028,10 @@ function IssueImageStrip({ issueId, entityType, images: initialImages, userId })
 
 /* ── Severity helpers ── */
 const HOME_SEVERITY_COLORS = {
-  critical: "bg-red-600 text-white",
-  major:    "bg-orange-600 text-white",
-  moderate: "bg-yellow-600 text-black",
-  minor:    "bg-slate-600 text-slate-200",
+  critical: "bg-red-600 text-on-accent",
+  major:    "bg-orange-600 text-on-accent",
+  moderate: "bg-yellow-600 text-[#000]",
+  minor:    "surface-raised text-default",
 };
 
 const HOME_STATUS_DOT = {
@@ -1083,21 +1083,21 @@ function HomeIssuesTab({ userId }) {
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-800 shrink-0">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-subtle shrink-0">
         <div className="relative flex-1">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-faint" />
           <input
-            className="w-full bg-slate-900 border border-slate-700 rounded pl-7 pr-2.5 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+            className="w-full surface-panel border border-subtle rounded pl-7 pr-2.5 py-1.5 text-xs text-default placeholder-slate-600 focus:outline-none focus:border-indigo-500"
             placeholder="Search issues..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
-          {search && <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white"><X size={12} /></button>}
+          {search && <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-faint hover:text-[var(--ds-text)]"><X size={12} /></button>}
         </div>
         <button
           onClick={() => setShowAdd(v => !v)}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded transition-colors ${
-            showAdd ? "bg-slate-700 text-white" : "bg-indigo-600 hover:bg-indigo-500 text-white"
+            showAdd ? "surface-raised text-on-accent" : "bg-indigo-600 hover:bg-indigo-500 text-on-accent"
           }`}
         >
           {showAdd ? <X size={13} /> : <Plus size={13} />}
@@ -1106,20 +1106,20 @@ function HomeIssuesTab({ userId }) {
       </div>
 
       {/* Filter pills */}
-      <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-slate-800 shrink-0 overflow-x-auto">
+      <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-subtle shrink-0 overflow-x-auto">
         {[["open", "Open"], ["in_progress", "In Progress"], ["fixed", "Fixed"], ["all", "All"]].map(([v, label]) => (
           <button key={v} onClick={() => setFilterStatus(v)}
             className={`px-2.5 py-0.5 text-xs rounded-full whitespace-nowrap transition-colors ${
-              filterStatus === v ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"
+              filterStatus === v ? "bg-indigo-600 text-on-accent" : "text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-card)]"
             }`}>
             {label}{v === "open" && openCount > 0 ? ` (${openCount})` : ""}
           </button>
         ))}
-        {locations.length > 0 && <span className="text-slate-700 mx-1">|</span>}
+        {locations.length > 0 && <span className="text-default mx-1">|</span>}
         {locations.map(loc => (
           <button key={loc} onClick={() => setFilterLoc(filterLoc === loc ? "" : loc)}
             className={`px-2.5 py-0.5 text-xs rounded-full whitespace-nowrap transition-colors ${
-              filterLoc === loc ? "bg-slate-600 text-white" : "text-slate-500 hover:text-white hover:bg-slate-800"
+              filterLoc === loc ? "surface-raised text-default" : "text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-card)]"
             }`}>
             {loc}
           </button>
@@ -1137,13 +1137,13 @@ function HomeIssuesTab({ userId }) {
           />
         )}
         {loading ? (
-          <div className="flex items-center justify-center h-32 text-slate-500 text-sm">Loading...</div>
+          <div className="flex items-center justify-center h-32 text-faint text-sm">Loading...</div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-slate-500">
-            <AlertTriangle size={32} className="text-slate-700 mb-2" />
-            <p className="text-sm text-slate-400">{search ? `No issues matching "${search}"` : "No issues found"}</p>
+          <div className="flex flex-col items-center justify-center h-40 text-faint">
+            <AlertTriangle size={32} className="text-default mb-2" />
+            <p className="text-sm text-muted">{search ? `No issues matching "${search}"` : "No issues found"}</p>
             {filterStatus === "open" && !search && (
-              <p className="text-xs text-slate-600 mt-1">Click &quot;Add Issue&quot; to log one</p>
+              <p className="text-xs text-faint mt-1">Click &quot;Add Issue&quot; to log one</p>
             )}
           </div>
         ) : (
@@ -1206,11 +1206,11 @@ function AddHomeIssueForm({ locations, userId, onSave, onCancel }) {
     }
   }
 
-  const inputCls = "w-full bg-slate-900 border border-slate-700 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500";
+  const inputCls = "w-full surface-panel border border-subtle rounded px-2.5 py-1.5 text-xs text-default focus:outline-none focus:border-indigo-500";
 
   return (
-    <form onSubmit={handleSubmit} className="bg-slate-800/60 border border-slate-700 rounded-lg p-4 space-y-3 mb-2">
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">New Home Issue</p>
+    <form onSubmit={handleSubmit} className="surface-card border border-subtle rounded-lg p-4 space-y-3 mb-2">
+      <p className="text-xs font-semibold text-muted uppercase tracking-wide">New Home Issue</p>
       <input className={inputCls} placeholder="What needs to be fixed? *" value={form.title}
         onChange={e => set("title", e.target.value)} autoFocus required />
       <div className="grid grid-cols-2 gap-2">
@@ -1237,7 +1237,7 @@ function AddHomeIssueForm({ locations, userId, onSave, onCancel }) {
       {/* Photo picker */}
       <div className="flex items-center gap-3">
         <label className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded border cursor-pointer transition-colors ${
-          pendingPhoto ? "border-indigo-500 bg-indigo-600/20 text-indigo-300" : "border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-300"
+          pendingPhoto ? "border-indigo-500 bg-indigo-600/20 text-indigo-300" : "border-subtle text-muted hover:border-[var(--ds-border)] hover:text-[var(--ds-text)]"
         }`}>
           <Camera size={13} />
           {pendingPhoto ? pendingPhoto.name : "Attach photo (optional)"}
@@ -1246,16 +1246,16 @@ function AddHomeIssueForm({ locations, userId, onSave, onCancel }) {
         </label>
         {pendingPhoto && (
           <button type="button" onClick={() => { setPendingPhoto(null); if (photoRef.current) photoRef.current.value = ""; }}
-            className="text-slate-500 hover:text-red-400">
+            className="text-faint hover:text-red-400">
             <X size={13} />
           </button>
         )}
       </div>
 
       <div className="flex items-center justify-end gap-2">
-        <button type="button" onClick={onCancel} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white">Cancel</button>
+        <button type="button" onClick={onCancel} className="px-3 py-1.5 text-xs text-muted hover:text-[var(--ds-text)]">Cancel</button>
         <button type="submit" disabled={saving || !form.title.trim()}
-          className="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded">
+          className="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-on-accent rounded">
           {saving ? "Saving..." : "Add Issue"}
         </button>
       </div>
@@ -1332,72 +1332,72 @@ function HomeIssueCard({ issue, expanded, onToggle, onUpdate, onDelete, userId, 
   }
 
   const sevCls = HOME_SEVERITY_COLORS[issue.severity] || HOME_SEVERITY_COLORS.minor;
-  const dotCls = HOME_STATUS_DOT[issue.status] || "bg-slate-500";
+  const dotCls = HOME_STATUS_DOT[issue.status] || "surface-raised";
 
   return (
     <div className={`border rounded-lg overflow-hidden transition-all ${
-      isFixed ? "bg-slate-800/20 border-slate-800" : "bg-slate-800/50 border-slate-700/50"
+      isFixed ? "surface-card border-subtle" : "surface-card border-subtle"
     }`}>
       <div className="flex items-start gap-2.5 px-3 py-2.5 cursor-pointer" onClick={onToggle}>
         <span className={`w-2 h-2 rounded-full shrink-0 mt-1.5 ${dotCls}`} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className={`px-1.5 py-0 rounded text-[10px] font-medium ${sevCls}`}>{issue.severity}</span>
-            <span className={`text-sm font-medium ${ isFixed ? "line-through text-slate-500" : "text-slate-100"}`}>{issue.title}</span>
+            <span className={`text-sm font-medium ${ isFixed ? "line-through text-faint" : "text-default"}`}>{issue.title}</span>
             {issue.location && (
-              <span className="flex items-center gap-0.5 text-[10px] text-slate-500 bg-slate-700/50 px-1.5 py-0.5 rounded">
+              <span className="flex items-center gap-0.5 text-[10px] text-faint surface-raised px-1.5 py-0.5 rounded">
                 <MapPin size={8} /> {issue.location}{issue.sub_location ? ` › ${issue.sub_location}` : ""}
               </span>
             )}
           </div>
           {issue.description && !expanded && (
-            <p className="text-[11px] text-slate-500 mt-0.5 truncate">{issue.description}</p>
+            <p className="text-[11px] text-faint mt-0.5 truncate">{issue.description}</p>
           )}
         </div>
-        <ChevronDown size={14} className={`text-slate-600 shrink-0 mt-0.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+        <ChevronDown size={14} className={`text-faint shrink-0 mt-0.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
       </div>
 
       {expanded && (
-        <div className="border-t border-slate-700/40 px-3 py-3">
+        <div className="border-t border-subtle px-3 py-3">
           {editMode ? (
             <div className="space-y-2">
               {[["title","Title"],["sub_location","Sub-location"],["category","Category"]].map(([k, label]) => (
                 <div key={k}>
-                  <label className="text-[10px] text-slate-500">{label}</label>
-                  <input className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 outline-none focus:border-indigo-500"
+                  <label className="text-[10px] text-faint">{label}</label>
+                  <input className="w-full surface-panel border border-subtle rounded px-2 py-1 text-xs text-default outline-none focus:border-indigo-500"
                     value={editForm[k] || ""} onChange={e => setEditForm(p => ({...p, [k]: e.target.value}))} />
                 </div>
               ))}
               <div>
-                <label className="text-[10px] text-slate-500">Location</label>
-                <select className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 outline-none focus:border-indigo-500"
+                <label className="text-[10px] text-faint">Location</label>
+                <select className="w-full surface-panel border border-subtle rounded px-2 py-1 text-xs text-default outline-none focus:border-indigo-500"
                   value={editForm.location || ""} onChange={e => setEditForm(p => ({...p, location: e.target.value}))}>
                   <option value="">— none —</option>
                   {locations.map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-[10px] text-slate-500">Severity</label>
-                <select className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 outline-none"
+                <label className="text-[10px] text-faint">Severity</label>
+                <select className="w-full surface-panel border border-subtle rounded px-2 py-1 text-xs text-default outline-none"
                   value={editForm.severity} onChange={e => setEditForm(p => ({...p, severity: e.target.value}))}>
                   {["minor","moderate","major","critical"].map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
-              <textarea className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs text-slate-200 outline-none resize-none"
+              <textarea className="w-full surface-panel border border-subtle rounded px-2 py-1 text-xs text-default outline-none resize-none"
                 rows={2} placeholder="Notes" value={editForm.notes}
                 onChange={e => setEditForm(p => ({...p, notes: e.target.value}))} />
               <div className="flex gap-1">
                 <button onClick={handleEditSave} disabled={saving}
-                  className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded disabled:opacity-50">
+                  className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-on-accent rounded disabled:opacity-50">
                   {saving ? "Saving..." : "Save"}
                 </button>
-                <button onClick={() => setEditMode(false)} className="px-3 py-1 text-xs text-slate-400 hover:text-white">Cancel</button>
+                <button onClick={() => setEditMode(false)} className="px-3 py-1 text-xs text-muted hover:text-[var(--ds-text)]">Cancel</button>
               </div>
             </div>
           ) : (
             <>
-              {issue.description && <p className="text-xs text-slate-400 mb-2">{issue.description}</p>}
-              {issue.notes && <p className="text-xs text-slate-500 italic mb-2">{issue.notes}</p>}
+              {issue.description && <p className="text-xs text-muted mb-2">{issue.description}</p>}
+              {issue.notes && <p className="text-xs text-faint italic mb-2">{issue.notes}</p>}
               {isFixed && issue.date_fixed && (
                 <p className="text-xs text-green-500 mb-2">Fixed: {issue.date_fixed}</p>
               )}
@@ -1415,12 +1415,12 @@ function HomeIssueCard({ issue, expanded, onToggle, onUpdate, onDelete, userId, 
                 )}
                 {isFixed && (
                   <button onClick={handleReopen}
-                    className="flex items-center gap-1 px-2.5 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded">
+                    className="flex items-center gap-1 px-2.5 py-1 text-xs surface-raised hover:bg-[var(--ds-raised)] text-default rounded">
                     Reopen
                   </button>
                 )}
                 <button onClick={startEdit}
-                  className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:text-white border border-slate-700 rounded">
+                  className="flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-[var(--ds-text)] border border-subtle rounded">
                   <Edit2 size={11} /> Edit
                 </button>
                 <button onClick={handleDelete}
@@ -1439,9 +1439,9 @@ function HomeIssueCard({ issue, expanded, onToggle, onUpdate, onDelete, userId, 
 
 function ContractorsTab() {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-slate-500">
-      <HardHat size={36} className="text-slate-600 mb-3" />
-      <p className="text-sm font-medium text-slate-400">Contractors</p>
+    <div className="flex flex-col items-center justify-center h-full text-faint">
+      <HardHat size={36} className="text-faint mb-3" />
+      <p className="text-sm font-medium text-muted">Contractors</p>
       <p className="text-xs mt-1">Electricians, plumbers, roofers, painters &amp; more — coming soon</p>
     </div>
   );

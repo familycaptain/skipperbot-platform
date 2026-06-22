@@ -87,7 +87,7 @@ export default function WeatherMap({ place }) {
 
   return (
     <div>
-      <div className="rounded-xl overflow-hidden border border-slate-700/50" style={{ height: 360 }}>
+      <div className="rounded-xl overflow-hidden border border-subtle" style={{ height: 360 }}>
         <div ref={elRef} style={{ height: "100%", width: "100%" }} />
       </div>
       {alertNote && (

@@ -8,11 +8,11 @@ const API_BASE = "";
 
 const CATEGORY_COLORS = {
   chore: "bg-amber-600",
-  maintenance: "bg-sky-600",
+  maintenance: "bg-[var(--ds-accent)]",
   school: "bg-indigo-600",
-  auto: "bg-cyan-600",
+  auto: "bg-[var(--ds-accent)]",
   medical: "bg-rose-600",
-  general: "bg-slate-600",
+  general: "surface-raised",
 };
 
 const CATEGORY_LABELS = {
@@ -118,18 +118,18 @@ export default function SchedulesApp({ appId, userId, context = {}, onTitle, onO
 
   if (loading && !schedules && !detail) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-400">
+      <div className="flex items-center justify-center h-full text-muted">
         <Loader2 size={20} className="animate-spin mr-2" /> Loading...
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full flex flex-col text-slate-200">
+    <div className="h-full w-full flex flex-col text-default">
       {error && (
         <div className="px-4 py-2 bg-red-900/40 border-b border-red-700/40 text-red-300 text-sm flex items-center justify-between">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className="ml-2 hover:text-white"><X size={14} /></button>
+          <button onClick={() => setError(null)} className="ml-2 hover:text-[var(--ds-text)]"><X size={14} /></button>
         </div>
       )}
 
@@ -234,10 +234,10 @@ function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, o
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700/50">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-subtle">
         <button
           onClick={onNewClick}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--ds-accent)] hover:bg-[var(--ds-accent)] text-on-accent text-sm font-medium transition-colors"
         >
           <Plus size={14} /> New Schedule
         </button>
@@ -253,15 +253,15 @@ function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, o
               onClick={() => setFilter(tab.key)}
               className={`text-[11px] px-2 py-0.5 rounded-full transition-colors ${
                 filter === tab.key
-                  ? tab.key === "overdue" ? "bg-red-600 text-white" : "bg-cyan-600 text-white"
-                  : "bg-slate-800 text-slate-400 hover:text-slate-200"
+                  ? tab.key === "overdue" ? "bg-red-600 text-on-accent" : "bg-[var(--ds-accent)] text-on-accent"
+                  : "surface-card text-muted hover:text-[var(--ds-text)]"
               }`}
             >
               {tab.label}
             </button>
           ))}
         </div>
-        <button onClick={onRefresh} className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors" title="Refresh">
+        <button onClick={onRefresh} className="p-1 rounded hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] transition-colors" title="Refresh">
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
@@ -280,7 +280,7 @@ function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, o
       {/* Schedule list */}
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
-          <div className="text-center text-slate-500 py-12 text-sm">
+          <div className="text-center text-faint py-12 text-sm">
             {filter === "all" ? "No schedules yet. Create one to get started." : "No schedules in this category."}
           </div>
         ) : (
@@ -290,7 +290,7 @@ function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, o
             return (
               <div
                 key={sch.id}
-                className={`flex items-center border-b border-slate-800/60 hover:bg-slate-800/40 transition-colors ${
+                className={`flex items-center border-b border-subtle hover:bg-[var(--ds-card)] transition-colors ${
                   overdueFl ? "bg-red-900/10" : ""
                 }`}
               >
@@ -298,11 +298,11 @@ function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, o
                   onClick={() => onScheduleClick(sch.id)}
                   className="flex-1 text-left px-4 py-3 flex items-start gap-3 min-w-0"
                 >
-                  <CalendarClock size={18} className={`shrink-0 mt-0.5 ${overdueFl ? "text-red-400" : dueSoonFl ? "text-amber-400" : "text-slate-500"}`} />
+                  <CalendarClock size={18} className={`shrink-0 mt-0.5 ${overdueFl ? "text-red-400" : dueSoonFl ? "text-amber-400" : "text-faint"}`} />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-slate-200 line-clamp-1">{sch.title}</div>
-                    <div className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
-                      <span className={`px-1.5 py-0 rounded text-[10px] ${CATEGORY_COLORS[sch.category] || "bg-slate-600"} text-white`}>
+                    <div className="text-sm text-default line-clamp-1">{sch.title}</div>
+                    <div className="text-xs text-faint mt-0.5 flex items-center gap-2">
+                      <span className={`px-1.5 py-0 rounded text-[10px] ${CATEGORY_COLORS[sch.category] || "surface-raised"} text-default`}>
                         {CATEGORY_LABELS[sch.category] || sch.category}
                       </span>
                       {sch.assigned_to && <span>{sch.assigned_to}</span>}
@@ -315,12 +315,12 @@ function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, o
                 </button>
                 <button
                   onClick={() => quickComplete(sch.id)}
-                  className="shrink-0 mr-3 p-1.5 rounded-lg hover:bg-emerald-600/20 text-slate-500 hover:text-emerald-400 transition-colors"
+                  className="shrink-0 mr-3 p-1.5 rounded-lg hover:bg-emerald-600/20 text-faint hover:text-emerald-400 transition-colors"
                   title="Mark Done"
                 >
                   <CheckCircle2 size={18} />
                 </button>
-                <ChevronRight size={14} className="text-slate-600 shrink-0 mr-3" />
+                <ChevronRight size={14} className="text-faint shrink-0 mr-3" />
               </div>
             );
           })
@@ -387,19 +387,19 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700/50">
-        <button onClick={onCancel} className="p-1 rounded hover:bg-slate-700 text-slate-400"><ArrowLeft size={16} /></button>
-        <h2 className="text-sm font-semibold text-slate-200">New Schedule</h2>
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-subtle">
+        <button onClick={onCancel} className="p-1 rounded hover:bg-[var(--ds-raised)] text-muted"><ArrowLeft size={16} /></button>
+        <h2 className="text-sm font-semibold text-default">New Schedule</h2>
       </div>
       <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Title */}
         <div>
-          <label className="block text-xs text-slate-400 mb-1">Title</label>
+          <label className="block text-xs text-muted mb-1">Title</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Mow the lawn, Change HVAC filter..."
-            className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 placeholder-slate-500"
+            className="w-full surface-card border border-subtle rounded px-3 py-2 text-sm text-default placeholder-slate-500"
             autoFocus
           />
         </div>
@@ -407,16 +407,16 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
         {/* Category + Assigned to */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Category</label>
+            <label className="block text-xs text-muted mb-1">Category</label>
             <select value={category} onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200">
+              className="w-full surface-card border border-subtle rounded px-3 py-2 text-sm text-default">
               {ALL_CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Assigned to</label>
+            <label className="block text-xs text-muted mb-1">Assigned to</label>
             <select value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200">
+              className="w-full surface-card border border-subtle rounded px-3 py-2 text-sm text-default">
               {users.map(u => <option key={u.name} value={u.name}>{u.display_name || u.name}</option>)}
             </select>
           </div>
@@ -424,18 +424,18 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
 
         {/* Recurrence */}
         <div>
-          <label className="block text-xs text-slate-400 mb-1">Repeats</label>
+          <label className="block text-xs text-muted mb-1">Repeats</label>
           <select value={recurrenceType} onChange={(e) => setRecurrenceType(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 mb-2">
+            className="w-full surface-card border border-subtle rounded px-3 py-2 text-sm text-default mb-2">
             {RECURRENCE_TYPES.map(rt => <option key={rt.value} value={rt.value}>{rt.label}</option>)}
           </select>
 
           {/* Type-specific rule builder */}
           {recurrenceType === "daily" && (
-            <div className="flex items-center gap-2 text-sm text-slate-300">
+            <div className="flex items-center gap-2 text-sm text-default">
               <span>Every</span>
               <input type="number" min={1} max={365} value={dailyEvery} onChange={(e) => setDailyEvery(Number(e.target.value))}
-                className="w-16 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-200" />
+                className="w-16 surface-card border border-subtle rounded px-2 py-1 text-sm text-default" />
               <span>day{dailyEvery > 1 ? "s" : ""}</span>
             </div>
           )}
@@ -451,8 +451,8 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
                   )}
                   className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
                     weekDays.includes(wd.key)
-                      ? "bg-cyan-600 text-white"
-                      : "bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-600"
+                      ? "bg-[var(--ds-accent)] text-on-accent"
+                      : "surface-card text-muted hover:text-[var(--ds-text)] border border-subtle"
                   }`}
                 >
                   {wd.label}
@@ -462,33 +462,33 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
           )}
 
           {recurrenceType === "monthly" && (
-            <div className="flex items-center gap-2 text-sm text-slate-300">
+            <div className="flex items-center gap-2 text-sm text-default">
               <span>Day</span>
               <input type="number" min={1} max={31} value={monthDay} onChange={(e) => setMonthDay(Number(e.target.value))}
-                className="w-16 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-200" />
+                className="w-16 surface-card border border-subtle rounded px-2 py-1 text-sm text-default" />
               <span>of every month</span>
             </div>
           )}
 
           {recurrenceType === "yearly" && (
-            <div className="flex items-center gap-2 text-sm text-slate-300">
+            <div className="flex items-center gap-2 text-sm text-default">
               <span>Every</span>
               <select value={yearlyMonth} onChange={(e) => setYearlyMonth(Number(e.target.value))}
-                className="bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-200">
+                className="surface-card border border-subtle rounded px-2 py-1 text-sm text-default">
                 {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m, i) => (
                   <option key={i+1} value={i+1}>{m}</option>
                 ))}
               </select>
               <input type="number" min={1} max={31} value={yearlyDay} onChange={(e) => setYearlyDay(Number(e.target.value))}
-                className="w-16 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-200" />
+                className="w-16 surface-card border border-subtle rounded px-2 py-1 text-sm text-default" />
             </div>
           )}
 
           {recurrenceType === "interval" && (
-            <div className="flex items-center gap-2 text-sm text-slate-300">
+            <div className="flex items-center gap-2 text-sm text-default">
               <span>Every</span>
               <input type="number" min={1} max={999} value={intervalDays} onChange={(e) => setIntervalDays(Number(e.target.value))}
-                className="w-20 bg-slate-800 border border-slate-600 rounded px-2 py-1 text-sm text-slate-200" />
+                className="w-20 surface-card border border-subtle rounded px-2 py-1 text-sm text-default" />
               <span>days from last completion</span>
             </div>
           )}
@@ -496,23 +496,23 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
 
         {/* Time of day */}
         <div>
-          <label className="block text-xs text-slate-400 mb-1">Time of day (optional)</label>
+          <label className="block text-xs text-muted mb-1">Time of day (optional)</label>
           <input
             type="time"
             value={timeOfDay}
             onChange={(e) => setTimeOfDay(e.target.value)}
-            className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200"
+            className="surface-card border border-subtle rounded px-3 py-2 text-sm text-default"
           />
         </div>
 
         {/* Description */}
         <div>
-          <label className="block text-xs text-slate-400 mb-1">Description (optional)</label>
+          <label className="block text-xs text-muted mb-1">Description (optional)</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={2}
-            className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 placeholder-slate-500 resize-none"
+            className="w-full surface-card border border-subtle rounded px-3 py-2 text-sm text-default placeholder-slate-500 resize-none"
             placeholder="Additional details..."
           />
         </div>
@@ -522,12 +522,12 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
           <button
             type="submit"
             disabled={!title.trim() || saving}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white text-sm font-medium transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--ds-accent)] hover:bg-[var(--ds-accent)] disabled:opacity-50 text-on-accent text-sm font-medium transition-colors"
           >
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
             Create Schedule
           </button>
-          <button type="button" onClick={onCancel} className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-slate-300 text-sm transition-colors">
+          <button type="button" onClick={onCancel} className="px-4 py-2 rounded-lg surface-raised hover:bg-[var(--ds-raised)] text-default text-sm transition-colors">
             Cancel
           </button>
         </div>
@@ -613,27 +613,27 @@ function DetailView({ schedule, userId, users, apiMutate, onBack, onRefresh, set
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700/50">
-        <button onClick={onBack} className="p-1 rounded hover:bg-slate-700 text-slate-400"><ArrowLeft size={16} /></button>
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-subtle">
+        <button onClick={onBack} className="p-1 rounded hover:bg-[var(--ds-raised)] text-muted"><ArrowLeft size={16} /></button>
         <div className="flex-1" />
         {dirty && (
           <button onClick={handleSave} disabled={saving}
-            className="flex items-center gap-1 px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white text-xs font-medium">
+            className="flex items-center gap-1 px-3 py-1 rounded-lg bg-[var(--ds-accent)] hover:bg-[var(--ds-accent)] disabled:opacity-50 text-on-accent text-xs font-medium">
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Save
           </button>
         )}
         <button onClick={handleComplete} disabled={completing}
-          className="flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-medium">
+          className="flex items-center gap-1 px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-on-accent text-xs font-medium">
           {completing ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />} Mark Done
         </button>
         <button onClick={() => { setActive(!active); setDirty(true); }}
           className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-medium ${
-            active ? "bg-slate-700 hover:bg-slate-600 text-slate-300" : "bg-amber-700 hover:bg-amber-600 text-white"
+            active ? "surface-raised hover:bg-[var(--ds-raised)] text-default" : "bg-amber-700 hover:bg-amber-600 text-on-accent"
           }`}>
           {active ? <><Pause size={12} /> Pause</> : <><Play size={12} /> Resume</>}
         </button>
         <button onClick={handleDelete}
-          className="p-1 rounded hover:bg-red-900/40 text-slate-500 hover:text-red-400">
+          className="p-1 rounded hover:bg-red-900/40 text-faint hover:text-red-400">
           <Trash2 size={14} />
         </button>
       </div>
@@ -645,10 +645,10 @@ function DetailView({ schedule, userId, users, apiMutate, onBack, onRefresh, set
           <input
             value={title}
             onChange={(e) => { setTitle(e.target.value); setDirty(true); }}
-            className="w-full bg-transparent text-lg font-semibold text-slate-200 border-b border-transparent hover:border-slate-600 focus:border-cyan-500 focus:outline-none pb-1 transition-colors"
+            className="w-full bg-transparent text-lg font-semibold text-default border-b border-transparent hover:border-[var(--ds-border)] focus:border-subtle focus:outline-none pb-1 transition-colors"
           />
-          <div className="flex items-center gap-3 mt-2 text-xs text-slate-500">
-            <span className={`px-1.5 py-0.5 rounded text-[10px] ${CATEGORY_COLORS[category]} text-white`}>
+          <div className="flex items-center gap-3 mt-2 text-xs text-faint">
+            <span className={`px-1.5 py-0.5 rounded text-[10px] ${CATEGORY_COLORS[category]} text-default`}>
               {CATEGORY_LABELS[category]}
             </span>
             {!active && <span className="px-1.5 py-0.5 rounded bg-amber-700/40 text-amber-300 text-[10px]">Paused</span>}
@@ -660,23 +660,23 @@ function DetailView({ schedule, userId, users, apiMutate, onBack, onRefresh, set
 
         {/* Due status */}
         <div className={`rounded-lg border p-3 ${
-          overdueFl ? "bg-red-900/20 border-red-700/40" : "bg-slate-800/50 border-slate-700/50"
+          overdueFl ? "bg-red-900/20 border-red-700/40" : "surface-card border-subtle"
         }`}>
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xs text-slate-400">Next due</div>
-              <div className={`text-sm font-medium ${overdueFl ? "text-red-400" : "text-slate-200"}`}>
+              <div className="text-xs text-muted">Next due</div>
+              <div className={`text-sm font-medium ${overdueFl ? "text-red-400" : "text-default"}`}>
                 {schedule.next_due ? new Date(schedule.next_due).toLocaleString() : "—"}
               </div>
             </div>
             <div className="text-right">
-              <div className="text-xs text-slate-400">Completed</div>
-              <div className="text-sm text-slate-200">{schedule.completed_count} time{schedule.completed_count !== 1 ? "s" : ""}</div>
+              <div className="text-xs text-muted">Completed</div>
+              <div className="text-sm text-default">{schedule.completed_count} time{schedule.completed_count !== 1 ? "s" : ""}</div>
             </div>
             {schedule.last_completed && (
               <div className="text-right">
-                <div className="text-xs text-slate-400">Last done</div>
-                <div className="text-sm text-slate-300">{new Date(schedule.last_completed).toLocaleDateString()}</div>
+                <div className="text-xs text-muted">Last done</div>
+                <div className="text-sm text-default">{new Date(schedule.last_completed).toLocaleDateString()}</div>
               </div>
             )}
           </div>
@@ -685,42 +685,42 @@ function DetailView({ schedule, userId, users, apiMutate, onBack, onRefresh, set
         {/* Editable fields */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Category</label>
+            <label className="block text-xs text-muted mb-1">Category</label>
             <select value={category} onChange={(e) => { setCategory(e.target.value); setDirty(true); }}
-              className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200">
+              className="w-full surface-card border border-subtle rounded px-3 py-2 text-sm text-default">
               {ALL_CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABELS[c]}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Assigned to</label>
+            <label className="block text-xs text-muted mb-1">Assigned to</label>
             <select value={assignedTo} onChange={(e) => { setAssignedTo(e.target.value); setDirty(true); }}
-              className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200">
+              className="w-full surface-card border border-subtle rounded px-3 py-2 text-sm text-default">
               {users.map(u => <option key={u.name} value={u.name}>{u.display_name || u.name}</option>)}
             </select>
           </div>
         </div>
 
         <div>
-          <label className="block text-xs text-slate-400 mb-1">Description</label>
+          <label className="block text-xs text-muted mb-1">Description</label>
           <textarea
             value={description}
             onChange={(e) => { setDescription(e.target.value); setDirty(true); }}
             rows={3}
-            className="w-full bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-slate-200 resize-none"
+            className="w-full surface-card border border-subtle rounded px-3 py-2 text-sm text-default resize-none"
           />
         </div>
 
         {/* Completion history */}
         {schedule.completions && schedule.completions.length > 0 && (
           <div>
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Completion History</h3>
+            <h3 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">Completion History</h3>
             <div className="space-y-1">
               {schedule.completions.map((c) => (
-                <div key={c.id} className="flex items-center gap-3 text-xs text-slate-400 py-1 border-b border-slate-800/40">
+                <div key={c.id} className="flex items-center gap-3 text-xs text-muted py-1 border-b border-subtle">
                   <CheckCircle2 size={12} className="text-emerald-500 shrink-0" />
-                  <span className="text-slate-300">{new Date(c.completed_at).toLocaleString()}</span>
+                  <span className="text-default">{new Date(c.completed_at).toLocaleString()}</span>
                   {c.completed_by && <span>by {c.completed_by}</span>}
-                  {c.notes && <span className="text-slate-500 truncate">{c.notes}</span>}
+                  {c.notes && <span className="text-faint truncate">{c.notes}</span>}
                 </div>
               ))}
             </div>
@@ -728,7 +728,7 @@ function DetailView({ schedule, userId, users, apiMutate, onBack, onRefresh, set
         )}
 
         {/* Meta */}
-        <div className="text-xs text-slate-600 pt-2 border-t border-slate-800/40">
+        <div className="text-xs text-faint pt-2 border-t border-subtle">
           <span>ID: {schedule.id}</span>
           <span className="mx-2">&middot;</span>
           <span>Created by {schedule.created_by} on {new Date(schedule.created_at).toLocaleDateString()}</span>

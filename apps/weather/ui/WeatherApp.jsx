@@ -91,31 +91,31 @@ export default function WeatherApp({ context = {} }) {
   const submit = (e) => { e.preventDefault(); load(query.trim()); };
 
   return (
-    <div className="h-full overflow-y-auto bg-gradient-to-b from-sky-950 to-slate-950 text-slate-100">
+    <div className="h-full overflow-y-auto surface-page text-default">
       <div className="max-w-3xl mx-auto p-5">
         <div className="flex items-center gap-2 mb-4">
-          <CloudSun className="text-sky-400" size={22} />
+          <CloudSun className="text-accent" size={22} />
           <h1 className="text-xl font-bold">Weather</h1>
           <form onSubmit={submit} className="ml-auto flex items-center gap-2">
             <div className="relative">
-              <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-faint" />
               <input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="City or postal,country"
                 title="e.g. Austin, Texas, US  —or—  SW1A 1AA, UK"
-                className="w-48 rounded bg-slate-900 border border-slate-700 pl-7 pr-2 py-1.5 text-sm focus:border-sky-500 focus:outline-none"
+                className="w-48 rounded surface-panel border border-subtle pl-7 pr-2 py-1.5 text-sm focus:border-[var(--ds-accent)] focus:outline-none"
               />
             </div>
-            <button type="submit" className="rounded bg-sky-600 hover:bg-sky-500 px-3 py-1.5 text-sm font-medium">Go</button>
-            <button type="button" onClick={() => load(query.trim())} title="Refresh" className="text-slate-400 hover:text-white p-1.5">
+            <button type="submit" className="rounded btn-primary px-3 py-1.5 text-sm font-medium">Go</button>
+            <button type="button" onClick={() => load(query.trim())} title="Refresh" className="icon-btn p-1.5">
               <RefreshCw size={15} />
             </button>
           </form>
         </div>
 
         {/* tabs: Current | Forecast | Radar */}
-        <div className="flex items-center gap-1 mb-4 border-b border-slate-800">
+        <div className="flex items-center gap-1 mb-4 border-b border-subtle">
           {TABS.map((t) => {
             const Icon = t.icon;
             const active = tab === t.id;
@@ -124,7 +124,7 @@ export default function WeatherApp({ context = {} }) {
                 key={t.id}
                 onClick={() => setTab(t.id)}
                 className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
-                  active ? "border-sky-400 text-sky-300" : "border-transparent text-slate-400 hover:text-slate-200"
+                  active ? "border-[var(--ds-accent)] text-accent" : "border-transparent text-muted hover:text-[var(--ds-text)]"
                 }`}
               >
                 <Icon size={14} /> {t.label}
@@ -134,25 +134,25 @@ export default function WeatherApp({ context = {} }) {
         </div>
 
         {loading ? (
-          <div className="flex items-center gap-2 text-slate-400 py-16 justify-center"><Loader2 className="animate-spin" size={16} /> Loading forecast…</div>
+          <div className="flex items-center gap-2 text-muted py-16 justify-center"><Loader2 className="animate-spin" size={16} /> Loading forecast…</div>
         ) : err ? (
           <div className="rounded-lg border border-amber-800/50 bg-amber-950/40 text-amber-300 px-4 py-3 text-sm">{err}</div>
         ) : !data ? null : (
           <>
             {/* ── Current ── */}
             {tab === "current" && (
-              <div className="rounded-2xl border border-sky-800/40 bg-sky-900/20 p-5 mb-5">
-                <div className="text-sm text-slate-400">{data.place.display_label}</div>
+              <div className="rounded-2xl border border-subtle surface-card p-5 mb-5">
+                <div className="text-sm text-muted">{data.place.display_label}</div>
                 <div className="flex items-center gap-4 mt-2">
                   <div className="text-6xl leading-none">{ICON(data.current.code)}</div>
                   <div>
                     <div className="text-5xl font-bold">{round(data.current.temp)}°</div>
-                    <div className="text-slate-300">{data.current.desc}</div>
+                    <div className="text-default">{data.current.desc}</div>
                   </div>
-                  <div className="ml-auto text-right text-sm text-slate-300 space-y-1">
+                  <div className="ml-auto text-right text-sm text-default space-y-1">
                     <div>Feels like {round(data.current.feels)}°</div>
-                    <div className="flex items-center justify-end gap-1.5"><Droplets size={13} className="text-sky-400" /> {round(data.current.humidity)}%</div>
-                    <div className="flex items-center justify-end gap-1.5"><Wind size={13} className="text-slate-400" /> {round(data.current.wind)} mph</div>
+                    <div className="flex items-center justify-end gap-1.5"><Droplets size={13} className="text-accent" /> {round(data.current.humidity)}%</div>
+                    <div className="flex items-center justify-end gap-1.5"><Wind size={13} className="text-muted" /> {round(data.current.wind)} mph</div>
                     {data.current.uv !== null && data.current.uv !== undefined && (
                       <div className="flex items-center justify-end gap-1.5"><Sun size={13} className="text-amber-400" /> UV {uvLabel(data.current.uv)}</div>
                     )}
@@ -164,27 +164,27 @@ export default function WeatherApp({ context = {} }) {
             {/* ── Forecast: hourly + 10-day ── */}
             {tab === "forecast" && (
               <>
-                <h2 className="text-sm font-semibold text-slate-300 mb-2">Next 12 hours</h2>
+                <h2 className="text-sm font-semibold text-default mb-2">Next 12 hours</h2>
                 <div className="flex gap-2 overflow-x-auto pb-2 mb-5">
                   {data.hourly.map((h) => (
-                    <div key={h.time} className="shrink-0 w-16 rounded-lg border border-slate-700/50 bg-slate-900/40 p-2 text-center">
-                      <div className="text-[11px] text-slate-400">{hourLabel(h.time)}</div>
+                    <div key={h.time} className="shrink-0 w-16 rounded-lg border border-subtle surface-panel p-2 text-center">
+                      <div className="text-[11px] text-muted">{hourLabel(h.time)}</div>
                       <div className="text-xl my-1">{ICON(h.code)}</div>
                       <div className="text-sm font-medium">{round(h.temp)}°</div>
-                      <div className="text-[10px] text-sky-400 h-3">{h.pop ? `${h.pop}%` : ""}</div>
+                      <div className="text-[10px] text-accent h-3">{h.pop ? `${h.pop}%` : ""}</div>
                     </div>
                   ))}
                 </div>
 
-                <h2 className="text-sm font-semibold text-slate-300 mb-2">10-day forecast</h2>
-                <div className="rounded-xl border border-slate-700/50 bg-slate-900/40 divide-y divide-slate-800">
+                <h2 className="text-sm font-semibold text-default mb-2">10-day forecast</h2>
+                <div className="rounded-xl border border-subtle surface-panel divide-y divide-[var(--ds-border)]">
                   {data.daily.map((d, i) => (
                     <div key={d.date} className="flex items-center gap-3 px-3 py-2.5 text-sm">
-                      <span className="w-12 text-slate-300">{dayLabel(d.date, i)}</span>
+                      <span className="w-12 text-default">{dayLabel(d.date, i)}</span>
                       <span className="text-lg w-7 text-center">{ICON(d.code)}</span>
-                      <span className="flex-1 text-slate-400 truncate">{d.desc}</span>
-                      <span className="text-sky-400 w-12 text-right text-xs">{d.pop ? `${d.pop}%` : ""}</span>
-                      <span className="w-16 text-right"><span className="font-semibold">{round(d.hi)}°</span> <span className="text-slate-500">{round(d.lo)}°</span></span>
+                      <span className="flex-1 text-muted truncate">{d.desc}</span>
+                      <span className="text-accent w-12 text-right text-xs">{d.pop ? `${d.pop}%` : ""}</span>
+                      <span className="w-16 text-right"><span className="font-semibold">{round(d.hi)}°</span> <span className="text-faint">{round(d.lo)}°</span></span>
                     </div>
                   ))}
                 </div>
@@ -193,12 +193,12 @@ export default function WeatherApp({ context = {} }) {
 
             {/* ── Radar: ~100-mile NEXRAD + severe-weather map ── */}
             {tab === "radar" && (
-              <Suspense fallback={<div className="text-slate-500 text-sm py-6 text-center">Loading map…</div>}>
+              <Suspense fallback={<div className="text-faint text-sm py-6 text-center">Loading map…</div>}>
                 <WeatherMap place={data.place} />
               </Suspense>
             )}
 
-            <p className="text-[11px] text-slate-600 mt-4">
+            <p className="text-[11px] text-faint mt-4">
               Keyless data via open-meteo; base map © OpenStreetMap, radar © IEM NEXRAD, severe-weather alerts © NWS.
             </p>
           </>

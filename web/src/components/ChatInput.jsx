@@ -49,7 +49,7 @@ export default function ChatInput({ onSend, disabled, placeholder }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex items-end gap-2 px-4 py-3 border-t border-slate-800 bg-slate-900/60"
+      className="flex items-end gap-2 px-4 py-3 border-t border-subtle surface-panel"
     >
       <textarea
         ref={inputRef}
@@ -59,7 +59,7 @@ export default function ChatInput({ onSend, disabled, placeholder }) {
         disabled={disabled}
         placeholder={placeholder}
         rows={1}
-        className="flex-1 resize-none rounded-xl bg-slate-800 text-sm text-slate-100 placeholder-slate-500 px-4 py-2.5 outline-none focus:ring-1 focus:ring-indigo-500/50 disabled:opacity-50 leading-relaxed"
+        className="flex-1 resize-none input rounded-xl text-sm px-4 py-2.5 outline-none focus:ring-1 focus:ring-indigo-500/50 disabled:opacity-50 leading-relaxed"
       />
       {/* Controlled button (type=button + onClick), never a native submit button,
           so a native form submit can never fire a full-page reload under load
@@ -69,7 +69,7 @@ export default function ChatInput({ onSend, disabled, placeholder }) {
         type="button"
         onClick={handleSubmit}
         disabled={disabled || !text.trim()}
-        className="shrink-0 w-9 h-9 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-700 disabled:text-slate-500 text-white flex items-center justify-center transition-colors"
+        className="shrink-0 w-9 h-9 rounded-xl btn-primary flex items-center justify-center transition-colors"
       >
         <SendHorizontal size={16} />
       </button>

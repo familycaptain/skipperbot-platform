@@ -49,14 +49,14 @@ const STATE_TYPE_META = {
   focus:            { icon: Target,         color: "text-blue-400",    bg: "bg-blue-500/10",    border: "border-blue-700/50",    label: "Focus" },
   working_memory:   { icon: Brain,          color: "text-purple-400",  bg: "bg-purple-500/10",  border: "border-purple-700/50",  label: "Memory" },
   pending_action:   { icon: Clock,          color: "text-amber-400",   bg: "bg-amber-500/10",   border: "border-amber-700/50",   label: "Pending" },
-  observation:      { icon: Eye,            color: "text-cyan-400",    bg: "bg-cyan-500/10",    border: "border-cyan-700/50",    label: "Observation" },
-  note:             { icon: StickyNote,     color: "text-slate-400",   bg: "bg-slate-500/10",   border: "border-slate-600/50",   label: "Note" },
+  observation:      { icon: Eye,            color: "text-accent",    bg: "bg-[var(--ds-accent)]",    border: "border-subtle",    label: "Observation" },
+  note:             { icon: StickyNote,     color: "text-muted",   bg: "surface-raised",   border: "border-subtle",   label: "Note" },
   process_position: { icon: Activity,       color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-700/50", label: "Process" },
 };
 
 const STATUS_META = {
   active:   { color: "text-emerald-400 bg-emerald-900/30 border-emerald-700/40", icon: Play },
-  resolved: { color: "text-slate-400 bg-slate-800/30 border-slate-600/40",       icon: CheckCircle2 },
+  resolved: { color: "text-muted surface-card border-subtle",       icon: CheckCircle2 },
   deferred: { color: "text-yellow-400 bg-yellow-900/30 border-yellow-700/40",    icon: Pause },
   expired:  { color: "text-red-400 bg-red-900/30 border-red-700/40",             icon: XCircle },
 };
@@ -64,24 +64,24 @@ const STATUS_META = {
 const DOMAIN_COLORS = {
   pm:         "text-blue-300 bg-blue-900/40 border-blue-700/40",
   investment: "text-emerald-300 bg-emerald-900/40 border-emerald-700/40",
-  general:    "text-slate-300 bg-slate-800/40 border-slate-600/40",
+  general:    "text-default surface-card border-subtle",
 };
 
 const PRIORITY_DOT = {
   high:   "bg-red-400",
   medium: "bg-amber-400",
-  low:    "bg-slate-500",
+  low:    "surface-raised",
 };
 
 const TRIGGER_META = {
-  timer: { icon: Timer, color: "text-slate-400 bg-slate-800/40" },
+  timer: { icon: Timer, color: "text-muted surface-card" },
   event: { icon: Zap,   color: "text-yellow-400 bg-yellow-900/40" },
   self:  { icon: Brain, color: "text-purple-400 bg-purple-900/40" },
   user:  { icon: Activity, color: "text-blue-400 bg-blue-900/40" },
 };
 
 const MODEL_META = {
-  skip:      { color: "text-slate-500 bg-slate-800/30", label: "Skip" },
+  skip:      { color: "text-faint surface-card", label: "Skip" },
   cheap:     { color: "text-green-400 bg-green-900/30", label: "Cheap" },
   standard:  { color: "text-blue-400 bg-blue-900/30",   label: "Standard" },
   expensive: { color: "text-amber-400 bg-amber-900/30", label: "Expensive" },
@@ -164,34 +164,34 @@ function BudgetBar({ budget }) {
     return rest;
   })();
   return (
-    <div className="px-3 py-2 bg-slate-800/50 border-b border-slate-700/50">
+    <div className="px-3 py-2 surface-card border-b border-subtle">
       <div className="flex items-center gap-3">
-        <DollarSign size={12} className="text-slate-400" />
+        <DollarSign size={12} className="text-muted" />
         <div className="flex-1">
           <div className="flex items-center justify-between mb-0.5">
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-muted">
               Today: {(budget.total_tokens || 0).toLocaleString()} / {(budget.budget || 0).toLocaleString()} tokens
               {budget.daily_cost_usd != null && (
                 <span className="ml-2 text-emerald-400 font-medium">${Number(budget.daily_cost_usd).toFixed(2)}</span>
               )}
             </span>
-            <span className="text-[10px] text-slate-500">
+            <span className="text-[10px] text-faint">
               {budget.cycle_count || 0} cycles
             </span>
           </div>
-          <div className="w-full bg-slate-700 rounded-full h-1">
+          <div className="w-full surface-raised rounded-full h-1">
             <div className={`${barColor} h-1 rounded-full transition-all`} style={{ width: `${Math.min(pct, 100)}%` }} />
           </div>
         </div>
-        <span className="text-[10px] font-mono text-slate-400">{pct.toFixed(1)}%</span>
+        <span className="text-[10px] font-mono text-muted">{pct.toFixed(1)}%</span>
       </div>
       {byDomain.length > 0 && (
         <div className="flex gap-3 mt-1.5 ml-6">
           {byDomain.map(d => (
-            <span key={d.domain} className="text-[10px] text-slate-500">
+            <span key={d.domain} className="text-[10px] text-faint">
               <DomainBadge domain={d.domain} />
               {" "}{(d.total_tokens || 0).toLocaleString()}
-              <span className="text-slate-600 ml-0.5">({d.cycle_count}c)</span>
+              <span className="text-faint ml-0.5">({d.cycle_count}c)</span>
             </span>
           ))}
         </div>
@@ -213,9 +213,9 @@ function StateCard({ state }) {
   const isResolved = state.status === "resolved" || state.status === "expired";
 
   return (
-    <div className={`border-b border-slate-700/30 ${isResolved ? "opacity-50" : ""}`}>
+    <div className={`border-b border-subtle ${isResolved ? "opacity-50" : ""}`}>
       <button
-        className="w-full px-3 py-2 text-left hover:bg-slate-800/30 transition-colors"
+        className="w-full px-3 py-2 text-left hover:bg-[var(--ds-card)] transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-2">
@@ -224,18 +224,18 @@ function StateCard({ state }) {
           <DomainBadge domain={state.domain} />
           <StatusBadge status={state.status} />
           <span className="flex-1" />
-          <span className="text-[10px] text-slate-500" title={state.updated_at || state.created_at}>
+          <span className="text-[10px] text-faint" title={state.updated_at || state.created_at}>
             {relativeTime(state.updated_at || state.created_at)}
           </span>
-          {expanded ? <ChevronDown size={12} className="text-slate-500" /> : <ChevronRight size={12} className="text-slate-500" />}
+          {expanded ? <ChevronDown size={12} className="text-faint" /> : <ChevronRight size={12} className="text-faint" />}
         </div>
         <div className="mt-1 flex items-center gap-2">
-          <span className="text-xs text-slate-300 truncate">
+          <span className="text-xs text-default truncate">
             {parsed?.entity_name || parsed?.summary || (contentDisplay.length > 120 ? contentDisplay.slice(0, 120) + "..." : contentDisplay)}
           </span>
         </div>
         {state.subject_id && (
-          <span className="text-[10px] text-slate-500 font-mono">{state.subject_id}</span>
+          <span className="text-[10px] text-faint font-mono">{state.subject_id}</span>
         )}
       </button>
 
@@ -249,14 +249,14 @@ function StateCard({ state }) {
           )}
           {state.resolved_at && (
             <div className="flex items-center gap-1 text-[10px]">
-              <CheckCircle2 size={9} className="text-slate-400" />
-              <span className="text-slate-400">Resolved: {fmtTime(state.resolved_at)}</span>
+              <CheckCircle2 size={9} className="text-muted" />
+              <span className="text-muted">Resolved: {fmtTime(state.resolved_at)}</span>
             </div>
           )}
-          <div className="text-[11px] text-slate-300 bg-slate-800/50 rounded p-2 font-mono whitespace-pre-wrap break-all max-h-48 overflow-y-auto">
+          <div className="text-[11px] text-default surface-card rounded p-2 font-mono whitespace-pre-wrap break-all max-h-48 overflow-y-auto">
             {parsed ? JSON.stringify(parsed, null, 2) : contentDisplay}
           </div>
-          <div className="text-[10px] text-slate-500">
+          <div className="text-[10px] text-faint">
             ID: {state.id} &middot; Created: {fmtTime(state.created_at)}
           </div>
         </div>
@@ -273,29 +273,29 @@ function LogCard({ entry }) {
   const hasContent = entry.reasoning || actions.length > 0;
 
   return (
-    <div className="border-b border-slate-700/30 overflow-hidden">
+    <div className="border-b border-subtle overflow-hidden">
       <button
-        className="w-full px-3 py-2 text-left hover:bg-slate-800/30 transition-colors overflow-hidden"
+        className="w-full px-3 py-2 text-left hover:bg-[var(--ds-card)] transition-colors overflow-hidden"
         onClick={() => hasContent && setExpanded(!expanded)}
       >
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-[10px] text-slate-400 font-mono w-16 shrink-0">
+          <span className="text-[10px] text-muted font-mono w-16 shrink-0">
             {fmtTimeShort(entry.cycle_at)}
           </span>
           <DomainBadge domain={entry.domain} />
           <TriggerBadge trigger={entry.trigger} />
           <ModelBadge model={entry.model_used} />
           {entry.tokens_used > 0 && (
-            <span className="text-[10px] text-slate-500">{entry.tokens_used.toLocaleString()} tok</span>
+            <span className="text-[10px] text-faint">{entry.tokens_used.toLocaleString()} tok</span>
           )}
           <span className="flex-1" />
           {actions.length > 0 && (
             <span className="text-[10px] text-emerald-400">{actions.length} action{actions.length !== 1 ? "s" : ""}</span>
           )}
-          {hasContent && (expanded ? <ChevronDown size={12} className="text-slate-500" /> : <ChevronRight size={12} className="text-slate-500" />)}
+          {hasContent && (expanded ? <ChevronDown size={12} className="text-faint" /> : <ChevronRight size={12} className="text-faint" />)}
         </div>
         {entry.input_summary && (
-          <p className={`mt-0.5 text-xs text-slate-400 pl-[72px] ${expanded ? "whitespace-pre-wrap break-words" : "truncate"}`}>{entry.input_summary}</p>
+          <p className={`mt-0.5 text-xs text-muted pl-[72px] ${expanded ? "whitespace-pre-wrap break-words" : "truncate"}`}>{entry.input_summary}</p>
         )}
       </button>
 
@@ -303,18 +303,18 @@ function LogCard({ entry }) {
         <div className="px-3 pb-3 pl-[72px] space-y-2">
           {entry.reasoning && (
             <div>
-              <span className="text-[10px] text-slate-500 font-medium">Reasoning</span>
-              <div className="text-[11px] text-slate-300 bg-slate-800/50 rounded p-2 whitespace-pre-wrap max-h-48 overflow-y-auto">
+              <span className="text-[10px] text-faint font-medium">Reasoning</span>
+              <div className="text-[11px] text-default surface-card rounded p-2 whitespace-pre-wrap max-h-48 overflow-y-auto">
                 {entry.reasoning}
               </div>
             </div>
           )}
           {actions.length > 0 && (
             <div>
-              <span className="text-[10px] text-slate-500 font-medium">Actions</span>
+              <span className="text-[10px] text-faint font-medium">Actions</span>
               <div className="space-y-0.5">
                 {actions.map((a, i) => (
-                  <div key={i} className="text-[11px] text-slate-300 bg-slate-800/50 rounded px-2 py-1 font-mono">
+                  <div key={i} className="text-[11px] text-default surface-card rounded px-2 py-1 font-mono">
                     {a.type}: {a.detail || a.state_id || a.entity_id || JSON.stringify(a)}
                   </div>
                 ))}
@@ -323,13 +323,13 @@ function LogCard({ entry }) {
           )}
           {entry.context_snapshot && (
             <details className="text-[10px]">
-              <summary className="text-slate-500 cursor-pointer hover:text-slate-300">Context snapshot</summary>
-              <pre className="text-slate-400 bg-slate-900/50 rounded p-2 mt-1 overflow-x-auto max-h-48 overflow-y-auto">
+              <summary className="text-faint cursor-pointer hover:text-[var(--ds-text)]">Context snapshot</summary>
+              <pre className="text-muted surface-panel rounded p-2 mt-1 overflow-x-auto max-h-48 overflow-y-auto">
                 {JSON.stringify(entry.context_snapshot, null, 2)}
               </pre>
             </details>
           )}
-          <div className="text-[10px] text-slate-500">ID: {entry.id}</div>
+          <div className="text-[10px] text-faint">ID: {entry.id}</div>
         </div>
       )}
     </div>
@@ -358,7 +358,7 @@ function DomainCard({ domain, onToggle }) {
   }
 
   return (
-    <div className={`px-3 py-2 border-b border-slate-700/30 ${!domain.enabled ? "opacity-60" : ""}`}>
+    <div className={`px-3 py-2 border-b border-subtle ${!domain.enabled ? "opacity-60" : ""}`}>
       <div className="flex items-center gap-2">
         <DomainBadge domain={domain.name} />
         {isChat ? (
@@ -382,26 +382,26 @@ function DomainCard({ domain, onToggle }) {
         )}
         <span className={`px-1.5 py-0.5 text-[10px] rounded ${
           domain.budget_priority === "critical" ? "text-red-300 bg-red-900/30" :
-          domain.budget_priority === "low" ? "text-slate-400 bg-slate-800/30" :
+          domain.budget_priority === "low" ? "text-muted surface-card" :
           "text-blue-300 bg-blue-900/30"
         }`}>
           {domain.budget_priority}
         </span>
       </div>
-      <p className="text-xs text-slate-400 mt-1">{domain.description}</p>
-      <div className="flex gap-3 mt-1 text-[10px] text-slate-500">
+      <p className="text-xs text-muted mt-1">{domain.description}</p>
+      <div className="flex gap-3 mt-1 text-[10px] text-faint">
         {hours.length >= 2 && <span>Hours: {hours[0]}:00–{hours[1]}:00</span>}
         {cadence.interval_minutes && <span>Interval: {cadence.interval_minutes}m</span>}
       </div>
       {!isChat && domain.observe_tool !== "n/a" && (
-        <div className="flex gap-2 mt-1 text-[10px] text-slate-500 font-mono">
+        <div className="flex gap-2 mt-1 text-[10px] text-faint font-mono">
           <span>{domain.observe_tool}</span>
           <span>{domain.evaluate_tool}</span>
           <span>{domain.act_tool}</span>
         </div>
       )}
       {isChat && (
-        <div className="mt-1 text-[10px] text-slate-500">
+        <div className="mt-1 text-[10px] text-faint">
           Event-driven — dispatched immediately on user message
         </div>
       )}
@@ -523,12 +523,12 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
   }
 
   return (
-    <div className="flex flex-col h-full w-full min-w-0 overflow-hidden bg-slate-900 text-white">
+    <div className="flex flex-col h-full w-full min-w-0 overflow-hidden surface-panel text-default">
       {/* Budget bar */}
       <BudgetBar budget={budget} />
 
       {/* Tab bar + filters */}
-      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-slate-700/50 bg-slate-800/30">
+      <div className="flex items-center gap-1 px-3 py-1.5 border-b border-subtle surface-card">
         {[
           { id: "mind", label: "Mind", icon: Brain },
           { id: "log", label: "Log", icon: Activity },
@@ -538,7 +538,7 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
             key={t.id}
             onClick={() => setTab(t.id)}
             className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded transition-colors ${
-              tab === t.id ? "bg-slate-700 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"
+              tab === t.id ? "surface-raised text-default" : "text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-card)]"
             }`}
           >
             <t.icon size={12} /> {t.label}
@@ -553,7 +553,7 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
             <select
               value={domainFilter}
               onChange={e => setDomainFilter(e.target.value)}
-              className="text-[10px] bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-slate-300"
+              className="text-[10px] surface-card border border-subtle rounded px-1.5 py-0.5 text-default"
             >
               <option value="">All domains</option>
               <option value="pm">PM</option>
@@ -562,7 +562,7 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
             <select
               value={typeFilter}
               onChange={e => setTypeFilter(e.target.value)}
-              className="text-[10px] bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-slate-300"
+              className="text-[10px] surface-card border border-subtle rounded px-1.5 py-0.5 text-default"
             >
               <option value="">All types</option>
               <option value="focus">Focus</option>
@@ -575,7 +575,7 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
-              className="text-[10px] bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-slate-300"
+              className="text-[10px] surface-card border border-subtle rounded px-1.5 py-0.5 text-default"
             >
               <option value="active">Active</option>
               <option value="">All</option>
@@ -591,7 +591,7 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
             <select
               value={logDomain}
               onChange={e => setLogDomain(e.target.value)}
-              className="text-[10px] bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-slate-300"
+              className="text-[10px] surface-card border border-subtle rounded px-1.5 py-0.5 text-default"
             >
               <option value="">All domains</option>
               {domains.map(d => (
@@ -601,7 +601,7 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
             <select
               value={logDays}
               onChange={e => setLogDays(Number(e.target.value))}
-              className="text-[10px] bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5 text-slate-300"
+              className="text-[10px] surface-card border border-subtle rounded px-1.5 py-0.5 text-default"
             >
               <option value={1}>Today</option>
               <option value={3}>3 days</option>
@@ -613,7 +613,7 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
 
         <button
           onClick={handleRefresh}
-          className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+          className="p-1 text-muted hover:text-[var(--ds-text)] rounded hover:bg-[var(--ds-card)] transition-colors"
           title="Refresh"
         >
           <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
@@ -623,7 +623,7 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
       {/* Content */}
       <div className="flex-1 overflow-y-auto overflow-x-hidden">
         {loading && states.length === 0 && logs.length === 0 && (
-          <div className="flex items-center justify-center py-12 text-slate-500">
+          <div className="flex items-center justify-center py-12 text-faint">
             <Loader2 size={16} className="animate-spin mr-2" /> Loading...
           </div>
         )}
@@ -632,7 +632,7 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
         {tab === "mind" && (
           <div>
             {states.length === 0 && !loading && (
-              <div className="text-center py-12 text-slate-500 text-sm">
+              <div className="text-center py-12 text-faint text-sm">
                 <Brain size={24} className="mx-auto mb-2 opacity-40" />
                 No state entries found.
                 <p className="text-[10px] mt-1">Skipper's mind is empty — the thinking loop hasn't produced any state yet.</p>
@@ -645,10 +645,10 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
               const Icon = meta.icon;
               return (
                 <div key={type}>
-                  <div className={`sticky top-0 z-10 flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b border-slate-700/30 bg-slate-900/95 backdrop-blur ${meta.color}`}>
+                  <div className={`sticky top-0 z-10 flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b border-subtle surface-panel backdrop-blur ${meta.color}`}>
                     <Icon size={12} />
                     {meta.label}
-                    <span className="text-slate-500 font-normal">({group.length})</span>
+                    <span className="text-faint font-normal">({group.length})</span>
                   </div>
                   {group.map(s => <StateCard key={s.id} state={s} />)}
                 </div>
@@ -659,7 +659,7 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
               const group = stateGroups[type];
               return (
                 <div key={type}>
-                  <div className="sticky top-0 z-10 flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b border-slate-700/30 bg-slate-900/95 backdrop-blur text-slate-400">
+                  <div className="sticky top-0 z-10 flex items-center gap-2 px-3 py-1.5 text-xs font-medium border-b border-subtle surface-panel backdrop-blur text-muted">
                     {type} ({group.length})
                   </div>
                   {group.map(s => <StateCard key={s.id} state={s} />)}
@@ -673,7 +673,7 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
         {tab === "log" && (
           <div>
             {logs.length === 0 && !loading && (
-              <div className="text-center py-12 text-slate-500 text-sm">
+              <div className="text-center py-12 text-faint text-sm">
                 <Activity size={24} className="mx-auto mb-2 opacity-40" />
                 No thinking cycles logged yet.
                 <p className="text-[10px] mt-1">The thinking scheduler will log cycles as they run.</p>
@@ -687,7 +687,7 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
         {tab === "domains" && (
           <div>
             {domains.length === 0 && !loading && (
-              <div className="text-center py-12 text-slate-500 text-sm">
+              <div className="text-center py-12 text-faint text-sm">
                 No domains configured.
               </div>
             )}

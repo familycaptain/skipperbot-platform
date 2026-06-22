@@ -59,12 +59,12 @@ function intervalLabel(days) {
 
 function ConfirmModal({ message, onConfirm, onCancel }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onCancel}>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-5 w-80 space-y-4" onClick={e => e.stopPropagation()}>
-        <p className="text-sm text-gray-200">{message}</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center surface-overlay" onClick={onCancel}>
+      <div className="surface-card border border-subtle rounded-lg p-5 w-80 space-y-4" onClick={e => e.stopPropagation()}>
+        <p className="text-sm text-default">{message}</p>
         <div className="flex justify-end gap-2">
-          <button onClick={onCancel} className="px-3 py-1.5 text-sm rounded bg-gray-700 text-gray-300 hover:bg-gray-600">Cancel</button>
-          <button onClick={onConfirm} className="px-3 py-1.5 text-sm rounded bg-red-600 text-white hover:bg-red-500">Delete</button>
+          <button onClick={onCancel} className="px-3 py-1.5 text-sm rounded surface-raised text-default hover:bg-[var(--ds-raised)]">Cancel</button>
+          <button onClick={onConfirm} className="px-3 py-1.5 text-sm rounded bg-red-600 text-on-accent hover:bg-red-500">Delete</button>
         </div>
       </div>
     </div>
@@ -74,16 +74,16 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
 function Field({ label, children }) {
   return (
     <div>
-      <label className="block text-xs text-gray-500 mb-0.5">{label}</label>
+      <label className="block text-xs text-faint mb-0.5">{label}</label>
       {children}
     </div>
   );
 }
 
-const inp = "w-full text-sm bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-gray-200 focus:outline-none focus:border-teal-500";
-const btnPrimary = "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded bg-teal-600 hover:bg-teal-500 text-white disabled:opacity-50";
-const btnSecondary = "px-3 py-1.5 text-sm rounded bg-gray-700 text-gray-300 hover:bg-gray-600";
-const btnDanger = "px-3 py-1.5 text-sm rounded bg-red-700 text-white hover:bg-red-600";
+const inp = "w-full text-sm surface-panel border border-subtle rounded px-2 py-1.5 text-default focus:outline-none focus:border-subtle";
+const btnPrimary = "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded bg-[var(--ds-accent)] hover:bg-[var(--ds-accent)] text-on-accent disabled:opacity-50";
+const btnSecondary = "px-3 py-1.5 text-sm rounded surface-raised text-default hover:bg-[var(--ds-raised)]";
+const btnDanger = "px-3 py-1.5 text-sm rounded bg-red-700 text-on-accent hover:bg-red-600";
 
 // ═══════════════════════════════════════════════════════════════════════════
 //  Main App
@@ -125,14 +125,14 @@ export default function MedicalApp({ appId, userId, onTitle, refreshKey }) {
   const refresh = () => setRefreshCtr(c => c + 1);
 
   return (
-    <div className="flex flex-col h-full w-full bg-gray-900 text-gray-200">
+    <div className="flex flex-col h-full w-full surface-panel text-default">
       {/* Header bar */}
-      <div className="flex items-center gap-3 px-4 py-2 border-b border-gray-700/60 shrink-0">
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-subtle shrink-0">
         {/* Member filter */}
         <select
           value={memberId}
           onChange={e => setMemberId(e.target.value)}
-          className="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-gray-300 min-w-[140px]"
+          className="text-sm surface-card border border-subtle rounded px-2 py-1.5 text-default min-w-[140px]"
         >
           <option value="">All Members</option>
           {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -143,8 +143,8 @@ export default function MedicalApp({ appId, userId, onTitle, refreshKey }) {
             <button key={id} onClick={() => setTab(id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded transition-colors ${
                 tab === id
-                  ? "bg-teal-600 text-white"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+                  ? "bg-[var(--ds-accent)] text-on-accent"
+                  : "text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-card)]"
               }`}>
               <Icon size={14} />{label}
             </button>
@@ -152,7 +152,7 @@ export default function MedicalApp({ appId, userId, onTitle, refreshKey }) {
         </div>
         {/* Manage members */}
         <button onClick={() => setTab("_members")}
-          className={`p-1.5 rounded hover:bg-gray-700 ${tab === "_members" ? "text-teal-400 bg-gray-700" : "text-gray-500"}`}
+          className={`p-1.5 rounded hover:bg-[var(--ds-raised)] ${tab === "_members" ? "text-accent surface-raised" : "text-faint"}`}
           title="Manage members">
           <Settings size={16} />
         </button>
@@ -201,32 +201,32 @@ function MembersPanel({ members, onRefresh }) {
   return (
     <div className="p-4 max-w-lg space-y-3">
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-gray-300">Family Members</h3>
+        <h3 className="text-sm font-semibold text-default">Family Members</h3>
         <button onClick={() => setAdding(true)} className={btnPrimary}><Plus size={14} />Add</button>
       </div>
       {adding && (
-        <div className="flex gap-2 p-2 bg-gray-800/60 rounded border border-gray-700">
+        <div className="flex gap-2 p-2 surface-card rounded border border-subtle">
           <input placeholder="Name" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inp + " flex-1"} />
           <input placeholder="Notes" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className={inp + " flex-1"} />
           <button onClick={saveAdd} className="p-1 text-emerald-400 hover:bg-emerald-900/40 rounded"><Save size={16} /></button>
-          <button onClick={() => setAdding(false)} className="p-1 text-gray-500 hover:bg-gray-700 rounded"><X size={16} /></button>
+          <button onClick={() => setAdding(false)} className="p-1 text-faint hover:bg-[var(--ds-raised)] rounded"><X size={16} /></button>
         </div>
       )}
       {members.map(m => (
-        <div key={m.id} className="flex items-center gap-2 p-2 bg-gray-800/40 rounded border border-gray-700/50 group">
+        <div key={m.id} className="flex items-center gap-2 p-2 surface-card rounded border border-subtle group">
           {editId === m.id ? (
             <>
               <input value={editForm.name || ""} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} className={inp + " flex-1"} />
               <input value={editForm.notes || ""} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} className={inp + " flex-1"} />
               <button onClick={saveEdit} className="p-1 text-emerald-400 hover:bg-emerald-900/40 rounded"><Save size={16} /></button>
-              <button onClick={() => setEditId(null)} className="p-1 text-gray-500 hover:bg-gray-700 rounded"><X size={16} /></button>
+              <button onClick={() => setEditId(null)} className="p-1 text-faint hover:bg-[var(--ds-raised)] rounded"><X size={16} /></button>
             </>
           ) : (
             <>
-              <span className="font-medium text-gray-200 flex-1">{m.name}</span>
-              <span className="text-gray-500 text-sm flex-1">{m.notes}</span>
-              <button onClick={() => { setEditId(m.id); setEditForm({ name: m.name, notes: m.notes }); }} className="p-1 text-gray-500 hover:text-gray-300 hover:bg-gray-700 rounded opacity-0 group-hover:opacity-100"><Edit3 size={14} /></button>
-              <button onClick={() => setConfirm(m.id)} className="p-1 text-gray-500 hover:text-red-400 hover:bg-red-900/30 rounded opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button>
+              <span className="font-medium text-default flex-1">{m.name}</span>
+              <span className="text-faint text-sm flex-1">{m.notes}</span>
+              <button onClick={() => { setEditId(m.id); setEditForm({ name: m.name, notes: m.notes }); }} className="p-1 text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] rounded opacity-0 group-hover:opacity-100"><Edit3 size={14} /></button>
+              <button onClick={() => setConfirm(m.id)} className="p-1 text-faint hover:text-red-400 hover:bg-red-900/30 rounded opacity-0 group-hover:opacity-100"><Trash2 size={14} /></button>
             </>
           )}
         </div>
@@ -245,7 +245,7 @@ const REFILL_BADGE = {
   active:   { cls: "bg-emerald-900/40 text-emerald-400 border-emerald-700/50", label: "On Track" },
   nagging:  { cls: "bg-yellow-900/40 text-yellow-400 border-yellow-700/50",   label: "Refill Soon" },
   ordered:  { cls: "bg-blue-900/40 text-blue-400 border-blue-700/50",         label: "Ordered" },
-  filled:   { cls: "bg-gray-700/40 text-gray-400 border-gray-600/50",         label: "Filled" },
+  filled:   { cls: "surface-raised text-muted border-subtle",         label: "Filled" },
 };
 
 function MedicationsTab({ memberId, userId, refreshKey }) {
@@ -273,20 +273,20 @@ function MedicationsTab({ memberId, userId, refreshKey }) {
 
   const memberName = (id) => members.find(m => m.id === id)?.name || "";
 
-  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-teal-400" size={24} /></div>;
+  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-accent" size={24} /></div>;
 
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-3">
-        <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-muted cursor-pointer">
           <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)}
-            className="rounded border-gray-600 bg-gray-800 text-teal-500" />
+            className="rounded border-subtle surface-card text-accent" />
           Show inactive
         </label>
         <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus size={14} />Add Medication</button>
       </div>
 
-      {meds.length === 0 && <p className="text-gray-500 text-sm text-center py-8">No medications yet.</p>}
+      {meds.length === 0 && <p className="text-faint text-sm text-center py-8">No medications yet.</p>}
 
       <div className="space-y-2">
         {meds.map(med => {
@@ -346,33 +346,33 @@ function MedCard({ med, days, badge, memberName, isExpanded, onToggle, members, 
   };
 
   return (
-    <div className={`rounded-lg border ${med.active ? "border-gray-700/60 bg-gray-800/30" : "border-gray-700/30 bg-gray-900/30 opacity-60"}`}>
+    <div className={`rounded-lg border ${med.active ? "border-subtle surface-card" : "border-subtle surface-panel opacity-60"}`}>
       <div className="flex items-center gap-3 px-3 py-2.5 cursor-pointer" onClick={onToggle}>
         <span className="text-base">{statusDot(days)}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-gray-200 text-sm">{med.name}</span>
-            {memberName && <span className="text-xs text-gray-500">{memberName}</span>}
+            <span className="font-medium text-default text-sm">{med.name}</span>
+            {memberName && <span className="text-xs text-faint">{memberName}</span>}
             <span className={`text-xs px-2 py-0.5 rounded-full border ${badge.cls}`}>{badge.label}</span>
           </div>
-          <div className="text-xs text-gray-500 mt-0.5">
+          <div className="text-xs text-faint mt-0.5">
             {med.dosage_notes && <span className="mr-2">{med.dosage_notes}</span>}
             {med.last_dose_date && <span>runs out {fmtDate(med.last_dose_date)} ({daysLabel(days)})</span>}
           </div>
         </div>
         {med.refill_status === "nagging" && (
           <button onClick={e => { e.stopPropagation(); markOrdered(); }}
-            className="text-xs px-2 py-1 rounded bg-blue-700 text-white hover:bg-blue-600 shrink-0">Mark Ordered</button>
+            className="text-xs px-2 py-1 rounded bg-blue-700 text-on-accent hover:bg-blue-600 shrink-0">Mark Ordered</button>
         )}
         {med.refill_status === "ordered" && (
           <button onClick={e => { e.stopPropagation(); markFilled(); }}
-            className="text-xs px-2 py-1 rounded bg-emerald-700 text-white hover:bg-emerald-600 shrink-0">Mark Filled</button>
+            className="text-xs px-2 py-1 rounded bg-emerald-700 text-on-accent hover:bg-emerald-600 shrink-0">Mark Filled</button>
         )}
-        {isExpanded ? <ChevronDown size={14} className="text-gray-500 shrink-0" /> : <ChevronRight size={14} className="text-gray-500 shrink-0" />}
+        {isExpanded ? <ChevronDown size={14} className="text-faint shrink-0" /> : <ChevronRight size={14} className="text-faint shrink-0" />}
       </div>
 
       {isExpanded && (
-        <div className="border-t border-gray-700/40 px-3 py-3">
+        <div className="border-t border-subtle px-3 py-3">
           {editing ? (
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
@@ -387,8 +387,8 @@ function MedCard({ med, days, badge, memberName, isExpanded, onToggle, members, 
               </div>
               <Field label="Notes"><textarea value={form.notes || ""} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className={inp} /></Field>
               <div className="flex items-center gap-2">
-                <label className="flex items-center gap-1.5 text-sm text-gray-400 cursor-pointer">
-                  <input type="checkbox" checked={form.active ?? true} onChange={e => setForm(f => ({...f, active: e.target.checked}))} className="rounded border-gray-600 bg-gray-800 text-teal-500" />
+                <label className="flex items-center gap-1.5 text-sm text-muted cursor-pointer">
+                  <input type="checkbox" checked={form.active ?? true} onChange={e => setForm(f => ({...f, active: e.target.checked}))} className="rounded border-subtle surface-card text-accent" />
                   Active
                 </label>
                 <div className="flex-1" />
@@ -398,11 +398,11 @@ function MedCard({ med, days, badge, memberName, isExpanded, onToggle, members, 
               </div>
             </div>
           ) : (
-            <div className="space-y-1 text-sm text-gray-400">
-              {med.prescriber && <div>Prescriber: <span className="text-gray-300">{med.prescriber}</span></div>}
-              {med.pharmacy && <div>Pharmacy: <span className="text-gray-300">{med.pharmacy}</span></div>}
-              {med.duration_days && <div>Supply: <span className="text-gray-300">{med.duration_days}d ({intervalLabel(med.duration_days)})</span></div>}
-              {med.notes && <div className="text-gray-500 mt-1">{med.notes}</div>}
+            <div className="space-y-1 text-sm text-muted">
+              {med.prescriber && <div>Prescriber: <span className="text-default">{med.prescriber}</span></div>}
+              {med.pharmacy && <div>Pharmacy: <span className="text-default">{med.pharmacy}</span></div>}
+              {med.duration_days && <div>Supply: <span className="text-default">{med.duration_days}d ({intervalLabel(med.duration_days)})</span></div>}
+              {med.notes && <div className="text-faint mt-1">{med.notes}</div>}
               <div className="flex gap-2 pt-2">
                 <button onClick={startEdit} className={btnSecondary}><Edit3 size={13} />Edit</button>
               </div>
@@ -428,9 +428,9 @@ function AddMedModal({ members, userId, defaultMemberId, onClose, onSave }) {
     setSaving(false); onClose(); onSave();
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 w-[480px] space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <h3 className="text-base font-bold text-gray-200">Add Medication</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center surface-overlay" onClick={onClose}>
+      <div className="surface-card border border-subtle rounded-lg p-4 w-[480px] space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <h3 className="text-base font-bold text-default">Add Medication</h3>
         <div className="grid grid-cols-2 gap-2">
           <Field label="For"><select value={form.member_id} onChange={e => setForm(f => ({...f, member_id: e.target.value}))} className={inp}>
             {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -484,20 +484,20 @@ function TreatmentsTab({ memberId, userId, refreshKey }) {
 
   const memberName = (id) => members.find(m => m.id === id)?.name || "";
 
-  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-teal-400" size={24} /></div>;
+  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-accent" size={24} /></div>;
 
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-3">
-        <label className="flex items-center gap-2 text-sm text-gray-400 cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-muted cursor-pointer">
           <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)}
-            className="rounded border-gray-600 bg-gray-800 text-teal-500" />
+            className="rounded border-subtle surface-card text-accent" />
           Show inactive
         </label>
         <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus size={14} />Add Treatment</button>
       </div>
 
-      {treatments.length === 0 && <p className="text-gray-500 text-sm text-center py-8">No treatments yet.</p>}
+      {treatments.length === 0 && <p className="text-faint text-sm text-center py-8">No treatments yet.</p>}
 
       <div className="space-y-2">
         {treatments.map(t => {
@@ -555,27 +555,27 @@ function TreatmentCard({ treatment: t, days, memberName, isExpanded, onToggle, m
   };
 
   return (
-    <div className={`rounded-lg border ${t.active ? "border-gray-700/60 bg-gray-800/30" : "border-gray-700/30 bg-gray-900/30 opacity-60"}`}>
+    <div className={`rounded-lg border ${t.active ? "border-subtle surface-card" : "border-subtle surface-panel opacity-60"}`}>
       <div className="flex items-center gap-3 px-3 py-2.5 cursor-pointer" onClick={onToggle}>
         <span className="text-base">{statusDot(days)}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-gray-200 text-sm">{t.name}</span>
-            {memberName && <span className="text-xs text-gray-500">{memberName}</span>}
-            <span className="text-xs text-gray-500">{intervalLabel(t.interval_days)}</span>
+            <span className="font-medium text-default text-sm">{t.name}</span>
+            {memberName && <span className="text-xs text-faint">{memberName}</span>}
+            <span className="text-xs text-faint">{intervalLabel(t.interval_days)}</span>
           </div>
-          <div className="text-xs text-gray-500 mt-0.5">
+          <div className="text-xs text-faint mt-0.5">
             {t.last_done_at && <span className="mr-2">last: {fmtDate(t.last_done_at)}</span>}
             {t.next_due_at && <span>due {fmtDate(t.next_due_at)} ({daysLabel(days)})</span>}
           </div>
         </div>
         <button onClick={e => { e.stopPropagation(); setLogModal(true); }}
-          className="text-xs px-2 py-1 rounded bg-teal-700 text-white hover:bg-teal-600 shrink-0">Log It</button>
-        {isExpanded ? <ChevronDown size={14} className="text-gray-500 shrink-0" /> : <ChevronRight size={14} className="text-gray-500 shrink-0" />}
+          className="text-xs px-2 py-1 rounded bg-[var(--ds-accent)] text-on-accent hover:bg-[var(--ds-accent)] shrink-0">Log It</button>
+        {isExpanded ? <ChevronDown size={14} className="text-faint shrink-0" /> : <ChevronRight size={14} className="text-faint shrink-0" />}
       </div>
 
       {isExpanded && (
-        <div className="border-t border-gray-700/40 px-3 py-3">
+        <div className="border-t border-subtle px-3 py-3">
           {editing ? (
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
@@ -586,8 +586,8 @@ function TreatmentCard({ treatment: t, days, memberName, isExpanded, onToggle, m
               </div>
               <Field label="Notes"><textarea value={form.notes || ""} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className={inp} /></Field>
               <div className="flex items-center gap-2">
-                <label className="flex items-center gap-1.5 text-sm text-gray-400 cursor-pointer">
-                  <input type="checkbox" checked={form.active ?? true} onChange={e => setForm(f => ({...f, active: e.target.checked}))} className="rounded border-gray-600 bg-gray-800 text-teal-500" />Active
+                <label className="flex items-center gap-1.5 text-sm text-muted cursor-pointer">
+                  <input type="checkbox" checked={form.active ?? true} onChange={e => setForm(f => ({...f, active: e.target.checked}))} className="rounded border-subtle surface-card text-accent" />Active
                 </label>
                 <div className="flex-1" />
                 <button onClick={() => setConfirm(true)} className={btnDanger}><Trash2 size={14} />Delete</button>
@@ -596,26 +596,26 @@ function TreatmentCard({ treatment: t, days, memberName, isExpanded, onToggle, m
               </div>
             </div>
           ) : (
-            <div className="space-y-1 text-sm text-gray-400">
-              {t.description && <div className="text-gray-300">{t.description}</div>}
+            <div className="space-y-1 text-sm text-muted">
+              {t.description && <div className="text-default">{t.description}</div>}
               {t.notes && <div>{t.notes}</div>}
               <button onClick={startEdit} className={btnSecondary + " mt-2"}><Edit3 size={13} />Edit</button>
             </div>
           )}
 
           {/* Log history */}
-          <div className="mt-3 border-t border-gray-700/30 pt-3">
-            <button onClick={() => setShowLog(v => !v)} className="text-xs text-gray-500 hover:text-gray-300 flex items-center gap-1">
+          <div className="mt-3 border-t border-subtle pt-3">
+            <button onClick={() => setShowLog(v => !v)} className="text-xs text-faint hover:text-[var(--ds-text)] flex items-center gap-1">
               {showLog ? <ChevronDown size={12} /> : <ChevronRight size={12} />} Log history ({log.length})
             </button>
             {showLog && (
               <div className="mt-2 space-y-1">
-                {log.length === 0 && <p className="text-xs text-gray-600">No log entries yet.</p>}
+                {log.length === 0 && <p className="text-xs text-faint">No log entries yet.</p>}
                 {log.map(entry => (
-                  <div key={entry.id} className="flex items-center gap-2 text-xs text-gray-400 group">
-                    <span className="text-gray-300">{fmtDate(entry.done_at)}</span>
-                    {entry.medication && <span className="text-gray-500">{entry.medication}</span>}
-                    {entry.notes && <span className="text-gray-500">{entry.notes}</span>}
+                  <div key={entry.id} className="flex items-center gap-2 text-xs text-muted group">
+                    <span className="text-default">{fmtDate(entry.done_at)}</span>
+                    {entry.medication && <span className="text-faint">{entry.medication}</span>}
+                    {entry.notes && <span className="text-faint">{entry.notes}</span>}
                     <button onClick={() => setConfirmLogId(entry.id)} className="ml-auto opacity-0 group-hover:opacity-100 p-0.5 text-red-500 hover:text-red-400"><Trash2 size={12} /></button>
                   </div>
                 ))}
@@ -644,9 +644,9 @@ function LogTreatmentModal({ treatment, userId, onClose, onSave }) {
     setSaving(false); onClose(); onSave();
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 w-80 space-y-3" onClick={e => e.stopPropagation()}>
-        <h3 className="text-base font-bold text-gray-200">Log: {treatment.name}</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center surface-overlay" onClick={onClose}>
+      <div className="surface-card border border-subtle rounded-lg p-4 w-80 space-y-3" onClick={e => e.stopPropagation()}>
+        <h3 className="text-base font-bold text-default">Log: {treatment.name}</h3>
         <Field label="Date done"><input type="date" value={form.done_at} onChange={e => setForm(f => ({...f, done_at: e.target.value}))} className={inp} /></Field>
         <Field label="Medication / lot# (optional)"><input value={form.medication} onChange={e => setForm(f => ({...f, medication: e.target.value}))} className={inp} /></Field>
         <Field label="Notes"><textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className={inp} /></Field>
@@ -671,9 +671,9 @@ function AddTreatmentModal({ members, userId, defaultMemberId, onClose, onSave }
     setSaving(false); onClose(); onSave();
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 w-[420px] space-y-3" onClick={e => e.stopPropagation()}>
-        <h3 className="text-base font-bold text-gray-200">Add Treatment</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center surface-overlay" onClick={onClose}>
+      <div className="surface-card border border-subtle rounded-lg p-4 w-[420px] space-y-3" onClick={e => e.stopPropagation()}>
+        <h3 className="text-base font-bold text-default">Add Treatment</h3>
         <div className="grid grid-cols-2 gap-2">
           <Field label="For"><select value={form.member_id} onChange={e => setForm(f => ({...f, member_id: e.target.value}))} className={inp}>
             {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -702,7 +702,7 @@ function AddTreatmentModal({ members, userId, defaultMemberId, onClose, onSave }
 const EVENT_TYPES = ["visit","surgery","procedure","lab","note","emergency"];
 const EVENT_TYPE_COLORS = {
   visit: "text-blue-400", surgery: "text-red-400", procedure: "text-orange-400",
-  lab: "text-purple-400", note: "text-gray-400", emergency: "text-red-500",
+  lab: "text-purple-400", note: "text-muted", emergency: "text-red-500",
 };
 
 function EventsTab({ memberId, userId, refreshKey }) {
@@ -730,7 +730,7 @@ function EventsTab({ memberId, userId, refreshKey }) {
 
   const memberName = (id) => members.find(m => m.id === id)?.name || "";
 
-  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-teal-400" size={24} /></div>;
+  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-accent" size={24} /></div>;
 
   return (
     <div className="p-4">
@@ -739,7 +739,7 @@ function EventsTab({ memberId, userId, refreshKey }) {
           {["", ...EVENT_TYPES].map(t => (
             <button key={t} onClick={() => setTypeFilter(t)}
               className={`px-2.5 py-1 text-xs rounded-full border transition-colors ${
-                typeFilter === t ? "bg-teal-700 text-white border-teal-600" : "border-gray-700 text-gray-400 hover:border-gray-600"
+                typeFilter === t ? "bg-[var(--ds-accent)] text-on-accent border-subtle" : "border-subtle text-muted hover:border-[var(--ds-border)]"
               }`}>
               {t || "All"}
             </button>
@@ -748,7 +748,7 @@ function EventsTab({ memberId, userId, refreshKey }) {
         <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus size={14} />Log Event</button>
       </div>
 
-      {events.length === 0 && <p className="text-gray-500 text-sm text-center py-8">No events yet.</p>}
+      {events.length === 0 && <p className="text-faint text-sm text-center py-8">No events yet.</p>}
 
       <div className="space-y-2">
         {events.map(ev => (
@@ -787,32 +787,32 @@ function EventCard({ event: ev, memberName, isExpanded, onToggle, members, onRef
     setConfirm(false); onRefresh();
   };
 
-  const typeColor = EVENT_TYPE_COLORS[ev.event_type] || "text-gray-400";
+  const typeColor = EVENT_TYPE_COLORS[ev.event_type] || "text-muted";
 
   return (
-    <div className="rounded-lg border border-gray-700/60 bg-gray-800/30">
+    <div className="rounded-lg border border-subtle surface-card">
       <div className="flex items-center gap-3 px-3 py-2.5 cursor-pointer" onClick={onToggle}>
         <span className={`text-xs font-mono uppercase font-bold ${typeColor} w-14 shrink-0`}>{ev.event_type}</span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-gray-200 text-sm">{ev.title}</span>
-            {memberName && <span className="text-xs text-gray-500">{memberName}</span>}
+            <span className="font-medium text-default text-sm">{ev.title}</span>
+            {memberName && <span className="text-xs text-faint">{memberName}</span>}
             {ev.follow_up_date && (
-              <span className={`text-xs px-1.5 py-0.5 rounded border ${followDays !== null && followDays <= 3 ? "text-yellow-400 border-yellow-700/50 bg-yellow-900/20" : "text-gray-500 border-gray-700/50"}`}>
+              <span className={`text-xs px-1.5 py-0.5 rounded border ${followDays !== null && followDays <= 3 ? "text-yellow-400 border-yellow-700/50 bg-yellow-900/20" : "text-faint border-subtle"}`}>
                 follow-up {fmtDate(ev.follow_up_date)}
               </span>
             )}
           </div>
-          <div className="text-xs text-gray-500 mt-0.5">
+          <div className="text-xs text-faint mt-0.5">
             {fmtDate(ev.event_date)}{ev.provider ? ` — ${ev.provider}` : ""}
-            {ev.summary && <span className="ml-2 text-gray-600 truncate">{ev.summary.slice(0, 80)}</span>}
+            {ev.summary && <span className="ml-2 text-faint truncate">{ev.summary.slice(0, 80)}</span>}
           </div>
         </div>
-        {isExpanded ? <ChevronDown size={14} className="text-gray-500 shrink-0" /> : <ChevronRight size={14} className="text-gray-500 shrink-0" />}
+        {isExpanded ? <ChevronDown size={14} className="text-faint shrink-0" /> : <ChevronRight size={14} className="text-faint shrink-0" />}
       </div>
 
       {isExpanded && (
-        <div className="border-t border-gray-700/40 px-3 py-3">
+        <div className="border-t border-subtle px-3 py-3">
           {editing ? (
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
@@ -835,11 +835,11 @@ function EventCard({ event: ev, memberName, isExpanded, onToggle, members, onRef
               </div>
             </div>
           ) : (
-            <div className="space-y-1.5 text-sm text-gray-400">
-              {ev.summary && <p className="text-gray-300 leading-relaxed">{ev.summary}</p>}
-              {ev.follow_up_date && <p>Follow-up: <span className="text-gray-300">{fmtDate(ev.follow_up_date)}</span>{ev.follow_up_notes ? ` — ${ev.follow_up_notes}` : ""}</p>}
-              {ev.tags?.length > 0 && <div className="flex gap-1 flex-wrap">{ev.tags.map(tag => <span key={tag} className="text-xs px-1.5 py-0.5 rounded bg-gray-700/60 text-gray-400">{tag}</span>)}</div>}
-              {ev.notes && <p className="text-gray-500">{ev.notes}</p>}
+            <div className="space-y-1.5 text-sm text-muted">
+              {ev.summary && <p className="text-default leading-relaxed">{ev.summary}</p>}
+              {ev.follow_up_date && <p>Follow-up: <span className="text-default">{fmtDate(ev.follow_up_date)}</span>{ev.follow_up_notes ? ` — ${ev.follow_up_notes}` : ""}</p>}
+              {ev.tags?.length > 0 && <div className="flex gap-1 flex-wrap">{ev.tags.map(tag => <span key={tag} className="text-xs px-1.5 py-0.5 rounded surface-raised text-muted">{tag}</span>)}</div>}
+              {ev.notes && <p className="text-faint">{ev.notes}</p>}
               <button onClick={startEdit} className={btnSecondary + " mt-2"}><Edit3 size={13} />Edit</button>
             </div>
           )}
@@ -862,9 +862,9 @@ function AddEventModal({ members, userId, defaultMemberId, onClose, onSave }) {
     setSaving(false); onClose(); onSave();
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 w-[500px] space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <h3 className="text-base font-bold text-gray-200">Log Medical Event</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center surface-overlay" onClick={onClose}>
+      <div className="surface-card border border-subtle rounded-lg p-4 w-[500px] space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <h3 className="text-base font-bold text-default">Log Medical Event</h3>
         <div className="grid grid-cols-2 gap-2">
           <Field label="For"><select value={form.member_id} onChange={e => setForm(f => ({...f, member_id: e.target.value}))} className={inp}>
             {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -950,40 +950,40 @@ function LabsTab({ memberId, userId, refreshKey }) {
     load();
   };
 
-  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-teal-400" size={24} /></div>;
+  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-accent" size={24} /></div>;
 
   return (
     <div className="p-4">
       <div className="flex items-center gap-2 mb-3 flex-wrap">
         <select value={filterTestId} onChange={e => setFilterTestId(e.target.value)}
-          className="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-gray-300">
+          className="text-sm surface-card border border-subtle rounded px-2 py-1.5 text-default">
           <option value="">All Tests</option>
           {tests.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
         <select value={filterEventId} onChange={e => setFilterEventId(e.target.value)}
-          className="text-sm bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-gray-300 max-w-[200px]">
+          className="text-sm surface-card border border-subtle rounded px-2 py-1.5 text-default max-w-[200px]">
           <option value="">All Draws</option>
           {labEvents.map(ev => <option key={ev.id} value={ev.id}>{fmtDate(ev.event_date)} — {ev.title}</option>)}
         </select>
         <div className="flex-1" />
-        <button onClick={() => setShowManage(v => !v)} className={`p-1.5 rounded hover:bg-gray-700 ${showManage ? "text-teal-400 bg-gray-700" : "text-gray-500"}`} title="Manage lab tests"><Settings size={16} /></button>
+        <button onClick={() => setShowManage(v => !v)} className={`p-1.5 rounded hover:bg-[var(--ds-raised)] ${showManage ? "text-accent surface-raised" : "text-faint"}`} title="Manage lab tests"><Settings size={16} /></button>
         <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus size={14} />Log Results</button>
       </div>
 
       {showManage && <ManageLabTests tests={tests} onRefresh={load} />}
 
-      {rows.length === 0 && !showManage && <p className="text-gray-500 text-sm text-center py-8">No lab results yet.</p>}
+      {rows.length === 0 && !showManage && <p className="text-faint text-sm text-center py-8">No lab results yet.</p>}
 
       {rows.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
-              <tr className="text-gray-500 text-left border-b border-gray-700/50">
+              <tr className="text-faint text-left border-b border-subtle">
                 <th className="py-1.5 pr-3 font-medium">Date</th>
                 <th className="py-1.5 pr-3 font-medium">Who</th>
                 {displayTests.map(t => (
                   <th key={t.id} className="py-1.5 pr-3 font-medium whitespace-nowrap">
-                    {t.name}{t.unit ? <span className="text-xs text-gray-600 ml-1">({t.unit})</span> : ""}
+                    {t.name}{t.unit ? <span className="text-xs text-faint ml-1">({t.unit})</span> : ""}
                   </th>
                 ))}
                 <th className="py-1.5 font-medium"></th>
@@ -1011,9 +1011,9 @@ function LabResultRow({ row, displayTests, memberName, onDelete, onUpdateCell })
   const [confirm, setConfirm] = useState(false);
 
   return (
-    <tr className="border-b border-gray-700/30 hover:bg-gray-800/20 group">
-      <td className="py-1.5 pr-3 text-gray-300 whitespace-nowrap">{fmtDate(row.date)}</td>
-      <td className="py-1.5 pr-3 text-gray-500 whitespace-nowrap">{memberName}</td>
+    <tr className="border-b border-subtle hover:bg-[var(--ds-card)] group">
+      <td className="py-1.5 pr-3 text-default whitespace-nowrap">{fmtDate(row.date)}</td>
+      <td className="py-1.5 pr-3 text-faint whitespace-nowrap">{memberName}</td>
       {displayTests.map(t => {
         const result = row.values[t.id];
         const val = result?.value;
@@ -1027,10 +1027,10 @@ function LabResultRow({ row, displayTests, memberName, onDelete, onUpdateCell })
                   onChange={e => setCellVal(e.target.value)}
                   onBlur={() => { onUpdateCell(result.id, cellVal); setEditingCell(null); }}
                   onKeyDown={e => { if (e.key === "Enter") { onUpdateCell(result.id, cellVal); setEditingCell(null); } if (e.key === "Escape") setEditingCell(null); }}
-                  className="w-20 text-sm bg-gray-900 border border-teal-500 rounded px-1.5 py-0.5 text-gray-200" />
+                  className="w-20 text-sm surface-panel border border-subtle rounded px-1.5 py-0.5 text-default" />
               ) : (
                 <span
-                  className={`cursor-pointer hover:underline ${abnormal ? "text-yellow-400 font-medium" : "text-gray-300"}`}
+                  className={`cursor-pointer hover:underline ${abnormal ? "text-yellow-400 font-medium" : "text-default"}`}
                   onClick={() => { setEditingCell(t.id); setCellVal(String(val)); }}
                   title="Click to edit"
                 >
@@ -1038,13 +1038,13 @@ function LabResultRow({ row, displayTests, memberName, onDelete, onUpdateCell })
                 </span>
               )
             ) : (
-              <span className="text-gray-700">—</span>
+              <span className="text-default">—</span>
             )}
           </td>
         );
       })}
       <td className="py-1.5">
-        <button onClick={() => setConfirm(true)} className="opacity-0 group-hover:opacity-100 p-1 text-gray-600 hover:text-red-400 rounded"><Trash2 size={12} /></button>
+        <button onClick={() => setConfirm(true)} className="opacity-0 group-hover:opacity-100 p-1 text-faint hover:text-red-400 rounded"><Trash2 size={12} /></button>
         {confirm && <ConfirmModal message={`Delete all results for ${fmtDate(row.date)}?`} onConfirm={onDelete} onCancel={() => setConfirm(false)} />}
       </td>
     </tr>
@@ -1082,10 +1082,10 @@ function ManageLabTests({ tests, onRefresh }) {
   };
 
   return (
-    <div className="mb-4 p-3 bg-gray-800/40 rounded-lg border border-gray-700/60">
+    <div className="mb-4 p-3 surface-card rounded-lg border border-subtle">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Lab Tests</span>
-        <button onClick={() => setAdding(true)} className="text-xs flex items-center gap-1 text-teal-400 hover:text-teal-300"><Plus size={12} />Add</button>
+        <span className="text-xs font-semibold text-muted uppercase tracking-wide">Lab Tests</span>
+        <button onClick={() => setAdding(true)} className="text-xs flex items-center gap-1 text-accent hover:text-accent"><Plus size={12} />Add</button>
       </div>
       {adding && (
         <div className="flex gap-1 mb-2 flex-wrap">
@@ -1094,7 +1094,7 @@ function ManageLabTests({ tests, onRefresh }) {
           <input placeholder="Min" type="number" value={form.normal_min} onChange={e => setForm(f => ({...f, normal_min: e.target.value}))} className={inp + " w-16"} />
           <input placeholder="Max" type="number" value={form.normal_max} onChange={e => setForm(f => ({...f, normal_max: e.target.value}))} className={inp + " w-16"} />
           <button onClick={saveAdd} className="p-1 text-emerald-400 hover:bg-emerald-900/40 rounded"><Save size={16} /></button>
-          <button onClick={() => setAdding(false)} className="p-1 text-gray-500 hover:bg-gray-700 rounded"><X size={16} /></button>
+          <button onClick={() => setAdding(false)} className="p-1 text-faint hover:bg-[var(--ds-raised)] rounded"><X size={16} /></button>
         </div>
       )}
       <div className="space-y-1">
@@ -1107,15 +1107,15 @@ function ManageLabTests({ tests, onRefresh }) {
                 <input placeholder="Min" type="number" value={editForm.normal_min ?? ""} onChange={e => setEditForm(f => ({...f, normal_min: e.target.value}))} className={inp + " w-16"} />
                 <input placeholder="Max" type="number" value={editForm.normal_max ?? ""} onChange={e => setEditForm(f => ({...f, normal_max: e.target.value}))} className={inp + " w-16"} />
                 <button onClick={saveEdit} className="p-1 text-emerald-400 hover:bg-emerald-900/40 rounded"><Save size={14} /></button>
-                <button onClick={() => setEditId(null)} className="p-1 text-gray-500 hover:bg-gray-700 rounded"><X size={14} /></button>
+                <button onClick={() => setEditId(null)} className="p-1 text-faint hover:bg-[var(--ds-raised)] rounded"><X size={14} /></button>
               </>
             ) : (
               <>
-                <span className="text-gray-300 flex-1">{t.name}</span>
-                {t.unit && <span className="text-gray-600">{t.unit}</span>}
-                {(t.normal_min !== null || t.normal_max !== null) && <span className="text-gray-600">{t.normal_min ?? "?"}–{t.normal_max ?? "?"}</span>}
-                <button onClick={() => { setEditId(t.id); setEditForm({ name: t.name, unit: t.unit, normal_min: t.normal_min ?? "", normal_max: t.normal_max ?? "" }); }} className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-500 hover:text-gray-300 rounded"><Edit3 size={12} /></button>
-                <button onClick={() => setConfirm(t.id)} className="opacity-0 group-hover:opacity-100 p-0.5 text-gray-600 hover:text-red-400 rounded"><Trash2 size={12} /></button>
+                <span className="text-default flex-1">{t.name}</span>
+                {t.unit && <span className="text-faint">{t.unit}</span>}
+                {(t.normal_min !== null || t.normal_max !== null) && <span className="text-faint">{t.normal_min ?? "?"}–{t.normal_max ?? "?"}</span>}
+                <button onClick={() => { setEditId(t.id); setEditForm({ name: t.name, unit: t.unit, normal_min: t.normal_min ?? "", normal_max: t.normal_max ?? "" }); }} className="opacity-0 group-hover:opacity-100 p-0.5 text-faint hover:text-[var(--ds-text)] rounded"><Edit3 size={12} /></button>
+                <button onClick={() => setConfirm(t.id)} className="opacity-0 group-hover:opacity-100 p-0.5 text-faint hover:text-red-400 rounded"><Trash2 size={12} /></button>
               </>
             )}
           </div>
@@ -1146,9 +1146,9 @@ function LogLabResultsModal({ members, tests, labEvents, userId, defaultMemberId
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 w-[440px] space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <h3 className="text-base font-bold text-gray-200">Log Lab Results</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center surface-overlay" onClick={onClose}>
+      <div className="surface-card border border-subtle rounded-lg p-4 w-[440px] space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <h3 className="text-base font-bold text-default">Log Lab Results</h3>
         <div className="grid grid-cols-2 gap-2">
           <Field label="For"><select value={form.member_id} onChange={e => setForm(f => ({...f, member_id: e.target.value}))} className={inp}>
             {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
@@ -1164,8 +1164,8 @@ function LogLabResultsModal({ members, tests, labEvents, userId, defaultMemberId
             {labEvents.map(ev => <option key={ev.id} value={ev.id}>{fmtDate(ev.event_date)} — {ev.title}</option>)}
           </select>
         </Field>
-        <div className="border-t border-gray-700/40 pt-2">
-          <p className="text-xs text-gray-500 mb-2">Enter values (leave blank to skip):</p>
+        <div className="border-t border-subtle pt-2">
+          <p className="text-xs text-faint mb-2">Enter values (leave blank to skip):</p>
           <div className="grid grid-cols-2 gap-2">
             {tests.map(t => (
               <Field key={t.id} label={`${t.name}${t.unit ? ` (${t.unit})` : ""}`}>
@@ -1193,10 +1193,10 @@ const APPT_TYPE_COLORS = {
   visit:      "text-blue-400",
   specialist: "text-purple-400",
   procedure:  "text-orange-400",
-  lab:        "text-teal-400",
+  lab:        "text-accent",
   dentist:    "text-green-400",
   followup:   "text-yellow-400",
-  other:      "text-gray-400",
+  other:      "text-muted",
 };
 
 function fmtDateTime(isoStr) {
@@ -1220,23 +1220,23 @@ function fmtTimeOnly(isoStr) {
 function apptCountdown(isoStr) {
   if (!isoStr) return null;
   const diffMs = new Date(isoStr) - Date.now();
-  if (diffMs < 0) return { label: "past", cls: "text-gray-500" };
+  if (diffMs < 0) return { label: "past", cls: "text-faint" };
   const diffH = diffMs / 3600000;
   if (diffH < 2)   return { label: `in ${Math.round(diffMs / 60000)}m`, cls: "text-red-400 font-semibold" };
   if (diffH < 24)  return { label: `in ${Math.round(diffH)}h`, cls: "text-yellow-400" };
   const diffD = Math.ceil(diffH / 24);
   if (diffD === 1) return { label: "tomorrow", cls: "text-yellow-400" };
-  return { label: `in ${diffD}d`, cls: "text-gray-400" };
+  return { label: `in ${diffD}d`, cls: "text-muted" };
 }
 
 function NotifyBadges({ appt }) {
   return (
     <div className="flex gap-1">
-      <span title="24h reminder" className={`text-xs ${appt.notified_24h ? "text-teal-500" : "text-gray-700"}`}>
+      <span title="24h reminder" className={`text-xs ${appt.notified_24h ? "text-accent" : "text-default"}`}>
         {appt.notified_24h ? <Bell size={11} /> : <BellOff size={11} />}
         <span className="sr-only">24h</span>
       </span>
-      <span title="2h reminder" className={`text-xs ${appt.notified_2h ? "text-teal-500" : "text-gray-700"}`}>
+      <span title="2h reminder" className={`text-xs ${appt.notified_2h ? "text-accent" : "text-default"}`}>
         {appt.notified_2h ? <Bell size={11} /> : <BellOff size={11} />}
         <span className="sr-only">2h</span>
       </span>
@@ -1273,7 +1273,7 @@ function AppointmentsTab({ memberId, userId, refreshKey }) {
 
   const memberName = (id) => members.find(m => m.id === id)?.name || "";
 
-  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-teal-400" size={24} /></div>;
+  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-accent" size={24} /></div>;
 
   const upcoming = appts.filter(a => !a.cancelled);
   const cancelled = appts.filter(a => a.cancelled);
@@ -1282,14 +1282,14 @@ function AppointmentsTab({ memberId, userId, refreshKey }) {
     <div className="p-4">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-faint cursor-pointer">
             <input type="checkbox" checked={showPast} onChange={e => setShowPast(e.target.checked)}
-              className="rounded border-gray-600 bg-gray-800 text-teal-500" />
+              className="rounded border-subtle surface-card text-accent" />
             Past
           </label>
-          <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-xs text-faint cursor-pointer">
             <input type="checkbox" checked={showCancelled} onChange={e => setShowCancelled(e.target.checked)}
-              className="rounded border-gray-600 bg-gray-800 text-teal-500" />
+              className="rounded border-subtle surface-card text-accent" />
             Cancelled
           </label>
           {unloggedIds.size > 0 && (
@@ -1302,7 +1302,7 @@ function AppointmentsTab({ memberId, userId, refreshKey }) {
       </div>
 
       {appts.length === 0 && (
-        <p className="text-gray-500 text-sm text-center py-8">No appointments scheduled.</p>
+        <p className="text-faint text-sm text-center py-8">No appointments scheduled.</p>
       )}
 
       <div className="space-y-2">
@@ -1315,7 +1315,7 @@ function AppointmentsTab({ memberId, userId, refreshKey }) {
         ))}
         {showCancelled && cancelled.length > 0 && (
           <>
-            <p className="text-xs text-gray-600 uppercase tracking-wide pt-2">Cancelled</p>
+            <p className="text-xs text-faint uppercase tracking-wide pt-2">Cancelled</p>
             {cancelled.map(appt => (
               <ApptCard key={appt.id} appt={appt} memberName={memberName(appt.member_id)}
                 isExpanded={expandedId === appt.id}
@@ -1346,7 +1346,7 @@ function ApptCard({ appt, memberName, isExpanded, onToggle, members, userId, onR
   const [showLogVisit, setShowLogVisit] = useState(false);
 
   const countdown = apptCountdown(appt.appointment_at);
-  const typeColor = APPT_TYPE_COLORS[appt.appointment_type] || "text-gray-400";
+  const typeColor = APPT_TYPE_COLORS[appt.appointment_type] || "text-muted";
 
   const startEdit = () => {
     const localDt = appt.appointment_at
@@ -1391,10 +1391,10 @@ function ApptCard({ appt, memberName, isExpanded, onToggle, members, userId, onR
   return (
     <div className={`rounded-lg border ${
       appt.cancelled
-        ? "border-gray-700/30 bg-gray-900/30 opacity-60"
+        ? "border-subtle surface-panel opacity-60"
         : countdown?.label === "past"
-          ? "border-gray-700/40 bg-gray-800/20 opacity-70"
-          : "border-gray-700/60 bg-gray-800/30"
+          ? "border-subtle surface-card opacity-70"
+          : "border-subtle surface-card"
     }`}>
       <div className="flex items-center gap-3 px-3 py-2.5 cursor-pointer" onClick={onToggle}>
         <span className={`text-xs font-mono uppercase font-bold ${typeColor} w-16 shrink-0`}>
@@ -1402,10 +1402,10 @@ function ApptCard({ appt, memberName, isExpanded, onToggle, members, userId, onR
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-gray-200 text-sm">{appt.title}</span>
-            {memberName && <span className="text-xs text-gray-500">{memberName}</span>}
+            <span className="font-medium text-default text-sm">{appt.title}</span>
+            {memberName && <span className="text-xs text-faint">{memberName}</span>}
             {appt.cancelled && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-gray-700/60 text-gray-500">cancelled</span>
+              <span className="text-xs px-1.5 py-0.5 rounded surface-raised text-faint">cancelled</span>
             )}
             {countdown && !appt.cancelled && (
               <span className={`text-xs ${countdown.cls}`}>{countdown.label}</span>
@@ -1416,18 +1416,18 @@ function ApptCard({ appt, memberName, isExpanded, onToggle, members, userId, onR
               </span>
             )}
           </div>
-          <div className="text-xs text-gray-500 mt-0.5">
+          <div className="text-xs text-faint mt-0.5">
             <span>{fmtDateTime(appt.appointment_at)}</span>
             {appt.provider && <span className="ml-2">— {appt.provider}</span>}
-            {appt.location && <span className="ml-2 text-gray-600">📍 {appt.location}</span>}
+            {appt.location && <span className="ml-2 text-faint">📍 {appt.location}</span>}
           </div>
         </div>
         <NotifyBadges appt={appt} />
-        {isExpanded ? <ChevronDown size={14} className="text-gray-500 shrink-0" /> : <ChevronRight size={14} className="text-gray-500 shrink-0" />}
+        {isExpanded ? <ChevronDown size={14} className="text-faint shrink-0" /> : <ChevronRight size={14} className="text-faint shrink-0" />}
       </div>
 
       {isExpanded && (
-        <div className="border-t border-gray-700/40 px-3 py-3">
+        <div className="border-t border-subtle px-3 py-3">
           {editing ? (
             <div className="space-y-2">
               <div className="grid grid-cols-2 gap-2">
@@ -1453,9 +1453,9 @@ function ApptCard({ appt, memberName, isExpanded, onToggle, members, userId, onR
                 <textarea value={form.notes || ""} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className={inp} />
               </Field>
               <div className="flex items-center gap-2">
-                <label className="flex items-center gap-1.5 text-sm text-gray-400 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-sm text-muted cursor-pointer">
                   <input type="checkbox" checked={form.cancelled ?? false} onChange={e => setForm(f => ({...f, cancelled: e.target.checked}))}
-                    className="rounded border-gray-600 bg-gray-800 text-red-500" />
+                    className="rounded border-subtle surface-card text-red-500" />
                   Cancelled
                 </label>
                 <div className="flex-1" />
@@ -1465,15 +1465,15 @@ function ApptCard({ appt, memberName, isExpanded, onToggle, members, userId, onR
               </div>
             </div>
           ) : (
-            <div className="space-y-1.5 text-sm text-gray-400">
-              {appt.location && <div>Location: <span className="text-gray-300">{appt.location}</span></div>}
-              {appt.notes && <p className="text-gray-500">{appt.notes}</p>}
+            <div className="space-y-1.5 text-sm text-muted">
+              {appt.location && <div>Location: <span className="text-default">{appt.location}</span></div>}
+              {appt.notes && <p className="text-faint">{appt.notes}</p>}
               <div className="flex items-center gap-2 pt-1 flex-wrap">
-                <div className="flex items-center gap-1 text-xs text-gray-600">
-                  <Bell size={11} className={appt.notified_24h ? "text-teal-500" : ""} />
-                  <span className={appt.notified_24h ? "text-teal-500" : ""}>24h sent</span>
-                  <Bell size={11} className={`ml-2 ${appt.notified_2h ? "text-teal-500" : ""}`} />
-                  <span className={appt.notified_2h ? "text-teal-500" : ""}>2h sent</span>
+                <div className="flex items-center gap-1 text-xs text-faint">
+                  <Bell size={11} className={appt.notified_24h ? "text-accent" : ""} />
+                  <span className={appt.notified_24h ? "text-accent" : ""}>24h sent</span>
+                  <Bell size={11} className={`ml-2 ${appt.notified_2h ? "text-accent" : ""}`} />
+                  <span className={appt.notified_2h ? "text-accent" : ""}>2h sent</span>
                 </div>
                 <div className="flex-1" />
                 {needsLog && (
@@ -1537,11 +1537,11 @@ function LogVisitModal({ appt, userId, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 w-[480px] space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center surface-overlay" onClick={onClose}>
+      <div className="surface-card border border-subtle rounded-lg p-4 w-[480px] space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div>
-          <h3 className="text-base font-bold text-gray-200">Log Visit Results</h3>
-          <p className="text-xs text-gray-500 mt-0.5">Linked to: <span className="text-amber-400">{appt.title}</span></p>
+          <h3 className="text-base font-bold text-default">Log Visit Results</h3>
+          <p className="text-xs text-faint mt-0.5">Linked to: <span className="text-amber-400">{appt.title}</span></p>
         </div>
         <div className="grid grid-cols-2 gap-2">
           <Field label="Event Title">
@@ -1609,7 +1609,7 @@ function taskDueStatus(next_due_at) {
   if (diffDays < 0)  return { label: `${Math.abs(diffDays)}d overdue`, cls: "text-red-400 font-semibold", overdue: true };
   if (diffDays === 0) return { label: "due today", cls: "text-yellow-400 font-semibold", overdue: false };
   if (diffDays <= 7)  return { label: `due in ${diffDays}d`, cls: "text-yellow-400", overdue: false };
-  return { label: `due ${fmtDate(next_due_at)}`, cls: "text-gray-500", overdue: false };
+  return { label: `due ${fmtDate(next_due_at)}`, cls: "text-faint", overdue: false };
 }
 
 function EquipmentTab({ memberId, userId, refreshKey }) {
@@ -1637,21 +1637,21 @@ function EquipmentTab({ memberId, userId, refreshKey }) {
 
   const memberName = (id) => members.find(m => m.id === id)?.name || "";
 
-  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-teal-400" size={24} /></div>;
+  if (loading) return <div className="flex justify-center p-8"><Loader2 className="animate-spin text-accent" size={24} /></div>;
 
   return (
     <div className="p-4">
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+        <label className="flex items-center gap-1.5 text-xs text-faint cursor-pointer">
           <input type="checkbox" checked={showInactive} onChange={e => setShowInactive(e.target.checked)}
-            className="rounded border-gray-600 bg-gray-800 text-teal-500" />
+            className="rounded border-subtle surface-card text-accent" />
           Show inactive
         </label>
         <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus size={14} />Add Equipment</button>
       </div>
 
       {equipment.length === 0 && (
-        <p className="text-gray-500 text-sm text-center py-8">No medical equipment tracked yet.</p>
+        <p className="text-faint text-sm text-center py-8">No medical equipment tracked yet.</p>
       )}
 
       <div className="space-y-3">
@@ -1721,14 +1721,14 @@ function EquipmentCard({ equip, memberName, isExpanded, onToggle, members, userI
   };
 
   return (
-    <div className={`rounded-lg border ${equip.active ? "border-gray-700/60 bg-gray-800/30" : "border-gray-700/30 bg-gray-900/30 opacity-60"}`}>
+    <div className={`rounded-lg border ${equip.active ? "border-subtle surface-card" : "border-subtle surface-panel opacity-60"}`}>
       <div className="flex items-center gap-3 px-3 py-2.5 cursor-pointer" onClick={onToggle}>
-        <Wrench size={15} className="text-teal-500 shrink-0" />
+        <Wrench size={15} className="text-accent shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-gray-200 text-sm">{equip.name}</span>
-            {memberName && <span className="text-xs text-gray-500">{memberName}</span>}
-            {!equip.active && <span className="text-xs px-1.5 py-0.5 rounded bg-gray-700/60 text-gray-500">inactive</span>}
+            <span className="font-medium text-default text-sm">{equip.name}</span>
+            {memberName && <span className="text-xs text-faint">{memberName}</span>}
+            {!equip.active && <span className="text-xs px-1.5 py-0.5 rounded surface-raised text-faint">inactive</span>}
             {overdueCount > 0 && (
               <span className="flex items-center gap-1 text-xs text-red-400">
                 <AlertTriangle size={11} />{overdueCount} overdue
@@ -1736,18 +1736,18 @@ function EquipmentCard({ equip, memberName, isExpanded, onToggle, members, userI
             )}
           </div>
           {(equip.brand || equip.model) && (
-            <div className="text-xs text-gray-600 mt-0.5">
+            <div className="text-xs text-faint mt-0.5">
               {[equip.brand, equip.model].filter(Boolean).join(" · ")}
               {equip.serial_no && <span className="ml-2">S/N: {equip.serial_no}</span>}
             </div>
           )}
         </div>
-        <span className="text-xs text-gray-600">{tasks.length > 0 ? `${tasks.length} task${tasks.length !== 1 ? "s" : ""}` : ""}</span>
-        {isExpanded ? <ChevronDown size={14} className="text-gray-500 shrink-0" /> : <ChevronRight size={14} className="text-gray-500 shrink-0" />}
+        <span className="text-xs text-faint">{tasks.length > 0 ? `${tasks.length} task${tasks.length !== 1 ? "s" : ""}` : ""}</span>
+        {isExpanded ? <ChevronDown size={14} className="text-faint shrink-0" /> : <ChevronRight size={14} className="text-faint shrink-0" />}
       </div>
 
       {isExpanded && (
-        <div className="border-t border-gray-700/40">
+        <div className="border-t border-subtle">
           {editing ? (
             <div className="px-3 py-3 space-y-2">
               <div className="grid grid-cols-2 gap-2">
@@ -1759,9 +1759,9 @@ function EquipmentCard({ equip, memberName, isExpanded, onToggle, members, userI
               <Field label="Description"><input value={form.description || ""} onChange={e => setForm(f => ({...f, description: e.target.value}))} className={inp} /></Field>
               <Field label="Notes"><textarea value={form.notes || ""} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className={inp} /></Field>
               <div className="flex items-center gap-2">
-                <label className="flex items-center gap-1.5 text-sm text-gray-400 cursor-pointer">
+                <label className="flex items-center gap-1.5 text-sm text-muted cursor-pointer">
                   <input type="checkbox" checked={form.active ?? true} onChange={e => setForm(f => ({...f, active: e.target.checked}))}
-                    className="rounded border-gray-600 bg-gray-800 text-teal-500" />
+                    className="rounded border-subtle surface-card text-accent" />
                   Active
                 </label>
                 <div className="flex-1" />
@@ -1772,8 +1772,8 @@ function EquipmentCard({ equip, memberName, isExpanded, onToggle, members, userI
             </div>
           ) : (
             <div className="px-3 pt-2 pb-1 flex items-center gap-2 flex-wrap">
-              {equip.description && <span className="text-xs text-gray-500 flex-1">{equip.description}</span>}
-              {equip.notes && <span className="text-xs text-gray-600 flex-1">{equip.notes}</span>}
+              {equip.description && <span className="text-xs text-faint flex-1">{equip.description}</span>}
+              {equip.notes && <span className="text-xs text-faint flex-1">{equip.notes}</span>}
               <div className="flex items-center gap-2 ml-auto">
                 <button onClick={() => setShowAddTask(true)} className={btnSecondary}><Plus size={13} />Add Task</button>
                 <button onClick={startEdit} className={btnSecondary}><Edit3 size={13} />Edit</button>
@@ -1784,9 +1784,9 @@ function EquipmentCard({ equip, memberName, isExpanded, onToggle, members, userI
           {/* Tasks */}
           <div className="px-3 pb-3">
             {loadingTasks
-              ? <div className="flex justify-center py-3"><Loader2 className="animate-spin text-gray-600" size={16} /></div>
+              ? <div className="flex justify-center py-3"><Loader2 className="animate-spin text-faint" size={16} /></div>
               : tasks.length === 0
-                ? <p className="text-xs text-gray-600 py-2">No maintenance tasks yet. <button onClick={() => setShowAddTask(true)} className="text-teal-500 hover:underline">Add one</button></p>
+                ? <p className="text-xs text-faint py-2">No maintenance tasks yet. <button onClick={() => setShowAddTask(true)} className="text-accent hover:underline">Add one</button></p>
                 : <div className="space-y-1 mt-1">
                     {tasks.map(task => (
                       <TaskRow key={task.id} task={task} equipId={equip.id} userId={userId} onRefresh={loadTasks} />
@@ -1864,7 +1864,7 @@ function TaskRow({ task, equipId, userId, onRefresh }) {
   };
 
   return (
-    <div className={`rounded border ${due?.overdue ? "border-red-900/40 bg-red-950/20" : "border-gray-700/30 bg-gray-900/20"}`}>
+    <div className={`rounded border ${due?.overdue ? "border-red-900/40 bg-red-950/20" : "border-subtle surface-panel"}`}>
       <div className="flex items-center gap-2 px-2.5 py-2">
         <div className="flex-1 min-w-0">
           {editing ? (
@@ -1884,25 +1884,25 @@ function TaskRow({ task, equipId, userId, onRefresh }) {
             </div>
           ) : (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm text-gray-300">{task.name}</span>
+              <span className="text-sm text-default">{task.name}</span>
               {task.interval_days && (
-                <span className="text-xs text-gray-600 bg-gray-800/60 rounded px-1.5 py-0.5">{fmtInterval(task.interval_days)}</span>
+                <span className="text-xs text-faint surface-card rounded px-1.5 py-0.5">{fmtInterval(task.interval_days)}</span>
               )}
               {due && <span className={`text-xs ${due.cls}`}>{due.label}</span>}
-              {task.last_done_at && <span className="text-xs text-gray-600">last: {fmtDate(task.last_done_at)}</span>}
+              {task.last_done_at && <span className="text-xs text-faint">last: {fmtDate(task.last_done_at)}</span>}
             </div>
           )}
         </div>
         {!editing && (
           <div className="flex items-center gap-1 shrink-0">
-            <button onClick={toggleExpand} className="p-1 text-gray-600 hover:text-gray-400" title="History">
+            <button onClick={toggleExpand} className="p-1 text-faint hover:text-[var(--ds-muted)]" title="History">
               <History size={13} />
             </button>
-            <button onClick={startEdit} className="p-1 text-gray-600 hover:text-gray-400" title="Edit">
+            <button onClick={startEdit} className="p-1 text-faint hover:text-[var(--ds-muted)]" title="Edit">
               <Edit3 size={13} />
             </button>
             <button onClick={() => setCompleting(c => !c)}
-              className={`flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors ${completing ? "bg-teal-700 text-white" : "bg-teal-900/40 text-teal-400 hover:bg-teal-800/60"}`}>
+              className={`flex items-center gap-1 text-xs px-2 py-1 rounded transition-colors ${completing ? "bg-[var(--ds-accent)] text-on-accent" : "surface-card text-accent hover:bg-[var(--ds-accent-hover)]/60"}`}>
               <CheckCircle2 size={13} />Done
             </button>
           </div>
@@ -1910,7 +1910,7 @@ function TaskRow({ task, equipId, userId, onRefresh }) {
       </div>
 
       {completing && (
-        <div className="px-2.5 pb-2 flex items-center gap-2 border-t border-gray-700/30 pt-1.5">
+        <div className="px-2.5 pb-2 flex items-center gap-2 border-t border-subtle pt-1.5">
           <input value={completeNotes} onChange={e => setCompleteNotes(e.target.value)}
             placeholder="Notes (optional)" className={`${inp} flex-1 text-xs`} />
           <button onClick={markDone} disabled={saving} className={btnPrimary}>
@@ -1921,17 +1921,17 @@ function TaskRow({ task, equipId, userId, onRefresh }) {
       )}
 
       {expanded && (
-        <div className="px-2.5 pb-2 border-t border-gray-700/20 pt-1.5">
+        <div className="px-2.5 pb-2 border-t border-subtle pt-1.5">
           {loadingLog
-            ? <div className="flex justify-center py-2"><Loader2 className="animate-spin text-gray-600" size={13} /></div>
+            ? <div className="flex justify-center py-2"><Loader2 className="animate-spin text-faint" size={13} /></div>
             : log.length === 0
-              ? <p className="text-xs text-gray-600">No completions logged yet.</p>
+              ? <p className="text-xs text-faint">No completions logged yet.</p>
               : <div className="space-y-0.5">
                   {log.map(entry => (
-                    <div key={entry.id} className="flex items-center gap-2 text-xs text-gray-500">
-                      <CheckCircle2 size={11} className="text-teal-700 shrink-0" />
+                    <div key={entry.id} className="flex items-center gap-2 text-xs text-faint">
+                      <CheckCircle2 size={11} className="text-accent shrink-0" />
                       <span>{fmtDate(entry.completed_at)}</span>
-                      {entry.notes && <span className="text-gray-600">— {entry.notes}</span>}
+                      {entry.notes && <span className="text-faint">— {entry.notes}</span>}
                     </div>
                   ))}
                 </div>
@@ -1962,9 +1962,9 @@ function AddEquipmentModal({ members, userId, defaultMemberId, onClose, onSave }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 w-[440px] space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <h3 className="text-base font-bold text-gray-200">Add Equipment</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center surface-overlay" onClick={onClose}>
+      <div className="surface-card border border-subtle rounded-lg p-4 w-[440px] space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <h3 className="text-base font-bold text-default">Add Equipment</h3>
         <div className="grid grid-cols-2 gap-2">
           <Field label="For">
             <select value={form.member_id} onChange={e => setForm(f => ({...f, member_id: e.target.value}))} className={inp}>
@@ -2025,9 +2025,9 @@ function AddTaskModal({ equipId, userId, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 w-[400px] space-y-3" onClick={e => e.stopPropagation()}>
-        <h3 className="text-base font-bold text-gray-200">Add Maintenance Task</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center surface-overlay" onClick={onClose}>
+      <div className="surface-card border border-subtle rounded-lg p-4 w-[400px] space-y-3" onClick={e => e.stopPropagation()}>
+        <h3 className="text-base font-bold text-default">Add Maintenance Task</h3>
         <div className="grid grid-cols-2 gap-2">
           <Field label="Task Name">
             <input value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} className={inp} placeholder="Replace filter" />
@@ -2083,9 +2083,9 @@ function AddApptModal({ members, userId, defaultMemberId, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 w-[480px] space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <h3 className="text-base font-bold text-gray-200">Schedule Appointment</h3>
+    <div className="fixed inset-0 z-50 flex items-center justify-center surface-overlay" onClick={onClose}>
+      <div className="surface-card border border-subtle rounded-lg p-4 w-[480px] space-y-3 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <h3 className="text-base font-bold text-default">Schedule Appointment</h3>
         <div className="grid grid-cols-2 gap-2">
           <Field label="For">
             <select value={form.member_id} onChange={e => setForm(f => ({...f, member_id: e.target.value}))} className={inp}>
@@ -2113,8 +2113,8 @@ function AddApptModal({ members, userId, defaultMemberId, onClose, onSave }) {
         <Field label="Notes">
           <textarea value={form.notes} onChange={e => setForm(f => ({...f, notes: e.target.value}))} rows={2} className={inp} />
         </Field>
-        <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-900/40 rounded px-2 py-1.5">
-          <Bell size={12} className="text-teal-500 shrink-0" />
+        <div className="flex items-center gap-2 text-xs text-faint surface-panel rounded px-2 py-1.5">
+          <Bell size={12} className="text-accent shrink-0" />
           Reminders will be sent 24 hours before and 2 hours before this appointment.
         </div>
         <div className="flex justify-end gap-2 pt-1">

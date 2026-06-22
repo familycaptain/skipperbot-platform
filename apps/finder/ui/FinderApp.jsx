@@ -107,7 +107,7 @@ const SEARCH_SOURCES = [
     key: "schedules",
     label: "Schedules",
     icon: CalendarClock,
-    color: "text-cyan-400",
+    color: "text-accent",
     fetch: async (q) => {
       const res = await fetch("/api/apps/schedules");
       if (!res.ok) return [];
@@ -353,7 +353,7 @@ export default function FinderApp({ appId, userId, context = {}, onTitle, onOpen
       {/* Search bar */}
       <div className="px-4 pt-4 pb-2 shrink-0">
         <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-faint" />
           <input
             ref={inputRef}
             type="text"
@@ -362,10 +362,10 @@ export default function FinderApp({ appId, userId, context = {}, onTitle, onOpen
             onKeyDown={handleKeyDown}
             placeholder="Search everything..."
             autoFocus
-            className="w-full pl-9 pr-9 py-2.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-sm text-slate-200 placeholder-slate-500 outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/30 transition-all"
+            className="w-full pl-9 pr-9 py-2.5 rounded-lg surface-card border border-subtle text-sm text-default placeholder-slate-500 outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/30 transition-all"
           />
           {query && (
-            <button onClick={handleClear} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300">
+            <button onClick={handleClear} className="absolute right-3 top-1/2 -translate-y-1/2 text-faint hover:text-[var(--ds-text)]">
               <X size={14} />
             </button>
           )}
@@ -388,22 +388,22 @@ export default function FinderApp({ appId, userId, context = {}, onTitle, onOpen
       {/* Results area */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
         {loading && (
-          <div className="flex items-center justify-center py-12 text-slate-500">
+          <div className="flex items-center justify-center py-12 text-faint">
             <Loader2 size={20} className="animate-spin mr-2" />
             <span className="text-sm">Searching...</span>
           </div>
         )}
 
         {!loading && results === null && (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+          <div className="flex flex-col items-center justify-center py-16 text-faint">
             <Search size={32} className="mb-3 opacity-40" />
             <p className="text-sm">Search across all your goals, documents, recipes, and more</p>
-            <p className="text-xs text-slate-600 mt-1">Type at least 2 characters to search</p>
+            <p className="text-xs text-faint mt-1">Type at least 2 characters to search</p>
           </div>
         )}
 
         {!loading && results !== null && totalResults === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-500">
+          <div className="flex flex-col items-center justify-center py-16 text-faint">
             <Search size={32} className="mb-3 opacity-40" />
             <p className="text-sm">No results for &ldquo;{query.trim()}&rdquo;</p>
             {activeFilter !== "all" && (
@@ -431,8 +431,8 @@ export default function FinderApp({ appId, userId, context = {}, onTitle, onOpen
                   {/* Section header */}
                   <div className="flex items-center gap-2 mb-1.5">
                     <Icon size={14} className={src.color} />
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{src.label}</span>
-                    <span className="text-xs text-slate-600">({items.length})</span>
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wider">{src.label}</span>
+                    <span className="text-xs text-faint">({items.length})</span>
                   </div>
                   {/* Result cards */}
                   <div className="space-y-1">
@@ -440,16 +440,16 @@ export default function FinderApp({ appId, userId, context = {}, onTitle, onOpen
                       <button
                         key={item.id}
                         onClick={() => item.open(onOpenApp)}
-                        className="w-full text-left px-3 py-2 rounded-md bg-slate-800/50 hover:bg-slate-700/60 border border-slate-800 hover:border-slate-700 transition-colors group"
+                        className="w-full text-left px-3 py-2 rounded-md surface-card hover:bg-[var(--ds-raised)] border border-subtle hover:border-[var(--ds-border)] transition-colors group"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-slate-200 truncate flex-1 group-hover:text-white">
+                          <span className="text-sm text-default truncate flex-1 group-hover:text-[var(--ds-text)]">
                             {item.title}
                           </span>
-                          <span className="text-[10px] text-slate-600 font-mono shrink-0">{item.id}</span>
+                          <span className="text-[10px] text-faint font-mono shrink-0">{item.id}</span>
                         </div>
                         {item.subtitle && (
-                          <div className="text-xs text-slate-500 mt-0.5 truncate">{item.subtitle}</div>
+                          <div className="text-xs text-faint mt-0.5 truncate">{item.subtitle}</div>
                         )}
                       </button>
                     ))}
@@ -463,22 +463,22 @@ export default function FinderApp({ appId, userId, context = {}, onTitle, onOpen
               return (
                 <div key={key}>
                   <div className="flex items-center gap-2 mb-1.5">
-                    <Search size={14} className="text-slate-400" />
-                    <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{key}</span>
-                    <span className="text-xs text-slate-600">({items.length})</span>
+                    <Search size={14} className="text-muted" />
+                    <span className="text-xs font-semibold text-muted uppercase tracking-wider">{key}</span>
+                    <span className="text-xs text-faint">({items.length})</span>
                   </div>
                   <div className="space-y-1">
                     {items.map((item) => (
                       <button
                         key={item.id}
                         onClick={() => item.open(onOpenApp)}
-                        className="w-full text-left px-3 py-2 rounded-md bg-slate-800/50 hover:bg-slate-700/60 border border-slate-800 hover:border-slate-700 transition-colors group"
+                        className="w-full text-left px-3 py-2 rounded-md surface-card hover:bg-[var(--ds-raised)] border border-subtle hover:border-[var(--ds-border)] transition-colors group"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-slate-200 truncate flex-1 group-hover:text-white">{item.title}</span>
-                          <span className="text-[10px] text-slate-600 font-mono shrink-0">{item.id}</span>
+                          <span className="text-sm text-default truncate flex-1 group-hover:text-[var(--ds-text)]">{item.title}</span>
+                          <span className="text-[10px] text-faint font-mono shrink-0">{item.id}</span>
                         </div>
-                        {item.subtitle && <div className="text-xs text-slate-500 mt-0.5 truncate">{item.subtitle}</div>}
+                        {item.subtitle && <div className="text-xs text-faint mt-0.5 truncate">{item.subtitle}</div>}
                       </button>
                     ))}
                   </div>
@@ -499,8 +499,8 @@ function FilterBubble({ label, active, onClick }) {
       onClick={onClick}
       className={`px-2.5 py-1 rounded-full text-xs transition-colors ${
         active
-          ? "bg-indigo-600/80 text-white"
-          : "bg-slate-800/60 text-slate-400 hover:bg-slate-700/60 hover:text-slate-300"
+          ? "bg-indigo-600/80 text-on-accent"
+          : "surface-card text-muted hover:bg-[var(--ds-raised)] hover:text-[var(--ds-text)]"
       }`}
     >
       {label}

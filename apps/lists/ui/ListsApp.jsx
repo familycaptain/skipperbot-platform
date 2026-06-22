@@ -87,40 +87,40 @@ export default function ListsApp({ appId, userId, context = {}, refreshKey, isAc
   }
 
   return (
-    <div className="flex flex-col h-full w-full text-sm text-gray-200 overflow-hidden">
+    <div className="flex flex-col h-full w-full text-sm text-default overflow-hidden">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
+      <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <List size={16} className="text-sky-400 shrink-0" />
+          <List size={16} className="text-accent shrink-0" />
           <div className="relative flex-1 max-w-xs">
-            <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-faint" />
             <input
               type="text"
               placeholder="Search lists & items..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setActiveSource(""); }}
-              className="w-full bg-slate-800/60 text-sm text-white pl-7 pr-2 py-1 rounded border border-slate-700 outline-none focus:border-sky-500"
+              className="w-full surface-card text-sm text-default pl-7 pr-2 py-1 rounded border border-subtle outline-none focus:border-subtle"
             />
           </div>
         </div>
         <div className="flex items-center gap-1.5">
           <button
             onClick={() => setShowTrelloSettings(true)}
-            className="p-1.5 rounded hover:bg-slate-700 text-slate-400 hover:text-sky-400 transition-colors"
+            className="p-1.5 rounded hover:bg-[var(--ds-raised)] text-muted hover:text-accent transition-colors"
             title="Trello settings"
           >
             <Trello size={13} />
           </button>
           <button
             onClick={loadLists}
-            className="p-1.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+            className="p-1.5 rounded hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] transition-colors"
             title="Refresh"
           >
             <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
           </button>
           <button
             onClick={() => setShowNewForm(f => !f)}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-sky-600 hover:bg-sky-500 text-white rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-[var(--ds-accent)] hover:bg-[var(--ds-accent)] text-on-accent rounded transition-colors"
           >
             <Plus size={12} /> New
           </button>
@@ -128,11 +128,11 @@ export default function ListsApp({ appId, userId, context = {}, refreshKey, isAc
       </div>
 
       {/* ── Source filter bubbles ── */}
-      <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-900/20 border-b border-slate-800/50 overflow-x-auto shrink-0">
+      <div className="flex items-center gap-1.5 px-3 py-2 surface-panel border-b border-subtle overflow-x-auto shrink-0">
         <button
           onClick={() => setActiveSource("")}
           className={`px-2.5 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
-            !activeSource ? "bg-sky-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
+            !activeSource ? "bg-[var(--ds-accent)] text-on-accent" : "surface-card text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)]"
           }`}
         >
           All
@@ -140,7 +140,7 @@ export default function ListsApp({ appId, userId, context = {}, refreshKey, isAc
         <button
           onClick={() => { setActiveSource("standalone"); setSearchQuery(""); }}
           className={`px-2.5 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
-            activeSource === "standalone" ? "bg-sky-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
+            activeSource === "standalone" ? "bg-[var(--ds-accent)] text-on-accent" : "surface-card text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)]"
           }`}
         >
           Standalone
@@ -150,7 +150,7 @@ export default function ListsApp({ appId, userId, context = {}, refreshKey, isAc
             key={b}
             onClick={() => { setActiveSource(b); setSearchQuery(""); }}
             className={`px-2.5 py-1 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${
-              activeSource === b ? "bg-sky-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
+              activeSource === b ? "bg-[var(--ds-accent)] text-on-accent" : "surface-card text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)]"
             }`}
           >
             <ExternalLink size={9} className="opacity-60" />
@@ -171,11 +171,11 @@ export default function ListsApp({ appId, userId, context = {}, refreshKey, isAc
       {/* ── List content ── */}
       <div className="flex-1 overflow-y-auto p-3 space-y-4">
         {loading && lists.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-slate-400">
+          <div className="flex items-center justify-center h-32 text-muted">
             <Loader2 size={18} className="animate-spin mr-2" /> Loading lists...
           </div>
         ) : lists.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-slate-500 text-sm">
+          <div className="flex flex-col items-center justify-center h-32 text-faint text-sm">
             <List size={32} className="mb-2 opacity-40" />
             {searchQuery ? "No lists match your search." : "No lists yet. Create one or connect a Trello board via chat."}
           </div>
@@ -184,10 +184,10 @@ export default function ListsApp({ appId, userId, context = {}, refreshKey, isAc
             <div key={group.key}>
               {/* Group header */}
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{group.label}</h3>
-                <span className="text-[10px] text-slate-600">({group.lists.length} {group.lists.length === 1 ? "list" : "lists"})</span>
+                <h3 className="text-xs font-semibold text-muted uppercase tracking-wider">{group.label}</h3>
+                <span className="text-[10px] text-faint">({group.lists.length} {group.lists.length === 1 ? "list" : "lists"})</span>
                 {group.trello && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-900/30 text-sky-400 border border-sky-700/30">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded surface-card text-accent border border-subtle">
                     ↔ Trello
                   </span>
                 )}
@@ -326,21 +326,21 @@ function ListCard({ lst, expanded, onToggle, userId, onRefresh }) {
   const archivedItems = detail?.archived_items || [];
 
   return (
-    <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 transition-colors hover:border-slate-600/50">
+    <div className="rounded-lg border border-subtle surface-card transition-colors hover:border-[var(--ds-border)]">
       {/* ── Collapsed header ── */}
       <button
         onClick={onToggle}
         className="w-full text-left flex items-center gap-3 px-3 py-2.5 group"
       >
-        <div className="shrink-0 text-slate-500 transition-transform" style={{ transform: expanded ? "rotate(90deg)" : "" }}>
+        <div className="shrink-0 text-faint transition-transform" style={{ transform: expanded ? "rotate(90deg)" : "" }}>
           <ChevronRight size={14} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-white truncate">{lst.name}</span>
-            <span className="text-[10px] text-slate-500">{lst.item_count} {lst.item_count === 1 ? "item" : "items"}</span>
+            <span className="text-sm font-medium text-default truncate">{lst.name}</span>
+            <span className="text-[10px] text-faint">{lst.item_count} {lst.item_count === 1 ? "item" : "items"}</span>
             {lst.aliases?.length > 0 && (
-              <span className="text-[10px] text-slate-600 flex items-center gap-0.5">
+              <span className="text-[10px] text-faint flex items-center gap-0.5">
                 <Tag size={8} />
                 {lst.aliases.join(", ")}
               </span>
@@ -348,14 +348,14 @@ function ListCard({ lst, expanded, onToggle, userId, onRefresh }) {
           </div>
           {/* Inline preview when collapsed */}
           {!expanded && previewItems.length > 0 && (
-            <div className="mt-1 text-xs text-slate-500 truncate">
+            <div className="mt-1 text-xs text-faint truncate">
               {previewItems.map(i => i.text).join(" · ")}
-              {extraCount > 0 && <span className="text-slate-600"> +{extraCount} more</span>}
+              {extraCount > 0 && <span className="text-faint"> +{extraCount} more</span>}
             </div>
           )}
         </div>
         {isTrello && (
-          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-sky-900/20 text-sky-500 border border-sky-800/30">
+          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded surface-card text-accent border border-subtle">
             {lst.trello.board}
           </span>
         )}
@@ -363,13 +363,13 @@ function ListCard({ lst, expanded, onToggle, userId, onRefresh }) {
 
       {/* ── Expanded detail ── */}
       {expanded && (
-        <div className="border-t border-slate-700/30 px-3 pb-3">
+        <div className="border-t border-subtle px-3 pb-3">
           {/* Trello info line */}
           {isTrello && lst.trello && (
-            <div className="text-[11px] text-slate-500 pt-2 pb-1">
+            <div className="text-[11px] text-faint pt-2 pb-1">
               Trello: {lst.trello.board} / {lst.trello.list_name}
               {lst.trello.last_sync && (
-                <span className="ml-2 text-slate-600">· synced {fmtRelative(lst.trello.last_sync)}</span>
+                <span className="ml-2 text-faint">· synced {fmtRelative(lst.trello.last_sync)}</span>
               )}
             </div>
           )}
@@ -382,12 +382,12 @@ function ListCard({ lst, expanded, onToggle, userId, onRefresh }) {
               value={addText}
               onChange={(e) => setAddText(e.target.value)}
               placeholder="Add item..."
-              className="flex-1 bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded border border-slate-700 outline-none focus:border-sky-500"
+              className="flex-1 surface-card text-default text-xs px-2.5 py-1.5 rounded border border-subtle outline-none focus:border-subtle"
             />
             <button
               type="submit"
               disabled={adding || !addText.trim()}
-              className="px-2.5 py-1.5 text-xs bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white rounded transition-colors"
+              className="px-2.5 py-1.5 text-xs bg-[var(--ds-accent)] hover:bg-[var(--ds-accent)] disabled:opacity-40 text-on-accent rounded transition-colors"
             >
               {adding ? <Loader2 size={12} className="animate-spin" /> : "Add"}
             </button>
@@ -395,11 +395,11 @@ function ListCard({ lst, expanded, onToggle, userId, onRefresh }) {
 
           {/* Item list */}
           {!detail ? (
-            <div className="flex items-center justify-center py-4 text-slate-500">
+            <div className="flex items-center justify-center py-4 text-faint">
               <Loader2 size={14} className="animate-spin mr-1.5" /> Loading...
             </div>
           ) : items.length === 0 ? (
-            <p className="text-xs text-slate-600 italic py-2">Empty list</p>
+            <p className="text-xs text-faint italic py-2">Empty list</p>
           ) : (
             <div className="space-y-0.5">
               {items.map((item, idx) => (
@@ -421,7 +421,7 @@ function ListCard({ lst, expanded, onToggle, userId, onRefresh }) {
             <div className="mt-2">
               <button
                 onClick={() => setShowArchived(!showArchived)}
-                className="flex items-center gap-1 text-[10px] text-slate-600 hover:text-slate-400 transition-colors"
+                className="flex items-center gap-1 text-[10px] text-faint hover:text-[var(--ds-muted)] transition-colors"
               >
                 <ChevronDown size={10} className={`transition-transform ${showArchived ? "" : "-rotate-90"}`} />
                 Archived ({archivedItems.length})
@@ -429,7 +429,7 @@ function ListCard({ lst, expanded, onToggle, userId, onRefresh }) {
               {showArchived && (
                 <div className="mt-1 space-y-0.5 pl-5">
                   {archivedItems.map((item) => (
-                    <div key={item.id} className="text-xs text-slate-600 line-through py-0.5">
+                    <div key={item.id} className="text-xs text-faint line-through py-0.5">
                       {item.text}
                     </div>
                   ))}
@@ -439,12 +439,12 @@ function ListCard({ lst, expanded, onToggle, userId, onRefresh }) {
           )}
 
           {/* Action bar */}
-          <div className="flex items-center gap-2 mt-3 pt-2 border-t border-slate-700/30">
+          <div className="flex items-center gap-2 mt-3 pt-2 border-t border-subtle">
             {isTrello && (
               <button
                 onClick={handleSync}
                 disabled={syncing}
-                className="flex items-center gap-1 px-2 py-1 text-[11px] rounded bg-slate-700/50 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+                className="flex items-center gap-1 px-2 py-1 text-[11px] rounded surface-raised hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] transition-colors"
               >
                 <RefreshCw size={10} className={syncing ? "animate-spin" : ""} />
                 Sync
@@ -452,18 +452,18 @@ function ListCard({ lst, expanded, onToggle, userId, onRefresh }) {
             )}
             <button
               onClick={() => printList(lst.name, items)}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] rounded bg-slate-700/50 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-[11px] rounded surface-raised hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] transition-colors"
               title="Print this list"
             >
               <Printer size={10} />
               Print
             </button>
             <div className="flex-1" />
-            <span className="text-[10px] text-slate-600 font-mono">{lst.id}</span>
+            <span className="text-[10px] text-faint font-mono">{lst.id}</span>
             <button
               onClick={handleDelete}
               disabled={deleting}
-              className="flex items-center gap-1 px-2 py-1 text-[11px] rounded hover:bg-red-900/30 text-slate-500 hover:text-red-400 transition-colors"
+              className="flex items-center gap-1 px-2 py-1 text-[11px] rounded hover:bg-red-900/30 text-faint hover:text-red-400 transition-colors"
             >
               <Trash2 size={10} />
               Delete
@@ -509,8 +509,8 @@ function ListItemRow({ item, idx, total, onEdit, onMove, onRemove }) {
   }
 
   return (
-    <div className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-700/30 group/item transition-colors">
-      <span className="text-[10px] text-slate-600 w-5 text-right shrink-0">{idx + 1}.</span>
+    <div className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-[var(--ds-raised)] group/item transition-colors">
+      <span className="text-[10px] text-faint w-5 text-right shrink-0">{idx + 1}.</span>
       {editing ? (
         <input
           ref={editRef}
@@ -519,11 +519,11 @@ function ListItemRow({ item, idx, total, onEdit, onMove, onRemove }) {
           onChange={(e) => setEditText(e.target.value)}
           onBlur={commitEdit}
           onKeyDown={handleKeyDown}
-          className="flex-1 bg-slate-800 text-white text-xs px-2 py-1 rounded border border-sky-500 outline-none min-w-0"
+          className="flex-1 surface-card text-default text-xs px-2 py-1 rounded border border-subtle outline-none min-w-0"
         />
       ) : (
         <span
-          className="flex-1 text-xs text-slate-200 min-w-0 cursor-pointer hover:text-white"
+          className="flex-1 text-xs text-default min-w-0 cursor-pointer hover:text-[var(--ds-text)]"
           onDoubleClick={startEdit}
           title="Double-click to edit"
         >
@@ -531,13 +531,13 @@ function ListItemRow({ item, idx, total, onEdit, onMove, onRemove }) {
         </span>
       )}
       {!editing && item.added_by && item.added_by !== "trello_sync" && (
-        <span className="text-[10px] text-slate-600 shrink-0">{item.added_by}</span>
+        <span className="text-[10px] text-faint shrink-0">{item.added_by}</span>
       )}
       {!editing && (
         <div className="flex items-center gap-0 opacity-0 group-hover/item:opacity-100 transition-all shrink-0">
           <button
             onClick={startEdit}
-            className="p-0.5 rounded hover:bg-slate-600/50 text-slate-500 hover:text-white transition-colors"
+            className="p-0.5 rounded hover:bg-[var(--ds-raised)] text-faint hover:text-[var(--ds-text)] transition-colors"
             title="Edit"
           >
             <Pencil size={11} />
@@ -545,7 +545,7 @@ function ListItemRow({ item, idx, total, onEdit, onMove, onRemove }) {
           <button
             onClick={() => onMove(item.id, idx - 1)}
             disabled={idx === 0}
-            className="p-0.5 rounded hover:bg-slate-600/50 text-slate-500 hover:text-white disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-colors"
+            className="p-0.5 rounded hover:bg-[var(--ds-raised)] text-faint hover:text-[var(--ds-text)] disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-[var(--ds-faint)] transition-colors"
             title="Move up"
           >
             <ChevronUp size={11} />
@@ -553,7 +553,7 @@ function ListItemRow({ item, idx, total, onEdit, onMove, onRemove }) {
           <button
             onClick={() => onMove(item.id, idx + 1)}
             disabled={idx === total - 1}
-            className="p-0.5 rounded hover:bg-slate-600/50 text-slate-500 hover:text-white disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-slate-500 transition-colors"
+            className="p-0.5 rounded hover:bg-[var(--ds-raised)] text-faint hover:text-[var(--ds-text)] disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-[var(--ds-faint)] transition-colors"
             title="Move down"
           >
             <ChevronDown size={11} />
@@ -563,7 +563,7 @@ function ListItemRow({ item, idx, total, onEdit, onMove, onRemove }) {
       {!editing && (
         <button
           onClick={() => onRemove(item.id)}
-          className="p-0.5 rounded opacity-0 group-hover/item:opacity-100 hover:bg-red-900/30 text-slate-500 hover:text-red-400 transition-all shrink-0"
+          className="p-0.5 rounded opacity-0 group-hover/item:opacity-100 hover:bg-red-900/30 text-faint hover:text-red-400 transition-all shrink-0"
           title="Remove"
         >
           <X size={11} />
@@ -598,26 +598,26 @@ function NewListForm({ userId, onCreated, onCancel }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex items-center gap-2 px-3 py-2 bg-slate-900/40 border-b border-slate-800">
+    <form onSubmit={handleSubmit} className="flex items-center gap-2 px-3 py-2 surface-panel border-b border-subtle">
       <input
         ref={ref}
         type="text"
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="New list name..."
-        className="flex-1 bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded border border-slate-700 outline-none focus:border-sky-500"
+        className="flex-1 surface-card text-default text-xs px-2.5 py-1.5 rounded border border-subtle outline-none focus:border-subtle"
       />
       <button
         type="submit"
         disabled={creating || !name.trim()}
-        className="px-3 py-1.5 text-xs bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white rounded transition-colors"
+        className="px-3 py-1.5 text-xs bg-[var(--ds-accent)] hover:bg-[var(--ds-accent)] disabled:opacity-40 text-on-accent rounded transition-colors"
       >
         {creating ? <Loader2 size={12} className="animate-spin" /> : "Create"}
       </button>
       <button
         type="button"
         onClick={onCancel}
-        className="px-2 py-1.5 text-xs text-slate-400 hover:text-white rounded hover:bg-slate-700 transition-colors"
+        className="px-2 py-1.5 text-xs text-muted hover:text-[var(--ds-text)] rounded hover:bg-[var(--ds-raised)] transition-colors"
       >
         Cancel
       </button>

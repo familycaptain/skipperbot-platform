@@ -224,19 +224,19 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
   // ── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-full w-full bg-gray-950 text-gray-100">
+    <div className="flex flex-col h-full w-full surface-page text-default">
       {/* ── Toolbar ────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-gray-800 bg-gray-900/60 flex-wrap">
+      <div className="flex items-center gap-2 px-4 py-2 border-b border-subtle surface-panel flex-wrap">
 
         {/* Feed mode toggle */}
-        <div className="flex items-center rounded overflow-hidden border border-gray-700 flex-shrink-0">
+        <div className="flex items-center rounded overflow-hidden border border-subtle flex-shrink-0">
           <button
             onClick={() => setFeedMode("family")}
             title="Family feed — shared posts visible to everyone"
             className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
               feedMode === "family"
-                ? "bg-violet-600 text-white"
-                : "bg-gray-800 text-gray-400 hover:text-gray-200"
+                ? "bg-violet-600 text-on-accent"
+                : "surface-card text-muted hover:text-[var(--ds-text)]"
             }`}
           >
             <Users size={12} /> Family
@@ -244,10 +244,10 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
           <button
             onClick={() => setFeedMode("activity")}
             title="Personal activity log — auto-logged CRUD events"
-            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-gray-700 ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors border-l border-subtle ${
               feedMode === "activity"
-                ? "bg-emerald-700 text-white"
-                : "bg-gray-800 text-gray-400 hover:text-gray-200"
+                ? "bg-emerald-700 text-on-accent"
+                : "surface-card text-muted hover:text-[var(--ds-text)]"
             }`}
           >
             <Activity size={12} /> Activity
@@ -266,12 +266,12 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
               <ChevronDown size={12} />
             </button>
             {showActivityAuthorDropdown && (
-              <div className="absolute left-0 top-full mt-1 w-40 bg-gray-800 border border-gray-700 rounded shadow-xl z-50 max-h-60 overflow-y-auto">
+              <div className="absolute left-0 top-full mt-1 w-40 surface-card border border-subtle rounded shadow-xl z-50 max-h-60 overflow-y-auto">
                 {userId && (
                   <button
                     onClick={() => { setActivityAuthor(userId); setShowActivityAuthorDropdown(false); }}
-                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 capitalize ${
-                      activityAuthor === userId ? "text-emerald-300 bg-emerald-700/10" : "text-gray-300"
+                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--ds-raised)] capitalize ${
+                      activityAuthor === userId ? "text-emerald-300 bg-emerald-700/10" : "text-default"
                     }`}
                   >
                     {userId} (me)
@@ -281,8 +281,8 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
                   <button
                     key={a.author_id}
                     onClick={() => { setActivityAuthor(a.author_id); setShowActivityAuthorDropdown(false); }}
-                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 capitalize ${
-                      activityAuthor === a.author_id ? "text-emerald-300 bg-emerald-700/10" : "text-gray-300"
+                    className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--ds-raised)] capitalize ${
+                      activityAuthor === a.author_id ? "text-emerald-300 bg-emerald-700/10" : "text-default"
                     }`}
                   >
                     {a.author_id}
@@ -296,17 +296,17 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
         {/* Search */}
         <form onSubmit={handleSearch} className="flex items-center gap-1 flex-1 min-w-[180px]">
           <div className="relative flex-1">
-            <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
+            <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-faint" />
             <input
               type="text"
               placeholder="Search posts…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-7 pr-2 py-1.5 text-xs rounded bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-violet-500"
+              className="w-full pl-7 pr-2 py-1.5 text-xs rounded surface-card border border-subtle text-default placeholder-gray-500 focus:outline-none focus:border-violet-500"
             />
           </div>
           {activeSearch && (
-            <button onClick={clearSearch} className="text-gray-500 hover:text-gray-300" title="Clear search">
+            <button onClick={clearSearch} className="text-faint hover:text-[var(--ds-text)]" title="Clear search">
               <X size={14} />
             </button>
           )}
@@ -317,18 +317,18 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
           <button
             onClick={() => { setShowTagDropdown(!showTagDropdown); }}
             className={`flex items-center gap-1 px-2 py-1.5 text-xs rounded border ${
-              tagFilter ? "border-violet-500 bg-violet-500/20 text-violet-300" : "border-gray-700 bg-gray-800 text-gray-400"
-            } hover:border-gray-500`}
+              tagFilter ? "border-violet-500 bg-violet-500/20 text-violet-300" : "border-subtle surface-card text-muted"
+            } hover:border-[var(--ds-border)]`}
           >
             <Tag size={12} />
             {tagFilter ? `#${tagFilter}` : "Tags"}
             <ChevronDown size={12} />
           </button>
           {showTagDropdown && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-gray-800 border border-gray-700 rounded shadow-xl z-50 max-h-60 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-48 surface-card border border-subtle rounded shadow-xl z-50 max-h-60 overflow-y-auto">
               <button
                 onClick={() => { setTagFilter(""); setShowTagDropdown(false); }}
-                className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 text-gray-400"
+                className="w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--ds-raised)] text-muted"
               >
                 All tags
               </button>
@@ -336,15 +336,15 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
                 <button
                   key={t.tag}
                   onClick={() => { setTagFilter(t.tag); setShowTagDropdown(false); }}
-                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 ${
-                    tagFilter === t.tag ? "text-violet-300 bg-violet-500/10" : "text-gray-300"
+                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--ds-raised)] ${
+                    tagFilter === t.tag ? "text-violet-300 bg-violet-500/10" : "text-default"
                   }`}
                 >
-                  #{t.tag} <span className="text-gray-500 ml-1">({t.post_count})</span>
+                  #{t.tag} <span className="text-faint ml-1">({t.post_count})</span>
                 </button>
               ))}
               {allTags.length === 0 && (
-                <div className="px-3 py-2 text-xs text-gray-500">No tags yet</div>
+                <div className="px-3 py-2 text-xs text-faint">No tags yet</div>
               )}
             </div>
           )}
@@ -355,18 +355,18 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
           <button
             onClick={() => { setShowAuthorDropdown(!showAuthorDropdown); }}
             className={`flex items-center gap-1 px-2 py-1.5 text-xs rounded border ${
-              authorFilter ? "border-blue-500 bg-blue-500/20 text-blue-300" : "border-gray-700 bg-gray-800 text-gray-400"
-            } hover:border-gray-500`}
+              authorFilter ? "border-blue-500 bg-blue-500/20 text-blue-300" : "border-subtle surface-card text-muted"
+            } hover:border-[var(--ds-border)]`}
           >
             <User size={12} />
             {authorFilter ? authorFilter : "Author"}
             <ChevronDown size={12} />
           </button>
           {showAuthorDropdown && (
-            <div className="absolute right-0 top-full mt-1 w-48 bg-gray-800 border border-gray-700 rounded shadow-xl z-50 max-h-60 overflow-y-auto">
+            <div className="absolute right-0 top-full mt-1 w-48 surface-card border border-subtle rounded shadow-xl z-50 max-h-60 overflow-y-auto">
               <button
                 onClick={() => { setAuthorFilter(""); setShowAuthorDropdown(false); }}
-                className="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 text-gray-400"
+                className="w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--ds-raised)] text-muted"
               >
                 All authors
               </button>
@@ -374,11 +374,11 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
                 <button
                   key={a.author_id}
                   onClick={() => { setAuthorFilter(a.author_id); setShowAuthorDropdown(false); }}
-                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-gray-700 capitalize ${
-                    authorFilter === a.author_id ? "text-blue-300 bg-blue-500/10" : "text-gray-300"
+                  className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--ds-raised)] capitalize ${
+                    authorFilter === a.author_id ? "text-blue-300 bg-blue-500/10" : "text-default"
                   }`}
                 >
-                  {a.author_id} <span className="text-gray-500 ml-1">({a.post_count})</span>
+                  {a.author_id} <span className="text-faint ml-1">({a.post_count})</span>
                 </button>
               ))}
             </div>
@@ -391,13 +391,13 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
             type="date"
             value={dateFilter}
             onChange={(e) => setDateFilter(e.target.value)}
-            className="px-2 py-1.5 text-xs rounded border border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-500 focus:outline-none focus:border-violet-500"
+            className="px-2 py-1.5 text-xs rounded border border-subtle surface-card text-muted hover:border-[var(--ds-border)] focus:outline-none focus:border-violet-500"
             title="Jump to date"
           />
         </div>
 
         {/* Post count */}
-        <span className="text-xs text-gray-500">
+        <span className="text-xs text-faint">
           {total} {feedMode === "activity" ? `entr${total !== 1 ? "ies" : "y"}` : `post${total !== 1 ? "s" : ""}`}
         </span>
 
@@ -405,7 +405,7 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
         <button
           onClick={() => loadFeed(true)}
           disabled={loading}
-          className="p-1.5 rounded border border-gray-700 bg-gray-800 text-gray-400 hover:text-gray-200 hover:border-gray-500 disabled:opacity-40"
+          className="p-1.5 rounded border border-subtle surface-card text-muted hover:text-[var(--ds-text)] hover:border-[var(--ds-border)] disabled:opacity-40"
           title="Refresh"
         >
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
@@ -415,7 +415,7 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
         {feedMode === "family" && (
           <button
             onClick={() => { setEditingPost(null); setShowComposer(true); }}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs rounded bg-violet-600 hover:bg-violet-500 text-white font-medium"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs rounded bg-violet-600 hover:bg-violet-500 text-on-accent font-medium"
           >
             <Plus size={14} /> New Post
           </button>
@@ -429,12 +429,12 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
 
       {/* ── Active filters bar ─────────────────────────────────────── */}
       {(activeSearch || tagFilter || authorFilter || dateFilter) && (
-        <div className="flex items-center gap-2 px-4 py-1.5 bg-gray-900/40 border-b border-gray-800 text-xs">
-          <Filter size={12} className="text-gray-500" />
+        <div className="flex items-center gap-2 px-4 py-1.5 surface-panel border-b border-subtle text-xs">
+          <Filter size={12} className="text-faint" />
           {activeSearch && (
-            <span className="bg-gray-800 px-2 py-0.5 rounded text-gray-300">
+            <span className="surface-card px-2 py-0.5 rounded text-default">
               Search: "{activeSearch}"
-              <button onClick={clearSearch} className="ml-1 text-gray-500 hover:text-gray-300">×</button>
+              <button onClick={clearSearch} className="ml-1 text-faint hover:text-[var(--ds-text)]">×</button>
             </span>
           )}
           {tagFilter && (
@@ -476,7 +476,7 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
             <Loader2 className="animate-spin text-violet-400" size={28} />
           </div>
         ) : posts.length === 0 ? (
-          <div className="text-center py-16 text-gray-500">
+          <div className="text-center py-16 text-faint">
             {feedMode === "activity" ? (
               <>
                 <p className="text-lg mb-2">No activity entries yet</p>
@@ -509,13 +509,13 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
 
             {loadingMore && (
               <div className="flex items-center justify-center py-4">
-                <Loader2 className="animate-spin text-gray-500" size={18} />
-                <span className="ml-2 text-xs text-gray-500">Loading more…</span>
+                <Loader2 className="animate-spin text-faint" size={18} />
+                <span className="ml-2 text-xs text-faint">Loading more…</span>
               </div>
             )}
 
             {!hasMore && posts.length > 0 && (
-              <div className="text-center py-4 text-xs text-gray-600">
+              <div className="text-center py-4 text-xs text-faint">
                 — End of timeline —
               </div>
             )}
@@ -527,7 +527,7 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
       {posts.length > 5 && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 p-2 rounded-full bg-gray-800 border border-gray-700 text-gray-400 hover:text-white hover:border-violet-500 shadow-lg z-30"
+          className="fixed bottom-6 right-6 p-2 rounded-full surface-card border border-subtle text-muted hover:text-[var(--ds-text)] hover:border-violet-500 shadow-lg z-30"
           title="Back to top"
         >
           <ArrowUp size={16} />
@@ -550,7 +550,7 @@ const APP_COLORS = {
   meals:       "text-yellow-400 bg-yellow-400/10 border-yellow-700/40",
   goals:       "text-violet-400 bg-violet-400/10 border-violet-700/40",
   investment:  "text-emerald-400 bg-emerald-400/10 border-emerald-700/40",
-  timeline:    "text-sky-400    bg-sky-400/10    border-sky-700/40",
+  timeline:    "text-accent    bg-[var(--ds-accent)]    border-subtle",
 };
 
 function ActivityCard({ post }) {
@@ -561,36 +561,36 @@ function ActivityCard({ post }) {
     : "";
 
   const appColorClass = APP_COLORS[post.source_app] ||
-    "text-gray-400 bg-gray-400/10 border-gray-700/40";
+    "text-muted surface-raised border-subtle";
 
   // Strip the auto-appended activity tag from display
   const displayTags = (post.tags || []).filter(t => t !== "activity");
 
   return (
-    <div className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-gray-900/60 border border-gray-800/60 hover:border-gray-700 transition-colors">
+    <div className="flex items-start gap-3 px-3 py-2.5 rounded-lg surface-panel border border-subtle hover:border-[var(--ds-border)] transition-colors">
       {/* Source app badge */}
       {post.source_app ? (
         <span className={`flex-shrink-0 mt-0.5 px-1.5 py-0.5 text-[10px] font-medium rounded border ${appColorClass}`}>
           {post.source_app}
         </span>
       ) : (
-        <span className="flex-shrink-0 mt-0.5 w-2 h-2 rounded-full bg-gray-600 mt-2" />
+        <span className="flex-shrink-0 mt-0.5 w-2 h-2 rounded-full surface-raised mt-2" />
       )}
 
       {/* Title */}
-      <span className="flex-1 text-sm text-gray-300 leading-snug">{post.title || post.id}</span>
+      <span className="flex-1 text-sm text-default leading-snug">{post.title || post.id}</span>
 
       {/* Tags (excluding 'activity') */}
       {displayTags.length > 0 && (
         <div className="flex gap-1 flex-shrink-0">
           {displayTags.map(t => (
-            <span key={t} className="px-1.5 py-0.5 text-[10px] rounded-full bg-gray-800 text-gray-500">#{t}</span>
+            <span key={t} className="px-1.5 py-0.5 text-[10px] rounded-full surface-card text-faint">#{t}</span>
           ))}
         </div>
       )}
 
       {/* Time */}
-      <span className="flex-shrink-0 text-xs text-gray-600 whitespace-nowrap">{timeStr}</span>
+      <span className="flex-shrink-0 text-xs text-faint whitespace-nowrap">{timeStr}</span>
     </div>
   );
 }
@@ -618,32 +618,32 @@ function PostCard({ post, onDelete, onPin, onEdit, onTagClick }) {
   const sourceIcon = post.source_app ? "🔧" : "";
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden hover:border-gray-700 transition-colors">
+    <div className="surface-panel border border-subtle rounded-lg overflow-hidden hover:border-[var(--ds-border)] transition-colors">
       {/* Header */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-800/50">
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-subtle">
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
           {post.pinned && <Pin size={13} className="text-amber-400 flex-shrink-0" />}
           {sourceIcon && <span className="text-sm">{sourceIcon}</span>}
-          <User size={13} className="text-gray-500 flex-shrink-0" />
-          <span className="text-xs font-medium text-gray-300 capitalize">{post.author_id || "Unknown"}</span>
-          <span className="text-gray-600">·</span>
-          <span className="text-xs text-gray-500">{dateStr}</span>
+          <User size={13} className="text-faint flex-shrink-0" />
+          <span className="text-xs font-medium text-default capitalize">{post.author_id || "Unknown"}</span>
+          <span className="text-faint">·</span>
+          <span className="text-xs text-faint">{dateStr}</span>
           {post.source_app && (
             <>
-              <span className="text-gray-600">·</span>
-              <span className="text-xs text-gray-500 italic">via {post.source_app}</span>
+              <span className="text-faint">·</span>
+              <span className="text-xs text-faint italic">via {post.source_app}</span>
             </>
           )}
         </div>
         {/* Actions */}
         <div className="flex items-center gap-1">
-          <button onClick={() => onPin(post.id)} className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-amber-400" title={post.pinned ? "Unpin" : "Pin"}>
+          <button onClick={() => onPin(post.id)} className="p-1 rounded hover:bg-[var(--ds-card)] text-faint hover:text-amber-400" title={post.pinned ? "Unpin" : "Pin"}>
             {post.pinned ? <PinOff size={13} /> : <Pin size={13} />}
           </button>
-          <button onClick={() => onEdit(post)} className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-blue-400" title="Edit">
+          <button onClick={() => onEdit(post)} className="p-1 rounded hover:bg-[var(--ds-card)] text-faint hover:text-blue-400" title="Edit">
             <Edit3 size={13} />
           </button>
-          <button onClick={() => onDelete(post.id)} className="p-1 rounded hover:bg-gray-800 text-gray-500 hover:text-red-400" title="Delete">
+          <button onClick={() => onDelete(post.id)} className="p-1 rounded hover:bg-[var(--ds-card)] text-faint hover:text-red-400" title="Delete">
             <Trash2 size={13} />
           </button>
         </div>
@@ -652,14 +652,14 @@ function PostCard({ post, onDelete, onPin, onEdit, onTagClick }) {
       {/* Title */}
       {post.title && (
         <div className="px-4 pt-2.5">
-          <h3 className="text-sm font-semibold text-gray-200">{post.title}</h3>
+          <h3 className="text-sm font-semibold text-default">{post.title}</h3>
         </div>
       )}
 
       {/* Body */}
       <div className="px-4 py-2.5">
         <div
-          className="markdown-body text-sm text-gray-300 max-w-none leading-relaxed"
+          className="markdown-body text-sm text-default max-w-none leading-relaxed"
           dangerouslySetInnerHTML={{ __html: markdownToHtml(displayBody) }}
           onClick={(e) => {
             const a = e.target.closest('a[href]');
@@ -701,7 +701,7 @@ function PostCard({ post, onDelete, onPin, onEdit, onTagClick }) {
 
       {/* Source link */}
       {post.source_label && (
-        <div className="px-4 pb-2.5 text-xs text-gray-500">
+        <div className="px-4 pb-2.5 text-xs text-faint">
           → {post.source_label}
         </div>
       )}
@@ -762,25 +762,25 @@ function LinkPreviews({ body }) {
           target="_blank"
           rel="noopener noreferrer"
           onClick={(e) => { e.preventDefault(); window.open(p.url, '_blank', 'noopener'); }}
-          className="flex items-start gap-3 p-3 rounded-lg border border-gray-700/60 bg-gray-800/50 hover:bg-gray-800 hover:border-gray-600 transition-colors cursor-pointer no-underline"
+          className="flex items-start gap-3 p-3 rounded-lg border border-subtle surface-card hover:bg-[var(--ds-card)] hover:border-[var(--ds-border)] transition-colors cursor-pointer no-underline"
         >
           {p.image && (
             <img
               src={p.image}
               alt=""
-              className="w-20 h-20 rounded object-cover flex-shrink-0 bg-gray-700"
+              className="w-20 h-20 rounded object-cover flex-shrink-0 surface-raised"
               onError={(e) => { e.target.style.display = 'none'; }}
             />
           )}
           <div className="flex-1 min-w-0">
             {p.title && (
-              <div className="text-sm font-medium text-gray-200 line-clamp-2 leading-snug">{p.title}</div>
+              <div className="text-sm font-medium text-default line-clamp-2 leading-snug">{p.title}</div>
             )}
             {p.description && (
-              <div className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">{p.description}</div>
+              <div className="text-xs text-muted mt-1 line-clamp-2 leading-relaxed">{p.description}</div>
             )}
             {p.site_name && (
-              <div className="text-[10px] text-gray-500 mt-1">{p.site_name}</div>
+              <div className="text-[10px] text-faint mt-1">{p.site_name}</div>
             )}
           </div>
         </a>
@@ -822,7 +822,7 @@ function PhotoCarousel({ photos, onClickPhoto }) {
       {canLeft && (
         <button
           onClick={() => scrollRef.current?.scrollBy({ left: -200, behavior: "smooth" })}
-          className="absolute left-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-gray-800/90 border border-gray-700 text-gray-300 hover:text-white opacity-0 group-hover/carousel:opacity-100 transition-opacity"
+          className="absolute left-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full surface-card border border-subtle text-default hover:text-[var(--ds-text)] opacity-0 group-hover/carousel:opacity-100 transition-opacity"
         >
           <ChevronLeft size={14} />
         </button>
@@ -843,17 +843,17 @@ function PhotoCarousel({ photos, onClickPhoto }) {
             <img
               src={IMG_URL(photo.image_id)}
               alt={photo.caption || ""}
-              className="h-28 max-w-[200px] object-cover rounded-lg border border-gray-700 hover:border-violet-500 transition-colors"
+              className="h-28 max-w-[200px] object-cover rounded-lg border border-subtle hover:border-violet-500 transition-colors"
               loading="lazy"
             />
             {/* Expand icon overlay */}
-            <div className="absolute inset-0 flex items-center justify-center bg-black/0 hover:bg-black/30 rounded-lg transition-colors">
-              <Maximize2 size={16} className="text-white opacity-0 group-hover/photo:opacity-80 transition-opacity" />
+            <div className="absolute inset-0 flex items-center justify-center bg-transparent hover:bg-[rgb(0_0_0/0.30)] rounded-lg transition-colors">
+              <Maximize2 size={16} className="text-default opacity-0 group-hover/photo:opacity-80 transition-opacity" />
             </div>
             {/* Caption */}
             {photo.caption && (
-              <div className="absolute bottom-0 left-0 right-0 px-2 py-1 bg-black/60 rounded-b-lg">
-                <span className="text-[10px] text-gray-300 line-clamp-1">{photo.caption}</span>
+              <div className="absolute bottom-0 left-0 right-0 px-2 py-1 surface-overlay rounded-b-lg">
+                <span className="text-[10px] text-default line-clamp-1">{photo.caption}</span>
               </div>
             )}
           </div>
@@ -864,7 +864,7 @@ function PhotoCarousel({ photos, onClickPhoto }) {
       {canRight && (
         <button
           onClick={() => scrollRef.current?.scrollBy({ left: 200, behavior: "smooth" })}
-          className="absolute right-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full bg-gray-800/90 border border-gray-700 text-gray-300 hover:text-white opacity-0 group-hover/carousel:opacity-100 transition-opacity"
+          className="absolute right-1 top-1/2 -translate-y-1/2 z-10 p-1 rounded-full surface-card border border-subtle text-default hover:text-[var(--ds-text)] opacity-0 group-hover/carousel:opacity-100 transition-opacity"
         >
           <ChevronRight size={14} />
         </button>
@@ -896,19 +896,19 @@ function Lightbox({ photos, startIndex, onClose }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center"
+      className="fixed inset-0 z-[100] surface-overlay flex items-center justify-center"
       onClick={onClose}
     >
       {/* Close button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 p-2 rounded-full bg-gray-800/80 text-gray-300 hover:text-white z-10"
+        className="absolute top-4 right-4 p-2 rounded-full surface-card text-default hover:text-[var(--ds-text)] z-10"
       >
         <X size={20} />
       </button>
 
       {/* Counter */}
-      <div className="absolute top-4 left-4 text-sm text-gray-400">
+      <div className="absolute top-4 left-4 text-sm text-muted">
         {idx + 1} / {photos.length}
       </div>
 
@@ -916,7 +916,7 @@ function Lightbox({ photos, startIndex, onClose }) {
       {idx > 0 && (
         <button
           onClick={(e) => { e.stopPropagation(); setIdx(idx - 1); }}
-          className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-gray-800/80 text-gray-300 hover:text-white"
+          className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full surface-card text-default hover:text-[var(--ds-text)]"
         >
           <ChevronLeft size={24} />
         </button>
@@ -934,7 +934,7 @@ function Lightbox({ photos, startIndex, onClose }) {
       {idx < photos.length - 1 && (
         <button
           onClick={(e) => { e.stopPropagation(); setIdx(idx + 1); }}
-          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-gray-800/80 text-gray-300 hover:text-white"
+          className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full surface-card text-default hover:text-[var(--ds-text)]"
         >
           <ChevronRight size={24} />
         </button>
@@ -942,8 +942,8 @@ function Lightbox({ photos, startIndex, onClose }) {
 
       {/* Caption */}
       {photo.caption && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-gray-900/80 px-4 py-2 rounded-lg max-w-lg text-center">
-          <span className="text-sm text-gray-200">{photo.caption}</span>
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 surface-panel px-4 py-2 rounded-lg max-w-lg text-center">
+          <span className="text-sm text-default">{photo.caption}</span>
         </div>
       )}
     </div>
@@ -1173,12 +1173,12 @@ function PostComposer({ userId, editingPost, onDone, onCancel, allTags }) {
   };
 
   return (
-    <div ref={composerRef} className="border-b border-gray-800 bg-gray-900/80 px-4 py-3 space-y-2">
+    <div ref={composerRef} className="border-b border-subtle surface-panel px-4 py-3 space-y-2">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium text-gray-400">
+        <span className="text-xs font-medium text-muted">
           {editingPost ? `Editing ${editingPost.id}` : "New Post"}
         </span>
-        <button onClick={onCancel} className="text-gray-500 hover:text-gray-300">
+        <button onClick={onCancel} className="text-faint hover:text-[var(--ds-text)]">
           <X size={16} />
         </button>
       </div>
@@ -1189,7 +1189,7 @@ function PostComposer({ userId, editingPost, onDone, onCancel, allTags }) {
         placeholder="Title (optional)"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="w-full px-3 py-1.5 text-sm rounded bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-violet-500"
+        className="w-full px-3 py-1.5 text-sm rounded surface-card border border-subtle text-default placeholder-gray-500 focus:outline-none focus:border-violet-500"
       />
 
       {/* Body */}
@@ -1200,7 +1200,7 @@ function PostComposer({ userId, editingPost, onDone, onCancel, allTags }) {
         onChange={(e) => setBody(e.target.value)}
         onKeyDown={handleKeyDown}
         rows={5}
-        className="w-full px-3 py-2 text-sm rounded bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-violet-500 resize-y font-mono"
+        className="w-full px-3 py-2 text-sm rounded surface-card border border-subtle text-default placeholder-gray-500 focus:outline-none focus:border-violet-500 resize-y font-mono"
       />
 
       {/* Photo strip */}
@@ -1212,7 +1212,7 @@ function PostComposer({ userId, editingPost, onDone, onCancel, allTags }) {
                 src={photo._localUrl || IMG_URL(photo.image_id)}
                 alt={photo.caption || ""}
                 className={`h-20 w-20 object-cover rounded-lg border ${
-                  photo._uploading ? "border-yellow-500/50 opacity-60" : "border-gray-700"
+                  photo._uploading ? "border-yellow-500/50 opacity-60" : "border-subtle"
                 }`}
               />
               {photo._uploading && (
@@ -1224,7 +1224,7 @@ function PostComposer({ userId, editingPost, onDone, onCancel, allTags }) {
               {!photo._uploading && (
                 <button
                   onClick={() => removePhoto(idx)}
-                  className="absolute -top-1 -right-1 p-0.5 rounded-full bg-red-600 text-white opacity-0 group-hover/thumb:opacity-100 transition-opacity"
+                  className="absolute -top-1 -right-1 p-0.5 rounded-full bg-red-600 text-on-accent opacity-0 group-hover/thumb:opacity-100 transition-opacity"
                 >
                   <X size={10} />
                 </button>
@@ -1233,12 +1233,12 @@ function PostComposer({ userId, editingPost, onDone, onCancel, allTags }) {
               {!photo._uploading && photos.length > 1 && (
                 <div className="absolute bottom-0 left-0 right-0 flex justify-center gap-0.5 pb-0.5 opacity-0 group-hover/thumb:opacity-100 transition-opacity">
                   {idx > 0 && (
-                    <button onClick={() => movePhoto(idx, -1)} className="p-0.5 rounded bg-gray-800/80 text-gray-300">
+                    <button onClick={() => movePhoto(idx, -1)} className="p-0.5 rounded surface-card text-default">
                       <ChevronLeft size={10} />
                     </button>
                   )}
                   {idx < photos.length - 1 && (
-                    <button onClick={() => movePhoto(idx, 1)} className="p-0.5 rounded bg-gray-800/80 text-gray-300">
+                    <button onClick={() => movePhoto(idx, 1)} className="p-0.5 rounded surface-card text-default">
                       <ChevronRight size={10} />
                     </button>
                   )}
@@ -1265,7 +1265,7 @@ function PostComposer({ userId, editingPost, onDone, onCancel, allTags }) {
                   placeholder={`Caption for photo ${idx + 1}`}
                   value={photo.caption}
                   onChange={(e) => updateCaption(idx, e.target.value)}
-                  className="flex-1 px-2 py-1 text-[11px] rounded bg-gray-800 border border-gray-700 text-gray-300 placeholder-gray-600 focus:outline-none focus:border-violet-500"
+                  className="flex-1 px-2 py-1 text-[11px] rounded surface-card border border-subtle text-default placeholder-gray-600 focus:outline-none focus:border-violet-500"
                 />
               </div>
             )
@@ -1282,15 +1282,15 @@ function PostComposer({ userId, editingPost, onDone, onCancel, allTags }) {
           onChange={(e) => { setTagInput(e.target.value); setShowTagSuggest(true); }}
           onFocus={() => setShowTagSuggest(true)}
           onBlur={() => setTimeout(() => setShowTagSuggest(false), 200)}
-          className="w-full px-3 py-1.5 text-xs rounded bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:border-violet-500"
+          className="w-full px-3 py-1.5 text-xs rounded surface-card border border-subtle text-default placeholder-gray-500 focus:outline-none focus:border-violet-500"
         />
         {showTagSuggest && tagSuggestions.length > 0 && (
-          <div className="absolute left-0 top-full mt-1 w-full bg-gray-800 border border-gray-700 rounded shadow-xl z-50 max-h-32 overflow-y-auto">
+          <div className="absolute left-0 top-full mt-1 w-full surface-card border border-subtle rounded shadow-xl z-50 max-h-32 overflow-y-auto">
             {tagSuggestions.slice(0, 8).map(tag => (
               <button
                 key={tag}
                 onMouseDown={() => handleTagSuggestion(tag)}
-                className="w-full text-left px-3 py-1 text-xs hover:bg-gray-700 text-gray-300"
+                className="w-full text-left px-3 py-1 text-xs hover:bg-[var(--ds-raised)] text-default"
               >
                 #{tag}
               </button>
@@ -1313,25 +1313,25 @@ function PostComposer({ userId, editingPost, onDone, onCancel, allTags }) {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500 disabled:opacity-40"
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded border border-subtle text-muted hover:text-[var(--ds-text)] hover:border-[var(--ds-border)] disabled:opacity-40"
             title="Add photos"
           >
             {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
             Photos
           </button>
-          <span className="text-[10px] text-gray-600">Ctrl+Enter to post · Paste images</span>
+          <span className="text-[10px] text-faint">Ctrl+Enter to post · Paste images</span>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={onCancel}
-            className="px-3 py-1.5 text-xs rounded border border-gray-700 text-gray-400 hover:text-gray-200 hover:border-gray-500"
+            className="px-3 py-1.5 text-xs rounded border border-subtle text-muted hover:text-[var(--ds-text)] hover:border-[var(--ds-border)]"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={!body.trim() || saving || anyUploading}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs rounded bg-violet-600 hover:bg-violet-500 text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 px-3 py-1.5 text-xs rounded bg-violet-600 hover:bg-violet-500 text-on-accent font-medium disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
             {editingPost ? "Save" : "Post"}

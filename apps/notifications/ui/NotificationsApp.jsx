@@ -22,11 +22,11 @@ function channelBadge(channel) {
   const map = {
     discord: { label: "Discord", cls: "bg-indigo-900/60 text-indigo-300 border-indigo-700/40" },
     pushover: { label: "Pushover", cls: "bg-orange-900/60 text-orange-300 border-orange-700/40" },
-    websocket: { label: "Web", cls: "bg-sky-900/60 text-sky-300 border-sky-700/40" },
+    websocket: { label: "Web", cls: "surface-card text-accent border-subtle/40" },
     chat: { label: "Chat", cls: "bg-emerald-900/60 text-emerald-300 border-emerald-700/40" },
   };
   const key = (channel || "").toLowerCase();
-  const info = map[key] || { label: channel || "—", cls: "bg-slate-800 text-slate-400 border-slate-700/40" };
+  const info = map[key] || { label: channel || "—", cls: "surface-card text-muted border-subtle" };
   return (
     <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium border ${info.cls}`}>
       {info.label}
@@ -37,7 +37,7 @@ function channelBadge(channel) {
 function sourceBadge(sourceType) {
   if (!sourceType) return null;
   return (
-    <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-800 text-slate-400 border border-slate-700/40">
+    <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium surface-card text-muted border border-subtle">
       {sourceType}
     </span>
   );
@@ -49,35 +49,35 @@ function NotificationRow({ notif }) {
   const hasMore = notif.message && notif.message.trim() !== firstLine;
 
   return (
-    <div className="border border-slate-700/50 rounded-lg bg-slate-800/40 hover:bg-slate-800/60 transition-colors">
+    <div className="border border-subtle rounded-lg surface-card hover:bg-[var(--ds-card)] transition-colors">
       <button
         className="w-full text-left px-4 py-3 flex items-start gap-3"
         onClick={() => hasMore && setExpanded(e => !e)}
         style={{ cursor: hasMore ? "pointer" : "default" }}
       >
-        <Bell size={14} className="text-slate-500 mt-0.5 shrink-0" />
+        <Bell size={14} className="text-faint mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
-            <span className="text-xs text-slate-500">{fmtDateTime(notif.created_at)}</span>
+            <span className="text-xs text-faint">{fmtDateTime(notif.created_at)}</span>
             {channelBadge(notif.channel)}
             {sourceBadge(notif.source_type)}
           </div>
-          <p className="text-sm text-slate-200 leading-snug break-words">
-            {firstLine || <span className="text-slate-500 italic">empty</span>}
+          <p className="text-sm text-default leading-snug break-words">
+            {firstLine || <span className="text-faint italic">empty</span>}
             {!expanded && hasMore && (
-              <span className="text-slate-500 ml-1">…</span>
+              <span className="text-faint ml-1">…</span>
             )}
           </p>
         </div>
         {hasMore && (
-          <span className="text-slate-500 shrink-0 mt-0.5">
+          <span className="text-faint shrink-0 mt-0.5">
             {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
           </span>
         )}
       </button>
       {expanded && hasMore && (
         <div className="px-4 pb-3 pl-11">
-          <pre className="text-xs text-slate-300 whitespace-pre-wrap break-words bg-slate-900/50 rounded p-3 border border-slate-700/30">
+          <pre className="text-xs text-default whitespace-pre-wrap break-words surface-panel rounded p-3 border border-subtle">
             {notif.message.trim()}
           </pre>
         </div>
@@ -214,43 +214,43 @@ function PushoverCard({ userId }) {
   } else if (configured && status.enabled) {
     statusPill = <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-900/60 text-emerald-300 border border-emerald-700/40">On</span>;
   } else if (configured) {
-    statusPill = <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/40">Off</span>;
+    statusPill = <span className="text-[10px] font-medium px-1.5 py-0.5 rounded surface-card text-muted border border-subtle">Off</span>;
   } else {
-    statusPill = <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 border border-slate-700/40">Not set up</span>;
+    statusPill = <span className="text-[10px] font-medium px-1.5 py-0.5 rounded surface-card text-faint border border-subtle">Not set up</span>;
   }
 
   return (
-    <div className="border border-slate-700/50 rounded-lg bg-slate-800/40 overflow-hidden">
+    <div className="border border-subtle rounded-lg surface-card overflow-hidden">
       <button
-        className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-slate-800/60 transition-colors"
+        className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-[var(--ds-card)] transition-colors"
         onClick={() => setOpen(o => !o)}
       >
         <Smartphone size={15} className="text-orange-400 shrink-0" />
-        <span className="font-semibold text-slate-100 text-sm">Pushover</span>
+        <span className="font-semibold text-default text-sm">Pushover</span>
         {statusPill}
-        {loading && <RefreshCw size={12} className="animate-spin text-slate-500" />}
-        <span className="ml-auto text-slate-500 shrink-0">
+        {loading && <RefreshCw size={12} className="animate-spin text-faint" />}
+        <span className="ml-auto text-faint shrink-0">
           {open ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
         </span>
       </button>
 
       {open && (
-        <div className="px-4 pb-4 pt-1 border-t border-slate-700/30">
+        <div className="px-4 pb-4 pt-1 border-t border-subtle">
           {statusError && (
             <div className="text-red-400 text-xs py-2">Couldn't load Pushover status: {statusError}</div>
           )}
 
           {status && !appReady && (
-            <div className="text-xs text-slate-500 bg-slate-900/40 rounded p-3 border border-slate-700/30 mt-3">
+            <div className="text-xs text-faint surface-panel rounded p-3 border border-subtle mt-3">
               Pushover isn't enabled on this server yet. An admin needs to set the
-              Pushover app token in <span className="text-slate-400">Settings → Notifications</span>.
+              Pushover app token in <span className="text-muted">Settings → Notifications</span>.
             </div>
           )}
 
           {status && appReady && (
             <div className="space-y-3 mt-3">
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Pushover user key</label>
+                <label className="block text-xs text-muted mb-1">Pushover user key</label>
                 <div className="relative">
                   <input
                     type={showKey ? "text" : "password"}
@@ -258,12 +258,12 @@ function PushoverCard({ userId }) {
                     onChange={e => setUserKey(e.target.value)}
                     placeholder={configured ? "•••••••• saved — type to replace" : "your pushover.net user key"}
                     autoComplete="off"
-                    className="w-full bg-slate-800/60 border border-slate-700/50 rounded px-3 py-1.5 pr-9 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-500 font-mono"
+                    className="w-full surface-card border border-subtle rounded px-3 py-1.5 pr-9 text-sm text-default placeholder-slate-500 focus:outline-none focus:border-[var(--ds-border)] font-mono"
                   />
                   <button
                     type="button"
                     onClick={() => setShowKey(s => !s)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-faint hover:text-[var(--ds-text)]"
                     title={showKey ? "Hide" : "Show"}
                   >
                     {showKey ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -272,17 +272,17 @@ function PushoverCard({ userId }) {
               </div>
 
               <div>
-                <label className="block text-xs text-slate-400 mb-1">Device <span className="text-slate-600">(optional)</span></label>
+                <label className="block text-xs text-muted mb-1">Device <span className="text-faint">(optional)</span></label>
                 <input
                   type="text"
                   value={device}
                   onChange={e => setDevice(e.target.value)}
                   placeholder="all devices"
-                  className="w-full bg-slate-800/60 border border-slate-700/50 rounded px-3 py-1.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-500"
+                  className="w-full surface-card border border-subtle rounded px-3 py-1.5 text-sm text-default placeholder-slate-500 focus:outline-none focus:border-[var(--ds-border)]"
                 />
               </div>
 
-              <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer select-none">
+              <label className="flex items-center gap-2 text-sm text-default cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={enabled}
@@ -303,7 +303,7 @@ function PushoverCard({ userId }) {
                 <button
                   onClick={sendTest}
                   disabled={testing || !configured}
-                  className="px-3 py-1.5 rounded text-sm font-medium bg-slate-700/70 hover:bg-slate-600 text-slate-100 transition-colors disabled:opacity-40 flex items-center gap-1.5"
+                  className="px-3 py-1.5 rounded text-sm font-medium surface-raised hover:bg-[var(--ds-raised)] text-default transition-colors disabled:opacity-40 flex items-center gap-1.5"
                   title={!configured ? "Save a user key first" : "Send a test push"}
                 >
                   <Send size={13} /> {testing ? "Sending…" : "Send test"}
@@ -331,7 +331,7 @@ function PushoverCard({ userId }) {
                 href="https://pushover.net"
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-sky-400 hover:text-sky-300"
+                className="inline-flex items-center gap-1 text-xs text-accent hover:text-accent"
               >
                 Get your user key at pushover.net <ExternalLink size={11} />
               </a>
@@ -376,20 +376,20 @@ export default function NotificationsApp({ userId }) {
   });
 
   return (
-    <div className="flex flex-col h-full w-full bg-slate-950 text-white">
+    <div className="flex flex-col h-full w-full surface-page">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/60 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-subtle surface-panel shrink-0">
         <div className="flex items-center gap-2">
-          <Mail size={16} className="text-sky-400" />
-          <span className="font-semibold text-slate-100 text-sm">Notifications</span>
+          <Mail size={16} className="text-accent" />
+          <span className="font-semibold text-default text-sm">Notifications</span>
           {!loading && (
-            <span className="text-xs text-slate-500 ml-1">({notifications.length})</span>
+            <span className="text-xs text-faint ml-1">({notifications.length})</span>
           )}
         </div>
         <button
           onClick={load}
           disabled={loading}
-          className="p-1.5 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors disabled:opacity-40"
+          className="p-1.5 rounded hover:bg-[var(--ds-card)] text-muted hover:text-[var(--ds-text)] transition-colors disabled:opacity-40"
           title="Refresh"
         >
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
@@ -397,13 +397,13 @@ export default function NotificationsApp({ userId }) {
       </div>
 
       {/* Search */}
-      <div className="px-4 py-2 border-b border-slate-800/60 shrink-0">
+      <div className="px-4 py-2 border-b border-subtle shrink-0">
         <input
           type="text"
           value={filter}
           onChange={e => setFilter(e.target.value)}
           placeholder="Filter notifications…"
-          className="w-full bg-slate-800/60 border border-slate-700/50 rounded px-3 py-1.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-500"
+          className="w-full surface-card border border-subtle rounded px-3 py-1.5 text-sm text-default placeholder-slate-500 focus:outline-none focus:border-[var(--ds-border)]"
         />
       </div>
 
@@ -411,7 +411,7 @@ export default function NotificationsApp({ userId }) {
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
         <PushoverCard userId={userId} />
         {loading && (
-          <div className="flex items-center justify-center py-12 text-slate-500 text-sm">
+          <div className="flex items-center justify-center py-12 text-faint text-sm">
             <RefreshCw size={14} className="animate-spin mr-2" /> Loading…
           </div>
         )}
@@ -419,7 +419,7 @@ export default function NotificationsApp({ userId }) {
           <div className="text-red-400 text-sm px-2 py-4 text-center">{error}</div>
         )}
         {!loading && !error && filtered.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-500 gap-2">
+          <div className="flex flex-col items-center justify-center py-16 text-faint gap-2">
             <Bell size={28} className="opacity-30" />
             <p className="text-sm">{filter ? "No matching notifications" : "No notifications yet"}</p>
           </div>

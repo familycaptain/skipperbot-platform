@@ -96,12 +96,12 @@ export default function AppPanel({
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 min-w-0 border-r border-slate-800">
+    <div className="flex flex-col flex-1 min-h-0 min-w-0 border-r border-subtle">
       {/* ── App Taskbar ── */}
-      <div className="flex items-center h-9 bg-slate-900/60 border-b border-slate-800 shrink-0">
+      <div className="flex items-center h-9 surface-panel border-b border-subtle shrink-0">
         {/* Left scroll arrow */}
         {canScrollLeft && (
-          <button onClick={() => scrollBy(-120)} className="px-0.5 h-full text-slate-500 hover:text-white shrink-0">
+          <button onClick={() => scrollBy(-120)} className="px-0.5 h-full icon-btn shrink-0">
             <ChevronLeft size={14} />
           </button>
         )}
@@ -113,15 +113,15 @@ export default function AppPanel({
             onClick={() => onSelectApp("home")}
             className={`flex items-center gap-1.5 px-2.5 h-7 rounded text-xs whitespace-nowrap transition-colors shrink-0 ${
               activeAppId === "home"
-                ? "bg-slate-700/80 text-white"
-                : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                ? "surface-raised"
+                : "icon-btn"
             }`}
           >
             <Home size={14} className="shrink-0" />
           </button>
 
           {/* Separator */}
-          {openApps.length > 0 && <div className="w-px h-4 bg-slate-700/50 mx-0.5 shrink-0" />}
+          {openApps.length > 0 && <div className="w-px h-4 divider mx-0.5 shrink-0" />}
 
           {/* App tabs */}
           {openApps.map((app) => {
@@ -134,8 +134,8 @@ export default function AppPanel({
                 onClick={() => onSelectApp(app.id)}
                 className={`group flex items-center gap-1.5 px-2.5 h-7 rounded text-xs whitespace-nowrap transition-colors shrink-0 ${
                   app.id === activeAppId
-                    ? "bg-slate-700/80 text-white"
-                    : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                    ? "surface-raised"
+                    : "icon-btn"
                 }`}
               >
                 {Icon && <Icon size={12} className="shrink-0 opacity-60" />}
@@ -146,7 +146,7 @@ export default function AppPanel({
                     e.stopPropagation();
                     onCloseApp(app.id);
                   }}
-                  className="ml-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 hover:bg-slate-600 transition-opacity"
+                  className="ml-0.5 p-0.5 rounded opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 hover:bg-[var(--ds-border-strong)] transition-opacity"
                 >
                   <X size={10} />
                 </span>
@@ -157,7 +157,7 @@ export default function AppPanel({
 
         {/* Right scroll arrow */}
         {canScrollRight && (
-          <button onClick={() => scrollBy(120)} className="px-0.5 h-full text-slate-500 hover:text-white shrink-0">
+          <button onClick={() => scrollBy(120)} className="px-0.5 h-full icon-btn shrink-0">
             <ChevronRight size={14} />
           </button>
         )}
@@ -167,7 +167,7 @@ export default function AppPanel({
           <button
             onClick={openHelp}
             title={`Help — ${activeApp.name}`}
-            className="px-1.5 h-full text-slate-500 hover:text-white shrink-0"
+            className="px-1.5 h-full icon-btn shrink-0"
           >
             <HelpCircle size={15} />
           </button>
@@ -197,7 +197,7 @@ export default function AppPanel({
             >
               <Suspense
                 fallback={
-                  <div className="flex items-center justify-center w-full h-full text-slate-400">
+                  <div className="flex items-center justify-center w-full h-full text-muted">
                     <Loader2 size={20} className="animate-spin mr-2" />
                     Loading {app.name}...
                   </div>
@@ -228,33 +228,33 @@ export default function AppPanel({
       {/* ── Per-app Help panel — full-width + scrollable (manuals can be long) ── */}
       {helpFor && (
         <div
-          className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-black/70 sm:p-4"
+          className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center surface-overlay sm:p-4"
           onClick={() => setHelpFor(null)}
         >
           <div
-            className="bg-slate-900 border border-slate-700 shadow-xl w-full h-full sm:h-[94vh] sm:max-w-5xl sm:rounded-lg flex flex-col overflow-hidden"
+            className="surface-panel border border-subtle shadow-xl w-full h-full sm:h-[94vh] sm:max-w-5xl sm:rounded-lg flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700 shrink-0">
-              <div className="flex items-center gap-2 text-slate-100">
-                <HelpCircle size={16} className="text-sky-400" />
+            <div className="flex items-center justify-between px-4 py-3 border-b border-subtle shrink-0">
+              <div className="flex items-center gap-2 text-default">
+                <HelpCircle size={16} className="text-accent" />
                 <h3 className="text-sm font-semibold">{helpFor.name} — Help &amp; user guide</h3>
               </div>
-              <button onClick={() => setHelpFor(null)} className="text-slate-400 hover:text-white" title="Close">
+              <button onClick={() => setHelpFor(null)} className="icon-btn" title="Close">
                 <X size={18} />
               </button>
             </div>
             {/* Scrollable body; content held to a comfortable reading measure. */}
             <div className="flex-1 overflow-y-auto">
-              <div className="max-w-3xl mx-auto px-5 py-6 text-sm text-slate-300 markdown-body">
+              <div className="max-w-3xl mx-auto px-5 py-6 text-sm text-default markdown-body">
                 {helpLoading ? (
-                  <div className="flex items-center gap-2 text-slate-400">
+                  <div className="flex items-center gap-2 text-muted">
                     <Loader2 size={14} className="animate-spin" /> Loading…
                   </div>
                 ) : helpText ? (
                   <ReactMarkdown>{helpText}</ReactMarkdown>
                 ) : (
-                  <p className="text-slate-500">Help for {helpFor.name} is coming soon.</p>
+                  <p className="text-faint">Help for {helpFor.name} is coming soon.</p>
                 )}
               </div>
             </div>
@@ -318,17 +318,17 @@ function HomeScreen({ onOpenApp }) {
     >
       {/* Left nav hot area — previous page */}
       <div
-        className={`flex-1 h-full ${currentPage > 0 ? "cursor-pointer hover:bg-slate-700/10" : "cursor-default"}`}
+        className={`flex-1 h-full ${currentPage > 0 ? "cursor-pointer hover:bg-[var(--ds-raised)]" : "cursor-default"}`}
         onClick={() => currentPage > 0 && setCurrentPage(p => p - 1)}
       />
 
       {/* Center content */}
-      <div className="flex flex-col items-center justify-center gap-6 text-slate-500 select-none px-2 py-4">
+      <div className="flex flex-col items-center justify-center gap-6 text-faint select-none px-2 py-4">
         <div className="text-center">
-          <p className="text-sm font-medium text-slate-400">
+          <p className="text-sm font-medium text-muted">
             {currentPage === 0 ? "Agentic Desktop" : currentPage === 1 ? "Tools & More" : "System & Admin"}
           </p>
-          <p className="text-xs text-slate-600 mt-1 whitespace-nowrap">
+          <p className="text-xs text-faint mt-1 whitespace-nowrap">
             Open an app below, or ask Skipper in chat.
           </p>
         </div>
@@ -347,12 +347,12 @@ function HomeScreen({ onOpenApp }) {
                 title="Right-click to hide from your desktop"
                 className={`flex flex-col items-center gap-1.5 px-4 py-3 rounded-xl transition-colors min-w-[80px] ${
                   isPkg
-                    ? "bg-teal-900/30 hover:bg-teal-900/50 border border-teal-700/40 hover:border-teal-600/60"
-                    : "bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 hover:border-slate-600"
+                    ? "app-tile-pkg"
+                    : "app-tile"
                 }`}
               >
-                {Icon && <Icon size={20} className={isPkg ? "text-teal-400" : "text-slate-400"} />}
-                <span className={`text-xs ${isPkg ? "text-teal-200" : "text-slate-300"}`}>{app.name}</span>
+                {Icon && <Icon size={20} className={isPkg ? "text-pkg" : "text-muted"} />}
+                <span className={`text-xs ${isPkg ? "text-pkg" : "text-default"}`}>{app.name}</span>
               </button>
             );
           })}
@@ -365,8 +365,8 @@ function HomeScreen({ onOpenApp }) {
               onClick={() => setCurrentPage(i)}
               className={`rounded-full transition-all ${
                 i === currentPage
-                  ? "w-4 h-2 bg-slate-300"
-                  : "w-2 h-2 bg-slate-600 hover:bg-slate-500"
+                  ? "w-4 h-2 bg-[var(--ds-text)]"
+                  : "w-2 h-2 bg-[var(--ds-faint)]"
               }`}
               title={i === 0 ? "Page 1 — Apps" : i === 1 ? "Page 2 — Tools" : "Page 3 — System"}
             />
@@ -376,7 +376,7 @@ function HomeScreen({ onOpenApp }) {
 
       {/* Right nav hot area — next page */}
       <div
-        className={`flex-1 h-full ${currentPage < pages.length - 1 ? "cursor-pointer hover:bg-slate-700/10" : "cursor-default"}`}
+        className={`flex-1 h-full ${currentPage < pages.length - 1 ? "cursor-pointer hover:bg-[var(--ds-raised)]" : "cursor-default"}`}
         onClick={() => currentPage < pages.length - 1 && setCurrentPage(p => p + 1)}
       />
 
@@ -389,14 +389,14 @@ function HomeScreen({ onOpenApp }) {
             onContextMenu={(e) => { e.preventDefault(); setTileMenu(null); }}
           />
           <div
-            className="fixed z-50 min-w-[200px] rounded-lg border border-slate-700 bg-slate-800 shadow-xl py-1 text-sm"
+            className="fixed z-50 min-w-[200px] rounded-lg border border-subtle surface-card shadow-xl py-1 text-sm"
             style={{ left: Math.min(tileMenu.x, window.innerWidth - 230), top: Math.min(tileMenu.y, window.innerHeight - 60) }}
           >
             <button
               onClick={() => hideTile(tileMenu.app)}
-              className="w-full text-left px-3 py-2 text-slate-200 hover:bg-slate-700 inline-flex items-center gap-2"
+              className="w-full text-left px-3 py-2 text-default hover:bg-[var(--ds-raised)] inline-flex items-center gap-2"
             >
-              <EyeOff size={14} className="text-slate-400" /> Hide {tileMenu.app.name} from my desktop
+              <EyeOff size={14} className="text-muted" /> Hide {tileMenu.app.name} from my desktop
             </button>
           </div>
         </>

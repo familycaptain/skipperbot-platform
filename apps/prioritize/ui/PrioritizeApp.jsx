@@ -47,12 +47,12 @@ const SOURCE_COLORS = {
   reminder: "text-violet-400",
   nag: "text-pink-400",
   auto_issue: "text-orange-400",
-  schedule: "text-cyan-400",
+  schedule: "text-accent",
   todo: "text-amber-400",
   home_task: "text-lime-400",
   med_refill: "text-rose-400",
-  med_treatment: "text-teal-400",
-  med_followup: "text-sky-400",
+  med_treatment: "text-accent",
+  med_followup: "text-accent",
   med_lab_missing: "text-purple-400",
 };
 
@@ -60,14 +60,14 @@ const SEVERITY_COLORS = {
   critical: "bg-red-600",
   major: "bg-orange-500",
   moderate: "bg-yellow-500",
-  minor: "bg-slate-500",
+  minor: "surface-raised",
 };
 
 const PRIORITY_COLORS = {
   critical: "text-red-400",
   high: "text-orange-400",
   medium: "text-yellow-400",
-  low: "text-slate-400",
+  low: "text-muted",
 };
 
 const FLAT_BACKLOG_GROUPS = [
@@ -258,7 +258,7 @@ export default function PrioritizeApp({ userId, onOpenApp, isActive, refreshKey,
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-400">
+      <div className="flex items-center justify-center h-full text-muted">
         <Loader2 size={18} className="animate-spin mr-2" /> Loading...
       </div>
     );
@@ -283,18 +283,18 @@ export default function PrioritizeApp({ userId, onOpenApp, isActive, refreshKey,
   return (
     <div className="flex flex-col h-full w-full overflow-y-auto">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
+      <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
         <div className="flex items-center gap-1">
           <button
             onClick={() => setTab("mine")}
             className={`px-2.5 py-1 text-xs rounded transition-colors ${
-              tab === "mine" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-white"
+              tab === "mine" ? "surface-raised text-default" : "text-muted hover:text-[var(--ds-text)]"
             }`}
           >Mine</button>
           <button
             onClick={() => setTab("family")}
             className={`flex items-center gap-1 px-2.5 py-1 text-xs rounded transition-colors ${
-              tab === "family" ? "bg-slate-700 text-white" : "text-slate-400 hover:text-white"
+              tab === "family" ? "surface-raised text-default" : "text-muted hover:text-[var(--ds-text)]"
             }`}
           ><Users size={11} /> Family</button>
         </div>
@@ -304,7 +304,7 @@ export default function PrioritizeApp({ userId, onOpenApp, isActive, refreshKey,
             className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
               nagEnabled
                 ? "text-violet-400 hover:bg-violet-900/30"
-                : "text-slate-500 hover:bg-slate-700"
+                : "text-faint hover:bg-[var(--ds-raised)]"
             }`}
             title={nagEnabled ? "Daily focus nag is ON — click to pause" : "Daily focus nag is OFF — click to enable"}
           >
@@ -323,11 +323,11 @@ export default function PrioritizeApp({ userId, onOpenApp, isActive, refreshKey,
           <div className="flex items-center gap-2 mb-2">
             <Star size={14} className="text-amber-400" />
             <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Focus</span>
-            <span className="text-xs text-slate-500">{slots.length}/3</span>
+            <span className="text-xs text-faint">{slots.length}/3</span>
           </div>
 
           {slots.length === 0 ? (
-            <div className="text-sm text-slate-500 italic px-2 py-4 text-center border border-dashed border-slate-700 rounded-lg">
+            <div className="text-sm text-faint italic px-2 py-4 text-center border border-dashed border-subtle rounded-lg">
               No focus items yet. Promote something from the backlog below.
             </div>
           ) : (
@@ -354,12 +354,12 @@ export default function PrioritizeApp({ userId, onOpenApp, isActive, refreshKey,
         {/* Backlog Section */}
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Backlog</span>
-            <span className="text-xs text-slate-500">{totalBacklog} items</span>
+            <span className="text-xs font-semibold text-muted uppercase tracking-wider">Backlog</span>
+            <span className="text-xs text-faint">{totalBacklog} items</span>
           </div>
 
           {totalBacklog === 0 ? (
-            <div className="text-sm text-slate-500 italic px-2 py-4 text-center">
+            <div className="text-sm text-faint italic px-2 py-4 text-center">
               Nothing in your backlog. All clear!
             </div>
           ) : (
@@ -368,9 +368,9 @@ export default function PrioritizeApp({ userId, onOpenApp, isActive, refreshKey,
               {goalsTree.length > 0 && (
                 <div>
                   <div className="flex items-center gap-1.5 mb-1 px-1">
-                    <Target size={12} className="text-slate-500" />
-                    <span className="text-xs font-medium text-slate-400">Goals</span>
-                    <span className="text-[10px] text-slate-600">({goalsCount})</span>
+                    <Target size={12} className="text-faint" />
+                    <span className="text-xs font-medium text-muted">Goals</span>
+                    <span className="text-[10px] text-faint">({goalsCount})</span>
                   </div>
                   <div className="space-y-0.5">
                     {goalsTree.map(goal => (
@@ -395,9 +395,9 @@ export default function PrioritizeApp({ userId, onOpenApp, isActive, refreshKey,
                 return (
                   <div key={key}>
                     <div className="flex items-center gap-1.5 mb-1 px-1">
-                      <Icon size={12} className="text-slate-500" />
-                      <span className="text-xs font-medium text-slate-400">{label}</span>
-                      <span className="text-[10px] text-slate-600">({items.length})</span>
+                      <Icon size={12} className="text-faint" />
+                      <span className="text-xs font-medium text-muted">{label}</span>
+                      <span className="text-[10px] text-faint">({items.length})</span>
                     </div>
                     <div className="space-y-0.5">
                       {items.map(item => (
@@ -427,7 +427,7 @@ export default function PrioritizeApp({ userId, onOpenApp, isActive, refreshKey,
 function FamilyView({ data, loading, onOpenApp }) {
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12 text-slate-400">
+      <div className="flex items-center justify-center py-12 text-muted">
         <Loader2 size={18} className="animate-spin mr-2" /> Loading family...
       </div>
     );
@@ -453,30 +453,30 @@ function FamilyView({ data, loading, onOpenApp }) {
       {data.map(member => (
         <div key={member.user_id}>
           <div className="flex items-center gap-2 mb-1.5">
-            <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white uppercase">
+            <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-on-accent uppercase">
               {member.display_name?.[0] || "?"}
             </div>
-            <span className="text-sm font-medium text-white">{member.display_name}</span>
-            <span className="text-[10px] text-slate-500">{member.slots.length}/3</span>
+            <span className="text-sm font-medium text-default">{member.display_name}</span>
+            <span className="text-[10px] text-faint">{member.slots.length}/3</span>
             {member.focus_nag_enabled ? (
               <span className="text-[9px] px-1.5 py-0.5 rounded bg-violet-900/30 text-violet-400">nag on</span>
             ) : (
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-600">nag off</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded surface-card text-faint">nag off</span>
             )}
           </div>
           {member.slots.length === 0 ? (
-            <div className="text-xs text-slate-600 italic ml-8 mb-2">No focus items set</div>
+            <div className="text-xs text-faint italic ml-8 mb-2">No focus items set</div>
           ) : (
             <div className="space-y-1 ml-2 mb-2">
               {member.slots.map((slot, idx) => {
                 const item = slot.item || {};
                 const Icon = SOURCE_ICONS[slot.source_type] || Target;
-                const color = SOURCE_COLORS[slot.source_type] || "text-slate-400";
+                const color = SOURCE_COLORS[slot.source_type] || "text-muted";
                 const label = SOURCE_LABELS[slot.source_type] || slot.source_type;
                 return (
                   <div
                     key={slot.id}
-                    className="flex items-center gap-2 bg-slate-800/40 rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-slate-800/60 transition-colors"
+                    className="flex items-center gap-2 surface-card rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-[var(--ds-card)] transition-colors"
                     onClick={() => openSource(slot.source_type, slot.source_id, item)}
                   >
                     <span className="text-sm font-bold text-amber-500/50 w-4 text-center shrink-0">
@@ -484,18 +484,18 @@ function FamilyView({ data, loading, onOpenApp }) {
                     </span>
                     <Icon size={11} className={color} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm text-slate-300 truncate">{item.title || slot.source_id}</div>
+                      <div className="text-sm text-default truncate">{item.title || slot.source_id}</div>
                     </div>
                     <div className="flex items-center gap-1.5 text-[10px] shrink-0">
                       <span className={color}>{label}</span>
-                      {item.detail && <span className="text-slate-500">{item.detail}</span>}
+                      {item.detail && <span className="text-faint">{item.detail}</span>}
                       {item.priority && (
-                        <span className={PRIORITY_COLORS[item.priority] || "text-slate-500"}>
+                        <span className={PRIORITY_COLORS[item.priority] || "text-faint"}>
                           {item.priority}
                         </span>
                       )}
                       {item.severity && (
-                        <span className={`px-1 py-0 rounded text-white ${SEVERITY_COLORS[item.severity] || ""}`}>
+                        <span className={`px-1 py-0 rounded text-default ${SEVERITY_COLORS[item.severity] || ""}`}>
                           {item.severity}
                         </span>
                       )}
@@ -558,17 +558,17 @@ function GoalsTreeNode({ goal, onPromote, onOpen, disabled, slotsFull, focusedId
 function FocusCard({ slot, index, total, onClear, onMoveUp, onMoveDown, onMoveToTop, onMoveToBottom, onOpen, disabled }) {
   const item = slot.item || {};
   const Icon = SOURCE_ICONS[slot.source_type] || Target;
-  const color = SOURCE_COLORS[slot.source_type] || "text-slate-400";
+  const color = SOURCE_COLORS[slot.source_type] || "text-muted";
   const label = SOURCE_LABELS[slot.source_type] || slot.source_type;
 
   return (
-    <div className="flex items-center gap-2 bg-slate-800/60 border border-amber-900/30 rounded-lg px-2.5 py-2 group">
+    <div className="flex items-center gap-2 surface-card border border-amber-900/30 rounded-lg px-2.5 py-2 group">
       {/* Reorder arrows */}
       <div className="flex flex-col shrink-0">
         <button
           onClick={onMoveToTop}
           disabled={disabled || index === 0}
-          className="p-0 text-slate-600 hover:text-amber-400 disabled:opacity-20 disabled:cursor-default transition-colors"
+          className="p-0 text-faint hover:text-amber-400 disabled:opacity-20 disabled:cursor-default transition-colors"
           title="Move to top"
         >
           <ChevronsUp size={11} />
@@ -576,7 +576,7 @@ function FocusCard({ slot, index, total, onClear, onMoveUp, onMoveDown, onMoveTo
         <button
           onClick={onMoveUp}
           disabled={disabled || index === 0}
-          className="p-0 text-slate-600 hover:text-amber-400 disabled:opacity-20 disabled:cursor-default transition-colors"
+          className="p-0 text-faint hover:text-amber-400 disabled:opacity-20 disabled:cursor-default transition-colors"
           title="Move up"
         >
           <ChevronUp size={11} />
@@ -584,7 +584,7 @@ function FocusCard({ slot, index, total, onClear, onMoveUp, onMoveDown, onMoveTo
         <button
           onClick={onMoveDown}
           disabled={disabled || index === total - 1}
-          className="p-0 text-slate-600 hover:text-amber-400 disabled:opacity-20 disabled:cursor-default transition-colors"
+          className="p-0 text-faint hover:text-amber-400 disabled:opacity-20 disabled:cursor-default transition-colors"
           title="Move down"
         >
           <ChevronDown size={11} />
@@ -592,7 +592,7 @@ function FocusCard({ slot, index, total, onClear, onMoveUp, onMoveDown, onMoveTo
         <button
           onClick={onMoveToBottom}
           disabled={disabled || index === total - 1}
-          className="p-0 text-slate-600 hover:text-amber-400 disabled:opacity-20 disabled:cursor-default transition-colors"
+          className="p-0 text-faint hover:text-amber-400 disabled:opacity-20 disabled:cursor-default transition-colors"
           title="Move to bottom"
         >
           <ChevronsDown size={11} />
@@ -609,25 +609,25 @@ function FocusCard({ slot, index, total, onClear, onMoveUp, onMoveDown, onMoveTo
         className="flex-1 min-w-0 cursor-pointer"
         onClick={onOpen}
       >
-        <div className="text-sm font-medium text-white truncate hover:text-amber-300 transition-colors">
+        <div className="text-sm font-medium text-default truncate hover:text-amber-300 transition-colors">
           {item.title || slot.source_id}
         </div>
         <div className="flex items-center gap-2 mt-0.5 text-xs">
           <span className={`flex items-center gap-0.5 ${color}`}>
             <Icon size={10} /> {label}
           </span>
-          {item.detail && <span className="text-slate-500">{item.detail}</span>}
+          {item.detail && <span className="text-faint">{item.detail}</span>}
           {item.priority && (
-            <span className={PRIORITY_COLORS[item.priority] || "text-slate-400"}>
+            <span className={PRIORITY_COLORS[item.priority] || "text-muted"}>
               {item.priority}
             </span>
           )}
           {item.severity && (
-            <span className={`px-1 py-0 rounded text-[10px] text-white ${SEVERITY_COLORS[item.severity] || ""}`}>
+            <span className={`px-1 py-0 rounded text-[10px] text-default ${SEVERITY_COLORS[item.severity] || ""}`}>
               {item.severity}
             </span>
           )}
-          {item.due_date && <span className="text-slate-500">due {item.due_date}</span>}
+          {item.due_date && <span className="text-faint">due {item.due_date}</span>}
         </div>
       </div>
 
@@ -635,7 +635,7 @@ function FocusCard({ slot, index, total, onClear, onMoveUp, onMoveDown, onMoveTo
       <button
         onClick={onClear}
         disabled={disabled}
-        className="shrink-0 p-1 text-slate-600 hover:text-red-400 transition-colors disabled:opacity-30"
+        className="shrink-0 p-1 text-faint hover:text-red-400 transition-colors disabled:opacity-30"
         title="Remove from focus"
       >
         <X size={14} />
@@ -646,13 +646,13 @@ function FocusCard({ slot, index, total, onClear, onMoveUp, onMoveDown, onMoveTo
 
 
 function BacklogItem({ item, onPromote, onOpen, disabled, slotsFull, indent = 0 }) {
-  const color = SOURCE_COLORS[item.source_type] || "text-slate-400";
+  const color = SOURCE_COLORS[item.source_type] || "text-muted";
   const Icon = SOURCE_ICONS[item.source_type] || Target;
   const indentPx = indent * 20;
 
   return (
     <div
-      className={`flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-800/40 transition-colors group ${
+      className={`flex items-center gap-2 px-2 py-1.5 rounded hover:bg-[var(--ds-card)] transition-colors group ${
         item.in_focus ? "opacity-40" : ""
       }`}
       style={{ paddingLeft: `${8 + indentPx}px` }}
@@ -661,7 +661,7 @@ function BacklogItem({ item, onPromote, onOpen, disabled, slotsFull, indent = 0 
       <button
         onClick={onPromote}
         disabled={disabled || (slotsFull && !item.in_focus)}
-        className="shrink-0 p-0.5 text-slate-600 hover:text-amber-400 disabled:opacity-20 disabled:cursor-default transition-colors"
+        className="shrink-0 p-0.5 text-faint hover:text-amber-400 disabled:opacity-20 disabled:cursor-default transition-colors"
         title={item.in_focus ? "Already in focus" : slotsFull ? "All focus slots full" : "Promote to focus"}
       >
         <ArrowUpFromLine size={12} />
@@ -670,7 +670,7 @@ function BacklogItem({ item, onPromote, onOpen, disabled, slotsFull, indent = 0 
       {/* Content */}
       <Icon size={11} className={`shrink-0 ${color}`} />
       <div className="flex-1 min-w-0 cursor-pointer" onClick={onOpen}>
-        <span className="text-sm text-slate-300 hover:text-white transition-colors truncate block">
+        <span className="text-sm text-default hover:text-[var(--ds-text)] transition-colors truncate block">
           {item.title}
         </span>
       </div>
@@ -678,16 +678,16 @@ function BacklogItem({ item, onPromote, onOpen, disabled, slotsFull, indent = 0 
       {/* Metadata */}
       <div className="flex items-center gap-1.5 shrink-0 text-[10px]">
         {item.priority && (
-          <span className={PRIORITY_COLORS[item.priority] || "text-slate-500"}>
+          <span className={PRIORITY_COLORS[item.priority] || "text-faint"}>
             {item.priority}
           </span>
         )}
         {item.severity && (
-          <span className={`px-1 py-0 rounded text-white ${SEVERITY_COLORS[item.severity] || ""}`}>
+          <span className={`px-1 py-0 rounded text-default ${SEVERITY_COLORS[item.severity] || ""}`}>
             {item.severity}
           </span>
         )}
-        {item.due_date && <span className="text-slate-500">{item.due_date}</span>}
+        {item.due_date && <span className="text-faint">{item.due_date}</span>}
         {item.detail && !item.due_date && (
           <span className={`${color} truncate max-w-[120px]`}>{item.detail}</span>
         )}

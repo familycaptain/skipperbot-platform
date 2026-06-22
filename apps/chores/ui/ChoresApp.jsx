@@ -71,8 +71,8 @@ export default function ChoresApp({ appId, userId, userRole, refreshKey, isActiv
   }, [activeTab, visibleTabs]);
 
   return (
-    <div className="flex flex-col h-full w-full bg-zinc-950 text-zinc-100">
-      <div className="flex items-center gap-1 px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
+    <div className="flex flex-col h-full w-full surface-page text-default">
+      <div className="flex items-center gap-1 px-3 h-10 surface-panel border-b border-subtle shrink-0">
         {visibleTabs.map(tab => {
           const Icon = tab.icon;
           const active = activeTab === tab.id;
@@ -81,7 +81,7 @@ export default function ChoresApp({ appId, userId, userRole, refreshKey, isActiv
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md whitespace-nowrap transition-colors ${
-                active ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"
+                active ? "bg-indigo-600 text-on-accent" : "text-muted hover:text-on-accent hover:bg-[var(--ds-card)]"
               }`}
             >
               <Icon size={13} />
@@ -160,24 +160,24 @@ function TodayTab({ userId, isParent, refreshKey }) {
   return (
     <div className="p-4 space-y-4">
       <div className="flex items-center gap-2">
-        <button onClick={() => setDate(addDays(date, -1))} className="p-1.5 hover:bg-slate-800 rounded">
+        <button onClick={() => setDate(addDays(date, -1))} className="p-1.5 hover:bg-[var(--ds-card)] rounded">
           <ChevronLeft size={16} />
         </button>
         <input
           type="date"
           value={date}
           onChange={e => setDate(e.target.value)}
-          className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+          className="surface-panel border border-subtle rounded px-2 py-1 text-sm"
         />
-        <button onClick={() => setDate(addDays(date, 1))} className="p-1.5 hover:bg-slate-800 rounded">
+        <button onClick={() => setDate(addDays(date, 1))} className="p-1.5 hover:bg-[var(--ds-card)] rounded">
           <ChevronRight size={16} />
         </button>
         <button
           onClick={() => setDate(todayISO())}
-          className="px-2 py-1 text-xs bg-slate-800 hover:bg-slate-700 rounded ml-2"
+          className="px-2 py-1 text-xs surface-card hover:bg-[var(--ds-raised)] rounded ml-2"
         >Today</button>
         <div className="flex-1" />
-        <button onClick={() => load()} className="p-1.5 hover:bg-slate-800 rounded">
+        <button onClick={() => load()} className="p-1.5 hover:bg-[var(--ds-card)] rounded">
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
@@ -188,7 +188,7 @@ function TodayTab({ userId, isParent, refreshKey }) {
         </div>
       )}
 
-      {!data && <div className="text-slate-500 text-sm">Loading…</div>}
+      {!data && <div className="text-faint text-sm">Loading…</div>}
 
       {data && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -198,7 +198,7 @@ function TodayTab({ userId, isParent, refreshKey }) {
             return (
               <div
                 key={kid.id}
-                className="bg-slate-900 border border-slate-800 rounded-lg p-3"
+                className="surface-panel border border-subtle rounded-lg p-3"
                 style={{ borderTopColor: kid.color, borderTopWidth: 3 }}
               >
                 <div className="flex items-baseline justify-between mb-2">
@@ -206,7 +206,7 @@ function TodayTab({ userId, isParent, refreshKey }) {
                     {kid.name}{isYou ? " (you)" : ""}
                   </div>
                   {kid.assignments.length === 0 && (
-                    <span className="text-xs text-slate-500">nothing today</span>
+                    <span className="text-xs text-faint">nothing today</span>
                   )}
                 </div>
                 <ul className="space-y-1">
@@ -217,18 +217,18 @@ function TodayTab({ userId, isParent, refreshKey }) {
                         disabled={!interactive}
                         className={`mt-0.5 w-5 h-5 flex items-center justify-center rounded border ${
                           a.completed
-                            ? "bg-emerald-600 border-emerald-500 text-white"
-                            : "border-slate-600"
+                            ? "bg-emerald-600 border-emerald-500 text-on-accent"
+                            : "border-subtle"
                         } ${interactive ? "cursor-pointer hover:border-indigo-500" : "cursor-not-allowed opacity-70"}`}
                         title={interactive ? "Toggle done" : "View only"}
                       >
                         {a.completed && <Check size={12} />}
                       </button>
                       <div className="flex-1 min-w-0">
-                        <div className={a.completed ? "line-through text-slate-500" : ""}>
+                        <div className={a.completed ? "line-through text-faint" : ""}>
                           {a.chore_name}
                         </div>
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-faint">
                           {a.zone_name}
                           {a.note && <span> · {a.note}</span>}
                           {a.completion?.completed_at && (
@@ -282,28 +282,28 @@ function WeekTab({ userId, isParent, refreshKey }) {
   return (
     <div className="p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <button onClick={() => setStart(addDays(start, -7))} className="p-1.5 hover:bg-slate-800 rounded">
+        <button onClick={() => setStart(addDays(start, -7))} className="p-1.5 hover:bg-[var(--ds-card)] rounded">
           <ChevronLeft size={16} />
         </button>
         <input
           type="date"
           value={start}
           onChange={e => setStart(e.target.value)}
-          className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm"
+          className="surface-panel border border-subtle rounded px-2 py-1 text-sm"
         />
-        <button onClick={() => setStart(addDays(start, 7))} className="p-1.5 hover:bg-slate-800 rounded">
+        <button onClick={() => setStart(addDays(start, 7))} className="p-1.5 hover:bg-[var(--ds-card)] rounded">
           <ChevronRight size={16} />
         </button>
       </div>
 
       {error && <div className="text-red-400 text-sm">{error}</div>}
-      {!data && <div className="text-slate-500 text-sm">Loading…</div>}
+      {!data && <div className="text-faint text-sm">Loading…</div>}
 
       {data && (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
+              <tr className="text-left text-xs text-muted border-b border-subtle">
                 <th className="py-2 px-2">Kid</th>
                 {data.days.map(day => (
                   <th key={day.date} className="py-2 px-2">{fmtDate(day.date)}</th>
@@ -312,7 +312,7 @@ function WeekTab({ userId, isParent, refreshKey }) {
             </thead>
             <tbody>
               {data.kids.map(k => (
-                <tr key={k.id} className="border-b border-slate-900 align-top">
+                <tr key={k.id} className="border-b border-subtle align-top">
                   <td className="py-2 px-2 font-semibold" style={{ color: k.color }}>{k.name}</td>
                   {data.days.map(day => {
                     const kidDay = day.kids.find(x => x.id === k.id);
@@ -320,9 +320,9 @@ function WeekTab({ userId, isParent, refreshKey }) {
                     return (
                       <td key={day.date} className="py-2 px-2 text-xs">
                         {ass.length === 0
-                          ? <span className="text-slate-600">—</span>
+                          ? <span className="text-faint">—</span>
                           : ass.map(a => (
-                              <div key={a.chore_id} className={a.completed ? "line-through text-slate-500" : ""}>
+                              <div key={a.chore_id} className={a.completed ? "line-through text-faint" : ""}>
                                 {a.completed ? "✓" : "•"} {a.chore_name}
                               </div>
                             ))}
@@ -353,7 +353,7 @@ function ManageTab({ userId, refreshKey }) {
             key={id}
             onClick={() => setTab(id)}
             className={`px-3 py-1 text-xs rounded ${
-              tab === id ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400 hover:bg-slate-700"
+              tab === id ? "bg-indigo-600 text-on-accent" : "surface-card text-muted hover:bg-[var(--ds-raised)]"
             }`}
           >{label}</button>
         ))}
@@ -425,19 +425,19 @@ function ManageKids({ userId, refreshKey }) {
     <div className="space-y-2">
       {error && <div className="text-red-400 text-sm">{error}</div>}
 
-      <div className="bg-slate-900 border border-slate-800 rounded p-2 flex flex-wrap gap-2 items-end text-sm">
-        <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} placeholder="Name" className="bg-slate-800 px-2 py-1 rounded w-32"/>
+      <div className="surface-panel border border-subtle rounded p-2 flex flex-wrap gap-2 items-end text-sm">
+        <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} placeholder="Name" className="surface-card px-2 py-1 rounded w-32"/>
         <input type="color" value={draft.color} onChange={e => setDraft({ ...draft, color: e.target.value })} className="h-8 w-8 rounded"/>
-        <input value={draft.user_id} onChange={e => setDraft({ ...draft, user_id: e.target.value })} placeholder="username (optional)" className="bg-slate-800 px-2 py-1 rounded w-40"/>
-        <input type="number" value={draft.sort_order} onChange={e => setDraft({ ...draft, sort_order: parseInt(e.target.value || "0") })} className="bg-slate-800 px-2 py-1 rounded w-16" placeholder="order"/>
-        <button onClick={add} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded flex items-center gap-1">
+        <input value={draft.user_id} onChange={e => setDraft({ ...draft, user_id: e.target.value })} placeholder="username (optional)" className="surface-card px-2 py-1 rounded w-40"/>
+        <input type="number" value={draft.sort_order} onChange={e => setDraft({ ...draft, sort_order: parseInt(e.target.value || "0") })} className="surface-card px-2 py-1 rounded w-16" placeholder="order"/>
+        <button onClick={add} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-on-accent rounded flex items-center gap-1">
           <Plus size={14}/> Add kid
         </button>
       </div>
 
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-xs text-slate-400 border-b border-slate-800">
+          <tr className="text-left text-xs text-muted border-b border-subtle">
             <th className="py-1 px-2">Name</th>
             <th className="py-1 px-2">Color</th>
             <th className="py-1 px-2">User</th>
@@ -462,30 +462,30 @@ function KidRow({ kid, onSave, onRemove, editing, setEditing }) {
 
   if (!editing) {
     return (
-      <tr className="border-b border-slate-900">
+      <tr className="border-b border-subtle">
         <td className="py-1 px-2" style={{ color: kid.color }}>{kid.name}</td>
         <td className="py-1 px-2"><span className="inline-block w-4 h-4 rounded" style={{ backgroundColor: kid.color }} /> {kid.color}</td>
-        <td className="py-1 px-2">{kid.user_id || <span className="text-slate-600">—</span>}</td>
+        <td className="py-1 px-2">{kid.user_id || <span className="text-faint">—</span>}</td>
         <td className="py-1 px-2">{kid.notify_morning ? "✓" : "—"}</td>
-        <td className="py-1 px-2">{kid.active ? "✓" : <span className="text-slate-500">inactive</span>}</td>
+        <td className="py-1 px-2">{kid.active ? "✓" : <span className="text-faint">inactive</span>}</td>
         <td className="py-1 px-2 flex gap-1 justify-end">
-          <button onClick={() => setEditing(true)} className="p-1 hover:bg-slate-800 rounded"><Pencil size={12}/></button>
-          <button onClick={onRemove} className="p-1 hover:bg-slate-800 text-red-400 rounded"><Trash2 size={12}/></button>
+          <button onClick={() => setEditing(true)} className="p-1 hover:bg-[var(--ds-card)] rounded"><Pencil size={12}/></button>
+          <button onClick={onRemove} className="p-1 hover:bg-[var(--ds-card)] text-red-400 rounded"><Trash2 size={12}/></button>
         </td>
       </tr>
     );
   }
 
   return (
-    <tr className="border-b border-slate-900 bg-slate-900/50">
-      <td className="py-1 px-2"><input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} className="bg-slate-800 px-2 py-1 rounded w-full"/></td>
+    <tr className="border-b border-subtle surface-panel">
+      <td className="py-1 px-2"><input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} className="surface-card px-2 py-1 rounded w-full"/></td>
       <td className="py-1 px-2"><input type="color" value={draft.color} onChange={e => setDraft({ ...draft, color: e.target.value })} className="h-7 w-7"/></td>
-      <td className="py-1 px-2"><input value={draft.user_id || ""} onChange={e => setDraft({ ...draft, user_id: e.target.value })} className="bg-slate-800 px-2 py-1 rounded w-full"/></td>
+      <td className="py-1 px-2"><input value={draft.user_id || ""} onChange={e => setDraft({ ...draft, user_id: e.target.value })} className="surface-card px-2 py-1 rounded w-full"/></td>
       <td className="py-1 px-2"><input type="checkbox" checked={!!draft.notify_morning} onChange={e => setDraft({ ...draft, notify_morning: e.target.checked })}/></td>
       <td className="py-1 px-2"><input type="checkbox" checked={!!draft.active} onChange={e => setDraft({ ...draft, active: e.target.checked })}/></td>
       <td className="py-1 px-2 flex gap-1 justify-end">
-        <button onClick={() => onSave(draft)} className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs">Save</button>
-        <button onClick={() => setEditing(false)} className="p-1 hover:bg-slate-800 rounded"><X size={12}/></button>
+        <button onClick={() => onSave(draft)} className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-on-accent rounded text-xs">Save</button>
+        <button onClick={() => setEditing(false)} className="p-1 hover:bg-[var(--ds-card)] rounded"><X size={12}/></button>
       </td>
     </tr>
   );
@@ -544,18 +544,18 @@ function ManageZones({ userId, refreshKey }) {
     <div className="space-y-2">
       {error && <div className="text-red-400 text-sm">{error}</div>}
 
-      <div className="bg-slate-900 border border-slate-800 rounded p-2 flex flex-wrap gap-2 items-end text-sm">
-        <input value={newZone.name} onChange={e => setNewZone({ ...newZone, name: e.target.value })} placeholder="Zone name" className="bg-slate-800 px-2 py-1 rounded w-40"/>
-        <input type="date" value={newZone.rotation_start} onChange={e => setNewZone({ ...newZone, rotation_start: e.target.value })} className="bg-slate-800 px-2 py-1 rounded"/>
+      <div className="surface-panel border border-subtle rounded p-2 flex flex-wrap gap-2 items-end text-sm">
+        <input value={newZone.name} onChange={e => setNewZone({ ...newZone, name: e.target.value })} placeholder="Zone name" className="surface-card px-2 py-1 rounded w-40"/>
+        <input type="date" value={newZone.rotation_start} onChange={e => setNewZone({ ...newZone, rotation_start: e.target.value })} className="surface-card px-2 py-1 rounded"/>
         <select
           multiple
           value={newZone.member_kid_ids}
           onChange={e => setNewZone({ ...newZone, member_kid_ids: Array.from(e.target.selectedOptions).map(o => o.value) })}
-          className="bg-slate-800 px-2 py-1 rounded text-xs"
+          className="surface-card px-2 py-1 rounded text-xs"
         >
           {kids.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
         </select>
-        <button onClick={addZone} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded flex items-center gap-1">
+        <button onClick={addZone} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-on-accent rounded flex items-center gap-1">
           <Plus size={14}/> Add zone
         </button>
       </div>
@@ -656,67 +656,67 @@ function ZoneCard({ zone, kids, userId, expanded, setExpanded, onChange, onRemov
   const memberNames = zone.members.map(m => m.kid_name).join(" → ");
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded">
+    <div className="surface-panel border border-subtle rounded">
       <div className="flex items-center gap-2 p-2">
         <button
           onClick={() => setExpanded(!expanded)}
           className="text-sm font-semibold flex-1 text-left hover:text-indigo-300"
         >
           {zone.name}
-          <span className="text-xs text-slate-500 ml-2">
+          <span className="text-xs text-faint ml-2">
             ({memberNames || "no members"}) · {zone.chore_count} chore(s)
           </span>
         </button>
-        <button onClick={() => setEditing(!editing)} className="p-1 hover:bg-slate-800 rounded"><Pencil size={12}/></button>
-        <button onClick={onRemove} className="p-1 hover:bg-slate-800 text-red-400 rounded"><Trash2 size={12}/></button>
+        <button onClick={() => setEditing(!editing)} className="p-1 hover:bg-[var(--ds-card)] rounded"><Pencil size={12}/></button>
+        <button onClick={onRemove} className="p-1 hover:bg-[var(--ds-card)] text-red-400 rounded"><Trash2 size={12}/></button>
       </div>
 
       {editing && (
-        <div className="bg-slate-950 border-t border-slate-800 p-2 flex flex-wrap gap-2 items-end text-sm">
-          <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} className="bg-slate-800 px-2 py-1 rounded"/>
-          <label className="text-xs text-slate-400 flex flex-col gap-1">
+        <div className="surface-page border-t border-subtle p-2 flex flex-wrap gap-2 items-end text-sm">
+          <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} className="surface-card px-2 py-1 rounded"/>
+          <label className="text-xs text-muted flex flex-col gap-1">
             rotation_start
-            <input type="date" value={draft.rotation_start} onChange={e => setDraft({ ...draft, rotation_start: e.target.value })} className="bg-slate-800 px-2 py-1 rounded"/>
+            <input type="date" value={draft.rotation_start} onChange={e => setDraft({ ...draft, rotation_start: e.target.value })} className="surface-card px-2 py-1 rounded"/>
           </label>
-          <label className="text-xs text-slate-400 flex flex-col gap-1">
+          <label className="text-xs text-muted flex flex-col gap-1">
             members (ordered)
             <select
               multiple
               value={draft.member_kid_ids}
               onChange={e => setDraft({ ...draft, member_kid_ids: Array.from(e.target.selectedOptions).map(o => o.value) })}
-              className="bg-slate-800 px-2 py-1 rounded text-xs"
+              className="surface-card px-2 py-1 rounded text-xs"
             >
               {kids.map(k => <option key={k.id} value={k.id}>{k.name}</option>)}
             </select>
           </label>
-          <button onClick={saveZone} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded">Save</button>
-          <button onClick={() => setEditing(false)} className="p-1 hover:bg-slate-800 rounded"><X size={12}/></button>
+          <button onClick={saveZone} className="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-on-accent rounded">Save</button>
+          <button onClick={() => setEditing(false)} className="p-1 hover:bg-[var(--ds-card)] rounded"><X size={12}/></button>
         </div>
       )}
 
       {expanded && (
-        <div className="bg-slate-950 border-t border-slate-800 p-2">
+        <div className="surface-page border-t border-subtle p-2">
           {error && <div className="text-red-400 text-xs mb-2">{error}</div>}
           {DOW_NAMES.map((d, dow) => {
             const dayChores = chores.filter(c => c.dow === dow).sort((a, b) => a.position - b.position);
             return (
-              <div key={dow} className="flex items-start gap-2 text-sm border-b border-slate-900 py-1">
-                <div className="w-12 shrink-0 text-xs text-slate-400 pt-1">{d}</div>
+              <div key={dow} className="flex items-start gap-2 text-sm border-b border-subtle py-1">
+                <div className="w-12 shrink-0 text-xs text-muted pt-1">{d}</div>
                 <div className="flex-1">
                   {dayChores.length === 0
-                    ? <span className="text-slate-600 text-xs">—</span>
+                    ? <span className="text-faint text-xs">—</span>
                     : dayChores.map(c => (
                         <div key={c.id} className="flex items-center gap-2 text-xs py-0.5">
-                          <span className={c.active ? "" : "text-slate-500 line-through"}>
+                          <span className={c.active ? "" : "text-faint line-through"}>
                             [{c.position}] {c.name}
                           </span>
-                          {c.note && <span className="text-slate-500">— {c.note}</span>}
-                          <button onClick={() => editChore(c)} className="p-0.5 hover:bg-slate-800 rounded"><Pencil size={10}/></button>
-                          <button onClick={() => deleteChore(c)} className="p-0.5 hover:bg-slate-800 text-red-400 rounded"><Trash2 size={10}/></button>
+                          {c.note && <span className="text-faint">— {c.note}</span>}
+                          <button onClick={() => editChore(c)} className="p-0.5 hover:bg-[var(--ds-card)] rounded"><Pencil size={10}/></button>
+                          <button onClick={() => deleteChore(c)} className="p-0.5 hover:bg-[var(--ds-card)] text-red-400 rounded"><Trash2 size={10}/></button>
                         </div>
                       ))}
                 </div>
-                <button onClick={() => addChoreSlot(dow)} className="p-1 hover:bg-slate-800 rounded text-xs flex items-center gap-1 text-slate-400">
+                <button onClick={() => addChoreSlot(dow)} className="p-1 hover:bg-[var(--ds-card)] rounded text-xs flex items-center gap-1 text-muted">
                   <Plus size={11}/>
                 </button>
               </div>

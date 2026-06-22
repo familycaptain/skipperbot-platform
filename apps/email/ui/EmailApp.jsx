@@ -33,23 +33,23 @@ export default function EmailApp({ appId, userId, isActive }) {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-slate-500">
+      <div className="flex items-center justify-center h-64 text-faint">
         <Loader2 size={20} className="animate-spin mr-2" /> Loading...
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full flex flex-col bg-slate-900 text-white">
+    <div className="h-full w-full flex flex-col surface-panel text-default">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 px-4 pt-3 pb-2 border-b border-slate-800">
+      <div className="flex items-center gap-1 px-4 pt-3 pb-2 border-b border-subtle">
         {TABS.map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-              tab === t ? "bg-slate-700 text-white" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800"
+              tab === t ? "surface-raised text-default" : "text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-card)]"
             }`}>
             {t}
-            {t === "Accounts" && <span className="ml-1 text-[10px] text-slate-600">({accounts.length})</span>}
+            {t === "Accounts" && <span className="ml-1 text-[10px] text-faint">({accounts.length})</span>}
           </button>
         ))}
       </div>
@@ -129,25 +129,25 @@ function AccountsTab({ accounts, userId, onRefresh }) {
   return (
     <div className="space-y-4 max-w-xl">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-slate-400">Connected Gmail Accounts</h3>
+        <h3 className="text-sm font-medium text-muted">Connected Gmail Accounts</h3>
       </div>
 
       {accounts.length === 0 ? (
         <div className="text-center py-12">
-          <Mail size={40} className="mx-auto text-slate-700 mb-3" />
-          <p className="text-slate-500 text-sm mb-1">No Gmail accounts connected yet.</p>
-          <p className="text-slate-600 text-xs mb-4">Connect your Gmail to start setting up email rules.</p>
+          <Mail size={40} className="mx-auto text-default mb-3" />
+          <p className="text-faint text-sm mb-1">No Gmail accounts connected yet.</p>
+          <p className="text-faint text-xs mb-4">Connect your Gmail to start setting up email rules.</p>
         </div>
       ) : (
         <div className="space-y-2">
           {accounts.map(a => (
-            <div key={a.id} className="bg-slate-800/40 border border-slate-700/30 rounded-lg p-3 group">
+            <div key={a.id} className="surface-card border border-subtle rounded-lg p-3 group">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Mail size={16} className={a.active ? "text-indigo-400" : "text-slate-600"} />
+                  <Mail size={16} className={a.active ? "text-indigo-400" : "text-faint"} />
                   <div>
                     <div className="text-sm font-medium">{a.email_address}</div>
-                    <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                    <div className="flex items-center gap-2 text-[10px] text-faint">
                       {a.display_name && <span>{a.display_name}</span>}
                       {a.last_synced_at && (
                         <span>Last synced: {new Date(a.last_synced_at).toLocaleString()}</span>
@@ -158,17 +158,17 @@ function AccountsTab({ accounts, userId, onRefresh }) {
                 </div>
                 <div className="flex items-center gap-2">
                   <button onClick={() => handleToggle(a)} title={a.active ? "Disable" : "Enable"}
-                    className="text-slate-500 hover:text-white">
+                    className="text-faint hover:text-[var(--ds-text)]">
                     {a.active ? <ToggleRight size={18} className="text-emerald-400" /> : <ToggleLeft size={18} />}
                   </button>
                   {confirmDel === a.id ? (
                     <div className="flex items-center gap-1">
-                      <button onClick={() => handleDelete(a.id)} className="px-1.5 py-0.5 text-[10px] bg-red-600 hover:bg-red-500 text-white rounded">Yes</button>
-                      <button onClick={() => setConfirmDel(null)} className="px-1.5 py-0.5 text-[10px] bg-slate-700 text-white rounded">No</button>
+                      <button onClick={() => handleDelete(a.id)} className="px-1.5 py-0.5 text-[10px] bg-red-600 hover:bg-red-500 text-on-accent rounded">Yes</button>
+                      <button onClick={() => setConfirmDel(null)} className="px-1.5 py-0.5 text-[10px] surface-raised text-default rounded">No</button>
                     </div>
                   ) : (
                     <button onClick={() => setConfirmDel(a.id)}
-                      className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400">
+                      className="opacity-0 group-hover:opacity-100 text-faint hover:text-red-400">
                       <Trash2 size={14} />
                     </button>
                   )}
@@ -180,22 +180,22 @@ function AccountsTab({ accounts, userId, onRefresh }) {
       )}
 
       {/* Connect form */}
-      <div className="bg-slate-800/30 border border-slate-700/30 rounded-lg p-3 space-y-2">
-        <div className="text-xs text-slate-500 uppercase tracking-wider font-medium">Connect Gmail Account</div>
+      <div className="surface-card border border-subtle rounded-lg p-3 space-y-2">
+        <div className="text-xs text-faint uppercase tracking-wider font-medium">Connect Gmail Account</div>
         <div className="flex items-center gap-2">
           <input
             value={displayName}
             onChange={e => setDisplayName(e.target.value)}
             placeholder="Display name (e.g. Personal, Work)"
-            className="flex-1 bg-slate-800 text-white text-xs px-3 py-2 rounded border border-slate-700 outline-none focus:border-indigo-500"
+            className="flex-1 surface-card text-default text-xs px-3 py-2 rounded border border-subtle outline-none focus:border-indigo-500"
           />
           <button onClick={handleConnect} disabled={connecting}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded font-medium">
+            className="flex items-center gap-1.5 px-4 py-2 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-on-accent rounded font-medium">
             {connecting ? <Loader2 size={12} className="animate-spin" /> : <Link2 size={12} />}
             Connect Gmail
           </button>
         </div>
-        <p className="text-[10px] text-slate-600">
+        <p className="text-[10px] text-faint">
           Opens Google sign-in in a new tab. You'll be asked to grant SkipperBot access to read and modify your Gmail labels.
         </p>
       </div>
@@ -245,7 +245,7 @@ function RulesTab({ accounts, userId, onRefresh, ruleTemplate, onTemplateClear }
   const refreshR = () => setRefreshRules(k => k + 1);
 
   if (accounts.length === 0) {
-    return <p className="text-sm text-slate-600 italic">Connect a Gmail account first on the Accounts tab.</p>;
+    return <p className="text-sm text-faint italic">Connect a Gmail account first on the Accounts tab.</p>;
   }
 
   return (
@@ -253,18 +253,18 @@ function RulesTab({ accounts, userId, onRefresh, ruleTemplate, onTemplateClear }
       {/* Account selector */}
       {accounts.length > 1 && (
         <select value={selectedAccount} onChange={e => setSelectedAccount(e.target.value)}
-          className="bg-slate-800 text-white text-xs px-2 py-1.5 rounded border border-slate-700 outline-none">
+          className="surface-card text-default text-xs px-2 py-1.5 rounded border border-subtle outline-none">
           {accounts.map(a => <option key={a.id} value={a.id}>{a.email_address}</option>)}
         </select>
       )}
 
       <div className="flex items-center justify-between">
-        <h3 className="text-xs text-slate-500 uppercase tracking-wider">
+        <h3 className="text-xs text-faint uppercase tracking-wider">
           Rules ({rules.length})
-          {accounts.length === 1 && <span className="ml-2 normal-case text-slate-600">for {accounts[0].email_address}</span>}
+          {accounts.length === 1 && <span className="ml-2 normal-case text-faint">for {accounts[0].email_address}</span>}
         </h3>
         <button onClick={() => { setShowAdd(!showAdd); setEditingId(null); }}
-          className="flex items-center gap-1 px-2 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded">
+          className="flex items-center gap-1 px-2 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-on-accent rounded">
           <Plus size={12} /> Add Rule
         </button>
       </div>
@@ -276,9 +276,9 @@ function RulesTab({ accounts, userId, onRefresh, ruleTemplate, onTemplateClear }
       )}
 
       {loadingRules ? (
-        <div className="text-slate-500 text-sm flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Loading rules...</div>
+        <div className="text-faint text-sm flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Loading rules...</div>
       ) : rules.length === 0 ? (
-        <p className="text-sm text-slate-600 italic">No rules yet. Add one to start auto-processing your inbox.</p>
+        <p className="text-sm text-faint italic">No rules yet. Add one to start auto-processing your inbox.</p>
       ) : (
         <div className="space-y-2">
           {rules.map((rule, i) => (
@@ -411,53 +411,53 @@ function RuleForm({ accountId, rule, template, onSave, onCancel }) {
   );
 
   return (
-    <form onSubmit={handleSubmit} className="bg-slate-800/40 border border-slate-700/50 rounded-lg p-3 space-y-3">
+    <form onSubmit={handleSubmit} className="surface-card border border-subtle rounded-lg p-3 space-y-3">
       <div className="text-[10px] text-indigo-400 uppercase tracking-wider font-medium">
         {isEdit ? "Edit Rule" : tpl.sender ? `New Rule from "${tpl.sender.split("<")[0].trim()}"` : "New Rule"}
       </div>
 
       <input value={name} onChange={e => setName(e.target.value)} placeholder="Rule name *"
-        className="w-full bg-slate-800 text-white text-xs px-2 py-1.5 rounded border border-slate-700 outline-none focus:border-indigo-500" />
+        className="w-full surface-card text-default text-xs px-2 py-1.5 rounded border border-subtle outline-none focus:border-indigo-500" />
 
-      <div className="text-[10px] text-slate-500 uppercase tracking-wider">Conditions (match all non-empty)</div>
+      <div className="text-[10px] text-faint uppercase tracking-wider">Conditions (match all non-empty)</div>
       <div className="grid grid-cols-3 gap-2">
         <input value={fromContains} onChange={e => setFromContains(e.target.value)} placeholder="From contains..."
-          className="bg-slate-800 text-white text-xs px-2 py-1.5 rounded border border-slate-700 outline-none focus:border-indigo-500" />
+          className="surface-card text-default text-xs px-2 py-1.5 rounded border border-subtle outline-none focus:border-indigo-500" />
         <input value={subjectContains} onChange={e => setSubjectContains(e.target.value)} placeholder="Subject contains..."
-          className="bg-slate-800 text-white text-xs px-2 py-1.5 rounded border border-slate-700 outline-none focus:border-indigo-500" />
+          className="surface-card text-default text-xs px-2 py-1.5 rounded border border-subtle outline-none focus:border-indigo-500" />
         <input value={bodyContains} onChange={e => setBodyContains(e.target.value)} placeholder="Body contains..."
-          className="bg-slate-800 text-white text-xs px-2 py-1.5 rounded border border-slate-700 outline-none focus:border-indigo-500" />
+          className="surface-card text-default text-xs px-2 py-1.5 rounded border border-subtle outline-none focus:border-indigo-500" />
       </div>
       <div className="flex items-center gap-3">
         {labelsLoading ? (
-          <Loader2 size={12} className="animate-spin text-slate-500" />
+          <Loader2 size={12} className="animate-spin text-faint" />
         ) : (
           <select value={hasLabel} onChange={e => setHasLabel(e.target.value)}
-            className="bg-slate-800 text-white text-xs px-2 py-1.5 rounded border border-slate-700 outline-none focus:border-indigo-500">
+            className="surface-card text-default text-xs px-2 py-1.5 rounded border border-subtle outline-none focus:border-indigo-500">
             <option value="">In any label</option>
             {sortedLabels.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
           </select>
         )}
-        <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
+        <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer">
           <input type="checkbox" checked={isUnread} onChange={e => setIsUnread(e.target.checked)}
-            className="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500" />
+            className="rounded border-subtle surface-card text-indigo-500 focus:ring-indigo-500" />
           Only unread
         </label>
       </div>
 
-      <div className="text-[10px] text-slate-500 uppercase tracking-wider">Actions</div>
+      <div className="text-[10px] text-faint uppercase tracking-wider">Actions</div>
 
       {/* Quick move: Inbox → Label */}
       {!showAdvanced && (
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 shrink-0">Move from</span>
-          <span className="text-xs text-white bg-slate-700 px-2 py-1 rounded">INBOX</span>
-          <ArrowRight size={12} className="text-slate-600 shrink-0" />
+          <span className="text-xs text-muted shrink-0">Move from</span>
+          <span className="text-xs text-default surface-raised px-2 py-1 rounded">INBOX</span>
+          <ArrowRight size={12} className="text-faint shrink-0" />
           {labelsLoading ? (
-            <Loader2 size={12} className="animate-spin text-slate-500" />
+            <Loader2 size={12} className="animate-spin text-faint" />
           ) : (
             <select value={quickMoveTarget} onChange={e => setQuickMoveTarget(e.target.value)}
-              className="bg-slate-800 text-white text-xs px-2 py-1.5 rounded border border-slate-700 outline-none focus:border-indigo-500 flex-1">
+              className="surface-card text-default text-xs px-2 py-1.5 rounded border border-subtle outline-none focus:border-indigo-500 flex-1">
               <option value="">-- Select label --</option>
               {moveTargets.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
             </select>
@@ -475,18 +475,18 @@ function RuleForm({ accountId, rule, template, onSave, onCancel }) {
         </div>
       )}
       {showAdvanced && labelsLoading && (
-        <div className="text-slate-500 text-xs flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Loading labels...</div>
+        <div className="text-faint text-xs flex items-center gap-1"><Loader2 size={12} className="animate-spin" /> Loading labels...</div>
       )}
 
       <div className="flex items-center gap-4">
-        <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
+        <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer">
           <input type="checkbox" checked={markRead} onChange={e => setMarkRead(e.target.checked)}
-            className="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500" />
+            className="rounded border-subtle surface-card text-indigo-500 focus:ring-indigo-500" />
           Mark as read
         </label>
-        <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
+        <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer">
           <input type="checkbox" checked={archive} onChange={e => setArchive(e.target.checked)}
-            className="rounded border-slate-600 bg-slate-800 text-indigo-500 focus:ring-indigo-500" />
+            className="rounded border-subtle surface-card text-indigo-500 focus:ring-indigo-500" />
           Archive
         </label>
         <button type="button" onClick={() => { setShowAdvanced(!showAdvanced); if (!showAdvanced) setQuickMoveTarget(""); }}
@@ -496,9 +496,9 @@ function RuleForm({ accountId, rule, template, onSave, onCancel }) {
       </div>
 
       <div className="flex justify-end gap-1">
-        <button type="button" onClick={onCancel} className="px-2 py-1 text-xs text-slate-400">Cancel</button>
+        <button type="button" onClick={onCancel} className="px-2 py-1 text-xs text-muted">Cancel</button>
         <button type="submit" disabled={saving || !name.trim()}
-          className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded">
+          className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-on-accent rounded">
           {saving ? "Saving..." : isEdit ? "Save Changes" : "Create Rule"}
         </button>
       </div>
@@ -515,7 +515,7 @@ function LabelPicker({ title, labels, selected, onToggle, accent }) {
   const visible = expanded ? labels : labels.slice(0, 6);
 
   return (
-    <div className="bg-slate-800/50 border border-slate-700/40 rounded p-2 space-y-1.5">
+    <div className="surface-card border border-subtle rounded p-2 space-y-1.5">
       <div className="flex items-center justify-between">
         <span className={`text-[10px] uppercase tracking-wider font-medium ${accentColor}`}>
           {title} {count > 0 && `(${count})`}
@@ -523,21 +523,21 @@ function LabelPicker({ title, labels, selected, onToggle, accent }) {
       </div>
       <div className="space-y-0.5 max-h-40 overflow-y-auto">
         {visible.map(label => (
-          <label key={label.id} className="flex items-center gap-1.5 py-0.5 cursor-pointer hover:bg-slate-700/30 px-1 rounded text-xs">
+          <label key={label.id} className="flex items-center gap-1.5 py-0.5 cursor-pointer hover:bg-[var(--ds-raised)] px-1 rounded text-xs">
             <input
               type="checkbox"
               checked={selected.has(label.name)}
               onChange={() => onToggle(label.name)}
-              className={`rounded border-slate-600 bg-slate-800 ${accent === "emerald" ? "text-emerald-500 focus:ring-emerald-500" : "text-red-500 focus:ring-red-500"}`}
+              className={`rounded border-subtle surface-card ${accent === "emerald" ? "text-emerald-500 focus:ring-emerald-500" : "text-red-500 focus:ring-red-500"}`}
             />
-            <span className={`truncate ${selected.has(label.name) ? "text-white" : "text-slate-400"}`}>{label.name}</span>
-            {label.type === "system" && <span className="text-[8px] text-slate-600 shrink-0">sys</span>}
+            <span className={`truncate ${selected.has(label.name) ? "text-default" : "text-muted"}`}>{label.name}</span>
+            {label.type === "system" && <span className="text-[8px] text-faint shrink-0">sys</span>}
           </label>
         ))}
       </div>
       {labels.length > 6 && (
         <button type="button" onClick={() => setExpanded(!expanded)}
-          className="text-[10px] text-slate-500 hover:text-slate-300 w-full text-center">
+          className="text-[10px] text-faint hover:text-[var(--ds-text)] w-full text-center">
           {expanded ? "Show less" : `Show all ${labels.length} labels`}
         </button>
       )}
@@ -578,37 +578,37 @@ function RuleCard({ rule, isEditing, onEdit, onRefresh }) {
   if (acts.archive) actParts.push("archive");
 
   return (
-    <div className={`bg-slate-800/30 border rounded-lg group ${rule.active ? "border-slate-700/30" : "border-slate-700/20 opacity-60"}`}>
+    <div className={`surface-card border rounded-lg group ${rule.active ? "border-subtle" : "border-subtle opacity-60"}`}>
       <div className="flex items-center justify-between p-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <Tag size={13} className="text-indigo-400 shrink-0" />
             <span className="text-sm font-medium">{rule.name}</span>
-            <span className="text-[10px] text-slate-600">{rule.match_count}× matched</span>
+            <span className="text-[10px] text-faint">{rule.match_count}× matched</span>
           </div>
-          <div className="flex items-center gap-3 mt-0.5 text-[10px] text-slate-500">
+          <div className="flex items-center gap-3 mt-0.5 text-[10px] text-faint">
             <span>IF {condParts.join(" AND ") || "—"}</span>
-            <span className="text-slate-600">→</span>
+            <span className="text-faint">→</span>
             <span className="text-emerald-500/70">{actParts.join(", ") || "—"}</span>
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
           <button onClick={onEdit}
-            className={`px-2 py-1 text-xs rounded ${isEditing ? "bg-indigo-700 text-white" : "text-slate-500 hover:text-indigo-400 hover:bg-slate-700 opacity-0 group-hover:opacity-100"}`}>
+            className={`px-2 py-1 text-xs rounded ${isEditing ? "bg-indigo-700 text-on-accent" : "text-faint hover:text-indigo-400 hover:bg-[var(--ds-raised)] opacity-0 group-hover:opacity-100"}`}>
             <PenLine size={12} />
           </button>
           <button onClick={handleToggle} title={rule.active ? "Disable" : "Enable"}
-            className="text-slate-500 hover:text-white opacity-0 group-hover:opacity-100">
+            className="text-faint hover:text-[var(--ds-text)] opacity-0 group-hover:opacity-100">
             {rule.active ? <ToggleRight size={16} className="text-emerald-400" /> : <ToggleLeft size={16} />}
           </button>
           {confirmDel ? (
             <div className="flex items-center gap-0.5">
-              <button onClick={handleDelete} className="px-1.5 py-0.5 text-[10px] bg-red-600 hover:bg-red-500 text-white rounded">Yes</button>
-              <button onClick={() => setConfirmDel(false)} className="px-1.5 py-0.5 text-[10px] bg-slate-700 text-white rounded">No</button>
+              <button onClick={handleDelete} className="px-1.5 py-0.5 text-[10px] bg-red-600 hover:bg-red-500 text-on-accent rounded">Yes</button>
+              <button onClick={() => setConfirmDel(false)} className="px-1.5 py-0.5 text-[10px] surface-raised text-default rounded">No</button>
             </div>
           ) : (
             <button onClick={() => setConfirmDel(true)}
-              className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100">
+              className="text-faint hover:text-red-400 opacity-0 group-hover:opacity-100">
               <X size={12} />
             </button>
           )}
@@ -616,7 +616,7 @@ function RuleCard({ rule, isEditing, onEdit, onRefresh }) {
       </div>
 
       {isEditing && (
-        <div className="border-t border-slate-700/50 p-3">
+        <div className="border-t border-subtle p-3">
           <RuleForm rule={rule} onSave={() => { onEdit(); onRefresh(); }} onCancel={onEdit} />
         </div>
       )}
@@ -651,7 +651,7 @@ function LabelsTab({ accounts, userId }) {
   }, [selectedAccount]);
 
   if (accounts.length === 0) {
-    return <p className="text-sm text-slate-600 italic">Connect a Gmail account first on the Accounts tab.</p>;
+    return <p className="text-sm text-faint italic">Connect a Gmail account first on the Accounts tab.</p>;
   }
 
   const filtered = labels.filter(l => {
@@ -670,20 +670,20 @@ function LabelsTab({ accounts, userId }) {
     <div className="space-y-3 max-w-2xl">
       {accounts.length > 1 && (
         <select value={selectedAccount} onChange={e => setSelectedAccount(e.target.value)}
-          className="bg-slate-800 text-white text-xs px-2 py-1.5 rounded border border-slate-700 outline-none">
+          className="surface-card text-default text-xs px-2 py-1.5 rounded border border-subtle outline-none">
           {accounts.map(a => <option key={a.id} value={a.id}>{a.email_address}</option>)}
         </select>
       )}
 
       <div className="flex items-center justify-between">
-        <h3 className="text-xs text-slate-500 uppercase tracking-wider">
+        <h3 className="text-xs text-faint uppercase tracking-wider">
           Labels ({filtered.length})
-          {accounts.length === 1 && <span className="ml-2 normal-case text-slate-600">for {accounts[0].email_address}</span>}
+          {accounts.length === 1 && <span className="ml-2 normal-case text-faint">for {accounts[0].email_address}</span>}
         </h3>
         <div className="flex items-center gap-1">
           {["all", "user", "system"].map(f => (
             <button key={f} onClick={() => setFilter(f)}
-              className={`px-2 py-1 text-[10px] rounded ${filter === f ? "bg-slate-700 text-white" : "text-slate-500 hover:text-slate-300"}`}>
+              className={`px-2 py-1 text-[10px] rounded ${filter === f ? "surface-raised text-default" : "text-faint hover:text-[var(--ds-text)]"}`}>
               {f.charAt(0).toUpperCase() + f.slice(1)}
             </button>
           ))}
@@ -691,26 +691,26 @@ function LabelsTab({ accounts, userId }) {
       </div>
 
       {loading ? (
-        <div className="text-slate-500 text-sm flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Loading labels...</div>
+        <div className="text-faint text-sm flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Loading labels...</div>
       ) : sorted.length === 0 ? (
-        <p className="text-sm text-slate-600 italic">No labels found.</p>
+        <p className="text-sm text-faint italic">No labels found.</p>
       ) : (
         <div className="space-y-1">
           {sorted.map(label => (
-            <div key={label.id} className="flex items-center justify-between px-3 py-2 rounded hover:bg-slate-800/30 group">
+            <div key={label.id} className="flex items-center justify-between px-3 py-2 rounded hover:bg-[var(--ds-card)] group">
               <div className="flex items-center gap-2 min-w-0">
-                <Tag size={13} className={label.type === "user" ? "text-indigo-400" : "text-slate-600"} />
+                <Tag size={13} className={label.type === "user" ? "text-indigo-400" : "text-faint"} />
                 <span className="text-sm truncate">{label.name}</span>
                 {label.type === "system" && (
-                  <span className="text-[9px] text-slate-600 bg-slate-800 px-1.5 py-0.5 rounded">system</span>
+                  <span className="text-[9px] text-faint surface-card px-1.5 py-0.5 rounded">system</span>
                 )}
               </div>
-              <div className="flex items-center gap-4 text-[11px] text-slate-500 shrink-0">
+              <div className="flex items-center gap-4 text-[11px] text-faint shrink-0">
                 {label.messages_unread > 0 && (
                   <span className="text-amber-400 font-medium">{label.messages_unread} unread</span>
                 )}
                 <span>{label.messages_total} msg{label.messages_total !== 1 ? "s" : ""}</span>
-                <span className="text-slate-600">{label.threads_total} thread{label.threads_total !== 1 ? "s" : ""}</span>
+                <span className="text-faint">{label.threads_total} thread{label.threads_total !== 1 ? "s" : ""}</span>
               </div>
             </div>
           ))}
@@ -761,11 +761,11 @@ function ActivityTab({ accounts, userId, onCreateRule }) {
   }
 
   if (accounts.length === 0) {
-    return <p className="text-sm text-slate-600 italic">Connect a Gmail account first on the Accounts tab.</p>;
+    return <p className="text-sm text-faint italic">Connect a Gmail account first on the Accounts tab.</p>;
   }
 
   if (loading) {
-    return <div className="text-slate-500 text-sm flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Loading activity...</div>;
+    return <div className="text-faint text-sm flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Loading activity...</div>;
   }
 
   const filtered = showUnhandledOnly ? log.filter(e => !e.rule_id) : log;
@@ -784,14 +784,14 @@ function ActivityTab({ accounts, userId, onCreateRule }) {
     <div className="space-y-4 max-w-3xl">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h3 className="text-xs text-slate-500 uppercase tracking-wider">
+          <h3 className="text-xs text-faint uppercase tracking-wider">
             {showUnhandledOnly ? `Unhandled (${unhandledCount})` : `Processed Emails (${log.length})`}
           </h3>
           <button onClick={() => setShowUnhandledOnly(!showUnhandledOnly)}
             className={`flex items-center gap-1 px-2 py-1 text-[10px] rounded transition-colors ${
               showUnhandledOnly
                 ? "bg-amber-500/20 text-amber-300 border border-amber-500/30"
-                : "text-slate-500 hover:text-slate-300 hover:bg-slate-800 border border-slate-700/30"
+                : "text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-card)] border border-subtle"
             }`}
             title="Show only emails with no rule match">
             <Filter size={10} />
@@ -800,14 +800,14 @@ function ActivityTab({ accounts, userId, onCreateRule }) {
         </div>
         <div className="flex items-center gap-1">
           <button onClick={() => fetchLog(true)} disabled={refreshing}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 rounded"
+            className="flex items-center gap-1 px-2 py-1 text-xs surface-card hover:bg-[var(--ds-raised)] text-muted rounded"
             title="Refresh log">
             {refreshing ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
             Refresh
           </button>
           {accounts.map(a => (
             <button key={a.id} onClick={() => handleSync(a.id)} disabled={syncing === a.id}
-              className="flex items-center gap-1 px-2 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 rounded"
+              className="flex items-center gap-1 px-2 py-1 text-xs surface-card hover:bg-[var(--ds-raised)] text-muted rounded"
               title={`Sync ${a.email_address}`}>
               {syncing === a.id ? <Loader2 size={11} className="animate-spin" /> : <RefreshCw size={11} />}
               Sync {a.display_name || a.email_address.split("@")[0]}
@@ -818,16 +818,16 @@ function ActivityTab({ accounts, userId, onCreateRule }) {
 
       {log.length === 0 ? (
         <div className="text-center py-8">
-          <MailOpen size={32} className="mx-auto text-slate-700 mb-2" />
-          <p className="text-sm text-slate-600">No emails processed yet.</p>
-          <p className="text-xs text-slate-700">Hit Sync to process your inbox, or wait for the scheduled job.</p>
+          <MailOpen size={32} className="mx-auto text-default mb-2" />
+          <p className="text-sm text-faint">No emails processed yet.</p>
+          <p className="text-xs text-default">Hit Sync to process your inbox, or wait for the scheduled job.</p>
         </div>
       ) : (
         dates.map(date => (
           <div key={date}>
-            <div className="text-[10px] text-slate-600 uppercase tracking-wider mb-1 sticky top-0 bg-slate-900 py-1">
+            <div className="text-[10px] text-faint uppercase tracking-wider mb-1 sticky top-0 surface-panel py-1">
               {date}
-              <span className="ml-2 text-slate-700">({grouped[date].length})</span>
+              <span className="ml-2 text-default">({grouped[date].length})</span>
             </div>
             <div className="space-y-1">
               {grouped[date].map(entry => (
@@ -858,17 +858,17 @@ function LogEntry({ entry, onCreateRule }) {
   return (
     <div>
       <div
-        className={`flex items-center gap-3 px-2 py-1.5 rounded hover:bg-slate-800/30 group text-xs ${!hasActions ? "cursor-pointer" : ""}`}
+        className={`flex items-center gap-3 px-2 py-1.5 rounded hover:bg-[var(--ds-card)] group text-xs ${!hasActions ? "cursor-pointer" : ""}`}
         onClick={() => { if (!hasActions) setExpanded(!expanded); }}
         title={!hasActions ? "Click to expand and create a rule" : undefined}
       >
         {hasActions ? (
           <CheckCircle size={12} className="text-emerald-500/60 shrink-0" />
         ) : (
-          <Mail size={12} className="text-slate-600 shrink-0" />
+          <Mail size={12} className="text-faint shrink-0" />
         )}
-        <span className="text-slate-400 w-32 truncate shrink-0" title={entry.sender}>{entry.sender}</span>
-        <span className="text-slate-300 flex-1 truncate">{entry.subject}</span>
+        <span className="text-muted w-32 truncate shrink-0" title={entry.sender}>{entry.sender}</span>
+        <span className="text-default flex-1 truncate">{entry.subject}</span>
         {entry.rule_name && (
           <span className="text-[10px] text-indigo-400/70 shrink-0">{entry.rule_name}</span>
         )}
@@ -878,7 +878,7 @@ function LogEntry({ entry, onCreateRule }) {
         {!hasActions && (
           expanded
             ? <ChevronUp size={12} className="text-indigo-400 shrink-0" />
-            : <Plus size={12} className="text-slate-700 group-hover:text-indigo-400 shrink-0 transition-colors" />
+            : <Plus size={12} className="text-default group-hover:text-indigo-400 shrink-0 transition-colors" />
         )}
       </div>
       {expanded && !hasActions && (
@@ -943,7 +943,7 @@ function EmailPreview({ entry, onCreateRule }) {
   const hasAnySelection = selections.from_contains || selections.subject_contains || selections.body_contains;
 
   return (
-    <div className="ml-6 mr-2 mb-2 mt-1 bg-slate-800/60 border border-slate-700/50 rounded-lg p-3 space-y-3 text-xs"
+    <div className="ml-6 mr-2 mb-2 mt-1 surface-card border border-subtle rounded-lg p-3 space-y-3 text-xs"
          onMouseUp={handleMouseUp}>
 
       <div className="text-[10px] text-indigo-400 uppercase tracking-wider font-medium flex items-center gap-2">
@@ -953,9 +953,9 @@ function EmailPreview({ entry, onCreateRule }) {
 
       {/* From field */}
       <div>
-        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">From</div>
+        <div className="text-[10px] text-faint uppercase tracking-wider mb-1">From</div>
         <div ref={fromRef} data-field="from_contains"
-          className="text-slate-300 bg-slate-900/50 px-2 py-1.5 rounded select-text cursor-text break-all">
+          className="text-default surface-panel px-2 py-1.5 rounded select-text cursor-text break-all">
           {entry.sender || "(unknown)"}
         </div>
         {selections.from_contains && (
@@ -965,9 +965,9 @@ function EmailPreview({ entry, onCreateRule }) {
 
       {/* Subject field */}
       <div>
-        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Subject</div>
+        <div className="text-[10px] text-faint uppercase tracking-wider mb-1">Subject</div>
         <div ref={subjectRef} data-field="subject_contains"
-          className="text-slate-300 bg-slate-900/50 px-2 py-1.5 rounded select-text cursor-text">
+          className="text-default surface-panel px-2 py-1.5 rounded select-text cursor-text">
           {entry.subject || "(no subject)"}
         </div>
         {selections.subject_contains && (
@@ -977,14 +977,14 @@ function EmailPreview({ entry, onCreateRule }) {
 
       {/* Body field */}
       <div>
-        <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Body</div>
+        <div className="text-[10px] text-faint uppercase tracking-wider mb-1">Body</div>
         {loadingBody ? (
-          <div className="text-slate-500 flex items-center gap-1 py-2">
+          <div className="text-faint flex items-center gap-1 py-2">
             <Loader2 size={12} className="animate-spin" /> Loading body...
           </div>
         ) : (
           <div ref={bodyRef} data-field="body_contains"
-            className="text-slate-400 bg-slate-900/50 px-2 py-1.5 rounded select-text cursor-text max-h-48 overflow-y-auto whitespace-pre-wrap text-[11px] leading-relaxed">
+            className="text-muted surface-panel px-2 py-1.5 rounded select-text cursor-text max-h-48 overflow-y-auto whitespace-pre-wrap text-[11px] leading-relaxed">
             {body || "(empty body)"}
           </div>
         )}
@@ -994,8 +994,8 @@ function EmailPreview({ entry, onCreateRule }) {
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between pt-1 border-t border-slate-700/30">
-        <div className="text-[10px] text-slate-600">
+      <div className="flex items-center justify-between pt-1 border-t border-subtle">
+        <div className="text-[10px] text-faint">
           {hasAnySelection
             ? "Selections captured — click Create Rule to continue"
             : "Select text above to set match conditions"}
@@ -1003,7 +1003,7 @@ function EmailPreview({ entry, onCreateRule }) {
         <button
           onClick={handleCreateRule}
           disabled={!hasAnySelection}
-          className="flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-30 disabled:cursor-not-allowed text-on-accent rounded transition-colors"
         >
           Create Rule <ArrowRight size={12} />
         </button>
@@ -1020,7 +1020,7 @@ function SelectionChip({ label, value, onClear }) {
       <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-1.5 py-0.5 rounded max-w-xs truncate">
         "{value}"
       </span>
-      <button onClick={onClear} className="text-slate-600 hover:text-red-400 transition-colors">
+      <button onClick={onClear} className="text-faint hover:text-red-400 transition-colors">
         <X size={10} />
       </button>
     </div>

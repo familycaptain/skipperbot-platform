@@ -52,7 +52,7 @@ function MessageTime({ ts, align }) {
     <time
       dateTime={ts}
       title={full}
-      className={`block text-[11px] text-slate-500 mt-0.5 px-1 ${align === "end" ? "text-right" : "text-left"}`}
+      className={`block text-[11px] text-faint mt-0.5 px-1 ${align === "end" ? "text-right" : "text-left"}`}
     >
       {label}
     </time>
@@ -66,7 +66,7 @@ export default function ChatMessage({ message, showTime = false }) {
   if (role === "user") {
     return (
       <div className="flex flex-col items-end">
-        <div className="max-w-[80%] md:max-w-[65%] px-4 py-2.5 rounded-2xl rounded-br-md bg-indigo-600 text-white text-sm leading-relaxed">
+        <div className="max-w-[80%] md:max-w-[65%] px-4 py-2.5 rounded-2xl rounded-br-md bg-indigo-600 text-on-accent text-sm leading-relaxed">
           {content}
         </div>
         {showTime && <MessageTime ts={ts} align="end" />}
@@ -79,7 +79,7 @@ export default function ChatMessage({ message, showTime = false }) {
     const Icon = NOTIF_ICONS[source] || Bell;
     return (
       <div className="flex flex-col items-start">
-        <div className="max-w-[85%] md:max-w-[70%] px-4 py-2.5 rounded-2xl rounded-bl-md bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-slate-200 text-sm leading-relaxed flex items-start gap-2">
+        <div className="max-w-[85%] md:max-w-[70%] px-4 py-2.5 rounded-2xl rounded-bl-md bg-gradient-to-br from-indigo-500/20 to-purple-500/20 border border-indigo-500/30 text-default text-sm leading-relaxed flex items-start gap-2">
           <Icon size={16} className="text-indigo-400 mt-0.5 shrink-0" />
           <span className="whitespace-pre-wrap">{content}</span>
         </div>
@@ -96,17 +96,17 @@ export default function ChatMessage({ message, showTime = false }) {
     );
     return (
       <div className="flex justify-start pl-1">
-        <div className="max-w-[85%] md:max-w-[70%] px-3 py-2 rounded-xl rounded-bl-sm bg-slate-700/50 border border-slate-600/40 text-xs">
+        <div className="max-w-[85%] md:max-w-[70%] px-3 py-2 rounded-xl rounded-bl-sm surface-raised border border-subtle text-xs">
           <div className="flex items-center gap-1.5 mb-1">
-            <Wrench size={11} className="text-sky-400 shrink-0" />
-            <span className="font-mono font-semibold text-sky-300 tracking-wide">{toolName}</span>
+            <Wrench size={11} className="text-accent shrink-0" />
+            <span className="font-mono font-semibold text-accent tracking-wide">{toolName}</span>
           </div>
           {argEntries.length > 0 && (
-            <div className="space-y-0.5 pl-3 border-l border-slate-600/50 mt-1">
+            <div className="space-y-0.5 pl-3 border-l border-subtle mt-1">
               {argEntries.map(([key, value]) => (
-                <div key={key} className="flex gap-1.5 text-slate-400 leading-snug">
-                  <span className="text-slate-500 shrink-0 font-mono">{key}:</span>
-                  <span className="text-slate-300 font-mono break-all">{formatArgValue(value)}</span>
+                <div key={key} className="flex gap-1.5 text-muted leading-snug">
+                  <span className="text-faint shrink-0 font-mono">{key}:</span>
+                  <span className="text-default font-mono break-all">{formatArgValue(value)}</span>
                 </div>
               ))}
             </div>
@@ -125,9 +125,9 @@ export default function ChatMessage({ message, showTime = false }) {
           <div className="flex items-center gap-2 flex-wrap font-mono">
             <Layers size={11} className="text-emerald-400 shrink-0" />
             {loaded && <span className="text-emerald-300">＋ {loaded}</span>}
-            {unloaded && <span className="text-slate-500">－ {unloaded}</span>}
+            {unloaded && <span className="text-faint">－ {unloaded}</span>}
             {Array.isArray(slots) && (
-              <span className="text-slate-500">slots: [{slots.join(", ") || "—"}]</span>
+              <span className="text-faint">slots: [{slots.join(", ") || "—"}]</span>
             )}
           </div>
         </div>
@@ -138,7 +138,7 @@ export default function ChatMessage({ message, showTime = false }) {
   // ── Bot message (markdown) ──
   return (
     <div className="flex flex-col items-start">
-      <div className="max-w-[85%] md:max-w-[70%] px-4 py-2.5 rounded-2xl rounded-bl-md bg-slate-800 text-slate-100 text-sm leading-relaxed markdown-body">
+      <div className="max-w-[85%] md:max-w-[70%] px-4 py-2.5 rounded-2xl rounded-bl-md surface-card text-sm leading-relaxed markdown-body">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
       </div>
       {showTime && <MessageTime ts={ts} align="start" />}

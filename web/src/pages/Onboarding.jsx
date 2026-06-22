@@ -76,11 +76,11 @@ function ErrorLine({ children }) {
 function StepHeader({ index, total, title, blurb }) {
   return (
     <div className="mb-6 text-center">
-      <div className="text-xs uppercase tracking-wider text-zinc-500">
+      <div className="text-xs uppercase tracking-wider text-faint">
         Step {index} of {total}
       </div>
-      <h2 className="mt-1 text-2xl font-medium text-zinc-100">{title}</h2>
-      {blurb && <p className="mt-2 text-sm text-zinc-400">{blurb}</p>}
+      <h2 className="mt-1 text-2xl font-medium text-default">{title}</h2>
+      {blurb && <p className="mt-2 text-sm text-muted">{blurb}</p>}
     </div>
   );
 }
@@ -94,7 +94,7 @@ function Welcome({ onNext }) {
         title="Welcome to Skipperbot"
         blurb="An agentic app platform for your family."
       />
-      <ul className="space-y-3 text-sm text-zinc-300">
+      <ul className="space-y-3 text-sm text-default">
         <li className="flex items-start gap-3">
           <Check size={16} className="mt-0.5 text-emerald-400 shrink-0" />
           <span>Postgres is up, the agent is running, every required app loaded successfully.</span>
@@ -110,7 +110,7 @@ function Welcome({ onNext }) {
       </ul>
       <div className="mt-8 flex justify-end">
         <button
-          className="inline-flex items-center gap-2 rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500"
+          className="inline-flex items-center gap-2 rounded btn-primary px-4 py-2 text-sm font-medium"
           onClick={onNext}
         >
           Get started <ArrowRight size={14} />
@@ -152,13 +152,13 @@ function CheckOpenAI({ onNext, onBack }) {
         title="OpenAI key"
         blurb="We're testing the key you set in .env against api.openai.com/v1/models."
       />
-      <div className="mx-auto mt-2 inline-flex items-center gap-3 rounded bg-zinc-900 px-4 py-3 text-sm text-zinc-300 border border-zinc-800">
-        <KeyRound size={16} className="text-zinc-500" />
-        <code className="font-mono text-zinc-400">OPENAI_API_KEY</code>
+      <div className="mx-auto mt-2 inline-flex items-center gap-3 rounded surface-card px-4 py-3 text-sm text-default border border-subtle">
+        <KeyRound size={16} className="text-faint" />
+        <code className="font-mono text-muted">OPENAI_API_KEY</code>
       </div>
       <div className="mt-6 min-h-[3rem]">
         {state === "checking" && (
-          <div className="flex items-center gap-2 text-zinc-400 text-sm">
+          <div className="flex items-center gap-2 text-muted text-sm">
             <Loader2 size={14} className="animate-spin" /> Calling OpenAI…
           </div>
         )}
@@ -169,7 +169,7 @@ function CheckOpenAI({ onNext, onBack }) {
         )}
         <ErrorLine>{error}</ErrorLine>
         {state === "error" && (
-          <div className="mt-5 rounded border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-zinc-300">
+          <div className="mt-5 rounded border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-default">
             <div className="mb-3 font-medium text-amber-200">How to fix</div>
             <ol className="list-decimal space-y-3 pl-5">
               <li>
@@ -185,22 +185,22 @@ function CheckOpenAI({ onNext, onBack }) {
                 . The account needs a payment method on file.
               </li>
               <li>
-                Open <code className="font-mono text-zinc-200">.env</code> in
+                Open <code className="font-mono text-default">.env</code> in
                 the platform repo and replace the{" "}
-                <code className="font-mono text-zinc-200">OPENAI_API_KEY=</code>{" "}
+                <code className="font-mono text-default">OPENAI_API_KEY=</code>{" "}
                 line.
               </li>
               <li>
                 Restart the agent so it picks up the new key, then come back
-                here and click <span className="text-zinc-200">Retry</span>:
+                here and click <span className="text-default">Retry</span>:
                 <div className="mt-2 space-y-1.5 font-mono text-xs">
-                  <div className="rounded bg-zinc-950 px-2 py-1.5 text-zinc-300">
-                    <span className="text-zinc-500"># Docker path</span>
+                  <div className="rounded surface-page px-2 py-1.5 text-default">
+                    <span className="text-faint"># Docker path</span>
                     <br />
                     docker compose restart agent
                   </div>
-                  <div className="rounded bg-zinc-950 px-2 py-1.5 text-zinc-300">
-                    <span className="text-zinc-500"># Native path</span>
+                  <div className="rounded surface-page px-2 py-1.5 text-default">
+                    <span className="text-faint"># Native path</span>
                     <br />
                     {"# Ctrl-C the running agent, then re-run ./start_agent.sh"}
                   </div>
@@ -212,7 +212,7 @@ function CheckOpenAI({ onNext, onBack }) {
       </div>
       <div className="mt-8 flex items-center justify-between">
         <button
-          className="inline-flex items-center gap-2 rounded text-sm text-zinc-400 hover:text-zinc-200"
+          className="inline-flex items-center gap-2 rounded text-sm text-muted hover:text-default"
           onClick={onBack}
         >
           <ArrowLeft size={14} /> Back
@@ -221,14 +221,14 @@ function CheckOpenAI({ onNext, onBack }) {
           {state === "error" && (
             <button
               type="button"
-              className="text-xs text-zinc-400 hover:text-zinc-200"
+              className="text-xs text-muted hover:text-default"
               onClick={check}
             >
               Retry
             </button>
           )}
           <button
-            className="inline-flex items-center gap-2 rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:bg-zinc-700 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 rounded btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed"
             disabled={state !== "ok"}
             onClick={onNext}
           >
@@ -325,40 +325,40 @@ function CreatePrimaryUser({ onCreated, onBack }) {
       />
       <div className="space-y-4">
         <div>
-          <label className="text-sm text-zinc-300">Username</label>
+          <label className="text-sm text-default">Username</label>
           <input
             autoFocus
             name="username"
             autoComplete="username"
-            className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 placeholder-zinc-500 font-mono text-sm"
+            className="mt-1 w-full rounded input px-3 py-2 font-mono text-sm"
             value={username}
             onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
             onKeyDown={onInputKeyDown}
             placeholder="alice"
             spellCheck={false}
           />
-          <p className="mt-1 text-xs text-zinc-500">Lowercase letters / digits / underscores. This is your canonical id.</p>
+          <p className="mt-1 text-xs text-faint">Lowercase letters / digits / underscores. This is your canonical id.</p>
         </div>
         <div>
-          <label className="text-sm text-zinc-300">Display name</label>
+          <label className="text-sm text-default">Display name</label>
           <input
             name="display_name"
             autoComplete="name"
-            className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 placeholder-zinc-500 text-sm"
+            className="mt-1 w-full rounded input px-3 py-2 text-sm"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             onKeyDown={onInputKeyDown}
             placeholder={username ? username.charAt(0).toUpperCase() + username.slice(1) : "Alice"}
           />
-          <p className="mt-1 text-xs text-zinc-500">Shown in the UI. Defaults to your username with a capital first letter.</p>
+          <p className="mt-1 text-xs text-faint">Shown in the UI. Defaults to your username with a capital first letter.</p>
         </div>
         <div>
-          <label className="text-sm text-zinc-300">Password</label>
+          <label className="text-sm text-default">Password</label>
           <input
             type="password"
             name="password"
             autoComplete="new-password"
-            className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 text-sm"
+            className="mt-1 w-full rounded input px-3 py-2 text-sm"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={onInputKeyDown}
@@ -366,19 +366,19 @@ function CreatePrimaryUser({ onCreated, onBack }) {
             minLength={8}
             placeholder="at least 8 characters"
           />
-          <p className="mt-1 text-xs text-zinc-500">Used to sign in to the web UI. Minimum 8 characters — you can change it later from Settings.</p>
+          <p className="mt-1 text-xs text-faint">Used to sign in to the web UI. Minimum 8 characters — you can change it later from Settings.</p>
         </div>
         <div>
-          <label className="text-sm text-zinc-300">Timezone</label>
+          <label className="text-sm text-default">Timezone</label>
           <select
-            className="mt-1 w-full rounded border border-zinc-700 bg-zinc-900 px-3 py-2 text-zinc-100 text-sm"
+            className="mt-1 w-full rounded input px-3 py-2 text-sm"
             value={tz}
             onChange={(e) => setTz(e.target.value)}
           >
             {tzOptions.map((z) => <option key={z} value={z}>{z}</option>)}
           </select>
-          <p className="mt-1 text-xs text-zinc-500">
-            Detected from your browser: <code className="font-mono text-zinc-400">{detected}</code>.
+          <p className="mt-1 text-xs text-faint">
+            Detected from your browser: <code className="font-mono text-muted">{detected}</code>.
           </p>
         </div>
       </div>
@@ -386,7 +386,7 @@ function CreatePrimaryUser({ onCreated, onBack }) {
       <div className="mt-8 flex items-center justify-between">
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded text-sm text-zinc-400 hover:text-zinc-200"
+          className="inline-flex items-center gap-2 rounded text-sm text-muted hover:text-default"
           onClick={onBack}
         >
           <ArrowLeft size={14} /> Back
@@ -398,7 +398,7 @@ function CreatePrimaryUser({ onCreated, onBack }) {
         <button
           type="button"
           onClick={submit}
-          className="inline-flex items-center gap-2 rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500 disabled:bg-zinc-700 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-2 rounded btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed"
           disabled={saving || !usernameOk || !passwordOk}
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <UserIcon size={14} />}
@@ -418,19 +418,19 @@ function Done({ user, onContinue }) {
         title="You're set up"
         blurb={`Welcome, ${user.display_name}. Skipperbot is ready.`}
       />
-      <div className="mt-4 rounded bg-zinc-900 border border-zinc-800 p-4 text-sm text-zinc-300">
+      <div className="mt-4 rounded surface-card border border-subtle p-4 text-sm text-default">
         <div className="flex items-center justify-between">
-          <span className="text-zinc-500">Username</span>
-          <code className="font-mono text-zinc-200">{user.name}</code>
+          <span className="text-faint">Username</span>
+          <code className="font-mono text-default">{user.name}</code>
         </div>
         <div className="mt-2 flex items-center justify-between">
-          <span className="text-zinc-500">Role</span>
-          <span className="text-zinc-200">{user.role}</span>
+          <span className="text-faint">Role</span>
+          <span className="text-default">{user.role}</span>
         </div>
       </div>
       <div className="mt-8 flex justify-end">
         <button
-          className="inline-flex items-center gap-2 rounded bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-500"
+          className="inline-flex items-center gap-2 rounded btn-primary px-4 py-2 text-sm font-medium"
           onClick={onContinue}
         >
           Open the desktop <ArrowRight size={14} />
@@ -450,13 +450,13 @@ export default function Onboarding({ onComplete }) {
   const [user, setUser] = useState(null);
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-zinc-950 p-4">
-      <div className="w-full max-w-md rounded-xl border border-zinc-800 bg-zinc-900/40 p-8 shadow-2xl">
+    <div className="min-h-screen w-full flex items-center justify-center surface-page p-4">
+      <div className="w-full max-w-md rounded-xl border border-subtle surface-card p-8 shadow-2xl">
         <div className="mb-8 flex items-center justify-center gap-3">
-          <div className="grid h-12 w-12 place-items-center rounded-xl bg-violet-600 text-2xl font-bold text-white">
+          <div className="grid h-12 w-12 place-items-center rounded-xl bg-[var(--ds-accent)] text-2xl font-bold text-on-accent">
             S
           </div>
-          <div className="text-lg font-medium text-zinc-200">Skipperbot</div>
+          <div className="text-lg font-medium text-default">Skipperbot</div>
         </div>
         {step === "welcome" && <Welcome onNext={() => setStep("openai")} />}
         {step === "openai" && (
