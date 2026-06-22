@@ -87,26 +87,26 @@ export default function TodoApp({ appId, userId, context = {}, onTitle, refreshK
   return (
     <div className="flex flex-col h-full w-full">
       {/* ── Toolbar ── */}
-      <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
-        <div className="flex items-center gap-2 text-sm text-slate-300">
+      <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
+        <div className="flex items-center gap-2 text-sm text-default">
           <ListTodo size={16} className="text-amber-400" />
           <span className="font-medium">To-Do</span>
         </div>
         <div className="flex items-center gap-1.5">
           {config && (
-            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-slate-800 text-slate-400" title={`Nudge day: ${config.nudge_day}`}>
+            <span className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] surface-card text-muted" title={`Nudge day: ${config.nudge_day}`}>
               <CalendarDays size={10} />
               {DAY_LABELS[config.nudge_day] || config.nudge_day}
             </span>
           )}
           {config && (
-            <span className="p-1 text-slate-500" title={config.nudge_enabled ? "Nudges on" : "Nudges off"}>
+            <span className="p-1 text-faint" title={config.nudge_enabled ? "Nudges on" : "Nudges off"}>
               {config.nudge_enabled ? <Bell size={12} /> : <BellOff size={12} />}
             </span>
           )}
           <button
             onClick={() => setShowSettings(true)}
-            className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+            className="p-1 rounded text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors"
             title="Settings"
           >
             <Settings size={14} />
@@ -114,7 +114,7 @@ export default function TodoApp({ appId, userId, context = {}, onTitle, refreshK
           <button
             onClick={loadAll}
             disabled={loading}
-            className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+            className="p-1 rounded text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors"
             title="Refresh"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -125,7 +125,7 @@ export default function TodoApp({ appId, userId, context = {}, onTitle, refreshK
       {/* ── Two-column layout ── */}
       <div className={`flex-1 min-h-0 flex ${hasBacklog ? "" : "flex-col"}`}>
         {/* To-Do column */}
-        <div className={`flex flex-col ${hasBacklog ? "w-1/2 border-r border-slate-800/50" : "flex-1"}`}>
+        <div className={`flex flex-col ${hasBacklog ? "w-1/2 border-r border-subtle" : "flex-1"}`}>
           <TodoColumn
             title="To-Do"
             titleIcon={<ListTodo size={13} className="text-amber-400" />}
@@ -166,10 +166,10 @@ export default function TodoApp({ appId, userId, context = {}, onTitle, refreshK
       </div>
 
       {!hasBacklog && (
-        <div className="px-3 py-2 border-t border-slate-800/50 text-center">
+        <div className="px-3 py-2 border-t border-subtle text-center">
           <button
             onClick={() => setShowSettings(true)}
-            className="text-[11px] text-slate-500 hover:text-violet-400 transition-colors"
+            className="text-[11px] text-faint hover:text-violet-400 transition-colors"
           >
             + Add a Backlog list in Settings
           </button>
@@ -336,30 +336,30 @@ function TodoColumn({
   return (
     <>
       {/* Column header */}
-      <div className="flex items-center justify-between px-2 h-8 bg-slate-900/30 border-b border-slate-800/50 shrink-0">
-        <div className="flex items-center gap-1.5 text-xs text-slate-300">
+      <div className="flex items-center justify-between px-2 h-8 surface-panel border-b border-subtle shrink-0">
+        <div className="flex items-center gap-1.5 text-xs text-default">
           {titleIcon}
           <span className="font-medium">{title}</span>
-          <span className="text-[10px] text-slate-500">{activeItems.length}</span>
+          <span className="text-[10px] text-faint">{activeItems.length}</span>
         </div>
-        <button onClick={handlePrint} className="p-0.5 rounded text-slate-600 hover:text-white hover:bg-slate-700 transition-colors" title="Print">
+        <button onClick={handlePrint} className="p-0.5 rounded text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors" title="Print">
           <Printer size={12} />
         </button>
       </div>
 
       {/* Add item */}
-      <form onSubmit={handleAdd} className="flex items-center gap-1.5 px-2 py-1.5 bg-slate-900/20 border-b border-slate-800/30">
-        <Plus size={12} className="text-slate-500 shrink-0" />
+      <form onSubmit={handleAdd} className="flex items-center gap-1.5 px-2 py-1.5 surface-panel border-b border-subtle">
+        <Plus size={12} className="text-faint shrink-0" />
         <input
           ref={addRef}
           type="text"
           value={addText}
           onChange={(e) => setAddText(e.target.value)}
           placeholder={`Add to ${title.toLowerCase()}...`}
-          className="flex-1 bg-transparent text-xs text-slate-200 placeholder:text-slate-600 outline-none"
+          className="flex-1 bg-transparent text-xs text-default placeholder:text-[var(--ds-faint)] outline-none"
         />
         {addText.trim() && (
-          <button type="submit" disabled={adding} className={`px-2 py-0.5 text-[10px] ${accentBtn} disabled:opacity-40 text-white rounded transition-colors`}>
+          <button type="submit" disabled={adding} className={`px-2 py-0.5 text-[10px] ${accentBtn} disabled:opacity-40 text-default rounded transition-colors`}>
             {adding ? <Loader2 size={10} className="animate-spin" /> : "Add"}
           </button>
         )}
@@ -368,12 +368,12 @@ function TodoColumn({
       {/* Items */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {loading && items.length === 0 ? (
-          <div className="flex items-center justify-center h-24 text-slate-500">
+          <div className="flex items-center justify-center h-24 text-faint">
             <Loader2 size={16} className="animate-spin" />
           </div>
         ) : activeItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-24 text-slate-500 text-xs">
-            <ListTodo size={20} className="mb-1.5 text-slate-600" />
+          <div className="flex flex-col items-center justify-center h-24 text-faint text-xs">
+            <ListTodo size={20} className="mb-1.5 text-faint" />
             <p>{title} is empty</p>
           </div>
         ) : (
@@ -410,14 +410,14 @@ function TodoColumn({
 
         {/* Completed Today */}
         {completedToday.length > 0 && (
-          <div className="border-t border-slate-800/50 mt-0.5">
+          <div className="border-t border-subtle mt-0.5">
             <div className="flex items-center justify-between px-2 py-1.5">
-              <span className="text-[10px] text-slate-500">Completed Today ({completedToday.length})</span>
-              <button onClick={() => handleClearCompleted(completedToday.map((i) => i.id))} className="text-[9px] text-slate-600 hover:text-red-400 transition-colors">clear</button>
+              <span className="text-[10px] text-faint">Completed Today ({completedToday.length})</span>
+              <button onClick={() => handleClearCompleted(completedToday.map((i) => i.id))} className="text-[9px] text-faint hover:text-red-400 transition-colors">clear</button>
             </div>
             <div className="pb-1">
               {completedToday.map((item) => (
-                <div key={item.id} className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] text-slate-500">
+                <div key={item.id} className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] text-faint">
                   <Check size={10} className="text-green-500 shrink-0" />
                   <span className="line-through flex-1 truncate">{item.text}</span>
                 </div>
@@ -428,27 +428,27 @@ function TodoColumn({
 
         {/* Recently Completed */}
         {recentCompleted.length > 0 && (
-          <div className="border-t border-slate-800/50">
+          <div className="border-t border-subtle">
             <button
               onClick={() => setShowRecentCompleted(!showRecentCompleted)}
-              className="flex items-center justify-between w-full px-2 py-1.5 text-[10px] text-slate-600 hover:text-slate-400 transition-colors"
+              className="flex items-center justify-between w-full px-2 py-1.5 text-[10px] text-faint hover:text-[var(--ds-muted)] transition-colors"
             >
               <span className="flex items-center gap-1">
                 {showRecentCompleted ? <ChevronDown size={9} /> : <ChevronUp size={9} />}
                 Recently ({recentCompleted.length})
               </span>
               {showRecentCompleted && (
-                <span onClick={(e) => { e.stopPropagation(); handleClearCompleted(recentCompleted.map((i) => i.id)); }} className="text-[9px] text-slate-600 hover:text-red-400">clear</span>
+                <span onClick={(e) => { e.stopPropagation(); handleClearCompleted(recentCompleted.map((i) => i.id)); }} className="text-[9px] text-faint hover:text-red-400">clear</span>
               )}
             </button>
             {showRecentCompleted && (
               <div className="pb-1">
                 {recentCompleted.map((item) => (
-                  <div key={item.id} className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] text-slate-600">
+                  <div key={item.id} className="flex items-center gap-1.5 px-2 py-0.5 text-[10px] text-faint">
                     <Check size={10} className="text-green-600/50 shrink-0" />
                     <span className="line-through flex-1 truncate">{item.text}</span>
                     {item.archived_at && (
-                      <span className="text-[9px] text-slate-700 shrink-0">{new Date(item.archived_at).toLocaleDateString(undefined, { weekday: "short" })}</span>
+                      <span className="text-[9px] text-default shrink-0">{new Date(item.archived_at).toLocaleDateString(undefined, { weekday: "short" })}</span>
                     )}
                   </div>
                 ))}
@@ -458,14 +458,14 @@ function TodoColumn({
         )}
 
         {olderCompleted.length > 0 && (
-          <div className="px-2 py-1 text-[9px] text-slate-700 border-t border-slate-800/30">
+          <div className="px-2 py-1 text-[9px] text-default border-t border-subtle">
             {olderCompleted.length} older completed
           </div>
         )}
       </div>
 
       {/* Footer */}
-      <div className="px-2 py-1 border-t border-slate-800/50 flex items-center justify-between text-[9px] text-slate-600">
+      <div className="px-2 py-1 border-t border-subtle flex items-center justify-between text-[9px] text-faint">
         <span className="font-mono">{listId}</span>
         <span className="truncate ml-1">{listName}</span>
       </div>
@@ -521,13 +521,13 @@ function ContextMenu({ x, y, itemId, idx, total, onClose, onMoveToTop, onMoveToB
   return (
     <div
       ref={menuRef}
-      className="fixed z-50 bg-slate-800 border border-slate-700 rounded-lg shadow-xl py-1 min-w-[160px]"
+      className="fixed z-50 surface-card border border-subtle rounded-lg shadow-xl py-1 min-w-[160px]"
       style={{ left: x, top: y }}
       onClick={(e) => e.stopPropagation()}
     >
       {items.map((item, i) =>
         item.divider ? (
-          <div key={i} className="border-t border-slate-700 my-1" />
+          <div key={i} className="border-t border-subtle my-1" />
         ) : (
           <button
             key={i}
@@ -536,7 +536,7 @@ function ContextMenu({ x, y, itemId, idx, total, onClose, onMoveToTop, onMoveToB
             className={`flex items-center gap-2 w-full px-3 py-1.5 text-xs transition-colors disabled:opacity-30 ${
               item.danger
                 ? "text-red-400 hover:bg-red-900/30"
-                : "text-slate-300 hover:bg-slate-700"
+                : "text-default hover:bg-[var(--ds-raised)]"
             }`}
           >
             <item.icon size={12} />
@@ -595,7 +595,7 @@ function TodoItemRow({
           ? "opacity-40"
           : isDragOver
           ? "border-t-2 border-amber-400"
-          : "hover:bg-slate-800/30 border-t-2 border-transparent"
+          : "hover:bg-[var(--ds-card)] border-t-2 border-transparent"
       }`}
       draggable={!editing}
       onDragStart={(e) => onDragStart(e, item.id)}
@@ -606,7 +606,7 @@ function TodoItemRow({
       onContextMenu={(e) => onContextMenu(e, item.id)}
     >
       {/* Drag handle */}
-      <span className="cursor-grab active:cursor-grabbing text-slate-700 group-hover/item:text-slate-500 transition-colors shrink-0">
+      <span className="cursor-grab active:cursor-grabbing text-default group-hover/item:text-[var(--ds-faint)] transition-colors shrink-0">
         <GripVertical size={11} />
       </span>
 
@@ -616,17 +616,17 @@ function TodoItemRow({
         className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-all duration-300 ${
           isCheckingOff
             ? "border-green-400 bg-green-400 scale-110"
-            : "border-slate-600 hover:border-amber-400 hover:bg-amber-400/10 group/check"
+            : "border-subtle hover:border-amber-400 hover:bg-amber-400/10 group/check"
         }`}
         title="Mark done"
       >
         <Check size={8} className={`transition-all duration-300 ${
-          isCheckingOff ? "text-white" : "text-transparent group-hover/check:text-amber-400"
+          isCheckingOff ? "text-default" : "text-transparent group-hover/check:text-amber-400"
         }`} />
       </button>
 
       {/* Rank number */}
-      <span className="text-[9px] text-slate-600 w-3 text-right shrink-0">{idx + 1}.</span>
+      <span className="text-[9px] text-faint w-3 text-right shrink-0">{idx + 1}.</span>
 
       {/* Text */}
       {editing ? (
@@ -637,12 +637,12 @@ function TodoItemRow({
           onChange={(e) => setEditText(e.target.value)}
           onBlur={commitEdit}
           onKeyDown={handleKeyDown}
-          className="flex-1 bg-slate-800 text-white text-xs px-1.5 py-0.5 rounded border border-amber-500/50 outline-none min-w-0"
+          className="flex-1 surface-card text-default text-xs px-1.5 py-0.5 rounded border border-amber-500/50 outline-none min-w-0"
         />
       ) : (
         <span
           className={`flex-1 text-xs min-w-0 cursor-pointer truncate transition-all duration-300 ${
-            isCheckingOff ? "line-through text-green-400" : "text-slate-200 hover:text-white"
+            isCheckingOff ? "line-through text-green-400" : "text-default hover:text-[var(--ds-text)]"
           }`}
           onDoubleClick={startEdit}
           title={item.text}
@@ -654,13 +654,13 @@ function TodoItemRow({
       {/* Actions */}
       {!editing && !isCheckingOff && (
         <div className="flex items-center gap-0 opacity-0 group-hover/item:opacity-100 transition-all shrink-0">
-          <button onClick={startEdit} className="p-0.5 rounded hover:bg-slate-700 text-slate-500 hover:text-white transition-colors" title="Edit">
+          <button onClick={startEdit} className="p-0.5 rounded hover:bg-[var(--ds-raised)] text-faint hover:text-[var(--ds-text)] transition-colors" title="Edit">
             <Pencil size={10} />
           </button>
           {moveLabel && MoveIcon && (
             <button
               onClick={() => onMoveItem(item.id, moveDirection)}
-              className="p-0.5 rounded hover:bg-slate-700 text-slate-500 hover:text-violet-400 transition-colors"
+              className="p-0.5 rounded hover:bg-[var(--ds-raised)] text-faint hover:text-violet-400 transition-colors"
               title={`Move to ${moveLabel}`}
             >
               <MoveIcon size={10} />
@@ -669,7 +669,7 @@ function TodoItemRow({
           <button
             onClick={() => onMoveToTop(item.id)}
             disabled={idx === 0}
-            className="p-0.5 rounded hover:bg-slate-700 text-slate-500 hover:text-white disabled:opacity-20 transition-colors"
+            className="p-0.5 rounded hover:bg-[var(--ds-raised)] text-faint hover:text-[var(--ds-text)] disabled:opacity-20 transition-colors"
             title="Move to top"
           >
             <ChevronsUp size={10} />
@@ -677,7 +677,7 @@ function TodoItemRow({
           <button
             onClick={() => onMove(item.id, idx - 1)}
             disabled={idx === 0}
-            className="p-0.5 rounded hover:bg-slate-700 text-slate-500 hover:text-white disabled:opacity-20 transition-colors"
+            className="p-0.5 rounded hover:bg-[var(--ds-raised)] text-faint hover:text-[var(--ds-text)] disabled:opacity-20 transition-colors"
             title="Move up"
           >
             <ChevronUp size={10} />
@@ -685,7 +685,7 @@ function TodoItemRow({
           <button
             onClick={() => onMove(item.id, idx + 1)}
             disabled={idx === total - 1}
-            className="p-0.5 rounded hover:bg-slate-700 text-slate-500 hover:text-white disabled:opacity-20 transition-colors"
+            className="p-0.5 rounded hover:bg-[var(--ds-raised)] text-faint hover:text-[var(--ds-text)] disabled:opacity-20 transition-colors"
             title="Move down"
           >
             <ChevronDown size={10} />
@@ -693,14 +693,14 @@ function TodoItemRow({
           <button
             onClick={() => onMoveToBottom(item.id)}
             disabled={idx === total - 1}
-            className="p-0.5 rounded hover:bg-slate-700 text-slate-500 hover:text-white disabled:opacity-20 transition-colors"
+            className="p-0.5 rounded hover:bg-[var(--ds-raised)] text-faint hover:text-[var(--ds-text)] disabled:opacity-20 transition-colors"
             title="Move to bottom"
           >
             <ChevronsDown size={10} />
           </button>
           <button
             onClick={() => onRemove(item.id)}
-            className="p-0.5 rounded hover:bg-red-900/30 text-slate-500 hover:text-red-400 transition-colors"
+            className="p-0.5 rounded hover:bg-red-900/30 text-faint hover:text-red-400 transition-colors"
             title="Remove"
           >
             <X size={10} />
@@ -762,14 +762,14 @@ function SettingsPanel({ userId, config, onClose }) {
   function renderListSelect(value, onChange, label, hint) {
     return (
       <div>
-        <label className="block text-xs text-slate-400 font-medium mb-1.5">{label}</label>
+        <label className="block text-xs text-muted font-medium mb-1.5">{label}</label>
         {loadingLists ? (
-          <div className="text-xs text-slate-500"><Loader2 size={12} className="animate-spin inline mr-1" /> Loading lists...</div>
+          <div className="text-xs text-faint"><Loader2 size={12} className="animate-spin inline mr-1" /> Loading lists...</div>
         ) : (
           <select
             value={value}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full bg-slate-800 text-sm text-slate-200 px-3 py-2 rounded border border-slate-700 outline-none focus:border-amber-500/50"
+            className="w-full surface-card text-sm text-default px-3 py-2 rounded border border-subtle outline-none focus:border-amber-500/50"
           >
             <option value="">— Select a list —</option>
             {lists.map((l) => (
@@ -777,19 +777,19 @@ function SettingsPanel({ userId, config, onClose }) {
             ))}
           </select>
         )}
-        <p className="text-[11px] text-slate-600 mt-1">{hint}</p>
+        <p className="text-[11px] text-faint mt-1">{hint}</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-full w-full">
-      <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
-        <div className="flex items-center gap-2 text-sm text-slate-300">
-          <Settings size={14} className="text-slate-500" />
+      <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
+        <div className="flex items-center gap-2 text-sm text-default">
+          <Settings size={14} className="text-faint" />
           <span className="font-medium">To-Do Settings</span>
         </div>
-        <button onClick={onClose} className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700 transition-colors">
+        <button onClick={onClose} className="p-1 rounded text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors">
           <X size={14} />
         </button>
       </div>
@@ -800,25 +800,25 @@ function SettingsPanel({ userId, config, onClose }) {
 
         {/* Weekly nudge */}
         <div>
-          <label className="block text-xs text-slate-400 font-medium mb-1.5">Weekly Nudge</label>
-          <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer mb-3">
+          <label className="block text-xs text-muted font-medium mb-1.5">Weekly Nudge</label>
+          <label className="flex items-center gap-2 text-sm text-default cursor-pointer mb-3">
             <input
               type="checkbox"
               checked={nudgeEnabled}
               onChange={(e) => setNudgeEnabled(e.target.checked)}
-              className="rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500/30"
+              className="rounded border-subtle surface-card text-amber-500 focus:ring-amber-500/30"
             />
             Send me a weekly to-do summary
           </label>
 
           <div className="flex items-center gap-3">
             <div>
-              <label className="block text-[11px] text-slate-500 mb-1">Day</label>
+              <label className="block text-[11px] text-faint mb-1">Day</label>
               <select
                 value={nudgeDay}
                 onChange={(e) => setNudgeDay(e.target.value)}
                 disabled={!nudgeEnabled}
-                className="bg-slate-800 text-sm text-slate-200 px-2.5 py-1.5 rounded border border-slate-700 outline-none focus:border-amber-500/50 disabled:opacity-40"
+                className="surface-card text-sm text-default px-2.5 py-1.5 rounded border border-subtle outline-none focus:border-amber-500/50 disabled:opacity-40"
               >
                 {DAYS.map((d) => (
                   <option key={d} value={d}>{d.charAt(0).toUpperCase() + d.slice(1)}</option>
@@ -826,13 +826,13 @@ function SettingsPanel({ userId, config, onClose }) {
               </select>
             </div>
             <div>
-              <label className="block text-[11px] text-slate-500 mb-1">Time</label>
+              <label className="block text-[11px] text-faint mb-1">Time</label>
               <input
                 type="time"
                 value={nudgeTime}
                 onChange={(e) => setNudgeTime(e.target.value)}
                 disabled={!nudgeEnabled}
-                className="bg-slate-800 text-sm text-slate-200 px-2.5 py-1.5 rounded border border-slate-700 outline-none focus:border-amber-500/50 disabled:opacity-40"
+                className="surface-card text-sm text-default px-2.5 py-1.5 rounded border border-subtle outline-none focus:border-amber-500/50 disabled:opacity-40"
               />
             </div>
           </div>
@@ -840,13 +840,13 @@ function SettingsPanel({ userId, config, onClose }) {
 
         {/* Calendar */}
         <div>
-          <label className="block text-xs text-slate-400 font-medium mb-1.5">Calendar</label>
-          <label className="flex items-center gap-2 text-sm text-slate-300 cursor-pointer">
+          <label className="block text-xs text-muted font-medium mb-1.5">Calendar</label>
+          <label className="flex items-center gap-2 text-sm text-default cursor-pointer">
             <input
               type="checkbox"
               checked={showOnCalendar}
               onChange={(e) => setShowOnCalendar(e.target.checked)}
-              className="rounded border-slate-600 bg-slate-800 text-amber-500 focus:ring-amber-500/30"
+              className="rounded border-subtle surface-card text-amber-500 focus:ring-amber-500/30"
             />
             Show to-do block on my nudge day
           </label>
@@ -854,17 +854,17 @@ function SettingsPanel({ userId, config, onClose }) {
       </div>
 
       {/* Save bar */}
-      <div className="px-4 py-3 border-t border-slate-800 flex items-center justify-end gap-2">
+      <div className="px-4 py-3 border-t border-subtle flex items-center justify-end gap-2">
         <button
           onClick={onClose}
-          className="px-3 py-1.5 text-xs text-slate-400 hover:text-white rounded hover:bg-slate-700 transition-colors"
+          className="px-3 py-1.5 text-xs text-muted hover:text-[var(--ds-text)] rounded hover:bg-[var(--ds-raised)] transition-colors"
         >
           Cancel
         </button>
         <button
           onClick={handleSave}
           disabled={saving}
-          className="px-4 py-1.5 text-xs bg-amber-600 hover:bg-amber-500 disabled:opacity-40 text-white rounded transition-colors"
+          className="px-4 py-1.5 text-xs bg-amber-600 hover:bg-amber-500 disabled:opacity-40 text-on-accent rounded transition-colors"
         >
           {saving ? <Loader2 size={12} className="animate-spin" /> : "Save"}
         </button>

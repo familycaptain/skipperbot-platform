@@ -128,12 +128,12 @@ export default function RemindersApp({ userId, refreshKey, sendChat, context = {
   ];
 
   return (
-    <div className="flex flex-col h-full w-full text-sm text-gray-200 overflow-hidden">
+    <div className="flex flex-col h-full w-full text-sm text-default overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 shrink-0">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-subtle shrink-0">
         <div className="flex items-center gap-3">
           <Bell size={18} className="text-violet-400" />
-          <span className="font-semibold text-white">Reminders</span>
+          <span className="font-semibold text-default">Reminders</span>
         </div>
         <div className="flex items-center gap-2">
           {/* User dropdown */}
@@ -141,25 +141,25 @@ export default function RemindersApp({ userId, refreshKey, sendChat, context = {
             <select
               value={selectedUser}
               onChange={e => setSelectedUser(e.target.value)}
-              className="appearance-none bg-gray-800 border border-gray-600 rounded px-2 py-1 text-xs text-gray-300 pr-6 cursor-pointer hover:border-gray-500"
+              className="appearance-none surface-card border border-subtle rounded px-2 py-1 text-xs text-default pr-6 cursor-pointer hover:border-[var(--ds-border)]"
             >
               <option value="">All users</option>
               {users.map(u => (
                 <option key={u.name} value={u.name}>{u.display_name || u.name}</option>
               ))}
             </select>
-            <ChevronDown size={12} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+            <ChevronDown size={12} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-faint pointer-events-none" />
           </div>
-          <label className="flex items-center gap-1 text-xs text-gray-500 cursor-pointer">
+          <label className="flex items-center gap-1 text-xs text-faint cursor-pointer">
             <input
               type="checkbox"
               checked={showInactive}
               onChange={e => setShowInactive(e.target.checked)}
-              className="rounded border-gray-600 bg-gray-800 text-violet-500 w-3 h-3"
+              className="rounded border-subtle surface-card text-violet-500 w-3 h-3"
             />
             Inactive
           </label>
-          <button onClick={loadReminders} className="p-1 rounded hover:bg-gray-700 text-gray-400 hover:text-gray-200 transition-colors">
+          <button onClick={loadReminders} className="p-1 rounded hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] transition-colors">
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           </button>
         </div>
@@ -175,8 +175,8 @@ export default function RemindersApp({ userId, refreshKey, sendChat, context = {
               onClick={() => setTab(t.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-t text-xs font-medium transition-colors ${
                 tab === t.id
-                  ? "bg-gray-800 text-violet-400 border-b-2 border-violet-400"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-gray-800/50"
+                  ? "surface-card text-violet-400 border-b-2 border-violet-400"
+                  : "text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-card)]"
               }`}
             >
               <Icon size={13} />
@@ -188,7 +188,7 @@ export default function RemindersApp({ userId, refreshKey, sendChat, context = {
         <div className="flex-1" />
         <button
           onClick={() => setShowNewForm(f => !f)}
-          className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-violet-600 hover:bg-violet-500 text-white transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-xs rounded bg-violet-600 hover:bg-violet-500 text-on-accent transition-colors"
         >
           <Plus size={12} />
           New
@@ -216,12 +216,12 @@ export default function RemindersApp({ userId, refreshKey, sendChat, context = {
       {/* List */}
       <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1.5">
         {loading && reminders.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-gray-500">
+          <div className="flex items-center justify-center h-32 text-faint">
             <Loader2 size={20} className="animate-spin mr-2" />
             Loading...
           </div>
         ) : displayList.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-gray-500 gap-2">
+          <div className="flex flex-col items-center justify-center h-32 text-faint gap-2">
             <Bell size={24} className="opacity-30" />
             <span className="text-xs">No {tab === "nags" ? "nags" : "reminders"} found.</span>
           </div>
@@ -286,21 +286,21 @@ function ReminderCard({ reminder, onRefresh, isFirst, isLast, selectedUser, show
   }
 
   const borderColor = !active
-    ? "border-gray-700/30"
+    ? "border-subtle"
     : overdue
     ? "border-amber-600/50"
-    : "border-gray-700";
+    : "border-subtle";
 
   const bgColor = !active
-    ? "bg-gray-800/20"
+    ? "surface-card"
     : overdue
     ? "bg-amber-900/10"
-    : "bg-gray-800/50";
+    : "surface-card";
 
   return (
     <div className={`rounded-lg border ${borderColor} ${bgColor} transition-colors`}>
       <div
-        className="flex items-start gap-3 px-3 py-2.5 cursor-pointer hover:bg-gray-700/20"
+        className="flex items-start gap-3 px-3 py-2.5 cursor-pointer hover:bg-[var(--ds-raised)]"
         onClick={() => setExpanded(e => !e)}
       >
         {/* Sort arrows */}
@@ -308,7 +308,7 @@ function ReminderCard({ reminder, onRefresh, isFirst, isLast, selectedUser, show
           <button
             onClick={e => { e.stopPropagation(); handleReorder("up"); }}
             disabled={isFirst || reordering}
-            className="p-0 text-gray-600 hover:text-violet-400 disabled:opacity-20 disabled:cursor-default transition-colors"
+            className="p-0 text-faint hover:text-violet-400 disabled:opacity-20 disabled:cursor-default transition-colors"
             title="Move up"
           >
             <ChevronUp size={13} />
@@ -316,7 +316,7 @@ function ReminderCard({ reminder, onRefresh, isFirst, isLast, selectedUser, show
           <button
             onClick={e => { e.stopPropagation(); handleReorder("down"); }}
             disabled={isLast || reordering}
-            className="p-0 text-gray-600 hover:text-violet-400 disabled:opacity-20 disabled:cursor-default transition-colors"
+            className="p-0 text-faint hover:text-violet-400 disabled:opacity-20 disabled:cursor-default transition-colors"
             title="Move down"
           >
             <ChevronDown size={13} />
@@ -326,22 +326,22 @@ function ReminderCard({ reminder, onRefresh, isFirst, isLast, selectedUser, show
         {/* Icon */}
         <div className="mt-0.5 shrink-0">
           {isNag ? (
-            <Zap size={14} className={active ? "text-amber-400" : "text-gray-600"} />
+            <Zap size={14} className={active ? "text-amber-400" : "text-faint"} />
           ) : isRecurring ? (
-            <Repeat size={14} className={active ? "text-violet-400" : "text-gray-600"} />
+            <Repeat size={14} className={active ? "text-violet-400" : "text-faint"} />
           ) : (
-            <Bell size={14} className={active ? "text-blue-400" : "text-gray-600"} />
+            <Bell size={14} className={active ? "text-blue-400" : "text-faint"} />
           )}
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <p className={`text-xs leading-relaxed ${active ? "text-gray-200" : "text-gray-500 line-through"}`}>
+          <p className={`text-xs leading-relaxed ${active ? "text-default" : "text-faint line-through"}`}>
             {r.message}
           </p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             {/* Next fire time */}
-            <span className={`text-[11px] flex items-center gap-1 ${overdue ? "text-amber-400" : "text-gray-500"}`}>
+            <span className={`text-[11px] flex items-center gap-1 ${overdue ? "text-amber-400" : "text-faint"}`}>
               <Clock size={10} />
               {overdue ? "Overdue: " : "Next: "}
               {fmtDateTime(r.remind_at)}
@@ -359,14 +359,14 @@ function ReminderCard({ reminder, onRefresh, isFirst, isLast, selectedUser, show
               </span>
             )}
             {!active && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-800 text-gray-500 border border-gray-700/30">
+              <span className="text-[10px] px-1.5 py-0.5 rounded surface-card text-faint border border-subtle">
                 inactive
               </span>
             )}
 
             {/* User */}
             {r.user_id && (
-              <span className="text-[10px] text-gray-600 flex items-center gap-0.5">
+              <span className="text-[10px] text-faint flex items-center gap-0.5">
                 <User size={9} />
                 {r.user_id}
               </span>
@@ -380,7 +380,7 @@ function ReminderCard({ reminder, onRefresh, isFirst, isLast, selectedUser, show
             <button
               onClick={e => { e.stopPropagation(); handleCancel(); }}
               disabled={cancelling}
-              className="p-1 rounded hover:bg-red-900/30 text-gray-500 hover:text-red-400 transition-colors"
+              className="p-1 rounded hover:bg-red-900/30 text-faint hover:text-red-400 transition-colors"
               title="Cancel reminder"
             >
               {cancelling ? <Loader2 size={13} className="animate-spin" /> : <XCircle size={13} />}
@@ -391,32 +391,32 @@ function ReminderCard({ reminder, onRefresh, isFirst, isLast, selectedUser, show
 
       {/* Expanded details */}
       {expanded && (
-        <div className="px-3 pb-2.5 border-t border-gray-700/30 pt-2 space-y-1.5">
+        <div className="px-3 pb-2.5 border-t border-subtle pt-2 space-y-1.5">
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
-            <span className="text-gray-500">ID:</span>
-            <span className="text-gray-400 font-mono">{r.id}</span>
-            <span className="text-gray-500">Created:</span>
-            <span className="text-gray-400">{fmtDateTime(r.created_at)}</span>
+            <span className="text-faint">ID:</span>
+            <span className="text-muted font-mono">{r.id}</span>
+            <span className="text-faint">Created:</span>
+            <span className="text-muted">{fmtDateTime(r.created_at)}</span>
             {isRecurring && (
               <>
-                <span className="text-gray-500">RRULE:</span>
-                <span className="text-gray-400 font-mono text-[10px] break-all">{r.recurrence}</span>
+                <span className="text-faint">RRULE:</span>
+                <span className="text-muted font-mono text-[10px] break-all">{r.recurrence}</span>
               </>
             )}
             {isNag && r.last_nagged && (
               <>
-                <span className="text-gray-500">Last nagged:</span>
-                <span className="text-gray-400">{r.last_nagged}</span>
+                <span className="text-faint">Last nagged:</span>
+                <span className="text-muted">{r.last_nagged}</span>
               </>
             )}
             {isNag && r.time_slot && (
               <>
-                <span className="text-gray-500">Time slot:</span>
-                <span className="text-gray-400">{r.time_slot}</span>
+                <span className="text-faint">Time slot:</span>
+                <span className="text-muted">{r.time_slot}</span>
               </>
             )}
           </div>
-          <p className="text-[11px] text-gray-600 mt-2 italic">
+          <p className="text-[11px] text-faint mt-2 italic">
             To reschedule, tell Skipper in chat: "reschedule {r.id} to ..."
           </p>
         </div>
@@ -447,12 +447,12 @@ function NewReminderForm({ userId, isNag, onClose, sendChat }) {
   }
 
   return (
-    <div className="mx-4 mt-2 p-3 rounded-lg bg-gray-800 border border-violet-700/40 space-y-2">
+    <div className="mx-4 mt-2 p-3 rounded-lg surface-card border border-violet-700/40 space-y-2">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-violet-400">
           {isNag ? "New Nag" : "New Reminder"} — via Skipper
         </span>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-300">
+        <button onClick={onClose} className="text-faint hover:text-[var(--ds-text)]">
           <X size={14} />
         </button>
       </div>
@@ -462,7 +462,7 @@ function NewReminderForm({ userId, isNag, onClose, sendChat }) {
           value={message}
           onChange={e => setMessage(e.target.value)}
           placeholder={isNag ? "What should we nag about?" : "What should we remind about?"}
-          className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-violet-500"
+          className="w-full surface-panel border border-subtle rounded px-2 py-1.5 text-xs text-default placeholder-gray-600 focus:outline-none focus:border-violet-500"
           autoFocus
         />
         <input
@@ -470,27 +470,27 @@ function NewReminderForm({ userId, isNag, onClose, sendChat }) {
           value={timing}
           onChange={e => setTiming(e.target.value)}
           placeholder={isNag ? "Time slot: morning, afternoon, evening (optional)" : "When? e.g. \"tomorrow at 9am\", \"every weekday at 8am\""}
-          className="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1.5 text-xs text-gray-200 placeholder-gray-600 focus:outline-none focus:border-violet-500"
+          className="w-full surface-panel border border-subtle rounded px-2 py-1.5 text-xs text-default placeholder-gray-600 focus:outline-none focus:border-violet-500"
         />
         <div className="flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
-            className="px-2 py-1 text-xs rounded border border-gray-600 text-gray-400 hover:bg-gray-700 transition-colors"
+            className="px-2 py-1 text-xs rounded border border-subtle text-muted hover:bg-[var(--ds-raised)] transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={!message.trim()}
-            className="flex items-center gap-1 px-3 py-1 text-xs rounded bg-violet-600 hover:bg-violet-500 text-white disabled:opacity-50 transition-colors"
+            className="flex items-center gap-1 px-3 py-1 text-xs rounded bg-violet-600 hover:bg-violet-500 text-on-accent disabled:opacity-50 transition-colors"
           >
             <Plus size={12} />
             Ask Skipper
           </button>
         </div>
       </form>
-      <p className="text-[10px] text-gray-600 leading-relaxed">
+      <p className="text-[10px] text-faint leading-relaxed">
         Skipper will interpret the timing and create the reminder. The response will appear in chat.
       </p>
     </div>

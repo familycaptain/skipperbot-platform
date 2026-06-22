@@ -37,23 +37,23 @@ export default function TrelloSettings({ onBack }) {
   useEffect(() => { load(); }, [load]);
 
   return (
-    <div className="flex flex-col h-full w-full text-sm text-gray-200 overflow-hidden">
+    <div className="flex flex-col h-full w-full text-sm text-default overflow-hidden">
       {/* ── Header ── */}
-      <div className="flex items-center gap-2 px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
+      <div className="flex items-center gap-2 px-3 h-10 surface-panel border-b border-subtle shrink-0">
         <button
           onClick={onBack}
-          className="flex items-center gap-1 px-2 py-1 text-xs rounded text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+          className="flex items-center gap-1 px-2 py-1 text-xs rounded text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors"
           title="Back to lists"
         >
           <ArrowLeft size={13} /> Back to lists
         </button>
         <div className="flex items-center gap-2 flex-1 min-w-0 justify-center">
-          <Trello size={15} className="text-sky-400 shrink-0" />
-          <span className="text-sm font-medium text-white">Trello Settings</span>
+          <Trello size={15} className="text-accent shrink-0" />
+          <span className="text-sm font-medium text-default">Trello Settings</span>
         </div>
         <button
           onClick={load}
-          className="p-1.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+          className="p-1.5 rounded hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] transition-colors"
           title="Refresh"
         >
           <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
@@ -69,7 +69,7 @@ export default function TrelloSettings({ onBack }) {
         )}
 
         {loading && accounts.length === 0 && boards.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-slate-400">
+          <div className="flex items-center justify-center h-32 text-muted">
             <Loader2 size={18} className="animate-spin mr-2" /> Loading Trello settings...
           </div>
         ) : (
@@ -97,12 +97,12 @@ function AccountsSection({ accounts, setAccounts }) {
   return (
     <section>
       <div className="flex items-center gap-2 mb-2">
-        <Key size={13} className="text-sky-400" />
-        <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Accounts</h3>
+        <Key size={13} className="text-accent" />
+        <h3 className="text-xs font-semibold text-default uppercase tracking-wider">Accounts</h3>
       </div>
 
       {accounts.length === 0 ? (
-        <p className="text-xs text-slate-500 italic mb-3">No Trello accounts yet — add one to connect boards.</p>
+        <p className="text-xs text-faint italic mb-3">No Trello accounts yet — add one to connect boards.</p>
       ) : (
         <div className="space-y-2 mb-3">
           {accounts.map((acc) => (
@@ -140,15 +140,15 @@ function AccountRow({ acc, setAccounts }) {
   }
 
   return (
-    <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 px-3 py-2">
+    <div className="rounded-lg border border-subtle surface-card px-3 py-2">
       <div className="flex items-center gap-3">
-        <span className="text-sm font-medium text-white truncate flex-1 min-w-0">{acc.name}</span>
+        <span className="text-sm font-medium text-default truncate flex-1 min-w-0">{acc.name}</span>
         <Flag label="key" set={acc.key_set} />
         <Flag label="token" set={acc.token_set} />
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="p-1 rounded hover:bg-red-900/30 text-slate-500 hover:text-red-400 transition-colors"
+          className="p-1 rounded hover:bg-red-900/30 text-faint hover:text-red-400 transition-colors"
           title="Delete account"
         >
           {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
@@ -169,7 +169,7 @@ function Flag({ label, set }) {
       className={`text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-0.5 ${
         set
           ? "bg-emerald-900/20 text-emerald-400 border-emerald-700/30"
-          : "bg-slate-700/30 text-slate-500 border-slate-600/30"
+          : "surface-raised text-faint border-subtle"
       }`}
     >
       {set ? <Check size={9} /> : null}
@@ -230,9 +230,9 @@ function AddAccountForm({ accounts, setAccounts }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-lg border border-slate-700/40 bg-slate-900/30 p-3 space-y-2"
+      className="rounded-lg border border-subtle surface-panel p-3 space-y-2"
     >
-      <p className="text-[11px] text-slate-400 font-medium">
+      <p className="text-[11px] text-muted font-medium">
         {existing ? `Edit "${existing.name}"` : "Add account"}
       </p>
       <input
@@ -240,7 +240,7 @@ function AddAccountForm({ accounts, setAccounts }) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Account name (e.g. personal)"
-        className="w-full bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded border border-slate-700 outline-none focus:border-sky-500"
+        className="w-full surface-card text-default text-xs px-2.5 py-1.5 rounded border border-subtle outline-none focus:border-subtle"
       />
       <SecretInput
         value={apiKey}
@@ -265,12 +265,12 @@ function AddAccountForm({ accounts, setAccounts }) {
         <button
           type="submit"
           disabled={saving || !name.trim()}
-          className="flex items-center gap-1 px-3 py-1.5 text-xs bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white rounded transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 text-xs bg-[var(--ds-accent)] hover:bg-[var(--ds-accent)] disabled:opacity-40 text-on-accent rounded transition-colors"
         >
           {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
           {existing ? "Save changes" : "Save"}
         </button>
-        <span className="text-[10px] text-slate-600">
+        <span className="text-[10px] text-faint">
           Leave key/token blank to keep existing.
         </span>
       </div>
@@ -287,12 +287,12 @@ function SecretInput({ value, onChange, reveal, onToggleReveal, placeholder }) {
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoComplete="off"
-        className="w-full bg-slate-800 text-white text-xs pl-2.5 pr-8 py-1.5 rounded border border-slate-700 outline-none focus:border-sky-500"
+        className="w-full surface-card text-default text-xs pl-2.5 pr-8 py-1.5 rounded border border-subtle outline-none focus:border-subtle"
       />
       <button
         type="button"
         onClick={onToggleReveal}
-        className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded text-slate-500 hover:text-white transition-colors"
+        className="absolute right-1.5 top-1/2 -translate-y-1/2 p-1 rounded text-faint hover:text-[var(--ds-text)] transition-colors"
         title={reveal ? "Hide" : "Reveal"}
         tabIndex={-1}
       >
@@ -310,12 +310,12 @@ function BoardsSection({ accounts, boards, setBoards }) {
   return (
     <section>
       <div className="flex items-center gap-2 mb-2">
-        <Link size={13} className="text-sky-400" />
-        <h3 className="text-xs font-semibold text-slate-300 uppercase tracking-wider">Boards</h3>
+        <Link size={13} className="text-accent" />
+        <h3 className="text-xs font-semibold text-default uppercase tracking-wider">Boards</h3>
       </div>
 
       {boards.length === 0 ? (
-        <p className="text-xs text-slate-500 italic mb-3">
+        <p className="text-xs text-faint italic mb-3">
           No Trello boards yet — {hasAccounts ? "add one below." : "add an account first."}
         </p>
       ) : (
@@ -356,23 +356,23 @@ function BoardRow({ board, accounts, setBoards }) {
   }
 
   return (
-    <div className="rounded-lg border border-slate-700/50 bg-slate-800/30 px-3 py-2">
+    <div className="rounded-lg border border-subtle surface-card px-3 py-2">
       <div className="flex items-center gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-white truncate">{board.name}</span>
+            <span className="text-sm font-medium text-default truncate">{board.name}</span>
             <span
               className={`text-[10px] px-1.5 py-0.5 rounded border ${
                 accountMissing
                   ? "bg-amber-900/20 text-amber-400 border-amber-700/30"
-                  : "bg-sky-900/20 text-sky-400 border-sky-700/30"
+                  : "surface-card text-accent border-subtle"
               }`}
               title={accountMissing ? "Account not found" : "Account"}
             >
               {board.account || "—"}{accountMissing ? " (?)" : ""}
             </span>
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5 truncate">
+          <div className="text-[10px] text-faint mt-0.5 truncate">
             <span className="font-mono">{board.board_id}</span>
             {board.default_list ? <span> · default: {board.default_list}</span> : null}
           </div>
@@ -380,7 +380,7 @@ function BoardRow({ board, accounts, setBoards }) {
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="p-1 rounded hover:bg-red-900/30 text-slate-500 hover:text-red-400 transition-colors"
+          className="p-1 rounded hover:bg-red-900/30 text-faint hover:text-red-400 transition-colors"
           title="Delete board"
         >
           {deleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
@@ -440,9 +440,9 @@ function AddBoardForm({ accounts, boards, setBoards }) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-lg border border-slate-700/40 bg-slate-900/30 p-3 space-y-2"
+      className="rounded-lg border border-subtle surface-panel p-3 space-y-2"
     >
-      <p className="text-[11px] text-slate-400 font-medium">Add board</p>
+      <p className="text-[11px] text-muted font-medium">Add board</p>
       {!hasAccounts && (
         <div className="flex items-center gap-1.5 text-[11px] text-amber-400">
           <AlertCircle size={11} /> Add a Trello account before connecting boards.
@@ -454,13 +454,13 @@ function AddBoardForm({ accounts, boards, setBoards }) {
         onChange={(e) => setName(e.target.value)}
         placeholder="Board name (e.g. household)"
         disabled={!hasAccounts}
-        className="w-full bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded border border-slate-700 outline-none focus:border-sky-500 disabled:opacity-40"
+        className="w-full surface-card text-default text-xs px-2.5 py-1.5 rounded border border-subtle outline-none focus:border-subtle disabled:opacity-40"
       />
       <select
         value={account}
         onChange={(e) => setAccount(e.target.value)}
         disabled={!hasAccounts}
-        className="w-full bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded border border-slate-700 outline-none focus:border-sky-500 disabled:opacity-40"
+        className="w-full surface-card text-default text-xs px-2.5 py-1.5 rounded border border-subtle outline-none focus:border-subtle disabled:opacity-40"
       >
         <option value="">{hasAccounts ? "Select account…" : "No accounts available"}</option>
         {accounts.map((a) => (
@@ -473,10 +473,10 @@ function AddBoardForm({ accounts, boards, setBoards }) {
         onChange={(e) => setBoardId(e.target.value)}
         placeholder="Board ID"
         disabled={!hasAccounts}
-        className="w-full bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded border border-slate-700 outline-none focus:border-sky-500 disabled:opacity-40 font-mono"
+        className="w-full surface-card text-default text-xs px-2.5 py-1.5 rounded border border-subtle outline-none focus:border-subtle disabled:opacity-40 font-mono"
       />
-      <p className="text-[10px] text-slate-600">
-        Board ID is from the board URL: trello.com/b/<span className="text-slate-400">BOARD_ID</span>/...
+      <p className="text-[10px] text-faint">
+        Board ID is from the board URL: trello.com/b/<span className="text-muted">BOARD_ID</span>/...
       </p>
       <input
         type="text"
@@ -484,7 +484,7 @@ function AddBoardForm({ accounts, boards, setBoards }) {
         onChange={(e) => setDefaultList(e.target.value)}
         placeholder="Default list (optional)"
         disabled={!hasAccounts}
-        className="w-full bg-slate-800 text-white text-xs px-2.5 py-1.5 rounded border border-slate-700 outline-none focus:border-sky-500 disabled:opacity-40"
+        className="w-full surface-card text-default text-xs px-2.5 py-1.5 rounded border border-subtle outline-none focus:border-subtle disabled:opacity-40"
       />
       {error && (
         <div className="flex items-center gap-1.5 text-[11px] text-red-400">
@@ -494,7 +494,7 @@ function AddBoardForm({ accounts, boards, setBoards }) {
       <button
         type="submit"
         disabled={saving || !hasAccounts || !name.trim() || !account || !boardId.trim()}
-        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-sky-600 hover:bg-sky-500 disabled:opacity-40 text-white rounded transition-colors"
+        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-[var(--ds-accent)] hover:bg-[var(--ds-accent)] disabled:opacity-40 text-on-accent rounded transition-colors"
       >
         {saving ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
         Save
