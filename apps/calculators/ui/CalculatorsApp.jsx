@@ -137,16 +137,16 @@ function finishLoan({ P, c, N, M, solved }) {
 function Field({ label, value, onChange, placeholder, suffix }) {
   return (
     <label className="block">
-      <span className="text-xs text-slate-400">{label}</span>
+      <span className="text-xs text-muted">{label}</span>
       <div className="mt-1 flex items-center gap-1">
         <input
           type="number"
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder || "leave blank to solve"}
-          className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-sm text-slate-100 focus:border-sky-500 focus:outline-none"
+          className="w-full surface-panel border border-subtle rounded px-2 py-1.5 text-sm text-default focus:border-[var(--ds-accent)] focus:outline-none"
         />
-        {suffix && <span className="text-xs text-slate-500 w-6 shrink-0">{suffix}</span>}
+        {suffix && <span className="text-xs text-faint w-6 shrink-0">{suffix}</span>}
       </div>
     </label>
   );
@@ -161,7 +161,7 @@ function CompoundTab() {
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-slate-500">Leave exactly one of Principal / Rate / Years / Future value blank, then Calculate.</p>
+      <p className="text-xs text-faint">Leave exactly one of Principal / Rate / Years / Future value blank, then Calculate.</p>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Principal" value={f.P} onChange={set("P")} />
         <Field label="Annual rate" value={f.rate} onChange={set("rate")} suffix="%" />
@@ -169,20 +169,20 @@ function CompoundTab() {
         <Field label="Years" value={f.t} onChange={set("t")} suffix="yr" />
         <Field label="Future value" value={f.A} onChange={set("A")} />
       </div>
-      <button onClick={calc} className="px-4 py-2 rounded bg-sky-600 hover:bg-sky-500 text-white text-sm font-medium">Calculate</button>
+      <button onClick={calc} className="px-4 py-2 rounded bg-[var(--ds-accent)] hover:bg-[var(--ds-accent-hover)] text-on-accent text-sm font-medium">Calculate</button>
       {res?.error && (
         <div className="flex items-start gap-2 text-rose-400 text-sm"><AlertCircle size={14} className="mt-0.5 shrink-0" /><span>{res.error}</span></div>
       )}
       {res?.info && (
-        <div className="flex items-start gap-2 bg-sky-900/20 border border-sky-800 rounded-lg p-4 text-sky-200 text-sm"><Info size={14} className="mt-0.5 shrink-0" /><span>{res.info}</span></div>
+        <div className="flex items-start gap-2 surface-card border border-[var(--ds-accent)] rounded-lg p-4 text-accent text-sm"><Info size={14} className="mt-0.5 shrink-0" /><span>{res.info}</span></div>
       )}
       {res && !res.error && !res.info && (
-        <div className="bg-slate-800/60 border border-slate-700 rounded-lg p-4">
-          <div className="text-xs text-slate-400">{res.label}</div>
-          <div className="text-2xl font-semibold text-sky-300">
+        <div className="surface-card border border-subtle rounded-lg p-4">
+          <div className="text-xs text-muted">{res.label}</div>
+          <div className="text-2xl font-semibold text-accent">
             {res.unit ? `${res.value}${res.unit === "%" ? "%" : " " + res.unit}` : money(res.value)}
           </div>
-          {res.note && <div className="text-xs text-slate-400 mt-1">{res.note}</div>}
+          {res.note && <div className="text-xs text-muted mt-1">{res.note}</div>}
         </div>
       )}
     </div>
@@ -198,14 +198,14 @@ function LoanTab() {
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-slate-500">Leave exactly one of Loan amount / Rate / Years / Monthly payment blank, then Calculate.</p>
+      <p className="text-xs text-faint">Leave exactly one of Loan amount / Rate / Years / Monthly payment blank, then Calculate.</p>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Loan amount" value={f.P} onChange={set("P")} />
         <Field label="Annual rate" value={f.rate} onChange={set("rate")} suffix="%" />
         <Field label="Term (years)" value={f.years} onChange={set("years")} suffix="yr" />
         <Field label="Monthly payment" value={f.M} onChange={set("M")} />
       </div>
-      <button onClick={calc} className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium">Calculate</button>
+      <button onClick={calc} className="px-4 py-2 rounded bg-emerald-600 hover:bg-emerald-500 text-on-accent text-sm font-medium">Calculate</button>
       {res?.error && (
         <div className="flex items-start gap-2 text-rose-400 text-sm"><AlertCircle size={14} className="mt-0.5 shrink-0" /><span>{res.error}</span></div>
       )}
@@ -217,18 +217,18 @@ function LoanTab() {
             <Stat label="Total interest" value={money(res.summary.totalInterest)} />
             <Stat label="Total paid" value={money(res.summary.totalPaid)} />
           </div>
-          <div className="border border-slate-700 rounded-lg overflow-hidden">
-            <div className="px-3 py-2 text-xs text-slate-400 bg-slate-800/60 border-b border-slate-700">
+          <div className="border border-subtle rounded-lg overflow-hidden">
+            <div className="px-3 py-2 text-xs text-muted surface-card border-b border-subtle">
               Amortization schedule ({res.summary.payments} payments)
             </div>
             <div className="max-h-72 overflow-y-auto">
               <table className="w-full text-xs">
-                <thead className="text-slate-500 sticky top-0 bg-slate-900">
+                <thead className="text-faint sticky top-0 surface-panel">
                   <tr><th className="text-left px-3 py-1">#</th><th className="text-right px-3 py-1">Payment</th><th className="text-right px-3 py-1">Principal</th><th className="text-right px-3 py-1">Interest</th><th className="text-right px-3 py-1">Balance</th></tr>
                 </thead>
                 <tbody>
                   {res.rows.map((r) => (
-                    <tr key={r.i} className="border-t border-slate-800 text-slate-300">
+                    <tr key={r.i} className="border-t border-subtle text-default">
                       <td className="px-3 py-1">{r.i}</td>
                       <td className="text-right px-3 py-1">{money(r.payment)}</td>
                       <td className="text-right px-3 py-1">{money(r.principal)}</td>
@@ -248,9 +248,9 @@ function LoanTab() {
 
 function Stat({ label, value, highlight }) {
   return (
-    <div className={`rounded-lg border p-3 ${highlight ? "border-emerald-700 bg-emerald-900/20" : "border-slate-700 bg-slate-800/60"}`}>
-      <div className="text-[10px] text-slate-400">{label}</div>
-      <div className={`text-sm font-semibold ${highlight ? "text-emerald-300" : "text-slate-200"}`}>{value}</div>
+    <div className={`rounded-lg border p-3 ${highlight ? "border-emerald-700 bg-emerald-900/20" : "border-subtle surface-card"}`}>
+      <div className="text-[10px] text-muted">{label}</div>
+      <div className={`text-sm font-semibold ${highlight ? "text-emerald-300" : "text-default"}`}>{value}</div>
     </div>
   );
 }
@@ -381,12 +381,12 @@ function ScientificTab() {
   };
 
   // [label, onClick, className]
-  const C = "bg-slate-800 hover:bg-slate-700 text-slate-200";
-  const Fn = "bg-slate-700/70 hover:bg-slate-600 text-sky-300 text-xs";
-  const Op = "bg-slate-700 hover:bg-slate-600 text-amber-300";
-  const Eq = "bg-sky-600 hover:bg-sky-500 text-white";
+  const C = "surface-card hover:bg-[var(--ds-raised)] text-default";
+  const Fn = "surface-raised hover:bg-[var(--ds-raised)] text-accent text-xs";
+  const Op = "surface-raised hover:bg-[var(--ds-raised)] text-amber-300";
+  const Eq = "bg-[var(--ds-accent)] hover:bg-[var(--ds-accent-hover)] text-on-accent";
   const keys = [
-    [deg ? "DEG" : "RAD", () => setDeg((d) => !d), "bg-slate-700 hover:bg-slate-600 text-emerald-300 text-xs"],
+    [deg ? "DEG" : "RAD", () => setDeg((d) => !d), "surface-raised hover:bg-[var(--ds-raised)] text-emerald-300 text-xs"],
     ["(", () => push("("), Fn], [")", () => push(")"), Fn], ["C", clear, "bg-rose-800/70 hover:bg-rose-700 text-rose-200"], ["⌫", back, C],
     ["sin", () => push("sin("), Fn], ["cos", () => push("cos("), Fn], ["tan", () => push("tan("), Fn], ["^", () => push("^"), Op], ["√", () => push("sqrt("), Fn],
     ["ln", () => push("ln("), Fn], ["log", () => push("log("), Fn], ["7", () => push("7"), C], ["8", () => push("8"), C], ["9", () => push("9"), C],
@@ -397,8 +397,8 @@ function ScientificTab() {
 
   return (
     <div className="max-w-xs">
-      <div className={`rounded-lg border px-3 py-3 mb-3 text-right font-mono break-all min-h-[3.5rem] ${err ? "border-rose-700 bg-rose-900/20" : "border-slate-700 bg-slate-900"}`}>
-        <div className="text-lg text-slate-100">{expr || "0"}</div>
+      <div className={`rounded-lg border px-3 py-3 mb-3 text-right font-mono break-all min-h-[3.5rem] ${err ? "border-rose-700 bg-rose-900/20" : "border-subtle surface-panel"}`}>
+        <div className="text-lg text-default">{expr || "0"}</div>
         {err && <div className="text-xs text-rose-400">Error</div>}
       </div>
       <div className="grid grid-cols-5 gap-1.5">
@@ -407,7 +407,7 @@ function ScientificTab() {
         ))}
         <button onClick={equals} className={`col-span-5 h-10 rounded text-sm font-semibold ${Eq}`}>=</button>
       </div>
-      <p className="text-[10px] text-slate-500 mt-2">Trig uses {deg ? "degrees" : "radians"} — tap DEG/RAD to switch. Supports + − × ÷ ^, parentheses, π, e, √, ln, log, factorial (x!).</p>
+      <p className="text-[10px] text-faint mt-2">Trig uses {deg ? "degrees" : "radians"} — tap DEG/RAD to switch. Supports + − × ÷ ^, parentheses, π, e, √, ln, log, factorial (x!).</p>
     </div>
   );
 }
@@ -415,20 +415,20 @@ function ScientificTab() {
 export default function CalculatorsApp() {
   const [tab, setTab] = useState("scientific");
   const tabBtn = (id, label, Icon, activeCls) => (
-    <button onClick={() => setTab(id)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm ${tab === id ? activeCls : "bg-slate-800 text-slate-300 hover:bg-slate-700"}`}>
+    <button onClick={() => setTab(id)} className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded text-sm ${tab === id ? activeCls : "surface-card text-default hover:bg-[var(--ds-raised)]"}`}>
       <Icon size={14} /> {label}
     </button>
   );
   return (
     <div className="h-full overflow-y-auto p-4 max-w-2xl">
       <div className="flex items-center gap-2 mb-4">
-        <Calculator size={18} className="text-sky-400" />
-        <h1 className="text-base font-bold text-slate-200">Calculators</h1>
+        <Calculator size={18} className="text-accent" />
+        <h1 className="text-base font-bold text-default">Calculators</h1>
       </div>
       <div className="flex flex-wrap gap-1 mb-4">
-        {tabBtn("scientific", "Scientific", FlaskConical, "bg-slate-600 text-white")}
-        {tabBtn("compound", "Compound interest", TrendingUp, "bg-sky-700 text-white")}
-        {tabBtn("loan", "Loan / amortization", Landmark, "bg-emerald-700 text-white")}
+        {tabBtn("scientific", "Scientific", FlaskConical, "surface-raised text-on-accent")}
+        {tabBtn("compound", "Compound interest", TrendingUp, "bg-[var(--ds-accent)] text-on-accent")}
+        {tabBtn("loan", "Loan / amortization", Landmark, "bg-emerald-700 text-on-accent")}
       </div>
       {tab === "scientific" && <ScientificTab />}
       {tab === "compound" && <CompoundTab />}

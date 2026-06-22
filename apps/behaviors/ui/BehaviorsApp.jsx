@@ -9,15 +9,15 @@ function BehaviorCard({ b, expandedId, editingId, showForm, handleToggle, startE
   return (
     <div className={`rounded-lg border transition-all ${
       b.enabled
-        ? "border-zinc-700 bg-zinc-800/60"
-        : "border-zinc-800 bg-zinc-900/40 opacity-60"
+        ? "border-subtle surface-card"
+        : "border-subtle surface-panel opacity-60"
     }`}>
       {/* Header row */}
       <div className="flex items-start gap-3 p-4">
         {/* Toggle */}
         <button
           onClick={() => handleToggle(b.id)}
-          className="mt-0.5 flex-shrink-0 text-zinc-400 hover:text-amber-400 transition-colors"
+          className="mt-0.5 flex-shrink-0 text-muted hover:text-amber-400 transition-colors"
           title={b.enabled ? "Click to disable" : "Click to enable"}
         >
           {b.enabled
@@ -31,32 +31,32 @@ function BehaviorCard({ b, expandedId, editingId, showForm, handleToggle, startE
             <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
               b.scope === "system"
                 ? "bg-purple-900/60 text-purple-300 border border-purple-700"
-                : "bg-zinc-700 text-zinc-300 border border-zinc-600"
+                : "surface-raised text-default border border-subtle"
             }`}>
               {b.scope === "system" ? <Globe size={10} className="inline mr-1" /> : <User size={10} className="inline mr-1" />}
               {b.scope}
             </span>
             {!b.enabled && (
-              <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-500 border border-zinc-700">
+              <span className="text-xs px-1.5 py-0.5 rounded surface-card text-faint border border-subtle">
                 disabled
               </span>
             )}
-            <span className="text-xs text-zinc-600 font-mono">{b.id}</span>
+            <span className="text-xs text-faint font-mono">{b.id}</span>
           </div>
 
           <div className="space-y-1">
             <div className="flex gap-1.5">
               <span className="text-xs text-amber-500 font-semibold uppercase tracking-wide mt-0.5 flex-shrink-0">IF</span>
-              <p className="text-sm text-zinc-200 leading-snug">{b.trigger_description}</p>
+              <p className="text-sm text-default leading-snug">{b.trigger_description}</p>
             </div>
             <div className="flex gap-1.5">
               <span className="text-xs text-blue-400 font-semibold uppercase tracking-wide mt-0.5 flex-shrink-0">THEN</span>
-              <p className="text-sm text-zinc-300 leading-snug">{b.action_description}</p>
+              <p className="text-sm text-default leading-snug">{b.action_description}</p>
             </div>
           </div>
 
           {isExpanded && b.notes && (
-            <p className="mt-2 text-xs text-zinc-500 italic">{b.notes}</p>
+            <p className="mt-2 text-xs text-faint italic">{b.notes}</p>
           )}
         </div>
 
@@ -65,7 +65,7 @@ function BehaviorCard({ b, expandedId, editingId, showForm, handleToggle, startE
           {b.notes && (
             <button
               onClick={() => setExpandedId(isExpanded ? null : b.id)}
-              className="p-1.5 rounded text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="p-1.5 rounded text-faint hover:text-[var(--ds-text)] transition-colors"
               title="Show notes"
             >
               {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -73,7 +73,7 @@ function BehaviorCard({ b, expandedId, editingId, showForm, handleToggle, startE
           )}
           <button
             onClick={() => startEdit(b)}
-            className="p-1.5 rounded text-zinc-500 hover:text-blue-400 transition-colors"
+            className="p-1.5 rounded text-faint hover:text-blue-400 transition-colors"
             title="Edit"
           >
             <Pencil size={14} />
@@ -89,7 +89,7 @@ function BehaviorCard({ b, expandedId, editingId, showForm, handleToggle, startE
               </button>
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="p-1.5 rounded text-zinc-500 hover:text-zinc-300 transition-colors"
+                className="p-1.5 rounded text-faint hover:text-[var(--ds-text)] transition-colors"
               >
                 <X size={14} />
               </button>
@@ -97,7 +97,7 @@ function BehaviorCard({ b, expandedId, editingId, showForm, handleToggle, startE
           ) : (
             <button
               onClick={() => setDeleteConfirm(b.id)}
-              className="p-1.5 rounded text-zinc-500 hover:text-red-400 transition-colors"
+              className="p-1.5 rounded text-faint hover:text-red-400 transition-colors"
               title="Delete"
             >
               <Trash2 size={14} />
@@ -119,7 +119,7 @@ function FormPanel({ editingId, form, setForm, error, saving, resetForm, handleS
       <div className="space-y-4">
         {/* Scope */}
         <div>
-          <label className="block text-xs text-zinc-400 mb-1.5 font-medium">Scope</label>
+          <label className="block text-xs text-muted mb-1.5 font-medium">Scope</label>
           <div className="flex gap-2">
             {["user", "system"].map(s => (
               <button
@@ -130,7 +130,7 @@ function FormPanel({ editingId, form, setForm, error, saving, resetForm, handleS
                     ? s === "system"
                       ? "bg-purple-900/60 text-purple-300 border border-purple-600"
                       : "bg-amber-900/60 text-amber-300 border border-amber-600"
-                    : "bg-zinc-800 text-zinc-400 border border-zinc-700 hover:border-zinc-500"
+                    : "surface-card text-muted border border-subtle hover:border-[var(--ds-border)]"
                 }`}
               >
                 {s === "system" ? <Globe size={13} /> : <User size={13} />}
@@ -142,7 +142,7 @@ function FormPanel({ editingId, form, setForm, error, saving, resetForm, handleS
 
         {/* Trigger */}
         <div>
-          <label className="block text-xs text-zinc-400 mb-1.5 font-medium">
+          <label className="block text-xs text-muted mb-1.5 font-medium">
             <span className="text-amber-500 font-bold">IF</span> — Trigger condition
           </label>
           <textarea
@@ -150,13 +150,13 @@ function FormPanel({ editingId, form, setForm, error, saving, resetForm, handleS
             onChange={e => setForm(f => ({ ...f, trigger_description: e.target.value }))}
             rows={2}
             placeholder="e.g. When the user says they started their truck or mentions starting a vehicle"
-            className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-amber-600 resize-none"
+            className="w-full surface-panel border border-subtle rounded px-3 py-2 text-sm text-default placeholder-zinc-600 focus:outline-none focus:border-amber-600 resize-none"
           />
         </div>
 
         {/* Action */}
         <div>
-          <label className="block text-xs text-zinc-400 mb-1.5 font-medium">
+          <label className="block text-xs text-muted mb-1.5 font-medium">
             <span className="text-blue-400 font-bold">THEN</span> — Action to take
           </label>
           <textarea
@@ -164,19 +164,19 @@ function FormPanel({ editingId, form, setForm, error, saving, resetForm, handleS
             onChange={e => setForm(f => ({ ...f, action_description: e.target.value }))}
             rows={3}
             placeholder="e.g. Search the Auto app for a maintenance item matching the vehicle name and mark it as done"
-            className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-blue-600 resize-none"
+            className="w-full surface-panel border border-subtle rounded px-3 py-2 text-sm text-default placeholder-zinc-600 focus:outline-none focus:border-blue-600 resize-none"
           />
         </div>
 
         {/* Notes */}
         <div>
-          <label className="block text-xs text-zinc-400 mb-1.5 font-medium">Notes (optional)</label>
+          <label className="block text-xs text-muted mb-1.5 font-medium">Notes (optional)</label>
           <input
             type="text"
             value={form.notes}
             onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
             placeholder="Why this rule exists, context, etc."
-            className="w-full bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-sm text-zinc-200 placeholder-zinc-600 focus:outline-none focus:border-zinc-500"
+            className="w-full surface-panel border border-subtle rounded px-3 py-2 text-sm text-default placeholder-zinc-600 focus:outline-none focus:border-[var(--ds-border)]"
           />
         </div>
 
@@ -185,14 +185,14 @@ function FormPanel({ editingId, form, setForm, error, saving, resetForm, handleS
         <div className="flex gap-2 justify-end">
           <button
             onClick={resetForm}
-            className="px-4 py-2 rounded text-sm text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors"
+            className="px-4 py-2 rounded text-sm text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-card)] transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 rounded text-sm bg-amber-600 hover:bg-amber-500 text-white font-medium transition-colors disabled:opacity-50"
+            className="px-4 py-2 rounded text-sm bg-amber-600 hover:bg-amber-500 text-on-accent font-medium transition-colors disabled:opacity-50"
           >
             {saving ? "Saving…" : editingId ? "Save Changes" : "Create Behavior"}
           </button>
@@ -307,7 +307,7 @@ export default function BehaviorsApp({ userId }) {
   const systemBehaviors = behaviors.filter(b => b.scope === "system");
 
   return (
-    <div className="h-full w-full overflow-y-auto bg-zinc-900 text-zinc-100">
+    <div className="h-full w-full overflow-y-auto surface-panel text-default">
       <div className="max-w-2xl mx-auto px-5 py-6">
 
         {/* Header */}
@@ -318,7 +318,7 @@ export default function BehaviorsApp({ userId }) {
           </div>
           <button
             onClick={startCreate}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-on-accent text-sm font-medium transition-colors"
           >
             <Plus size={14} />
             New Behavior
@@ -326,21 +326,21 @@ export default function BehaviorsApp({ userId }) {
         </div>
 
         {/* Subtitle */}
-        <p className="text-sm text-zinc-500 mb-6">
+        <p className="text-sm text-faint mb-6">
           Always-active if/then rules. Every behavior is injected into every chat turn — guaranteed to fire when the trigger matches.
         </p>
 
         {/* Info callout */}
         {behaviors.length === 0 && !loading && !showForm && (
-          <div className="rounded-lg border border-zinc-700 bg-zinc-800/40 p-5 mb-6">
+          <div className="rounded-lg border border-subtle surface-card p-5 mb-6">
             <div className="flex gap-3">
               <Info size={18} className="text-amber-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-zinc-300 mb-1">No behaviors yet</p>
-                <p className="text-sm text-zinc-500 mb-3">
+                <p className="text-sm font-medium text-default mb-1">No behaviors yet</p>
+                <p className="text-sm text-faint mb-3">
                   Teach Skipper custom rules through chat or create one here. Example triggers:
                 </p>
-                <ul className="text-sm text-zinc-500 space-y-1 list-disc list-inside">
+                <ul className="text-sm text-faint space-y-1 list-disc list-inside">
                   <li>"Whenever I say I did something, mark matching to-do items as done"</li>
                   <li>"If I say I started my truck, mark the matching auto maintenance item complete"</li>
                   <li>"When I mention a meal I made, log it to the home timeline"</li>
@@ -362,18 +362,18 @@ export default function BehaviorsApp({ userId }) {
         />}
 
         {loading ? (
-          <div className="text-center py-10 text-zinc-600">Loading…</div>
+          <div className="text-center py-10 text-faint">Loading…</div>
         ) : (
           <div className="space-y-6">
             {/* Personal behaviors */}
             {userBehaviors.length > 0 && (
               <section>
                 <div className="flex items-center gap-2 mb-3">
-                  <User size={13} className="text-zinc-500" />
-                  <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">
+                  <User size={13} className="text-faint" />
+                  <h2 className="text-xs font-semibold text-faint uppercase tracking-widest">
                     Personal — {userId}
                   </h2>
-                  <span className="text-xs text-zinc-600">({userBehaviors.length})</span>
+                  <span className="text-xs text-faint">({userBehaviors.length})</span>
                 </div>
                 <div className="space-y-2">
                   {userBehaviors.map(b => <BehaviorCard key={b.id} b={b}
@@ -395,11 +395,11 @@ export default function BehaviorsApp({ userId }) {
             {systemBehaviors.length > 0 && (
               <section>
                 <div className="flex items-center gap-2 mb-3">
-                  <Globe size={13} className="text-zinc-500" />
-                  <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">
+                  <Globe size={13} className="text-faint" />
+                  <h2 className="text-xs font-semibold text-faint uppercase tracking-widest">
                     System — All Users
                   </h2>
-                  <span className="text-xs text-zinc-600">({systemBehaviors.length})</span>
+                  <span className="text-xs text-faint">({systemBehaviors.length})</span>
                 </div>
                 <div className="space-y-2">
                   {systemBehaviors.map(b => <BehaviorCard key={b.id} b={b}
