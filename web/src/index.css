@@ -285,21 +285,8 @@ html, body, #root {
   animation: task-flash-pulse 0.75s ease-in-out 2;
 }
 
-/* ════════════════════════════════════════════════════════════════════════════
- * DESIGN SYSTEM — semantic tokens + component classes (issue #38)
- *
- * One definition per role for BOTH themes, so a new app gets correct light/dark
- * for free and the SAME element looks identical across every app. Apps use these
- * semantic classes (surface-*/text-*/btn-*/pill-*/tab/list-row/…) instead of raw
- * Tailwind scales (the raw-token lint enforces it).
- *
- * Values are INDEPENDENT LITERALS per theme (never var(--color-slate/gray/zinc-*)),
- * so semantic tokens can't inherit the issue-#26 neutral remap and DARK stays
- * byte-identical to today's stock palette. LIGHT matches the established warm/clean
- * reference feel (white surfaces, warm near-black text, indigo-not-cyan accent).
- * All pairings target WCAG AA (>=4.5 body / >=3 large+UI) — measured in the box-2
- * acceptance, not eyeballed.
- * ════════════════════════════════════════════════════════════════════════════ */
+/* Design system — semantic tokens + component classes (issue #38).
+ * Independent literal values per theme; dark byte-stable, light reference feel. */
 :root {
   /* DARK (default) — independent literals == current stock slate/indigo */
   --ds-page:#020617; --ds-panel:#0f172a; --ds-card:#1e293b; --ds-raised:#334155;
@@ -341,7 +328,7 @@ html[data-theme="light"] {
   .surface-page   { background-color:var(--ds-page);   color:var(--ds-text); }
   .surface-panel  { background-color:var(--ds-panel);  color:var(--ds-text); }
   .surface-card   { background-color:var(--ds-card);   color:var(--ds-text); }
-  .surface-raised { background-color:var(--ds-raised); color:var(--ds-text); box-shadow:var(--ds-elevation); }
+  .surface-raised { background-color:var(--ds-raised); color:var(--ds-text); }
   .surface-overlay{ background-color:var(--ds-overlay); }
   /* text */
   .text-default { color:var(--ds-text); }
@@ -356,13 +343,13 @@ html[data-theme="light"] {
   .border-strong { border-color:var(--ds-border-strong); }
   /* buttons (foreground baked in so text never renders black-on-accent) */
   .btn-primary { background-color:var(--ds-accent); color:var(--ds-accent-fg); }
-  .btn-primary:hover:not(:disabled) { background-color:var(--ds-accent-hover); }
+  .btn-primary:hover { background-color:var(--ds-accent-hover); }
   .btn-success { background-color:var(--ds-success); color:#fff; }
-  .btn-success:hover:not(:disabled) { background-color:var(--ds-success-hover); }
+  .btn-success:hover { background-color:var(--ds-success-hover); }
   .btn-danger { background-color:var(--ds-danger); color:#fff; }
-  .btn-danger:hover:not(:disabled) { background-color:var(--ds-danger-hover); }
+  .btn-danger:hover { background-color:var(--ds-danger-hover); }
   .btn-ghost { background-color:transparent; color:var(--ds-text); }
-  .btn-ghost:hover:not(:disabled) { background-color:var(--ds-raised); }
+  .btn-ghost:hover { background-color:var(--ds-raised); }
   .btn-primary:disabled,.btn-success:disabled,.btn-danger:disabled,.btn-ghost:disabled {
     background-color:var(--ds-disabled-bg); color:var(--ds-disabled-fg); cursor:not-allowed; }
   /* form fields + focus + disabled */
