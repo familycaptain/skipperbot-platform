@@ -77,9 +77,9 @@ export default function ChatPanel({
             return (
               <div key={msg.id} role="separator" aria-label={label}
                    className="flex items-center gap-3 py-1 select-none">
-                <div className="flex-1 h-px bg-slate-700/60" />
-                <span className="text-xs font-medium text-slate-400">{label}</span>
-                <div className="flex-1 h-px bg-slate-700/60" />
+                <div className="flex-1 h-px divider" />
+                <span className="text-xs font-medium text-muted">{label}</span>
+                <div className="flex-1 h-px divider" />
               </div>
             );
           }
@@ -94,7 +94,7 @@ export default function ChatPanel({
 
         {/* Progress message (replaces on each new progress event) */}
         {progress && (
-          <div className="text-sm text-slate-400 italic px-1">{progress}</div>
+          <div className="text-sm text-muted italic px-1">{progress}</div>
         )}
 
         {/* Typing indicator */}

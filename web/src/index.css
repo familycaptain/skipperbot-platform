@@ -348,6 +348,7 @@ html[data-theme="light"] {
   .text-muted   { color:var(--ds-muted); }
   .text-faint   { color:var(--ds-faint); }
   .text-on-accent { color:var(--ds-on-accent); }
+  .text-accent  { color:var(--ds-accent); }
   .link { color:var(--ds-link); cursor:pointer; }
   .link:hover { color:var(--ds-link-hover); text-decoration:underline; }
   /* borders */
@@ -392,4 +393,6 @@ html[data-theme="light"] {
   .empty-state { color:var(--ds-faint); text-align:center; padding:2rem 1rem; }
   /* small neutral dot (e.g. typing indicator, status dots) — themed both ways */
   .dot { background-color:var(--ds-muted); }
+  /* thin divider line (a bg hairline, e.g. date separators) */
+  .divider { background-color:var(--ds-border); }
 }
