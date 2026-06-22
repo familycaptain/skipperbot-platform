@@ -113,7 +113,7 @@ export default function FolderDetailApp({ appId, userId, context = {}, refreshKe
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-500">
+      <div className="flex items-center justify-center h-full text-faint">
         <Loader2 size={16} className="animate-spin mr-2" /> Loading folder...
       </div>
     );
@@ -121,7 +121,7 @@ export default function FolderDetailApp({ appId, userId, context = {}, refreshKe
 
   if (!folder) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-500 text-sm">
+      <div className="flex items-center justify-center h-full text-faint text-sm">
         Folder not found.
       </div>
     );
@@ -130,13 +130,13 @@ export default function FolderDetailApp({ appId, userId, context = {}, refreshKe
   return (
     <div className="flex flex-col h-full w-full">
       {/* Header */}
-      <div className="px-3 py-2 bg-slate-900/40 border-b border-slate-800 shrink-0">
+      <div className="px-3 py-2 surface-panel border-b border-subtle shrink-0">
         {/* Breadcrumbs */}
         {folder.breadcrumbs?.length > 1 && (
-          <div className="flex items-center gap-1 text-[10px] text-slate-600 mb-1">
+          <div className="flex items-center gap-1 text-[10px] text-faint mb-1">
             <button
               onClick={() => onOpenApp?.("folders")}
-              className="hover:text-slate-400 transition-colors"
+              className="hover:text-[var(--ds-muted)] transition-colors"
             >
               Folders
             </button>
@@ -146,12 +146,12 @@ export default function FolderDetailApp({ appId, userId, context = {}, refreshKe
                 {i < folder.breadcrumbs.length - 1 ? (
                   <button
                     onClick={() => onOpenApp?.("folder", { folderId: bc.id, title: bc.name })}
-                    className="hover:text-slate-400 transition-colors"
+                    className="hover:text-[var(--ds-muted)] transition-colors"
                   >
                     {bc.name}
                   </button>
                 ) : (
-                  <span className="text-slate-400">{bc.name}</span>
+                  <span className="text-muted">{bc.name}</span>
                 )}
               </span>
             ))}
@@ -168,32 +168,32 @@ export default function FolderDetailApp({ appId, userId, context = {}, refreshKe
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
                   placeholder="Folder name"
-                  className="bg-slate-800 text-sm text-white px-2 py-0.5 rounded border border-slate-700 outline-none focus:border-blue-600"
+                  className="surface-card text-sm text-default px-2 py-0.5 rounded border border-subtle outline-none focus:border-blue-600"
                 />
                 <input
                   value={editDesc}
                   onChange={(e) => setEditDesc(e.target.value)}
                   placeholder="Description (optional)"
-                  className="bg-slate-800 text-xs text-slate-300 px-2 py-0.5 rounded border border-slate-700 outline-none focus:border-blue-600"
+                  className="surface-card text-xs text-default px-2 py-0.5 rounded border border-subtle outline-none focus:border-blue-600"
                 />
               </div>
               <button onClick={handleSaveEdit} className="text-green-400 hover:text-green-300 shrink-0">
                 <Check size={14} />
               </button>
-              <button onClick={() => setEditing(false)} className="text-slate-500 hover:text-white shrink-0">
+              <button onClick={() => setEditing(false)} className="text-faint hover:text-[var(--ds-text)] shrink-0">
                 <X size={14} />
               </button>
             </div>
           ) : (
             <>
-              <span className="text-sm font-medium text-slate-200 flex-1 truncate">{folder.name}</span>
+              <span className="text-sm font-medium text-default flex-1 truncate">{folder.name}</span>
               <button
                 onClick={() => { setEditName(folder.name); setEditDesc(folder.description || ""); setEditing(true); }}
-                className="text-slate-600 hover:text-slate-300 transition-colors"
+                className="text-faint hover:text-[var(--ds-text)] transition-colors"
               >
                 <Pencil size={12} />
               </button>
-              <button onClick={handleDelete} className="text-slate-600 hover:text-red-400 transition-colors">
+              <button onClick={handleDelete} className="text-faint hover:text-red-400 transition-colors">
                 <Trash2 size={12} />
               </button>
             </>
@@ -201,34 +201,34 @@ export default function FolderDetailApp({ appId, userId, context = {}, refreshKe
         </div>
 
         {folder.description && !editing && (
-          <p className="text-xs text-slate-500 mt-0.5 ml-6">{folder.description}</p>
+          <p className="text-xs text-faint mt-0.5 ml-6">{folder.description}</p>
         )}
 
-        <div className="flex items-center gap-3 text-[10px] text-slate-600 mt-1 ml-6">
+        <div className="flex items-center gap-3 text-[10px] text-faint mt-1 ml-6">
           <span>{folder.item_count || 0} items</span>
           <span>{folder.subfolder_count || 0} subfolders</span>
           {folder.owner && <span>Owner: {folder.owner}</span>}
-          <span className="text-slate-700">{folder.id}</span>
+          <span className="text-default">{folder.id}</span>
         </div>
       </div>
 
       {/* Action bar */}
-      <div className="flex items-center gap-1 px-3 py-1.5 bg-slate-900/20 border-b border-slate-800/50 shrink-0">
+      <div className="flex items-center gap-1 px-3 py-1.5 surface-panel border-b border-subtle shrink-0">
         <button
           onClick={() => { setShowAddDoc(!showAddDoc); setShowNewDoc(false); setShowNewSub(false); }}
-          className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-slate-700/50 hover:bg-slate-700 text-slate-300 transition-colors"
+          className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] surface-raised hover:bg-[var(--ds-raised)] text-default transition-colors"
         >
           <Plus size={10} /> Add Document
         </button>
         <button
           onClick={() => { setShowNewDoc(!showNewDoc); setShowAddDoc(false); setShowNewSub(false); }}
-          className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-slate-700/50 hover:bg-slate-700 text-slate-300 transition-colors"
+          className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] surface-raised hover:bg-[var(--ds-raised)] text-default transition-colors"
         >
           <FilePlus size={10} /> New Document
         </button>
         <button
           onClick={() => { setShowNewSub(!showNewSub); setShowAddDoc(false); setShowNewDoc(false); }}
-          className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-slate-700/50 hover:bg-slate-700 text-slate-300 transition-colors"
+          className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] surface-raised hover:bg-[var(--ds-raised)] text-default transition-colors"
         >
           <Folder size={10} /> New Subfolder
         </button>
@@ -244,16 +244,16 @@ export default function FolderDetailApp({ appId, userId, context = {}, refreshKe
         {/* Subfolders */}
         {folder.subfolders?.length > 0 && (
           <div className="mb-3">
-            <div className="text-[10px] text-slate-600 uppercase tracking-wider mb-1.5">Subfolders</div>
+            <div className="text-[10px] text-faint uppercase tracking-wider mb-1.5">Subfolders</div>
             {[...folder.subfolders].sort((a, b) => a.name.localeCompare(b.name)).map((sf) => (
               <button
                 key={sf.id}
                 onClick={() => onOpenApp?.("folder", { folderId: sf.id, title: sf.name })}
-                className="w-full text-left flex items-center gap-2 p-2 rounded-md bg-slate-800/30 hover:bg-slate-800/60 border border-slate-700/20 hover:border-blue-700/30 transition-all mb-1"
+                className="w-full text-left flex items-center gap-2 p-2 rounded-md surface-card hover:bg-[var(--ds-card)] border border-subtle hover:border-blue-700/30 transition-all mb-1"
               >
                 <Folder size={14} className="text-blue-400 shrink-0" />
-                <span className="text-xs text-slate-300">{sf.name}</span>
-                <span className="text-[10px] text-slate-600 ml-auto">{sf.id}</span>
+                <span className="text-xs text-default">{sf.name}</span>
+                <span className="text-[10px] text-faint ml-auto">{sf.id}</span>
               </button>
             ))}
           </div>
@@ -262,7 +262,7 @@ export default function FolderDetailApp({ appId, userId, context = {}, refreshKe
         {/* Items */}
         {folder.items?.length > 0 ? (
           <div>
-            <div className="text-[10px] text-slate-600 uppercase tracking-wider mb-1.5">Contents</div>
+            <div className="text-[10px] text-faint uppercase tracking-wider mb-1.5">Contents</div>
             {[...folder.items].sort((a, b) => (a.title || a.entity_id).localeCompare(b.title || b.entity_id)).map((item) => (
               <ItemRow
                 key={item.entity_id}
@@ -277,7 +277,7 @@ export default function FolderDetailApp({ appId, userId, context = {}, refreshKe
             ))}
           </div>
         ) : (!folder.subfolders?.length && (
-          <div className="text-center py-8 text-slate-600 text-sm">
+          <div className="text-center py-8 text-faint text-sm">
             This folder is empty. Add documents or create new ones above.
           </div>
         ))}
@@ -293,13 +293,13 @@ function ItemRow({ item, onOpen, onRemove }) {
   const iconColor = isDoc ? "text-emerald-400" : "text-amber-400";
 
   return (
-    <div className="flex items-center gap-2 p-2 rounded-md bg-slate-800/30 hover:bg-slate-800/50 border border-slate-700/20 group transition-all mb-1">
+    <div className="flex items-center gap-2 p-2 rounded-md surface-card hover:bg-[var(--ds-card)] border border-subtle group transition-all mb-1">
       <Icon size={14} className={`${iconColor} shrink-0`} />
       <button onClick={onOpen} className="flex-1 text-left min-w-0">
-        <div className="text-xs text-slate-300 group-hover:text-white truncate">
+        <div className="text-xs text-default group-hover:text-[var(--ds-text)] truncate">
           {item.title || item.entity_id}
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-slate-600">
+        <div className="flex items-center gap-2 text-[10px] text-faint">
           <span>{item.entity_id}</span>
           {item.word_count > 0 && <span>{item.word_count} words</span>}
           {item.mime_type && <span>{item.mime_type}</span>}
@@ -310,7 +310,7 @@ function ItemRow({ item, onOpen, onRemove }) {
       </button>
       <button
         onClick={onRemove}
-        className="text-slate-700 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0"
+        className="text-default hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all shrink-0"
         title="Remove from folder"
       >
         <Trash2 size={12} />
@@ -340,35 +340,35 @@ function AddDocForm({ onSubmit, onCancel }) {
     <div className="px-3 py-2 bg-blue-950/20 border-b border-blue-900/30 space-y-2">
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
-          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-faint" />
           <input
             autoFocus
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleSearch()}
             placeholder="Search documents to add..."
-            className="w-full bg-slate-800 text-xs text-slate-300 pl-7 pr-2 py-1.5 rounded border border-slate-700 outline-none focus:border-blue-600"
+            className="w-full surface-card text-xs text-default pl-7 pr-2 py-1.5 rounded border border-subtle outline-none focus:border-blue-600"
           />
         </div>
-        <button onClick={handleSearch} className="px-2 py-1 rounded text-xs bg-blue-600/80 text-white hover:bg-blue-500">
+        <button onClick={handleSearch} className="px-2 py-1 rounded text-xs bg-blue-600/80 text-on-accent hover:bg-blue-500">
           Search
         </button>
-        <button onClick={onCancel} className="text-slate-500 hover:text-white">
+        <button onClick={onCancel} className="text-faint hover:text-[var(--ds-text)]">
           <X size={14} />
         </button>
       </div>
-      <div className="text-[10px] text-slate-600">Or enter an entity ID directly:</div>
+      <div className="text-[10px] text-faint">Or enter an entity ID directly:</div>
       <div className="flex items-center gap-2">
         <input
           value={docId}
           onChange={(e) => setDocId(e.target.value)}
           placeholder="d-xxxxxxxx or a-xxxxxxxx"
-          className="flex-1 bg-slate-800 text-xs text-slate-300 px-2 py-1 rounded border border-slate-700 outline-none focus:border-blue-600"
+          className="flex-1 surface-card text-xs text-default px-2 py-1 rounded border border-subtle outline-none focus:border-blue-600"
         />
         <button
           onClick={() => docId.trim() && onSubmit(docId.trim())}
           disabled={!docId.trim()}
-          className="px-2 py-1 rounded text-xs bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-30"
+          className="px-2 py-1 rounded text-xs bg-blue-600 text-on-accent hover:bg-blue-500 disabled:opacity-30"
         >
           Add
         </button>
@@ -379,11 +379,11 @@ function AddDocForm({ onSubmit, onCancel }) {
             <button
               key={doc.id}
               onClick={() => onSubmit(doc.id)}
-              className="w-full text-left flex items-center gap-2 px-2 py-1 rounded bg-slate-800/50 hover:bg-slate-700 text-xs text-slate-300"
+              className="w-full text-left flex items-center gap-2 px-2 py-1 rounded surface-card hover:bg-[var(--ds-raised)] text-xs text-default"
             >
               <FileText size={10} className="text-emerald-400 shrink-0" />
               <span className="truncate">{doc.title || doc.id}</span>
-              <span className="text-[10px] text-slate-600 ml-auto shrink-0">{doc.id}</span>
+              <span className="text-[10px] text-faint ml-auto shrink-0">{doc.id}</span>
             </button>
           ))}
         </div>
@@ -410,23 +410,23 @@ function NewDocForm({ onSubmit, onCancel }) {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Document title..."
-        className="w-full bg-slate-800 text-sm text-white px-3 py-1.5 rounded border border-slate-700 outline-none focus:border-emerald-600"
+        className="w-full surface-card text-sm text-default px-3 py-1.5 rounded border border-subtle outline-none focus:border-emerald-600"
       />
       <textarea
         value={content}
         onChange={(e) => setContent(e.target.value)}
         placeholder="Initial content (optional, markdown)..."
         rows={3}
-        className="w-full bg-slate-800 text-xs text-slate-300 px-3 py-1.5 rounded border border-slate-700 outline-none focus:border-emerald-600 resize-none"
+        className="w-full surface-card text-xs text-default px-3 py-1.5 rounded border border-subtle outline-none focus:border-emerald-600 resize-none"
       />
       <div className="flex items-center gap-2 justify-end">
-        <button type="button" onClick={onCancel} className="px-3 py-1 rounded text-xs text-slate-400 hover:text-white transition-colors">
+        <button type="button" onClick={onCancel} className="px-3 py-1 rounded text-xs text-muted hover:text-[var(--ds-text)] transition-colors">
           Cancel
         </button>
         <button
           type="submit"
           disabled={!title.trim()}
-          className="px-3 py-1 rounded text-xs bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-30 transition-colors"
+          className="px-3 py-1 rounded text-xs bg-emerald-600 text-on-accent hover:bg-emerald-500 disabled:opacity-30 transition-colors"
         >
           Create Document
         </button>
@@ -453,22 +453,22 @@ function NewSubfolderForm({ onSubmit, onCancel }) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Subfolder name..."
-        className="w-full bg-slate-800 text-sm text-white px-3 py-1.5 rounded border border-slate-700 outline-none focus:border-blue-600"
+        className="w-full surface-card text-sm text-default px-3 py-1.5 rounded border border-subtle outline-none focus:border-blue-600"
       />
       <input
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Description (optional)..."
-        className="w-full bg-slate-800 text-xs text-slate-300 px-3 py-1.5 rounded border border-slate-700 outline-none focus:border-blue-600"
+        className="w-full surface-card text-xs text-default px-3 py-1.5 rounded border border-subtle outline-none focus:border-blue-600"
       />
       <div className="flex items-center gap-2 justify-end">
-        <button type="button" onClick={onCancel} className="px-3 py-1 rounded text-xs text-slate-400 hover:text-white transition-colors">
+        <button type="button" onClick={onCancel} className="px-3 py-1 rounded text-xs text-muted hover:text-[var(--ds-text)] transition-colors">
           Cancel
         </button>
         <button
           type="submit"
           disabled={!name.trim()}
-          className="px-3 py-1 rounded text-xs bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-30 transition-colors"
+          className="px-3 py-1 rounded text-xs bg-blue-600 text-on-accent hover:bg-blue-500 disabled:opacity-30 transition-colors"
         >
           Create Subfolder
         </button>

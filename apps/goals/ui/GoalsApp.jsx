@@ -208,18 +208,18 @@ export default function GoalsApp({ appId, userId, context = {}, onTitle, onConte
 
   // Status badge colors
   const statusColor = {
-    not_started: "bg-slate-600",
+    not_started: "surface-raised",
     in_progress: "bg-blue-600",
     done: "bg-emerald-600",
     blocked: "bg-red-600",
     deferred: "bg-amber-600",
-    cancelled: "bg-gray-600",
+    cancelled: "surface-raised",
   };
 
   const priorityColor = {
     high: "text-red-400",
     medium: "text-amber-400",
-    low: "text-slate-400",
+    low: "text-muted",
   };
 
   async function loadTask(taskId) {
@@ -244,7 +244,7 @@ export default function GoalsApp({ appId, userId, context = {}, onTitle, onConte
 
   if (loading && !goals && !goalDetail && !projectDetail && !taskDetail) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-400">
+      <div className="flex items-center justify-center h-full text-muted">
         <Loader2 size={20} className="animate-spin mr-2" />
         Loading...
       </div>
@@ -254,56 +254,56 @@ export default function GoalsApp({ appId, userId, context = {}, onTitle, onConte
   return (
     <div className="flex flex-col h-full w-full min-w-0">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
-        <div className="flex items-center gap-1 text-sm text-slate-300 min-w-0 overflow-hidden">
+      <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
+        <div className="flex items-center gap-1 text-sm text-default min-w-0 overflow-hidden">
           <button
             onClick={loadSummary}
-            className="hover:text-white transition-colors shrink-0"
+            className="hover:text-[var(--ds-text)] transition-colors shrink-0"
           >
             Goals
           </button>
           {view === "mytasks" && (
             <>
-              <ChevronRight size={14} className="text-slate-600 shrink-0" />
-              <span className="text-slate-200 shrink-0">My Tasks</span>
+              <ChevronRight size={14} className="text-faint shrink-0" />
+              <span className="text-default shrink-0">My Tasks</span>
             </>
           )}
           {view === "goal" && goalDetail && (
             <>
-              <ChevronRight size={14} className="text-slate-600 shrink-0" />
+              <ChevronRight size={14} className="text-faint shrink-0" />
               <span className="truncate max-w-[200px]">{goalDetail.name}</span>
             </>
           )}
           {view === "project" && projectDetail && (
             <>
-              <ChevronRight size={14} className="text-slate-600 shrink-0" />
+              <ChevronRight size={14} className="text-faint shrink-0" />
               <button
                 onClick={() => projectDetail.goal_id && loadGoal(projectDetail.goal_id)}
-                className="hover:text-white transition-colors truncate max-w-[120px]"
+                className="hover:text-[var(--ds-text)] transition-colors truncate max-w-[120px]"
               >
                 {projectDetail.goal_name || "Goal"}
               </button>
-              <ChevronRight size={14} className="text-slate-600 shrink-0" />
+              <ChevronRight size={14} className="text-faint shrink-0" />
               <span className="truncate max-w-[200px]">{projectDetail.name}</span>
             </>
           )}
           {view === "task" && taskDetail && (
             <>
-              <ChevronRight size={14} className="text-slate-600 shrink-0" />
+              <ChevronRight size={14} className="text-faint shrink-0" />
               <button
                 onClick={() => taskDetail.goal_id && loadGoal(taskDetail.goal_id)}
-                className="hover:text-white transition-colors truncate max-w-[100px]"
+                className="hover:text-[var(--ds-text)] transition-colors truncate max-w-[100px]"
               >
                 {taskDetail.goal_name || "Goal"}
               </button>
-              <ChevronRight size={14} className="text-slate-600 shrink-0" />
+              <ChevronRight size={14} className="text-faint shrink-0" />
               <button
                 onClick={() => taskDetail.project_id && loadProject(taskDetail.project_id)}
-                className="hover:text-white transition-colors truncate max-w-[100px]"
+                className="hover:text-[var(--ds-text)] transition-colors truncate max-w-[100px]"
               >
                 {taskDetail.project_name || "Project"}
               </button>
-              <ChevronRight size={14} className="text-slate-600 shrink-0" />
+              <ChevronRight size={14} className="text-faint shrink-0" />
               <span className="truncate max-w-[200px]">{taskDetail.name}</span>
             </>
           )}
@@ -312,7 +312,7 @@ export default function GoalsApp({ appId, userId, context = {}, onTitle, onConte
           <SearchBar onSelect={handleSearchSelect} />
           <button
             onClick={loadMyTasks}
-            className={`p-1 rounded transition-colors ${view === "mytasks" ? "text-indigo-400 bg-slate-700" : "text-slate-500 hover:text-white hover:bg-slate-700"}`}
+            className={`p-1 rounded transition-colors ${view === "mytasks" ? "text-indigo-400 surface-raised" : "text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)]"}`}
             title="My Tasks"
           >
             <Users size={14} />
@@ -326,7 +326,7 @@ export default function GoalsApp({ appId, userId, context = {}, onTitle, onConte
               else loadSummary();
             }}
             disabled={loading}
-            className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+            className="p-1 rounded text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors"
             title="Refresh"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -378,23 +378,23 @@ function GoalCard({ goal, onGoalClick, statusColor }) {
     <button
       key={goal.id}
       onClick={() => onGoalClick(goal.id)}
-      className="w-full text-left px-4 py-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 transition-colors"
+      className="w-full text-left px-4 py-3 rounded-lg surface-card hover:bg-[var(--ds-card)] border border-subtle transition-colors"
     >
       <div className="flex items-center justify-between">
-        <span className="text-sm font-medium text-slate-200">{goal.name}</span>
-        <span className={`text-xs px-2 py-0.5 rounded-full text-white ${statusColor[goal.status] || "bg-slate-600"}`}>
+        <span className="text-sm font-medium text-default">{goal.name}</span>
+        <span className={`text-xs px-2 py-0.5 rounded-full text-default ${statusColor[goal.status] || "surface-raised"}`}>
           {goal.status?.replace("_", " ")}
         </span>
       </div>
       {goal.progress !== undefined && (
         <div className="mt-2 flex items-center gap-2">
-          <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+          <div className="flex-1 h-1.5 surface-raised rounded-full overflow-hidden">
             <div
               className="h-full bg-indigo-500 rounded-full transition-all"
               style={{ width: `${Math.round(goal.progress * 100)}%` }}
             />
           </div>
-          <span className="text-xs text-slate-400">{Math.round(goal.progress * 100)}%</span>
+          <span className="text-xs text-muted">{Math.round(goal.progress * 100)}%</span>
         </div>
       )}
     </button>
@@ -436,8 +436,8 @@ function SummaryView({ goals, allUsers, onGoalClick, statusColor, userId, apiMut
 
   if (!goals || goals.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-500">
-        <Target size={32} className="text-slate-600 mb-2" />
+      <div className="flex flex-col items-center justify-center h-full text-faint">
+        <Target size={32} className="text-faint mb-2" />
         <p className="text-sm">No goals yet</p>
         <div className="mt-4 w-full max-w-md">
           <QuickAdd placeholder="New goal name..." onSubmit={handleCreateGoal} />
@@ -450,13 +450,13 @@ function SummaryView({ goals, allUsers, onGoalClick, statusColor, userId, apiMut
     <div className="space-y-6">
       {/* My Goals */}
       <div>
-        <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">My Goals</h2>
+        <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">My Goals</h2>
         <QuickAdd placeholder="New goal..." onSubmit={handleCreateGoal} />
         <div className="space-y-2 mt-2">
           {myGoals.length > 0 ? myGoals.map(g => (
             <GoalCard key={g.id} goal={g} onGoalClick={onGoalClick} statusColor={statusColor} />
           )) : (
-            <p className="text-xs text-slate-600 italic px-2">No goals assigned to you</p>
+            <p className="text-xs text-faint italic px-2">No goals assigned to you</p>
           )}
         </div>
       </div>
@@ -464,7 +464,7 @@ function SummaryView({ goals, allUsers, onGoalClick, statusColor, userId, apiMut
       {/* Other users' goals */}
       {sortedOwners.map(owner => (
         <div key={owner}>
-          <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+          <h2 className="text-xs font-semibold text-muted uppercase tracking-wider mb-2">
             {owner === "_unassigned" ? "Unassigned" : (userDisplayMap[owner] || owner)}
           </h2>
           <div className="space-y-2">
@@ -490,16 +490,16 @@ function GoalView({ goal, onProjectClick, onSummary, statusColor, priorityColor,
     <div className="space-y-4">
       <div>
         <div className="flex items-center gap-2">
-          <button onClick={() => onSummary?.()} className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors" title="Back to goals">
+          <button onClick={() => onSummary?.()} className="p-1 rounded hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] transition-colors" title="Back to goals">
             <ChevronRight size={18} className="rotate-180" />
           </button>
-          <span className="text-slate-500 text-sm font-semibold shrink-0">GOAL:</span>
+          <span className="text-faint text-sm font-semibold shrink-0">GOAL:</span>
           <EditableTitle name={goal.name} entityId={goal.id} patchEntity={patchEntity} />
         </div>
-        <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-slate-400">
+        <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-muted">
           <StatusBadge status={goal.status} entityId={goal.id} patchEntity={patchEntity} STATUSES={STATUSES} />
-          <span className="text-slate-600">|</span>
-          <button onClick={() => { navigator.clipboard.writeText(goal.id); }} className="text-slate-500 hover:text-slate-200 cursor-pointer transition-colors" title="Copy ID">{goal.id}</button>
+          <span className="text-faint">|</span>
+          <button onClick={() => { navigator.clipboard.writeText(goal.id); }} className="text-faint hover:text-[var(--ds-text)] cursor-pointer transition-colors" title="Copy ID">{goal.id}</button>
           <span>Owners: <AssigneeField assignees={goal.owners} entityId={goal.id} patchEntity={patchEntity} fieldName="owners" /></span>
           <span>Collaborators: <AssigneeField assignees={goal.collaborators || []} entityId={goal.id} patchEntity={patchEntity} fieldName="collaborators" /></span>
           <span className="flex items-center gap-1">Target: <DueDateField date={goal.target_date} entityId={goal.id} patchEntity={patchEntity} fieldName="target_date" /></span>
@@ -517,42 +517,42 @@ function GoalView({ goal, onProjectClick, onSummary, statusColor, priorityColor,
       <LinkedArtifacts entityId={goal.id} refreshKey={refreshKey} />
 
       <div className="space-y-2">
-        <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider">Projects</h3>
+        <h3 className="text-xs font-medium text-faint uppercase tracking-wider">Projects</h3>
         <QuickAdd placeholder="New project..." onSubmit={handleCreateProject} />
         {goal.projects && goal.projects.length > 0 ? (
           goal.projects.map((p) => (
             <button
               key={p.id}
               onClick={() => onProjectClick(p.id)}
-              className="w-full text-left px-4 py-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 transition-colors"
+              className="w-full text-left px-4 py-3 rounded-lg surface-card hover:bg-[var(--ds-card)] border border-subtle transition-colors"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-slate-200">{p.name}</span>
-                  <span className={`text-xs ${priorityColor[p.priority] || "text-slate-400"}`}>
+                  <span className="text-sm text-default">{p.name}</span>
+                  <span className={`text-xs ${priorityColor[p.priority] || "text-muted"}`}>
                     {p.priority}
                   </span>
                   {p.trello_board && (
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-900/30 text-sky-400 border border-sky-700/30 flex items-center gap-0.5">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded surface-card text-accent border border-subtle flex items-center gap-0.5">
                       <ExternalLink size={8} className="opacity-60" />
                       {p.trello_board}
                     </span>
                   )}
                 </div>
-                <span className={`text-xs px-2 py-0.5 rounded-full text-white ${statusColor[p.status] || "bg-slate-600"}`}>
+                <span className={`text-xs px-2 py-0.5 rounded-full text-default ${statusColor[p.status] || "surface-raised"}`}>
                   {p.status?.replace("_", " ")}
                 </span>
               </div>
               {p.due_date && (
-                <div className="mt-1 text-xs text-slate-500">Due: {p.due_date}</div>
+                <div className="mt-1 text-xs text-faint">Due: {p.due_date}</div>
               )}
               {p.task_summary && (
-                <div className="mt-1 text-xs text-slate-500">{p.task_summary}</div>
+                <div className="mt-1 text-xs text-faint">{p.task_summary}</div>
               )}
             </button>
           ))
         ) : (
-          <p className="text-sm text-slate-500">No projects yet — add one above</p>
+          <p className="text-sm text-faint">No projects yet — add one above</p>
         )}
       </div>
     </div>
@@ -607,20 +607,20 @@ function ProjectView({ project, onTaskClick, onGoalClick, statusColor, priorityC
       <div>
         <div className="flex items-center gap-2">
           {project.goal_id && (
-            <button onClick={() => onGoalClick?.(project.goal_id)} className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors" title="Back to goal">
+            <button onClick={() => onGoalClick?.(project.goal_id)} className="p-1 rounded hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] transition-colors" title="Back to goal">
               <ChevronRight size={18} className="rotate-180" />
             </button>
           )}
-          <span className="text-slate-500 text-sm font-semibold shrink-0">PROJECT:</span>
+          <span className="text-faint text-sm font-semibold shrink-0">PROJECT:</span>
           <EditableTitle name={project.name} entityId={project.id} patchEntity={patchEntity} />
         </div>
-        <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-slate-400">
+        <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-muted">
           <StatusBadge status={project.status} entityId={project.id} patchEntity={patchEntity} STATUSES={STATUSES} />
           <PriorityBadge priority={project.priority} entityId={project.id} patchEntity={patchEntity} />
-          <span className="text-slate-600">|</span>
-          <button onClick={() => { navigator.clipboard.writeText(project.id); }} className="text-slate-500 hover:text-slate-200 cursor-pointer transition-colors" title="Copy ID">{project.id}</button>
+          <span className="text-faint">|</span>
+          <button onClick={() => { navigator.clipboard.writeText(project.id); }} className="text-faint hover:text-[var(--ds-text)] cursor-pointer transition-colors" title="Copy ID">{project.id}</button>
           {project.trello_board && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-900/30 text-sky-400 border border-sky-700/30 flex items-center gap-0.5">
+            <span className="text-[10px] px-1.5 py-0.5 rounded surface-card text-accent border border-subtle flex items-center gap-0.5">
               <ExternalLink size={8} className="opacity-60" />
               {project.trello_board}
             </span>
@@ -658,7 +658,7 @@ function ProjectView({ project, onTaskClick, onGoalClick, statusColor, priorityC
         if (!tasks || tasks.length === 0) return null;
         return (
           <div key={status}>
-            <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+            <h3 className="text-xs font-medium text-faint uppercase tracking-wider mb-2">
               {status.replace("_", " ")} ({tasks.length})
             </h3>
             <div className="space-y-1.5">
@@ -667,7 +667,7 @@ function ProjectView({ project, onTaskClick, onGoalClick, statusColor, priorityC
                   key={t.id}
                   data-task-id={t.id}
                   onClick={() => onTaskClick(t.id)}
-                  className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 transition-colors group cursor-pointer"
+                  className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg surface-card hover:bg-[var(--ds-card)] border border-subtle transition-colors group cursor-pointer"
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     {tasks.length > 1 && (
@@ -675,7 +675,7 @@ function ProjectView({ project, onTaskClick, onGoalClick, statusColor, priorityC
                         <button
                           onClick={(e) => { e.stopPropagation(); handleReorder(t.id, "up"); }}
                           disabled={i === 0}
-                          className="p-0.5 text-slate-600 hover:text-white disabled:opacity-20 disabled:hover:text-slate-600 transition-colors"
+                          className="p-0.5 text-faint hover:text-[var(--ds-text)] disabled:opacity-20 disabled:hover:text-[var(--ds-faint)] transition-colors"
                           title="Move up"
                         >
                           <ChevronUp size={12} />
@@ -683,7 +683,7 @@ function ProjectView({ project, onTaskClick, onGoalClick, statusColor, priorityC
                         <button
                           onClick={(e) => { e.stopPropagation(); handleReorder(t.id, "down"); }}
                           disabled={i === tasks.length - 1}
-                          className="p-0.5 text-slate-600 hover:text-white disabled:opacity-20 disabled:hover:text-slate-600 transition-colors"
+                          className="p-0.5 text-faint hover:text-[var(--ds-text)] disabled:opacity-20 disabled:hover:text-[var(--ds-faint)] transition-colors"
                           title="Move down"
                         >
                           <ChevronDown size={12} />
@@ -691,20 +691,20 @@ function ProjectView({ project, onTaskClick, onGoalClick, statusColor, priorityC
                       </div>
                     )}
                     <StatusBadge status={t.status} entityId={t.id} patchEntity={patchEntity} STATUSES={STATUSES} />
-                    <span className="text-sm text-slate-200 text-left">
+                    <span className="text-sm text-default text-left">
                       {t.name}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 text-xs text-slate-500">
+                  <div className="flex items-center gap-2 shrink-0 text-xs text-faint">
                     {t.trello_linked && (
-                      <span className="text-[9px] px-1 py-0.5 rounded bg-sky-900/30 text-sky-400 border border-sky-700/30" title="Trello-linked">
+                      <span className="text-[9px] px-1 py-0.5 rounded surface-card text-accent border border-subtle" title="Trello-linked">
                         <ExternalLink size={9} />
                       </span>
                     )}
                     {t.assigned_to && <span>{t.assigned_to}</span>}
                     {t.due_date && <span>{t.due_date}</span>}
                     <PriorityBadge priority={t.priority} entityId={t.id} patchEntity={patchEntity} />
-                    <ChevronRight size={12} className="text-slate-600" />
+                    <ChevronRight size={12} className="text-faint" />
                   </div>
                 </div>
               ))}
@@ -714,7 +714,7 @@ function ProjectView({ project, onTaskClick, onGoalClick, statusColor, priorityC
       })}
 
       {(!project.tasks || project.tasks.length === 0) && (
-        <p className="text-sm text-slate-500">No tasks yet — add one above</p>
+        <p className="text-sm text-faint">No tasks yet — add one above</p>
       )}
     </div>
   );
@@ -723,8 +723,8 @@ function ProjectView({ project, onTaskClick, onGoalClick, statusColor, priorityC
 function MyTasksView({ tasks, onTaskClick, statusColor, priorityColor, patchEntity, STATUSES }) {
   if (!tasks || tasks.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-500">
-        <Users size={32} className="text-slate-600 mb-2" />
+      <div className="flex flex-col items-center justify-center h-full text-faint">
+        <Users size={32} className="text-faint mb-2" />
         <p className="text-sm">No tasks assigned to you</p>
       </div>
     );
@@ -732,35 +732,35 @@ function MyTasksView({ tasks, onTaskClick, statusColor, priorityColor, patchEnti
 
   return (
     <div className="space-y-3">
-      <p className="text-xs text-slate-500">{tasks.length} task{tasks.length !== 1 ? "s" : ""} assigned to you</p>
+      <p className="text-xs text-faint">{tasks.length} task{tasks.length !== 1 ? "s" : ""} assigned to you</p>
       {tasks.map((t) => (
         <div
           key={t.id}
           onClick={() => onTaskClick(t.id)}
-          className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 transition-colors cursor-pointer"
+          className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg surface-card hover:bg-[var(--ds-card)] border border-subtle transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-2 min-w-0">
             <StatusBadge status={t.status} entityId={t.id} patchEntity={patchEntity} STATUSES={STATUSES} />
             <div className="min-w-0">
-              <span className="text-sm text-slate-200 text-left block">
+              <span className="text-sm text-default text-left block">
                 {t.name}
               </span>
-              <div className="text-[10px] text-slate-600">
+              <div className="text-[10px] text-faint">
                 {t.goal_name && <span>{t.goal_name}</span>}
                 {t.goal_name && t.project_name && <span> / </span>}
                 {t.project_name && <span>{t.project_name}</span>}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0 text-xs text-slate-500">
+          <div className="flex items-center gap-2 shrink-0 text-xs text-faint">
             {t.trello_linked && (
-              <span className="text-[9px] px-1 py-0.5 rounded bg-sky-900/30 text-sky-400 border border-sky-700/30" title="Trello-linked">
+              <span className="text-[9px] px-1 py-0.5 rounded surface-card text-accent border border-subtle" title="Trello-linked">
                 <ExternalLink size={9} />
               </span>
             )}
             {t.due_date && <span>{t.due_date}</span>}
             <PriorityBadge priority={t.priority} entityId={t.id} patchEntity={patchEntity} />
-            <ChevronRight size={12} className="text-slate-600" />
+            <ChevronRight size={12} className="text-faint" />
           </div>
         </div>
       ))}

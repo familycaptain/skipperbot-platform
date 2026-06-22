@@ -61,28 +61,28 @@ export default function FoldersApp({ appId, userId, context = {}, refreshKey, is
   return (
     <div className="flex flex-col h-full w-full">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
+      <div className="flex items-center gap-2 px-3 h-10 surface-panel border-b border-subtle shrink-0">
         <FolderOpen size={14} className="text-blue-400 shrink-0" />
-        <span className="text-sm font-medium text-slate-300">Folders</span>
+        <span className="text-sm font-medium text-default">Folders</span>
         <div className="flex-1" />
         <div className="relative">
-          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-faint" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search folders..."
-            className="bg-slate-800 text-xs text-slate-300 pl-7 pr-2 py-1 rounded border border-slate-700 outline-none w-44 focus:border-blue-600"
+            className="surface-card text-xs text-default pl-7 pr-2 py-1 rounded border border-subtle outline-none w-44 focus:border-blue-600"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+            <button onClick={() => setSearchQuery("")} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-faint hover:text-[var(--ds-text)]">
               <X size={10} />
             </button>
           )}
         </div>
         <button
           onClick={() => setShowNew(!showNew)}
-          className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-blue-600/80 hover:bg-blue-500 text-white transition-colors"
+          className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-blue-600/80 hover:bg-blue-500 text-on-accent transition-colors"
         >
           <Plus size={12} />
           New Folder
@@ -97,11 +97,11 @@ export default function FoldersApp({ appId, userId, context = {}, refreshKey, is
       {/* Folder list */}
       <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
         {loading ? (
-          <div className="flex items-center justify-center py-8 text-slate-500">
+          <div className="flex items-center justify-center py-8 text-faint">
             <Loader2 size={16} className="animate-spin mr-2" /> Loading folders...
           </div>
         ) : folders.length === 0 ? (
-          <div className="text-center py-8 text-slate-600 text-sm">
+          <div className="text-center py-8 text-faint text-sm">
             {searchQuery ? "No folders match your search." : "No folders yet. Click \"New Folder\" to get started!"}
           </div>
         ) : (
@@ -119,20 +119,20 @@ function FolderCard({ folder, onClick }) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left p-3 rounded-lg bg-slate-800/40 hover:bg-slate-800/70 border border-slate-700/30 hover:border-blue-700/30 transition-all group"
+      className="w-full text-left p-3 rounded-lg surface-card hover:bg-[var(--ds-card)] border border-subtle hover:border-blue-700/30 transition-all group"
     >
       <div className="flex items-start gap-2.5">
         <Folder size={18} className="text-blue-400 mt-0.5 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-sm font-medium text-slate-200 group-hover:text-white truncate">
+            <span className="text-sm font-medium text-default group-hover:text-[var(--ds-text)] truncate">
               {folder.name}
             </span>
           </div>
           {folder.description && (
-            <p className="text-xs text-slate-500 line-clamp-1 mb-1">{folder.description}</p>
+            <p className="text-xs text-faint line-clamp-1 mb-1">{folder.description}</p>
           )}
-          <div className="flex items-center gap-3 text-[10px] text-slate-600">
+          <div className="flex items-center gap-3 text-[10px] text-faint">
             <span className="flex items-center gap-1">
               <FileText size={10} />
               {folder.item_count || 0} items
@@ -152,7 +152,7 @@ function FolderCard({ folder, onClick }) {
             {folder.tags?.length > 0 && (
               <span className="flex items-center gap-1">
                 {folder.tags.slice(0, 3).map((t) => (
-                  <span key={t} className="px-1 py-0 bg-slate-700/50 rounded text-slate-500">{t}</span>
+                  <span key={t} className="px-1 py-0 surface-raised rounded text-faint">{t}</span>
                 ))}
               </span>
             )}
@@ -183,29 +183,29 @@ function NewFolderForm({ onSubmit, onCancel }) {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Folder name..."
-        className="w-full bg-slate-800 text-sm text-white px-3 py-1.5 rounded border border-slate-700 outline-none focus:border-blue-600"
+        className="w-full surface-card text-sm text-default px-3 py-1.5 rounded border border-subtle outline-none focus:border-blue-600"
       />
       <input
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="Description (optional)..."
-        className="w-full bg-slate-800 text-xs text-slate-300 px-3 py-1.5 rounded border border-slate-700 outline-none focus:border-blue-600"
+        className="w-full surface-card text-xs text-default px-3 py-1.5 rounded border border-subtle outline-none focus:border-blue-600"
       />
       <div className="flex items-center gap-2">
         <input
           value={owner}
           onChange={(e) => setOwner(e.target.value)}
           placeholder="Owner (empty = shared)"
-          className="bg-slate-800 text-xs text-slate-300 px-2 py-1 rounded border border-slate-700 outline-none w-40 focus:border-blue-600"
+          className="surface-card text-xs text-default px-2 py-1 rounded border border-subtle outline-none w-40 focus:border-blue-600"
         />
         <div className="flex-1" />
-        <button type="button" onClick={onCancel} className="px-3 py-1 rounded text-xs text-slate-400 hover:text-white transition-colors">
+        <button type="button" onClick={onCancel} className="px-3 py-1 rounded text-xs text-muted hover:text-[var(--ds-text)] transition-colors">
           Cancel
         </button>
         <button
           type="submit"
           disabled={!name.trim()}
-          className="px-3 py-1 rounded text-xs bg-blue-600 text-white hover:bg-blue-500 disabled:opacity-30 transition-colors"
+          className="px-3 py-1 rounded text-xs bg-blue-600 text-on-accent hover:bg-blue-500 disabled:opacity-30 transition-colors"
         >
           Create
         </button>

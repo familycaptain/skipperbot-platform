@@ -116,16 +116,16 @@ export default function RecipeListApp({ appId, userId, context = {}, onOpenApp, 
   return (
     <div className="flex flex-col h-full w-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
+      <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className="relative flex-1 max-w-xs">
-            <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-faint" />
             <input
               type="text"
               placeholder="Search recipes..."
               value={searchQuery}
               onChange={(e) => { setSearchQuery(e.target.value); setActiveCategory(""); }}
-              className="w-full bg-slate-800/60 text-sm text-white pl-7 pr-2 py-1 rounded border border-slate-700 outline-none focus:border-indigo-500"
+              className="w-full surface-card text-sm text-default pl-7 pr-2 py-1 rounded border border-subtle outline-none focus:border-indigo-500"
             />
           </div>
         </div>
@@ -133,14 +133,14 @@ export default function RecipeListApp({ appId, userId, context = {}, onOpenApp, 
           <button
             onClick={() => setShowCategoryEditor(!showCategoryEditor)}
             className={`flex items-center gap-1 px-2 py-1 text-xs rounded transition-colors ${
-              showCategoryEditor ? "bg-indigo-600 text-white" : "text-slate-400 hover:bg-slate-700 hover:text-white"
+              showCategoryEditor ? "bg-indigo-600 text-on-accent" : "text-muted hover:bg-[var(--ds-raised)] hover:text-[var(--ds-text)]"
             }`}
           >
             <Tag size={12} /> Categories
           </button>
           <button
             onClick={handleCreateRecipe}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors"
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-on-accent rounded transition-colors"
           >
             <Plus size={12} /> New
           </button>
@@ -149,11 +149,11 @@ export default function RecipeListApp({ appId, userId, context = {}, onOpenApp, 
 
       {/* Category filter bar — always visible */}
       {!showCategoryEditor && (
-        <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 bg-slate-900/20 border-b border-slate-800/50 shrink-0">
+        <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 surface-panel border-b border-subtle shrink-0">
           <button
             onClick={() => setActiveCategory("")}
             className={`px-2.5 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
-              !activeCategory ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
+              !activeCategory ? "bg-indigo-600 text-on-accent" : "surface-card text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)]"
             }`}
           >
             All
@@ -164,8 +164,8 @@ export default function RecipeListApp({ appId, userId, context = {}, onOpenApp, 
               onClick={() => { setActiveCategory(cat.name); setSearchQuery(""); }}
               className={`px-2.5 py-1 text-xs rounded-full whitespace-nowrap transition-colors flex items-center gap-1 ${
                 activeCategory === cat.name
-                  ? "bg-indigo-600 text-white"
-                  : "bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700"
+                  ? "bg-indigo-600 text-on-accent"
+                  : "surface-card text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)]"
               }`}
             >
               {cat.name}
@@ -175,17 +175,17 @@ export default function RecipeListApp({ appId, userId, context = {}, onOpenApp, 
             </button>
           ))}
           {categories.length === 0 && (
-            <span className="text-xs text-slate-600 italic">No categories yet</span>
+            <span className="text-xs text-faint italic">No categories yet</span>
           )}
         </div>
       )}
 
       {/* Category editor */}
       {showCategoryEditor && (
-        <div className="px-3 py-2 bg-slate-900/40 border-b border-slate-800 space-y-2">
+        <div className="px-3 py-2 surface-panel border-b border-subtle space-y-2">
           <div className="flex flex-wrap gap-1">
             {categories.map((cat) => (
-              <span key={cat.id} className="flex items-center gap-1 px-2 py-0.5 bg-slate-800 rounded-full text-xs text-slate-300">
+              <span key={cat.id} className="flex items-center gap-1 px-2 py-0.5 surface-card rounded-full text-xs text-default">
                 {cat.name}
                 <button onClick={() => handleDeleteCategory(cat.id)} className="hover:text-red-400 transition-colors">
                   <X size={10} />
@@ -198,9 +198,9 @@ export default function RecipeListApp({ appId, userId, context = {}, onOpenApp, 
               value={newCatName}
               onChange={(e) => setNewCatName(e.target.value)}
               placeholder="New category..."
-              className="bg-slate-800 text-white text-xs px-2 py-1 rounded border border-slate-700 outline-none flex-1 max-w-[200px]"
+              className="surface-card text-default text-xs px-2 py-1 rounded border border-subtle outline-none flex-1 max-w-[200px]"
             />
-            <button type="submit" className="px-2 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-white rounded">Add</button>
+            <button type="submit" className="px-2 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-on-accent rounded">Add</button>
           </form>
         </div>
       )}
@@ -208,11 +208,11 @@ export default function RecipeListApp({ appId, userId, context = {}, onOpenApp, 
       {/* Recipe list */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {loading && recipes.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-slate-400">
+          <div className="flex items-center justify-center h-32 text-muted">
             <Loader2 size={18} className="animate-spin mr-2" /> Loading recipes...
           </div>
         ) : recipes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-slate-500 text-sm">
+          <div className="flex flex-col items-center justify-center h-32 text-faint text-sm">
             <ChefHat size={32} className="mb-2 opacity-40" />
             {searchQuery ? "No recipes match your search." : "No recipes yet. Click + New to create one!"}
           </div>
@@ -221,17 +221,17 @@ export default function RecipeListApp({ appId, userId, context = {}, onOpenApp, 
             <button
               key={recipe.id}
               onClick={() => openRecipe(recipe)}
-              className="w-full text-left bg-slate-800/40 hover:bg-slate-800/70 border border-slate-700/50 hover:border-slate-600 rounded-lg p-3 transition-colors group"
+              className="w-full text-left surface-card hover:bg-[var(--ds-card)] border border-subtle hover:border-[var(--ds-border)] rounded-lg p-3 transition-colors group"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
-                  <h3 className="text-sm font-medium text-white truncate group-hover:text-indigo-300 transition-colors">
+                  <h3 className="text-sm font-medium text-default truncate group-hover:text-indigo-300 transition-colors">
                     {recipe.title || "Untitled"}
                   </h3>
                   {recipe.description && (
-                    <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{recipe.description}</p>
+                    <p className="text-xs text-muted mt-0.5 line-clamp-2">{recipe.description}</p>
                   )}
-                  <div className="flex items-center gap-3 mt-1.5 text-xs text-slate-500">
+                  <div className="flex items-center gap-3 mt-1.5 text-xs text-faint">
                     {recipe.prep_time_min != null && recipe.cook_time_min != null && (
                       <span className="flex items-center gap-1">
                         <Clock size={10} />
@@ -244,7 +244,7 @@ export default function RecipeListApp({ appId, userId, context = {}, onOpenApp, 
                     {recipe.categories?.length > 0 && (
                       <span className="flex items-center gap-1">
                         {recipe.categories.slice(0, 3).map((c) => (
-                          <span key={c} className="px-1.5 py-0 bg-slate-700/50 rounded text-[10px]">{c}</span>
+                          <span key={c} className="px-1.5 py-0 surface-raised rounded text-[10px]">{c}</span>
                         ))}
                       </span>
                     )}
@@ -256,7 +256,7 @@ export default function RecipeListApp({ appId, userId, context = {}, onOpenApp, 
                       <Star
                         key={s}
                         size={12}
-                        className={s <= recipe.rating ? "text-amber-400 fill-amber-400" : "text-slate-600"}
+                        className={s <= recipe.rating ? "text-amber-400 fill-amber-400" : "text-faint"}
                       />
                     ))}
                   </div>

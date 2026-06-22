@@ -8,22 +8,22 @@ import {
 /* ── Constants ── */
 
 export const STATUS_COLORS = {
-  not_started: "bg-slate-600",
+  not_started: "surface-raised",
   in_progress: "bg-blue-600",
   done: "bg-emerald-600",
   blocked: "bg-red-600",
   deferred: "bg-amber-600",
-  cancelled: "bg-gray-600",
+  cancelled: "surface-raised",
 };
 
 export const PRIORITIES = ["high", "medium", "low"];
-export const PRIORITY_COLORS = { high: "text-red-400", medium: "text-amber-400", low: "text-slate-400" };
+export const PRIORITY_COLORS = { high: "text-red-400", medium: "text-amber-400", low: "text-muted" };
 
 const TRELLO_COLORS = {
   green: "bg-green-600", yellow: "bg-yellow-500", orange: "bg-orange-500",
   red: "bg-red-600", purple: "bg-purple-600", blue: "bg-blue-600",
-  sky: "bg-sky-500", lime: "bg-lime-500", pink: "bg-pink-500",
-  black: "bg-slate-700", null: "bg-slate-600", "": "bg-slate-600",
+  sky: "bg-[var(--ds-accent)]", lime: "bg-lime-500", pink: "bg-pink-500",
+  black: "surface-raised", null: "surface-raised", "": "surface-raised",
 };
 
 /* ── Reusable interactive components ── */
@@ -41,7 +41,7 @@ export function StatusBadge({ status, entityId, patchEntity, STATUSES }) {
 
   if (!patchEntity) {
     return (
-      <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium text-white ${STATUS_COLORS[status] || "bg-slate-600"}`}>
+      <span className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium text-default ${STATUS_COLORS[status] || "surface-raised"}`}>
         {status?.replace("_", " ")}
       </span>
     );
@@ -51,12 +51,12 @@ export function StatusBadge({ status, entityId, patchEntity, STATUSES }) {
     <span ref={ref} className="relative inline-block">
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
-        className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium text-white cursor-pointer hover:ring-1 hover:ring-white/30 ${STATUS_COLORS[status] || "bg-slate-600"}`}
+        className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-medium text-default cursor-pointer hover:ring-1 hover:ring-white/30 ${STATUS_COLORS[status] || "surface-raised"}`}
       >
         {status?.replace("_", " ")}
       </button>
       {open && (
-        <div className="absolute z-50 top-full left-0 mt-1 py-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[140px]">
+        <div className="absolute z-50 top-full left-0 mt-1 py-1 surface-card border border-subtle rounded-lg shadow-xl min-w-[140px]">
           {(STATUSES || []).map((s) => (
             <button
               key={s}
@@ -65,7 +65,7 @@ export function StatusBadge({ status, entityId, patchEntity, STATUSES }) {
                 setOpen(false);
                 if (s !== status) patchEntity(entityId, { status: s });
               }}
-              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-700 transition-colors flex items-center gap-2 ${s === status ? "text-white font-medium" : "text-slate-400"}`}
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--ds-raised)] transition-colors flex items-center gap-2 ${s === status ? "text-default font-medium" : "text-muted"}`}
             >
               <div className={`w-2 h-2 rounded-full ${STATUS_COLORS[s]}`} />
               {s.replace("_", " ")}
@@ -96,21 +96,21 @@ export function QuickAdd({ placeholder, onSubmit }) {
 
   return (
     <form onSubmit={handleSubmit} className="flex items-center gap-2">
-      <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/50 focus-within:border-indigo-500/50 transition-colors">
-        <Plus size={14} className="text-slate-500 shrink-0" />
+      <div className="flex-1 flex items-center gap-2 px-3 py-1.5 rounded-lg surface-card border border-subtle focus-within:border-indigo-500/50 transition-colors">
+        <Plus size={14} className="text-faint shrink-0" />
         <input
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
           placeholder={placeholder}
-          className="flex-1 bg-transparent text-sm text-slate-200 placeholder-slate-600 outline-none"
+          className="flex-1 bg-transparent text-sm text-default placeholder-slate-600 outline-none"
         />
       </div>
       {value.trim() && (
         <button
           type="submit"
           disabled={busy}
-          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium transition-colors disabled:opacity-50"
+          className="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-on-accent text-xs font-medium transition-colors disabled:opacity-50"
         >
           {busy ? <Loader2 size={12} className="animate-spin" /> : "Add"}
         </button>
@@ -139,23 +139,23 @@ export function EditableDoD({ entityId, dod, patchEntity, userId }) {
   if (!editing) {
     return (
       <div>
-        <h3 className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+        <h3 className="flex items-center gap-1.5 text-xs font-medium text-faint uppercase tracking-wider mb-2">
           <CheckCircle2 size={12} />
           Definition of Done
           <button
             onClick={() => setEditing(true)}
-            className="ml-auto p-0.5 rounded text-slate-600 hover:text-slate-300 transition-colors"
+            className="ml-auto p-0.5 rounded text-faint hover:text-[var(--ds-text)] transition-colors"
             title="Edit definition of done"
           >
             <Edit3 size={11} />
           </button>
         </h3>
         {draft ? (
-          <div className="px-4 py-3 rounded-lg bg-slate-800/50 border border-slate-700/50 text-sm text-slate-300 whitespace-pre-wrap leading-relaxed font-mono">
+          <div className="px-4 py-3 rounded-lg surface-card border border-subtle text-sm text-default whitespace-pre-wrap leading-relaxed font-mono">
             {draft}
           </div>
         ) : (
-          <div className="text-xs text-slate-600 italic">
+          <div className="text-xs text-faint italic">
             No definition of done
             <button onClick={() => setEditing(true)} className="ml-2 text-indigo-400 hover:text-indigo-300">
               + add
@@ -168,21 +168,21 @@ export function EditableDoD({ entityId, dod, patchEntity, userId }) {
 
   return (
     <div>
-      <h3 className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+      <h3 className="flex items-center gap-1.5 text-xs font-medium text-faint uppercase tracking-wider mb-2">
         <CheckCircle2 size={12} />
         Definition of Done
         <div className="ml-auto flex items-center gap-1">
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs transition-colors disabled:opacity-50"
+            className="flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-on-accent text-xs transition-colors disabled:opacity-50"
           >
             {saving ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />}
             Save
           </button>
           <button
             onClick={() => { setDraft(dod || ""); setEditing(false); }}
-            className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs transition-colors"
+            className="flex items-center gap-1 px-2 py-0.5 rounded surface-raised hover:bg-[var(--ds-raised)] text-default text-xs transition-colors"
           >
             <X size={10} />
           </button>
@@ -192,7 +192,7 @@ export function EditableDoD({ entityId, dod, patchEntity, userId }) {
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         rows={4}
-        className="w-full px-4 py-3 rounded-lg bg-slate-800/50 border border-indigo-500/50 text-sm text-slate-200 font-mono leading-relaxed resize-y outline-none focus:border-indigo-500 transition-colors"
+        className="w-full px-4 py-3 rounded-lg surface-card border border-indigo-500/50 text-sm text-default font-mono leading-relaxed resize-y outline-none focus:border-indigo-500 transition-colors"
         autoFocus
         placeholder="What does 'done' look like for this item?"
       />
@@ -220,13 +220,13 @@ export function EditableNotes({ entityId, notes, saveNotes }) {
   if (!editing) {
     return (
       <div>
-        <h3 className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+        <h3 className="flex items-center gap-1.5 text-xs font-medium text-faint uppercase tracking-wider mb-2">
           <FileText size={12} />
           Notes
           {saveNotes && (
             <button
               onClick={() => setEditing(true)}
-              className="ml-auto p-0.5 rounded text-slate-600 hover:text-slate-300 transition-colors"
+              className="ml-auto p-0.5 rounded text-faint hover:text-[var(--ds-text)] transition-colors"
               title="Edit notes"
             >
               <Edit3 size={11} />
@@ -234,11 +234,11 @@ export function EditableNotes({ entityId, notes, saveNotes }) {
           )}
         </h3>
         {draft ? (
-          <div className="px-4 py-3 rounded-lg bg-slate-800/50 border border-slate-700/50 text-sm text-slate-300 whitespace-pre-wrap leading-relaxed font-mono">
+          <div className="px-4 py-3 rounded-lg surface-card border border-subtle text-sm text-default whitespace-pre-wrap leading-relaxed font-mono">
             {draft}
           </div>
         ) : (
-          <div className="text-xs text-slate-600 italic">
+          <div className="text-xs text-faint italic">
             No notes
             {saveNotes && (
               <button onClick={() => setEditing(true)} className="ml-2 text-indigo-400 hover:text-indigo-300">
@@ -253,21 +253,21 @@ export function EditableNotes({ entityId, notes, saveNotes }) {
 
   return (
     <div>
-      <h3 className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+      <h3 className="flex items-center gap-1.5 text-xs font-medium text-faint uppercase tracking-wider mb-2">
         <FileText size={12} />
         Notes
         <div className="ml-auto flex items-center gap-1">
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-white text-xs transition-colors disabled:opacity-50"
+            className="flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-600 hover:bg-indigo-500 text-on-accent text-xs transition-colors disabled:opacity-50"
           >
             {saving ? <Loader2 size={10} className="animate-spin" /> : <Save size={10} />}
             Save
           </button>
           <button
             onClick={() => { setDraft(notes || ""); setEditing(false); }}
-            className="flex items-center gap-1 px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs transition-colors"
+            className="flex items-center gap-1 px-2 py-0.5 rounded surface-raised hover:bg-[var(--ds-raised)] text-default text-xs transition-colors"
           >
             <X size={10} />
           </button>
@@ -277,7 +277,7 @@ export function EditableNotes({ entityId, notes, saveNotes }) {
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         rows={8}
-        className="w-full px-4 py-3 rounded-lg bg-slate-800/50 border border-indigo-500/50 text-sm text-slate-200 font-mono leading-relaxed resize-y outline-none focus:border-indigo-500 transition-colors"
+        className="w-full px-4 py-3 rounded-lg surface-card border border-indigo-500/50 text-sm text-default font-mono leading-relaxed resize-y outline-none focus:border-indigo-500 transition-colors"
         autoFocus
       />
     </div>
@@ -296,24 +296,24 @@ export function PriorityBadge({ priority, entityId, patchEntity }) {
   }, [open]);
 
   if (!patchEntity) {
-    return <span className={`text-xs ${PRIORITY_COLORS[priority] || "text-slate-400"}`}>{priority}</span>;
+    return <span className={`text-xs ${PRIORITY_COLORS[priority] || "text-muted"}`}>{priority}</span>;
   }
 
   return (
     <span ref={ref} className="relative inline-block">
       <button
         onClick={(e) => { e.stopPropagation(); setOpen(!open); }}
-        className={`text-xs cursor-pointer hover:underline ${PRIORITY_COLORS[priority] || "text-slate-400"}`}
+        className={`text-xs cursor-pointer hover:underline ${PRIORITY_COLORS[priority] || "text-muted"}`}
       >
         {priority}
       </button>
       {open && (
-        <div className="absolute z-50 top-full left-0 mt-1 py-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[100px]">
+        <div className="absolute z-50 top-full left-0 mt-1 py-1 surface-card border border-subtle rounded-lg shadow-xl min-w-[100px]">
           {PRIORITIES.map((p) => (
             <button
               key={p}
               onClick={(e) => { e.stopPropagation(); setOpen(false); if (p !== priority) patchEntity(entityId, { priority: p }); }}
-              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-700 transition-colors ${p === priority ? "text-white font-medium" : "text-slate-400"}`}
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--ds-raised)] transition-colors ${p === priority ? "text-default font-medium" : "text-muted"}`}
             >
               <span className={PRIORITY_COLORS[p]}>{p}</span>
               {p === priority && <Check size={10} className="inline ml-2" />}
@@ -364,21 +364,21 @@ export function AssigneeField({ assignees, entityId, patchEntity, fieldName = "a
   const display = assignees && assignees.length > 0 ? assignees.join(", ") : "unassigned";
 
   if (!patchEntity) {
-    return <span className="text-slate-300">{display}</span>;
+    return <span className="text-default">{display}</span>;
   }
 
   return (
     <span ref={ref} className="relative inline-block">
-      <button onClick={handleOpen} className="text-slate-300 hover:text-white hover:underline cursor-pointer transition-colors">
+      <button onClick={handleOpen} className="text-default hover:text-[var(--ds-text)] hover:underline cursor-pointer transition-colors">
         {display}
       </button>
       {open && members && (
-        <div className="absolute z-50 top-full left-0 mt-1 py-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[140px]">
+        <div className="absolute z-50 top-full left-0 mt-1 py-1 surface-card border border-subtle rounded-lg shadow-xl min-w-[140px]">
           {members.map((m) => (
             <button
               key={m.name}
               onClick={(e) => { e.stopPropagation(); toggleMember(m.name); }}
-              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-700 transition-colors flex items-center gap-2 ${(assignees || []).includes(m.name) ? "text-white font-medium" : "text-slate-400"}`}
+              className={`w-full text-left px-3 py-1.5 text-xs hover:bg-[var(--ds-raised)] transition-colors flex items-center gap-2 ${(assignees || []).includes(m.name) ? "text-default font-medium" : "text-muted"}`}
             >
               {m.display_name}
               {(assignees || []).includes(m.name) && <Check size={10} className="ml-auto" />}
@@ -397,12 +397,12 @@ export function DueDateField({ date, entityId, patchEntity, fieldName = "due_dat
   useEffect(() => { setValue(date || ""); setEditing(false); }, [entityId, date]);
 
   if (!patchEntity) {
-    return <span className="text-slate-300">{date || "—"}</span>;
+    return <span className="text-default">{date || "—"}</span>;
   }
 
   if (!editing) {
     return (
-      <button onClick={() => setEditing(true)} className="text-slate-300 hover:text-white hover:underline cursor-pointer transition-colors">
+      <button onClick={() => setEditing(true)} className="text-default hover:text-[var(--ds-text)] hover:underline cursor-pointer transition-colors">
         {date || "set date"}
       </button>
     );
@@ -414,7 +414,7 @@ export function DueDateField({ date, entityId, patchEntity, fieldName = "due_dat
         type="date"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 text-xs text-slate-200 outline-none focus:border-indigo-500"
+        className="px-1.5 py-0.5 rounded surface-card border border-subtle text-xs text-default outline-none focus:border-indigo-500"
         autoFocus
         onKeyDown={(e) => {
           if (e.key === "Enter") { patchEntity(entityId, { [fieldName]: value }); setEditing(false); }
@@ -422,7 +422,7 @@ export function DueDateField({ date, entityId, patchEntity, fieldName = "due_dat
         }}
       />
       <button onClick={() => { patchEntity(entityId, { [fieldName]: value }); setEditing(false); }} className="text-emerald-400 hover:text-emerald-300"><Check size={12} /></button>
-      <button onClick={() => { setValue(date || ""); setEditing(false); }} className="text-slate-500 hover:text-slate-300"><X size={12} /></button>
+      <button onClick={() => { setValue(date || ""); setEditing(false); }} className="text-faint hover:text-[var(--ds-text)]"><X size={12} /></button>
     </span>
   );
 }
@@ -434,12 +434,12 @@ export function CadenceField({ cadence, entityId, patchEntity }) {
   useEffect(() => { setValue(cadence || ""); setEditing(false); }, [entityId, cadence]);
 
   if (!patchEntity) {
-    return <span className="text-slate-300">{cadence ? `${cadence}m` : "—"}</span>;
+    return <span className="text-default">{cadence ? `${cadence}m` : "—"}</span>;
   }
 
   if (!editing) {
     return (
-      <button onClick={() => setEditing(true)} className="text-slate-300 hover:text-white hover:underline cursor-pointer transition-colors" title="PM check-in cadence in minutes (empty = standard rotation)">
+      <button onClick={() => setEditing(true)} className="text-default hover:text-[var(--ds-text)] hover:underline cursor-pointer transition-colors" title="PM check-in cadence in minutes (empty = standard rotation)">
         {cadence ? `${cadence}m` : "default"}
       </button>
     );
@@ -460,7 +460,7 @@ export function CadenceField({ cadence, entityId, patchEntity }) {
         placeholder="min"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        className="w-16 px-1.5 py-0.5 rounded bg-slate-800 border border-slate-600 text-xs text-slate-200 outline-none focus:border-indigo-500"
+        className="w-16 px-1.5 py-0.5 rounded surface-card border border-subtle text-xs text-default outline-none focus:border-indigo-500"
         autoFocus
         onKeyDown={(e) => {
           if (e.key === "Enter") save();
@@ -468,7 +468,7 @@ export function CadenceField({ cadence, entityId, patchEntity }) {
         }}
       />
       <button onClick={save} className="text-emerald-400 hover:text-emerald-300"><Check size={12} /></button>
-      <button onClick={() => { setValue(cadence || ""); setEditing(false); }} className="text-slate-500 hover:text-slate-300"><X size={12} /></button>
+      <button onClick={() => { setValue(cadence || ""); setEditing(false); }} className="text-faint hover:text-[var(--ds-text)]"><X size={12} /></button>
     </span>
   );
 }
@@ -482,7 +482,7 @@ export function EditableTitle({ name, entityId, patchEntity }) {
   if (!editing) {
     return (
       <h2
-        className="text-lg font-semibold text-white cursor-pointer hover:text-indigo-300 transition-colors"
+        className="text-lg font-semibold text-default cursor-pointer hover:text-indigo-300 transition-colors"
         onClick={() => patchEntity && setEditing(true)}
         title={patchEntity ? "Click to rename" : undefined}
       >
@@ -497,7 +497,7 @@ export function EditableTitle({ name, entityId, patchEntity }) {
         type="text"
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        className="flex-1 text-lg font-semibold bg-slate-800 border border-indigo-500/50 rounded px-2 py-0.5 text-white outline-none focus:border-indigo-500"
+        className="flex-1 text-lg font-semibold surface-card border border-indigo-500/50 rounded px-2 py-0.5 text-default outline-none focus:border-indigo-500"
         autoFocus
         onKeyDown={(e) => {
           if (e.key === "Enter" && value.trim()) { patchEntity(entityId, { name: value.trim() }); setEditing(false); }
@@ -505,7 +505,7 @@ export function EditableTitle({ name, entityId, patchEntity }) {
         }}
       />
       <button onClick={() => { if (value.trim()) { patchEntity(entityId, { name: value.trim() }); setEditing(false); } }} className="text-emerald-400 hover:text-emerald-300"><Check size={16} /></button>
-      <button onClick={() => { setValue(name || ""); setEditing(false); }} className="text-slate-500 hover:text-slate-300"><X size={16} /></button>
+      <button onClick={() => { setValue(name || ""); setEditing(false); }} className="text-faint hover:text-[var(--ds-text)]"><X size={16} /></button>
     </div>
   );
 }
@@ -517,7 +517,7 @@ export function DeleteButton({ entityId, entityName, onDelete }) {
     return (
       <button
         onClick={() => setConfirming(true)}
-        className="text-xs text-slate-600 hover:text-red-400 transition-colors"
+        className="text-xs text-faint hover:text-red-400 transition-colors"
         title="Delete"
       >
         Delete
@@ -530,13 +530,13 @@ export function DeleteButton({ entityId, entityName, onDelete }) {
       <span className="text-red-400">Delete "{entityName}"?</span>
       <button
         onClick={() => { onDelete(entityId); setConfirming(false); }}
-        className="px-2 py-0.5 rounded bg-red-600 hover:bg-red-500 text-white font-medium"
+        className="px-2 py-0.5 rounded bg-red-600 hover:bg-red-500 text-on-accent font-medium"
       >
         Yes
       </button>
       <button
         onClick={() => setConfirming(false)}
-        className="px-2 py-0.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300"
+        className="px-2 py-0.5 rounded surface-raised hover:bg-[var(--ds-raised)] text-default"
       >
         No
       </button>
@@ -582,26 +582,26 @@ export function SearchBar({ onSelect }) {
         value={query}
         onChange={handleChange}
         placeholder="Search..."
-        className="w-32 lg:w-44 px-2 py-1 rounded bg-slate-800/60 border border-slate-700/50 text-xs text-slate-200 placeholder-slate-600 outline-none focus:border-indigo-500/50 focus:w-48 lg:focus:w-56 transition-all"
+        className="w-32 lg:w-44 px-2 py-1 rounded surface-card border border-subtle text-xs text-default placeholder-slate-600 outline-none focus:border-indigo-500/50 focus:w-48 lg:focus:w-56 transition-all"
       />
       {results && results.length > 0 && (
-        <div className="absolute z-50 top-full right-0 mt-1 py-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl min-w-[250px] max-h-64 overflow-y-auto">
+        <div className="absolute z-50 top-full right-0 mt-1 py-1 surface-card border border-subtle rounded-lg shadow-xl min-w-[250px] max-h-64 overflow-y-auto">
           {results.map((r) => (
             <button
               key={r.id}
               onClick={() => { onSelect(r); setQuery(""); setResults(null); }}
-              className="w-full text-left px-3 py-2 text-xs hover:bg-slate-700 transition-colors flex items-center gap-2"
+              className="w-full text-left px-3 py-2 text-xs hover:bg-[var(--ds-raised)] transition-colors flex items-center gap-2"
             >
               <span>{typeIcon[r.type] || "\u{2022}"}</span>
-              <span className="text-slate-200 truncate flex-1">{r.name}</span>
-              <span className="text-slate-600">{r.type}</span>
-              {r.match === "notes" && <span className="text-slate-600 text-[10px]">(notes)</span>}
+              <span className="text-default truncate flex-1">{r.name}</span>
+              <span className="text-faint">{r.type}</span>
+              {r.match === "notes" && <span className="text-faint text-[10px]">(notes)</span>}
             </button>
           ))}
         </div>
       )}
       {results && results.length === 0 && query.trim() && (
-        <div className="absolute z-50 top-full right-0 mt-1 py-2 px-3 bg-slate-800 border border-slate-700 rounded-lg shadow-xl text-xs text-slate-500">
+        <div className="absolute z-50 top-full right-0 mt-1 py-2 px-3 surface-card border border-subtle rounded-lg shadow-xl text-xs text-faint">
           No results
         </div>
       )}
@@ -626,18 +626,18 @@ export function TaskView({ task, onBack, onTaskClick, onProjectClick, statusColo
       <div>
         <div className="flex items-center gap-2">
           {(onBack || task.project_id) && (
-            <button onClick={() => onBack ? onBack() : onProjectClick?.(task.project_id)} className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors" title={onBack ? "Back to tasks" : "Back to project"}>
+            <button onClick={() => onBack ? onBack() : onProjectClick?.(task.project_id)} className="p-1 rounded hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] transition-colors" title={onBack ? "Back to tasks" : "Back to project"}>
               <ChevronRight size={18} className="rotate-180" />
             </button>
           )}
-          <span className="text-slate-500 text-sm font-semibold shrink-0">TASK:</span>
+          <span className="text-faint text-sm font-semibold shrink-0">TASK:</span>
           <EditableTitle name={task.name} entityId={task.id} patchEntity={patchEntity} />
         </div>
-        <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-slate-400">
+        <div className="flex flex-wrap items-center gap-2 mt-1.5 text-xs text-muted">
           <StatusBadge status={task.status} entityId={task.id} patchEntity={patchEntity} STATUSES={STATUSES} />
           <PriorityBadge priority={task.priority} entityId={task.id} patchEntity={patchEntity} />
-          <span className="text-slate-600">|</span>
-          <button onClick={() => { navigator.clipboard.writeText(task.id); }} className="text-slate-500 hover:text-slate-200 cursor-pointer transition-colors" title="Copy ID">{task.id}</button>
+          <span className="text-faint">|</span>
+          <button onClick={() => { navigator.clipboard.writeText(task.id); }} className="text-faint hover:text-[var(--ds-text)] cursor-pointer transition-colors" title="Copy ID">{task.id}</button>
           <DeleteButton entityId={task.id} entityName={task.name} onDelete={onDelete} />
         </div>
       </div>
@@ -645,34 +645,34 @@ export function TaskView({ task, onBack, onTaskClick, onProjectClick, statusColo
       {/* Metadata grid */}
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div className="flex items-start gap-2">
-          <Users size={14} className="text-slate-500 mt-0.5 shrink-0" />
+          <Users size={14} className="text-faint mt-0.5 shrink-0" />
           <div>
-            <div className="text-xs text-slate-500">Assigned to</div>
+            <div className="text-xs text-faint">Assigned to</div>
             <AssigneeField assignees={task.assigned_to ? [task.assigned_to] : []} entityId={task.id} patchEntity={patchEntity} singleSelect />
           </div>
         </div>
         <div className="flex items-start gap-2">
-          <Clock size={14} className="text-slate-500 mt-0.5 shrink-0" />
+          <Clock size={14} className="text-faint mt-0.5 shrink-0" />
           <div>
-            <div className="text-xs text-slate-500">Due date</div>
+            <div className="text-xs text-faint">Due date</div>
             <DueDateField date={task.due_date} entityId={task.id} patchEntity={patchEntity} />
           </div>
         </div>
         {task.depends_on && task.depends_on.length > 0 && (
           <div className="col-span-2 flex items-start gap-2">
-            <Target size={14} className="text-slate-500 mt-0.5 shrink-0" />
+            <Target size={14} className="text-faint mt-0.5 shrink-0" />
             <div>
-              <div className="text-xs text-slate-500">Depends on</div>
-              <div className="text-slate-300">{task.depends_on.join(", ")}</div>
+              <div className="text-xs text-faint">Depends on</div>
+              <div className="text-default">{task.depends_on.join(", ")}</div>
             </div>
           </div>
         )}
         {/* Project link — visible when accessed from TasksApp */}
         {onBack && task.project_name && (
           <div className="flex items-start gap-2">
-            <FileText size={14} className="text-slate-500 mt-0.5 shrink-0" />
+            <FileText size={14} className="text-faint mt-0.5 shrink-0" />
             <div>
-              <div className="text-xs text-slate-500">Project</div>
+              <div className="text-xs text-faint">Project</div>
               <button
                 onClick={() => onOpenApp?.("goals", { projectId: task.project_id })}
                 className="text-indigo-400 hover:text-indigo-300 hover:underline transition-colors"
@@ -684,9 +684,9 @@ export function TaskView({ task, onBack, onTaskClick, onProjectClick, statusColo
         )}
         {onBack && task.goal_name && (
           <div className="flex items-start gap-2">
-            <Target size={14} className="text-slate-500 mt-0.5 shrink-0" />
+            <Target size={14} className="text-faint mt-0.5 shrink-0" />
             <div>
-              <div className="text-xs text-slate-500">Goal</div>
+              <div className="text-xs text-faint">Goal</div>
               <button
                 onClick={() => onOpenApp?.("goals", { goalId: task.goal_id })}
                 className="text-indigo-400 hover:text-indigo-300 hover:underline transition-colors"
@@ -698,14 +698,14 @@ export function TaskView({ task, onBack, onTaskClick, onProjectClick, statusColo
         )}
         {task.created_by && (
           <div>
-            <div className="text-xs text-slate-500">Created by</div>
-            <div className="text-slate-300">{task.created_by}</div>
+            <div className="text-xs text-faint">Created by</div>
+            <div className="text-default">{task.created_by}</div>
           </div>
         )}
         {task.created_at && (
           <div>
-            <div className="text-xs text-slate-500">Created</div>
-            <div className="text-slate-300">{task.created_at.slice(0, 16).replace("T", " ")}</div>
+            <div className="text-xs text-faint">Created</div>
+            <div className="text-default">{task.created_at.slice(0, 16).replace("T", " ")}</div>
           </div>
         )}
       </div>
@@ -734,7 +734,7 @@ export function TaskView({ task, onBack, onTaskClick, onProjectClick, statusColo
 
       {/* Subtasks */}
       <div>
-        <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+        <h3 className="text-xs font-medium text-faint uppercase tracking-wider mb-2">
           Subtasks {task.subtasks && task.subtasks.length > 0 ? `(${task.subtasks.length})` : ""}
         </h3>
         <QuickAdd placeholder="New subtask..." onSubmit={handleCreateSubtask} />
@@ -744,18 +744,18 @@ export function TaskView({ task, onBack, onTaskClick, onProjectClick, statusColo
               <div
                 key={s.id}
                 onClick={() => onTaskClick(s.id)}
-                className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 transition-colors cursor-pointer"
+                className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg surface-card hover:bg-[var(--ds-card)] border border-subtle transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <StatusBadge status={s.status} entityId={s.id} patchEntity={patchEntity} STATUSES={STATUSES} />
-                  <span className="text-sm text-slate-200 text-left">
+                  <span className="text-sm text-default text-left">
                     {s.name}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 shrink-0 text-xs text-slate-500">
+                <div className="flex items-center gap-2 shrink-0 text-xs text-faint">
                   {s.assigned_to && <span>{s.assigned_to}</span>}
                   <PriorityBadge priority={s.priority} entityId={s.id} patchEntity={patchEntity} />
-                  <ChevronRight size={12} className="text-slate-600" />
+                  <ChevronRight size={12} className="text-faint" />
                 </div>
               </div>
             ))}
@@ -832,7 +832,7 @@ export function TrelloLabels({ cardId, boardName, initialLabels, onRefresh }) {
 
   return (
     <div>
-      <h3 className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+      <h3 className="flex items-center gap-1.5 text-xs font-medium text-faint uppercase tracking-wider mb-2">
         <Tag size={12} />
         Trello Labels
       </h3>
@@ -840,7 +840,7 @@ export function TrelloLabels({ cardId, boardName, initialLabels, onRefresh }) {
         {labels.map((l) => (
           <span
             key={l.id}
-            className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs text-white ${TRELLO_COLORS[l.color] || "bg-slate-600"}`}
+            className={`group inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs text-default ${TRELLO_COLORS[l.color] || "surface-raised"}`}
           >
             {l.name || l.color || "?"}
             <button
@@ -854,22 +854,22 @@ export function TrelloLabels({ cardId, boardName, initialLabels, onRefresh }) {
         ))}
         <button
           onClick={openPicker}
-          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs text-slate-500 border border-slate-700 hover:text-slate-300 hover:border-slate-500 transition-colors"
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs text-faint border border-subtle hover:text-[var(--ds-text)] hover:border-[var(--ds-border)] transition-colors"
         >
           <Plus size={10} /> Label
         </button>
         {showPicker && (
-          <div ref={pickerRef} className="absolute top-full left-0 mt-1 z-20 w-64 bg-slate-800 border border-slate-700 rounded-lg shadow-xl p-2 max-h-60 overflow-y-auto">
-            {loading && <div className="text-xs text-slate-500 p-2">Loading...</div>}
-            {!loading && available.length === 0 && <div className="text-xs text-slate-500 p-2">No more labels available</div>}
+          <div ref={pickerRef} className="absolute top-full left-0 mt-1 z-20 w-64 surface-card border border-subtle rounded-lg shadow-xl p-2 max-h-60 overflow-y-auto">
+            {loading && <div className="text-xs text-faint p-2">Loading...</div>}
+            {!loading && available.length === 0 && <div className="text-xs text-faint p-2">No more labels available</div>}
             {!loading && available.map((l) => (
               <button
                 key={l.id}
                 onClick={() => { addLabel(l); setShowPicker(false); }}
-                className="flex items-center gap-2 w-full px-2 py-1.5 rounded text-xs text-left hover:bg-slate-700 transition-colors"
+                className="flex items-center gap-2 w-full px-2 py-1.5 rounded text-xs text-left hover:bg-[var(--ds-raised)] transition-colors"
               >
-                <span className={`w-3 h-3 rounded-sm shrink-0 ${TRELLO_COLORS[l.color] || "bg-slate-600"}`} />
-                <span className="text-slate-300">{l.name || `(${l.color})`}</span>
+                <span className={`w-3 h-3 rounded-sm shrink-0 ${TRELLO_COLORS[l.color] || "surface-raised"}`} />
+                <span className="text-default">{l.name || `(${l.color})`}</span>
               </button>
             ))}
           </div>
@@ -1000,16 +1000,16 @@ export function LinkedDocs({ entityId, userId, refreshKey, onOpenApp }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase tracking-wider">
+        <h3 className="flex items-center gap-1.5 text-xs font-medium text-faint uppercase tracking-wider">
           <FileText size={12} />
           Documents {docs.length > 0 ? `(${docs.length})` : ""}
         </h3>
         {!mode && (
           <div className="flex items-center gap-2">
-            <button onClick={() => setMode("link")} className="text-xs text-slate-600 hover:text-slate-300 flex items-center gap-0.5">
+            <button onClick={() => setMode("link")} className="text-xs text-faint hover:text-[var(--ds-text)] flex items-center gap-0.5">
               <Link size={10} /> Link existing
             </button>
-            <button onClick={() => setMode("create")} className="text-xs text-slate-600 hover:text-slate-300 flex items-center gap-0.5">
+            <button onClick={() => setMode("create")} className="text-xs text-faint hover:text-[var(--ds-text)] flex items-center gap-0.5">
               <Plus size={10} /> New doc
             </button>
           </div>
@@ -1025,48 +1025,48 @@ export function LinkedDocs({ entityId, userId, refreshKey, onOpenApp }) {
             onChange={(e) => setNewTitle(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Escape") resetMode(); }}
             placeholder="Document title..."
-            className="flex-1 bg-slate-800 text-sm text-slate-200 px-2 py-1 rounded border border-slate-700 outline-none"
+            className="flex-1 surface-card text-sm text-default px-2 py-1 rounded border border-subtle outline-none"
           />
-          <button type="submit" className="px-2 py-1 text-xs rounded bg-indigo-600 text-white hover:bg-indigo-500">Create</button>
-          <button type="button" onClick={resetMode} className="text-slate-500 hover:text-white"><X size={12} /></button>
+          <button type="submit" className="px-2 py-1 text-xs rounded bg-indigo-600 text-on-accent hover:bg-indigo-500">Create</button>
+          <button type="button" onClick={resetMode} className="text-faint hover:text-[var(--ds-text)]"><X size={12} /></button>
         </form>
       )}
 
       {/* Link existing doc — searchable picker */}
       {mode === "link" && (
         <div ref={dropdownRef} className="relative mb-2">
-          <div className="flex items-center gap-2 bg-slate-800 rounded border border-slate-700 px-2 py-1">
-            <Search size={12} className="text-slate-500 shrink-0" />
+          <div className="flex items-center gap-2 surface-card rounded border border-subtle px-2 py-1">
+            <Search size={12} className="text-faint shrink-0" />
             <input
               autoFocus
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Escape") resetMode(); }}
               placeholder="Search documents by title..."
-              className="flex-1 bg-transparent text-sm text-slate-200 outline-none"
+              className="flex-1 bg-transparent text-sm text-default outline-none"
             />
-            {searching && <Loader2 size={12} className="animate-spin text-slate-500" />}
-            <button type="button" onClick={resetMode} className="text-slate-500 hover:text-white"><X size={12} /></button>
+            {searching && <Loader2 size={12} className="animate-spin text-faint" />}
+            <button type="button" onClick={resetMode} className="text-faint hover:text-[var(--ds-text)]"><X size={12} /></button>
           </div>
           {searchResults.length > 0 && (
-            <div className="absolute z-20 left-0 right-0 mt-1 max-h-48 overflow-y-auto bg-slate-800 border border-slate-700 rounded shadow-lg">
+            <div className="absolute z-20 left-0 right-0 mt-1 max-h-48 overflow-y-auto surface-card border border-subtle rounded shadow-lg">
               {searchResults.map((d) => (
                 <button
                   key={d.id}
                   onClick={() => handleLink(d.id)}
-                  className="w-full text-left px-3 py-1.5 hover:bg-slate-700 transition-colors flex items-center justify-between"
+                  className="w-full text-left px-3 py-1.5 hover:bg-[var(--ds-raised)] transition-colors flex items-center justify-between"
                 >
                   <div className="flex items-center gap-2 min-w-0">
-                    <FileText size={12} className="text-slate-500 shrink-0" />
-                    <span className="text-sm text-slate-200 truncate">{d.title}</span>
+                    <FileText size={12} className="text-faint shrink-0" />
+                    <span className="text-sm text-default truncate">{d.title}</span>
                   </div>
-                  <span className="text-xs text-slate-600 shrink-0">{d.word_count || 0}w</span>
+                  <span className="text-xs text-faint shrink-0">{d.word_count || 0}w</span>
                 </button>
               ))}
             </div>
           )}
           {searchQuery.trim() && !searching && searchResults.length === 0 && (
-            <div className="absolute z-20 left-0 right-0 mt-1 px-3 py-2 bg-slate-800 border border-slate-700 rounded text-xs text-slate-500">
+            <div className="absolute z-20 left-0 right-0 mt-1 px-3 py-2 surface-card border border-subtle rounded text-xs text-faint">
               No matching documents
             </div>
           )}
@@ -1080,18 +1080,18 @@ export function LinkedDocs({ entityId, userId, refreshKey, onOpenApp }) {
             <div
               key={d.id}
               onClick={() => onOpenApp?.("document", { docId: d.id, title: d.title || d.id })}
-              className="group flex items-center justify-between px-3 py-1.5 rounded bg-slate-800/50 border border-slate-700/50 text-sm cursor-pointer hover:bg-slate-700/50 transition-colors"
+              className="group flex items-center justify-between px-3 py-1.5 rounded surface-card border border-subtle text-sm cursor-pointer hover:bg-[var(--ds-raised)] transition-colors"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <FileText size={12} className="text-indigo-400/70 shrink-0" />
-                <span className="text-slate-300 truncate">{d.title}</span>
+                <span className="text-default truncate">{d.title}</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-600 shrink-0">
+              <div className="flex items-center gap-2 text-xs text-faint shrink-0">
                 <span>{d.word_count || 0}w</span>
                 {d.updated_at && <span>{d.updated_at.slice(0, 10)}</span>}
                 <button
                   onClick={(e) => { e.stopPropagation(); handleUnlink(d.id); }}
-                  className="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-red-400 transition-opacity"
+                  className="opacity-0 group-hover:opacity-100 text-faint hover:text-red-400 transition-opacity"
                   title="Unlink document"
                 >
                   <X size={12} />
@@ -1101,7 +1101,7 @@ export function LinkedDocs({ entityId, userId, refreshKey, onOpenApp }) {
           ))}
         </div>
       ) : !mode ? (
-        <p className="text-xs text-slate-600">No linked documents</p>
+        <p className="text-xs text-faint">No linked documents</p>
       ) : null}
     </div>
   );
@@ -1128,7 +1128,7 @@ export function HistorySection({ entityId, history, userId, patchEntity, onRefre
 
   return (
     <div>
-      <h3 className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase tracking-wider mb-2">
+      <h3 className="flex items-center gap-1.5 text-xs font-medium text-faint uppercase tracking-wider mb-2">
         <Clock size={12} />
         History
       </h3>
@@ -1138,12 +1138,12 @@ export function HistorySection({ entityId, history, userId, patchEntity, onRefre
           value={noteText}
           onChange={(e) => setNoteText(e.target.value)}
           placeholder="Add a note or directive..."
-          className="flex-1 px-2.5 py-1.5 rounded bg-slate-800/70 border border-slate-700/50 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-cyan-600 transition-colors"
+          className="flex-1 px-2.5 py-1.5 rounded surface-card border border-subtle text-sm text-default placeholder-slate-600 focus:outline-none focus:border-subtle transition-colors"
         />
         <button
           type="submit"
           disabled={adding || !noteText.trim()}
-          className="px-3 py-1.5 text-xs font-medium rounded bg-cyan-800/50 hover:bg-cyan-700/50 text-cyan-300 disabled:opacity-30 transition-colors"
+          className="px-3 py-1.5 text-xs font-medium rounded surface-card hover:bg-[var(--ds-accent)] text-accent disabled:opacity-30 transition-colors"
         >
           {adding ? "..." : "Add"}
         </button>
@@ -1151,17 +1151,17 @@ export function HistorySection({ entityId, history, userId, patchEntity, onRefre
       {entries.length > 0 ? (
         <div className="space-y-0.5 max-h-48 overflow-y-auto">
           {entries.map((h, i) => (
-            <div key={i} className="flex gap-2 text-xs text-slate-500 py-1 border-b border-slate-800/50 last:border-0">
-              <span className="text-slate-600 shrink-0 w-32">
+            <div key={i} className="flex gap-2 text-xs text-faint py-1 border-b border-subtle last:border-0">
+              <span className="text-faint shrink-0 w-32">
                 {(h.timestamp || h.date || "").slice(0, 16).replace("T", " ")}
               </span>
-              <span className="text-cyan-700 shrink-0 w-16 truncate">{h.by || ""}</span>
-              <span className="text-slate-400">{h.note || h.action || h.change || h.text || JSON.stringify(h)}</span>
+              <span className="text-accent shrink-0 w-16 truncate">{h.by || ""}</span>
+              <span className="text-muted">{h.note || h.action || h.change || h.text || JSON.stringify(h)}</span>
             </div>
           ))}
         </div>
       ) : (
-        <p className="text-xs text-slate-600">No history yet</p>
+        <p className="text-xs text-faint">No history yet</p>
       )}
     </div>
   );
@@ -1223,7 +1223,7 @@ export function LinkedArtifacts({ entityId, refreshKey }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase tracking-wider">
+        <h3 className="flex items-center gap-1.5 text-xs font-medium text-faint uppercase tracking-wider">
           <Paperclip size={12} />
           Artifacts ({artifacts.length})
         </h3>
@@ -1233,26 +1233,26 @@ export function LinkedArtifacts({ entityId, refreshKey }) {
           <div key={a.id}>
             <button
               onClick={() => toggleExpand(a.id)}
-              className="w-full text-left group flex items-center justify-between px-3 py-1.5 rounded bg-slate-800/50 border border-slate-700/50 text-sm cursor-pointer hover:bg-slate-700/50 transition-colors"
+              className="w-full text-left group flex items-center justify-between px-3 py-1.5 rounded surface-card border border-subtle text-sm cursor-pointer hover:bg-[var(--ds-raised)] transition-colors"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <Paperclip size={12} className="text-amber-400/70 shrink-0" />
-                <span className="text-slate-300 truncate">{a.name}</span>
+                <span className="text-default truncate">{a.name}</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-slate-600 shrink-0">
+              <div className="flex items-center gap-2 text-xs text-faint shrink-0">
                 <span>{humanSize(a.size_bytes)}</span>
                 {a.created_at && <span>{a.created_at.slice(0, 10)}</span>}
                 <ChevronRight size={12} className={`transition-transform ${expandedId === a.id ? "rotate-90" : ""}`} />
               </div>
             </button>
             {expandedId === a.id && (
-              <div className="mt-1 mx-1 rounded bg-slate-900/80 border border-slate-700/50 overflow-hidden">
+              <div className="mt-1 mx-1 rounded surface-panel border border-subtle overflow-hidden">
                 {loadingContent ? (
-                  <div className="flex items-center gap-2 px-3 py-3 text-xs text-slate-500">
+                  <div className="flex items-center gap-2 px-3 py-3 text-xs text-faint">
                     <Loader2 size={12} className="animate-spin" /> Loading...
                   </div>
                 ) : (
-                  <pre className="px-3 py-2 text-[11px] text-slate-300 whitespace-pre-wrap max-h-80 overflow-y-auto leading-relaxed font-mono">
+                  <pre className="px-3 py-2 text-[11px] text-default whitespace-pre-wrap max-h-80 overflow-y-auto leading-relaxed font-mono">
                     {expandedContent}
                   </pre>
                 )}

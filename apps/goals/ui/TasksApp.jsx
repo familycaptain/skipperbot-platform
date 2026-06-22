@@ -158,7 +158,7 @@ export default function TasksApp({ appId, userId, context = {}, onTitle, onConte
   // Loading state
   if (loading && !tasks && !taskDetail) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-400">
+      <div className="flex items-center justify-center h-full text-muted">
         <Loader2 size={20} className="animate-spin mr-2" />
         Loading...
       </div>
@@ -168,17 +168,17 @@ export default function TasksApp({ appId, userId, context = {}, onTitle, onConte
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
-        <div className="flex items-center gap-1 text-sm text-slate-300 min-w-0 overflow-hidden">
+      <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
+        <div className="flex items-center gap-1 text-sm text-default min-w-0 overflow-hidden">
           <button
             onClick={loadTasks}
-            className="hover:text-white transition-colors shrink-0"
+            className="hover:text-[var(--ds-text)] transition-colors shrink-0"
           >
             Tasks
           </button>
           {view === "detail" && taskDetail && (
             <>
-              <ChevronRight size={14} className="text-slate-600 shrink-0" />
+              <ChevronRight size={14} className="text-faint shrink-0" />
               <span className="truncate max-w-[300px]">{taskDetail.name}</span>
             </>
           )}
@@ -187,7 +187,7 @@ export default function TasksApp({ appId, userId, context = {}, onTitle, onConte
           <SearchBar onSelect={handleSearchSelect} />
           <button
             onClick={() => setShowCompleted(!showCompleted)}
-            className={`p-1 rounded transition-colors ${showCompleted ? "text-indigo-400 bg-slate-700" : "text-slate-500 hover:text-white hover:bg-slate-700"}`}
+            className={`p-1 rounded transition-colors ${showCompleted ? "text-indigo-400 surface-raised" : "text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)]"}`}
             title={showCompleted ? "Hide completed" : "Show completed"}
           >
             <Filter size={14} />
@@ -198,7 +198,7 @@ export default function TasksApp({ appId, userId, context = {}, onTitle, onConte
               else loadTasks();
             }}
             disabled={loading}
-            className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700 transition-colors"
+            className="p-1 rounded text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors"
             title="Refresh"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -251,8 +251,8 @@ export default function TasksApp({ appId, userId, context = {}, onTitle, onConte
 function TaskListView({ tasks, onTaskClick, patchEntity, isOverdue, onOpenApp }) {
   if (!tasks || tasks.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-slate-500">
-        <CheckSquare size={32} className="text-slate-600 mb-2" />
+      <div className="flex flex-col items-center justify-center h-full text-faint">
+        <CheckSquare size={32} className="text-faint mb-2" />
         <p className="text-sm">No tasks</p>
       </div>
     );
@@ -260,24 +260,24 @@ function TaskListView({ tasks, onTaskClick, patchEntity, isOverdue, onOpenApp })
 
   return (
     <div className="space-y-1.5">
-      <p className="text-xs text-slate-500 mb-2">{tasks.length} task{tasks.length !== 1 ? "s" : ""}</p>
+      <p className="text-xs text-faint mb-2">{tasks.length} task{tasks.length !== 1 ? "s" : ""}</p>
       {tasks.map((t) => (
         <div
           key={t.id}
           onClick={() => onTaskClick(t.id)}
-          className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 transition-colors cursor-pointer"
+          className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg surface-card hover:bg-[var(--ds-card)] border border-subtle transition-colors cursor-pointer"
         >
           <div className="flex items-center gap-2 min-w-0">
             <StatusBadge status={t.status} entityId={t.id} patchEntity={patchEntity} STATUSES={STATUSES} />
             <div className="min-w-0">
-              <span className="text-sm text-slate-200 text-left block">
+              <span className="text-sm text-default text-left block">
                 {t.name}
               </span>
-              <div className="text-[10px] text-slate-600 flex items-center gap-1">
+              <div className="text-[10px] text-faint flex items-center gap-1">
                 {t.goal_name && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onOpenApp?.("goals", { goalId: t.goal_id }); }}
-                    className="hover:text-slate-400 transition-colors"
+                    className="hover:text-[var(--ds-muted)] transition-colors"
                   >
                     {t.goal_name}
                   </button>
@@ -286,7 +286,7 @@ function TaskListView({ tasks, onTaskClick, patchEntity, isOverdue, onOpenApp })
                 {t.project_name && (
                   <button
                     onClick={(e) => { e.stopPropagation(); onOpenApp?.("goals", { projectId: t.project_id }); }}
-                    className="hover:text-slate-400 transition-colors"
+                    className="hover:text-[var(--ds-muted)] transition-colors"
                   >
                     {t.project_name}
                   </button>
@@ -294,9 +294,9 @@ function TaskListView({ tasks, onTaskClick, patchEntity, isOverdue, onOpenApp })
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0 text-xs text-slate-500">
+          <div className="flex items-center gap-2 shrink-0 text-xs text-faint">
             {t.trello_linked && (
-              <span className="text-[9px] px-1 py-0.5 rounded bg-sky-900/30 text-sky-400 border border-sky-700/30" title="Trello-linked">
+              <span className="text-[9px] px-1 py-0.5 rounded surface-card text-accent border border-subtle" title="Trello-linked">
                 <ExternalLink size={9} />
               </span>
             )}
@@ -306,7 +306,7 @@ function TaskListView({ tasks, onTaskClick, patchEntity, isOverdue, onOpenApp })
               </span>
             )}
             <PriorityBadge priority={t.priority} entityId={t.id} patchEntity={patchEntity} />
-            <ChevronRight size={12} className="text-slate-600" />
+            <ChevronRight size={12} className="text-faint" />
           </div>
         </div>
       ))}

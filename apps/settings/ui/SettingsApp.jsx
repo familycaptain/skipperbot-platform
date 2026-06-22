@@ -55,36 +55,36 @@ function DesktopVisibilityPanel() {
   };
 
   if (hidden === null) {
-    return <div className="flex items-center gap-2 p-6 text-zinc-500"><Loader2 className="animate-spin" size={14} /> Loading…</div>;
+    return <div className="flex items-center gap-2 p-6 text-faint"><Loader2 className="animate-spin" size={14} /> Loading…</div>;
   }
 
   return (
     <div className="p-6 max-w-2xl">
-      <h2 className="text-xl font-medium text-zinc-100 mb-1 inline-flex items-center gap-2">
+      <h2 className="text-xl font-medium text-default mb-1 inline-flex items-center gap-2">
         <LayoutGrid size={18} /> My desktop
       </h2>
-      <p className="text-sm text-zinc-500 mb-5">
+      <p className="text-sm text-faint mb-5">
         Choose which app tiles appear on <strong>your</strong> launcher. Hiding a
         tile only affects your desktop — the app keeps running for everyone else,
         and new apps show up automatically. Tip: you can also right-click a tile on
         the desktop to hide it.
       </p>
-      <ul className="divide-y divide-zinc-800 border border-zinc-800 rounded">
+      <ul className="divide-y divide-[var(--ds-border)] border border-subtle rounded">
         {tileApps.map((a) => {
           const Icon = a.icon;
           const isHidden = hidden.has(a.id);
           return (
             <li key={a.id} className="flex items-center justify-between px-4 py-2.5">
-              <span className="inline-flex items-center gap-2.5 text-sm text-zinc-300">
-                {Icon && <Icon size={15} className={isHidden ? "text-zinc-600" : "text-zinc-400"} />}
-                <span className={isHidden ? "text-zinc-500" : ""}>{a.name}</span>
+              <span className="inline-flex items-center gap-2.5 text-sm text-default">
+                {Icon && <Icon size={15} className={isHidden ? "text-faint" : "text-muted"} />}
+                <span className={isHidden ? "text-faint" : ""}>{a.name}</span>
               </span>
               <button
                 onClick={() => toggle(a.id)}
                 disabled={saving}
                 className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded transition-colors ${
                   isHidden
-                    ? "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                    ? "surface-card text-muted hover:text-[var(--ds-text)]"
                     : "bg-emerald-900/30 text-emerald-300 hover:bg-emerald-900/50"
                 }`}
               >
@@ -144,21 +144,21 @@ function AppManagementPanel({ userId }) {
   };
 
   if (required === null || disabled === null) {
-    return <div className="flex items-center gap-2 p-6 text-zinc-500"><Loader2 className="animate-spin" size={14} /> Loading…</div>;
+    return <div className="flex items-center gap-2 p-6 text-faint"><Loader2 className="animate-spin" size={14} /> Loading…</div>;
   }
 
   return (
     <div className="p-6 max-w-2xl">
-      <h2 className="text-xl font-medium text-zinc-100 mb-1 inline-flex items-center gap-2">
+      <h2 className="text-xl font-medium text-default mb-1 inline-flex items-center gap-2">
         <Power size={18} /> Apps
       </h2>
-      <p className="text-sm text-zinc-500 mb-4">
+      <p className="text-sm text-faint mb-4">
         Turn apps on or off for the whole household. A disabled app doesn't load at
         all — no tools, routes, or background work. Required apps are always on.
         Changes take effect after a restart.
       </p>
       {!isAdmin && (
-        <div className="mb-4 flex items-center gap-2 rounded bg-zinc-900 border border-zinc-800 px-3 py-2 text-sm text-zinc-400">
+        <div className="mb-4 flex items-center gap-2 rounded surface-panel border border-subtle px-3 py-2 text-sm text-muted">
           <Lock size={14} /> Only admins can enable or disable apps.
         </div>
       )}
@@ -167,19 +167,19 @@ function AppManagementPanel({ userId }) {
           <AlertCircle size={14} /> {err}
         </div>
       )}
-      <ul className="divide-y divide-zinc-800 border border-zinc-800 rounded">
+      <ul className="divide-y divide-[var(--ds-border)] border border-subtle rounded">
         {apps.map((a) => {
           const Icon = a.icon;
           const isReq = required.has(a.id);
           const isOff = disabled.has(a.id);
           return (
             <li key={a.id} className="flex items-center justify-between px-4 py-2.5">
-              <span className="inline-flex items-center gap-2.5 text-sm text-zinc-300">
-                {Icon && <Icon size={15} className={isOff ? "text-zinc-600" : "text-zinc-400"} />}
-                <span className={isOff ? "text-zinc-500" : ""}>{a.name}</span>
+              <span className="inline-flex items-center gap-2.5 text-sm text-default">
+                {Icon && <Icon size={15} className={isOff ? "text-faint" : "text-muted"} />}
+                <span className={isOff ? "text-faint" : ""}>{a.name}</span>
               </span>
               {isReq ? (
-                <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded bg-zinc-800 text-zinc-500" title="Required app — always on">
+                <span className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded surface-card text-faint" title="Required app — always on">
                   <Lock size={12} /> Required
                 </span>
               ) : (
@@ -188,7 +188,7 @@ function AppManagementPanel({ userId }) {
                   disabled={saving || !isAdmin}
                   className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                     isOff
-                      ? "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
+                      ? "surface-card text-muted hover:text-[var(--ds-text)]"
                       : "bg-emerald-900/30 text-emerald-300 hover:bg-emerald-900/50"
                   }`}
                   title={isAdmin ? (isOff ? "Enable" : "Disable") : "Admin only"}
@@ -241,7 +241,7 @@ function ConfigInput({ field, value, onChange }) {
     const hasCurrent = opts.some((o) => String(o.value) === String(value ?? ""));
     return (
       <select
-        className="w-full bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100"
+        className="w-full surface-panel border border-subtle rounded px-2 py-1 text-sm text-default"
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value)}
       >
@@ -260,9 +260,9 @@ function ConfigInput({ field, value, onChange }) {
           type="checkbox"
           checked={!!value}
           onChange={(e) => onChange(e.target.checked)}
-          className="rounded border-zinc-700 bg-zinc-900"
+          className="rounded border-subtle surface-panel"
         />
-        <span className="text-sm text-zinc-300">{value ? "Enabled" : "Disabled"}</span>
+        <span className="text-sm text-default">{value ? "Enabled" : "Disabled"}</span>
       </label>
     );
   }
@@ -271,7 +271,7 @@ function ConfigInput({ field, value, onChange }) {
     return (
       <input
         type="number"
-        className="w-32 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100"
+        className="w-32 surface-panel border border-subtle rounded px-2 py-1 text-sm text-default"
         value={value ?? ""}
         placeholder={field.placeholder || ""}
         onChange={(e) => {
@@ -292,7 +292,7 @@ function ConfigInput({ field, value, onChange }) {
     <div className="flex items-center gap-2 w-full">
       <input
         type={showSecret ? "text" : "password"}
-        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-2 py-1 text-sm text-zinc-100 font-mono"
+        className="flex-1 surface-panel border border-subtle rounded px-2 py-1 text-sm text-default font-mono"
         value={value ?? ""}
         placeholder={secretPlaceholder || field.placeholder || ""}
         onChange={(e) => onChange(e.target.value)}
@@ -300,7 +300,7 @@ function ConfigInput({ field, value, onChange }) {
       {secret && (
         <button
           type="button"
-          className="text-zinc-500 hover:text-zinc-300"
+          className="text-faint hover:text-[var(--ds-text)]"
           onClick={() => setRevealed((r) => !r)}
           title={revealed ? "Hide" : "Reveal"}
         >
@@ -372,10 +372,10 @@ function AppDetail({ app, onSaved }) {
 
   if (!app.has_settings) {
     return (
-      <div className="p-6 text-zinc-400">
-        <h2 className="text-xl font-medium text-zinc-200 mb-2">{app.name}</h2>
+      <div className="p-6 text-muted">
+        <h2 className="text-xl font-medium text-default mb-2">{app.name}</h2>
         <p className="text-sm">This app has no configurable settings.</p>
-        <p className="text-xs mt-4 text-zinc-600">{app.description}</p>
+        <p className="text-xs mt-4 text-faint">{app.description}</p>
       </div>
     );
   }
@@ -383,18 +383,18 @@ function AppDetail({ app, onSaved }) {
   return (
     <div className="p-6">
       <div className="flex items-baseline justify-between mb-1">
-        <h2 className="text-xl font-medium text-zinc-100">{app.name}</h2>
-        {!app.is_panel && <span className="text-xs text-zinc-500">v{app.version || "?"}</span>}
+        <h2 className="text-xl font-medium text-default">{app.name}</h2>
+        {!app.is_panel && <span className="text-xs text-faint">v{app.version || "?"}</span>}
       </div>
-      <p className="text-sm text-zinc-500 mb-6">{app.description}</p>
+      <p className="text-sm text-faint mb-6">{app.description}</p>
 
       <div className="space-y-5">
         {app.schema.map((field) => (
           <div key={field.key}>
             <div className="flex items-baseline justify-between mb-1">
-              <label className="text-sm text-zinc-300 font-medium">
+              <label className="text-sm text-default font-medium">
                 {field.label || field.key}
-                <span className="ml-2 text-zinc-600 font-mono text-xs">{field.key}</span>
+                <span className="ml-2 text-faint font-mono text-xs">{field.key}</span>
                 {field.requires_restart && (
                   <span
                     className="ml-2 inline-flex items-center gap-1 text-[10px] text-amber-400/90 align-middle"
@@ -404,7 +404,7 @@ function AppDetail({ app, onSaved }) {
                   </span>
                 )}
               </label>
-              <span className="text-xs text-zinc-600">{field.type}</span>
+              <span className="text-xs text-faint">{field.type}</span>
             </div>
             <ConfigInput
               field={field}
@@ -412,7 +412,7 @@ function AppDetail({ app, onSaved }) {
               onChange={(v) => onChange(field.key, v)}
             />
             {field.description && (
-              <p className="text-xs text-zinc-500 mt-1">{field.description}</p>
+              <p className="text-xs text-faint mt-1">{field.description}</p>
             )}
           </div>
         ))}
@@ -427,7 +427,7 @@ function AppDetail({ app, onSaved }) {
 
       <div className="mt-8 flex items-center gap-3">
         <button
-          className="px-4 py-2 rounded bg-emerald-600 text-white text-sm disabled:opacity-40 inline-flex items-center gap-2 disabled:cursor-not-allowed"
+          className="px-4 py-2 rounded bg-emerald-600 text-on-accent text-sm disabled:opacity-40 inline-flex items-center gap-2 disabled:cursor-not-allowed"
           onClick={onSave}
           disabled={!dirty || saving}
         >
@@ -442,7 +442,7 @@ function AppDetail({ app, onSaved }) {
         {dirty && (
           <button
             type="button"
-            className="text-zinc-400 text-sm inline-flex items-center gap-1 hover:text-zinc-200"
+            className="text-muted text-sm inline-flex items-center gap-1 hover:text-[var(--ds-text)]"
             onClick={() => setDraft(app.values || {})}
           >
             <X size={14} /> Revert
@@ -452,29 +452,29 @@ function AppDetail({ app, onSaved }) {
 
       {restartNotice.length > 0 && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center surface-overlay p-4"
           onClick={() => setRestartNotice([])}
         >
           <div
-            className="max-w-md w-full rounded-lg border border-amber-700/60 bg-zinc-900 p-5 shadow-xl"
+            className="max-w-md w-full rounded-lg border border-amber-700/60 surface-panel p-5 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-2 mb-3 text-amber-400">
               <RotateCcw size={18} />
               <h3 className="text-base font-semibold">Restart required</h3>
             </div>
-            <p className="text-sm text-zinc-300">
+            <p className="text-sm text-default">
               Your changes were saved, but {restartNotice.length === 1 ? "this setting" : "these settings"} only
               take effect after you restart the server:
             </p>
-            <ul className="mt-2 mb-4 list-disc list-inside text-sm text-zinc-200">
+            <ul className="mt-2 mb-4 list-disc list-inside text-sm text-default">
               {restartNotice.map((label) => (
                 <li key={label}>{label}</li>
               ))}
             </ul>
             <div className="flex justify-end">
               <button
-                className="px-4 py-2 rounded bg-amber-600 hover:bg-amber-500 text-white text-sm font-medium"
+                className="px-4 py-2 rounded bg-amber-600 hover:bg-amber-500 text-on-accent text-sm font-medium"
                 onClick={() => setRestartNotice([])}
               >
                 Got it
@@ -669,16 +669,16 @@ function MembersPanel({ userId }) {
     }));
 
   if (users === null) {
-    return <div className="flex items-center gap-2 p-6 text-zinc-500"><Loader2 className="animate-spin" size={14} /> Loading members…</div>;
+    return <div className="flex items-center gap-2 p-6 text-faint"><Loader2 className="animate-spin" size={14} /> Loading members…</div>;
   }
 
-  const inputCls = "w-full rounded bg-zinc-900 border border-zinc-700 px-2.5 py-1.5 text-sm text-zinc-200 focus:border-indigo-500 focus:outline-none";
+  const inputCls = "w-full rounded surface-panel border border-subtle px-2.5 py-1.5 text-sm text-default focus:border-indigo-500 focus:outline-none";
 
   return (
     <div className="p-6 max-w-2xl space-y-8">
       <div>
-        <h2 className="text-base font-semibold text-zinc-200 inline-flex items-center gap-2"><Users size={16} /> Members</h2>
-        <p className="text-xs text-zinc-500 mt-1">
+        <h2 className="text-base font-semibold text-default inline-flex items-center gap-2"><Users size={16} /> Members</h2>
+        <p className="text-xs text-faint mt-1">
           {isAdmin
             ? "Add or remove household members and set their roles. New members get a temporary password — they change it themselves after their first login."
             : "Change your own password below. Ask an admin to add or remove members."}
@@ -694,16 +694,16 @@ function MembersPanel({ userId }) {
       {isAdmin && (
         <>
           {/* Roster */}
-          <div className="rounded-lg border border-zinc-800 divide-y divide-zinc-800">
+          <div className="rounded-lg border border-subtle divide-y divide-[var(--ds-border)]">
             {users.map((u) => (
               <div key={u.name}>
               <div className="flex items-center gap-3 px-3 py-2.5">
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm text-zinc-200 truncate">
+                  <div className="text-sm text-default truncate">
                     {u.display_name || u.name}
-                    {u.name === userId && <span className="ml-1.5 text-[10px] text-zinc-500">(you)</span>}
+                    {u.name === userId && <span className="ml-1.5 text-[10px] text-faint">(you)</span>}
                   </div>
-                  <div className="text-[11px] text-zinc-500 truncate">
+                  <div className="text-[11px] text-faint truncate">
                     @{u.name}{!u.has_password && " · no password set"}
                     {u.discord_id && <span className="ml-1.5 inline-flex items-center gap-0.5 text-indigo-400"><MessageCircle size={10} className="-mt-0.5" /> linked</span>}
                   </div>
@@ -741,7 +741,7 @@ function MembersPanel({ userId }) {
                         className={`px-2 py-0.5 rounded text-[11px] border transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                           on
                             ? "bg-indigo-600/30 border-indigo-600 text-indigo-200"
-                            : "border-zinc-700 text-zinc-500 hover:text-zinc-300"
+                            : "border-subtle text-faint hover:text-[var(--ds-text)]"
                         }`}
                         title={lastAdmin ? "At least one admin is required" : on ? `Remove ${role}` : `Grant ${role}`}
                       >
@@ -752,12 +752,12 @@ function MembersPanel({ userId }) {
                 </div>
                 <button onClick={() => editingDiscord === u.name ? closeDiscordEditor() : openDiscordEditor(u)} disabled={busy}
                   title={u.discord_id ? `Discord linked (${u.discord_id}) — edit or unlink` : "Link a Discord account for this member"}
-                  className={`p-1 ${editingDiscord === u.name ? "text-indigo-300" : u.discord_id ? "text-indigo-400 hover:text-indigo-300" : "text-zinc-500 hover:text-indigo-400"}`}>
+                  className={`p-1 ${editingDiscord === u.name ? "text-indigo-300" : u.discord_id ? "text-indigo-400 hover:text-indigo-300" : "text-faint hover:text-indigo-400"}`}>
                   <MessageCircle size={14} />
                 </button>
                 <button onClick={() => resettingPw === u.name ? closePwReset() : openPwReset(u)} disabled={busy}
                   title="Set a temporary password"
-                  className={`p-1 ${resettingPw === u.name ? "text-amber-300" : "text-zinc-500 hover:text-amber-400"}`}>
+                  className={`p-1 ${resettingPw === u.name ? "text-amber-300" : "text-faint hover:text-amber-400"}`}>
                   <KeyRound size={14} />
                 </button>
                 <button onClick={() => removeMember(u.name)}
@@ -769,7 +769,7 @@ function MembersPanel({ userId }) {
                         ? "Can't remove the last admin"
                         : "Remove member"
                   }
-                  className="text-zinc-500 hover:text-red-400 p-1 disabled:opacity-30 disabled:hover:text-zinc-500">
+                  className="text-faint hover:text-red-400 p-1 disabled:opacity-30 disabled:hover:text-[var(--ds-faint)]">
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -777,25 +777,25 @@ function MembersPanel({ userId }) {
               {/* Inline Discord editor — opens under the member when the Discord
                   icon is clicked. Matches the self-service "My Discord" form. */}
               {editingDiscord === u.name && (
-                <div className="px-3 pb-3 pt-1 space-y-2 bg-zinc-900/40">
+                <div className="px-3 pb-3 pt-1 space-y-2 surface-panel">
                   <label className="block">
-                    <span className="text-[11px] text-zinc-500">Discord user ID for @{u.name} (17–20 digits)</span>
+                    <span className="text-[11px] text-faint">Discord user ID for @{u.name} (17–20 digits)</span>
                     <input className={`${inputCls} font-mono`} value={discordEditDraft} inputMode="numeric" autoFocus
                       onChange={(e) => setDiscordEditDraft(e.target.value)}
                       placeholder="e.g. 123456789012345678" autoComplete="off" />
                   </label>
-                  <p className="text-[11px] text-zinc-500">
-                    In Discord: <span className="text-zinc-400">Developer Mode</span> (User Settings → Advanced),
-                    then right-click their name → <span className="text-zinc-400">Copy User ID</span>. Leave blank to unlink.
+                  <p className="text-[11px] text-faint">
+                    In Discord: <span className="text-muted">Developer Mode</span> (User Settings → Advanced),
+                    then right-click their name → <span className="text-muted">Copy User ID</span>. Leave blank to unlink.
                   </p>
                   <div className="flex items-center gap-2">
                     <button onClick={() => saveMemberDiscord(u.name)}
                       disabled={busy || discordEditDraft.trim() === (u.discord_id || "")}
-                      className="rounded bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white inline-flex items-center gap-1.5 disabled:opacity-50">
+                      className="rounded bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 text-sm font-medium text-on-accent inline-flex items-center gap-1.5 disabled:opacity-50">
                       <Save size={14} /> {discordEditDraft.trim() ? "Save" : "Unlink"}
                     </button>
                     <button onClick={closeDiscordEditor} disabled={busy}
-                      className="rounded border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800">
+                      className="rounded border border-subtle px-3 py-1.5 text-sm text-default hover:bg-[var(--ds-card)]">
                       Cancel
                     </button>
                   </div>
@@ -805,9 +805,9 @@ function MembersPanel({ userId }) {
               {/* Inline temporary-password editor — opens under the member when
                   the key icon is clicked. The member changes it after logging in. */}
               {resettingPw === u.name && (
-                <div className="px-3 pb-3 pt-1 space-y-2 bg-zinc-900/40">
+                <div className="px-3 pb-3 pt-1 space-y-2 surface-panel">
                   <label className="block">
-                    <span className="text-[11px] text-zinc-500">New temporary password for @{u.name} (min 8 characters)</span>
+                    <span className="text-[11px] text-faint">New temporary password for @{u.name} (min 8 characters)</span>
                     <input className={inputCls} value={pwResetDraft} type="text" minLength={8} autoFocus
                       onChange={(e) => setPwResetDraft(e.target.value)}
                       placeholder="they can change it after logging in" autoComplete="new-password" />
@@ -815,11 +815,11 @@ function MembersPanel({ userId }) {
                   <div className="flex items-center gap-2">
                     <button onClick={() => saveMemberPassword(u.name)}
                       disabled={busy || pwResetDraft.length < 8}
-                      className="rounded bg-amber-600 hover:bg-amber-500 px-3 py-1.5 text-sm font-medium text-white inline-flex items-center gap-1.5 disabled:opacity-50">
+                      className="rounded bg-amber-600 hover:bg-amber-500 px-3 py-1.5 text-sm font-medium text-on-accent inline-flex items-center gap-1.5 disabled:opacity-50">
                       <KeyRound size={14} /> Set password
                     </button>
                     <button onClick={closePwReset} disabled={busy}
-                      className="rounded border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 hover:bg-zinc-800">
+                      className="rounded border border-subtle px-3 py-1.5 text-sm text-default hover:bg-[var(--ds-card)]">
                       Cancel
                     </button>
                   </div>
@@ -830,39 +830,39 @@ function MembersPanel({ userId }) {
           </div>
 
           {/* Add member */}
-          <form onSubmit={addMember} className="rounded-lg border border-zinc-800 p-4 space-y-3">
-            <h3 className="text-sm font-medium text-zinc-300 inline-flex items-center gap-2"><UserPlus size={14} /> Add a member</h3>
+          <form onSubmit={addMember} className="rounded-lg border border-subtle p-4 space-y-3">
+            <h3 className="text-sm font-medium text-default inline-flex items-center gap-2"><UserPlus size={14} /> Add a member</h3>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className="text-[11px] text-zinc-500">Username (login)</span>
+                <span className="text-[11px] text-faint">Username (login)</span>
                 <input className={inputCls} value={form.username} required
                   onChange={(e) => setForm({ ...form, username: e.target.value })}
                   placeholder="e.g. alex" autoComplete="off" />
               </label>
               <label className="block">
-                <span className="text-[11px] text-zinc-500">Display name</span>
+                <span className="text-[11px] text-faint">Display name</span>
                 <input className={inputCls} value={form.display_name}
                   onChange={(e) => setForm({ ...form, display_name: e.target.value })}
                   placeholder="e.g. Alex" autoComplete="off" />
               </label>
             </div>
             <label className="block">
-              <span className="text-[11px] text-zinc-500">Temporary password (min 8 characters)</span>
+              <span className="text-[11px] text-faint">Temporary password (min 8 characters)</span>
               <input className={inputCls} value={form.password} required minLength={8} type="text"
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 placeholder="at least 8 characters — they can change it later" autoComplete="new-password" />
             </label>
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-zinc-500 mr-1">Roles:</span>
+              <span className="text-[11px] text-faint mr-1">Roles:</span>
               {ROLE_OPTIONS.map((role) => (
-                <label key={role} className="inline-flex items-center gap-1 text-xs text-zinc-400">
+                <label key={role} className="inline-flex items-center gap-1 text-xs text-muted">
                   <input type="checkbox" checked={form.roles.includes(role)} onChange={() => toggleFormRole(role)} />
                   {role}
                 </label>
               ))}
             </div>
             <button type="submit" disabled={busy}
-              className="rounded bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white inline-flex items-center gap-1.5 disabled:opacity-50">
+              className="rounded bg-indigo-600 hover:bg-indigo-500 px-3 py-1.5 text-sm font-medium text-on-accent inline-flex items-center gap-1.5 disabled:opacity-50">
               <UserPlus size={14} /> Add member
             </button>
           </form>
@@ -870,46 +870,46 @@ function MembersPanel({ userId }) {
       )}
 
       {/* Change my own password — everyone */}
-      <form onSubmit={changeMyPassword} className="rounded-lg border border-zinc-800 p-4 space-y-3">
-        <h3 className="text-sm font-medium text-zinc-300 inline-flex items-center gap-2"><KeyRound size={14} /> Change my password</h3>
-        <p className="text-[11px] text-zinc-500 -mt-1">Signed in as @{userId}.</p>
+      <form onSubmit={changeMyPassword} className="rounded-lg border border-subtle p-4 space-y-3">
+        <h3 className="text-sm font-medium text-default inline-flex items-center gap-2"><KeyRound size={14} /> Change my password</h3>
+        <p className="text-[11px] text-faint -mt-1">Signed in as @{userId}.</p>
         <label className="block">
-          <span className="text-[11px] text-zinc-500">Current password</span>
+          <span className="text-[11px] text-faint">Current password</span>
           <input className={inputCls} type="password" value={pw.current} autoComplete="current-password"
             onChange={(e) => setPw({ ...pw, current: e.target.value })} />
         </label>
         <label className="block">
-          <span className="text-[11px] text-zinc-500">New password (min 8 characters)</span>
+          <span className="text-[11px] text-faint">New password (min 8 characters)</span>
           <input className={inputCls} type="password" value={pw.next} required minLength={8} autoComplete="new-password"
             onChange={(e) => setPw({ ...pw, next: e.target.value })} />
         </label>
-        {pwMsg && <div className="text-xs text-zinc-400">{pwMsg}</div>}
+        {pwMsg && <div className="text-xs text-muted">{pwMsg}</div>}
         <button type="submit"
-          className="rounded bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 text-sm font-medium text-white inline-flex items-center gap-1.5">
+          className="rounded surface-raised hover:bg-[var(--ds-raised)] px-3 py-1.5 text-sm font-medium text-default inline-flex items-center gap-1.5">
           <Save size={14} /> Update password
         </button>
       </form>
 
       {/* My Discord link — everyone (self-service) */}
-      <form onSubmit={saveDiscord} className="rounded-lg border border-zinc-800 p-4 space-y-3">
-        <h3 className="text-sm font-medium text-zinc-300 inline-flex items-center gap-2"><MessageCircle size={14} /> My Discord</h3>
-        <p className="text-[11px] text-zinc-500 -mt-1">
+      <form onSubmit={saveDiscord} className="rounded-lg border border-subtle p-4 space-y-3">
+        <h3 className="text-sm font-medium text-default inline-flex items-center gap-2"><MessageCircle size={14} /> My Discord</h3>
+        <p className="text-[11px] text-faint -mt-1">
           Link your Discord account so Skipper recognises you on Discord and can DM you.
-          In Discord, turn on <span className="text-zinc-400">Developer Mode</span> (User
-          Settings → Advanced), then right-click your name → <span className="text-zinc-400">Copy
+          In Discord, turn on <span className="text-muted">Developer Mode</span> (User
+          Settings → Advanced), then right-click your name → <span className="text-muted">Copy
           User ID</span> and paste it here. Leave blank and save to unlink.
         </p>
         <label className="block">
-          <span className="text-[11px] text-zinc-500">Discord user ID</span>
+          <span className="text-[11px] text-faint">Discord user ID</span>
           <input className={`${inputCls} font-mono`} value={discordDraft} inputMode="numeric"
             disabled={discord === null}
             onChange={(e) => setDiscordDraft(e.target.value)}
             placeholder="e.g. 123456789012345678" autoComplete="off" />
         </label>
-        {discordMsg && <div className="text-xs text-zinc-400">{discordMsg}</div>}
+        {discordMsg && <div className="text-xs text-muted">{discordMsg}</div>}
         <button type="submit"
           disabled={discord === null || discordBusy || discordDraft.trim() === (discord ?? "")}
-          className="rounded bg-zinc-700 hover:bg-zinc-600 px-3 py-1.5 text-sm font-medium text-white inline-flex items-center gap-1.5 disabled:opacity-50">
+          className="rounded surface-raised hover:bg-[var(--ds-raised)] px-3 py-1.5 text-sm font-medium text-default inline-flex items-center gap-1.5 disabled:opacity-50">
           {discordBusy ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
           {discordDraft.trim() ? (discord ? "Update Discord ID" : "Link Discord") : "Unlink Discord"}
         </button>
@@ -955,7 +955,7 @@ export default function SettingsApp({ userId }) {
 
   if (loading) {
     return (
-      <div className="flex items-center gap-2 p-6 text-zinc-500">
+      <div className="flex items-center gap-2 p-6 text-faint">
         <Loader2 className="animate-spin" size={14} /> Loading settings…
       </div>
     );
@@ -963,9 +963,9 @@ export default function SettingsApp({ userId }) {
 
   return (
     <div className="flex h-full">
-      <aside className="w-64 border-r border-zinc-800 bg-zinc-950 overflow-y-auto">
-        <div className="px-4 py-3 border-b border-zinc-800">
-          <h1 className="text-sm font-semibold text-zinc-300 inline-flex items-center gap-2">
+      <aside className="w-64 border-r border-subtle surface-page overflow-y-auto">
+        <div className="px-4 py-3 border-b border-subtle">
+          <h1 className="text-sm font-semibold text-default inline-flex items-center gap-2">
             <Cog size={14} /> Settings
           </h1>
         </div>
@@ -973,7 +973,7 @@ export default function SettingsApp({ userId }) {
           <li>
             <button
               className={`w-full text-left px-4 py-2 text-sm transition-colors inline-flex items-center gap-2 ${
-                selected === "__desktop__" ? "bg-zinc-800 text-zinc-100" : "text-zinc-300 hover:bg-zinc-900"
+                selected === "__desktop__" ? "surface-card text-default" : "text-default hover:bg-[var(--ds-panel)]"
               }`}
               onClick={() => setSelected("__desktop__")}
             >
@@ -983,7 +983,7 @@ export default function SettingsApp({ userId }) {
           <li>
             <button
               className={`w-full text-left px-4 py-2 text-sm transition-colors inline-flex items-center gap-2 ${
-                selected === "__members__" ? "bg-zinc-800 text-zinc-100" : "text-zinc-300 hover:bg-zinc-900"
+                selected === "__members__" ? "surface-card text-default" : "text-default hover:bg-[var(--ds-panel)]"
               }`}
               onClick={() => setSelected("__members__")}
             >
@@ -993,7 +993,7 @@ export default function SettingsApp({ userId }) {
           <li>
             <button
               className={`w-full text-left px-4 py-2 text-sm transition-colors inline-flex items-center gap-2 ${
-                selected === "__apps__" ? "bg-zinc-800 text-zinc-100" : "text-zinc-300 hover:bg-zinc-900"
+                selected === "__apps__" ? "surface-card text-default" : "text-default hover:bg-[var(--ds-panel)]"
               }`}
               onClick={() => setSelected("__apps__")}
             >
@@ -1004,7 +1004,7 @@ export default function SettingsApp({ userId }) {
             <li key={p.id}>
               <button
                 className={`w-full text-left px-4 py-2 text-sm transition-colors inline-flex items-center gap-2 ${
-                  selected === `panel:${p.id}` ? "bg-zinc-800 text-zinc-100" : "text-zinc-300 hover:bg-zinc-900"
+                  selected === `panel:${p.id}` ? "surface-card text-default" : "text-default hover:bg-[var(--ds-panel)]"
                 }`}
                 onClick={() => setSelected(`panel:${p.id}`)}
               >
@@ -1022,19 +1022,19 @@ export default function SettingsApp({ userId }) {
             if (configurable.length === 0) return null;
             return (
               <>
-                <li className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-wide text-zinc-600">App settings</li>
+                <li className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-wide text-faint">App settings</li>
                 {configurable.map((a) => {
                   const isCurrent = a.id === selected;
                   return (
                     <li key={a.id}>
                       <button
                         className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-baseline justify-between gap-2 ${
-                          isCurrent ? "bg-zinc-800 text-zinc-100" : "text-zinc-300 hover:bg-zinc-900"
+                          isCurrent ? "surface-card text-default" : "text-default hover:bg-[var(--ds-panel)]"
                         }`}
                         onClick={() => setSelected(a.id)}
                       >
                         <span className="truncate">{a.name || a.id}</span>
-                        <span className="text-xs text-zinc-600">{a.schema.length}</span>
+                        <span className="text-xs text-faint">{a.schema.length}</span>
                       </button>
                     </li>
                   );
@@ -1054,7 +1054,7 @@ export default function SettingsApp({ userId }) {
         ) : current ? (
           <AppDetail key={selected} app={current} onSaved={onSaved} />
         ) : (
-          <div className="p-6 text-zinc-500">Select an app to view its settings.</div>
+          <div className="p-6 text-faint">Select an app to view its settings.</div>
         )}
       </main>
     </div>

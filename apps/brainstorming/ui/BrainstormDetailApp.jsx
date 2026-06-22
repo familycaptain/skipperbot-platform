@@ -14,10 +14,10 @@ const STATUS_OPTIONS = ["idea", "exploring", "developing", "parked", "graduated"
 const PRIORITY_OPTIONS = ["high", "medium", "low"];
 
 const STATUS_COLORS = {
-  idea: "bg-sky-500/20 text-sky-400 border-sky-500/30",
+  idea: "bg-[var(--ds-accent)] text-accent border-subtle",
   exploring: "bg-amber-500/20 text-amber-400 border-amber-500/30",
   developing: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-  parked: "bg-slate-500/20 text-slate-400 border-slate-500/30",
+  parked: "surface-raised text-muted border-subtle",
   graduated: "bg-purple-500/20 text-purple-400 border-purple-500/30",
 };
 
@@ -388,7 +388,7 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
 
   if (loading && !idea) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-500">
+      <div className="flex items-center justify-center h-full text-faint">
         <Loader2 size={16} className="animate-spin mr-2" /> Loading idea...
       </div>
     );
@@ -396,7 +396,7 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
 
   if (!idea) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-500">
+      <div className="flex items-center justify-center h-full text-faint">
         Idea not found.
       </div>
     );
@@ -407,9 +407,9 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
   return (
     <div className="flex flex-col h-full w-full">
       {/* ── Toolbar ── */}
-      <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
-        <div className="flex items-center gap-1.5 text-sm text-slate-300 min-w-0">
-          <button onClick={() => onOpenApp?.("brainstorming")} className="p-1 text-slate-500 hover:text-white transition-colors shrink-0" title="Back to ideas">
+      <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
+        <div className="flex items-center gap-1.5 text-sm text-default min-w-0">
+          <button onClick={() => onOpenApp?.("brainstorming")} className="p-1 text-faint hover:text-[var(--ds-text)] transition-colors shrink-0" title="Back to ideas">
             <ArrowLeft size={14} />
           </button>
           <Lightbulb size={14} className="text-amber-400 shrink-0" />
@@ -421,13 +421,13 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
                 onChange={(e) => setTitleDraft(e.target.value)}
                 onBlur={() => setEditingTitle(false)}
                 onKeyDown={(e) => { if (e.key === "Escape") setEditingTitle(false); }}
-                className="bg-slate-800 text-white text-sm px-1.5 py-0.5 rounded border border-slate-600 outline-none w-56"
+                className="surface-card text-default text-sm px-1.5 py-0.5 rounded border border-subtle outline-none w-56"
               />
             </form>
           ) : (
             <button
               onClick={() => { setTitleDraft(idea.title || ""); setEditingTitle(true); }}
-              className="truncate hover:text-white transition-colors font-medium"
+              className="truncate hover:text-[var(--ds-text)] transition-colors font-medium"
               title="Click to rename"
             >
               {idea.title || "Untitled Idea"}
@@ -445,12 +445,12 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
               {idea.status} <ChevronDown size={10} className="inline" />
             </button>
             {showStatusMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded shadow-lg z-10 py-1 min-w-[120px]">
+              <div className="absolute right-0 top-full mt-1 surface-card border border-subtle rounded shadow-lg z-10 py-1 min-w-[120px]">
                 {STATUS_OPTIONS.map(s => (
                   <button
                     key={s}
                     onClick={() => { handleUpdateMeta({ status: s }); setShowStatusMenu(false); }}
-                    className={`block w-full text-left px-3 py-1 text-xs capitalize hover:bg-slate-700 transition-colors ${idea.status === s ? "text-white font-medium" : "text-slate-400"}`}
+                    className={`block w-full text-left px-3 py-1 text-xs capitalize hover:bg-[var(--ds-raised)] transition-colors ${idea.status === s ? "text-default font-medium" : "text-muted"}`}
                   >
                     {s}
                   </button>
@@ -462,17 +462,17 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
           <div className="relative">
             <button
               onClick={() => { setShowPriorityMenu(!showPriorityMenu); setShowStatusMenu(false); }}
-              className="px-2 py-0.5 rounded text-[11px] text-slate-400 hover:text-white border border-slate-700 capitalize"
+              className="px-2 py-0.5 rounded text-[11px] text-muted hover:text-[var(--ds-text)] border border-subtle capitalize"
             >
               {idea.priority} <ChevronDown size={10} className="inline" />
             </button>
             {showPriorityMenu && (
-              <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded shadow-lg z-10 py-1 min-w-[100px]">
+              <div className="absolute right-0 top-full mt-1 surface-card border border-subtle rounded shadow-lg z-10 py-1 min-w-[100px]">
                 {PRIORITY_OPTIONS.map(p => (
                   <button
                     key={p}
                     onClick={() => { handleUpdateMeta({ priority: p }); setShowPriorityMenu(false); }}
-                    className={`block w-full text-left px-3 py-1 text-xs capitalize hover:bg-slate-700 transition-colors ${idea.priority === p ? "text-white font-medium" : "text-slate-400"}`}
+                    className={`block w-full text-left px-3 py-1 text-xs capitalize hover:bg-[var(--ds-raised)] transition-colors ${idea.priority === p ? "text-default font-medium" : "text-muted"}`}
                   >
                     {p}
                   </button>
@@ -483,39 +483,39 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
           {hasSelection && !preview && !reviewData && (
             <button
               onMouseDown={(e) => { e.preventDefault(); handlePinSelection(); }}
-              className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-indigo-600 text-white hover:bg-indigo-500 transition-colors animate-pulse"
+              className="flex items-center gap-1 px-2 py-1 rounded text-xs bg-indigo-600 text-on-accent hover:bg-indigo-500 transition-colors animate-pulse"
               title="Send selected text to Skipper"
             >
               <MessageSquareQuote size={12} />
               Quote to Chat
             </button>
           )}
-          <button onClick={() => setPreview(!preview)} className={`p-1 rounded text-xs transition-colors ${preview ? "text-indigo-400 bg-slate-700" : "text-slate-500 hover:text-white hover:bg-slate-700"}`} title={preview ? "Edit" : "Preview"}>
+          <button onClick={() => setPreview(!preview)} className={`p-1 rounded text-xs transition-colors ${preview ? "text-indigo-400 surface-raised" : "text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)]"}`} title={preview ? "Edit" : "Preview"}>
             {preview ? <Edit3 size={14} /> : <Eye size={14} />}
           </button>
-          <button onClick={handleSavePart} disabled={!dirty || saving} className="flex items-center gap-1 px-2 py-1 rounded text-xs text-slate-400 hover:text-white hover:bg-slate-700 disabled:opacity-30 transition-colors">
+          <button onClick={handleSavePart} disabled={!dirty || saving} className="flex items-center gap-1 px-2 py-1 rounded text-xs text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] disabled:opacity-30 transition-colors">
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
             Save
           </button>
           {!confirmDelete ? (
-            <button onClick={() => setConfirmDelete(true)} className="p-1 rounded text-slate-500 hover:text-red-400 hover:bg-slate-700 transition-colors" title="Delete idea">
+            <button onClick={() => setConfirmDelete(true)} className="p-1 rounded text-faint hover:text-red-400 hover:bg-[var(--ds-raised)] transition-colors" title="Delete idea">
               <Trash2 size={14} />
             </button>
           ) : (
             <span className="flex items-center gap-1 text-xs">
               <span className="text-red-400">Delete?</span>
-              <button onClick={handleDelete} className="px-1.5 py-0.5 rounded bg-red-600 text-white text-xs hover:bg-red-500">Yes</button>
-              <button onClick={() => setConfirmDelete(false)} className="px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 text-xs hover:bg-slate-600">No</button>
+              <button onClick={handleDelete} className="px-1.5 py-0.5 rounded bg-red-600 text-on-accent text-xs hover:bg-red-500">Yes</button>
+              <button onClick={() => setConfirmDelete(false)} className="px-1.5 py-0.5 rounded surface-raised text-default text-xs hover:bg-[var(--ds-raised)]">No</button>
             </span>
           )}
-          <button onClick={() => ideaId && loadIdea(ideaId)} disabled={loading} className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700 transition-colors" title="Refresh">
+          <button onClick={() => ideaId && loadIdea(ideaId)} disabled={loading} className="p-1 rounded text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors" title="Refresh">
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
           </button>
         </div>
       </div>
 
       {/* Summary + Tags bar */}
-      <div className="px-3 py-1.5 bg-slate-900/20 border-b border-slate-800/50 flex flex-wrap items-center gap-2 text-xs">
+      <div className="px-3 py-1.5 surface-panel border-b border-subtle flex flex-wrap items-center gap-2 text-xs">
         {/* Summary */}
         {editingSummary ? (
           <form
@@ -529,27 +529,27 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
               onBlur={() => { handleUpdateMeta({ summary: summaryDraft }); setEditingSummary(false); }}
               onKeyDown={(e) => { if (e.key === "Escape") setEditingSummary(false); }}
               placeholder="Brief summary..."
-              className="w-full bg-slate-800 text-slate-300 text-xs px-2 py-0.5 rounded border border-slate-600 outline-none"
+              className="w-full surface-card text-default text-xs px-2 py-0.5 rounded border border-subtle outline-none"
             />
           </form>
         ) : (
           <button
             onClick={() => { setSummaryDraft(idea.summary || ""); setEditingSummary(true); }}
-            className="text-slate-500 hover:text-slate-300 italic truncate max-w-[300px]"
+            className="text-faint hover:text-[var(--ds-text)] italic truncate max-w-[300px]"
             title="Click to edit summary"
           >
             {idea.summary || "Add summary..."}
           </button>
         )}
 
-        <span className="text-slate-700 mx-1">|</span>
+        <span className="text-default mx-1">|</span>
 
         {/* Tags */}
-        <Tag size={10} className="text-slate-500 shrink-0" />
+        <Tag size={10} className="text-faint shrink-0" />
         {(idea.tags || []).map(t => (
-          <span key={t} className="flex items-center gap-0.5 px-1.5 py-0.5 bg-slate-800 rounded text-slate-400">
+          <span key={t} className="flex items-center gap-0.5 px-1.5 py-0.5 surface-card rounded text-muted">
             {t}
-            <button onClick={() => handleRemoveTag(t)} className="hover:text-white"><X size={8} /></button>
+            <button onClick={() => handleRemoveTag(t)} className="hover:text-[var(--ds-text)]"><X size={8} /></button>
           </span>
         ))}
         {editingTags ? (
@@ -561,16 +561,16 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
               onBlur={() => { if (!tagDraft) setEditingTags(false); }}
               onKeyDown={(e) => { if (e.key === "Escape") setEditingTags(false); }}
               placeholder="tag"
-              className="bg-slate-800 text-slate-300 text-xs px-1.5 py-0.5 rounded border border-slate-700 outline-none w-20"
+              className="surface-card text-default text-xs px-1.5 py-0.5 rounded border border-subtle outline-none w-20"
             />
           </form>
         ) : (
-          <button onClick={() => setEditingTags(true)} className="text-slate-600 hover:text-slate-300">+ tag</button>
+          <button onClick={() => setEditingTags(true)} className="text-faint hover:text-[var(--ds-text)]">+ tag</button>
         )}
 
         {idea.status !== "graduated" && (
           <>
-            <span className="text-slate-700 mx-1">|</span>
+            <span className="text-default mx-1">|</span>
             <button
               onClick={handleGraduate}
               className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-purple-600/30 hover:bg-purple-600/50 text-purple-400 border border-purple-500/30 transition-colors"
@@ -588,9 +588,9 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
           <MessageSquareQuote size={14} className="text-indigo-400 shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <div className="text-xs text-indigo-400 font-medium mb-0.5">Quoted to Skipper</div>
-            <div className="text-xs text-slate-400 line-clamp-3 font-mono whitespace-pre-wrap">{pinnedSelection}</div>
+            <div className="text-xs text-muted line-clamp-3 font-mono whitespace-pre-wrap">{pinnedSelection}</div>
           </div>
-          <button onClick={handleClearPin} className="text-indigo-400/60 hover:text-white shrink-0" title="Clear quote">
+          <button onClick={handleClearPin} className="text-indigo-400/60 hover:text-[var(--ds-text)] shrink-0" title="Clear quote">
             <X size={12} />
           </button>
         </div>
@@ -600,12 +600,12 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
       {error && (
         <div className="px-3 py-1.5 bg-red-900/30 border-b border-red-800/50 text-xs text-red-300 flex items-center justify-between">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-white"><X size={12} /></button>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-[var(--ds-text)]"><X size={12} /></button>
         </div>
       )}
 
       {/* Part tabs */}
-      <div className="flex items-center bg-slate-900/30 border-b border-slate-800/50 shrink-0">
+      <div className="flex items-center surface-panel border-b border-subtle shrink-0">
         <div className="flex items-center gap-0.5 px-3 py-1 overflow-x-auto flex-1 min-w-0">
           {parts.map(p => {
             const isActive = p.id === activePartId;
@@ -623,14 +623,14 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
                       onChange={(e) => setPartTitleDraft(e.target.value)}
                       onBlur={() => handleRenamePart(p.id, partTitleDraft)}
                       onKeyDown={(e) => { if (e.key === "Escape") setRenamingPartId(null); }}
-                      className="bg-slate-700 text-white text-[11px] px-1.5 py-0.5 rounded border border-slate-600 outline-none w-24"
+                      className="surface-raised text-default text-[11px] px-1.5 py-0.5 rounded border border-subtle outline-none w-24"
                     />
                   </form>
                 ) : (
                   <button
                     onClick={() => selectPart(p)}
                     onDoubleClick={() => { if (!p.is_main) { setRenamingPartId(p.id); setPartTitleDraft(p.title || ""); } }}
-                    className={`flex items-center gap-1 px-2 py-1 rounded-t text-[11px] transition-colors ${isActive ? "bg-slate-800 text-white border-b-2 border-amber-500" : "text-slate-500 hover:text-slate-300 hover:bg-slate-800/50"}`}
+                    className={`flex items-center gap-1 px-2 py-1 rounded-t text-[11px] transition-colors ${isActive ? "surface-card text-default border-b-2 border-amber-500" : "text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-card)]"}`}
                     title={p.is_main ? p.title : "Double-click to rename"}
                   >
                     <Icon size={10} />
@@ -640,7 +640,7 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
                 {!p.is_main && isActive && (
                   <button
                     onClick={() => { if (window.confirm(`Delete "${p.title || p.type}"? This cannot be undone.`)) handleDeletePart(p.id); }}
-                    className="p-0.5 text-slate-600 hover:text-red-400 transition-colors"
+                    className="p-0.5 text-faint hover:text-red-400 transition-colors"
                     title="Delete this part"
                   >
                     <X size={10} />
@@ -650,17 +650,17 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
             );
           })}
         </div>
-        <span className="text-slate-700 mx-0.5 shrink-0">|</span>
+        <span className="text-default mx-0.5 shrink-0">|</span>
         <button
           onClick={() => handleAddPart("document")}
-          className="flex items-center gap-0.5 px-1.5 py-1 text-[11px] text-slate-600 hover:text-slate-300 transition-colors shrink-0"
+          className="flex items-center gap-0.5 px-1.5 py-1 text-[11px] text-faint hover:text-[var(--ds-text)] transition-colors shrink-0"
           title="Add document"
         >
           <Plus size={8} /><FileText size={10} />
         </button>
         <button
           onClick={() => handleAddPart("flowchart")}
-          className="flex items-center gap-0.5 px-1.5 py-1 text-[11px] text-slate-600 hover:text-slate-300 transition-colors shrink-0"
+          className="flex items-center gap-0.5 px-1.5 py-1 text-[11px] text-faint hover:text-[var(--ds-text)] transition-colors shrink-0"
           title="Add flowchart"
         >
           <Plus size={8} /><GitBranch size={10} />
@@ -682,7 +682,7 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
             <button
               onClick={handleAcceptEdit}
               disabled={acceptingEdit}
-              className="flex items-center gap-1 px-3 py-1 rounded text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-1 rounded text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-on-accent transition-colors disabled:opacity-50"
             >
               {acceptingEdit ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
               Accept All
@@ -690,7 +690,7 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
             <button
               onClick={handleRejectEdit}
               disabled={acceptingEdit}
-              className="flex items-center gap-1 px-3 py-1 rounded text-xs font-medium bg-red-600/80 hover:bg-red-500 text-white transition-colors disabled:opacity-50"
+              className="flex items-center gap-1 px-3 py-1 rounded text-xs font-medium bg-red-600/80 hover:bg-red-500 text-on-accent transition-colors disabled:opacity-50"
             >
               <XCircle size={12} />
               Reject
@@ -702,7 +702,7 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
       {/* ── Content area ── */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         {!activePart ? (
-          <div className="flex items-center justify-center h-full text-slate-600 text-sm">
+          <div className="flex items-center justify-center h-full text-faint text-sm">
             No parts available.
           </div>
         ) : activePart.type === "document" ? (
@@ -726,12 +726,12 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
             />
           ) : (
             <div
-              className="p-4 markdown-body text-sm text-slate-200 max-w-none overflow-auto"
+              className="p-4 markdown-body text-sm text-default max-w-none overflow-auto"
               dangerouslySetInnerHTML={{ __html: markdownToHtml(content) }}
             />
           )
         ) : activePart.type === "flowchart" ? (
-          <Suspense fallback={<div className="flex items-center justify-center h-full text-slate-500"><Loader2 size={16} className="animate-spin mr-2" /> Loading flowchart...</div>}>
+          <Suspense fallback={<div className="flex items-center justify-center h-full text-faint"><Loader2 size={16} className="animate-spin mr-2" /> Loading flowchart...</div>}>
             <FlowchartEditor
               meta={activePart.meta || { nodes: [], edges: [] }}
               onMetaChange={(newMeta) => {
@@ -741,7 +741,7 @@ export default function BrainstormDetailApp({ appId, userId, context = {}, onTit
             />
           </Suspense>
         ) : (
-          <div className="flex items-center justify-center h-full text-slate-600 text-sm">
+          <div className="flex items-center justify-center h-full text-faint text-sm">
             {activePart.type} part — editor not yet available
           </div>
         )}

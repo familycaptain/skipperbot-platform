@@ -51,7 +51,7 @@ function StarRating({ value, onChange, readonly = false }) {
           className={`cursor-pointer transition-colors ${
             n <= (hover || value || 0)
               ? "fill-amber-400 text-amber-400"
-              : "text-zinc-600"
+              : "text-faint"
           } ${readonly ? "cursor-default" : ""}`}
           onClick={() => !readonly && onChange && onChange(n === value ? null : n)}
           onMouseEnter={() => !readonly && setHover(n)}
@@ -64,7 +64,7 @@ function StarRating({ value, onChange, readonly = false }) {
 
 function TagChip({ label, onRemove, color = "zinc" }) {
   const colors = {
-    zinc: "bg-zinc-700/60 text-zinc-300 border border-zinc-600/40",
+    zinc: "surface-raised text-default border border-subtle",
     blue: "bg-blue-900/40 text-blue-300 border border-blue-700/50",
     green: "bg-green-900/40 text-green-300 border border-green-700/50",
     red: "bg-red-900/40 text-red-300 border border-red-700/50",
@@ -72,7 +72,7 @@ function TagChip({ label, onRemove, color = "zinc" }) {
   return (
     <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full ${colors[color] || colors.zinc}`}>
       {label}
-      {onRemove && <X size={10} className="cursor-pointer hover:text-white" onClick={onRemove} />}
+      {onRemove && <X size={10} className="cursor-pointer hover:text-[var(--ds-text)]" onClick={onRemove} />}
     </span>
   );
 }
@@ -127,11 +127,11 @@ function MealPhotoStrip({ mealId, initialPhotos, userId }) {
     <div>
       {lightbox && (
         <div
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+          className="fixed inset-0 surface-overlay z-50 flex items-center justify-center"
           onClick={() => setLightbox(null)}
         >
           <button
-            className="absolute top-4 right-4 text-white/70 hover:text-white"
+            className="absolute top-4 right-4 text-default/70 hover:text-[var(--ds-text)]"
             onClick={() => setLightbox(null)}
           >
             <X size={24} />
@@ -154,26 +154,26 @@ function MealPhotoStrip({ mealId, initialPhotos, userId }) {
               className={`w-20 h-20 object-cover rounded-lg cursor-pointer transition-all ${
                 idx === 0
                   ? "border-2 border-amber-500/70"
-                  : "border border-zinc-700/50 hover:border-zinc-500"
+                  : "border border-subtle hover:border-[var(--ds-border)]"
               }`}
               onClick={() => setLightbox(imgSrc(img))}
             />
             {/* Primary star badge */}
             {idx === 0
               ? <div className="absolute top-1 left-1 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center" title="Primary photo">
-                  <Star size={9} fill="white" className="text-white" />
+                  <Star size={9} fill="white" className="text-default" />
                 </div>
               : <button
                   onClick={e => { e.stopPropagation(); handleSetPrimary(img.id); }}
-                  className="absolute top-1 left-1 w-4 h-4 rounded-full bg-zinc-800/80 hover:bg-amber-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                  className="absolute top-1 left-1 w-4 h-4 rounded-full surface-card hover:bg-amber-500 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
                   title="Set as primary"
                 >
-                  <Star size={9} className="text-zinc-400 group-hover:text-white" />
+                  <Star size={9} className="text-muted group-hover:text-[var(--ds-text)]" />
                 </button>
             }
             <button
               onClick={e => { e.stopPropagation(); handleRemove(img.id); }}
-              className="absolute -top-1.5 -right-1.5 bg-red-600 hover:bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute -top-1.5 -right-1.5 bg-red-600 hover:bg-red-500 text-on-accent rounded-full w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
             >
               <X size={10} />
             </button>
@@ -181,13 +181,13 @@ function MealPhotoStrip({ mealId, initialPhotos, userId }) {
         ))}
 
         <label className={`w-20 h-20 rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-colors gap-1 ${
-          uploading ? "border-zinc-600 opacity-50" : "border-zinc-600 hover:border-zinc-400"
+          uploading ? "border-subtle opacity-50" : "border-subtle hover:border-[var(--ds-border)]"
         }`}>
           {uploading
-            ? <div className="w-5 h-5 border-2 border-zinc-400 border-t-transparent rounded-full animate-spin" />
+            ? <div className="w-5 h-5 border-2 border-subtle border-t-transparent rounded-full animate-spin" />
             : <>
-                <Camera size={18} className="text-zinc-500" />
-                <span className="text-xs text-zinc-600">Add</span>
+                <Camera size={18} className="text-faint" />
+                <span className="text-xs text-faint">Add</span>
               </>
           }
           <input
@@ -202,7 +202,7 @@ function MealPhotoStrip({ mealId, initialPhotos, userId }) {
       </div>
 
       {photos.length === 0 && !uploading && (
-        <p className="text-xs text-zinc-600 mt-1">No photos yet — tap Add to attach one</p>
+        <p className="text-xs text-faint mt-1">No photos yet — tap Add to attach one</p>
       )}
     </div>
   );
@@ -310,7 +310,7 @@ function DiscoverTab({ userId }) {
     <div className="flex flex-col gap-4">
       {/* Active filters */}
       {filters.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2 p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/40">
+        <div className="flex flex-wrap items-center gap-2 p-3 surface-card rounded-lg border border-subtle">
           {filters.map((f, i) => (
             <TagChip
               key={i}
@@ -319,17 +319,17 @@ function DiscoverTab({ userId }) {
               onRemove={() => removeFilter(i)}
             />
           ))}
-          <button onClick={clearAll} className="text-xs text-zinc-500 hover:text-zinc-300 ml-auto">
+          <button onClick={clearAll} className="text-xs text-faint hover:text-[var(--ds-text)] ml-auto">
             Clear all
           </button>
         </div>
       )}
 
       {/* Filter builder */}
-      <div className="flex flex-wrap gap-2 items-end p-3 bg-zinc-800/30 rounded-lg border border-zinc-700/30">
+      <div className="flex flex-wrap gap-2 items-end p-3 surface-card rounded-lg border border-subtle">
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-zinc-500">Mode</label>
-          <div className="flex rounded overflow-hidden border border-zinc-600/50">
+          <label className="text-xs text-faint">Mode</label>
+          <div className="flex rounded overflow-hidden border border-subtle">
             {["include", "exclude"].map(m => (
               <button
                 key={m}
@@ -337,7 +337,7 @@ function DiscoverTab({ userId }) {
                 className={`px-3 py-1.5 text-xs font-medium transition-colors ${
                   addMode === m
                     ? m === "include" ? "bg-green-700/60 text-green-200" : "bg-red-700/60 text-red-200"
-                    : "bg-zinc-700/40 text-zinc-400 hover:bg-zinc-600/40"
+                    : "surface-raised text-muted hover:bg-[var(--ds-raised)]"
                 }`}
               >
                 {m === "include" ? "✓ Include" : "✗ Exclude"}
@@ -347,11 +347,11 @@ function DiscoverTab({ userId }) {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label className="text-xs text-zinc-500">Filter by</label>
+          <label className="text-xs text-faint">Filter by</label>
           <select
             value={addType}
             onChange={e => { setAddType(e.target.value); setAddValue(""); setComponentSearch(""); }}
-            className="bg-zinc-700/60 border border-zinc-600/50 rounded px-2 py-1.5 text-sm text-zinc-200"
+            className="surface-raised border border-subtle rounded px-2 py-1.5 text-sm text-default"
           >
             <option value="cuisine">Cuisine</option>
             <option value="effort">Effort</option>
@@ -361,24 +361,24 @@ function DiscoverTab({ userId }) {
         </div>
 
         <div className="flex flex-col gap-1 min-w-40">
-          <label className="text-xs text-zinc-500">Value</label>
+          <label className="text-xs text-faint">Value</label>
           {addType === "component" ? (
             <div className="relative">
               <input
                 value={componentSearch}
                 onChange={e => { setComponentSearch(e.target.value); setAddValue(e.target.value); }}
                 placeholder="Search components..."
-                className="bg-zinc-700/60 border border-zinc-600/50 rounded px-2 py-1.5 text-sm text-zinc-200 w-full"
+                className="surface-raised border border-subtle rounded px-2 py-1.5 text-sm text-default w-full"
               />
               {componentSearch && filteredComponents.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-800 border border-zinc-600 rounded shadow-lg z-10 max-h-40 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 surface-card border border-subtle rounded shadow-lg z-10 max-h-40 overflow-y-auto">
                   {filteredComponents.slice(0, 8).map(c => (
                     <div
                       key={c.id}
-                      className="px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-700 cursor-pointer"
+                      className="px-3 py-1.5 text-sm text-default hover:bg-[var(--ds-raised)] cursor-pointer"
                       onClick={() => { setComponentSearch(c.name); setAddValue(c.name); }}
                     >
-                      {c.name} <span className="text-zinc-500 text-xs">({c.type})</span>
+                      {c.name} <span className="text-faint text-xs">({c.type})</span>
                     </div>
                   ))}
                 </div>
@@ -388,7 +388,7 @@ function DiscoverTab({ userId }) {
             <select
               value={addValue}
               onChange={e => setAddValue(e.target.value)}
-              className="bg-zinc-700/60 border border-zinc-600/50 rounded px-2 py-1.5 text-sm text-zinc-200"
+              className="surface-raised border border-subtle rounded px-2 py-1.5 text-sm text-default"
             >
               <option value="">— select —</option>
               {valueOptions().map(v => <option key={v} value={v}>{v}</option>)}
@@ -399,7 +399,7 @@ function DiscoverTab({ userId }) {
         <button
           onClick={addFilter}
           disabled={!addValue}
-          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/70 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm rounded transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/70 hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed text-on-accent text-sm rounded transition-colors"
         >
           <Plus size={14} /> Add Filter
         </button>
@@ -407,7 +407,7 @@ function DiscoverTab({ userId }) {
         <button
           onClick={surpriseMe}
           disabled={loading}
-          className="flex items-center gap-1 px-3 py-1.5 bg-purple-600/70 hover:bg-purple-600 disabled:opacity-40 text-white text-sm rounded transition-colors ml-auto"
+          className="flex items-center gap-1 px-3 py-1.5 bg-purple-600/70 hover:bg-purple-600 disabled:opacity-40 text-on-accent text-sm rounded transition-colors ml-auto"
         >
           <Shuffle size={14} /> Surprise Me
         </button>
@@ -419,7 +419,7 @@ function DiscoverTab({ userId }) {
           <div className="text-xs text-purple-400 font-medium mb-1 flex items-center gap-1">
             <Shuffle size={12} /> TONIGHT'S PICK
           </div>
-          <div className="text-xl font-bold text-white">{surprised.name}</div>
+          <div className="text-xl font-bold text-default">{surprised.name}</div>
           <div className="flex items-center gap-2 mt-2">
             {surprised.cuisine && <TagChip label={surprised.cuisine} color="blue" />}
             <EffortBadge effort={surprised.effort} />
@@ -430,17 +430,17 @@ function DiscoverTab({ userId }) {
 
       {/* Results */}
       {loading && (
-        <div className="text-center text-zinc-500 py-8">Searching...</div>
+        <div className="text-center text-faint py-8">Searching...</div>
       )}
 
       {!loading && results !== null && (
         <>
-          <div className="text-xs text-zinc-500">
+          <div className="text-xs text-faint">
             {results.length} meal{results.length !== 1 ? "s" : ""} match
             {results.length !== 1 ? "" : "es"} your filters
           </div>
           {results.length === 0 ? (
-            <div className="text-center text-zinc-500 py-8">
+            <div className="text-center text-faint py-8">
               <AlertCircle size={32} className="mx-auto mb-2 opacity-40" />
               No meals match. Try relaxing your filters.
             </div>
@@ -459,7 +459,7 @@ function DiscoverTab({ userId }) {
       )}
 
       {!loading && results === null && filters.length === 0 && (
-        <div className="text-center text-zinc-500 py-12">
+        <div className="text-center text-faint py-12">
           <UtensilsCrossed size={40} className="mx-auto mb-3 opacity-30" />
           <p className="text-sm">Add filters above to narrow down the meal list,</p>
           <p className="text-sm">or hit <strong className="text-purple-400">Surprise Me</strong> for a random pick.</p>
@@ -509,21 +509,21 @@ function BrowseTab({ onEditMeal, refreshKey }) {
       {/* Search + effort + new */}
       <div className="flex flex-wrap gap-2 items-center px-0 pb-2">
         <div className="relative flex-1 min-w-48">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-faint" />
           <input
             value={q}
             onChange={e => { setQ(e.target.value); setTag(""); }}
             placeholder="Search meals..."
-            className="w-full bg-zinc-800/60 border border-zinc-700/50 rounded px-3 py-1.5 pl-8 text-sm text-zinc-200"
+            className="w-full surface-card border border-subtle rounded px-3 py-1.5 pl-8 text-sm text-default"
           />
         </div>
-        <div className="flex rounded overflow-hidden border border-zinc-700/50">
+        <div className="flex rounded overflow-hidden border border-subtle">
           {["", "low", "medium", "high"].map(e => (
             <button
               key={e}
               onClick={() => setEffort(e)}
               className={`px-2.5 py-1.5 text-xs transition-colors ${
-                effort === e ? "bg-zinc-600 text-white" : "bg-zinc-800/60 text-zinc-400 hover:bg-zinc-700/50"
+                effort === e ? "surface-raised text-default" : "surface-card text-muted hover:bg-[var(--ds-raised)]"
               }`}
             >
               {e === "" ? "All" : e.charAt(0).toUpperCase() + e.slice(1)}
@@ -532,21 +532,21 @@ function BrowseTab({ onEditMeal, refreshKey }) {
         </div>
         <button
           onClick={() => setLocalRefresh(r => r + 1)}
-          className="flex items-center gap-1 px-2.5 py-1.5 bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-400 hover:text-white text-sm rounded border border-zinc-700/50 transition-colors"
+          className="flex items-center gap-1 px-2.5 py-1.5 surface-card hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] text-sm rounded border border-subtle transition-colors"
           title="Refresh meals and tags"
         >
           <RefreshCw size={14} />
         </button>
         <button
           onClick={() => window.open(`/meal-menu.html${tag ? "?tag=" + encodeURIComponent(tag) : ""}`, "_blank")}
-          className="flex items-center gap-1 px-2.5 py-1.5 bg-zinc-800/60 hover:bg-zinc-700/60 text-zinc-400 hover:text-white text-sm rounded border border-zinc-700/50 transition-colors"
+          className="flex items-center gap-1 px-2.5 py-1.5 surface-card hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] text-sm rounded border border-subtle transition-colors"
           title="Export menu PDF"
         >
           <FileDown size={14} />
         </button>
         <button
           onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/70 hover:bg-blue-600 text-white text-sm rounded transition-colors"
+          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/70 hover:bg-blue-600 text-on-accent text-sm rounded transition-colors"
         >
           <Plus size={14} /> New Meal
         </button>
@@ -554,11 +554,11 @@ function BrowseTab({ onEditMeal, refreshKey }) {
 
       {/* Tag cloud (cuisine is a tag now) */}
       {tags.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 py-2 border-b border-zinc-700/40 mb-2">
+        <div className="flex flex-wrap items-center gap-1.5 py-2 border-b border-subtle mb-2">
           <button
             onClick={() => setTag("")}
             className={`px-2.5 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
-              !tag ? "bg-blue-600 text-white" : "bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700"
+              !tag ? "bg-blue-600 text-on-accent" : "surface-card text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)]"
             }`}
           >
             All
@@ -569,8 +569,8 @@ function BrowseTab({ onEditMeal, refreshKey }) {
               onClick={() => { setTag(tag === t.name ? "" : t.name); setQ(""); }}
               className={`px-2.5 py-1 text-xs rounded-full whitespace-nowrap transition-colors ${
                 tag === t.name
-                  ? "bg-blue-600 text-white"
-                  : "bg-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-700"
+                  ? "bg-blue-600 text-on-accent"
+                  : "surface-card text-muted hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)]"
               }`}
             >
               {t.name}
@@ -591,9 +591,9 @@ function BrowseTab({ onEditMeal, refreshKey }) {
       )}
 
       {loading ? (
-        <div className="text-center text-zinc-500 py-8">Loading...</div>
+        <div className="text-center text-faint py-8">Loading...</div>
       ) : meals.length === 0 ? (
-        <div className="text-center text-zinc-500 py-8">No meals found.</div>
+        <div className="text-center text-faint py-8">No meals found.</div>
       ) : (
         <div className="grid gap-2">
           {meals.map(m => (
@@ -619,33 +619,33 @@ function MealCard({ meal, onEdit, highlighted = false }) {
       } ${
         highlighted
           ? "bg-purple-900/20 border-purple-600/50 hover:border-purple-500/60"
-          : "bg-zinc-800/40 border-zinc-700/30 hover:border-zinc-600/50 hover:bg-zinc-800/60"
+          : "surface-card border-subtle hover:border-[var(--ds-border)] hover:bg-[var(--ds-card)]"
       }`}
     >
       {/* Photo thumbnail */}
-      <div className="shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-zinc-700/40">
+      <div className="shrink-0 w-14 h-14 rounded-lg overflow-hidden border border-subtle">
         {thumb
           ? <img src={thumb} alt="" className="w-full h-full object-cover" />
-          : <div className="w-full h-full bg-zinc-800/80 flex items-center justify-center">
-              <Camera size={18} className="text-zinc-700" />
+          : <div className="w-full h-full surface-card flex items-center justify-center">
+              <Camera size={18} className="text-default" />
             </div>
         }
       </div>
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-medium text-zinc-100 truncate">{meal.name}</span>
+          <span className="font-medium text-default truncate">{meal.name}</span>
           <EffortBadge effort={meal.effort} />
           {meal.rating && <StarRating value={meal.rating} readonly />}
         </div>
         {meal.tags?.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {meal.tags.slice(0, 5).map(t => <TagChip key={t} label={t} />)}
-            {meal.tags.length > 5 && <span className="text-xs text-zinc-500">+{meal.tags.length - 5}</span>}
+            {meal.tags.length > 5 && <span className="text-xs text-faint">+{meal.tags.length - 5}</span>}
           </div>
         )}
       </div>
-      {onEdit && <ChevronRight size={16} className="text-zinc-600 shrink-0" />}
+      {onEdit && <ChevronRight size={16} className="text-faint shrink-0" />}
     </div>
   );
 }
@@ -738,7 +738,7 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
     setCompLinks(next);
   };
 
-  if (!meal) return <div className="text-zinc-500 text-sm py-8 text-center">Loading...</div>;
+  if (!meal) return <div className="text-faint text-sm py-8 text-center">Loading...</div>;
 
   const toggleTag = (tagName) => {
     const tags = form.tags || [];
@@ -757,7 +757,7 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
     <div className="flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <button onClick={onBack} className="text-zinc-500 hover:text-zinc-300 text-sm flex items-center gap-1">
+        <button onClick={onBack} className="text-faint hover:text-[var(--ds-text)] text-sm flex items-center gap-1">
           ← Back
         </button>
         <div className="flex-1" />
@@ -770,15 +770,15 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
           <Trash2 size={13} /> {deleting ? "Deleting..." : "Delete"}
         </button>
         {!editing ? (
-          <button onClick={() => setEditing(true)} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-zinc-700/50 hover:bg-zinc-600/50 text-zinc-200 rounded transition-colors">
+          <button onClick={() => setEditing(true)} className="flex items-center gap-1 px-3 py-1.5 text-sm surface-raised hover:bg-[var(--ds-raised)] text-default rounded transition-colors">
             <Pencil size={13} /> Edit
           </button>
         ) : (
           <div className="flex gap-2">
-            <button onClick={() => { setEditing(false); setForm(meal); setCompLinks(meal.components || []); }} className="px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200">
+            <button onClick={() => { setEditing(false); setForm(meal); setCompLinks(meal.components || []); }} className="px-3 py-1.5 text-sm text-muted hover:text-[var(--ds-text)]">
               Cancel
             </button>
-            <button onClick={save} disabled={saving} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded disabled:opacity-50">
+            <button onClick={save} disabled={saving} className="flex items-center gap-1 px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 text-on-accent rounded disabled:opacity-50">
               <Check size={13} /> {saving ? "Saving..." : "Save"}
             </button>
           </div>
@@ -790,10 +790,10 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
         <input
           value={form.name || ""}
           onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-          className="text-2xl font-bold bg-transparent border-b border-zinc-600 text-zinc-100 outline-none pb-1 w-full"
+          className="text-2xl font-bold bg-transparent border-b border-subtle text-default outline-none pb-1 w-full"
         />
       ) : (
-        <h2 className="text-2xl font-bold text-zinc-100">{meal.name}</h2>
+        <h2 className="text-2xl font-bold text-default">{meal.name}</h2>
       )}
 
       {/* Meta row */}
@@ -801,14 +801,14 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
         {editing ? (
           <>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-zinc-500">Effort</label>
-              <div className="flex rounded overflow-hidden border border-zinc-600/50">
+              <label className="text-xs text-faint">Effort</label>
+              <div className="flex rounded overflow-hidden border border-subtle">
                 {["low", "medium", "high"].map(e => (
                   <button
                     key={e}
                     onClick={() => setForm(f => ({ ...f, effort: e }))}
                     className={`px-3 py-1 text-xs transition-colors ${
-                      form.effort === e ? "bg-zinc-500 text-white" : "bg-zinc-700/40 text-zinc-400 hover:bg-zinc-600/40"
+                      form.effort === e ? "surface-raised text-default" : "surface-raised text-muted hover:bg-[var(--ds-raised)]"
                     }`}
                   >
                     {e.charAt(0).toUpperCase() + e.slice(1)}
@@ -817,7 +817,7 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-xs text-zinc-500">Rating</label>
+              <label className="text-xs text-faint">Rating</label>
               <StarRating
                 value={form.rating}
                 onChange={v => setForm(f => ({ ...f, rating: v }))}
@@ -834,22 +834,22 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
 
       {/* Description */}
       <div>
-        <label className="text-xs text-zinc-500 block mb-1">Description</label>
+        <label className="text-xs text-faint block mb-1">Description</label>
         {editing ? (
           <input
             value={form.description || ""}
             onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
             placeholder="Brief description..."
-            className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded px-3 py-1.5 text-sm text-zinc-200"
+            className="w-full surface-card border border-subtle rounded px-3 py-1.5 text-sm text-default"
           />
         ) : (
-          meal.description && <p className="text-sm text-zinc-300">{meal.description}</p>
+          meal.description && <p className="text-sm text-default">{meal.description}</p>
         )}
       </div>
 
       {/* Tags */}
       <div>
-        <label className="text-xs text-zinc-500 block mb-1.5 flex items-center gap-1"><Tag size={11} /> Tags</label>
+        <label className="text-xs text-faint block mb-1.5 flex items-center gap-1"><Tag size={11} /> Tags</label>
         {editing ? (
           <div className="flex flex-wrap gap-1.5">
             {allTags.map(t => (
@@ -859,7 +859,7 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
                 className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                   (form.tags || []).includes(t.name)
                     ? "bg-blue-700/50 text-blue-200 border-blue-600/50"
-                    : "bg-zinc-700/40 text-zinc-400 border-zinc-600/30 hover:border-zinc-500/50"
+                    : "surface-raised text-muted border-subtle hover:border-[var(--ds-border)]"
                 }`}
               >
                 {t.name}
@@ -869,7 +869,7 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
         ) : (
           <div className="flex flex-wrap gap-1.5">
             {(meal.tags || []).length === 0
-              ? <span className="text-xs text-zinc-600">No tags</span>
+              ? <span className="text-xs text-faint">No tags</span>
               : (meal.tags || []).map(t => <TagChip key={t} label={t} />)}
           </div>
         )}
@@ -877,13 +877,13 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
 
       {/* Components */}
       <div>
-        <label className="text-xs text-zinc-500 block mb-1.5 flex items-center gap-1"><Boxes size={11} /> Components</label>
+        <label className="text-xs text-faint block mb-1.5 flex items-center gap-1"><Boxes size={11} /> Components</label>
         <div className="flex flex-col gap-1.5">
           {compLinks.map((c, i) => (
-            <div key={i} className="flex items-center gap-2 p-2 bg-zinc-800/40 rounded border border-zinc-700/30">
+            <div key={i} className="flex items-center gap-2 p-2 surface-card rounded border border-subtle">
               <div className="flex-1">
-                <span className="text-sm text-zinc-200 font-medium">{c.component_name}</span>
-                {c.component_type && <span className="text-xs text-zinc-500 ml-2">({c.component_type})</span>}
+                <span className="text-sm text-default font-medium">{c.component_name}</span>
+                {c.component_type && <span className="text-xs text-faint ml-2">({c.component_type})</span>}
                 {c.component_recipe_id && (
                   <span className="text-xs text-blue-400 ml-2 flex items-center gap-1 inline-flex">
                     <BookOpen size={10} /> has recipe
@@ -895,7 +895,7 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
                   <select
                     value={c.role}
                     onChange={e => updateCompLink(i, "role", e.target.value)}
-                    className="bg-zinc-700/60 border border-zinc-600/50 rounded px-2 py-0.5 text-xs text-zinc-200"
+                    className="surface-raised border border-subtle rounded px-2 py-0.5 text-xs text-default"
                   >
                     {["main", "side", "sauce", "garnish", "other"].map(r => (
                       <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
@@ -905,7 +905,7 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
                     value={c.notes}
                     onChange={e => updateCompLink(i, "notes", e.target.value)}
                     placeholder="notes..."
-                    className="bg-zinc-700/60 border border-zinc-600/50 rounded px-2 py-0.5 text-xs text-zinc-200 w-28"
+                    className="surface-raised border border-subtle rounded px-2 py-0.5 text-xs text-default w-28"
                   />
                   <button onClick={() => deleteComp(i)} className="text-red-500 hover:text-red-400">
                     <Trash2 size={13} />
@@ -915,7 +915,7 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
                   c.role === "main" ? "bg-blue-900/40 text-blue-300" :
                   c.role === "sauce" ? "bg-amber-900/40 text-amber-300" :
-                  "bg-zinc-700/40 text-zinc-400"
+                  "surface-raised text-muted"
                 }`}>
                   {c.role}
                 </span>
@@ -930,17 +930,17 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
                 onChange={e => { setCompSearch(e.target.value); setShowCompSearch(true); }}
                 onFocus={() => setShowCompSearch(true)}
                 placeholder="Add component..."
-                className="w-full bg-zinc-800/50 border border-dashed border-zinc-600/50 rounded px-3 py-1.5 text-sm text-zinc-400 placeholder-zinc-600"
+                className="w-full surface-card border border-dashed border-subtle rounded px-3 py-1.5 text-sm text-muted placeholder-zinc-600"
               />
               {showCompSearch && filteredComps.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-zinc-800 border border-zinc-600 rounded shadow-lg z-10 max-h-40 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 mt-1 surface-card border border-subtle rounded shadow-lg z-10 max-h-40 overflow-y-auto">
                   {filteredComps.slice(0, 8).map(c => (
                     <div
                       key={c.id}
-                      className="px-3 py-1.5 text-sm text-zinc-200 hover:bg-zinc-700 cursor-pointer"
+                      className="px-3 py-1.5 text-sm text-default hover:bg-[var(--ds-raised)] cursor-pointer"
                       onClick={() => addCompLink(c)}
                     >
-                      {c.name} <span className="text-zinc-500 text-xs">({c.type})</span>
+                      {c.name} <span className="text-faint text-xs">({c.type})</span>
                     </div>
                   ))}
                 </div>
@@ -952,23 +952,23 @@ function MealDetailView({ mealId, onBack, onSaved, userId }) {
 
       {/* Notes */}
       <div>
-        <label className="text-xs text-zinc-500 block mb-1">Notes</label>
+        <label className="text-xs text-faint block mb-1">Notes</label>
         {editing ? (
           <textarea
             value={form.notes || ""}
             onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
             rows={3}
             placeholder="Any notes..."
-            className="w-full bg-zinc-800/50 border border-zinc-700/50 rounded px-3 py-2 text-sm text-zinc-200 resize-none"
+            className="w-full surface-card border border-subtle rounded px-3 py-2 text-sm text-default resize-none"
           />
         ) : (
-          meal.notes && <p className="text-sm text-zinc-300">{meal.notes}</p>
+          meal.notes && <p className="text-sm text-default">{meal.notes}</p>
         )}
       </div>
 
       {/* Photos */}
       <div>
-        <label className="text-xs text-zinc-500 block mb-2 flex items-center gap-1"><ImageIcon size={11} /> Photos</label>
+        <label className="text-xs text-faint block mb-2 flex items-center gap-1"><ImageIcon size={11} /> Photos</label>
         <MealPhotoStrip
           mealId={mealId}
           initialPhotos={meal.photos || []}
@@ -998,23 +998,23 @@ function AddMealForm({ onSave, onCancel }) {
   };
 
   return (
-    <div className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/40">
-      <div className="text-sm font-medium text-zinc-200 mb-3">New Meal</div>
+    <div className="p-4 surface-card rounded-lg border border-subtle">
+      <div className="text-sm font-medium text-default mb-3">New Meal</div>
       <div className="flex flex-wrap gap-3">
         <input
           autoFocus
           value={form.name}
           onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
           placeholder="Meal name *"
-          className="flex-1 min-w-48 bg-zinc-700/50 border border-zinc-600/50 rounded px-3 py-1.5 text-sm text-zinc-200"
+          className="flex-1 min-w-48 surface-raised border border-subtle rounded px-3 py-1.5 text-sm text-default"
         />
-        <div className="flex rounded overflow-hidden border border-zinc-600/50">
+        <div className="flex rounded overflow-hidden border border-subtle">
           {["low", "medium", "high"].map(e => (
             <button
               key={e}
               onClick={() => setForm(f => ({ ...f, effort: e }))}
               className={`px-2.5 py-1.5 text-xs transition-colors ${
-                form.effort === e ? "bg-zinc-500 text-white" : "bg-zinc-700/40 text-zinc-400 hover:bg-zinc-600/40"
+                form.effort === e ? "surface-raised text-default" : "surface-raised text-muted hover:bg-[var(--ds-raised)]"
               }`}
             >
               {e.charAt(0).toUpperCase() + e.slice(1)}
@@ -1023,11 +1023,11 @@ function AddMealForm({ onSave, onCancel }) {
         </div>
       </div>
       <div className="flex gap-2 mt-3 justify-end">
-        <button onClick={onCancel} className="px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200">Cancel</button>
+        <button onClick={onCancel} className="px-3 py-1.5 text-sm text-muted hover:text-[var(--ds-text)]">Cancel</button>
         <button
           onClick={save}
           disabled={!form.name.trim() || saving}
-          className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded"
+          className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-on-accent rounded"
         >
           {saving ? "Adding..." : "Add Meal"}
         </button>
@@ -1072,25 +1072,25 @@ function ComponentsTab() {
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2 items-center">
         <div className="relative flex-1 min-w-48">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500" />
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-faint" />
           <input
             value={q}
             onChange={e => setQ(e.target.value)}
             placeholder="Search components..."
-            className="w-full bg-zinc-800/60 border border-zinc-700/50 rounded px-3 py-1.5 pl-8 text-sm text-zinc-200"
+            className="w-full surface-card border border-subtle rounded px-3 py-1.5 pl-8 text-sm text-default"
           />
         </div>
         <select
           value={typeFilter}
           onChange={e => setTypeFilter(e.target.value)}
-          className="bg-zinc-800/60 border border-zinc-700/50 rounded px-2 py-1.5 text-sm text-zinc-200"
+          className="surface-card border border-subtle rounded px-2 py-1.5 text-sm text-default"
         >
           <option value="">All types</option>
           {TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
         </select>
         <button
           onClick={() => setShowAdd(true)}
-          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/70 hover:bg-blue-600 text-white text-sm rounded transition-colors ml-auto"
+          className="flex items-center gap-1 px-3 py-1.5 bg-blue-600/70 hover:bg-blue-600 text-on-accent text-sm rounded transition-colors ml-auto"
         >
           <Plus size={14} /> New Component
         </button>
@@ -1108,13 +1108,13 @@ function ComponentsTab() {
       )}
 
       {loading ? (
-        <div className="text-center text-zinc-500 py-8">Loading...</div>
+        <div className="text-center text-faint py-8">Loading...</div>
       ) : components.length === 0 ? (
-        <div className="text-center text-zinc-500 py-8">No components found.</div>
+        <div className="text-center text-faint py-8">No components found.</div>
       ) : (
         <div className="grid gap-1.5">
           {components.map(c => (
-            <div key={c.id} className="flex items-center gap-3 p-2.5 bg-zinc-800/40 rounded border border-zinc-700/30 hover:border-zinc-600/40 group">
+            <div key={c.id} className="flex items-center gap-3 p-2.5 surface-card rounded border border-subtle hover:border-[var(--ds-border)] group">
               {editing === c.id ? (
                 <EditComponentInline
                   component={c}
@@ -1129,8 +1129,8 @@ function ComponentsTab() {
                 <>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-zinc-200 text-sm">{c.name}</span>
-                      <span className="text-xs text-zinc-500 bg-zinc-700/40 px-1.5 py-0.5 rounded">{c.type}</span>
+                      <span className="font-medium text-default text-sm">{c.name}</span>
+                      <span className="text-xs text-faint surface-raised px-1.5 py-0.5 rounded">{c.type}</span>
                       {c.recipe_id && (
                         <span className="text-xs text-blue-400 flex items-center gap-0.5">
                           <BookOpen size={10} /> recipe linked
@@ -1144,10 +1144,10 @@ function ComponentsTab() {
                     )}
                   </div>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => setEditing(c.id)} className="p-1 text-zinc-500 hover:text-zinc-300">
+                    <button onClick={() => setEditing(c.id)} className="p-1 text-faint hover:text-[var(--ds-text)]">
                       <Pencil size={13} />
                     </button>
-                    <button onClick={() => deleteComp(c.id)} className="p-1 text-zinc-500 hover:text-red-400">
+                    <button onClick={() => deleteComp(c.id)} className="p-1 text-faint hover:text-red-400">
                       <Trash2 size={13} />
                     </button>
                   </div>
@@ -1177,19 +1177,19 @@ function AddComponentForm({ onSave, onCancel }) {
   };
 
   return (
-    <div className="p-3 bg-zinc-800/50 rounded-lg border border-zinc-700/40">
+    <div className="p-3 surface-card rounded-lg border border-subtle">
       <div className="flex flex-wrap gap-2">
         <input
           autoFocus
           value={form.name}
           onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
           placeholder="Component name *"
-          className="flex-1 min-w-48 bg-zinc-700/50 border border-zinc-600/50 rounded px-3 py-1.5 text-sm text-zinc-200"
+          className="flex-1 min-w-48 surface-raised border border-subtle rounded px-3 py-1.5 text-sm text-default"
         />
         <select
           value={form.type}
           onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-          className="bg-zinc-700/50 border border-zinc-600/50 rounded px-2 py-1.5 text-sm text-zinc-200"
+          className="surface-raised border border-subtle rounded px-2 py-1.5 text-sm text-default"
         >
           {TYPES.map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>)}
         </select>
@@ -1197,15 +1197,15 @@ function AddComponentForm({ onSave, onCancel }) {
           value={form.recipe_id}
           onChange={e => setForm(f => ({ ...f, recipe_id: e.target.value }))}
           placeholder="Recipe ID (re-...)"
-          className="bg-zinc-700/50 border border-zinc-600/50 rounded px-3 py-1.5 text-sm text-zinc-200 w-36"
+          className="surface-raised border border-subtle rounded px-3 py-1.5 text-sm text-default w-36"
         />
       </div>
       <div className="flex gap-2 mt-2 justify-end">
-        <button onClick={onCancel} className="px-3 py-1.5 text-sm text-zinc-400 hover:text-zinc-200">Cancel</button>
+        <button onClick={onCancel} className="px-3 py-1.5 text-sm text-muted hover:text-[var(--ds-text)]">Cancel</button>
         <button
           onClick={save}
           disabled={!form.name.trim() || saving}
-          className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded"
+          className="px-3 py-1.5 text-sm bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-on-accent rounded"
         >
           {saving ? "Adding..." : "Add"}
         </button>
@@ -1228,12 +1228,12 @@ function EditComponentInline({ component, onSave, onCancel }) {
       <input
         value={form.name}
         onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-        className="flex-1 min-w-32 bg-zinc-700/50 border border-zinc-600/50 rounded px-2 py-1 text-sm text-zinc-200"
+        className="flex-1 min-w-32 surface-raised border border-subtle rounded px-2 py-1 text-sm text-default"
       />
       <select
         value={form.type}
         onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-        className="bg-zinc-700/50 border border-zinc-600/50 rounded px-2 py-1 text-sm text-zinc-200"
+        className="surface-raised border border-subtle rounded px-2 py-1 text-sm text-default"
       >
         {TYPES.map(t => <option key={t} value={t}>{t}</option>)}
       </select>
@@ -1241,12 +1241,12 @@ function EditComponentInline({ component, onSave, onCancel }) {
         value={form.recipe_id}
         onChange={e => setForm(f => ({ ...f, recipe_id: e.target.value }))}
         placeholder="Recipe ID"
-        className="bg-zinc-700/50 border border-zinc-600/50 rounded px-2 py-1 text-sm text-zinc-200 w-28"
+        className="surface-raised border border-subtle rounded px-2 py-1 text-sm text-default w-28"
       />
       <button onClick={() => onSave({ ...form, recipe_id: form.recipe_id || null })} className="text-green-400 hover:text-green-300">
         <Check size={14} />
       </button>
-      <button onClick={onCancel} className="text-zinc-500 hover:text-zinc-300">
+      <button onClick={onCancel} className="text-faint hover:text-[var(--ds-text)]">
         <X size={14} />
       </button>
     </div>
@@ -1274,7 +1274,7 @@ function ManageTab() {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Cuisines */}
       <div>
-        <h3 className="text-sm font-semibold text-zinc-300 mb-3 flex items-center gap-1.5">
+        <h3 className="text-sm font-semibold text-default mb-3 flex items-center gap-1.5">
           <Globe size={14} /> Cuisines
         </h3>
         <div className="flex gap-2 mb-3">
@@ -1282,7 +1282,7 @@ function ManageTab() {
             value={newCuisine}
             onChange={e => setNewCuisine(e.target.value)}
             placeholder="New cuisine..."
-            className="flex-1 bg-zinc-800/60 border border-zinc-700/50 rounded px-2 py-1.5 text-sm text-zinc-200"
+            className="flex-1 surface-card border border-subtle rounded px-2 py-1.5 text-sm text-default"
             onKeyDown={e => {
               if (e.key === "Enter" && newCuisine.trim()) {
                 api("/cuisines", { method: "POST", body: JSON.stringify({ name: newCuisine.trim() }) })
@@ -1296,20 +1296,20 @@ function ManageTab() {
               api("/cuisines", { method: "POST", body: JSON.stringify({ name: newCuisine.trim() }) })
                 .then(() => { setNewCuisine(""); loadCuisines(); });
             }}
-            className="px-2.5 py-1.5 bg-blue-600/70 hover:bg-blue-600 disabled:opacity-40 text-white text-sm rounded"
+            className="px-2.5 py-1.5 bg-blue-600/70 hover:bg-blue-600 disabled:opacity-40 text-on-accent text-sm rounded"
           >
             <Plus size={14} />
           </button>
         </div>
         <div className="flex flex-col gap-1">
           {cuisines.map(c => (
-            <div key={c.id} className="flex items-center gap-2 px-2.5 py-1.5 bg-zinc-800/40 rounded border border-zinc-700/30 group">
+            <div key={c.id} className="flex items-center gap-2 px-2.5 py-1.5 surface-card rounded border border-subtle group">
               {editingCuisine === c.id ? (
                 <>
                   <input
                     value={editCuisineName}
                     onChange={e => setEditCuisineName(e.target.value)}
-                    className="flex-1 bg-zinc-700/50 border border-zinc-600/50 rounded px-2 py-0.5 text-sm text-zinc-200"
+                    className="flex-1 surface-raised border border-subtle rounded px-2 py-0.5 text-sm text-default"
                   />
                   <button
                     onClick={() => {
@@ -1318,15 +1318,15 @@ function ManageTab() {
                     }}
                     className="text-green-400 hover:text-green-300"
                   ><Check size={13} /></button>
-                  <button onClick={() => setEditingCuisine(null)} className="text-zinc-500 hover:text-zinc-300">
+                  <button onClick={() => setEditingCuisine(null)} className="text-faint hover:text-[var(--ds-text)]">
                     <X size={13} />
                   </button>
                 </>
               ) : (
                 <>
-                  <span className="flex-1 text-sm text-zinc-200">{c.name}</span>
+                  <span className="flex-1 text-sm text-default">{c.name}</span>
                   <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button onClick={() => { setEditingCuisine(c.id); setEditCuisineName(c.name); }} className="text-zinc-500 hover:text-zinc-300">
+                    <button onClick={() => { setEditingCuisine(c.id); setEditCuisineName(c.name); }} className="text-faint hover:text-[var(--ds-text)]">
                       <Pencil size={12} />
                     </button>
                     <button
@@ -1334,7 +1334,7 @@ function ManageTab() {
                         if (confirm(`Delete cuisine "${c.name}"?`))
                           api(`/cuisines/${c.id}`, { method: "DELETE" }).then(loadCuisines);
                       }}
-                      className="text-zinc-500 hover:text-red-400"
+                      className="text-faint hover:text-red-400"
                     ><Trash2 size={12} /></button>
                   </div>
                 </>
@@ -1346,7 +1346,7 @@ function ManageTab() {
 
       {/* Tags */}
       <div>
-        <h3 className="text-sm font-semibold text-zinc-300 mb-3 flex items-center gap-1.5">
+        <h3 className="text-sm font-semibold text-default mb-3 flex items-center gap-1.5">
           <Tag size={14} /> Tags
         </h3>
         <div className="flex gap-2 mb-3">
@@ -1354,7 +1354,7 @@ function ManageTab() {
             value={newTag}
             onChange={e => setNewTag(e.target.value)}
             placeholder="New tag..."
-            className="flex-1 bg-zinc-800/60 border border-zinc-700/50 rounded px-2 py-1.5 text-sm text-zinc-200"
+            className="flex-1 surface-card border border-subtle rounded px-2 py-1.5 text-sm text-default"
             onKeyDown={e => {
               if (e.key === "Enter" && newTag.trim()) {
                 api("/tags", { method: "POST", body: JSON.stringify({ name: newTag.trim() }) })
@@ -1368,22 +1368,22 @@ function ManageTab() {
               api("/tags", { method: "POST", body: JSON.stringify({ name: newTag.trim() }) })
                 .then(() => { setNewTag(""); loadTags(); });
             }}
-            className="px-2.5 py-1.5 bg-blue-600/70 hover:bg-blue-600 disabled:opacity-40 text-white text-sm rounded"
+            className="px-2.5 py-1.5 bg-blue-600/70 hover:bg-blue-600 disabled:opacity-40 text-on-accent text-sm rounded"
           >
             <Plus size={14} />
           </button>
         </div>
         <div className="flex flex-wrap gap-1.5">
           {tags.map(t => (
-            <div key={t.id} className="flex items-center gap-1 bg-zinc-800/40 border border-zinc-700/30 rounded-full px-2.5 py-0.5 group">
-              <span className="text-xs text-zinc-300">{t.name}</span>
-              {t.usage_count > 0 && <span className="text-xs text-zinc-600">({t.usage_count})</span>}
+            <div key={t.id} className="flex items-center gap-1 surface-card border border-subtle rounded-full px-2.5 py-0.5 group">
+              <span className="text-xs text-default">{t.name}</span>
+              {t.usage_count > 0 && <span className="text-xs text-faint">({t.usage_count})</span>}
               <button
                 onClick={() => {
                   if (confirm(`Delete tag "${t.name}"?`))
                     api(`/tags/${t.id}`, { method: "DELETE" }).then(loadTags);
                 }}
-                className="opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition-opacity ml-0.5"
+                className="opacity-0 group-hover:opacity-100 text-faint hover:text-red-400 transition-opacity ml-0.5"
               >
                 <X size={10} />
               </button>
@@ -1433,7 +1433,7 @@ function MealLogTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-zinc-300 flex items-center gap-2">
+        <h2 className="text-sm font-semibold text-default flex items-center gap-2">
           <CalendarDays size={15} className="text-indigo-400" />
           Meal Log
         </h2>
@@ -1441,7 +1441,7 @@ function MealLogTab() {
           <select
             value={typeFilter}
             onChange={e => setTypeFilter(e.target.value)}
-            className="text-xs bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-zinc-300"
+            className="text-xs surface-card border border-subtle rounded px-2 py-1 text-default"
           >
             <option value="">All meals</option>
             <option value="dinner">Dinner</option>
@@ -1452,7 +1452,7 @@ function MealLogTab() {
           <select
             value={days}
             onChange={e => setDays(Number(e.target.value))}
-            className="text-xs bg-zinc-800 border border-zinc-700 rounded px-2 py-1 text-zinc-300"
+            className="text-xs surface-card border border-subtle rounded px-2 py-1 text-default"
           >
             {[14, 30, 60, 90].map(d => <option key={d} value={d}>{d} days</option>)}
           </select>
@@ -1464,16 +1464,16 @@ function MealLogTab() {
           <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : error ? (
-        <div className="flex flex-col items-center justify-center py-16 text-zinc-500">
+        <div className="flex flex-col items-center justify-center py-16 text-faint">
           <AlertCircle size={36} className="text-red-600 mb-3" />
           <p className="text-sm font-medium text-red-400">Could not load meal log</p>
-          <p className="text-xs mt-1 text-zinc-500">{error}</p>
+          <p className="text-xs mt-1 text-faint">{error}</p>
         </div>
       ) : entries.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-zinc-500">
-          <CalendarDays size={36} className="text-zinc-700 mb-3" />
-          <p className="text-sm font-medium text-zinc-400">No meals logged yet</p>
-          <p className="text-xs mt-1 text-zinc-600">Tell Skipper what you had for dinner or lunch to get started</p>
+        <div className="flex flex-col items-center justify-center py-16 text-faint">
+          <CalendarDays size={36} className="text-default mb-3" />
+          <p className="text-sm font-medium text-muted">No meals logged yet</p>
+          <p className="text-xs mt-1 text-faint">Tell Skipper what you had for dinner or lunch to get started</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -1490,26 +1490,26 @@ function MealLogEntry({ entry }) {
   const typeCls = MEAL_TYPE_STYLES[entry.meal_type] || MEAL_TYPE_STYLES.dinner;
 
   return (
-    <div className="bg-zinc-800/60 border border-zinc-700/50 rounded-lg p-3">
+    <div className="surface-card border border-subtle rounded-lg p-3">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-semibold text-zinc-400">{dateStr}</span>
+            <span className="text-xs font-semibold text-muted">{dateStr}</span>
             <span className={`text-xs px-1.5 py-0.5 rounded font-medium capitalize ${typeCls}`}>
               {entry.meal_type}
             </span>
             {entry.meal_name && (
-              <span className="text-xs bg-zinc-700 text-zinc-300 rounded px-1.5 py-0.5">
+              <span className="text-xs surface-raised text-default rounded px-1.5 py-0.5">
                 {entry.meal_name}
               </span>
             )}
           </div>
-          <p className="text-sm text-zinc-200">{entry.description}</p>
+          <p className="text-sm text-default">{entry.description}</p>
           {entry.notes && (
-            <p className="text-xs text-zinc-500 mt-1 italic">{entry.notes}</p>
+            <p className="text-xs text-faint mt-1 italic">{entry.notes}</p>
           )}
         </div>
-        <UtensilsCrossed size={14} className="text-zinc-600 shrink-0 mt-0.5" />
+        <UtensilsCrossed size={14} className="text-faint shrink-0 mt-0.5" />
       </div>
     </div>
   );
@@ -1564,7 +1564,7 @@ export default function MealsApp({ userId }) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Tab bar */}
-      <div className="flex border-b border-zinc-700/50 px-4 shrink-0">
+      <div className="flex border-b border-subtle px-4 shrink-0">
         {tabs.map(t => (
           <button
             key={t.id}
@@ -1572,7 +1572,7 @@ export default function MealsApp({ userId }) {
             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               tab === t.id
                 ? "border-blue-500 text-blue-400"
-                : "border-transparent text-zinc-500 hover:text-zinc-300"
+                : "border-transparent text-faint hover:text-[var(--ds-text)]"
             }`}
           >
             {t.label}

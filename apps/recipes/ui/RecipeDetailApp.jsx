@@ -31,13 +31,13 @@ function ChefCommentsField({ value, onSave, onChange }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-sm font-semibold text-white flex items-center gap-1">
+        <h2 className="text-sm font-semibold text-default flex items-center gap-1">
           <ChefHat size={14} /> Chef Comments
         </h2>
         {saved && <span className="text-xs text-emerald-400">Saved ✓</span>}
         {dirty && !saved && (
           <button onClick={handleSave}
-            className="flex items-center gap-1 px-2 py-0.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded">
+            className="flex items-center gap-1 px-2 py-0.5 text-xs bg-emerald-600 hover:bg-emerald-500 text-on-accent rounded">
             <Save size={11} /> Save
           </button>
         )}
@@ -47,7 +47,7 @@ function ChefCommentsField({ value, onSave, onChange }) {
         onChange={(e) => setLocal(e.target.value)}
         rows={3}
         placeholder="Observations, proposed changes for next time..."
-        className="w-full bg-slate-800/50 text-sm text-slate-300 px-3 py-2 rounded border border-slate-700 outline-none focus:border-indigo-500 resize-none"
+        className="w-full surface-card text-sm text-default px-3 py-2 rounded border border-subtle outline-none focus:border-indigo-500 resize-none"
       />
     </div>
   );
@@ -480,7 +480,7 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
   // --- No recipe loaded ---
   if (!recipeId) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-500 text-sm">
+      <div className="flex items-center justify-center h-full text-faint text-sm">
         <ChefHat size={32} className="mr-2 opacity-40" />
         Select a recipe from the list to view it.
       </div>
@@ -489,7 +489,7 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
 
   if (loading && !recipe) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-400">
+      <div className="flex items-center justify-center h-full text-muted">
         <Loader2 size={18} className="animate-spin mr-2" /> Loading recipe...
       </div>
     );
@@ -507,17 +507,17 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
     return (
       <div className="flex flex-col h-full w-full">
         {/* Toolbar */}
-        <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
-          <div className="flex items-center gap-2 text-sm text-slate-300">
-            <button onClick={() => { setEditing(false); setForm(buildForm(recipe)); setDirty(false); }} className="p-1 text-slate-500 hover:text-white">
+        <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
+          <div className="flex items-center gap-2 text-sm text-default">
+            <button onClick={() => { setEditing(false); setForm(buildForm(recipe)); setDirty(false); }} className="p-1 text-faint hover:text-[var(--ds-text)]">
               <ArrowLeft size={14} />
             </button>
-            <Edit3 size={14} className="text-slate-500" />
+            <Edit3 size={14} className="text-faint" />
             <span className="font-medium">Edit Recipe</span>
             {dirty && <span className="text-xs text-amber-400">unsaved</span>}
           </div>
           <div className="flex items-center gap-1">
-            <button onClick={handleSave} disabled={saving} className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded disabled:opacity-50">
+            <button onClick={handleSave} disabled={saving} className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-on-accent rounded disabled:opacity-50">
               <Save size={12} /> {saving ? "Saving..." : "Save"}
             </button>
           </div>
@@ -527,47 +527,47 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Title */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Title</label>
+            <label className="block text-xs text-muted mb-1">Title</label>
             <input
               value={form.title}
               onChange={(e) => updateForm("title", e.target.value)}
-              className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none focus:border-indigo-500"
+              className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none focus:border-indigo-500"
             />
           </div>
 
           {/* Description */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Description</label>
+            <label className="block text-xs text-muted mb-1">Description</label>
             <textarea
               value={form.description}
               onChange={(e) => updateForm("description", e.target.value)}
               rows={2}
-              className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none focus:border-indigo-500 resize-none"
+              className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none focus:border-indigo-500 resize-none"
             />
           </div>
 
           {/* Times + Servings row */}
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Prep (min)</label>
+              <label className="block text-xs text-muted mb-1">Prep (min)</label>
               <input type="number" value={form.prep_time_min} onChange={(e) => updateForm("prep_time_min", e.target.value)}
-                className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none" />
+                className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Cook (min)</label>
+              <label className="block text-xs text-muted mb-1">Cook (min)</label>
               <input type="number" value={form.cook_time_min} onChange={(e) => updateForm("cook_time_min", e.target.value)}
-                className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none" />
+                className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none" />
             </div>
             <div>
-              <label className="block text-xs text-slate-400 mb-1">Servings</label>
+              <label className="block text-xs text-muted mb-1">Servings</label>
               <input type="number" value={form.servings} onChange={(e) => updateForm("servings", e.target.value)}
-                className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none" />
+                className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none" />
             </div>
           </div>
 
           {/* Categories */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Categories</label>
+            <label className="block text-xs text-muted mb-1">Categories</label>
             <div className="flex flex-wrap gap-1 mb-1">
               {form.categories.map((c, i) => (
                 <span key={i} className="flex items-center gap-1 px-2 py-0.5 bg-indigo-600/30 rounded-full text-xs text-indigo-300">
@@ -579,7 +579,7 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
             <div className="flex flex-wrap gap-1 items-center">
               {categories.filter(c => !form.categories.includes(c.name)).map(c => (
                 <button key={c.id} onClick={() => updateForm("categories", [...form.categories, c.name])}
-                  className="px-2 py-0.5 bg-slate-800 text-xs text-slate-400 rounded-full hover:text-white hover:bg-slate-700">
+                  className="px-2 py-0.5 surface-card text-xs text-muted rounded-full hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)]">
                   + {c.name}
                 </button>
               ))}
@@ -593,31 +593,31 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
                 }
               }} className="flex items-center gap-1">
                 <input name="newCat" placeholder="New category..."
-                  className="w-28 bg-slate-800 text-white text-xs px-2 py-1 rounded border border-slate-700 outline-none focus:border-indigo-500" />
-                <button type="submit" className="px-1.5 py-0.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs rounded">+</button>
+                  className="w-28 surface-card text-default text-xs px-2 py-1 rounded border border-subtle outline-none focus:border-indigo-500" />
+                <button type="submit" className="px-1.5 py-0.5 bg-indigo-600 hover:bg-indigo-500 text-on-accent text-xs rounded">+</button>
               </form>
             </div>
           </div>
 
           {/* Ingredients */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Ingredients</label>
+            <label className="block text-xs text-muted mb-1">Ingredients</label>
             <div className="space-y-1">
               {form.ingredients.map((ing, i) => (
                 <div key={i} className="flex items-center gap-1">
                   <div className="flex flex-col">
                     <button onClick={() => moveIngredient(i, -1)} disabled={i === 0}
-                      className="p-0.5 text-slate-600 hover:text-white disabled:opacity-20 disabled:cursor-default"><ChevronUp size={10} /></button>
+                      className="p-0.5 text-faint hover:text-[var(--ds-text)] disabled:opacity-20 disabled:cursor-default"><ChevronUp size={10} /></button>
                     <button onClick={() => moveIngredient(i, 1)} disabled={i === form.ingredients.length - 1}
-                      className="p-0.5 text-slate-600 hover:text-white disabled:opacity-20 disabled:cursor-default"><ChevronDown size={10} /></button>
+                      className="p-0.5 text-faint hover:text-[var(--ds-text)] disabled:opacity-20 disabled:cursor-default"><ChevronDown size={10} /></button>
                   </div>
                   <input value={ing.quantity || ""} onChange={(e) => updateIngredient(i, "quantity", e.target.value)}
-                    placeholder="Qty" className="w-16 bg-slate-800 text-white text-xs px-2 py-1.5 rounded border border-slate-700 outline-none" />
+                    placeholder="Qty" className="w-16 surface-card text-default text-xs px-2 py-1.5 rounded border border-subtle outline-none" />
                   <input value={ing.unit || ""} onChange={(e) => updateIngredient(i, "unit", e.target.value)}
-                    placeholder="Unit" className="w-16 bg-slate-800 text-white text-xs px-2 py-1.5 rounded border border-slate-700 outline-none" />
+                    placeholder="Unit" className="w-16 surface-card text-default text-xs px-2 py-1.5 rounded border border-subtle outline-none" />
                   <input value={ing.item || ""} onChange={(e) => updateIngredient(i, "item", e.target.value)}
-                    placeholder="Ingredient" className="flex-1 bg-slate-800 text-white text-xs px-2 py-1.5 rounded border border-slate-700 outline-none" />
-                  <button onClick={() => removeIngredient(i)} className="p-1 text-slate-500 hover:text-red-400"><X size={12} /></button>
+                    placeholder="Ingredient" className="flex-1 surface-card text-default text-xs px-2 py-1.5 rounded border border-subtle outline-none" />
+                  <button onClick={() => removeIngredient(i)} className="p-1 text-faint hover:text-red-400"><X size={12} /></button>
                 </div>
               ))}
             </div>
@@ -628,20 +628,20 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
 
           {/* Steps */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Steps</label>
+            <label className="block text-xs text-muted mb-1">Steps</label>
             <div className="space-y-1">
               {form.steps.map((step, i) => (
                 <div key={i} className="flex items-start gap-1">
                   <div className="flex flex-col mt-1">
                     <button onClick={() => moveStep(i, -1)} disabled={i === 0}
-                      className="p-0.5 text-slate-600 hover:text-white disabled:opacity-20 disabled:cursor-default"><ChevronUp size={10} /></button>
+                      className="p-0.5 text-faint hover:text-[var(--ds-text)] disabled:opacity-20 disabled:cursor-default"><ChevronUp size={10} /></button>
                     <button onClick={() => moveStep(i, 1)} disabled={i === form.steps.length - 1}
-                      className="p-0.5 text-slate-600 hover:text-white disabled:opacity-20 disabled:cursor-default"><ChevronDown size={10} /></button>
+                      className="p-0.5 text-faint hover:text-[var(--ds-text)] disabled:opacity-20 disabled:cursor-default"><ChevronDown size={10} /></button>
                   </div>
-                  <span className="text-xs text-slate-500 mt-2 w-5 shrink-0 text-right">{i + 1}.</span>
+                  <span className="text-xs text-faint mt-2 w-5 shrink-0 text-right">{i + 1}.</span>
                   <textarea value={step} onChange={(e) => updateStep(i, e.target.value)}
-                    rows={2} className="flex-1 bg-slate-800 text-white text-xs px-2 py-1.5 rounded border border-slate-700 outline-none resize-none" />
-                  <button onClick={() => removeStep(i)} className="p-1 mt-1 text-slate-500 hover:text-red-400"><X size={12} /></button>
+                    rows={2} className="flex-1 surface-card text-default text-xs px-2 py-1.5 rounded border border-subtle outline-none resize-none" />
+                  <button onClick={() => removeStep(i)} className="p-1 mt-1 text-faint hover:text-red-400"><X size={12} /></button>
                 </div>
               ))}
             </div>
@@ -652,26 +652,26 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
 
           {/* Source URL */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Source URL</label>
+            <label className="block text-xs text-muted mb-1">Source URL</label>
             <input value={form.source_url} onChange={(e) => updateForm("source_url", e.target.value)}
-              placeholder="https://..." className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none" />
+              placeholder="https://..." className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none" />
           </div>
 
           {/* Chef Comments */}
           <div>
-            <label className="block text-xs text-slate-400 mb-1">Chef Comments</label>
+            <label className="block text-xs text-muted mb-1">Chef Comments</label>
             <textarea value={form.chef_comments} onChange={(e) => updateForm("chef_comments", e.target.value)}
               rows={3} placeholder="Observations, proposed changes for next time..."
-              className="w-full bg-slate-800 text-white text-sm px-3 py-2 rounded border border-slate-700 outline-none resize-none" />
+              className="w-full surface-card text-default text-sm px-3 py-2 rounded border border-subtle outline-none resize-none" />
           </div>
 
           {/* Delete */}
-          <div className="pt-4 border-t border-slate-800">
+          <div className="pt-4 border-t border-subtle">
             {confirmDelete ? (
               <div className="flex items-center gap-2">
                 <span className="text-xs text-red-400">Delete this recipe?</span>
-                <button onClick={handleDelete} className="px-2 py-1 text-xs bg-red-600 text-white rounded">Yes, delete</button>
-                <button onClick={() => setConfirmDelete(false)} className="px-2 py-1 text-xs bg-slate-700 text-white rounded">Cancel</button>
+                <button onClick={handleDelete} className="px-2 py-1 text-xs bg-red-600 text-on-accent rounded">Yes, delete</button>
+                <button onClick={() => setConfirmDelete(false)} className="px-2 py-1 text-xs surface-raised text-default rounded">Cancel</button>
               </div>
             ) : (
               <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300">
@@ -690,20 +690,20 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
   return (
     <div className="flex flex-col h-full w-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
-        <div className="flex items-center gap-2 text-sm text-slate-300 min-w-0">
-          <button onClick={() => onOpenApp?.("recipes")} className="p-1 text-slate-500 hover:text-white" title="Back to recipes">
+      <div className="flex items-center justify-between px-3 h-10 surface-panel border-b border-subtle shrink-0">
+        <div className="flex items-center gap-2 text-sm text-default min-w-0">
+          <button onClick={() => onOpenApp?.("recipes")} className="p-1 text-faint hover:text-[var(--ds-text)]" title="Back to recipes">
             <ArrowLeft size={14} />
           </button>
-          <ChefHat size={14} className="text-slate-500 shrink-0" />
+          <ChefHat size={14} className="text-faint shrink-0" />
           <span className="truncate font-medium">{recipe.title}</span>
         </div>
         <div className="flex items-center gap-1">
-          <button onClick={handlePrint} className="p-1 rounded text-slate-500 hover:text-white hover:bg-slate-700 transition-colors" title="Print recipe">
+          <button onClick={handlePrint} className="p-1 rounded text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-raised)] transition-colors" title="Print recipe">
             <Printer size={14} />
           </button>
           <button onClick={() => { setEditing(true); setForm(buildForm(recipe)); }}
-            className="flex items-center gap-1 px-2 py-1 text-xs text-slate-400 hover:bg-slate-700 hover:text-white rounded">
+            className="flex items-center gap-1 px-2 py-1 text-xs text-muted hover:bg-[var(--ds-raised)] hover:text-[var(--ds-text)] rounded">
             <Edit3 size={12} /> Edit
           </button>
         </div>
@@ -714,20 +714,20 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
         <div className="max-w-2xl mx-auto p-4 space-y-5">
           {/* Title + Rating */}
           <div>
-            <h1 className="text-xl font-bold text-white">{recipe.title}</h1>
-            {recipe.description && <p className="text-sm text-slate-400 mt-1">{recipe.description}</p>}
+            <h1 className="text-xl font-bold text-default">{recipe.title}</h1>
+            {recipe.description && <p className="text-sm text-muted mt-1">{recipe.description}</p>}
             <div className="flex items-center gap-1 mt-2">
               {[1, 2, 3, 4, 5].map((s) => (
                 <button key={s} onClick={() => handleRate(s)} className="p-0.5 transition-colors">
-                  <Star size={18} className={s <= (recipe.rating || 0) ? "text-amber-400 fill-amber-400" : "text-slate-600 hover:text-amber-300"} />
+                  <Star size={18} className={s <= (recipe.rating || 0) ? "text-amber-400 fill-amber-400" : "text-faint hover:text-amber-300"} />
                 </button>
               ))}
-              {recipe.rating && <span className="text-xs text-slate-500 ml-1">{recipe.rating}/5</span>}
+              {recipe.rating && <span className="text-xs text-faint ml-1">{recipe.rating}/5</span>}
             </div>
           </div>
 
           {/* Meta */}
-          <div className="flex items-center gap-4 text-xs text-slate-400">
+          <div className="flex items-center gap-4 text-xs text-muted">
             {recipe.prep_time_min != null && (
               <span className="flex items-center gap-1"><Clock size={12} /> Prep: {recipe.prep_time_min}m</span>
             )}
@@ -754,13 +754,13 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
               <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 {images.map((img) => (
                   <button key={img.id} onClick={() => onOpenApp?.("image", { imageId: img.id, title: img.title || img.filename })}
-                    className="shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-slate-700 hover:border-indigo-500 transition-colors">
+                    className="shrink-0 w-24 h-24 rounded-lg overflow-hidden border border-subtle hover:border-indigo-500 transition-colors">
                     <img src={`/${img.storage_path}`} alt={img.title || img.filename}
                       className="w-full h-full object-cover" />
                   </button>
                 ))}
                 <button onClick={() => fileInputRef.current?.click()}
-                  className="shrink-0 w-24 h-24 rounded-lg border border-dashed border-slate-600 flex flex-col items-center justify-center text-slate-500 hover:border-indigo-500 hover:text-indigo-400 transition-colors">
+                  className="shrink-0 w-24 h-24 rounded-lg border border-dashed border-subtle flex flex-col items-center justify-center text-faint hover:border-indigo-500 hover:text-indigo-400 transition-colors">
                   <Camera size={20} />
                   <span className="text-[10px] mt-1">Add photo</span>
                 </button>
@@ -770,7 +770,7 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
 
           {images.length === 0 && (
             <button onClick={() => fileInputRef.current?.click()}
-              className="flex items-center gap-2 px-3 py-2 border border-dashed border-slate-700 rounded-lg text-xs text-slate-500 hover:border-indigo-500 hover:text-indigo-400 transition-colors">
+              className="flex items-center gap-2 px-3 py-2 border border-dashed border-subtle rounded-lg text-xs text-faint hover:border-indigo-500 hover:text-indigo-400 transition-colors">
               <Camera size={14} /> Add photos
             </button>
           )}
@@ -780,11 +780,11 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
 
           {/* Scale buttons */}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500">Scale:</span>
+            <span className="text-xs text-faint">Scale:</span>
             {SCALE_OPTIONS.map((s) => (
               <button key={s} onClick={() => setScale(s)}
                 className={`px-2 py-0.5 text-xs rounded transition-colors ${
-                  scale === s ? "bg-indigo-600 text-white" : "bg-slate-800 text-slate-400 hover:text-white"
+                  scale === s ? "bg-indigo-600 text-on-accent" : "surface-card text-muted hover:text-[var(--ds-text)]"
                 }`}>
                 {s}×
               </button>
@@ -795,9 +795,9 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
           {recipe.ingredients?.length > 0 && (
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-sm font-semibold text-white">Ingredients</h2>
+                <h2 className="text-sm font-semibold text-default">Ingredients</h2>
                 {(checked.size > 0 || checkedSteps.size > 0) && (
-                  <button onClick={handleStartOver} className="flex items-center gap-1 text-xs text-slate-500 hover:text-white">
+                  <button onClick={handleStartOver} className="flex items-center gap-1 text-xs text-faint hover:text-[var(--ds-text)]">
                     <RotateCcw size={11} /> Start Over
                   </button>
                 )}
@@ -810,13 +810,13 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
                     <button onClick={() => toggleIngredient(i)}
                       className={`w-full text-left px-3 py-1.5 rounded text-sm transition-colors ${
                         checked.has(i)
-                          ? "bg-slate-800/30 text-slate-600 line-through"
-                          : "bg-slate-800/50 text-slate-200 hover:bg-slate-800/70"
+                          ? "surface-card text-faint line-through"
+                          : "surface-card text-default hover:bg-[var(--ds-card)]"
                       }`}>
                       {si.qty && (
                         <span className="font-medium text-indigo-300">{si.qty}</span>
                       )}
-                      {si.unit && <span className="text-slate-400"> {si.unit}</span>}
+                      {si.unit && <span className="text-muted"> {si.unit}</span>}
                       {ing.item && <span> {ing.item}</span>}
                     </button>
                   </li>
@@ -829,21 +829,21 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
           {/* Steps */}
           {recipe.steps?.length > 0 && (
             <div>
-              <h2 className="text-sm font-semibold text-white mb-2">Steps</h2>
+              <h2 className="text-sm font-semibold text-default mb-2">Steps</h2>
               <ol className="space-y-2">
                 {recipe.steps.map((step, i) => (
                   <li key={i} className="flex gap-3">
                     <button onClick={() => toggleStep(i)}
                       className={`shrink-0 w-6 h-6 rounded-full text-xs flex items-center justify-center font-medium transition-colors ${
                         checkedSteps.has(i)
-                          ? "bg-slate-700/40 text-slate-600"
+                          ? "surface-raised text-faint"
                           : "bg-indigo-600/30 text-indigo-300 hover:bg-indigo-600/50"
                       }`}>{i + 1}</button>
                     <button onClick={() => toggleStep(i)}
                       className={`text-sm leading-relaxed pt-0.5 text-left transition-colors ${
                         checkedSteps.has(i)
-                          ? "text-slate-600 line-through"
-                          : "text-slate-300 hover:text-slate-100"
+                          ? "text-faint line-through"
+                          : "text-default hover:text-[var(--ds-text)]"
                       }`}>{step}</button>
                   </li>
                 ))}
@@ -860,14 +860,14 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
 
           {/* Source URL */}
           {recipe.source_url && (
-            <div className="text-xs text-slate-500">
+            <div className="text-xs text-faint">
               Source: <a href={recipe.source_url} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">{recipe.source_url}</a>
             </div>
           )}
 
           {/* Last opened */}
           {recipe.last_opened_at && (
-            <div className="text-xs text-slate-600">
+            <div className="text-xs text-faint">
               Last viewed: {new Date(recipe.last_opened_at).toLocaleString()}
             </div>
           )}

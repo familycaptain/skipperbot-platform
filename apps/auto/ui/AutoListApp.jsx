@@ -71,8 +71,8 @@ export default function AutoListApp({ appId, userId, context = {}, onOpenApp, re
 
   function ConditionDot({ label, value }) {
     return (
-      <span title={`${label}: ${value}`} className="flex items-center gap-0.5 text-[10px] text-slate-500">
-        <span className={`w-1.5 h-1.5 rounded-full ${CONDITION_COLOR[value] || "bg-slate-600"}`} />
+      <span title={`${label}: ${value}`} className="flex items-center gap-0.5 text-[10px] text-faint">
+        <span className={`w-1.5 h-1.5 rounded-full ${CONDITION_COLOR[value] || "surface-raised"}`} />
         {label}
       </span>
     );
@@ -81,22 +81,22 @@ export default function AutoListApp({ appId, userId, context = {}, onOpenApp, re
   return (
     <div className="flex flex-col h-full w-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-2 px-3 h-10 bg-slate-900/40 border-b border-slate-800 shrink-0">
+      <div className="flex items-center justify-between gap-2 px-3 h-10 surface-panel border-b border-subtle shrink-0">
         <div className="flex items-center gap-2 flex-1 min-w-0">
           <div className="relative flex-1 min-w-0 max-w-xs">
-            <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
+            <Search size={13} className="absolute left-2 top-1/2 -translate-y-1/2 text-faint" />
             <input
               type="text"
               placeholder="Search vehicles..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-800/60 text-sm text-white pl-7 pr-2 py-1 rounded border border-slate-700 outline-none focus:border-indigo-500"
+              className="w-full surface-card text-sm text-default pl-7 pr-2 py-1 rounded border border-subtle outline-none focus:border-indigo-500"
             />
           </div>
         </div>
         <button
           onClick={handleCreateVehicle}
-          className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded transition-colors shrink-0"
+          className="flex items-center gap-1 px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-on-accent rounded transition-colors shrink-0"
           title="Add Vehicle"
         >
           <Plus size={12} /> <span className="hidden sm:inline">Add Vehicle</span>
@@ -106,11 +106,11 @@ export default function AutoListApp({ appId, userId, context = {}, onOpenApp, re
       {/* Vehicle list */}
       <div className="flex-1 overflow-y-auto p-3 space-y-2">
         {loading && vehicles.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-slate-400">
+          <div className="flex items-center justify-center h-32 text-muted">
             <Loader2 size={18} className="animate-spin mr-2" /> Loading vehicles...
           </div>
         ) : vehicles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-slate-500 text-sm">
+          <div className="flex flex-col items-center justify-center h-32 text-faint text-sm">
             <Car size={32} className="mb-2 opacity-40" />
             {searchQuery ? "No vehicles match your search." : "No vehicles tracked yet. Click + Add Vehicle to start!"}
           </div>
@@ -124,12 +124,12 @@ export default function AutoListApp({ appId, userId, context = {}, onOpenApp, re
               <button
                 key={v.id}
                 onClick={() => openVehicle(v)}
-                className="w-full text-left bg-slate-800/40 hover:bg-slate-800/70 border border-slate-700/50 hover:border-slate-600 rounded-lg p-3 transition-colors group"
+                className="w-full text-left surface-card hover:bg-[var(--ds-card)] border border-subtle hover:border-[var(--ds-border)] rounded-lg p-3 transition-colors group"
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-medium text-white truncate group-hover:text-indigo-300 transition-colors">
+                      <h3 className="text-sm font-medium text-default truncate group-hover:text-indigo-300 transition-colors">
                         {[v.year, v.make, v.model, v.trim_level].filter(Boolean).join(" ") || v.name || "Untitled"}
                       </h3>
                       {issueCount > 0 && (
@@ -138,12 +138,12 @@ export default function AutoListApp({ appId, userId, context = {}, onOpenApp, re
                         </span>
                       )}
                     </div>
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-slate-500">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-faint">
                       {v.odometer && (
                         <span>{v.odometer.toLocaleString()} mi</span>
                       )}
                       {v.license_plate && (
-                        <span className="px-1.5 py-0 bg-slate-700/50 rounded text-[10px]">{v.license_plate}</span>
+                        <span className="px-1.5 py-0 surface-raised rounded text-[10px]">{v.license_plate}</span>
                       )}
                       {nextSvc && nextSvc.next_due_date && (
                         <span className="flex items-center gap-1">

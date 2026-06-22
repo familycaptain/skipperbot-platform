@@ -120,18 +120,18 @@ export default function IssuesApp({ appId, userId, context = {}, onTitle, onOpen
 
   if (loading && !issues && !detail) {
     return (
-      <div className="flex items-center justify-center h-full text-slate-400">
+      <div className="flex items-center justify-center h-full text-muted">
         <Loader2 size={20} className="animate-spin mr-2" /> Loading...
       </div>
     );
   }
 
   return (
-    <div className="h-full w-full flex flex-col text-slate-200">
+    <div className="h-full w-full flex flex-col text-default">
       {error && (
         <div className="px-4 py-2 bg-red-900/40 border-b border-red-700/40 text-red-300 text-sm flex items-center justify-between">
           <span>{error}</span>
-          <button onClick={() => setError(null)} className="ml-2 hover:text-white"><X size={14} /></button>
+          <button onClick={() => setError(null)} className="ml-2 hover:text-[var(--ds-text)]"><X size={14} /></button>
         </div>
       )}
 
@@ -190,8 +190,8 @@ const STATUS_COLORS = {
   in_progress: "bg-blue-600",
   pending_validation: "bg-purple-600",
   fixed: "bg-emerald-600",
-  wont_fix: "bg-slate-600",
-  duplicate: "bg-slate-600",
+  wont_fix: "surface-raised",
+  duplicate: "surface-raised",
 };
 
 const TYPE_ICON = {
@@ -203,19 +203,19 @@ function IssueRow({ iss, onIssueClick }) {
   return (
     <button
       onClick={() => onIssueClick(iss.id)}
-      className="w-full text-left px-4 py-3 border-b border-slate-800/60 hover:bg-slate-800/40 transition-colors flex items-start gap-3"
+      className="w-full text-left px-4 py-3 border-b border-subtle hover:bg-[var(--ds-card)] transition-colors flex items-start gap-3"
     >
       <span className="text-lg shrink-0">{TYPE_ICON[iss.type] || TYPE_ICON.bug}</span>
       <div className="flex-1 min-w-0">
-        <div className="text-sm text-slate-200 line-clamp-2">{iss.title}</div>
-        <div className="text-xs text-slate-500 mt-0.5">
+        <div className="text-sm text-default line-clamp-2">{iss.title}</div>
+        <div className="text-xs text-faint mt-0.5">
           {iss.reported_by} &middot; {new Date(iss.created_at).toLocaleDateString()}
         </div>
       </div>
-      <span className={`text-[10px] px-2 py-0.5 rounded-full text-white ${STATUS_COLORS[iss.status] || "bg-slate-600"}`}>
+      <span className={`text-[10px] px-2 py-0.5 rounded-full text-default ${STATUS_COLORS[iss.status] || "surface-raised"}`}>
         {iss.status.replace("_", " ")}
       </span>
-      <ChevronRight size={14} className="text-slate-600 shrink-0" />
+      <ChevronRight size={14} className="text-faint shrink-0" />
     </button>
   );
 }
@@ -263,24 +263,24 @@ function ListView({ issues, filter, setFilter, showFixed, setShowFixed, onIssueC
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-slate-700/50">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-subtle">
         <button
           onClick={onNewClick}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-on-accent text-sm font-medium transition-colors"
         >
           <Plus size={14} /> New Issue
         </button>
         <div className="relative flex-1 min-w-[140px]">
-          <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500" />
+          <Search size={14} className="absolute left-2 top-1/2 -translate-y-1/2 text-faint" />
           <input
             type="text"
             placeholder="Search issues…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-7 pr-2 py-1.5 text-xs rounded bg-slate-800 border border-slate-600 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            className="w-full pl-7 pr-2 py-1.5 text-xs rounded surface-card border border-subtle text-default placeholder-slate-500 focus:outline-none focus:border-indigo-500"
           />
         </div>
-        <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer select-none">
+        <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer select-none">
           <input
             type="checkbox"
             checked={showFixed}
@@ -292,13 +292,13 @@ function ListView({ issues, filter, setFilter, showFixed, setShowFixed, onIssueC
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
-          className="text-xs bg-slate-800 border border-slate-600 rounded px-2 py-1 text-slate-300"
+          className="text-xs surface-card border border-subtle rounded px-2 py-1 text-default"
         >
           <option value="all">All</option>
           <option value="open">Open</option>
           <option value="mine">Mine</option>
         </select>
-        <button onClick={onRefresh} className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors" title="Refresh">
+        <button onClick={onRefresh} className="p-1 rounded hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] transition-colors" title="Refresh">
           <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
@@ -311,14 +311,14 @@ function ListView({ issues, filter, setFilter, showFixed, setShowFixed, onIssueC
               Needs Your Validation
             </div>
             {needsValidation.map((iss) => (
-              <div key={iss.id} className="flex items-center border-b border-slate-800/60 hover:bg-slate-800/40 transition-colors">
+              <div key={iss.id} className="flex items-center border-b border-subtle hover:bg-[var(--ds-card)] transition-colors">
                 <button
                   onClick={() => onIssueClick(iss.id)}
                   className="flex-1 text-left px-4 py-3 flex items-start gap-3 min-w-0"
                 >
                   <span className="text-lg shrink-0">{TYPE_ICON[iss.type] || TYPE_ICON.bug}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm text-slate-200 line-clamp-2">{iss.title}</div>
+                    <div className="text-sm text-default line-clamp-2">{iss.title}</div>
                     {iss.resolution && (
                       <div className="text-xs text-purple-300/70 mt-0.5 line-clamp-1">Fix: {iss.resolution}</div>
                     )}
@@ -327,13 +327,13 @@ function ListView({ issues, filter, setFilter, showFixed, setShowFixed, onIssueC
                 <button
                   onClick={() => onIssueClick(iss.id)}
                   title="It's not actually fixed — open it to reopen and add details"
-                  className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-white text-xs font-medium transition-colors"
+                  className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-700 hover:bg-amber-600 text-on-accent text-xs font-medium transition-colors"
                 >
                   Not Fixed
                 </button>
                 <button
                   onClick={() => confirmFixed(iss.id)}
-                  className="shrink-0 mx-3 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium transition-colors"
+                  className="shrink-0 mx-3 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-on-accent text-xs font-medium transition-colors"
                 >
                   Confirm Fixed
                 </button>
@@ -344,8 +344,8 @@ function ListView({ issues, filter, setFilter, showFixed, setShowFixed, onIssueC
 
         {/* My open issues (not pending_validation) */}
         {myIssues.filter((iss) => iss.status !== "pending_validation").length > 0 && (
-          <div className="border-b border-slate-700/40">
-            <div className="px-4 py-2 bg-slate-800/40 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+          <div className="border-b border-subtle">
+            <div className="px-4 py-2 surface-card text-xs font-semibold text-muted uppercase tracking-wider">
               My Open Issues
             </div>
             {myIssues.filter((iss) => iss.status !== "pending_validation").map((iss) => (
@@ -363,19 +363,19 @@ function ListView({ issues, filter, setFilter, showFixed, setShowFixed, onIssueC
             return (
               <>
                 {hasMyOpen && (
-                  <div className="px-4 py-2 bg-slate-800/40 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-700/40">
+                  <div className="px-4 py-2 surface-card text-xs font-semibold text-muted uppercase tracking-wider border-b border-subtle">
                     Other Issues
                   </div>
                 )}
                 {!hasMyOpen && issues.length > 0 && (
-                  <div className="px-4 py-2 bg-slate-800/40 text-xs font-semibold text-slate-400 uppercase tracking-wider border-b border-slate-700/40">
+                  <div className="px-4 py-2 surface-card text-xs font-semibold text-muted uppercase tracking-wider border-b border-subtle">
                     All Issues
                   </div>
                 )}
                 {issues.length === 0 ? (
-                  <div className="text-center text-slate-500 py-12 text-sm">No issues found</div>
+                  <div className="text-center text-faint py-12 text-sm">No issues found</div>
                 ) : remainingIssues.length === 0 ? (
-                  <div className="text-center text-slate-500 py-8 text-sm">No other issues</div>
+                  <div className="text-center text-faint py-8 text-sm">No other issues</div>
                 ) : (
                   remainingIssues.map((iss) => (
                     <IssueRow key={iss.id} iss={iss} onIssueClick={onIssueClick} />
@@ -450,8 +450,8 @@ function NewIssueForm({ userId, apiMutate, onCreated, onCancel, setError }) {
   return (
     <div ref={formRef} className="p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-200">Report an Issue</h2>
-        <button onClick={onCancel} className="text-xs text-slate-400 hover:text-slate-200">Cancel</button>
+        <h2 className="text-lg font-semibold text-default">Report an Issue</h2>
+        <button onClick={onCancel} className="text-xs text-muted hover:text-[var(--ds-text)]">Cancel</button>
       </div>
 
       {/* Type toggle */}
@@ -461,7 +461,7 @@ function NewIssueForm({ userId, apiMutate, onCreated, onCancel, setError }) {
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             type === "bug"
               ? "bg-red-600/30 text-red-300 border border-red-500/40"
-              : "bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-600"
+              : "surface-card text-muted border border-subtle hover:border-[var(--ds-border)]"
           }`}
         >
           {"\u{1FAB2}"} Bug
@@ -471,7 +471,7 @@ function NewIssueForm({ userId, apiMutate, onCreated, onCancel, setError }) {
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
             type === "feature"
               ? "bg-violet-600/30 text-violet-300 border border-violet-500/40"
-              : "bg-slate-800 text-slate-400 border border-slate-700 hover:border-slate-600"
+              : "surface-card text-muted border border-subtle hover:border-[var(--ds-border)]"
           }`}
         >
           {"\u2728"} Feature Request
@@ -480,20 +480,20 @@ function NewIssueForm({ userId, apiMutate, onCreated, onCancel, setError }) {
 
       {/* Description */}
       <div>
-        <label className="block text-xs text-slate-500 mb-1">What&apos;s going on?</label>
+        <label className="block text-xs text-faint mb-1">What&apos;s going on?</label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Describe the bug or what you'd like..."
           rows={8}
-          className="w-full min-h-[200px] bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-y"
+          className="w-full min-h-[200px] surface-card border border-subtle rounded-lg px-3 py-2 text-sm text-default placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-y"
           autoFocus
         />
-        <p className="text-xs text-slate-600 mt-1">Tip: paste a screenshot here with Ctrl+V</p>
+        <p className="text-xs text-faint mt-1">Tip: paste a screenshot here with Ctrl+V</p>
       </div>
 
       {/* Screenshots (paste only) */}
-      {uploading && <p className="text-xs text-slate-400">Uploading screenshot...</p>}
+      {uploading && <p className="text-xs text-muted">Uploading screenshot...</p>}
       {screenshots.length > 0 && (
         <div className="flex flex-wrap gap-3">
           {screenshots.map((imgId, i) => (
@@ -501,13 +501,13 @@ function NewIssueForm({ userId, apiMutate, onCreated, onCancel, setError }) {
               <img
                 src={`/api/apps/images/${imgId}/file`}
                 alt=""
-                className="h-24 max-w-[200px] object-cover rounded-lg border border-slate-600"
+                className="h-24 max-w-[200px] object-cover rounded-lg border border-subtle"
               />
               <button
                 onClick={() => setScreenshots((prev) => prev.filter((s) => s !== imgId))}
                 className="absolute -top-2 -right-2 bg-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                <X size={12} className="text-white" />
+                <X size={12} className="text-default" />
               </button>
             </div>
           ))}
@@ -518,7 +518,7 @@ function NewIssueForm({ userId, apiMutate, onCreated, onCancel, setError }) {
       <button
         onClick={handleSubmit}
         disabled={!description.trim() || submitting}
-        className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-on-accent text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting ? "Submitting..." : "Submit"}
       </button>
@@ -632,27 +632,27 @@ function DetailView({ issue, userId, users = [], apiMutate, onBack, onRefresh, s
         <div className="flex items-center gap-2 mb-2">
           <button
             onClick={onBack}
-            className="p-1 rounded hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors"
+            className="p-1 rounded hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] transition-colors"
             title="Back to list"
           >
             <ChevronRight size={18} className="rotate-180" />
           </button>
           <span className="text-lg">{TYPE_ICON[issue.type] || TYPE_ICON.bug}</span>
-          <h2 className="text-lg font-semibold text-slate-200 flex-1">{issue.title}</h2>
+          <h2 className="text-lg font-semibold text-default flex-1">{issue.title}</h2>
         </div>
-        <div className="flex items-center gap-3 text-xs text-slate-500 ml-8">
+        <div className="flex items-center gap-3 text-xs text-faint ml-8">
           <span className="flex items-center gap-1">Reported by {isDev ? (
             <select
               value={reportedBy}
               onChange={(e) => { setReportedBy(e.target.value); setDirty(true); }}
-              className="text-xs bg-slate-800 border border-slate-600 rounded px-1.5 py-0.5 text-slate-300"
+              className="text-xs surface-card border border-subtle rounded px-1.5 py-0.5 text-default"
             >
               {users.map((u) => (
                 <option key={u.name} value={u.name}>{u.display_name || u.name}</option>
               ))}
             </select>
           ) : (
-            <span className="text-slate-300">{reportedBy}</span>
+            <span className="text-default">{reportedBy}</span>
           )}</span>
           <span>&middot;</span>
           <span>{new Date(issue.created_at).toLocaleString()}</span>
@@ -662,7 +662,7 @@ function DetailView({ issue, userId, users = [], apiMutate, onBack, onRefresh, s
               const text = `Please query the issue details for issue ${issue.id} from the database, access and view any related screenshots, and work on fixing this issue.`;
               navigator.clipboard.writeText(text);
             }}
-            className="text-slate-500 hover:text-indigo-400 cursor-pointer transition-colors"
+            className="text-faint hover:text-indigo-400 cursor-pointer transition-colors"
             title="Click to copy prompt to clipboard"
           >{issue.id}</button>
         </div>
@@ -671,11 +671,11 @@ function DetailView({ issue, userId, users = [], apiMutate, onBack, onRefresh, s
       {/* Status — editable by any user (matches the original Skipper). Change
           it, then Save. */}
       <div className="ml-8">
-        <label className="block text-xs text-slate-500 mb-1">Status</label>
+        <label className="block text-xs text-faint mb-1">Status</label>
         <select
           value={status}
           onChange={(e) => { setStatus(e.target.value); setDirty(true); }}
-          className="text-xs bg-slate-800 border border-slate-600 rounded px-2 py-1 text-slate-300"
+          className="text-xs surface-card border border-subtle rounded px-2 py-1 text-default"
         >
           {ALL_STATUSES.map((s) => (
             <option key={s} value={s}>{s.replace("_", " ")}</option>
@@ -707,7 +707,7 @@ function DetailView({ issue, userId, users = [], apiMutate, onBack, onRefresh, s
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 nudged
                   ? "bg-emerald-900/30 text-emerald-400 border border-emerald-700/40"
-                  : "bg-slate-800 text-slate-300 border border-slate-600 hover:bg-slate-700"
+                  : "surface-card text-default border border-subtle hover:bg-[var(--ds-raised)]"
               } disabled:opacity-60`}
             >
               <Bell size={12} />
@@ -717,26 +717,26 @@ function DetailView({ issue, userId, users = [], apiMutate, onBack, onRefresh, s
         </div>
       )}
       {status === "pending_validation" && (
-        <p className="ml-8 text-[11px] text-slate-500">
+        <p className="ml-8 text-[11px] text-faint">
           Picked an action? Add any notes below, then <b>Save</b> to apply. "Not fixed" sends it back to open to be worked again.
         </p>
       )}
 
       {/* Description */}
       <div className="ml-8">
-        <label className="block text-xs text-slate-500 mb-1">Description</label>
+        <label className="block text-xs text-faint mb-1">Description</label>
         <textarea
           value={description}
           onChange={(e) => { setDescription(e.target.value); setDirty(true); }}
           rows={4}
-          className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-indigo-500 resize-y"
+          className="w-full surface-card border border-subtle rounded-lg px-3 py-2 text-sm text-default focus:outline-none focus:border-indigo-500 resize-y"
           readOnly={issue.reported_by !== userId && !isDev}
         />
       </div>
 
       {/* Screenshots */}
       <div className="ml-8">
-        <label className="block text-xs text-slate-500 mb-1">Screenshots</label>
+        <label className="block text-xs text-faint mb-1">Screenshots</label>
         <div className="flex flex-wrap gap-2 mb-2">
           {screenshots.map((imgId, i) => (
             <div key={imgId} className="relative group">
@@ -747,14 +747,14 @@ function DetailView({ issue, userId, users = [], apiMutate, onBack, onRefresh, s
                 <img
                   src={`/api/apps/images/${imgId}/file`}
                   alt=""
-                  className="h-24 max-w-[200px] object-cover rounded-lg border border-slate-600 hover:border-indigo-500 transition-colors cursor-pointer"
+                  className="h-24 max-w-[200px] object-cover rounded-lg border border-subtle hover:border-indigo-500 transition-colors cursor-pointer"
                 />
               </button>
               <button
                 onClick={() => { setScreenshots((prev) => prev.filter((s) => s !== imgId)); setDirty(true); }}
                 className="absolute -top-2 -right-2 bg-red-600 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
               >
-                <X size={12} className="text-white" />
+                <X size={12} className="text-default" />
               </button>
             </div>
           ))}
@@ -764,13 +764,13 @@ function DetailView({ issue, userId, users = [], apiMutate, onBack, onRefresh, s
       {/* Resolution — editable by any user (matches the original Skipper).
           Explain what was done / why it's closed, then Save. */}
       <div className="ml-8">
-        <label className="block text-xs text-slate-500 mb-1">Resolution</label>
+        <label className="block text-xs text-faint mb-1">Resolution</label>
         <textarea
           value={resolution}
           onChange={(e) => { setResolution(e.target.value); setDirty(true); }}
           placeholder="What was done to fix this (or why it's won't-fix / a duplicate)…"
           rows={3}
-          className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-y"
+          className="w-full surface-card border border-subtle rounded-lg px-3 py-2 text-sm text-default placeholder-slate-500 focus:outline-none focus:border-indigo-500 resize-y"
         />
       </div>
 
@@ -780,7 +780,7 @@ function DetailView({ issue, userId, users = [], apiMutate, onBack, onRefresh, s
           <button
             onClick={handleSave}
             disabled={saving}
-            className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
+            className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-on-accent text-sm font-medium transition-colors disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save"}
           </button>
