@@ -187,7 +187,8 @@ def _is_public_path(request: Request) -> bool:
     # First-run only: allow creating the very first user, and validating a model tier,
     # while no non-bot user exists. Once a user exists these require auth/admin
     # (validate-tier then admin-gates itself — see onboarding_validate_tier).
-    if path in ("/api/onboarding/create-user", "/api/onboarding/validate-tier"):
+    if path in ("/api/onboarding/create-user", "/api/onboarding/validate-tier",
+                "/api/onboarding/models", "/api/onboarding/save-models"):
         try:
             return not any("bot" not in (u.get("role") or "") for u in get_all_users())
         except Exception:
@@ -539,6 +540,64 @@ async def onboarding_validate_tier(request: ValidateTierRequest, http_request: R
         r = model_config.validate_tier(request.tier, connector=request.connector,
                                        model=request.model, key=(request.key or None))
         return {"ok": r.ok, "error": r.error}
+    return await asyncio.to_thread(_do)
+
+
+@app.get("/api/onboarding/models")
+async def onboarding_models(http_request: Request):
+    """Available models for the picker (MODEL_FLEXIBILITY #44): every connector's baked chat +
+    embedding entries with provider_display, (default) flags, requires_key, and verified (so the
+    UI can mark experimental connectors). Reachable pre-auth during first-run; authed afterward."""
+    def _do():
+        from providers import registry
+        from providers.connectors.loader import load_all_connectors
+        load_all_connectors()  # idempotent — ensure descriptors are registered
+        cur = {}
+        try:
+            from providers import model_config
+            cur = {t: model_config.read_tier(t) for t in ("smart", "fast", "embedding")}
+        except Exception:
+            cur = {}
+        return {"chat": registry.list_models("chat"),
+                "embedding": registry.list_models("embedding"),
+                "current": cur,
+                "embedding_locked": bool(cur.get("embedding", {}).get("model"))}
+    return await asyncio.to_thread(_do)
+
+
+class SaveModelsRequest(BaseModel):
+    tiers: dict   # {smart:{connector,model,key?}, fast:{...}, embedding:{...}}
+
+
+@app.post("/api/onboarding/save-models")
+async def onboarding_save_models(request: SaveModelsRequest, http_request: Request):
+    """Persist per-tier selections + keys (MODEL_FLEXIBILITY #44). Pre-auth during first-run;
+    admin-gated afterward. Provisions the embedding dimension once from the chosen model."""
+    def _users_exist():
+        return any("bot" not in (u.get("role") or "") for u in get_all_users())
+
+    if await asyncio.to_thread(_users_exist) and not _is_admin_req(http_request):
+        return JSONResponse({"ok": False, "error": "Admin access required."}, status_code=403)
+
+    def _do():
+        from providers import model_config, registry
+        tiers = request.tiers or {}
+        for tier in ("smart", "fast", "embedding"):
+            sel = tiers.get(tier) or {}
+            if not sel.get("connector") or not sel.get("model"):
+                return {"ok": False, "error": f"Missing selection for the {tier} tier."}
+        for tier in ("smart", "fast", "embedding"):
+            sel = tiers[tier]
+            model_config.save_tier(tier, connector=sel["connector"], model=sel["model"],
+                                   key=(sel.get("key") or None))
+        # Provision the embedding dimension ONCE (first setup) from the chosen embedding model.
+        emb = tiers["embedding"]
+        if not model_config.embedding_dim():
+            rows = [r for r in registry.list_models("embedding")
+                    if r["connector"] == emb["connector"] and r["model"] == emb["model"]]
+            if rows and rows[0].get("embedding_dim"):
+                model_config.set_embedding_dim(rows[0]["embedding_dim"])
+        return {"ok": True, "restart_required": True}
     return await asyncio.to_thread(_do)
 
 
