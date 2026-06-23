@@ -40,4 +40,7 @@ def register_builtins() -> list[str]:
     # The 8 OpenAI-compatible vendors (mock-only, flagged not-live-verified).
     from providers.connectors.compat_vendors import register_compat_vendors
     names += register_compat_vendors()
+    # The bespoke Anthropic connector (chat-only; mock-only, flagged not-live-verified).
+    from providers.connectors.anthropic import register_anthropic
+    names += register_anthropic()
     return names
