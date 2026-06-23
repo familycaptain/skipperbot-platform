@@ -17,16 +17,58 @@ from providers.base import ChatProvider, EmbeddingProvider
 
 _chat_providers: dict[str, ChatProvider] = {}
 _embedding_providers: dict[str, EmbeddingProvider] = {}
+_descriptors: dict[str, object] = {}   # name -> ConnectorDescriptor (stored opaquely)
 _DEFAULT = "openai"
 
 
 def register_model_provider(name: str, *, chat: ChatProvider | None = None,
-                            embedding: EmbeddingProvider | None = None) -> None:
-    """Register a connector's chat and/or embedding provider under `name`."""
+                            embedding: EmbeddingProvider | None = None,
+                            descriptor: object | None = None) -> None:
+    """Register a connector's chat and/or embedding provider under `name`.
+
+    ``descriptor`` (a ConnectorDescriptor) is optional and carries the baked model list +
+    auth shape the UI aggregates via ``list_models`` — the registry stores it opaquely so it
+    never has to import the connector layer (one-directional dep)."""
     if chat is not None:
         _chat_providers[name] = chat
     if embedding is not None:
         _embedding_providers[name] = embedding
+    if descriptor is not None:
+        _descriptors[name] = descriptor
+
+
+def get_descriptor(name: str) -> object | None:
+    return _descriptors.get(name)
+
+
+def requires_key(name: str) -> bool:
+    """Whether the connector needs an API key (default True if unknown)."""
+    d = _descriptors.get(name)
+    return bool(getattr(d, "requires_key", True)) if d is not None else True
+
+
+def list_models(kind: str | None = None) -> list[dict]:
+    """Aggregate every connector's baked model entries (optionally filtered by kind) for the
+    UI. Each row carries its connector's (default) flag + requires_key + verified so the
+    picker can render 'Provider / model', mark defaults, and signal experimental connectors.
+    Default-multiplicity is per-connector (enforced at load) — across connectors there may be
+    several defaults (one per provider) and NO forced single platform default."""
+    rows: list[dict] = []
+    for name, d in _descriptors.items():
+        for m in getattr(d, "models", []) or []:
+            if kind is not None and getattr(m, "kind", None) != kind:
+                continue
+            rows.append({
+                "connector": name,
+                "provider_display": getattr(m, "provider_display", name),
+                "model": getattr(m, "model", ""),
+                "kind": getattr(m, "kind", ""),
+                "default": bool(getattr(m, "default", False)),
+                "embedding_dim": getattr(m, "embedding_dim", None),
+                "requires_key": bool(getattr(d, "requires_key", True)),
+                "verified": bool(getattr(d, "verified", False)),
+            })
+    return rows
 
 
 def register_builtin_providers() -> None:
