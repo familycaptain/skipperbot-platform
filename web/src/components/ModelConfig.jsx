@@ -130,7 +130,7 @@ export default function ModelConfig({ mode = "onboarding", embeddingLocked = fal
       });
       const data = await res.json();
       if (data.ok) update(tier.key, { status: "ok", error: "" });
-      else update(tier.key, { status: "error", error: friendlyError(data.error, tier) });
+      else update(tier.key, { status: "error", error: friendlyError(data.error) });
     } catch (e) {
       update(tier.key, { status: "error", error: String(e.message || e) });
     }
@@ -241,16 +241,14 @@ function TierStatus({ status }) {
   return <span className="text-xs text-faint">Not validated</span>;
 }
 
-function friendlyError(code, tier) {
+function friendlyError(code) {
   switch (code) {
     case "missing_key": return "An API key is required for this provider.";
     case "auth": return "The provider rejected the key. Check it and try again.";
     case "quota": return "The provider reports no quota/credit on this account.";
     case "model_not_found": return "That model isn’t available on this account.";
     case "network":
-      return tier.kind === "embedding" || true
-        ? "Couldn’t reach the provider (network, or a local server that isn’t running)."
-        : "Network error.";
+      return "Couldn’t reach the provider (network, or a local server that isn’t running).";
     default: return "Validation failed. Check the selection and key.";
   }
 }

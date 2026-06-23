@@ -13,9 +13,10 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Settings as Cog, Loader2, Save, Check, X, Eye, EyeOff, AlertCircle, LayoutGrid,
   Users, UserPlus, Trash2, KeyRound, ShieldCheck, RotateCcw, Star, MessageCircle,
-  Power, Lock,
+  Power, Lock, Cpu,
 } from "lucide-react";
 import { getManageableApps, getTileApps, setHiddenApps } from "../../../web/src/apps/registry";
+import ModelConfig from "../../../web/src/components/ModelConfig";
 
 const API = "/api/apps/settings";
 
@@ -918,6 +919,94 @@ function MembersPanel({ userId }) {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Models panel (MODEL_FLEXIBILITY #44) — mirrors the first-run model step.
+// Smart & Fast are changeable; the text-encoding (embedding) model is locked after first setup.
+// ---------------------------------------------------------------------------
+function ModelsPanel() {
+  const [valid, setValid] = useState(false);
+  const [tiersState, setTiersState] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [restart, setRestart] = useState(false);
+
+  const save = async () => {
+    setError("");
+    setRestart(false);
+    setSaving(true);
+    try {
+      const tiers = {};
+      for (const k of ["smart", "fast", "embedding"]) {
+        const t = tiersState[k] || {};
+        tiers[k] = { connector: t.connector, model: t.model, key: t.key || null };
+      }
+      // Absolute path — these endpoints live under /api/onboarding, not the settings prefix.
+      const res = await fetch("/api/onboarding/save-models", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tiers }),
+      });
+      const data = await res.json();
+      if (!data.ok) { setError(data.error || "Could not save your model selections."); return; }
+      setRestart(true);
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="p-6 max-w-2xl">
+      <h2 className="text-xl font-medium text-default mb-1 inline-flex items-center gap-2">
+        <Cpu size={18} /> Models
+      </h2>
+      <p className="text-sm text-muted mb-4">
+        Choose the provider + model for each tier and validate it. The text-encoding model is
+        locked after first setup (changing it would require re-encoding all your data).
+      </p>
+      <ModelConfig
+        mode="settings"
+        embeddingLocked={true}
+        onChange={({ tiers, allValid }) => { setTiersState(tiers); setValid(allValid); }}
+      />
+      {error && (
+        <div className="mt-3 flex items-center gap-2 text-sm text-rose-400">
+          <AlertCircle size={14} /> {error}
+        </div>
+      )}
+      {restart && (
+        <div className="mt-4 rounded border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-default">
+          <div className="mb-2 font-medium text-amber-200">Saved — restart required to take effect</div>
+          <p className="mb-2 text-muted">Model changes apply on the next start. Nothing in progress is lost.</p>
+          <div className="space-y-1.5 font-mono text-xs">
+            <div className="rounded surface-page px-2 py-1.5 text-default">
+              <span className="text-faint"># Docker path</span><br />docker compose restart agent
+            </div>
+            <div className="rounded surface-page px-2 py-1.5 text-default">
+              <span className="text-faint"># Native path</span><br />
+              {"# Ctrl-C the running agent, then re-run ./start_agent.sh"}
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="mt-5">
+        <button
+          className="inline-flex items-center gap-2 rounded btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!valid || saving}
+          onClick={save}
+        >
+          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+          {saving ? "Saving…" : "Save"}
+        </button>
+        {!valid && (
+          <span className="ml-3 text-xs text-faint">Validate all three tiers to save.</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsApp({ userId }) {
   const [apps, setApps] = useState([]);
   const [panels, setPanels] = useState([]);   // platform panels: System, Integrations
@@ -1000,6 +1089,16 @@ export default function SettingsApp({ userId }) {
               <Power size={14} /> Apps
             </button>
           </li>
+          <li>
+            <button
+              className={`w-full text-left px-4 py-2 text-sm transition-colors inline-flex items-center gap-2 ${
+                selected === "__models__" ? "surface-card text-default" : "text-default hover:bg-[var(--ds-panel)]"
+              }`}
+              onClick={() => setSelected("__models__")}
+            >
+              <Cpu size={14} /> Models
+            </button>
+          </li>
           {panels.map((p) => (
             <li key={p.id}>
               <button
@@ -1051,6 +1150,8 @@ export default function SettingsApp({ userId }) {
           <AppManagementPanel userId={userId} />
         ) : selected === "__members__" ? (
           <MembersPanel userId={userId} />
+        ) : selected === "__models__" ? (
+          <ModelsPanel />
         ) : current ? (
           <AppDetail key={selected} app={current} onSaved={onSaved} />
         ) : (
