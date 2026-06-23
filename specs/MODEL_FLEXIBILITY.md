@@ -137,7 +137,7 @@ following the existing provider-registry pattern (`nag_registry.py`,
 as apps), so a broken connector cannot crash the platform. Boot wires this with a
 `load_all_connectors()` call beside `load_all_apps()` in `agent.py`.
 
-**NO REQUIRED THIRD-PARTY PROXIES (operator directive, load-bearing).** Out of the box,
+**NO THIRD-PARTY PROXIES REQUIRED (operator directive, load-bearing).** Out of the box,
 every BUNDLED connector talks DIRECTLY to the vendor's own first-party API endpoint, or to
 a LOCAL/self-hosted endpoint the operator controls (Ollama / vLLM / LM Studio). The goal is
 that a self-hoster **never has to install or sign up for a separate aggregator just to get
