@@ -91,22 +91,22 @@ flowchart TD
   gate2 -->|approve| merge[["Auto-merge to release branch"]]:::sys
   merge --> resync[["Re-sync files to DB"]]:::sys
   resync --> g3deploy[["UAT server (tracks origin/release): deploy release via skipper update"]]:::sys
-  g3deploy --> gate3[/"GATE 3 — verify: operator + assistant test it live on the UAT server"/]:::gate
+  g3deploy --> gate3[/"GATE 3 — verify: operator + PM test it live on the UAT server"/]:::gate
   gate3 -->|"✓ works"| close[["Close the GitHub issue"]]:::sys
   close --> e_done(["Verified + issue closed — per-change done"]):::event
   gate3 -->|"✗ code bug (spec still valid) → resume"| impl
   gate3 -->|"✗ approach wrong → rewrite spec → re-review"| l_design
 
-  %% The operator's ASSISTANT — the human-in-the-loop's AI partner, present at EVERY gate.
+  %% The operator's PM — the human-in-the-loop's AI partner, present at EVERY gate.
   %% Distinct from the autonomous swarm: it reads each packet, surfaces the real decision, pushes
   %% back, and OPERATES the gate on the operator's explicit say-so (the agents cannot decide).
-  assistant{{"🤖 Operator's assistant — reads every packet · surfaces the real decision in plain language · pushes back on thin validation / code-read-not-reproduced conclusions · answers questions · OPERATES the gate on the operator's explicit say-so (agents CANNOT decide) · runs the watcher that keeps items moving"}}:::asst
-  assistant -. "review + operate · on say-so" .-> gate1
-  assistant -. "review + operate · on say-so" .-> gate2
-  assistant -. "verify + operate · on say-so" .-> gate3
+  PM{{"🤖 Operator's PM — reads every packet · surfaces the real decision in plain language · pushes back on thin validation / code-read-not-reproduced conclusions · answers questions · OPERATES the gate on the operator's explicit say-so (agents CANNOT decide) · runs the watcher that keeps items moving"}}:::pm
+  PM -. "review + operate · on say-so" .-> gate1
+  PM -. "review + operate · on say-so" .-> gate2
+  PM -. "verify + operate · on say-so" .-> gate3
 
   classDef event fill:#e8eef7,stroke:#5b7aa7,color:#1b2b44;
-  classDef asst fill:#eef0ff,stroke:#6a5acd,color:#1e1a44,stroke-width:2px;
+  classDef pm fill:#eef0ff,stroke:#6a5acd,color:#1e1a44,stroke-width:2px;
   classDef agent fill:#eaf6ec,stroke:#4c9a5a,color:#16331e;
   classDef sys fill:#f3eefc,stroke:#8a6bbf,color:#2c1f44;
   classDef gate fill:#fdf1d6,stroke:#caa23a,color:#4a3a0e;
@@ -171,9 +171,9 @@ flowchart TD
   branch → **box 2** validates with Playwright → loop **failing→retry** / **stuck→
   escalate** / **green→packet** → **Gate 2** → **auto-merge to the `release` branch**
   → **re-sync**. Both gates can **bounce back** ("change this").
-- **Every gate has a human-in-the-loop *and their assistant*.** A gate is not the operator alone
+- **Every gate has a human-in-the-loop *and their PM*.** A gate is not the operator alone
   clicking approve/change/reject — between the swarm's packet and the decision sits the **operator's
-  assistant** (a Claude instance on the operator's machine). It **reads each packet**, restates the
+  PM** (a Claude instance on the operator's machine). It **reads each packet**, restates the
   *real* decision in plain language (not the terse button labels), **flags what the packet underplays**
   (thin or un-reproduced validation, a placement/dependency risk, a cross-item conflict), **answers the
   operator's questions** grounded in the live code, and **pushes the agents back** when a conclusion was
@@ -183,12 +183,12 @@ flowchart TD
   autonomous swarm holds only the service token and **cannot decide its own gates**. It also runs a
   **watcher loop** that catches each gate as it appears and keeps items moving — auto-reviewing, pushing
   back, or approving on the operator's standing instruction, and surfacing genuine forks. (`/chat-ev <n>`
-  is the gate-1 requirements-partner form of this role; `/evolve-assistant` rebuilds it in a fresh
+  is the gate-1 requirements-partner form of this role; `/evolve-pm` rebuilds it in a fresh
   session.)
 - **Gate 3 — verify (acceptance): merge is NOT done.** Auto-merge ships a *candidate* to `release`;
   "shipped" ≠ "works." So the canonical `/loop` flow continues *past* merge into a **`verify`** phase
   (now shown in the main graph above): `release` is deployed to a **separate UAT server that tracks
-  `origin/release`**, the **operator + their assistant test it live**, and only then — `✓ works`
+  `origin/release`**, the **operator + their PM test it live**, and only then — `✓ works`
   **closes the GitHub issue** (per-change done), or `✗ broken` resumes the SAME conversation: a
   localized **code bug** → re-implement → Gate 2; a **wrong approach** → re-design → rewrite spec →
   re-review → Gate 1. See [§ Gate 3 below](#gate-3--verify-acceptance-loop) for the close-up. (The UAT
@@ -211,7 +211,7 @@ flowchart TD
   - On Gate-2 approve, box 1 merges `feature → release` (local) and **pushes
     `origin/release`** — the staging branch.
   - A **separate UAT server tracks `origin/release`**: `skipper update` (a plain `git pull`) deploys
-    the candidate so the operator + assistant verify *exactly what will ship*.
+    the candidate so the operator + PM verify *exactly what will ship*.
   - The operator then merges **`release → main`** (the publish gate; `main` is
     branch-protected). `main` is the world — nothing reaches it except that deliberate
     merge, so box 1 / the agents can never touch production directly.
@@ -221,12 +221,12 @@ flowchart TD
 **Merge is not done.** Auto-merge ships a *candidate* to `release`, but "shipped" ≠ "works." So
 after merge an item enters a **`verify`** phase: `release` is deployed to a **separate UAT server that
 tracks `origin/release`** (a dedicated mock-data box, `skipper update`), the **operator and their
-assistant test it live** (the assistant operates the gate on the operator's explicit say-so), and only
+PM test it live** (the PM operates the gate on the operator's explicit say-so), and only
 then confirm.
 
 ```mermaid
 flowchart LR
-  merged(["Merged to release"]):::event --> verify[/"GATE 3 — verify (operator + assistant test live on the UAT server)"/]:::gate
+  merged(["Merged to release"]):::event --> verify[/"GATE 3 — verify (operator + PM test live on the UAT server)"/]:::gate
   verify -->|"✓ works"| close[["Close the GitHub issue"]]:::sys --> done(["Verified + closed"]):::event
   verify -->|"✗ broken — code bug, spec still valid"| reimpl["Re-implement → Gate 2"]:::agent
   verify -->|"✗ broken — approach was wrong"| respec["Re-design → REWRITE spec → re-review → Gate 1"]:::agent

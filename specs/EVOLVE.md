@@ -31,14 +31,14 @@ removes it from intake. Operator-authored issues skip vision-fit (their request 
   (`scripts/evolve_explain.py`), pressure-tests/clarifies the spec in conversation, and — **on the
   operator's explicit, per-item say-so** — **operates the gate** (approve / change / reject) via
   `scripts/evolve_decide.py`. Replaces wrestling the terse gate UI. (`.claude/skills/chat-ev/`)
-- **`/evolve-assistant`** — rebuilds, in a fresh session, the durable summary of the **operator's-
-  assistant role** (gate review + operate, fleet topology, the fix/harden loop, design-with-the-operator,
+- **`/evolve-pm`** — rebuilds, in a fresh session, the durable summary of the **operator's-
+  PM role** (gate review + operate, fleet topology, the fix/harden loop, design-with-the-operator,
   the engine invariants). Use it to restore the role if a working conversation is lost.
-  (`.claude/skills/evolve-assistant/`)
+  (`.claude/skills/evolve-pm/`)
 - `evolve-explain` remains the underlying **read-only** live fetch the others build on.
 - **Gate-decision authority:** decisions are recorded with the **parent `EVOLVE_DECIDE_TOKEN`**, which
-  lives ONLY on the operator's assistant machine — **the autonomous loop/agents CANNOT decide gates**
-  (the decision endpoint rejects the service token). The assistant is the operator's hands, never an
+  lives ONLY on the operator's PM machine — **the autonomous loop/agents CANNOT decide gates**
+  (the decision endpoint rejects the service token). The PM is the operator's hands, never an
   autonomous approver.
 
 **Validation (box 2, always MOCK data).** The `validate` agent drives box 2's live UI (Playwright via
@@ -743,7 +743,7 @@ low-risk.)
 **Shipping today** (`.claude/skills/<name>/` → invocable as `/name`):
 - **`/chat-ev <n>`** — Gate-1 requirements partner; refine the spec in conversation and **operate the
   gate** (approve / change / reject via `evolve_decide.py`) on the operator's explicit say-so (§0).
-- **`/evolve-assistant`** — rebuild the operator's-assistant role + context in a fresh session.
+- **`/evolve-pm`** — rebuild the operator's-PM role + context in a fresh session.
 - **`/evolve`** — the loop engine's own skill (runs an `ev-<n>` through the pipeline).
 - **`evolve-explain`** — the read-only live packet fetch (`evolve_explain.py`) the above build on.
 - **`evolve-validate`** / **`run-evolve-tests`** / **`cfs-validate`** — the validation + bound-test
@@ -1068,7 +1068,7 @@ issue / PR / proactive design proposal / QA bug-finding   (four intake sources)
 Every box is either deterministic machinery or a fast human review — never the
 human reading raw code.
 
-### The decision assistant — Claude explains a gate (RECOMMENDED workflow)
+### The decision PM — Claude explains a gate (RECOMMENDED workflow)
 
 A gate review packet is **high-detail but low-context**: it states a recommendation and
 terse options ("approve / option A / option B"), but the wording often doesn't carry enough
@@ -1076,7 +1076,7 @@ for the operator to *understand what is actually being decided* or *how to choos
 the full spec + four reviewer outputs to recover that context is exactly the labor the gates
 are meant to avoid.
 
-**The recommended workflow: use Claude as a decision assistant.** The operator gives Claude an
+**The recommended workflow: use Claude as a decision PM.** The operator gives Claude an
 **Evolve item id + a question** ("explain ev-13", "what's the real difference between option A
 and B on poc-1?", "why does the architecture reviewer object?"), and Claude looks the item up
 live and **translates it**: what's actually being decided and why it matters, what each option
@@ -1087,24 +1087,24 @@ here; it never decides a gate.** This keeps the human as the judgment layer (the
 §1) while removing the "I don't have enough context to decide" friction.
 
 This is delivered as **repo skills, on purpose**:
-- **`evolve-explain`** (`.claude/skills/evolve-explain/`) — the assistant role: look an item up
+- **`evolve-explain`** (`.claude/skills/evolve-explain/`) — the PM role: look an item up
   and explain it. Backed by **`scripts/evolve_explain.py`**, a read-only fetch of the live gate
   packet / run / activity from the operator's platform (`GET /api/apps/evolve/...`).
 - Because it ships in `.claude/`, it **travels with the clone** (§6): any self-hoster's own Claude
   Code picks up the same skill and can assist *their* Evolve queue — and any agent (the in-session
   `/loop` engine included) can invoke it. The capability is shared and reusable, not a one-off.
 
-It's the interim, conversational form of an assistant that may later be **integrated directly into
+It's the interim, conversational form of a PM that may later be **integrated directly into
 the Evolve app** (an "explain this gate" affordance beside the decision buttons) once the manual
 workflow proves its value.
 
-> **Update (current — see §0):** this matured into **`/chat-ev <n>`**. The assistant still *explains*,
+> **Update (current — see §0):** this matured into **`/chat-ev <n>`**. The PM still *explains*,
 > but — on the operator's explicit, per-item say-so — it now also **operates the gate** (approve /
 > change / reject), submitting via `scripts/evolve_decide.py` authed by the **parent
-> `EVOLVE_DECIDE_TOKEN`** (assistant-machine-only). So the "read-only, never decides" rule above now
+> `EVOLVE_DECIDE_TOKEN`** (PM-machine-only). So the "read-only, never decides" rule above now
 > applies to the **autonomous loop/agents** (which still cannot decide a gate — the decision endpoint
-> rejects the service token), not to the operator acting *through* the assistant. **`/evolve-assistant`**
-> carries the broader operator's-assistant role.
+> rejects the service token), not to the operator acting *through* the PM. **`/evolve-pm`**
+> carries the broader operator's-PM role.
 
 ---
 
