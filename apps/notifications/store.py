@@ -126,19 +126,18 @@ def get_notifications(
     Returns:
         List of notification records.
     """
+    # Filter by source_type/source_id in the QUERY (server-side) BEFORE LIMIT, so a
+    # small limit reliably returns the matching row (issue #43 — the old path limited
+    # the raw fetch first, then filtered in Python, so limit=1 missed the row).
     if recipient:
         all_notifs = _dl_notif.get_notifications_for_user(
             recipient.lower().strip(), limit=limit,
+            source_type=source_type, source_id=source_id,
         )
     else:
-        all_notifs = _dl_notif.get_all_notifications(limit=limit)
-
-    if source_type:
-        st = source_type.strip().lower()
-        all_notifs = [n for n in all_notifs if n.get("source_type", "").lower() == st]
-    if source_id:
-        sid = source_id.strip()
-        all_notifs = [n for n in all_notifs if n.get("source_id") == sid]
+        all_notifs = _dl_notif.get_all_notifications(
+            limit=limit, source_type=source_type, source_id=source_id,
+        )
 
     return all_notifs[:limit]
 

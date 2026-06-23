@@ -96,26 +96,38 @@ def get_notification(notif_id: str) -> dict | None:
     return _row(row) if row else None
 
 
-def get_all_notifications(limit: int = 10000) -> list[dict]:
-    return [
-        _row(r)
-        for r in fetch_all_in_schema(
-            SCHEMA,
-            "SELECT * FROM notifications ORDER BY created_at DESC LIMIT %s",
-            (limit,),
-        )
-    ]
+def _source_clauses(source_type=None, source_id=None) -> tuple[list[str], list]:
+    """Build server-side source filter clauses + bound params (issue #43).
+
+    Filtering by source_type/source_id happens in the QUERY (before LIMIT) so a
+    small limit reliably returns the matching row. Only FIXED clause strings are
+    assembled; every value is a bound %s param (injection-safe). source_type
+    matches case-insensitively (symmetric, matching the prior Python compare);
+    source_id matches exactly with surrounding whitespace stripped.
+    """
+    clauses: list[str] = []
+    params: list = []
+    if source_type:
+        clauses.append("LOWER(source_type) = LOWER(%s)")
+        params.append(source_type.strip())
+    if source_id:
+        clauses.append("source_id = %s")
+        params.append(source_id.strip())
+    return clauses, params
 
 
-def get_notifications_for_user(recipient: str, limit: int = 50) -> list[dict]:
-    return [
-        _row(r)
-        for r in fetch_all_in_schema(
-            SCHEMA,
-            "SELECT * FROM notifications WHERE recipient = %s ORDER BY created_at DESC LIMIT %s",
-            (recipient, limit),
-        )
-    ]
+def get_all_notifications(limit: int = 10000, source_type=None, source_id=None) -> list[dict]:
+    clauses, params = _source_clauses(source_type, source_id)
+    where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
+    sql = f"SELECT * FROM notifications{where} ORDER BY created_at DESC LIMIT %s"
+    return [_row(r) for r in fetch_all_in_schema(SCHEMA, sql, (*params, limit))]
+
+
+def get_notifications_for_user(recipient: str, limit: int = 50, source_type=None, source_id=None) -> list[dict]:
+    clauses, params = _source_clauses(source_type, source_id)
+    where = " AND ".join(["recipient = %s", *clauses])
+    sql = f"SELECT * FROM notifications WHERE {where} ORDER BY created_at DESC LIMIT %s"
+    return [_row(r) for r in fetch_all_in_schema(SCHEMA, sql, (recipient, *params, limit))]
 
 
 def get_undelivered(recipient: str) -> list[dict]:

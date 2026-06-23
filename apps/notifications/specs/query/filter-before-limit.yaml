@@ -1,0 +1,44 @@
+kind: specification
+id: notifications.query.filter-before-limit
+title: Notification queries filter by source_type/source_id server-side before LIMIT
+state: live
+autonomy: gated
+verified: false
+behavior: >
+  apps/notifications/store.py::get_notifications(recipient, source_type, source_id, limit)
+  returns the most-recent notifications MATCHING the given source_type/source_id, with LIMIT
+  applied AFTER filtering. The filters are applied in the SQL query: apps/notifications/data.py
+  get_all_notifications(limit, source_type, source_id) and get_notifications_for_user(recipient,
+  limit, source_type, source_id) add WHERE terms (LOWER(source_type)=LOWER(%s) and source_id=%s,
+  bound params, whitespace-stripped) BEFORE ORDER BY created_at DESC LIMIT %s. INVARIANT: when a
+  notification with the requested (source_type, source_id) exists, get_notifications(source_type=...,
+  source_id=..., limit=1) returns it even if more-recent notifications of other types exist — it no
+  longer returns empty by over-limiting the raw fetch. With no source filter, behavior is unchanged
+  (the no-filter SQL is byte-identical). The public store.get_notifications signature is unchanged;
+  the redundant Python post-filter is removed (the query is authoritative); source_type matches
+  case-insensitively (symmetric), source_id exactly. CONSEQUENCE: apps/schedules/notifier.py
+  _has_overdue_notification_today and _has_recent_notification (which call get_notifications(...,
+  limit=1)) find the schedule's own prior notification, so the notifier creates each overdue
+  (once/day) and upcoming (once/12h) notification at most once per window instead of re-creating it
+  every ~30-60s tick. No change to notification delivery, the notifications schema, or notifier.py.
+implements:
+- apps/notifications/data.py::get_all_notifications
+- apps/notifications/data.py::get_notifications_for_user
+- apps/notifications/data.py::_source_clauses
+- apps/notifications/store.py::get_notifications
+tests:
+- type: unit
+  path: apps/notifications/tests/test_get_notifications_filter.py
+  rubric: >
+    Offline. PART A (store behavior with a fake data layer honoring filter-then-limit, rows
+    created_at DESC): filter-before-limit returns the schedule's own row when newer other-type rows
+    exist and the data layer received source_type/source_id; a reverted limit-before-filter yields
+    empty (regression guard); the recipient path threads the filters; no-source-filter returns the
+    most-recent of any type; case-insensitive source_type is symmetric. PART B (MANDATORY real SQL):
+    data.get_all_notifications / get_notifications_for_user build the source WHERE terms BEFORE LIMIT
+    with %s bound params (values not interpolated), and the no-filter SQL is byte-identical.
+links: {}
+notes: >
+  Issue #43 (operator bug; reproduced deterministically on box2). One change fixes both schedule
+  dedups; out of scope: delivery retry / admin fallback. The MCP tool get_recent_notifications also
+  routes through get_notifications and is improved (correct source semantics), not regressed.
