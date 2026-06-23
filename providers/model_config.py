@@ -29,6 +29,7 @@ _SEED = {
     "embedding": ("openai", "text-embedding-3-small"),
 }
 _SEED_EMBEDDING_DIM = 1536
+_PROBE_MAX_TOKENS = 64   # validate chat round-trip cap (reasoning models reject tiny caps)
 
 
 def _settings():
@@ -175,8 +176,12 @@ def validate_tier(tier: str, *, connector: str, model: str, key: str | None = No
             prov.embed(texts=["ping"], model=model, api_key=effective_key)
         else:
             prov = registry.get_chat_provider(connector)
+            # A small but non-trivial cap: reasoning models (gpt-5.x, o*) reject max tokens of 1
+            # (BadRequest) and spend output tokens on hidden reasoning, so 1 can't prove the model
+            # works. 64 is enough for any model to ACCEPT the call; we only need a clean round-trip
+            # (no exception), not visible content.
             prov.chat(turns=[Turn(role="user", content="ping")], tools=None, model=model,
-                      max_output_tokens=1, api_key=effective_key)
+                      max_output_tokens=_PROBE_MAX_TOKENS, api_key=effective_key)
         return ValidateResult(ok=True)
     except Exception as exc:  # noqa: BLE001 — never propagate (may carry a sanitized detail)
         detail = type(exc).__name__
