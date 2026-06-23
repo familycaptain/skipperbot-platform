@@ -68,9 +68,33 @@ async def lifespan(app: FastAPI):
         await asyncio.to_thread(ensure_chatlog_schema)
     except Exception as e:
         logger.error("STARTUP: ensure_chatlog_schema failed: %s", e)
-    # One-time migrations: backfill memory embeddings + migrate knowledge to binary
-    await asyncio.to_thread(backfill_embeddings)
-    await asyncio.to_thread(migrate_chunk_embeddings)
+    # MODEL_FLEXIBILITY (#44): seamless upgrade-seed for EXISTING installs (decision A) — if a
+    # pre-upgrade install has an OPENAI_API_KEY + onboarded users, seed the OpenAI tiers so it
+    # keeps working WITHOUT re-onboarding (idempotent; stored selection always wins).
+    try:
+        from providers import model_config
+        _existing = await asyncio.to_thread(
+            lambda: any("bot" not in (u.get("role") or "") for u in get_all_users()))
+        if await asyncio.to_thread(model_config.seed_from_existing_install,
+                                   env_openai_key=os.getenv("OPENAI_API_KEY"),
+                                   has_vectors=_existing):
+            logger.info("STARTUP: seeded model tiers from existing install (upgrade, keyless-safe)")
+    except Exception as e:
+        logger.error("STARTUP: upgrade-seed failed: %s", e)
+
+    # Keyless boot (#44): suppress LLM-dependent background work until models are configured, so
+    # a fresh keyless install boots HEALTHY and the first-run model step is reachable with no LLM call.
+    try:
+        from providers.tier_resolver import models_configured as _models_configured
+        _models_ready = _models_configured()
+    except Exception:
+        _models_ready = False
+    if _models_ready:
+        # One-time migrations: backfill memory embeddings + migrate knowledge to binary
+        await asyncio.to_thread(backfill_embeddings)
+        await asyncio.to_thread(migrate_chunk_embeddings)
+    else:
+        logger.info("STARTUP: models not configured — suppressing embedding/thinking work (keyless boot)")
     await mcp_client.connect_to_mcp()
 
     # Build direct-call tool registry (bypasses MCP subprocess for execution)
@@ -85,8 +109,10 @@ async def lifespan(app: FastAPI):
     # Register the bundled model providers (issue #39). Belt-and-suspenders: the registry
     # also self-registers lazily on first use, so this is not load-order-critical (the P3
     # plugin loader for external connectors layers on top here later).
-    from providers.registry import register_builtin_providers
-    register_builtin_providers()
+    # Register ALL bundled connectors (openai + 8 OpenAI-compatible + anthropic) and any
+    # external connectors in models/ (#44). Idempotent; core never imports a connector.
+    from providers.connectors.loader import load_all_connectors
+    load_all_connectors()
     apps_dir = Path(__file__).parent / "apps"
     load_all_apps(apps_dir, app, None)
 
@@ -116,7 +142,8 @@ async def lifespan(app: FastAPI):
     background_tasks = lifecycle.start_background_tasks()
     job_task = asyncio.create_task(start_dispatcher())
     trello_task = asyncio.create_task(start_trello_sync())
-    thinking_task = asyncio.create_task(start_thinking_scheduler())
+    # Thinking scheduler is LLM-dependent — start it only when models are configured (keyless boot, #44).
+    thinking_task = asyncio.create_task(start_thinking_scheduler()) if _models_ready else None
     yield
     # Shutdown
     if discord_enabled_now:
@@ -132,7 +159,8 @@ async def lifespan(app: FastAPI):
         _task.cancel()
     job_task.cancel()
     trello_task.cancel()
-    thinking_task.cancel()
+    if thinking_task is not None:
+        thinking_task.cancel()
     close_pool()
 
 
@@ -145,7 +173,7 @@ app = FastAPI(title="SkipperBot Agent", version="0.1.0", lifespan=lifespan)
 # non-public path with 401. Enforcement is unconditional — there is no off switch.
 # ---------------------------------------------------------------------------
 _PUBLIC_EXACT = {"/", "/api/health", "/auth/login", "/auth/logout",
-                 "/api/onboarding/status", "/api/onboarding/check-openai"}
+                 "/api/onboarding/status"}
 _PUBLIC_PREFIXES = ("/assets/", "/static/", "/web/")
 
 
@@ -156,8 +184,10 @@ def _is_public_path(request: Request) -> bool:
     # SPA + static assets (anything that isn't an API/auth/ws/chat path).
     if not path.startswith(("/api/", "/auth/", "/ws", "/chat")):
         return True
-    # First-run: allow creating the very first user only while none exist.
-    if path == "/api/onboarding/create-user":
+    # First-run only: allow creating the very first user, and validating a model tier,
+    # while no non-bot user exists. Once a user exists these require auth/admin
+    # (validate-tier then admin-gates itself — see onboarding_validate_tier).
+    if path in ("/api/onboarding/create-user", "/api/onboarding/validate-tier"):
         try:
             return not any("bot" not in (u.get("role") or "") for u in get_all_users())
         except Exception:
@@ -369,10 +399,16 @@ async def onboarding_status():
     def _do():
         users = get_all_users()
         non_bot = [u for u in users if "bot" not in (u.get("role") or "")]
+        try:
+            from providers.tier_resolver import models_configured as _mc
+            model_configured = _mc()
+        except Exception:
+            model_configured = False
         return {
             "needs_onboarding": len(non_bot) == 0,
             "user_count": len(non_bot),
             "openai_key_present": bool(os.getenv("OPENAI_API_KEY", "").strip()),
+            "model_configured": model_configured,  # MODEL_FLEXIBILITY (#44): tiers selected?
             "db_ok": True,  # The fact this endpoint replied means the DB is up.
         }
     return await asyncio.to_thread(_do)
@@ -475,37 +511,34 @@ async def api_set_openable_apps(req: OpenableAppsRequest, request: Request):
     return {"ok": True, "count": len(req.apps or [])}
 
 
-@app.post("/api/onboarding/check-openai")
-async def onboarding_check_openai():
-    """Verify the current OPENAI_API_KEY against the OpenAI API.
+class ValidateTierRequest(BaseModel):
+    tier: str
+    connector: str
+    model: str
+    key: str | None = None
 
-    We use the key already set in the agent's env (set in .env by the
-    operator before `docker compose up`). This endpoint does not accept
-    a key in the request body — that would mean writing back to .env
-    from the container, which adds a bind-mount requirement we don't
-    want to assume.
+
+@app.post("/api/onboarding/validate-tier")
+async def onboarding_validate_tier(request: ValidateTierRequest, http_request: Request):
+    """Validate one model tier by a REAL authenticated round-trip of the selected model
+    (MODEL_FLEXIBILITY #44, decision B) — replaces the OpenAI-only check-openai.
+
+    Auth: during first-run onboarding (no non-bot user yet) this is reachable pre-auth (the
+    onboarding modal has no session). Once a user exists it is admin-only. The validation
+    itself (providers.model_config.validate_tier) uses the connector's OWN hardcoded base_url
+    (no client-supplied URL — SSRF-safe) and never echoes the key.
     """
+    def _users_exist():
+        return any("bot" not in (u.get("role") or "") for u in get_all_users())
+
+    if await asyncio.to_thread(_users_exist) and not _is_admin_req(http_request):
+        return JSONResponse({"ok": False, "error": "Admin access required."}, status_code=403)
+
     def _do():
-        key = os.getenv("OPENAI_API_KEY", "").strip()
-        if not key:
-            return {"ok": False, "error": "OPENAI_API_KEY is not set in .env. Set it and restart the agent."}
-        import urllib.error
-        import urllib.request
-        req = urllib.request.Request(
-            "https://api.openai.com/v1/models",
-            headers={"Authorization": f"Bearer {key}"},
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=10) as resp:  # noqa: S310
-                if resp.status == 200:
-                    return {"ok": True}
-                return {"ok": False, "error": f"OpenAI returned HTTP {resp.status}"}
-        except urllib.error.HTTPError as e:
-            if e.code == 401:
-                return {"ok": False, "error": "OpenAI rejected the key (HTTP 401). Check OPENAI_API_KEY in .env."}
-            return {"ok": False, "error": f"OpenAI returned HTTP {e.code}"}
-        except Exception as e:
-            return {"ok": False, "error": f"Could not reach OpenAI: {e}"}
+        from providers import model_config
+        r = model_config.validate_tier(request.tier, connector=request.connector,
+                                       model=request.model, key=(request.key or None))
+        return {"ok": r.ok, "error": r.error}
     return await asyncio.to_thread(_do)
 
 
