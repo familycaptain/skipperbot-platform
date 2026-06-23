@@ -36,4 +36,8 @@ def register_builtins() -> list[str]:
     prov = OpenAIProvider()
     registry.register_model_provider("openai", chat=prov, embedding=prov,
                                      descriptor=openai_descriptor())
-    return ["openai"]
+    names = ["openai"]
+    # The 8 OpenAI-compatible vendors (mock-only, flagged not-live-verified).
+    from providers.connectors.compat_vendors import register_compat_vendors
+    names += register_compat_vendors()
+    return names

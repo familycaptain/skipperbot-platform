@@ -113,11 +113,14 @@ class ConnectorLoaderTests(unittest.TestCase):
             self.assertNotIn("baddefaults", names)
 
     def test_empty_and_missing_dir_is_inert(self):
+        # Built-ins register (openai + the bundled vendors); the EXTERNAL scan adds nothing.
         with tempfile.TemporaryDirectory() as tmp:
             names = loader.load_all_connectors(models_dir=Path(tmp))  # empty
-            self.assertEqual(names, ["openai"])
+            self.assertIn("openai", names)
+            self.assertNotIn("fakevendor", names)
+            builtins_only = set(names)
         names = loader.load_all_connectors(models_dir=Path(tmp) / "does-not-exist")
-        self.assertEqual(names, ["openai"])
+        self.assertEqual(set(names), builtins_only)  # missing dir == same built-in set, no extras
 
     def test_keyless_connector_requires_key_false(self):
         with tempfile.TemporaryDirectory() as tmp:
