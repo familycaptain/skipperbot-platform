@@ -3,7 +3,7 @@ id: notifications.query.filter-before-limit
 title: Notification queries filter by source_type/source_id server-side before LIMIT
 state: live
 autonomy: gated
-verified: false
+verified: true
 behavior: >
   apps/notifications/store.py::get_notifications(recipient, source_type, source_id, limit)
   returns the most-recent notifications MATCHING the given source_type/source_id, with LIMIT
