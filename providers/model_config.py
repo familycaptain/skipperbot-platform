@@ -67,12 +67,42 @@ def read_all_tiers() -> dict:
     return {t: read_tier(t) for t in TIERS}
 
 
+_DEFAULT_EMBEDDING_DIM = 1536
+
+
 def embedding_dim() -> int | None:
+    """The provisioned embedding dimension, or None if not provisioned yet."""
     v = _settings().get("embedding_dim", scope=_SCOPE, default=None)
     try:
         return int(v) if _is_set(v) else None
     except (TypeError, ValueError):
         return None
+
+
+def provisioned_embedding_dim() -> int:
+    """The single source of truth for the vector dimension across ALL stores (spec
+    mf-embedding-dim-provision). Returns the value provisioned at first setup, else the 1536
+    default (the OpenAI path / existing installs). NEVER raises — a DB hiccup reads as 1536."""
+    try:
+        d = embedding_dim()
+        return d if d else _DEFAULT_EMBEDDING_DIM
+    except Exception:
+        return _DEFAULT_EMBEDDING_DIM
+
+
+def set_embedding_dim(dim: int) -> None:
+    """Provision the embedding dimension once (at first setup, from the chosen model). The
+    embedding model is locked post-setup, so this never changes for the life of the install."""
+    _settings().set("embedding_dim", int(dim), scope=_SCOPE)
+
+
+def embedding_dim_ok(actual_column_dim: int) -> bool:
+    """Fail-closed guard: True iff the provisioned dim matches the live pgvector column dim.
+    A mismatch means embedding work must be SUPPRESSED (don't insert mismatched vectors)."""
+    try:
+        return int(actual_column_dim) == provisioned_embedding_dim()
+    except (TypeError, ValueError):
+        return False
 
 
 # --------------------------------------------------------------------------- upgrade seed

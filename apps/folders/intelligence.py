@@ -33,7 +33,8 @@ logger = logging.getLogger(__name__)
 
 # Embedding model is platform-wide (Settings → System → Embedding model),
 # resolved in memory_store; _get_embedding defers to it.
-EMBEDDING_DIM = 1536
+from providers.model_config import provisioned_embedding_dim as _provisioned_embedding_dim
+EMBEDDING_DIM = _provisioned_embedding_dim()  # provisioned at setup; default 1536 (MODEL_FLEXIBILITY #44)
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 

@@ -22,7 +22,8 @@ import data_layer.knowledge as _dl_know
 logger = logging.getLogger(__name__)
 
 EMBEDDING_MODEL = "text-embedding-3-small"
-EMBEDDING_DIM = 1536
+from providers.model_config import provisioned_embedding_dim as _provisioned_embedding_dim
+EMBEDDING_DIM = _provisioned_embedding_dim()  # provisioned at setup; default 1536 (MODEL_FLEXIBILITY #44)
 CHUNK_SIZE = 500        # target tokens per chunk (approx 4 chars per token)
 CHUNK_OVERLAP = 50      # overlap tokens between chunks
 CHARS_PER_TOKEN = 4     # rough approximation

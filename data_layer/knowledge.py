@@ -13,7 +13,8 @@ from data_layer.db import get_conn, fetch_one, fetch_all, execute
 
 logger = logging.getLogger(__name__)
 
-EMBEDDING_DIM = 1536
+from providers.model_config import provisioned_embedding_dim as _provisioned_embedding_dim
+EMBEDDING_DIM = _provisioned_embedding_dim()  # provisioned at setup; default 1536 (MODEL_FLEXIBILITY #44)
 
 
 # ---------------------------------------------------------------------------

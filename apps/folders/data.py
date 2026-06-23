@@ -34,7 +34,8 @@ from app_platform.db import (
 logger = logging.getLogger(__name__)
 
 SCHEMA = "app_folders"
-EMBEDDING_DIM = 1536
+from providers.model_config import provisioned_embedding_dim as _provisioned_embedding_dim
+EMBEDDING_DIM = _provisioned_embedding_dim()  # provisioned at setup; default 1536 (MODEL_FLEXIBILITY #44)
 
 
 # ---------------------------------------------------------------------------
