@@ -88,7 +88,9 @@ skipper_port() {
 
 needs_setup() {
     [ -f "$ENV_FILE" ] || return 0
-    [ -z "$(env_get OPENAI_API_KEY)" ] && return 0
+    # MODEL_FLEXIBILITY (#44): boot is no longer gated on OPENAI_API_KEY. The agent boots
+    # keyless+healthy and the model/provider is chosen in the first-run modal (or seeded from an
+    # existing .env key on upgrade). Only the DB password still gates setup here.
     local pw; pw="$(env_get POSTGRES_PASSWORD)"
     { [ -z "$pw" ] || [ "$pw" = "CHANGE_ME" ]; } && return 0
     return 1

@@ -50,7 +50,12 @@ class FakeClient:
 
 def _provider_with(completion=None, embed_data=None):
     p = op.OpenAIProvider()
-    p._client = FakeClient(completion=completion, embed_data=embed_data)
+    fake = FakeClient(completion=completion, embed_data=embed_data)
+    # MODEL_FLEXIBILITY (#44): the connector now resolves a client per api_key (per-tier key,
+    # falling back to env). Stub _get_client so the fake is returned regardless of key/env, and
+    # keep `_client` as an alias so existing assertions (p._client.captured) still read it.
+    p._get_client = lambda api_key=None: fake
+    p._client = fake
     return p
 
 

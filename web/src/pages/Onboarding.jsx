@@ -5,8 +5,8 @@
 // non-bot users in public.users. Four steps:
 //
 //   1. Welcome      — what Skipperbot is
-//   2. OpenAI key   — `POST /api/onboarding/check-openai` calls the
-//                     /v1/models endpoint to verify the key in `.env`
+//   2. Models       — pick a provider + model per tier (Smart/Fast/Text-encoding) and
+//                     validate each with a real round-trip (MODEL_FLEXIBILITY #44)
 //   3. Primary user — username + display name + password + timezone
 //   4. Done         — auto-login via the returned user
 //
@@ -18,8 +18,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { setToken } from "../utils/api";
+import ModelConfig from "../components/ModelConfig";
 import {
-  ArrowRight, ArrowLeft, Check, Loader2, AlertCircle, KeyRound, User as UserIcon, ShieldCheck,
+  ArrowRight, ArrowLeft, Check, Loader2, AlertCircle, User as UserIcon,
 } from "lucide-react";
 
 const API = "";
@@ -105,7 +106,7 @@ function Welcome({ onNext }) {
         </li>
         <li className="flex items-start gap-3">
           <Check size={16} className="mt-0.5 text-emerald-400 shrink-0" />
-          <span>The next three steps verify your OpenAI key, create your admin account, and pick a timezone.</span>
+          <span>The next three steps pick your AI models, create your admin account, and set a timezone.</span>
         </li>
       </ul>
       <div className="mt-8 flex justify-end">
@@ -120,125 +121,6 @@ function Welcome({ onNext }) {
   );
 }
 
-function CheckOpenAI({ onNext, onBack }) {
-  const [state, setState] = useState("idle"); // idle | checking | ok | error
-  const [error, setError] = useState("");
-
-  const check = async () => {
-    setState("checking");
-    setError("");
-    try {
-      const res = await fetch(`${API}/api/onboarding/check-openai`, { method: "POST" });
-      const data = await res.json();
-      if (data.ok) {
-        setState("ok");
-      } else {
-        setState("error");
-        setError(data.error || "OpenAI check failed.");
-      }
-    } catch (e) {
-      setState("error");
-      setError(String(e.message || e));
-    }
-  };
-
-  useEffect(() => { check(); }, []);  // eslint-disable-line
-
-  return (
-    <>
-      <StepHeader
-        index={2}
-        total={4}
-        title="OpenAI key"
-        blurb="We're testing the key you set in .env against api.openai.com/v1/models."
-      />
-      <div className="mx-auto mt-2 inline-flex items-center gap-3 rounded surface-card px-4 py-3 text-sm text-default border border-subtle">
-        <KeyRound size={16} className="text-faint" />
-        <code className="font-mono text-muted">OPENAI_API_KEY</code>
-      </div>
-      <div className="mt-6 min-h-[3rem]">
-        {state === "checking" && (
-          <div className="flex items-center gap-2 text-muted text-sm">
-            <Loader2 size={14} className="animate-spin" /> Calling OpenAI…
-          </div>
-        )}
-        {state === "ok" && (
-          <div className="flex items-center gap-2 text-emerald-400 text-sm">
-            <ShieldCheck size={14} /> Key works.
-          </div>
-        )}
-        <ErrorLine>{error}</ErrorLine>
-        {state === "error" && (
-          <div className="mt-5 rounded border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-default">
-            <div className="mb-3 font-medium text-amber-200">How to fix</div>
-            <ol className="list-decimal space-y-3 pl-5">
-              <li>
-                Get a working key at{" "}
-                <a
-                  href="https://platform.openai.com/api-keys"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-violet-400 hover:text-violet-300 underline"
-                >
-                  platform.openai.com/api-keys
-                </a>
-                . The account needs a payment method on file.
-              </li>
-              <li>
-                Open <code className="font-mono text-default">.env</code> in
-                the platform repo and replace the{" "}
-                <code className="font-mono text-default">OPENAI_API_KEY=</code>{" "}
-                line.
-              </li>
-              <li>
-                Restart the agent so it picks up the new key, then come back
-                here and click <span className="text-default">Retry</span>:
-                <div className="mt-2 space-y-1.5 font-mono text-xs">
-                  <div className="rounded surface-page px-2 py-1.5 text-default">
-                    <span className="text-faint"># Docker path</span>
-                    <br />
-                    docker compose restart agent
-                  </div>
-                  <div className="rounded surface-page px-2 py-1.5 text-default">
-                    <span className="text-faint"># Native path</span>
-                    <br />
-                    {"# Ctrl-C the running agent, then re-run ./start_agent.sh"}
-                  </div>
-                </div>
-              </li>
-            </ol>
-          </div>
-        )}
-      </div>
-      <div className="mt-8 flex items-center justify-between">
-        <button
-          className="inline-flex items-center gap-2 rounded text-sm text-muted hover:text-default"
-          onClick={onBack}
-        >
-          <ArrowLeft size={14} /> Back
-        </button>
-        <div className="flex items-center gap-2">
-          {state === "error" && (
-            <button
-              type="button"
-              className="text-xs text-muted hover:text-default"
-              onClick={check}
-            >
-              Retry
-            </button>
-          )}
-          <button
-            className="inline-flex items-center gap-2 rounded btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed"
-            disabled={state !== "ok"}
-            onClick={onNext}
-          >
-            Next <ArrowRight size={14} />
-          </button>
-        </div>
-      </div>
-    </>
-  );
-}
 
 function CreatePrimaryUser({ onCreated, onBack }) {
   const detected = useMemo(detectTimezone, []);
@@ -441,11 +323,85 @@ function Done({ user, onContinue }) {
 }
 
 // ---------------------------------------------------------------------------
+// Model selection step (MODEL_FLEXIBILITY #44) — replaces the OpenAI-key-only step.
+// ---------------------------------------------------------------------------
+
+function ModelStep({ onNext, onBack }) {
+  const [valid, setValid] = useState(false);
+  const [tiersState, setTiersState] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const proceed = async () => {
+    setError("");
+    setSaving(true);
+    try {
+      const tiers = {};
+      for (const k of ["smart", "fast", "embedding"]) {
+        const t = tiersState[k] || {};
+        tiers[k] = { connector: t.connector, model: t.model, key: t.key || null };
+      }
+      const res = await fetch(`${API}/api/onboarding/save-models`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tiers }),
+      });
+      const data = await res.json();
+      if (!data.ok) {
+        setError(data.error || "Could not save your model selections.");
+        return;
+      }
+      onNext();
+    } catch (e) {
+      setError(String(e.message || e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <StepHeader
+        index={2}
+        total={4}
+        title="Choose your models"
+        blurb="Pick a provider + model for each tier and validate it. Smart & Fast can be changed later in Settings."
+      />
+      <div className="mt-4">
+        <ModelConfig
+          mode="onboarding"
+          onChange={({ tiers, allValid }) => { setTiersState(tiers); setValid(allValid); }}
+        />
+      </div>
+      <ErrorLine>{error}</ErrorLine>
+      <div className="mt-6 flex items-center justify-between">
+        <button
+          className="inline-flex items-center gap-2 rounded text-sm text-muted hover:text-default"
+          onClick={onBack}
+        >
+          <ArrowLeft size={14} /> Back
+        </button>
+        <button
+          className="inline-flex items-center gap-2 rounded btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={!valid || saving}
+          onClick={proceed}
+        >
+          {saving ? "Saving…" : "Next"} <ArrowRight size={14} />
+        </button>
+      </div>
+      {!valid && (
+        <p className="mt-2 text-right text-xs text-faint">Validate all three tiers to continue.</p>
+      )}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Top-level wizard
 // ---------------------------------------------------------------------------
 
 export default function Onboarding({ onComplete }) {
-  // step: "welcome" | "openai" | "user" | "done"
+  // step: "welcome" | "models" | "user" | "done"
   const [step, setStep] = useState("welcome");
   const [user, setUser] = useState(null);
 
@@ -458,9 +414,9 @@ export default function Onboarding({ onComplete }) {
           </div>
           <div className="text-lg font-medium text-default">Skipperbot</div>
         </div>
-        {step === "welcome" && <Welcome onNext={() => setStep("openai")} />}
-        {step === "openai" && (
-          <CheckOpenAI
+        {step === "welcome" && <Welcome onNext={() => setStep("models")} />}
+        {step === "models" && (
+          <ModelStep
             onNext={() => setStep("user")}
             onBack={() => setStep("welcome")}
           />
@@ -468,7 +424,7 @@ export default function Onboarding({ onComplete }) {
         {step === "user" && (
           <CreatePrimaryUser
             onCreated={(u) => { setUser(u); setStep("done"); }}
-            onBack={() => setStep("openai")}
+            onBack={() => setStep("models")}
           />
         )}
         {step === "done" && user && (

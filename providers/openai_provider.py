@@ -93,14 +93,18 @@ def _turn_to_message(t: Turn) -> dict:
 
 class OpenAIProvider(ChatProvider, EmbeddingProvider):
     def __init__(self):
-        self._client = None
+        self._clients = {}   # api_key -> client (per-key cache; keys not deduped across tiers)
 
-    # --- lazy client (env key; never stashed in a logged/global place) ---
-    def _get_client(self):
-        if self._client is None:
+    # --- lazy client (per-tier key, falling back to env; never logged) ---
+    def _get_client(self, api_key: str | None = None):
+        # MODEL_FLEXIBILITY (#44): use the resolved per-tier key when supplied (a keyless install
+        # stores it encrypted and passes it here); fall back to OPENAI_API_KEY in env so the P1
+        # path + the seamless-upgrade path (key in .env) are unchanged.
+        key = api_key or os.getenv("OPENAI_API_KEY")
+        if key not in self._clients:
             from openai import OpenAI
-            self._client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        return self._client
+            self._clients[key] = OpenAI(api_key=key)
+        return self._clients[key]
 
     def _call_with_retry(self, fn, **kwargs):
         last: Exception | None = None
@@ -122,7 +126,7 @@ class OpenAIProvider(ChatProvider, EmbeddingProvider):
     def chat(self, *, turns: list[Turn], tools: list[dict] | None,
              model: str, temperature: float | None = None,
              max_output_tokens: int | None = None,
-             force_tool: str | None = None) -> ChatResult:
+             force_tool: str | None = None, api_key: str | None = None) -> ChatResult:
         caps = capabilities_for(model)
         kwargs: dict = {
             "model": model,
@@ -136,7 +140,7 @@ class OpenAIProvider(ChatProvider, EmbeddingProvider):
         if force_tool:  # P1: unused by product callers; forward-looking plumbing
             kwargs["tool_choice"] = {"type": "function", "function": {"name": force_tool}}
 
-        completion = self._call_with_retry(self._get_client().chat.completions.create, **kwargs)
+        completion = self._call_with_retry(self._get_client(api_key).chat.completions.create, **kwargs)
 
         choice = completion.choices[0].message
         tool_calls: list[ToolCall] = []
@@ -162,8 +166,8 @@ class OpenAIProvider(ChatProvider, EmbeddingProvider):
     def dimension(self) -> int:
         return _EMBEDDING_DIM
 
-    def embed(self, *, texts: list[str], model: str) -> list[list[float]]:
+    def embed(self, *, texts: list[str], model: str, api_key: str | None = None) -> list[list[float]]:
         # Callers own input prep (truncation, model string) — the provider does not
         # truncate or rewrite the model (P1a interop constraint: existing vectors stay identical).
-        resp = self._call_with_retry(self._get_client().embeddings.create, model=model, input=texts)
+        resp = self._call_with_retry(self._get_client(api_key).embeddings.create, model=model, input=texts)
         return [d.embedding for d in resp.data]

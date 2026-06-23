@@ -170,3 +170,6 @@ apps/*
 
 # UI-audit generated artifacts (throwaway audit outputs, not source)
 scripts/ui-audit/_audit_*/
+
+# Installable model connectors (MODEL_FLEXIBILITY P3, issue #44)
+models/
