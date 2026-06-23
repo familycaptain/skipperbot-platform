@@ -1,0 +1,9 @@
+kind: feature
+id: notifications.query
+title: Notification query & filtering
+state: live
+links: {}
+notes: >
+  Read-side of notifications — apps/notifications/store.py::get_notifications and the
+  apps/notifications/data.py queries it calls. Filtering by source_type/source_id is
+  applied server-side (in SQL, before LIMIT) so a small limit returns the matching row.
