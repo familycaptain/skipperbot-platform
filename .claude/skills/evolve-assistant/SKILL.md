@@ -37,8 +37,11 @@ remember.** The agents are now told the same (see the evolve charter + grounding
   token + `EVOLVE_PLATFORM_URL`. NEVER `git reset --hard` its release (drops unpushed merges).
 - **box 2** (`evolve-test.local`) = the live validation target. Keep it CLEAN (no scp'd/out-of-band
   cruft) or it blocks validation. `~/p2venv` has Playwright; QA user `evolve_qa`, pw in `~/.evolve_qa_pw`.
-- **skipper-pi** = the family's production. Operator's roadmap: Pi → `main`, `release` tested on
-  **skipper-uat**. `origin/release` is the shared staging branch the Pi currently tracks.
+- **skipper-pi** = the family's production, tracks **`main`**. **skipper-uat** = a dedicated mock-data
+  box tracking **`origin/release`** — the operator's hands-on **gate-3 verify** target (stood up this
+  session; it replaced verifying on the family Pi so verifying never disturbs the live home). The
+  per-change cycle ends at `release`; the operator-owned **`release → main`** promotion (a fast-forward
+  `git push origin origin/release:main`, on their say-so) is what ships to the Pi.
 
 ## What you do
 - **Read a gate item:** `scripts/evolve_explain.py <id>` (digest), `--json` (full spec + diff),
@@ -63,6 +66,45 @@ remember.** The agents are now told the same (see the evolve charter + grounding
   clear the redundant `ev-NN` runs on box 1 (`scripts/evolve_poc.py resolve ev-N merged` + set
   `~/.evolve-poc/N/state.json` phase=done + add N to `~/.evolve-poc/seen.json`).
 
+## Driving items through the gates — the watcher loop (when the operator delegates it)
+The operator may grant STANDING authority to keep items moving — "start a watcher," "drive ev-N through
+the gates," "keep it moving, I'm depending on you." This is the ONE exception to "only on explicit
+per-item instruction," and it is still operator-GRANTED (per item or per batch), never assumed.
+- **Watcher:** run a **background `Bash`** command that polls `evolve_explain list` for `WAITING ON YOU`
+  (~90-110s loop) and exits when a gate appears — the harness re-invokes you on exit, so each gate
+  wakes you; relaunch it each cycle. `grep -v ev-N` to EXCLUDE an item whose next gate is the operator's
+  own hands-on check (e.g. a uat gate-3) so it doesn't re-ping you. When the queue is empty, stand it
+  down rather than polling forever.
+- **At each gate, review what the agents actually did and act on the operator's bar:** PUSH BACK
+  (`change`/`reject`) if the validation is thin / un-reproduced / the fix is half-done / a big item got
+  sliced into per-leaf operator gates; APPROVE on their behalf if it's genuinely sound; surface to the
+  operator ONLY a real design fork or a real failure. Drive gate-1 → gate-2 → gate-3.
+
+## The current gate flow (the loop builds; you + the operator own every gate)
+- **Gate-1 now OPENS with a security issue-intent screen + an empirical REPRODUCE-on-box-2 step**
+  (deploy current `release`, recreate the reported symptom, screenshot it to the GitHub issue) BEFORE
+  any code is read — reading code alone misattributes a UI symptom to the wrong code (e.g. a markdown
+  notification renders via the `role="notification"` path, not the agent-loop bubble). At gate-1,
+  confirm the reproduce step actually REPRODUCED (evidence on the issue, not a code-read "it works")
+  and that grounding targets the PROVEN surface; **"could not reproduce" is a first-class outcome** (a
+  gate-1 finding, never an invented fix). For a backend bug the "screenshot" is the failing query/state
+  (e.g. `limit=1 → 0 rows`); for a FEATURE there's nothing to reproduce. You BUILT this flow
+  (`security-screen` + `reproduce` agents + the orchestration in `.claude/skills/evolve/SKILL.md`).
+- **Gate-2** = result/validation. Hold the bar: the fix is PROVEN (a real bound test AND a LIVE box-2
+  exercise of the actual path, not just unit-green), and for a UI/visible change the **after/fix
+  screenshot is posted to the issue** to pair with the gate-1 before/repro shot (via
+  `github_connector.attach_image_to_issue` → catbox; renders inline even on the private repo). When an
+  integration can't be live-tested for lack of credentials (e.g. non-OpenAI model vendors), mock +
+  contract-test it and **explicitly flag it "not live-verified"** — not a fake pass, not a hard fail.
+- **Gate-3** = verify-on-the-deliverable (merge ≠ done). The operator hand-verifies on **skipper-uat**;
+  for a BACKEND fix you can verify it YOURSELF on box 2 (deploy `release`, exercise the fixed path) and
+  close. **NEVER close on a RED verify until you understand it** — a false-fail is usually YOUR check's
+  flaw (box 2's user is `evolve_qa`, NOT the mock `admin`/family). Verify independently even when gate-2
+  passed.
+- **Comprehensive-fix / gate-the-deliverable (charter):** a fix is ONE comprehensive deliverable gated
+  ONCE — fix the root cause EVERYWHERE it manifests, validated as a whole; don't slice a big feature
+  into per-leaf operator gates or leave follow-up debt. Enforce this at gate-1.
+
 ## Engine invariants you uphold (already wired into the agent prompts)
 - A build the engine **couldn't build-test or run is a FAIL**, never an "approve, verify later."
 - A validation **blocker** (flaky/broken login, unrelated breakage) → `passed:false` + file an issue +
@@ -73,6 +115,26 @@ remember.** The agents are now told the same (see the evolve charter + grounding
 - **Reusable test scaffolding** goes in the shared `ui_harness.py`, not a one-off acceptance script.
 - box 1 fast-forwards local `release` to origin before each build.
 
+## Operational gotchas (learned the hard way)
+- After `evolve_decide`, CONFIRM it landed: look for **"ev-N: approve recorded"** AND `evolve_explain`
+  showing **`gate status: decided`** — not just the note echo. A silent failure leaves it `waiting` and
+  the watcher re-trips on it (this happened — a long approve note didn't record; the gate-status check
+  caught it).
+- The loop is an interactive **`/loop` session on box 1** — it can STOP (queue drains, or a manual
+  restart drops its launch env). Check it's running (`ssh box1 pgrep -af "claude --dangerously"`) before
+  expecting a newly-filed issue to be ingested.
+- **`EVOLVE_PLATFORM_URL`** (in box 1's `.env`) is what the engine PUSHES gate packets through; the
+  read helpers use `EVOLVE_PI_URL` and **fall back to `EVOLVE_PLATFORM_URL`** if unset. A transient
+  "can't reach the Pi" is usually a network blip, not a config error — box 1 reaches the Pi via that URL.
+- Operator deploy to any instance = **`skipper update`** (git pull + `docker compose up -d --build` — a
+  FULL rebuild incl. Tailwind content re-scan + `npm ci`, so it covers new deps and CSS). There is **no
+  `skipper rebuild`**; `skipper restart` only recycles the running stack.
+- box 2 deploy primitive = `python3 scripts/box2_live.py deploy <branch>` (checkout + `skipper update` +
+  wait healthy); `reset` redeploys the `release` baseline. Don't reinvent it.
+- On a fresh mock box, the household **timezone defaults to `Etc/UTC`** unless onboarding/seed set it —
+  which silently breaks the thinking/nag schedulers' active-hours gating. `seed_mock_data.py` now sets
+  America/Chicago.
+
 ## Boundaries & working style
 - You do NOT decide gates autonomously, and the loop/agents cannot decide them at all (token scoping).
 - Keep momentum; don't ask permission to continue (only consider pausing after ~10pm operator-local).
@@ -82,7 +144,8 @@ remember.** The agents are now told the same (see the evolve charter + grounding
 
 ## Where the depth lives
 The project memory dir (`MEMORY.md` + files) holds the detail: `[[chat-ev]]`,
+`[[gate1-reproduce-before-analysis]]`, `[[evolve-validation-evidence]]`,
 `[[evolve-cant-validate-is-a-fail]]`, `[[evolve-manual-fix-collision]]`,
 `[[public-distribution-no-embedded-secrets]]`, `[[evolve-box1-deploy-fold]]`,
-`[[evolve-release-promotion]]`, `[[fleet-ssh-access]]`, the C/F/S corpus, the tool-router work, etc.
-Recall them when relevant.
+`[[evolve-release-promotion]]`, `[[deploy-with-skipper-update]]`, `[[fleet-ssh-access]]`, the C/F/S
+corpus, the tool-router work, etc. Recall them when relevant.
