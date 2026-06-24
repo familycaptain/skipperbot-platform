@@ -9,7 +9,8 @@ is opaque to this script — it's passed in; the filename stays `evolve_poc.py` 
     python scripts/evolve_poc.py event ev-3 triage agent_end "✓ proceed · feature"
     python scripts/evolve_poc.py emit-file ev-3 spec-author ~/.evolve-poc/3/spec.json  # post a big artifact by PATH (keeps it out of the loop's context)
     python scripts/evolve_poc.py gate  ev-3 gate1 ~/.evolve-poc/3/gate1.json
-    python scripts/evolve_poc.py decision ev-3        # -> {"decision": "approve"|null, "note": ...}
+    python scripts/evolve_poc.py decision ev-3        # -> {"decision": "approve"|null, "note": ...} (ONE item)
+    python scripts/evolve_poc.py pending              # -> [EVERY item with a live operator decision] in ONE Pi call (the loop's per-pass scan)
     python scripts/evolve_poc.py resolve ev-3 merged  # clear the gate after acting on the decision
 """
 import argparse
@@ -47,6 +48,7 @@ def main():
     g = sub.add_parser("gate")
     g.add_argument("iid"); g.add_argument("gate"); g.add_argument("packet_file")
     d = sub.add_parser("decision"); d.add_argument("iid")
+    sub.add_parser("pending")  # bulk: EVERY item with a live operator decision, in ONE Pi call
     rs = sub.add_parser("resolve"); rs.add_argument("iid"); rs.add_argument("status")
     c = sub.add_parser("close"); c.add_argument("iid"); c.add_argument("comment", nargs="?", default="")
     sub.add_parser("flush")   # drain the offline outbox to the Pi now (no-op if empty / Pi down)
@@ -72,6 +74,15 @@ def main():
         print(json.dumps({"decision": dec[0]["decision"] if dec else None,
                           "note": dec[0].get("note") if dec else None,
                           "gate": dec[0].get("gate") if dec else None}))
+    elif a.cmd == "pending":
+        # ONE Pi call returns EVERY item with a live operator decision (a decided gate, including a
+        # re-opened 'done' item that came back at gate3). The loop iterates THIS short list instead of
+        # calling `decision <id>` once per run dir — O(actionable), not O(all-runs-ever) — so the scan
+        # stays cheap as closed/done items pile up. Each entry: instance_id + gate + decision + note;
+        # route on `gate`, cross-ref the local ~/.evolve-poc/<n>/ dir for phase/artifacts.
+        items = bridge.list_decided()
+        print(json.dumps([{"instance_id": x.get("instance_id"), "gate": x.get("gate"),
+                           "decision": x.get("decision"), "note": x.get("note")} for x in items]))
     elif a.cmd == "resolve":
         out = bridge.resolve(a.iid, a.status)
         # Keep the run row in lockstep with the gate outcome so it can never be left "running"

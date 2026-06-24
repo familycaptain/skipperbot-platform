@@ -52,13 +52,15 @@ GitHub issue stays OPEN until verified — an open issue means "not confirmed wo
 
 ## Each pass: advance ONE item by ONE segment, then END
 **1. Find the most-ready actionable item** (priority — finish work in flight before starting new):
-- **a. A decided gate.** For **every** item dir under `~/.evolve-poc/*/` — *including `done` ones*, a
-  done item can be re-opened at the verify gate from the UI ("Didn't work") — check ONCE using the
-  item's stored id: `python3 scripts/evolve_poc.py decision <state.json instance_id>` (an `ev-<n>`, or a
-  legacy `poc-<n>`). If it returns a non-null `decision`, that item is
-  actionable. **Route on the returned `gate`** (`gate1`/`gate2`/`gate3`), NOT the local phase — the UI
-  gate is authoritative; a re-opened `done` item comes back as a decided `gate3`. Reconcile
-  `state.json` `phase` to match the gate before running the segment (`gate3` → `verify`).
+- **a. A decided gate.** Call `python3 scripts/evolve_poc.py pending` **ONCE** — a single Pi call that
+  returns EVERY item with a live operator decision (including a `done` item re-opened at the verify gate
+  from the UI, "Didn't work"). **Do NOT** poll `decision <id>` per run dir — that's one Pi round-trip
+  *per dir* and grows unbounded as closed/done items pile up; `pending` is O(actionable-items), not
+  O(all-runs-ever). Each entry has `instance_id` + `gate` + `decision` + `note`. Pick the most-ready and
+  **route on the returned `gate`** (`gate1`/`gate2`/`gate3`), NOT the local phase — the UI gate is
+  authoritative; a re-opened `done` item comes back as a decided `gate3`. Cross-ref its
+  `~/.evolve-poc/<n>/` dir and reconcile `state.json` `phase` to the gate before running the segment
+  (`gate3` → `verify`). (`decision <id>` remains for single-item checks; `pending` is the per-pass scan.)
 - **b. Else an item stranded MID-SEGMENT** — a `state.json` `phase` of **`new`** or **`build`** with NO
   pending decision means a pass was interrupted before that segment finished (the session ended or hit a
   usage limit mid-work), so the item is stuck — e.g. a run frozen at `building` after the build pass
