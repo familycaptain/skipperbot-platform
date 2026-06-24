@@ -49,6 +49,7 @@ def main():
     g.add_argument("iid"); g.add_argument("gate"); g.add_argument("packet_file")
     d = sub.add_parser("decision"); d.add_argument("iid")
     sub.add_parser("pending")  # bulk: EVERY item with a live operator decision, in ONE Pi call
+    sub.add_parser("stranded")  # local: ONLY run dirs stranded mid-segment (phase new|build)
     rs = sub.add_parser("resolve"); rs.add_argument("iid"); rs.add_argument("status")
     c = sub.add_parser("close"); c.add_argument("iid"); c.add_argument("comment", nargs="?", default="")
     sub.add_parser("flush")   # drain the offline outbox to the Pi now (no-op if empty / Pi down)
@@ -83,6 +84,23 @@ def main():
         items = bridge.list_decided()
         print(json.dumps([{"instance_id": x.get("instance_id"), "gate": x.get("gate"),
                            "decision": x.get("decision"), "note": x.get("note")} for x in items]))
+    elif a.cmd == "stranded":
+        # Local scan of ~/.evolve-poc/*/state.json returning ONLY dirs stranded MID-SEGMENT — phase
+        # `new` or `build` (a pass died before the segment finished). Filtered HERE so the loop never
+        # reads all N state.json files into context; it ingests only the few stranded ids. Terminal
+        # (done/rejected) and operator-PARKED (gate1/gate2/verify) phases are excluded — not stranded.
+        # O(stranded), not O(all-runs-ever); tiny metadata only, never packet contents.
+        import glob
+        base = os.path.expanduser("~/.evolve-poc")
+        out = []
+        for sf in glob.glob(os.path.join(base, "*", "state.json")):
+            try:
+                st = json.load(open(sf))
+            except Exception:
+                continue
+            if st.get("phase") in ("new", "build"):
+                out.append({"instance_id": st.get("instance_id"), "phase": st.get("phase")})
+        print(json.dumps(out))
     elif a.cmd == "resolve":
         out = bridge.resolve(a.iid, a.status)
         # Keep the run row in lockstep with the gate outcome so it can never be left "running"

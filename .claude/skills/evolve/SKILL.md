@@ -61,10 +61,12 @@ GitHub issue stays OPEN until verified — an open issue means "not confirmed wo
   authoritative; a re-opened `done` item comes back as a decided `gate3`. Cross-ref its
   `~/.evolve-poc/<n>/` dir and reconcile `state.json` `phase` to the gate before running the segment
   (`gate3` → `verify`). (`decision <id>` remains for single-item checks; `pending` is the per-pass scan.)
-- **b. Else an item stranded MID-SEGMENT** — a `state.json` `phase` of **`new`** or **`build`** with NO
-  pending decision means a pass was interrupted before that segment finished (the session ended or hit a
-  usage limit mid-work), so the item is stuck — e.g. a run frozen at `building` after the build pass
-  died mid-`implement`. **RESUME it from its files** (don't wait for anything): `phase=new` → re-run the
+- **b. Else an item stranded MID-SEGMENT** — `python3 scripts/evolve_poc.py stranded` returns ONLY the
+  run dirs with `phase` **`new`** or **`build`** (it filters locally, so you never read all N
+  `state.json` files into context — O(stranded), not O(all-runs)). Such a phase with NO pending decision
+  means a pass was interrupted before that segment finished (the session ended or hit a usage limit
+  mid-work), so the item is stuck — e.g. a run frozen at `building` after the build pass died
+  mid-`implement`. **RESUME it from its files** (don't wait for anything): `phase=new` → re-run the
   **FUNNEL / SPEC PHASE** from its saved artifacts; `phase=build` → re-locate (or re-cut) the worktree
   and re-run **implement → isolation check → dep-guard → validate → push Gate 2**. (WORKING phases only:
   `gate1`/`gate2`/`verify` with no decision are correctly **PARKED on the operator** — never "resume"
