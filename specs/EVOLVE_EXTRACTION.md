@@ -20,24 +20,23 @@ So "the engine" = (a) the **playbook**, (b) the **agents-as-data** (prompts + re
 `platform_bridge`, `cost`, `spec_index`, `variance`, `base`, `charter`, `store`/`gate_queue`/`activity`),
 (e) the **human-side skills** (`evolve-pm`, `chat-ev`) + CLI scripts.
 
-**What this forces — extraction is only viable as a real PROGRAM, not a playbook.** A playbook run by an
-interactive Claude-Code session is not something you can clone and run; it's tied to the Claude Code CLI
-+ a hands-on session. For Evolve to be a shareable, installable system, it must be a **program**: you
-clone it, configure your fleet (VMs) + your charter + your repo registry, and run it — it executes the
-loop **autonomously**, parking only at the human gates. So the target is a **coded engine**, full stop.
-- **This is NOT about LLM "providers"** (that earlier framing was wrong). The only external integration
-  is **GitHub**; the LLM stays **Claude**. The relevant cross-cutting requirement is that the engine and
-  its scripts are **cross-platform (Windows / Mac / Linux)** — Python, not bash-only; remote VM control
-  via cross-platform tooling, not unix-only ssh assumptions — because adopters configure their own VMs.
-- **The runtime is the Claude Agent SDK** (`claude_agent_sdk` — the same SDK that powers Claude Code and
-  that the old `sdk_backend.py` already used): a packaged Python program that runs the agentic loop in
-  code while keeping the agentic capabilities (real Read/Edit/Bash tools, structured output, prompt
-  caching). The LLM credential (an Anthropic key or a Claude subscription) is just config, not a
-  "provider abstraction."
-- **The playbook (`SKILL.md`) becomes the authoritative SPEC** the coded engine implements; the 21
-  prompts + registry + charter carry over verbatim as agents-as-data. This is a real build: we previously
-  shelved a coded engine in favor of the subscription playbook, so re-building a coded engine that is **as
-  good as today's playbook logic** (now the best version) is the core effort — and the core risk.
+**What this means for the extraction:** the engine **stays exactly this** — the skills (`/loop`,
+`/evolve`, `/evolve-pm`) running inside **Claude Code**, as we run it today. We are **NOT** rewriting it
+as a coded program and **NOT** using the Claude Agent SDK. What makes it "a real system you can clone and
+run" rather than "just a design" is **packaging + genericization**, not a code rewrite:
+- A **clonable repo** containing the skills + prompts + registry + a charter *template* + the helper
+  scripts + the standalone local **dashboard** + the VM-setup scripts/docs.
+- **Configuration** the adopter supplies: their `CHARTER.md`, their repo registry, their fleet (the four
+  VMs), and their TargetAdapter (how to deploy/test their project).
+- **Run it the way we do:** install Claude Code on the VMs, run `/loop`+`/evolve` on **evolve-brain** and
+  `/evolve-pm`+`/chat-ev` + the dashboard on **evolve-admin** — against their repos. The adopter needs
+  Claude Code + a Claude auth; the only integration is **GitHub**; the LLM stays **Claude**.
+- **Cross-platform (Win/Mac/Linux)** applies to the helper scripts + the dashboard + VM control (Python,
+  not bash-only; no unix-only ssh assumptions), since adopters bring their own VMs.
+
+So "more than a playbook" = the whole runnable apparatus — skills + scripts + dashboard + VM setup +
+config — **packaged so others reproduce our setup**, not a reimplementation. The playbook (`SKILL.md`)
+**is** the engine; we package and genericize it, we don't rebuild it.
 
 ## 2. Already decoupled (the good news)
 - The SDLC substrate (`schema`, `store`, `engine` model, `agents`) is declared dependency-free +
@@ -97,9 +96,9 @@ code-audit, and the judgment logic of lead/triage/design/spec-audit). Leaks conc
 
 ## 5. Target architecture — three layers
 **A. The generic engine** (the standalone Evolve repo):
-- A **coded orchestrator** (Python, on the Claude Agent SDK) that implements the playbook's logic
-  autonomously — `SKILL.md` is the spec it implements — plus the human-side skills (`evolve-pm`,
-  `chat-ev`), templated against config/charter. Cross-platform (Win/Mac/Linux).
+- The **skills run in Claude Code** (`/loop`+`/evolve` on the brain; `/evolve-pm`+`/chat-ev` on admin),
+  exactly as today — templated against config/charter so they're domain-neutral. The playbook
+  (`SKILL.md`) IS the engine; we package it, we don't reimplement it. Helper scripts are cross-platform.
 - **Agents-as-data:** the role prompts (templated) + the registry (roster structure + the SDLC
   output-schema vocabulary).
 - **Live helper modules:** `base`, `charter` (mechanism), `cost`, `variance`, `spec_index` (embedding
@@ -135,7 +134,7 @@ code-audit, and the judgment logic of lead/triage/design/spec-audit). Leaks conc
 | **TargetAdapter** | `box2_live`+`skipper update`+`ui_harness`+`seed_mock_data`+`new_app` | per-project recipes | `deploy(host,ref)` · `health(host)` · `acceptance(host,spec)->evidence` · `seed(host)?` · `scaffold(unit)?` |
 | **RepoLayout** | `apps/<cap>/specs` + `specs/platform`, dep-rule prefixes | **per-repo** config | each managed repo declares its own **spec-root glob(s)** (default `specs/`; e.g. `apps/*/specs`) + dep rules; `specs_root_for` · `spec_relpath` · spec-tree glob resolve **per repo** |
 | **Workspace/VCS** | `WorkspaceManager` worktrees | already host-agnostic | `cut/serialize/merge/diff` + branch model + commit identity (config) |
-| **Agent runtime** | the `/loop` subscription session (interactive Claude Code) | the **Claude Agent SDK** (`claude_agent_sdk`), packaged as a program | run each agent step in code (tools + structured output + cost). LLM stays Claude — credential is config, NOT a provider abstraction |
+| **Agent runtime** | Claude Code running the `/loop`+`/evolve` skills | **same — Claude Code + the skills**, installed on the adopter's VMs | no SDK, no code rewrite; adopter needs Claude Code + a Claude auth. LLM stays Claude; only integration is GitHub |
 
 ## 7. Net-new build (not extraction)
 1. The **local web server + dashboard SPA** (port `EvolveApp.jsx`; reimplement the endpoints against the
@@ -148,9 +147,9 @@ code-audit, and the judgment logic of lead/triage/design/spec-audit). Leaks conc
 5. The **provider abstraction** (only if pursuing fork B).
 
 ## 8. Open decisions (for the operator)
-1. **Coded engine on the Claude Agent SDK — DECIDED (§1).** A real installable program is the only
-   viable extraction; the playbook is its spec, not the product. The open part is scope/effort + how
-   faithfully the coded loop reproduces the playbook's behavior, not *whether*.
+1. **Runtime stays Claude Code + skills — DECIDED (§1).** No Agent SDK, no code-rewrite of the engine.
+   The "product" is the packaged, clonable, configurable apparatus (skills + scripts + dashboard + VM
+   setup), run via Claude Code exactly as today.
 2. **The acceptance oracle.** Today: drive the live chat-agent web app + judge on captured tool-calls /
    DB / screenshots. This doesn't generalize to a CLI/library target. → a **tiered acceptance model**
    (unit-only | live-acceptance) per TargetAdapter. How generic now vs Skipper-only?
@@ -165,19 +164,19 @@ code-audit, and the judgment logic of lead/triage/design/spec-audit). Leaks conc
 ## 9. Roadmap (phasing)
 - **Phase 0** — this spec + the multi-repo registry (`EVOLVE_MULTIREPO.md` Phase 1). The repo-set is the
   unit that defines an Evolve instance.
-- **Phase 1 — extract the domain pack** in place: add the charter sections (surfaces/external-contracts/
-  repo-layout/stack), the config (product name/models/fleet/branches/paths), template the prompts +
-  skills. Still running via today's playbook; prove the agents-as-data are fully domain-neutral.
-- **Phase 2 — the coded engine (the core build):** a Python orchestrator on the **Claude Agent SDK** that
-  runs the loop **autonomously** per `SKILL.md` (the pass model, funnel, gates, segments, reproduce-first,
-  the two-token safety), executing the templated prompts/registry. Validate it reproduces the playbook's
-  behavior on Skipper. Cross-platform.
-- **Phase 3 — the generic store + local dashboard + repo-switcher** + the two-token auth; repoint the
-  scripts (env rename). Replaces the in-platform Evolve app.
-- **Phase 4 — the TargetAdapter boundary:** move the Skipper recipes (`skipper update`, box-2,
-  `ui_harness`, seed, `new_app`) behind a cross-platform adapter; define the tiered acceptance model.
-- **Phase 5 — split the repo:** the generic engine becomes its own repo; Skipper consumes it + supplies
-  its pack; retire `apps/evolve/ui` + `routes.py`.
+- **Phase 1 — extract the domain pack** in place: charter sections (surfaces/external-contracts/
+  repo-layout/stack), config (product name/models/fleet/branches/paths), template the prompts + skills so
+  they're domain-neutral. Engine still runs as skills in Claude Code; prove no Skipper specifics remain in
+  the engine itself.
+- **Phase 2 — the standalone dashboard (the main net-new build):** Evolve's own local web server + SPA
+  implementing the ~6-endpoint contract against a generic store, with the two-token auth + the
+  repo-switcher. Replaces the in-platform Evolve app; the scripts repoint to it (env rename).
+- **Phase 3 — the TargetAdapter + repo registry:** the cross-platform deploy/test/verify adapter + the
+  multi-repo change-poller (`EVOLVE_MULTIREPO.md`). Move the Skipper recipes (`skipper update`, box-2,
+  `ui_harness`, seed, `new_app`) behind the adapter; define the tiered acceptance model.
+- **Phase 4 — package + split the repo:** a clonable repo (skills + prompts + registry + charter template
+  + scripts + dashboard + VM-setup docs/scripts); Skipper consumes it + supplies its pack; retire
+  `apps/evolve/ui` + `routes.py`.
 
 ## 10. Risks / unknowns
 - **The engine-is-prose inversion** is the biggest conceptual lift: much of the "engine" is the playbook
@@ -186,10 +185,9 @@ code-audit, and the judgment logic of lead/triage/design/spec-audit). Leaks conc
   task.
 - **The acceptance oracle** assumes an introspectable chat-agent web app; it may not generalize.
 - **The `repo_set` dimension touches everything** (schema + every query + the bridge + GitHub).
-- **The coded engine must match the playbook.** We deprecated a coded engine once *because* the
-  subscription playbook was better; rebuilding one that faithfully reproduces the playbook's behavior
-  (fail-closed validation, reproduce-first, gate discipline, the two-token safety) on the Agent SDK is the
-  central risk. The Agent SDK's shared-session **prompt-caching** is what makes the "1 issue = 1
-  conversation forever" economics work — the coded loop must use it well or costs balloon.
+- **Genericizing the skills/prompts without losing behavior** is the highest-risk task: the playbook + 21
+  prompts are saturated with hard-won rules (fail-closed validation, reproduce-first,
+  operator-items-never-rejected, the two-token safety). Templating them against a charter must preserve
+  every bit of that. This is a prose/prompt risk, not a code-port risk — the engine isn't being rewritten.
 - **Tests pin the deprecated path** — the existing `tests/` exercise the soft-deprecated SDK engine; they
   are an oracle for behavior but not proof the live (playbook) engine works.
