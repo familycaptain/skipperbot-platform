@@ -70,6 +70,9 @@ code change, nothing of ours leaks.
   clone_path: apps/wants    # derived from type + name; overridable
   branch_model: release->main
   token_env: GITHUB_TOKEN   # override for a repo in another GitHub account
+  spec_roots: ["specs/"]    # where THIS repo's specs live (default specs/; the platform repo
+                            # would be ["apps/*/specs", "specs/platform"]). Each managed repo
+                            # carries its own specs; the engine resolves the C/F/S corpus per-repo.
 ```
 `token_env` is what makes "someone else's repo in their account" work — most entries use the default
 token; a foreign repo points at its own.
