@@ -3,7 +3,7 @@ id: platform.location.resolver
 title: Shared home-location resolver, geocoder, and label formatter
 state: live
 autonomy: gated
-verified: false
+verified: true
 behavior: >
   app_platform/location.py is the single platform-core location service consumed by
   apps (weather, voice, …); it imports nothing from apps/*.
