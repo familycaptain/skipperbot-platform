@@ -37,4 +37,4 @@ links: {}
 notes: ev-46. Presentation-only one-line className change (w-48 -> w-56, the operator's Gate-1
   width choice; the spec accepts w-56|w-64|w-72 so the guard needs no edit if the width is
   later nudged within range). Fixed width per the operator's decision (responsive option declined).
-verified: false
+verified: true
