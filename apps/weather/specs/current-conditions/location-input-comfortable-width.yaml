@@ -1,0 +1,40 @@
+kind: specification
+id: weather.current-conditions.location-input-comfortable-width
+title: Weather header location input is comfortably wide (fits a full 'City, Region, Country'
+  entry)
+state: live
+behavior: 'The Weather app dashboard header (apps/weather/ui/WeatherApp.jsx) renders the manual
+  location override <input> (placeholder "City or postal,country") at a comfortable width
+  — a Tailwind width utility no narrower than w-56 (14rem), meaningfully wider than the original
+  12rem (w-48) — so a full international entry such as "Austin, Texas, US" is visible while
+  typing rather than clipped at the prior narrow width. The widening is presentation-only:
+  the Search-icon left padding (pl-7), the submit/geocode flow (submitQuery → load → app_platform.location),
+  the canonical place label (display_label), and the adjacent Go and Refresh controls are
+  all unchanged. The input remains on a single line inside the max-w-3xl header beside the
+  Go/Refresh buttons, without wrapping or overlapping the "Weather" title, in both light and
+  dark themes at the app''s normal (max-w-3xl) render width. Width is fixed (non-responsive),
+  per the operator''s Gate-1 decision.'
+implements:
+- apps/weather/ui/WeatherApp.jsx
+tests:
+- type: static
+  path: apps/weather/tests/test_weather_ui.py
+  rubric: Offline/source assertion (unittest, no browser). Locate the manual location <input>
+    in WeatherApp.jsx by its placeholder 'City or postal,country' and assert its className
+    uses a widened Tailwind width utility (one of w-56 | w-64 | w-72, matching the >=14rem
+    floor), does NOT contain w-48, and retains pl-7. Guards the widening and blocks regression
+    to the narrow field.
+- type: acceptance
+  path: scripts/ui_harness.py
+  rubric: LIVE on the test host (Weather app). Assert the header location input renders meaningfully
+    wider than the prior 12rem/192px (client width >= ~14rem/224px). Type 'Austin, Texas,
+    US' and confirm it is not clipped (scrollWidth <= clientWidth). Click Go and confirm weather
+    loads for the typed place (place.display_label updates) and Refresh still works — proving
+    behavior is unchanged. Confirm the input stays on one line beside Go/Refresh and does
+    not overlap the 'Weather' title at normal width. Screenshot light + dark; repeat the render+type
+    check >=3x.
+links: {}
+notes: ev-46. Presentation-only one-line className change (w-48 -> w-56, the operator's Gate-1
+  width choice; the spec accepts w-56|w-64|w-72 so the guard needs no edit if the width is
+  later nudged within range). Fixed width per the operator's decision (responsive option declined).
+verified: true

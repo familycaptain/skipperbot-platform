@@ -125,7 +125,7 @@ export default function WeatherApp({ context = {} }) {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="City or postal,country"
                 title="e.g. Austin, Texas, US  —or—  SW1A 1AA, UK"
-                className="w-48 rounded surface-panel border border-subtle pl-7 pr-2 py-1.5 text-sm focus:border-[var(--ds-accent)] focus:outline-none"
+                className="w-56 rounded surface-panel border border-subtle pl-7 pr-2 py-1.5 text-sm focus:border-[var(--ds-accent)] focus:outline-none"
               />
             </div>
             <button type="submit" className="rounded btn-primary px-3 py-1.5 text-sm font-medium">Go</button>
