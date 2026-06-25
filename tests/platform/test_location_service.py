@@ -9,6 +9,7 @@ import sys
 import types
 import unittest
 from unittest import mock
+from urllib.parse import parse_qs, urlparse
 
 
 # ---------------------------------------------------------------------------
@@ -63,6 +64,11 @@ def _clear():
 def _gc(name, admin1, country, cc, lat, lon):
     return {"name": name, "admin1": admin1, "country": country,
             "country_code": cc, "latitude": lat, "longitude": lon}
+
+
+def _params(url):
+    """Outbound query params as a flat {key: first-value} dict."""
+    return {k: v[0] for k, v in parse_qs(urlparse(url).query).items()}
 
 
 class TestResolveCachedDefault(unittest.TestCase):
@@ -265,6 +271,191 @@ class TestOverride(unittest.TestCase):
             except location.LocationNotFound as exc:
                 self.assertNotIn("Secretville", str(exc))
                 self.assertNotIn("Private Lane", str(exc))
+
+
+class TestRegionQualifiedOverride(unittest.TestCase):
+    """ev-47: 'City, Region[, Country]' overrides resolve over a SINGLE Open-Meteo
+    call, with region/country preference applied client-side; a trailing US-state
+    token is never mis-bound to countryCode (the 'Austin, TX' bug)."""
+
+    def setUp(self):
+        _clear()
+
+    def _stub(self, results):
+        calls = {"n": 0, "url": None}
+
+        def fake_http(url, *, timeout=10):
+            calls["n"] += 1
+            calls["url"] = url
+            return {"results": results}
+
+        return calls, fake_http
+
+    # (1) 'Austin, Texas, US' — 3-piece, full region name.
+    def test_city_region_country_full_name(self):
+        calls, fake = self._stub([
+            _gc("Austin", "Texas", "United States", "US", 30.27, -97.74),
+            _gc("Austin", "Indiana", "United States", "US", 39.49, -85.80),
+        ])
+        with mock.patch.object(location, "_http_get_json", side_effect=fake):
+            rec = location.resolve_location(override="Austin, Texas, US")
+        self.assertEqual(calls["n"], 1)
+        p = _params(calls["url"])
+        self.assertEqual(p["name"], "Austin")            # NOT 'Austin, Texas'
+        self.assertEqual(p["countryCode"], "US")
+        self.assertEqual(rec["region"], "Texas")
+
+    # (2) 'Austin, TX, US' — abbrev region in the 3-piece form.
+    def test_city_abbrev_region_country(self):
+        calls, fake = self._stub([
+            _gc("Austin", "Texas", "United States", "US", 30.27, -97.74),
+            _gc("Austin", "Indiana", "United States", "US", 39.49, -85.80),
+        ])
+        with mock.patch.object(location, "_http_get_json", side_effect=fake):
+            rec = location.resolve_location(override="Austin, TX, US")
+        self.assertEqual(calls["n"], 1)
+        p = _params(calls["url"])
+        self.assertEqual(p["name"], "Austin")
+        self.assertEqual(p["countryCode"], "US")
+        self.assertEqual(rec["region"], "Texas")         # TX expanded to Texas
+
+    # (3) 'Austin, TX' — 2-piece, no country: TX must NOT become countryCode.
+    def test_city_state_abbrev_two_piece_no_countrycode(self):
+        calls, fake = self._stub([
+            _gc("Austin", "Texas", "United States", "US", 30.27, -97.74),
+        ])
+        with mock.patch.object(location, "_http_get_json", side_effect=fake):
+            rec = location.resolve_location(override="Austin, TX")
+        self.assertEqual(calls["n"], 1)
+        p = _params(calls["url"])
+        self.assertEqual(p["name"], "Austin")
+        self.assertNotIn("countryCode", p)               # the 'Austin, TX' bug
+        self.assertEqual(rec["region"], "Texas")
+
+    # (4) 'Paris, TX, US' — region hint beats the otherwise top-ranked Paris, France.
+    def test_paris_texas_us_region_beats_top(self):
+        calls, fake = self._stub([
+            _gc("Paris", "Île-de-France", "France", "FR", 48.85, 2.35),
+            _gc("Paris", "Texas", "United States", "US", 33.66, -95.55),
+            _gc("Paris", "Kentucky", "United States", "US", 38.21, -84.25),
+        ])
+        with mock.patch.object(location, "_http_get_json", side_effect=fake):
+            rec = location.resolve_location(override="Paris, TX, US")
+        self.assertEqual(calls["n"], 1)
+        self.assertEqual(rec["region"], "Texas")
+        self.assertEqual(rec["country_code"], "US")
+
+    # (5) 'Paris, TX' — 2-piece: still Paris/Texas over the top-ranked Paris/France.
+    def test_paris_tx_two_piece_no_countrycode(self):
+        calls, fake = self._stub([
+            _gc("Paris", "Île-de-France", "France", "FR", 48.85, 2.35),
+            _gc("Paris", "Texas", "United States", "US", 33.66, -95.55),
+        ])
+        with mock.patch.object(location, "_http_get_json", side_effect=fake):
+            rec = location.resolve_location(override="Paris, TX")
+        self.assertEqual(calls["n"], 1)
+        p = _params(calls["url"])
+        self.assertNotIn("countryCode", p)
+        self.assertEqual(rec["region"], "Texas")
+        self.assertEqual(rec["country_code"], "US")
+
+    # (6) Tie-break on a token that is BOTH a US state AND an ISO country (CA).
+    def test_tiebreak_region_present_wins_state(self):
+        # 'San Diego, CA' with a California result present -> region (California).
+        calls, fake = self._stub([
+            _gc("San Diego", "California", "United States", "US", 32.72, -117.16),
+        ])
+        with mock.patch.object(location, "_http_get_json", side_effect=fake):
+            rec = location.resolve_location(override="San Diego, CA")
+        self.assertEqual(calls["n"], 1)
+        self.assertEqual(rec["region"], "California")
+        self.assertEqual(rec["country_code"], "US")
+
+    def test_tiebreak_region_absent_wins_country(self):
+        # 'Toronto, CA' with NO admin1=='California' -> country (Canada) top.
+        calls, fake = self._stub([
+            _gc("Toronto", "Ontario", "Canada", "CA", 43.70, -79.42),
+        ])
+        with mock.patch.object(location, "_http_get_json", side_effect=fake):
+            rec = location.resolve_location(override="Toronto, CA")
+        self.assertEqual(calls["n"], 1)
+        self.assertEqual(rec["country_code"], "CA")
+        self.assertEqual(rec["region"], "Ontario")
+
+    # (7) Region that excludes everything -> country-filtered top, never raises.
+    def test_region_excludes_all_falls_back_no_raise(self):
+        calls, fake = self._stub([
+            _gc("Austin", "Texas", "United States", "US", 30.27, -97.74),
+            _gc("Austin", "Indiana", "United States", "US", 39.49, -85.80),
+        ])
+        with mock.patch.object(location, "_http_get_json", side_effect=fake):
+            rec = location.resolve_location(override="Austin, Nowhere, US")
+        self.assertEqual(calls["n"], 1)
+        self.assertEqual(rec["country_code"], "US")      # a US result, no raise
+
+    # (8) save_default_location shares _geocode -> Settings stores the Texas record.
+    def test_save_default_location_region_qualified(self):
+        calls, fake = self._stub([
+            _gc("Austin", "Texas", "United States", "US", 30.27, -97.74),
+            _gc("Austin", "Indiana", "United States", "US", 39.49, -85.80),
+        ])
+        with mock.patch.object(location, "_http_get_json", side_effect=fake):
+            rec = location.save_default_location("Austin, Texas, US")
+        self.assertEqual(calls["n"], 1)
+        self.assertEqual(rec["region"], "Texas")
+        self.assertIn(("platform", "default_location"), _fake.store)
+        stored = json.loads(_fake.store[("platform", "default_location")])
+        self.assertEqual(stored["region"], "Texas")
+
+
+class TestExistingFormsByteForByte(unittest.TestCase):
+    """ev-47 invariant: the pre-existing override forms keep IDENTICAL outbound
+    URL params (name + countryCode) and make exactly one call."""
+
+    def setUp(self):
+        _clear()
+
+    def _run(self, override, results):
+        calls = {"n": 0, "url": None}
+
+        def fake_http(url, *, timeout=10):
+            calls["n"] += 1
+            calls["url"] = url
+            return {"results": results}
+
+        with mock.patch.object(location, "_http_get_json", side_effect=fake_http):
+            rec = location.resolve_location(override=override)
+        self.assertEqual(calls["n"], 1)
+        return _params(calls["url"]), rec
+
+    def test_bare_city(self):
+        p, _ = self._run("London", [_gc("London", "England", "United Kingdom",
+                                         "GB", 51.5, -0.12)])
+        self.assertEqual(p["name"], "London")
+        self.assertNotIn("countryCode", p)
+
+    def test_city_country_code(self):
+        p, _ = self._run("Chicago, US", [_gc("Chicago", "Illinois",
+                                             "United States", "US", 41.85, -87.65)])
+        self.assertEqual(p["name"], "Chicago")
+        self.assertEqual(p["countryCode"], "US")
+
+    def test_city_country_name(self):
+        # 'France' is a NAME hint applied client-side — never sent as countryCode.
+        p, rec = self._run("Lyon, France", [
+            _gc("Lyon", "Texas", "United States", "US", 33.0, -94.0),
+            _gc("Lyon", "Auvergne-Rhône-Alpes", "France", "FR", 45.76, 4.83),
+        ])
+        self.assertEqual(p["name"], "Lyon")
+        self.assertNotIn("countryCode", p)
+        self.assertEqual(rec["country_code"], "FR")
+
+    def test_postal_country(self):
+        p, rec = self._run("SW1A 1AA, UK", [_gc("London", "England",
+                                               "United Kingdom", "GB", 51.5, -0.12)])
+        self.assertEqual(p["name"], "SW1A 1AA")
+        self.assertEqual(p["countryCode"], "GB")
+        self.assertEqual(rec["country_code"], "GB")
 
 
 if __name__ == "__main__":

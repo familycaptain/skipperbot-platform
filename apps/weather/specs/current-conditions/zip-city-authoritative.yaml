@@ -13,7 +13,9 @@ behavior: >
   platform's ONE canonical "City, Region, CountryName" (display_label), so current
   conditions and the forecast tools agree on the place name and it is identical across
   chat, voice, and the weather dashboard. Each tool takes an OPTIONAL international
-  `location` override (a place name like "Lyon, France" or a "<postal>, <country>");
+  `location` override (a place name like "Lyon, France", a region-qualified "City,
+  Region, Country" / 2-piece "City, Region" like "Austin, Texas, US" / "Austin, TX",
+  or a "<postal>, <country>" — all resolved by app_platform.location);
   with no override the configured home location is used; with neither, a clear
   Settings-pointing message is returned (no crash). NWS severe-weather alerts remain
   US-only — for a non-US resolved location the alerts path returns an explicit

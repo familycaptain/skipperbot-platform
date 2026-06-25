@@ -23,10 +23,10 @@ _ACCEPTED_WIDTHS = ("w-56", "w-64", "w-72")
 
 def _location_input_classname():
     """Return the className string of the manual location override <input>, located
-    by its stable placeholder 'City or postal,country'."""
+    by its stable placeholder 'City, Region, Country or postal,country'."""
     with open(_JSX, encoding="utf-8") as fh:
         src = fh.read()
-    idx = src.find('placeholder="City or postal,country"')
+    idx = src.find('placeholder="City, Region, Country or postal,country"')
     assert idx != -1, "could not find the location override <input> (placeholder changed?)"
     # Find the className attribute on the same <input ...> element (it follows the placeholder).
     m = re.search(r'className="([^"]*)"', src[idx:])
