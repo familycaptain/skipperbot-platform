@@ -27,6 +27,36 @@ behavior: >
   no-match) → transient "try again" error, previous kept. Never stores a
   partial/empty record.
 
+  Override grammar (ev-47, shared by resolve_location override AND
+  save_default_location — both call _geocode, so it applies on every surface:
+  the Weather input override, Settings → System → Location, chat/voice): the
+  override is split on commas and the FIRST token is ALWAYS the city (the
+  Open-Meteo name search term). Accepted forms — bare name ("Lyon"), "City,
+  Country" ("Chicago, US" / "Lyon, France"), "<postal>,<country>" ("SW1A 1AA,
+  UK"), 2-piece "City, Region" ("Austin, TX" / "Austin, Texas"), and "City,
+  Region, Country" ("Austin, Texas, US" / "Austin, TX, US"). Region/country
+  preference is resolved CLIENT-SIDE over the single result set (count>=10),
+  preserving EXACTLY ONE external call. A trailing 2-letter US-state token is
+  matched client-side as a region (a shipped 50-state + DC abbrev→admin1 map)
+  and is NEVER sent as Open-Meteo's countryCode — that mis-binding was the
+  "Austin, TX" bug. For a token that is BOTH a US state and an ISO country
+  (CA/IN/DE…) the state is kept as a region hint AND the code as a client-side
+  country fallback, giving a region-first-else-country tie-break ("San Diego,
+  CA"→California; "Toronto, CA"→Canada). Selection order, never raising when a
+  filter excludes everything: (1) top-ranked result whose admin1 matches the
+  region hint, constrained to the country when one was supplied; (2) else the
+  country-filtered top; (3) else the overall top. Blank comma-tokens are ignored
+  as absent hints. STRICTLY ADDITIVE: "City", "City, Country", and
+  "<postal>,<country>" inputs resolve byte-for-byte as before (same name + URL
+  params). Non-US region abbreviations are out of scope (full admin1 names still
+  match for any country). The Weather input placeholder is aligned with its hover
+  title so both advertise the working "City, Region, Country or postal,country"
+  grammar; the live sibling spec
+  weather.current-conditions.location-input-comfortable-width pins that placeholder
+  literal in its prose AND as its bound-test locator, so the placeholder change
+  updates that spec + apps/weather/tests/test_weather_ui.py in lockstep (its
+  width assertions are unaffected).
+
   display_label(record): the ONE canonical formatter — "City, Region, CountryName";
   drops a region that is empty OR redundant with city/country; never a bare ISO code, a
   US state abbreviation, or a "(zip)" suffix.
@@ -43,9 +73,12 @@ behavior: >
   "SkipperBot/0.1"; weather's _fetch_json is not imported (that would invert the layer).
 implements:
 - app_platform/location.py
+- apps/weather/ui/WeatherApp.jsx
+- apps/weather/specs/current-conditions/location-input-comfortable-width.yaml
+- apps/weather/tests/test_weather_ui.py
 tests:
 - type: unit
-  path: ../../../tests/evolve/platform/test_location_service.py
+  path: ../../../tests/platform/test_location_service.py
   rubric: >
     Offline (mock all network). (1) resolve_location() with a cached default_location
     {lat,lon,display_name='London',region='England',country_name='United
@@ -63,10 +96,32 @@ tests:
     postal accepted, no 5-digit assumption); empty + no default → Settings-pointing
     message; override never substitutes the cached default; the override request
     URL-encodes input and the home location is NOT in any returned error string.
+    (5) ev-47 region-qualified overrides, each asserting EXACTLY ONE stubbed call:
+    "Austin, Texas, US" and "Austin, TX, US" → name=='Austin', countryCode=='US',
+    chosen admin1=='Texas'; "Austin, TX" → name=='Austin' with NO countryCode param,
+    admin1=='Texas'; "Paris, TX[, US]" → Paris/Texas over the top-ranked Paris/France;
+    tie-break "San Diego, CA"→California and "Toronto, CA"→Canada; "Austin, Nowhere,
+    US" falls back to a US result without raising; save_default_location("Austin,
+    Texas, US") stores the Texas record; and the existing forms ("London"/"Chicago,
+    US"/"Lyon, France"/"SW1A 1AA, UK") keep byte-for-byte URL params.
 - type: unit
-  path: ../../../tests/evolve/platform/test_location_layering.py
+  path: ../../../tests/platform/test_location_layering.py
   rubric: >
     ast.walk / import-closure check: import app_platform.location and assert NONE of its
-    module-level imports reference apps.* (the service stands alone).
+    module-level imports reference apps.* (the service stands alone). Unchanged by the
+    ev-47 amendment — still GREEN after the abbrev map + parser changes.
+- type: static
+  path: ../../../apps/weather/tests/test_weather_ui.py
+  rubric: >
+    Interop lockstep for weather.current-conditions.location-input-comfortable-width:
+    the placeholder literal is that test's <input> locator. When the placeholder is
+    changed for ev-47 it must be updated to the SAME new literal ("City, Region,
+    Country or postal,country") so the comfortable-width guard still finds the input;
+    its width assertions (w-56 floor, pl-7, no w-48) are unaffected.
 links: {}
-notes: ''
+notes: 'ev-47: amended the override grammar to accept region-qualified ("City, Region,
+  Country" and 2-piece "City, Region") forms with a US-state abbrev map and a
+  region-first-else-country tie-break; fixed the trailing-2-letter-as-countryCode bug;
+  bundled the Weather placeholder alignment (lockstep with the comfortable-width spec).
+  Corrected the stale bound-test paths (tests/evolve/platform → tests/platform). verified
+  reset to false at build; validate must re-green it before merge.'

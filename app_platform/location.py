@@ -20,6 +20,7 @@ go to DEBUG.
 
 from __future__ import annotations
 
+import collections
 import json
 import logging
 import urllib.error
@@ -106,6 +107,28 @@ _COUNTRY_ALIASES = {
     "britain": "GB", "england": "GB", "scotland": "GB", "wales": "GB",
 }
 
+# US-state abbreviation → full admin1 name (50 states + DC). A trailing 2-letter
+# token that is one of these is a REGION hint, NOT an Open-Meteo countryCode —
+# that mis-binding was the "Austin, TX" bug (TX was sent as countryCode=TX).
+# Region matching is done client-side; non-US region abbreviations are out of
+# scope (full admin1 names still match for any country).
+_US_STATE_ABBR = {
+    "AL": "Alabama", "AK": "Alaska", "AZ": "Arizona", "AR": "Arkansas",
+    "CA": "California", "CO": "Colorado", "CT": "Connecticut", "DE": "Delaware",
+    "FL": "Florida", "GA": "Georgia", "HI": "Hawaii", "ID": "Idaho",
+    "IL": "Illinois", "IN": "Indiana", "IA": "Iowa", "KS": "Kansas",
+    "KY": "Kentucky", "LA": "Louisiana", "ME": "Maine", "MD": "Maryland",
+    "MA": "Massachusetts", "MI": "Michigan", "MN": "Minnesota", "MS": "Mississippi",
+    "MO": "Missouri", "MT": "Montana", "NE": "Nebraska", "NV": "Nevada",
+    "NH": "New Hampshire", "NJ": "New Jersey", "NM": "New Mexico", "NY": "New York",
+    "NC": "North Carolina", "ND": "North Dakota", "OH": "Ohio", "OK": "Oklahoma",
+    "OR": "Oregon", "PA": "Pennsylvania", "RI": "Rhode Island",
+    "SC": "South Carolina", "SD": "South Dakota", "TN": "Tennessee", "TX": "Texas",
+    "UT": "Utah", "VT": "Vermont", "VA": "Virginia", "WA": "Washington",
+    "WV": "West Virginia", "WI": "Wisconsin", "WY": "Wyoming",
+    "DC": "District of Columbia",
+}
+
 
 def _normalize_country(token: str) -> str | None:
     """Best-effort normalize a country token to an ISO-3166 alpha-2 code, or
@@ -120,27 +143,65 @@ def _normalize_country(token: str) -> str | None:
     return None
 
 
-def _parse_query(query: str) -> tuple[str, str | None, str | None]:
-    """Split a free-text query into (search_name, country_code, country_hint).
+# What a parsed override yields. ``url_country`` is the ONLY value sent to
+# Open-Meteo's server-side countryCode filter (so the original forms keep
+# byte-for-byte identical URLs); ``region_hint`` / ``filter_code`` /
+# ``filter_name`` are applied CLIENT-SIDE over the single result set.
+_Parsed = collections.namedtuple(
+    "_Parsed", ["search_name", "url_country", "region_hint", "filter_code", "filter_name"])
 
-    Accepts a place name ("Lyon, France"), a "<postal>,<COUNTRY>"
-    ("SW1A 1AA, UK") or a bare name. The trailing comma-token is taken as a
-    country: ``country_code`` is set when it normalizes to an ISO alpha-2 code
-    (used for the server-side countryCode filter); ``country_hint`` is the raw
-    free-text token (e.g. "France") used to filter results client-side by
-    country NAME when no code resolved."""
+
+def _parse_query(query: str) -> "_Parsed":
+    """Split a free-text override into geocode inputs.
+
+    The FIRST comma-token is ALWAYS the city (Open-Meteo's ``name`` search
+    term). Accepted forms (all strictly additive over the originals):
+      - bare name .............. "Lyon"                       → name only
+      - "City, Country" ........ "Chicago, US" / "Lyon, France"   (unchanged)
+      - "<postal>,<country>" ... "SW1A 1AA, UK"               (unchanged)
+      - "City, Region" ......... "Austin, TX" / "Austin, Texas"   (NEW, 2-piece)
+      - "City, Region, Country"  "Austin, Texas, US" / "Austin, TX, US"  (NEW)
+
+    Region/country preference is resolved CLIENT-SIDE so the geocode stays a
+    single call. A trailing 2-letter US-state token is NEVER sent as
+    ``url_country`` (the "Austin, TX" bug); for a token that is BOTH a US state
+    and an ISO country (CA/IN/DE…) the state is kept as a region hint AND the
+    code as a client-side country fallback → region-first-else-country. Blank
+    comma-tokens (e.g. "Austin,,US" or a trailing comma) are ignored as absent
+    hints."""
     q = (query or "").strip()
-    if "," in q:
-        head, _, tail = q.rpartition(",")
-        tail = tail.strip()
-        cc = _normalize_country(tail)
+    if "," not in q:
+        return _Parsed(q, None, None, None, None)
+
+    parts = [p.strip() for p in q.split(",")]
+    parts = [p for p in parts if p]            # ignore blank comma-tokens
+    if not parts:
+        return _Parsed("", None, None, None, None)
+    if len(parts) == 1:
+        return _Parsed(parts[0], None, None, None, None)
+
+    city = parts[0]
+    if len(parts) >= 3:
+        # "City, …, Region, Country" — second-to-last is the region, last the country.
+        region_tok, country_tok = parts[-2], parts[-1]
+        cc = _normalize_country(country_tok)
         if cc:
-            return head.strip(), cc, None
-        if tail and head.strip():
-            # A trailing word we couldn't map to a code (e.g. a full country
-            # name) — keep it as a name hint for client-side filtering.
-            return head.strip(), None, tail
-    return q, None, None
+            return _Parsed(city, cc, region_tok, cc, None)
+        return _Parsed(city, None, region_tok, None, country_tok)
+
+    # 2-piece "City, X" — X is a region OR a country, decided over the results.
+    tok = parts[1]
+    if tok.upper() in _US_STATE_ABBR:
+        # US-state token: a REGION hint, NOT a server-side countryCode. Keep its
+        # ISO reading (CA/IN/DE…) only as a CLIENT-SIDE country fallback.
+        return _Parsed(city, None, tok, _normalize_country(tok), None)
+    cc = _normalize_country(tok)
+    if cc:
+        # "Chicago, US" — country code (server-side, unchanged); also a (harmless)
+        # region candidate so the 2-piece form stays region-OR-country.
+        return _Parsed(city, cc, tok, cc, None)
+    # "Lyon, France" — free text: try as a region, else as a country NAME (unchanged).
+    return _Parsed(city, None, tok, None, tok)
 
 
 def _matches_country(r: dict, code: str | None, hint: str | None) -> bool:
@@ -151,19 +212,41 @@ def _matches_country(r: dict, code: str | None, hint: str | None) -> bool:
     return True
 
 
+def _matches_region(r: dict, region_hint: str | None) -> bool:
+    """True when a result's admin1 matches the region hint (case-insensitive),
+    accepting a US-state abbreviation as its full admin1 name."""
+    if not region_hint:
+        return False
+    admin1 = str(r.get("admin1") or "").strip().lower()
+    if not admin1:
+        return False
+    h = region_hint.strip()
+    if admin1 == h.lower():
+        return True
+    full = _US_STATE_ABBR.get(h.upper())
+    return bool(full) and admin1 == full.lower()
+
+
 def _geocode(query: str) -> dict:
     """Geocode ``query`` via Open-Meteo (EXACTLY ONE external call). Returns a
     resolved record dict; raises LocationNotFound / GeocoderUnavailable.
 
+    Region/country preference is applied CLIENT-SIDE over the single result set
+    (Open-Meteo returns results best-first). Selection order, never raising on a
+    filter that excludes everything:
+      1) the top-ranked result whose admin1 matches the region hint (further
+         constrained to the country when a country token was supplied);
+      2) else the top country-filtered result;
+      3) else the overall top result.
     Every user-supplied component is URL-encoded via urlencode (quote)."""
-    search_name, country, country_hint = _parse_query(query)
-    if not search_name:
+    p = _parse_query(query)
+    if not p.search_name:
         raise LocationNotFound("location service: empty query")
 
-    params = {"name": search_name, "count": 10, "format": "json"}
-    if country:
+    params = {"name": p.search_name, "count": 10, "format": "json"}
+    if p.url_country:
         # Open-Meteo accepts an ISO alpha-2 country filter.
-        params["countryCode"] = country
+        params["countryCode"] = p.url_country
     url = _GEOCODE_URL + "?" + urllib.parse.urlencode(params)
 
     data = _http_get_json(url)
@@ -171,17 +254,27 @@ def _geocode(query: str) -> dict:
     if not results:
         raise LocationNotFound("location service: no match for the requested place")
 
-    # Top-ranked result. When a country was given (code OR name hint) we
-    # country-filter first; Open-Meteo returns results best-first so [0] is the
-    # top rank. If the filter excludes everything, fall back to overall top.
-    if country or country_hint:
-        filtered = [r for r in results
-                    if _matches_country(r, country, country_hint)]
-        chosen = (filtered or results)[0]
-    else:
-        chosen = results[0]
+    has_country = bool(p.url_country or p.filter_code or p.filter_name)
+    cc = p.url_country or p.filter_code
 
-    return _record_from_geocode(chosen, query)
+    # (1) Region match, top-ranked, constrained to the country when one was given.
+    if p.region_hint:
+        region_matches = [r for r in results if _matches_region(r, p.region_hint)]
+        if has_country:
+            constrained = [r for r in region_matches
+                           if _matches_country(r, cc, p.filter_name)]
+            region_matches = constrained or region_matches
+        if region_matches:
+            return _record_from_geocode(region_matches[0], query)
+
+    # (2) Country-filtered top.
+    if has_country:
+        filtered = [r for r in results if _matches_country(r, cc, p.filter_name)]
+        if filtered:
+            return _record_from_geocode(filtered[0], query)
+
+    # (3) Overall top.
+    return _record_from_geocode(results[0], query)
 
 
 def _record_from_geocode(r: dict, query: str) -> dict:

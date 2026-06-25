@@ -4,7 +4,7 @@ title: Weather header location input is comfortably wide (fits a full 'City, Reg
   entry)
 state: live
 behavior: 'The Weather app dashboard header (apps/weather/ui/WeatherApp.jsx) renders the manual
-  location override <input> (placeholder "City or postal,country") at a comfortable width
+  location override <input> (placeholder "City, Region, Country or postal,country") at a comfortable width
   — a Tailwind width utility no narrower than w-56 (14rem), meaningfully wider than the original
   12rem (w-48) — so a full international entry such as "Austin, Texas, US" is visible while
   typing rather than clipped at the prior narrow width. The widening is presentation-only:
@@ -20,7 +20,7 @@ tests:
 - type: static
   path: apps/weather/tests/test_weather_ui.py
   rubric: Offline/source assertion (unittest, no browser). Locate the manual location <input>
-    in WeatherApp.jsx by its placeholder 'City or postal,country' and assert its className
+    in WeatherApp.jsx by its placeholder 'City, Region, Country or postal,country' and assert its className
     uses a widened Tailwind width utility (one of w-56 | w-64 | w-72, matching the >=14rem
     floor), does NOT contain w-48, and retains pl-7. Guards the widening and blocks regression
     to the narrow field.
