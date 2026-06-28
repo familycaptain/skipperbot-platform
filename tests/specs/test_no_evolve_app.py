@@ -71,10 +71,27 @@ def _runtime_available():
         return False
 
 
+def _source_gone(rel):
+    """A removed path is gone when no SOURCE remains. A `git checkout`-based deploy
+    leaves __pycache__/*.pyc bytecode behind (untracked), so a directory that holds
+    only bytecode cache still counts as removed — the app has no manifest/source and
+    is not discoverable or importable."""
+    p = REPO / rel
+    if not p.exists():
+        return True
+    if p.is_dir():
+        for f in p.rglob("*"):
+            if f.is_file() and (f.suffix != ".pyc" and "__pycache__" not in f.parts):
+                return False
+        return True
+    return False  # a non-dir path that still exists is NOT gone
+
+
 class TestRemovedFilesAbsent(unittest.TestCase):
     def test_removed_paths_gone(self):
         for rel in REMOVED_PATHS:
-            self.assertFalse((REPO / rel).exists(), f"{rel} must be removed")
+            self.assertTrue(_source_gone(rel),
+                            f"{rel} must be removed (no source; only bytecode cache tolerated)")
 
     def test_no_evolve_operator_skills(self):
         skills = REPO / ".claude" / "skills"
