@@ -11,7 +11,7 @@ of a microSD card.
 > [**docs/01-base-platform-setup.md**](01-base-platform-setup.md) to install the
 > software.
 
-**Roughly $180–260 in parts and ~1–2 hours of hands-on time** (plus an unattended
+**Roughly ~1–2 hours of hands-on time** (plus an unattended
 OS-write/clone wait). That's in the same spirit as the ~5-minute / ~30-minute
 estimates in [01](01-base-platform-setup.md) — this one is longer because you're
 building the machine, not just installing software.
@@ -26,7 +26,7 @@ as well. There are no affiliate links.
 
 | Part | Required? | Example | Why |
 |------|-----------|---------|-----|
-| Raspberry Pi 5, **16 GB (recommended)** | **Required** | Pi 5 16GB | Postgres + pgvector + the agent + the web build want headroom. 8 GB is the bare floor; **16 GB is recommended** for comfortable 24/7 operation (with the swap setup below). |
+| Raspberry Pi 5, **16 GB (required)** | **Required** | Pi 5 16GB | Postgres + pgvector + the agent + the web build want headroom. 8 GB will generally not have enough memory to run Skipper; **16 GB is required** for comfortable 24/7 operation (with the swap setup below). |
 | NVMe SSD, 256–512 GB | **Required** | **M.2 2242** NVMe (22×42 mm), 256 GB+ | The database, embeddings, uploads, and backups live here. Far faster and more durable than a microSD card. **Buy the short 2242 length** — see the warning below the table. |
 | M.2 HAT+ (PCIe) for Pi 5 | **Required** | Official Raspberry Pi M.2 HAT+ | Physically connects the NVMe SSD to the Pi 5's PCIe lane. The official HAT+ takes a **2230 or 2242** drive — match your SSD to it. |
 | USB-C PD power supply, **27 W** | **Required** | Official 27 W USB-C PSU | The Pi 5 + an NVMe drive draws real current; an underpowered PSU causes brown-outs and SSD drop-outs. Use a 27 W (5 V/5 A) supply. |
@@ -48,11 +48,12 @@ skip the shopping and go to **Bring-up** below.
 
 ## Why these parts (the longer version)
 
-- **Pi 5, 16 GB recommended.** Skipper runs Postgres (with pgvector), the Python
-  agent, and builds the web UI. 8 GB is the bare floor; **16 GB is recommended**
-  for comfortable 24/7 headroom (and the swap setup below assumes a 16 GB board).
-  A Pi 4 *can* run it but the Pi 5's PCIe lane is what makes real NVMe boot easy —
-  this guide assumes a Pi 5.
+- **Pi 5, 16 GB required.** Skipper runs Postgres (with pgvector), the Python
+  agent, and builds the web UI. 8 GB will generally not have enough memory to run
+  Skipper; **16 GB is required** for 24/7 operation (and the swap setup below
+  assumes a 16 GB board).
+  A Pi 4 cannot run Skipper — you need a Pi 5 (16 GB), whose PCIe lane also makes
+  real NVMe boot easy. This guide assumes a Pi 5, 16 GB.
 - **NVMe SSD over microSD.** microSD cards are slow and wear out — a database
   doing frequent small writes will eventually corrupt a cheap card. An NVMe SSD
   is dramatically faster and rated for far more writes. This is the single
@@ -292,7 +293,7 @@ A few Pi-specific notes for that guide:
   and dependencies resolve correctly. (A 32-bit OS will not work.)
 - **Memory.** This guide targets a **16 GB Pi 5 with 2 GB zram + 6 GB on-disk
   swap** (see *Configure swap* above) — comfortable headroom for the web build,
-  Postgres, and many apps. An 8 GB board can work for a light setup, but 16 GB +
-  swap is the recommended baseline for a 24/7 host.
+  Postgres, and many apps. An 8 GB board will generally not have enough memory to
+  run Skipper — 16 GB + swap is the required baseline for a 24/7 host.
 
 That's it — bare hardware to a running Skipper.
