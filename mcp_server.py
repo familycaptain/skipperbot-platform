@@ -30,6 +30,7 @@ from tools.tool_guide_tool import get_tool_creation_guide
 from tools.memory_tool import remember, recall, forget
 from tools.knowledge_tool import learn_from_url, query_knowledge, list_knowledge_sources, remove_knowledge_source, list_knowledge_crawls, get_knowledge_crawl
 from tools.chatlog_tool import search_chat_history, list_chat_users
+from tools.household_tool import get_primary_user
 from tools.ping_tool import ping_host
 from tools.grep_tool import grep_search
 from tools.curl_tool import curl_request
@@ -99,6 +100,7 @@ mcp.tool()(list_knowledge_crawls)
 mcp.tool()(get_knowledge_crawl)
 mcp.tool()(search_chat_history)
 mcp.tool()(list_chat_users)
+mcp.tool()(get_primary_user)
 mcp.tool()(ping_host)
 mcp.tool()(grep_search)
 mcp.tool()(curl_request)
