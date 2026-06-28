@@ -9,7 +9,6 @@
 #   - providers/            (the connector + its lazy client IS the sanctioned home)
 #   - config.py             (the lazy `openai_client` accessor for dev harnesses)
 #   - tests/, scripts/      (test/dev harnesses)
-#   - apps/evolve/          (separate subsystem — stays Claude Code, never on ChatProvider)
 #   - test_chat.py          (root dev/test harness)
 #   - .venv/, node_modules/, web/
 #
@@ -18,7 +17,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 PATTERN='openai_client|chat\.completions\.create\(|embeddings\.create\('
-EXCLUDES='/\.venv/|/node_modules/|/web/|/tests/|/scripts/|/apps/evolve/|/providers/|(^|/)config\.py:|(^|/)test_chat\.py:'
+EXCLUDES='/\.venv/|/node_modules/|/web/|/tests/|/scripts/|/providers/|(^|/)config\.py:|(^|/)test_chat\.py:'
 
 hits="$(grep -rnE "$PATTERN" --include='*.py' . 2>/dev/null | grep -vE "$EXCLUDES" || true)"
 

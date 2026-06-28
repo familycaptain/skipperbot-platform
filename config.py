@@ -214,8 +214,6 @@ ENTITY_PREFIXES: list[tuple[str, list[tuple[str, str]]]] = [
         ("iss-", "Issue"),
         ("bs-",  "Idea"),
         ("bp-",  "Idea Part"),
-        ("ev-",  "Evolution Item"),
-        ("et-",  "Evolution Thread"),
     ]),
     ("Recipes & Meals", [
         ("re-",  "Recipe"),

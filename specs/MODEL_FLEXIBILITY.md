@@ -30,7 +30,7 @@ Skipper is hard-wired to OpenAI. The lock-in lives in a few concrete places:
 The OpenAI API key is demanded at **install time** by `skipper.sh` before the app can
 boot, then merely validated by the onboarding wizard. There is **no provider
 abstraction** in the main platform; the only precedent is the Evolve subsystem
-(`apps/evolve/agents/runner.py`), which already abstracts a vendor behind a `Backend`
+(the Evolve engine's `Backend` abstraction (now extracted to its own repo)), which already abstracts a vendor behind a `Backend`
 protocol with tiered model resolution — a pattern this plan generalizes.
 
 Goal: route every model call through a vendor-neutral interface backed by pluggable,
@@ -47,7 +47,7 @@ The chat path in **`agent_loop.py`** (lines ~96-240) is a MULTI-TURN tool-callin
 it appends the assistant message (today the raw OpenAI SDK object, `agent_loop.py:138`)
 back into the list and threads tool results as `{role:"tool", tool_call_id, ...}`.
 Anthropic instead threads `tool_use` / `tool_result` content blocks keyed by id (see
-`apps/evolve/agents/tooluse.py`). A request-shape-only normalizer is therefore
+the Evolve engine's tool-use backend (extracted)). A request-shape-only normalizer is therefore
 insufficient — **the interface owns a vendor-neutral message model that each provider
 serializes on BOTH send and receive.**
 
@@ -73,7 +73,7 @@ class EmbeddingProvider(Protocol):
 
 The loop's unexecuted-tool-call backfill and the `max_tool_calls` / `max_turns`
 force-final logic (in `agent_loop.py`) move into the neutral loop. Evolve's existing
-structured-output `Backend` (`apps/evolve/agents/runner.py`) becomes a thin **adapter on
+structured-output `Backend` (the Evolve engine's `Backend` abstraction (now extracted to its own repo)) becomes a thin **adapter on
 top of `ChatProvider`** (its `emit` tool = a forced single tool call), NOT the base
 contract.
 
@@ -315,7 +315,7 @@ through it; prove everything still works; then add the other connectors.**
   run against ≥2 providers) before migrating dependents.
 - **Risk:** embedding-dimension provisioning touches schema DDL; ship it behind setup, not
   a live toggle.
-- **Open question:** does Evolve (`apps/evolve`) adopt the new `ChatProvider` or stay
+- **Open question:** does the now-extracted Evolve engine adopt the new `ChatProvider` or stay
   separate? (Recommend: keep Evolve separate initially; converge later.) ANSWER: Evolve explicitly stays Claude Code.
 - **Open question:** exact 2026 model IDs churn — the curated model lists must be easy to
   update without code edits.

@@ -474,44 +474,5 @@
       "improve this",
       "make it better"
     ]
-  },
-  "evolve": {
-    "guide": "evolve.md",
-    "description": "Skipper's self-improvement feed — findings, proposals, questions, and plans with conversation threads",
-    "tools": [
-      "create_evolution_item",
-      "list_evolution_items",
-      "get_evolution_item",
-      "update_evolution_item",
-      "set_evolution_status",
-      "add_evolution_thread_message",
-      "get_evolution_stats"
-    ],
-    "ack": {
-      "create_evolution_item": "Creating evolution item \"{title}\"...",
-      "list_evolution_items": "Loading evolution items...",
-      "get_evolution_item": "Loading evolution item {item_id}...",
-      "update_evolution_item": "Updating evolution item {item_id}...",
-      "set_evolution_status": "Setting {item_id} status to {status}...",
-      "add_evolution_thread_message": "Adding message to {item_id}...",
-      "get_evolution_stats": "Loading evolution stats..."
-    },
-    "keywords": [
-      "evolve",
-      "evolution",
-      "evolution feed",
-      "self-improvement",
-      "findings",
-      "evolution item",
-      "evolution items",
-      "improvement",
-      "skipper improvement",
-      "what needs improving",
-      "what should skipper work on",
-      "evolve cycle",
-      "deep cycle",
-      "evolution proposal",
-      "evolution finding"
-    ]
   }
 }

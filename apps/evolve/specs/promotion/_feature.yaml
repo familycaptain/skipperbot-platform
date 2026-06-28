@@ -1,7 +1,0 @@
-kind: feature
-id: evolve.promotion
-title: Promotion — feature -> release -> main
-state: live
-links: {}
-notes: 'Implements EVOLVE.md §5. BUILT: merge-to-release (Gate-2 merges feature->release).
-  PROPOSED (operator/box-2): release-canary, publish-release-to-main, brain-readopt.'
