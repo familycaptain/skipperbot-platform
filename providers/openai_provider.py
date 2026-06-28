@@ -25,7 +25,7 @@ from providers.base import (
     ChatProvider, EmbeddingProvider, ChatResult, ModelCapabilities, ToolCall, Turn, Usage,
 )
 
-# Transient infra failures — retry. Mirrors apps/evolve/agents/runner.py so the two retry
+# Transient infra failures — retry. Mirrors the extracted Evolve engine so the two retry
 # policies don't drift before later convergence. Deterministic failures are NOT retried.
 _TRANSIENT_MARKERS = ("overloaded", "rate limit", "rate_limit", "timeout", "timed out",
                       "connection", "econnreset", "temporarily", "503", "502", "500", "529",

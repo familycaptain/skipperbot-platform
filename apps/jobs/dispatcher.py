@@ -322,10 +322,6 @@ async def _notify_completion(job: dict, result: str, success: bool):
 
     On failure, also sends an actual Discord DM to notify_user.
     """
-    # Skip notifications for evolve internal jobs (too noisy — 100+ per cycle)
-    job_type = job.get("job_type", "")
-    if job_type in ("evolve_unit", "evolve_phase"):
-        return
 
     notify_user = job.get("notify_user") or job.get("created_by")
     if not notify_user:

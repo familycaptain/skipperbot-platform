@@ -29,7 +29,7 @@ pip-system-certs>=4.0
 
 # ---- LLM + MCP ----
 openai>=1.12.0             # the family-assistant agent (config.py / agent_loop.py)
-anthropic>=0.40.0          # the Evolve agent swarm runs on Claude (apps/evolve/agents) — separate from the assistant
+anthropic>=0.40.0          # used by platform connectors (Claude) — separate from the OpenAI assistant
 fastmcp>=0.1.0
 mcp>=1.0.0
 

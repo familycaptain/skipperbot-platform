@@ -77,7 +77,6 @@ These are **not** bundled. Install the ones you want by cloning into `apps/`
 | Scriptures | `skipperbot-app-scriptures` | Bible reader with daily passages |
 | Homeopathy | `skipperbot-app-homeopathy` | Homeopathy inventory + dose log |
 | Scrum | `skipperbot-app-scrum` | Daily standup / PM digest tracker |
-| Evolve | `skipperbot-app-evolve` | Autonomous self-improvement loop (requires the Issues app) |
 | Newsletter | `skipperbot-app-newsletter` | Generate + send a family newsletter (private/owner repo) |
 
 ---

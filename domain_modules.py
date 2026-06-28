@@ -84,12 +84,6 @@ def _register_builtins():
     # trading service on EC2 (trading_service/core/symbol_risk.py + scheduler).
 
     try:
-        from domain_evolve import evolve_domain_handler
-        register_domain("evolve", evolve_domain_handler)
-    except ImportError as e:
-        logger.warning("DOMAIN: Evolve domain module not available: %s", e)
-
-    try:
         from domain_memory import memory_domain_handler
         register_domain("memory", memory_domain_handler)
     except ImportError as e:

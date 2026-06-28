@@ -3,8 +3,8 @@
 
 Usage:
     python run_sql.py migrations/055_example.sql
-    python run_sql.py --sql "SELECT count(*) FROM evolution_items"
-    python run_sql.py --sql "SELECT * FROM evolution_items LIMIT 5" --query
+    python run_sql.py --sql "SELECT count(*) FROM notifications"
+    python run_sql.py --sql "SELECT * FROM notifications LIMIT 5" --query
 
 Loads .env automatically for the DSN. No interactive password prompt.
 """

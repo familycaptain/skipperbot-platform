@@ -1,8 +1,0 @@
-kind: feature
-id: evolve.build-validate
-title: Build & validate — implement on box 1, validate on box 2
-state: live
-links: {}
-notes: 'Implements EVOLVE.md §5/§8. BUILT (Stage 1, on one machine via git worktrees): workspace-branch,
-  box2-deploy, box2-reset, build-cycle. PROPOSED (need the box-2 instance): validate-on-box2
-  (Playwright), fix-retest-loop.'

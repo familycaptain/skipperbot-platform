@@ -18,5 +18,4 @@ category — the corresponding guide will be injected with it.
 | Web & Network | web.md | internet_search, curl_request, ping_host, git_tool — web and git ops |
 | Research | research.md | start_research, check_research, cancel_research, refine_research — background web research |
 | Documents | docs.md | create_doc, get_doc, update_doc, search_docs — living markdown documents |
-| Evolution Feed | evolve.md | create_evolution_item, list/get/update items, set_evolution_status, thread messages, stats |
 | User Guide | user.md | Full capabilities overview with prompt examples — triggered by "help", "what can you do", etc. |

@@ -207,8 +207,6 @@ class ModelFlexibilityPlanTest(unittest.TestCase):
                      "app_platform/loader.py must be cited in the connector section")
         self.assertIn("agent_loop.py", _find_section(self.sections, "interface"),
                      "agent_loop.py must be cited in the interfaces section")
-        self.assertIn("apps/evolve/agents/runner.py", _find_section(self.sections, "interface"),
-                     "the Evolve Backend precedent must be cited in the interfaces section")
 
 
 if __name__ == "__main__":

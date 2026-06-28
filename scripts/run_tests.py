@@ -9,7 +9,7 @@ discovered with the repo root as the top-level dir so package names (``apps.<app
 
 Usage:
     python3 scripts/run_tests.py [-v]
-    python3 scripts/run_tests.py apps/evolve/tests   # or any subset of roots
+    python3 scripts/run_tests.py tests/specs   # or any subset of roots
 """
 import glob
 import os
