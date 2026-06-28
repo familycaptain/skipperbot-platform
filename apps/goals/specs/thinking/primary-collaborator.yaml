@@ -1,0 +1,64 @@
+kind: specification
+id: goals.thinking.primary-collaborator
+title: Goals thinking domain refers to the primary collaborator by role and resolves the real
+  username via the get_primary_user MCP tool — never a hardcoded or load-time-baked name
+state: live
+autonomy: gated
+behavior: >
+  The goals thinking-domain static system prompt (apps/goals/prompts/goals_think.md, loaded
+  verbatim by apps/goals/domain.py::_load_prompt() with NO substitution) names NO person as the
+  primary collaborator: it contains no occurrence of 'alice'/'Alice', and no real username is
+  substituted into it at load time. Wherever it previously told the agent to DM/escalate to 'alice'
+  as the default human contact (the ownership-hierarchy escalation and the paragraph defining the
+  default contact), it now refers to "the primary user" by ROLE and instructs the agent that, when
+  it needs the primary user's actual username (e.g. to address a DM), it resolves it from the
+  household roster already in its context or by calling the `get_primary_user` MCP tool — never
+  inventing or assuming a name, and never DMing the literal phrase "the primary user". When no
+  primary user is set yet (pre-onboarding) the prompt tells the agent to hold the escalation and
+  note it, not DM anyone. The forbidden-action EXAMPLE ('Goal owned by "dana" -> do NOT modify') is
+  a STATIC generic third-party owner consistent with its siblings bob/carol — NOT the primary.
+
+  The get_primary_user MCP tool (tools/household_tool.py) takes no arguments and returns a plain
+  string whose first line is the pinned marker 'Primary user: <username>' followed by the household
+  roster (primary marked), resolved via data_layer.users.get_primary_user()/get_human_users()
+  (reading only usernames; the bot 'skipper' filtered out). It degrades safely and NEVER raises to
+  the model: empty primary -> a 'No primary user is set yet' message; any exception -> a generic
+  'Could not look up the primary user right now.' string (the real error is logged, never folded
+  into the model-visible text). It is registered in mcp_server.py and added to the 'core'
+  tool-routing category so it is universally routed — including into the goals thinking domain
+  (whose BASELINE_CATEGORIES includes 'core'), so its JSON schema reaches the model via the tools
+  API every cycle. apps/goals/domain.py::_load_prompt() is unchanged (verbatim read; no
+  substitution).
+implements:
+- tools/household_tool.py::get_primary_user
+- mcp_server.py
+- tool_routes.json
+- apps/goals/prompts/goals_think.md
+tests:
+- type: unit
+  path: apps/goals/tests/test_goals_think_primary_collaborator.py
+  rubric: >
+    Deterministic, DB-free. PART A (prompt via apps.goals.domain._load_prompt()): no
+    case-insensitive 'alice'/'Alice' anywhere; the role phrase 'the primary user' AND the tool name
+    'get_primary_user' are present; a pre-onboarding cue ('no primary user is set' + 'hold') is
+    present; _load_prompt() output equals the raw goals_think.md bytes (proves no load-time
+    substitution) and the raw file has no 'alice'; the forbidden-action example line (located by the
+    content 'do NOT modify the goal itself') contains the static owner 'dana' and is not a role/tool
+    reference. PART B (tool from tools.household_tool, monkeypatching data_layer.users
+    get_primary_user/get_human_users): primary='admin' -> return starts with 'Primary user: admin',
+    marks admin primary, filters 'skipper', does not raise; empty primary -> 'No primary user is set
+    yet' and no fabricated 'Primary user:'; get_primary_user raises -> tool returns the generic
+    'Could not look up the primary user' string and does not propagate or leak the exception text.
+    PART C (wiring): 'get_primary_user' is in tool_routes.json 'core' tools; tools.household_tool
+    .get_primary_user is callable and 'mcp.tool()(get_primary_user)' is registered in mcp_server.py;
+    'core' is in apps.goals.domain.BASELINE_CATEGORIES.
+links: {}
+notes: >
+  Issue #48 (operator-authored; reproduced on box2 where the primary is 'admin' and no 'alice'
+  exists). Re-specced at Gate 1 from a load-time name-substitution approach to this tool-based
+  approach per the operator's redirection (no baked/substituted name; role placeholder; agent
+  resolves the primary via an MCP tool whose definition the prompt references). The new tool is
+  additive for domains without an injected roster (chat/PM); for goals it is the on-demand
+  resolution/fallback path complementing the roster already injected in _build_user_prompt. Out of
+  scope: _load_prompt() (left verbatim), _build_user_prompt() roster injection, get_primary_user()
+  resolution logic.

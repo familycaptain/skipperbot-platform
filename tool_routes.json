@@ -1,6 +1,6 @@
 {
   "core": {
-    "description": "Memory, chat history, and routed notifications",
+    "description": "Memory, chat history, household/primary-user lookup, and routed notifications",
     "tools": [
       "remember",
       "recall",
@@ -10,6 +10,7 @@
       "broadcast_announcement",
       "search_chat_history",
       "list_chat_users",
+      "get_primary_user",
       "get_guide",
       "list_installed_apps",
       "get_app_help"
@@ -25,7 +26,8 @@
       "list_chat_users": "Checking chat users...",
       "get_guide": "Loading guide...",
       "list_installed_apps": "Checking installed apps...",
-      "get_app_help": "Reading the app's help..."
+      "get_app_help": "Reading the app's help...",
+      "get_primary_user": "Looking up the primary user..."
     },
     "keywords": [
       "announce",
