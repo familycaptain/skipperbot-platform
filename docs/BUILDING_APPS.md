@@ -17,6 +17,11 @@ If you're building with an AI assistant, hand it
 [specs/APP_PACKAGES.md](../specs/APP_PACKAGES.md) as the contract to code
 against — it's the prompt guidance, not a human tutorial.
 
+> **Prefer to automate the whole build-and-review cycle?** See
+> [**Expand Skipper with Evolve**](#expand-skipper-with-evolve) below — a
+> standalone engine that drives this same authoring → review → test workflow
+> from a GitHub issue.
+
 ## Where apps live
 
 New apps usually live in their own sibling repo named like
@@ -134,6 +139,33 @@ Follow [docs/02-adding-apps.md](02-adding-apps.md) for the full install,
 restart, verify, and troubleshoot steps. On boot the loader creates the
 `app_<id>` schema, runs your migrations, and registers your entity types,
 tools, routes, and UI.
+
+## Expand Skipper with Evolve
+
+Skipper is built with a repeatable software process — declarative C/F/S specs,
+AI-assisted authoring, independent review, isolated builds, and validation on a
+real test host before anything merges. **Evolve** packages that same process as
+an autonomous SDLC engine you point at a codebase.
+
+Give Evolve a GitHub issue and it drives the change end to end: it triages the
+request, **reproduces** the reported behavior on a live test host (with proof),
+writes a C/F/S spec, runs a panel of independent AI reviewers, **builds the
+change in an isolated git worktree**, validates it against the running product
+on the test host, and walks it through human approval gates — **Gate 1** (the
+spec / intent), **Gate 2** (the built *and validated* result), and **Gate 3**
+(your own verify on a UAT host) — before it merges.
+
+Because it follows the same patterns Skipper was built with, it's a natural way
+to **extend Skipper with the same rigor**: hand-author a quick app with the
+steps above, or reach for Evolve when you want issue-driven, reviewed, gated,
+tested changes.
+
+**Evolve is a standalone engine you run yourself** — it is *not* a Skipper app,
+you don't clone it into `apps/`, and the platform doesn't load it. It lives in
+its own repo, separate from this platform:
+
+➡️ **<https://github.com/familycaptain/evolve>** — the full picture of how Evolve
+works and how to run it.
 
 ## Licensing your app
 
