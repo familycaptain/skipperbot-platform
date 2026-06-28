@@ -3,6 +3,7 @@ id: platform.loader.no-evolve-app
 title: The Evolve SDLC app and the legacy in-core evolution-feed are not part of skipperbot-platform
 state: live
 autonomy: gated
+verified: true
 behavior: >
   skipperbot-platform bundles NEITHER the extracted Evolve SDLC app NOR the legacy in-core
   "evolution feed" self-improvement system. The Evolve app package directory is absent; because the
