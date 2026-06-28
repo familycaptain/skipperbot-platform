@@ -4,6 +4,7 @@ title: Goals thinking domain refers to the primary collaborator by role and reso
   username via the get_primary_user MCP tool — never a hardcoded or load-time-baked name
 state: live
 autonomy: gated
+verified: true
 behavior: >
   The goals thinking-domain static system prompt (apps/goals/prompts/goals_think.md, loaded
   verbatim by apps/goals/domain.py::_load_prompt() with NO substitution) names NO person as the
