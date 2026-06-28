@@ -1,0 +1,39 @@
+kind: specification
+id: platform.docs.evolve-plug
+title: Platform authoring docs introduce + link the standalone Evolve SDLC engine
+state: live
+autonomy: gated
+verified: true
+behavior: >
+  docs/BUILDING_APPS.md contains an "Expand Skipper with Evolve" section (placed after the Step 1-4
+  authoring workflow, before "Licensing your app") that: notes Skipper is built with a repeatable
+  process (C/F/S specs, AI-assisted authoring, independent review, isolated builds, test-host
+  validation); gives a brief accurate intro to Evolve (a GitHub issue drives an end-to-end change —
+  triage, reproduce-on-a-test-host-with-proof, C/F/S spec, an independent AI review panel, a
+  worktree-isolated build, live test-host validation, and human gates: Gate 1 spec/intent, Gate 2 the
+  built + validated result, Gate 3 the operator's UAT verify); frames it as a way to extend Skipper
+  with the same rigor (with a when-to-reach-for-it contrast vs hand-authoring); disambiguates it
+  plainly as a STANDALONE engine you run yourself — not a Skipper app, not cloned into apps/, not
+  loaded by the platform, living in its own repo; and links it with a single call-to-action to
+  https://github.com/familycaptain/evolve. A forward-pointer near the top of BUILDING_APPS.md (not a
+  row in the 3-doc role table) makes the section discoverable, and docs/02-adding-apps.md's "Writing
+  your own app" index cross-links it (clearly as a tool, not an installable app). The standalone evolve
+  repo is only referenced, never modified.
+implements:
+- docs/BUILDING_APPS.md
+- docs/02-adding-apps.md
+tests:
+- type: unit
+  path: tests/specs/test_evolve_plug_doc.py
+  rubric: >
+    Offline. Scoped to the Evolve section span (the '##+ ...evolve' heading to the next '## '):
+    the section exists, contains github.com/familycaptain/evolve, an expand/extend cue, a
+    same-patterns cue (synonym-tolerant), a distinctive gated-SDLC cue (gate/sdlc/triage/worktree/
+    validation/reviewed/gated — not the file-common 'spec'), and a standalone/not-an-app
+    disambiguation cue; and docs/02-adding-apps.md has a single line containing 'Evolve' plus a link
+    to BUILDING_APPS.md or the repo URL.
+links: {}
+notes: >
+  Issue #50 (operator-authored), complementary to #49 (which removed the bundled Evolve app). The
+  standalone evolve repo is only referenced (public URL), never modified. Description verified accurate
+  against the real repo by the accuracy review. New feature slug platform.docs.

@@ -259,6 +259,11 @@ See [docs/BUILDING_APPS.md](BUILDING_APPS.md) for the app authoring workflow.
 `specs/APP_PACKAGES.md` is the canonical prompt guidance and app contract for
 AI-assisted app creation; it is not the only human-facing authoring guide.
 
+To **automate** that whole build → review → test SDLC from a GitHub issue, see
+[**Expand Skipper with Evolve**](BUILDING_APPS.md#expand-skipper-with-evolve) —
+the standalone **Evolve** engine. You run Evolve yourself; it is a tool, **not**
+an app you clone into `apps/`.
+
 To scaffold a new app repo from the platform root:
 
 ```bash
