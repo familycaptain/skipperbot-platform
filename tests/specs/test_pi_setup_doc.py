@@ -39,7 +39,12 @@ class TestPiSetupDoc(unittest.TestCase):
         self.assertTrue(pi_rows, "no Pi shopping-list row found")
         pi_row = pi_rows[0].lower()
         self.assertIn("16 gb", pi_row)
-        self.assertIn("recommend", pi_row)
+        # 16 GB is the spec'd minimum — the doc may word it "recommended" OR "required".
+        # Tie the qualifier to the 16 GB token within its own table cell ([^|]* stops at
+        # the column boundary) so the always-present "Required?" column can't satisfy it.
+        self.assertTrue(
+            re.search(r"16\s*gb[^|]*\b(required|recommended)\b", pi_row),
+            "the Pi row must present 16 GB as required/recommended")
 
     # (2) 2242 form factor; the SSD shopping row must not recommend buying a 2280
     def test_2242_not_2280(self):

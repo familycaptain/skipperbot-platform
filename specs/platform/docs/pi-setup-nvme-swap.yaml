@@ -8,8 +8,9 @@ behavior: >
   docs/00-pi-hardware-and-setup.md documents the operator's target state — a 16 GB Raspberry Pi 5
   with an M.2 2242 NVMe SSD, booting off the NVMe, plus 2 GB zram and 6 GB persistent on-disk swap —
   as complete, current (Bookworm), copy-pasteable command blocks. Specifically: the shopping list and
-  the why-parts prose RECOMMEND the 16 GB Pi 5 (the old "8 GB (16 GB better)" / "8 GB practical floor"
-  framing is gone) and recommend an M.2 2242 (22x42 mm) SSD, with a prominent blockquote warning that
+  the why-parts prose present the 16 GB Pi 5 as the minimum — worded as "recommended" OR "required"
+  (the operator confirmed Skipper requires 16 GB and will not run on 8 GB); the old "8 GB (16 GB better)"
+  / "8 GB practical floor" framing is gone. They also recommend an M.2 2242 (22x42 mm) SSD, with a prominent blockquote warning that
   the official Pi 5 M.2 HAT+ fits only short 2230/2242 drives and the common 2280 will not seat; the
   HAT+ row says 2230/2242 (not 2280). It references Jeff Geerling's Pi 5 NVMe writeups. The NVMe-boot
   step updates the bootloader EEPROM (sudo rpi-eeprom-update -a) and sets BOOT_ORDER=0xf416 (NVMe first,
@@ -29,8 +30,9 @@ tests:
 - type: unit
   path: tests/specs/test_pi_setup_doc.py
   rubric: >
-    Offline content/structural assertions on docs/00-pi-hardware-and-setup.md: 16 GB is the
-    recommendation (old 8 GB framing gone, '16 GB'+'recommend' in the Pi shopping row); '2242' present
+    Offline content/structural assertions on docs/00-pi-hardware-and-setup.md: 16 GB is the spec'd
+    minimum (old 8 GB framing gone; the Pi shopping row qualifies '16 GB' as 'required' OR 'recommended',
+    cell-scoped so the always-present 'Required?' column can't satisfy it); '2242' present
     and the SSD shopping row does not recommend a 2280, with a prominent 2242-not-2280 warning callout;
     a Geerling reference; NVMe-boot commands (rpi-eeprom-update + BOOT_ORDER + findmnt/nvme0n1); 2 GB
     zram (zram + SIZE=2048 + PERCENT disabled/flagged + zramswap); 6 GB on-disk swap (fallocate -l 6G or
