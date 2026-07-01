@@ -3,6 +3,8 @@ import {
   Plus, RefreshCw, ChevronRight, ArrowLeft, Save, CheckCircle2, X,
   Loader2, CalendarClock, Pause, Play, Trash2, Clock, AlertTriangle,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 const API_BASE = "";
 
@@ -280,9 +282,18 @@ function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, o
       {/* Schedule list */}
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
-          <div className="text-center text-faint py-12 text-sm">
-            {filter === "all" ? "No schedules yet. Create one to get started." : "No schedules in this category."}
-          </div>
+          <PristineEmpty
+            appId="schedules"
+            blurb={getAppManifest("schedules")?.blurb}
+            records={schedules}
+            loading={loading}
+            filterActive={filter !== "all"}
+            fallback={
+              <div className="text-center text-faint py-12 text-sm">
+                No schedules in this category.
+              </div>
+            }
+          />
         ) : (
           filtered.map((sch) => {
             const overdueFl = isOverdue(sch);

@@ -4,6 +4,8 @@ import {
   ChevronDown, ChevronRight, ChevronUp, ExternalLink, Tag, Printer, Pencil, Trello,
 } from "lucide-react";
 import TrelloSettings from "./TrelloSettings.jsx";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 const PREVIEW_LIMIT = 4;
 
@@ -175,10 +177,19 @@ export default function ListsApp({ appId, userId, context = {}, refreshKey, isAc
             <Loader2 size={18} className="animate-spin mr-2" /> Loading lists...
           </div>
         ) : lists.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-faint text-sm">
-            <List size={32} className="mb-2 opacity-40" />
-            {searchQuery ? "No lists match your search." : "No lists yet. Create one or connect a Trello board via chat."}
-          </div>
+          <PristineEmpty
+            appId="lists"
+            blurb={getAppManifest("lists")?.blurb}
+            records={lists}
+            loading={loading}
+            filterActive={!!searchQuery.trim() || !!activeSource}
+            fallback={
+              <div className="flex flex-col items-center justify-center h-32 text-faint text-sm">
+                <List size={32} className="mb-2 opacity-40" />
+                No lists match your search.
+              </div>
+            }
+          />
         ) : (
           groupedLists().map((group) => (
             <div key={group.key}>

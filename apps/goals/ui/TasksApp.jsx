@@ -3,6 +3,8 @@ import { ChevronRight, Loader2, RefreshCw, ExternalLink, CheckSquare, Filter } f
 import {
   StatusBadge, PriorityBadge, SearchBar, TaskView,
 } from "./GoalShared";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 /**
  * Tasks app — flat, due-date-sorted list of all tasks across projects/goals.
@@ -218,6 +220,8 @@ export default function TasksApp({ appId, userId, context = {}, onTitle, onConte
         {view === "list" && tasks && (
           <TaskListView
             tasks={visibleTasks}
+            allTasks={tasks}
+            loading={loading}
             onTaskClick={loadTask}
             patchEntity={patchEntity}
             isOverdue={isOverdue}
@@ -248,13 +252,22 @@ export default function TasksApp({ appId, userId, context = {}, onTitle, onConte
 
 /* ── Flat task list ── */
 
-function TaskListView({ tasks, onTaskClick, patchEntity, isOverdue, onOpenApp }) {
+function TaskListView({ tasks, allTasks, loading, onTaskClick, patchEntity, isOverdue, onOpenApp }) {
   if (!tasks || tasks.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-faint">
-        <CheckSquare size={32} className="text-faint mb-2" />
-        <p className="text-sm">No tasks</p>
-      </div>
+      <PristineEmpty
+        appId="tasks"
+        blurb={getAppManifest("tasks")?.blurb}
+        records={allTasks}
+        loading={loading}
+        filterActive={false}
+        fallback={
+          <div className="flex flex-col items-center justify-center h-full text-faint">
+            <CheckSquare size={32} className="text-faint mb-2" />
+            <p className="text-sm">No tasks</p>
+          </div>
+        }
+      />
     );
   }
 
