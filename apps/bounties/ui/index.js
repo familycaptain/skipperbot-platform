@@ -4,5 +4,5 @@ import { lazy } from "react";
 import { Coins } from "lucide-react";
 
 export default [
-  { id: "bounties", name: "Bounties", icon: Coins, component: lazy(() => import("./BountiesApp")), singleton: true },
+  { id: "bounties", name: "Bounties", icon: Coins, component: lazy(() => import("./BountiesApp")), singleton: true, blurb: "Set rewards for things you want done around the house. Create a bounty to motivate the crew." },
 ];

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, Plus, Star, Clock, ChefHat, Tag, X, Edit3, Loader2, Filter,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 /**
  * Recipe List App — singleton for browsing, searching, and creating recipes.
@@ -212,10 +214,19 @@ export default function RecipeListApp({ appId, userId, context = {}, onOpenApp, 
             <Loader2 size={18} className="animate-spin mr-2" /> Loading recipes...
           </div>
         ) : recipes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-faint text-sm">
-            <ChefHat size={32} className="mb-2 opacity-40" />
-            {searchQuery ? "No recipes match your search." : "No recipes yet. Click + New to create one!"}
-          </div>
+          <PristineEmpty
+            appId="recipes"
+            blurb={getAppManifest("recipes")?.blurb}
+            records={recipes}
+            loading={loading}
+            filterActive={!!searchQuery.trim() || !!activeCategory}
+            fallback={
+              <div className="flex flex-col items-center justify-center h-32 text-faint text-sm">
+                <ChefHat size={32} className="mb-2 opacity-40" />
+                No recipes match your search.
+              </div>
+            }
+          />
         ) : (
           recipes.map((recipe) => (
             <button

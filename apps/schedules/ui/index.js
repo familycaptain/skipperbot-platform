@@ -16,5 +16,6 @@ export default [
     component: lazy(() => import("./SchedulesApp")),
     singleton: true,
     page: 2,
+    blurb: "Set up recurring schedules so routine things happen on time. Add a schedule to get started.",
   },
 ];

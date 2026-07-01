@@ -6,6 +6,8 @@ import {
   AssigneeField, DueDateField, CadenceField, EditableTitle, DeleteButton,
   SearchBar, TaskView, TrelloLabels, LinkedDocs, HistorySection, LinkedArtifacts,
 } from "./GoalShared";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 /**
  * Goals app — browse goals, projects, and tasks.
@@ -436,13 +438,17 @@ function SummaryView({ goals, allUsers, onGoalClick, statusColor, userId, apiMut
 
   if (!goals || goals.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-faint">
-        <Target size={32} className="text-faint mb-2" />
-        <p className="text-sm">No goals yet</p>
-        <div className="mt-4 w-full max-w-md">
+      <PristineEmpty
+        appId="goals"
+        blurb={getAppManifest("goals")?.blurb}
+        records={goals}
+        loading={false}
+        filterActive={false}
+      >
+        <div className="w-full max-w-md">
           <QuickAdd placeholder="New goal name..." onSubmit={handleCreateGoal} />
         </div>
-      </div>
+      </PristineEmpty>
     );
   }
 

@@ -5,6 +5,8 @@ import {
   ArrowUp, Filter, Upload, ChevronLeft, ChevronRight, GripVertical,
   MessageSquare, Maximize2, Users, Activity, RefreshCw,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 /** Upload a File/Blob to the images API. Returns the image ID or null. */
 async function uploadImageFile(file, userId) {
@@ -476,19 +478,28 @@ export default function TimelineApp({ appId, userId, onTitle, refreshKey }) {
             <Loader2 className="animate-spin text-violet-400" size={28} />
           </div>
         ) : posts.length === 0 ? (
-          <div className="text-center py-16 text-faint">
-            {feedMode === "activity" ? (
-              <>
-                <p className="text-lg mb-2">No activity entries yet</p>
-                <p className="text-sm capitalize">{activityAuthor} hasn't done anything logged yet — entries appear automatically when records are created, updated, or completed.</p>
-              </>
-            ) : (
-              <>
-                <p className="text-lg mb-2">No posts yet</p>
-                <p className="text-sm">Click "New Post" to start your family journal!</p>
-              </>
-            )}
-          </div>
+          <PristineEmpty
+            appId="timeline"
+            blurb={getAppManifest("timeline")?.blurb}
+            records={posts}
+            loading={loading}
+            filterActive={feedMode !== "family" || !!activeSearch || !!tagFilter || !!authorFilter || !!dateFilter}
+            fallback={
+              <div className="text-center py-16 text-faint">
+                {feedMode === "activity" ? (
+                  <>
+                    <p className="text-lg mb-2">No activity entries yet</p>
+                    <p className="text-sm capitalize">{activityAuthor} hasn't done anything logged yet — entries appear automatically when records are created, updated, or completed.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg mb-2">No posts yet</p>
+                    <p className="text-sm">Click "New Post" to start your family journal!</p>
+                  </>
+                )}
+              </div>
+            }
+          />
         ) : (
           <>
             {posts.map(post => (

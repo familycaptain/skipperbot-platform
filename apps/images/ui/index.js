@@ -12,6 +12,7 @@ export default [
     component: lazy(() => import("./ImagesApp")),
     singleton: true,
     page: 2,
+    blurb: "Keep the pictures you want handy in one place. Add an image to get started.",
   },
   {
     id: "image",
