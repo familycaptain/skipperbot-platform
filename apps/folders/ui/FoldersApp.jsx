@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Search, Plus, FolderOpen, Loader2, X, Folder, FileText, Paperclip, User,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 export default function FoldersApp({ appId, userId, context = {}, refreshKey, isActive, onOpenApp }) {
   const [folders, setFolders] = useState([]);
@@ -101,9 +103,18 @@ export default function FoldersApp({ appId, userId, context = {}, refreshKey, is
             <Loader2 size={16} className="animate-spin mr-2" /> Loading folders...
           </div>
         ) : folders.length === 0 ? (
-          <div className="text-center py-8 text-faint text-sm">
-            {searchQuery ? "No folders match your search." : "No folders yet. Click \"New Folder\" to get started!"}
-          </div>
+          <PristineEmpty
+            appId="folders"
+            blurb={getAppManifest("folders")?.blurb}
+            records={folders}
+            loading={loading}
+            filterActive={!!searchQuery}
+            fallback={
+              <div className="text-center py-8 text-faint text-sm">
+                No folders match your search.
+              </div>
+            }
+          />
         ) : (
           [...folders].sort((a, b) => a.name.localeCompare(b.name)).map((folder) => (
             <FolderCard key={folder.id} folder={folder} onClick={() => openFolder(folder)} />

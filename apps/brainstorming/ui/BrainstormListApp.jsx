@@ -3,6 +3,8 @@ import {
   Search, Plus, Lightbulb, Loader2, X, Filter,
   Sparkles, ParkingCircle, GraduationCap, Pencil,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 const STATUS_OPTIONS = ["idea", "exploring", "developing", "parked", "graduated"];
 const PRIORITY_OPTIONS = ["high", "medium", "low"];
@@ -125,9 +127,18 @@ export default function BrainstormListApp({ appId, userId, context = {}, refresh
             <Loader2 size={16} className="animate-spin mr-2" /> Loading ideas...
           </div>
         ) : ideas.length === 0 ? (
-          <div className="text-center py-8 text-faint text-sm">
-            {searchQuery || statusFilter ? "No ideas match your filters." : "No ideas yet. Click \"New Idea\" to get started!"}
-          </div>
+          <PristineEmpty
+            appId="brainstorming"
+            blurb={getAppManifest("brainstorming")?.blurb}
+            records={ideas}
+            loading={loading}
+            filterActive={!!searchQuery || !!statusFilter}
+            fallback={
+              <div className="text-center py-8 text-faint text-sm">
+                No ideas match your filters.
+              </div>
+            }
+          />
         ) : (
           ideas.map((idea) => (
             <IdeaCard key={idea.id} idea={idea} onClick={() => openIdea(idea)} />

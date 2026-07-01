@@ -3,6 +3,8 @@ import { ChevronRight, Loader2, RefreshCw, ExternalLink, CheckSquare, Filter } f
 import {
   StatusBadge, PriorityBadge, SearchBar, TaskView,
 } from "./GoalShared";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 /**
  * Tasks app — flat, due-date-sorted list of all tasks across projects/goals.
@@ -72,7 +74,12 @@ export default function TasksApp({ appId, userId, context = {}, onTitle, onConte
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch(`/api/apps/goals/my-tasks/${encodeURIComponent(userId)}`);
+      // Fetch the FULL assigned slice (incl. done/cancelled) so the empty-state
+      // hero fires ONLY on a genuine pristine-empty ("no assigned tasks ever"),
+      // not when the user's only tasks are completed. The active-task display is
+      // still filtered below via `visibleTasks`; the Show-completed toggle now
+      // has real data to reveal.
+      const data = await apiFetch(`/api/apps/goals/my-tasks/${encodeURIComponent(userId)}?status_filter=all`);
       // Sort by due date (nulls last), then by priority
       const sorted = (data.tasks || []).sort((a, b) => {
         if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
@@ -218,6 +225,8 @@ export default function TasksApp({ appId, userId, context = {}, onTitle, onConte
         {view === "list" && tasks && (
           <TaskListView
             tasks={visibleTasks}
+            allTasks={tasks}
+            loading={loading}
             onTaskClick={loadTask}
             patchEntity={patchEntity}
             isOverdue={isOverdue}
@@ -248,13 +257,22 @@ export default function TasksApp({ appId, userId, context = {}, onTitle, onConte
 
 /* ── Flat task list ── */
 
-function TaskListView({ tasks, onTaskClick, patchEntity, isOverdue, onOpenApp }) {
+function TaskListView({ tasks, allTasks, loading, onTaskClick, patchEntity, isOverdue, onOpenApp }) {
   if (!tasks || tasks.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-faint">
-        <CheckSquare size={32} className="text-faint mb-2" />
-        <p className="text-sm">No tasks</p>
-      </div>
+      <PristineEmpty
+        appId="tasks"
+        blurb={getAppManifest("tasks")?.blurb}
+        records={allTasks}
+        loading={loading}
+        filterActive={false}
+        fallback={
+          <div className="flex flex-col items-center justify-center h-full text-faint">
+            <CheckSquare size={32} className="text-faint mb-2" />
+            <p className="text-sm">No tasks</p>
+          </div>
+        }
+      />
     );
   }
 
