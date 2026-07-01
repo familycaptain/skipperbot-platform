@@ -11,7 +11,8 @@
     "predev": "node packaged-app-deps.mjs --emit-sources",
     "dev": "vite",
     "check:no-native-submit": "node scripts/check-no-native-submit.mjs",
-    "prebuild": "node scripts/check-no-native-submit.mjs && node packaged-app-deps.mjs --emit-sources",
+    "check:empty-state-hero": "node scripts/check-empty-state-hero.mjs",
+    "prebuild": "node scripts/check-no-native-submit.mjs && node scripts/check-empty-state-hero.mjs && node packaged-app-deps.mjs --emit-sources",
     "build": "vite build",
     "preview": "vite preview"
   },

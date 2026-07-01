@@ -4,5 +4,5 @@ import { lazy } from "react";
 import { Home } from "lucide-react";
 
 export default [
-  { id: "home", name: "Home", icon: Home, component: lazy(() => import("./HomeApp")), singleton: true },
+  { id: "home", name: "Home", icon: Home, component: lazy(() => import("./HomeApp")), singleton: true, heroes: { maintenance: "Stay on top of home upkeep — recurring and one-off maintenance. Add a task to get started." } },
 ];

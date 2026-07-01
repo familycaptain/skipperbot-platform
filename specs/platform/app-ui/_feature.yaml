@@ -1,0 +1,7 @@
+kind: feature
+id: platform.app-ui
+title: App UI shell
+state: live
+links: {}
+notes: 'Cross-cutting web UI conventions shared by app packages: how an app''s registry entry
+  (icon/name/blurb) renders in the shell. First spec: the pristine-empty-state hero.'

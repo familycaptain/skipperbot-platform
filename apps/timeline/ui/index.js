@@ -15,5 +15,6 @@ export default [
     icon: Newspaper,
     component: lazy(() => import("./TimelineApp")),
     singleton: true,
+    blurb: "A shared feed of your household's moments and updates. Post the first one to start the story.",
   },
 ];

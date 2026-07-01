@@ -17,6 +17,7 @@ export default [
     component: lazy(() => import("./DocListApp")),
     singleton: true,
     page: 3,
+    blurb: "Write and keep your notes and documents in one place. Create your first doc to get started.",
   },
   // Singleton editor — hidden from the launcher (LAUNCHER_HIDDEN
   // continues to suppress it), opened from the listing app or by ID.

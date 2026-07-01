@@ -16,5 +16,6 @@ export default [
     component: lazy(() => import("./ListsApp")),
     singleton: true,
     page: 2,
+    blurb: "Shared lists for groceries, packing, and anything else — connect them to Trello and use them from your phone. Start a list or sync a board.",
   },
 ];

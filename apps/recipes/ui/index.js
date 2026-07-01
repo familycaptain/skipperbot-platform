@@ -11,6 +11,7 @@ export default [
     icon: UtensilsCrossed,
     component: lazy(() => import("./RecipeListApp")),
     singleton: true,
+    blurb: "Your personal cookbook — save the recipes you love so they're always at hand. Add your first recipe.",
   },
   {
     id: "recipe",

@@ -17,6 +17,7 @@ export default [
     component: lazy(() => import("./FoldersApp")),
     singleton: true,
     page: 2,
+    blurb: "Where Skipper automatically turns your thoughts, memories, and conversations into organized folders and documents — no filing required. Keep talking to Skipper and it fills in here.",
   },
   // Detail / editor — hidden from the launcher (the platform's
   // LAUNCHER_HIDDEN set already excludes id="folder"), opened from

@@ -18,6 +18,7 @@ export default [
     icon: Target,
     component: lazy(() => import("./GoalsApp")),
     singleton: true,
+    blurb: "Turn what you want to get done into trackable goals. Add your first goal and Skipper helps you break it down and make progress.",
   },
   {
     id: "tasks",
@@ -25,5 +26,6 @@ export default [
     icon: CheckSquare,
     component: lazy(() => import("./TasksApp")),
     singleton: true,
+    blurb: "A focused view of the individual tasks across your goals and projects that are assigned to you. Add a task to a goal or project and it shows up here.",
   },
 ];

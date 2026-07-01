@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, Plus, Car, Loader2, AlertTriangle, Wrench, CircleDot,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 /**
  * Auto Maintenance List App — singleton for browsing vehicles.
@@ -110,10 +112,19 @@ export default function AutoListApp({ appId, userId, context = {}, onOpenApp, re
             <Loader2 size={18} className="animate-spin mr-2" /> Loading vehicles...
           </div>
         ) : vehicles.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-faint text-sm">
-            <Car size={32} className="mb-2 opacity-40" />
-            {searchQuery ? "No vehicles match your search." : "No vehicles tracked yet. Click + Add Vehicle to start!"}
-          </div>
+          <PristineEmpty
+            appId="auto"
+            blurb={getAppManifest("auto")?.blurb}
+            records={vehicles}
+            loading={loading}
+            filterActive={!!searchQuery.trim()}
+            fallback={
+              <div className="flex flex-col items-center justify-center h-32 text-faint text-sm">
+                <Car size={32} className="mb-2 opacity-40" />
+                No vehicles match your search.
+              </div>
+            }
+          />
         ) : (
           vehicles.map((v) => {
             const summary = v._summary || {};

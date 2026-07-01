@@ -1,0 +1,85 @@
+kind: specification
+id: platform.app-ui.empty-state-hero
+title: Record-based apps show an empty-state hero (icon + name + blurb) on a pristine-empty
+  view, with per-view and multi-hero placement
+state: live
+autonomy: gated
+behavior: 'A reusable EmptyStateHero (web/src/components/EmptyStateHero.jsx) takes {appId,
+  blurb}, resolves {icon,name} from getAppManifest(appId) (the registry ENTRY, keyed by entry
+  id), and renders a CENTERED hero: the app''s Lucide icon (~40px, FAINT/reduced-opacity to
+  match existing dimmed empty-state icons — calm, not a banner), the app name as a heading
+  in the STRONG text token (--ds-text, NOT the .empty-state faint default), and the operator-final
+  blurb (passed as a prop so a per-view hero can supply that view''s own copy) in text-faint,
+  within a max-w-md wrapper using design-system --ds-* tokens (no bespoke colors) so it themes
+  in both light and dark; it renders null if no blurb. A wrapper PristineEmpty (web/src/components/PristineEmpty.jsx)
+  takes {appId, blurb, records, loading, filterActive, fallback, children}: it runs isPristineEmpty
+  and, when pristine-empty, renders <EmptyStateHero appId blurb/> ABOVE its children (the
+  app''s existing +New/inline-add, footprint capped so the add stays visible) — else renders
+  `fallback` (the app''s existing search/scope-empty text). The SAME wrapper serves whole-collection
+  AND per-view placement: the caller passes the relevant slice (the whole app''s records,
+  or one tab''s). isPristineEmpty({records,loading,filterActive}) is true exactly when !loading
+  && (records?.length||0)===0 && !filterActive; filterActive is true whenever ANY search OR
+  date/time scope is active, so a zero-result search or an out-of-scope ''today'' view shows
+  the NORMAL text, never the hero. The opt-in/exclude decision is an EXPLICIT registry (web/src/apps/emptyStateHero.js)
+  keyed by PRIMARY (non-subview) registry ENTRY id, EXHAUSTIVE and DISJOINT over all primary
+  entry ids; each opt-in entry carries a PLACEMENT descriptor — {mode:''default''} (hero on
+  the default view when the primary collection is pristine-empty), {mode:''page''} (one hero
+  for the whole page under a compound condition — todo: NO todo cards AND NO backlog cards),
+  or {mode:''per-view'', views:[...]} (one hero per named tab/view, fired when THAT view''s
+  slice is pristine-empty) — and every exclude carries a reason. A static-parsing node guardrail
+  enforces that a new app cannot silently skip the decision and that every declared hero has
+  copy. FINAL OPT-IN (18 apps / 19 heroes): default-view heroes on auto, goals, tasks, brainstorming,
+  documents, folders, images, lists, locator, recipes, timeline, bounties, schedules; per-view
+  heroes on todo (one page hero when no todo AND no backlog), reminders (TWO — Reminders tab
+  + Nags tab), meals (Browse tab), medical (Medications tab; copy describes the whole medical
+  app), home (Maintenance tab). EXCLUDED (no hero): issues (removed from scope), chores, prioritize,
+  and the system/tool apps. Build proceeds STAGED under this one spec/slug: BATCH 1 (pilot)
+  = the shared infra + auto, goals, timeline, recipes (locks the hero design on both-theme
+  screenshots at Gate 2); BATCH 2+ = the remaining heroes, each fully screenshot-verified.'
+implements:
+- web/src/components/EmptyStateHero.jsx
+- web/src/components/PristineEmpty.jsx
+- web/src/apps/emptyStateHero.js
+- web/scripts/check-empty-state-hero.mjs
+- apps/<id>/ui/index.js (blurb/heroes on opt-in entries)
+tests:
+- type: unit
+  path: web/scripts/check-empty-state-hero.mjs
+  rubric: 'Node guardrail (Option B; STATIC parse, no new infra), run in web prebuild + standalone.
+    (1) isPristineEmpty truth table: {[],loading:false,filterActive:false}->true; {[{}],..}->false;
+    {[],loading:true,..}->false; {[],..,filterActive:true}->false; records:null treated empty.
+    (2) Enumerate PRIMARY (non-subview) registry ENTRY ids by static-parsing apps/*/ui/index.js
+    (reliable entry-id regex; tolerate the non-serializable Lucide icon refs); assert every
+    primary entry id is in OPT_IN xor EXCLUDE (exhaustive+disjoint). FAIL-CLOSED: error on
+    any index.js the parser cannot read, and include a self-test that asserts it recovers
+    the KNOWN primary set (35 entries, the 7 primary+subview files mapped correctly: auto/auto-vehicle,
+    brainstorming/brainstorm, documents/document, folders/folder, images/image, recipes/recipe,
+    locator/locator-item) so the regex can''t silently mis-classify. (3) Per-hero blurb presence
+    — checked for EVERY OPT_IN entry from batch 1 (DECLARE-UP-FRONT: all 19 blurbs/heroes
+    land as DATA in batch 1; the <PristineEmpty> integration lands per batch, so the guardrail
+    is batch-agnostic and truly exhaustive — NO pending-set escape): each default/page entry
+    has a non-empty `blurb`; each per-view entry has a `heroes` map with a non-empty blurb
+    for EACH view it declares. The goals file must carry blurbs for BOTH goals and tasks.
+    The heroes-map KEYS are the component''s REAL tab ids (lowercase: reminders->{reminders,nags};
+    medical->{medications}; home->{maintenance}; meals->{browse}); OPT_IN.views, if present,
+    is DERIVED from the heroes-map keys (single source of truth) — operator label strings
+    (''Reminders''/''Nags''/''Maintenance'') are display copy, not keys. (4) Every EXCLUDE
+    entry has a non-empty reason. Per-app integration (branch placement, the per-view slice,
+    filterActive incl. every scoping filter, +New preserved, todo''s no-todo-AND-no-backlog
+    condition) is verified by the VALIDATE screenshots for every hero, not by this guardrail.'
+- type: acceptance
+  path: 'live: pristine-empty hero on the pilot apps (auto, goals, timeline, recipes)'
+  rubric: 'Driving the live web UI as a fresh QA user: each pilot app''s primary view shows
+    the centered hero (faint app icon + strong app name + the operator-final blurb) when its
+    collection is pristine-empty; add a record and the hero is GONE; both light and dark themes
+    render correctly; a search/scoped-to-zero list shows the normal ''no matches'' text, NOT
+    the hero. Follow-on batches add the remaining heroes, each screenshot-verified.'
+links: {}
+notes: 'Operator-authored (#52). Staged build under one slug: pilot batch = auto, goals, timeline,
+  recipes; follow-on batches add the remaining 15 heroes (18 apps / 19 heroes total). Blurbs
+  are operator-final (verbatim). Test = Option B static node guardrail (no new infra). Guardrail
+  on an UNCLASSIFIED primary entry: warn + default-exclude, build stays GREEN (preserve the
+  zero-touch app-package contract). medical: whole-app copy on the Medications-tab-empty trigger
+  (operator-confirmed). verified flips true per-batch as the bound guardrail passes on the
+  test host.'
+verified: true

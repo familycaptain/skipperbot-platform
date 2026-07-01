@@ -15,5 +15,9 @@ export default [
     icon: Bell,
     component: lazy(() => import("./RemindersApp")),
     singleton: true,
+    heroes: {
+      reminders: "One-off and recurring reminders so nothing slips. Add a reminder and Skipper nudges you at the right time.",
+      nags: "Nags are persistent reminders that keep after you until the thing is actually done — for the stuff that's easy to ignore. Set a nag and Skipper won't let it drop.",
+    },
   },
 ];

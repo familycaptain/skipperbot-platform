@@ -4,6 +4,6 @@ import { lazy } from "react";
 import { Car } from "lucide-react";
 
 export default [
-  { id: "auto", name: "Auto", icon: Car, component: lazy(() => import("./AutoListApp")), singleton: true },
+  { id: "auto", name: "Auto", icon: Car, component: lazy(() => import("./AutoListApp")), singleton: true, blurb: "Track each vehicle's mileage, service history, and upcoming maintenance in one place. Add a car to get started." },
   { id: "auto-vehicle", name: "Vehicle", icon: Car, component: lazy(() => import("./AutoDetailApp")), singleton: false, subview: true },
 ];
