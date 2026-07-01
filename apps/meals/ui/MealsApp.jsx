@@ -5,6 +5,8 @@ import {
   Trash2, Check, AlertCircle, BookOpen, CalendarDays, RefreshCw,
   Camera, Image as ImageIcon, FileDown
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 const API = "/api/apps/meals";
 
@@ -593,7 +595,14 @@ function BrowseTab({ onEditMeal, refreshKey }) {
       {loading ? (
         <div className="text-center text-faint py-8">Loading...</div>
       ) : meals.length === 0 ? (
-        <div className="text-center text-faint py-8">No meals found.</div>
+        <PristineEmpty
+          appId="meals"
+          blurb={getAppManifest("meals")?.heroes?.browse}
+          records={meals}
+          loading={loading}
+          filterActive={!!(q || tag || effort)}
+          fallback={<div className="text-center text-faint py-8">No meals found.</div>}
+        />
       ) : (
         <div className="grid gap-2">
           {meals.map(m => (

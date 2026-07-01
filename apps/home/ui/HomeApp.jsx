@@ -5,6 +5,8 @@ import {
   Clock, AlertCircle, CalendarCheck, RotateCcw, Trash2, Edit2,
   AlertTriangle, Camera, Image as ImageIcon,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 /**
  * Home App — combined hub for home-related features.
@@ -695,15 +697,24 @@ function MaintenanceTab({ userId }) {
             {loading ? (
               <div className="flex items-center justify-center h-32 text-faint text-sm">Loading...</div>
             ) : tasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-48 text-faint">
-                <Wrench size={32} className="text-default mb-3" />
-                <p className="text-sm font-medium text-muted">
-                  {search ? `No tasks matching "${search}"` : "No maintenance tasks yet"}
-                </p>
-                <p className="text-xs mt-1 text-faint">
-                  {!search && 'Click "Add Task" to get started'}
-                </p>
-              </div>
+              <PristineEmpty
+                appId="home"
+                blurb={getAppManifest("home")?.heroes?.maintenance}
+                records={tasks}
+                loading={loading}
+                filterActive={!!search.trim() || filterCat !== "All"}
+                fallback={
+                  <div className="flex flex-col items-center justify-center h-48 text-faint">
+                    <Wrench size={32} className="text-default mb-3" />
+                    <p className="text-sm font-medium text-muted">
+                      {search ? `No tasks matching "${search}"` : "No maintenance tasks yet"}
+                    </p>
+                    <p className="text-xs mt-1 text-faint">
+                      {!search && 'Click "Add Task" to get started'}
+                    </p>
+                  </div>
+                }
+              />
             ) : (
               <>
                 <StatusGroup label="Overdue" icon={AlertCircle} color="text-red-400"

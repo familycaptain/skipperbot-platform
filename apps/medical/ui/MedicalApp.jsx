@@ -4,6 +4,8 @@ import {
   ChevronDown, ChevronRight, FlaskConical, Pill, Activity, Syringe, CalendarClock, Bell, BellOff,
   Wrench, CheckCircle2, History, AlertTriangle,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 /**
  * Medical App — Medications, Treatments, Events, Labs
@@ -286,7 +288,16 @@ function MedicationsTab({ memberId, userId, refreshKey }) {
         <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus size={14} />Add Medication</button>
       </div>
 
-      {meds.length === 0 && <p className="text-faint text-sm text-center py-8">No medications yet.</p>}
+      {meds.length === 0 && (
+        <PristineEmpty
+          appId="medical"
+          blurb={getAppManifest("medical")?.heroes?.medications}
+          records={meds}
+          loading={loading}
+          filterActive={!!memberId || showInactive}
+          fallback={<p className="text-faint text-sm text-center py-8">No medications yet.</p>}
+        />
+      )}
 
       <div className="space-y-2">
         {meds.map(med => {
