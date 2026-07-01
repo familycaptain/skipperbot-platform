@@ -7,6 +7,8 @@ import { isPristineEmpty } from "../apps/emptyStateHero";
  *
  * Props:
  *   appId, blurb   – forwarded to <EmptyStateHero>.
+ *   title          – OPTIONAL heading override forwarded to <EmptyStateHero>
+ *                    (per-view title; defaults to the app name when omitted).
  *   records        – the slice to judge (the whole collection OR one view's
  *                    slice; the caller passes the relevant slice). null == empty.
  *   loading        – true while the slice is still loading.
@@ -23,6 +25,7 @@ import { isPristineEmpty } from "../apps/emptyStateHero";
 export default function PristineEmpty({
   appId,
   blurb,
+  title,
   records,
   loading,
   filterActive,
@@ -32,7 +35,7 @@ export default function PristineEmpty({
   if (isPristineEmpty({ records, loading, filterActive })) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-6 w-full max-h-full overflow-y-auto">
-        <EmptyStateHero appId={appId} blurb={blurb} />
+        <EmptyStateHero appId={appId} blurb={blurb} title={title} />
         {children}
       </div>
     );

@@ -225,6 +225,7 @@ export default function RemindersApp({ userId, refreshKey, sendChat, context = {
         ) : displayList.length === 0 ? (
           <PristineEmpty
             appId="reminders"
+            title={tab === "nags" ? "Nags" : undefined}
             blurb={getAppManifest("reminders")?.heroes?.[tab === "nags" ? "nags" : "reminders"]}
             records={displayList}
             loading={loading}
