@@ -82,4 +82,4 @@ notes: 'Operator-authored (#52). Staged build under one slug: pilot batch = auto
   zero-touch app-package contract). medical: whole-app copy on the Medications-tab-empty trigger
   (operator-confirmed). verified flips true per-batch as the bound guardrail passes on the
   test host.'
-verified: false
+verified: true
