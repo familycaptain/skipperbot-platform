@@ -74,7 +74,12 @@ export default function TasksApp({ appId, userId, context = {}, onTitle, onConte
     setLoading(true);
     setError(null);
     try {
-      const data = await apiFetch(`/api/apps/goals/my-tasks/${encodeURIComponent(userId)}`);
+      // Fetch the FULL assigned slice (incl. done/cancelled) so the empty-state
+      // hero fires ONLY on a genuine pristine-empty ("no assigned tasks ever"),
+      // not when the user's only tasks are completed. The active-task display is
+      // still filtered below via `visibleTasks`; the Show-completed toggle now
+      // has real data to reveal.
+      const data = await apiFetch(`/api/apps/goals/my-tasks/${encodeURIComponent(userId)}?status_filter=all`);
       // Sort by due date (nulls last), then by priority
       const sorted = (data.tasks || []).sort((a, b) => {
         if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
