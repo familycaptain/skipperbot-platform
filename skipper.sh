@@ -455,16 +455,9 @@ setup() {
     # SKIPPERBOT_SECRET_KEY is intentionally left blank: the platform
     # auto-generates and persists it to .env on first boot (ensure_secret_key).
     ok ".env written (the secret-encryption key is auto-generated on first boot)."
-
-    # The deploy-watcher is a systemd service that pulls + rebuilds + recycles the
-    # Docker stack on a deploy request (the deploy_skipper flow / POST
-    # /api/admin/deploy). It is NOT needed for a plain restart. Only offer it for a
-    # Docker run on a systemd host (skips macOS, WSL without systemd, and native
-    # runs - matching the Windows launcher, which has none).
-    if [ "$RUNTIME" = "docker" ] && command -v systemctl >/dev/null 2>&1 \
-        && confirm "Install the deploy-watcher service now? (enables remote 'deploy' = git pull + rebuild)"; then
-        install_watcher || warn "Deploy watcher not installed — you can run 'skipper.sh' again later or install it by hand."
-    fi
+    # NOTE: the optional deploy-watcher (remote 'deploy' = git pull + rebuild) is
+    # NOT installed during setup — it's an advanced extra that confused first-run
+    # installs. Install it later on a Docker+systemd host with 'skipper.sh watcher'.
 }
 
 # --- deploy watcher (systemd) ------------------------------------------------
@@ -677,6 +670,8 @@ Usage: ./skipper.sh [command]   (or 'skipper' if installed)
   service <sub>  Auto-start on boot: install | uninstall | status | start |
                  stop | restart. systemd (Linux/WSL) or launchd (macOS), chosen
                  from your saved runtime. See docs/04-running-as-a-service.md.
+  watcher        Install the OPTIONAL deploy-watcher (Docker+systemd host):
+                 enables remote 'deploy' = git pull + rebuild. Not part of setup.
   logs           Follow the agent logs.
   status         Show container + health status.
   install        Symlink this script to /usr/local/bin/skipper.
@@ -919,6 +914,7 @@ case "$cmd" in
     restart)        ensure_runtime_tooling; needs_setup && setup; ensure_runtime_database; stop; start ;;
     update)         update ;;
     service)        service "${2:-help}" ;;
+    watcher)        install_watcher ;;
     logs)           logs ;;
     status|ps)      status ;;
     install)        install_cli ;;
