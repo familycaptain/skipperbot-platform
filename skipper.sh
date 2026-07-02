@@ -13,8 +13,8 @@
 #       - Native: runs on the host; you must already have PostgreSQL 18 +
 #         pgvector, Python 3.12, and Node 24+ installed. The launcher then
 #         installs the project's own deps for you (venv + pip + npm ci).
-#   * First run (no usable .env): asks for your OpenAI key and a Postgres
-#     password, writes .env, offers to install the deploy-watcher service,
+#   * First run (no usable .env): asks for a Postgres password, writes .env,
+#     offers to install the deploy-watcher service,
 #     then starts Skipper.
 #   * Later runs: start Skipper, wait until it has finished booting, then drop
 #     you into the live log (Ctrl+C stops watching; Skipper keeps running).
@@ -146,7 +146,7 @@ resolve_runtime() {
 
 # Prerequisite checks come in two phases:
 #   Tooling  — Node + Python; checked BEFORE setup (no .env needed), so we
-#              never ask for your OpenAI key on a machine that can't run.
+#              never run setup on a machine that can't run Skipper.
 #   Database — Postgres reachability; checked AFTER setup, because setup is
 #              what asks you for the DB host and writes it into .env.
 # For native, the tooling phase auto-installs the project's own deps (venv, pip,
@@ -415,12 +415,7 @@ setup() {
     log "First-time setup — creating $ENV_FILE"
     [ -f "$ENV_FILE" ] || cp "$EXAMPLE_ENV" "$ENV_FILE"
 
-    local key pw pw2
-    while :; do
-        read -r -p "OpenAI API key (from https://platform.openai.com/api-keys): " key
-        [ -n "$key" ] && break
-        warn "An OpenAI key is required."
-    done
+    local pw pw2
     while :; do
         read -r -s -p "Choose a Postgres password (any strong value): " pw; echo
         read -r -s -p "Confirm password: " pw2; echo
@@ -428,7 +423,8 @@ setup() {
         warn "Passwords were empty or didn't match — try again."
     done
 
-    set_env OPENAI_API_KEY "$key"
+    # No LLM provider key is collected here (#44): the platform boots keyless and
+    # you choose your provider + enter its key in the web UI on first run.
     set_env POSTGRES_PASSWORD "$pw"
     # Remember how to run Skipper so later starts don't re-ask Docker-vs-native.
     set_env SKIPPER_RUNTIME "$RUNTIME"
@@ -669,8 +665,9 @@ Usage: ./skipper.sh [command]   (or 'skipper' if installed)
   (no command)   Resolve runtime (asks once, then remembered), verify that
                  runtime's prerequisites, run first-time setup if needed, then
                  start Skipper and follow its log.
-  setup          (Re)configure .env (runtime choice + OpenAI key + Postgres
-                 password). Re-asks Docker-vs-native.
+  setup          (Re)configure .env (runtime choice + Postgres password;
+                 your LLM provider + key are set later in the web UI).
+                 Re-asks Docker-vs-native.
   start          Start Skipper, wait until it has booted, then follow the log
                  (Ctrl+C stops watching; Skipper keeps running).
   stop           Stop Skipper (Docker stack, or reminds you for native).

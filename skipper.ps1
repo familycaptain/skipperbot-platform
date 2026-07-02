@@ -11,8 +11,8 @@
 #       - Native: runs on the host; you must already have PostgreSQL 18 +
 #         pgvector, Python 3.12, and Node 24+ installed. The launcher then
 #         installs the project's own deps for you (venv + pip + npm ci).
-#   * First run (no usable .env): asks for your OpenAI key and a Postgres
-#     password, writes .env, then starts Skipper.
+#   * First run (no usable .env): asks for a Postgres password, writes .env,
+#     then starts Skipper.
 #   * Later runs: start Skipper, wait until it has finished booting, then drop
 #     you into the live log (Ctrl+C stops watching; Skipper keeps running).
 #
@@ -111,7 +111,7 @@ function Resolve-Runtime {
 
 # Prerequisite checks come in two phases:
 #   Tooling  - Node + Python; checked BEFORE setup (no .env needed), so we
-#              never ask for your OpenAI key on a machine that can't run.
+#              never run setup on a machine that can't run Skipper.
 #   Database - Postgres reachability; checked AFTER setup, because setup is
 #              what asks you for the DB host and writes it into .env.
 # For native, the tooling phase auto-installs the project's own deps (venv, pip,
@@ -516,8 +516,8 @@ function SetEnv {
 
 function NeedsSetup {
     if (-not (Test-Path $ENV_FILE)) { return $true }
-    $key = EnvGet "OPENAI_API_KEY"
-    if ($key -eq "") { return $true }
+    # MODEL_FLEXIBILITY (#44): boot is not gated on a provider key; you pick the
+    # provider + enter its key in the first-run web UI. Only the DB password gates setup.
     $pw = EnvGet "POSTGRES_PASSWORD"
     if ($pw -eq "" -or $pw -eq "CHANGE_ME") { return $true }
     return $false
@@ -528,14 +528,6 @@ function Setup {
     Log "First-time setup - creating $ENV_FILE"
     if (-not (Test-Path $ENV_FILE)) {
         Copy-Item $EXAMPLE_ENV $ENV_FILE
-    }
-
-    $key = ""
-    while ([string]::IsNullOrWhiteSpace($key)) {
-        $key = Read-Host "OpenAI API key (from https://platform.openai.com/api-keys)"
-        if ([string]::IsNullOrWhiteSpace($key)) {
-            Warn "An OpenAI key is required."
-        }
     }
 
     $pw = ""
@@ -550,7 +542,8 @@ function Setup {
         Warn "Passwords were empty or didn't match - try again."
     }
 
-    SetEnv "OPENAI_API_KEY" $key
+    # No LLM provider key is collected here (#44): the platform boots keyless and
+    # you choose your provider + enter its key in the web UI on first run.
     SetEnv "POSTGRES_PASSWORD" $pw
     # Remember how to run Skipper so later starts don't re-ask Docker-vs-native.
     SetEnv "SKIPPER_RUNTIME" (Resolve-Runtime)
@@ -763,8 +756,9 @@ Usage: powershell -ExecutionPolicy Bypass -File skipper.ps1 [command]
   (no command)   Resolve runtime (asks once, then remembered), verify that
                  runtime's prerequisites, run first-time setup if needed, then
                  start Skipper and follow its log.
-  setup          (Re)configure .env (runtime choice + OpenAI key + Postgres
-                 password). Re-asks Docker-vs-native.
+  setup          (Re)configure .env (runtime choice + Postgres password;
+                 your LLM provider + key are set later in the web UI).
+                 Re-asks Docker-vs-native.
   start          Start Skipper, wait until it has booted, then follow the log
                  (Ctrl+C stops watching; Skipper keeps running).
   stop           Stop Skipper (Docker stack, or reminds you for native).

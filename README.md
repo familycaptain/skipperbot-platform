@@ -42,8 +42,8 @@ Companion services run alongside the platform when you want them:
 > - **Native** runs directly on your machine and requires you to have already
 >   installed PostgreSQL 18 + pgvector, Python 3.12, and Node 24+ (see Path 2).
 >
-> It then asks for your OpenAI key and a Postgres password, writes `.env`,
-> and starts Skipper. Later, just run the command again to start it. (Optional: on Linux/Mac, `./skipper.sh install`
+> It then asks for a Postgres password, writes `.env`, and starts Skipper. On
+> first run you pick your LLM provider and enter its key in the web UI. Later, just run the command again to start it. (Optional: on Linux/Mac, `./skipper.sh install`
 > adds `skipper` to your `PATH` so you can type just `skipper` from anywhere.
 > On first run, you'll also be offered the chance to set up an automatic updater —
 > a lightweight background service that lets you update Skipper from within the app
@@ -58,8 +58,9 @@ web UI build — all on a private network. **You do not install Postgres
 yourself.** The `db` container ships with Postgres 18 + pgvector
 pre-configured.
 
-You'll need three things on your machine before you start: Docker, a
-clone of this repository, and an OpenAI API key.
+You'll need two things on your machine before you start: Docker and a
+clone of this repository. (You choose an LLM provider and enter its API key
+in the web UI on first run — not during install.)
 
 **Step 0 — Install Docker.** Use Docker Desktop on macOS / Windows,
 or Docker Engine on Linux (including Raspberry Pi). Docker runs
@@ -75,10 +76,11 @@ docker compose version
 
 If both work, Docker is good.
 
-**Step 1 — Get an OpenAI API key** at
-<https://platform.openai.com/api-keys>. Add a payment method and
-~$5 of credit; usage is metered. Copy the key (you won't be able
-to see it again) and keep it handy — the launcher asks for it in Step 3.
+**Step 1 — Have an LLM provider API key ready.** Skipper lets you choose your
+provider; get an API key from the one you want to use (e.g. OpenAI at
+<https://platform.openai.com/api-keys> — add a payment method and ~$5 of
+credit; usage is metered). Keep it handy — you enter it in the **web UI on
+first run**, not in the installer.
 
 **Step 2 — Clone the platform.**
 
@@ -107,10 +109,10 @@ powershell -ExecutionPolicy Bypass -File skipper.ps1
 ```
 
 On first run the launcher asks how you want to run Skipper — **choose Docker** —
-then prompts for your **OpenAI API key** and a **Postgres password** of your
-choosing, writes `.env` for you, and brings the stack up with `docker compose`
-(detached). No file editing. (Everything else in `.env` is optional — integrations
-you can add later.)
+then prompts for a **Postgres password** of your choosing, writes `.env` for
+you, and brings the stack up with `docker compose` (detached). No file editing.
+When it's up, open the web UI to pick your **LLM provider** and enter its key.
+(Everything else in `.env` is optional — integrations you can add later.)
 
 **First boot takes a while — be patient.** Docker downloads the Postgres image,
 builds the agent image, installs all the Python dependencies (including the
@@ -195,7 +197,7 @@ When you pick *native*, the `skipper` launcher checks these **runtimes**
 and tells you exactly what's missing — but it does **not** install Postgres,
 Python, or Node for you (those are yours to install). Once they're present it
 handles the rest automatically: creates the Python venv, installs the Python
-dependencies, runs `npm ci`, asks for your OpenAI key + Postgres details, writes
+dependencies, runs `npm ci`, asks for your Postgres details, writes
 `.env`, and offers to create the database + role + pgvector. For the full manual
 walkthrough — installing PostgreSQL + pgvector, creating the database, and
 configuring `.env` by hand — see
