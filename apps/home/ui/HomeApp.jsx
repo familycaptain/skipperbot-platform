@@ -68,7 +68,7 @@ export default function HomeApp({ appId, userId, context = {}, onTitle, onOpenAp
           <AppliancesTab userId={userId} />
         )}
         {activeTab === "insurance" && (
-          <InsuranceTab />
+          <InsuranceTab userId={userId} />
         )}
         {activeTab === "contractors" && (
           <ContractorsTab />
@@ -1384,12 +1384,549 @@ function AppliancesTab({ userId }) {
   );
 }
 
-function InsuranceTab() {
+/* ── Insurance renewal helpers ── */
+function renewalStatus(dateStr) {
+  if (!dateStr) return "none";
+  const diff = daysDiff(dateStr);
+  if (diff < 0) return "overdue";
+  if (diff <= 30) return "soon";
+  return "ok";
+}
+
+const RENEWAL_STYLES = {
+  overdue: { badge: "bg-red-500/20 text-red-400",     label: "Renewal overdue" },
+  soon:    { badge: "bg-amber-500/20 text-amber-400", label: "Renews soon" },
+  ok:      { badge: "bg-green-500/20 text-green-400", label: "Renews" },
+  none:    { badge: "surface-raised text-muted",      label: "No renewal date" },
+};
+
+function RenewalBadge({ renewal_date }) {
+  const status = renewalStatus(renewal_date);
+  if (status === "none") return null;
+  const s = RENEWAL_STYLES[status];
+  const suffix = renewal_date ? ` · ${fmtDate(renewal_date)}` : "";
   return (
-    <div className="flex flex-col items-center justify-center h-full text-faint">
-      <Shield size={36} className="text-faint mb-3" />
-      <p className="text-sm font-medium text-muted">Insurance</p>
-      <p className="text-xs mt-1">Valuations, coverage &amp; asset list — coming soon</p>
+    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${s.badge}`}>
+      {s.label}{status !== "overdue" ? suffix : ""}
+    </span>
+  );
+}
+
+const POLICY_TYPES = ["Home", "Auto", "Life", "Umbrella", "Flood", "Health", "Renters", "Other"];
+const PERIOD_MULTIPLIER = { annual: 1, semiannual: 2, quarterly: 4, monthly: 12 };
+const PERIOD_LABEL = { annual: "annual", semiannual: "semi-annual", quarterly: "quarterly", monthly: "monthly" };
+
+/* ── Add Policy Form ── */
+function AddPolicyForm({ types = [], userId, onSave, onCancel }) {
+  const [form, setForm] = useState({
+    provider: "", policy_number: "", policy_type: "Home", coverage_amount: "",
+    premium: "", premium_period: "annual", deductible: "", renewal_date: "",
+    insured_assets: "", notes: "",
+  });
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const photoRef = useRef();
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!form.provider.trim()) return;
+    setSaving(true);
+    try {
+      const body = {
+        provider: form.provider.trim(),
+        policy_number: form.policy_number.trim(),
+        policy_type: form.policy_type.trim() || "Home",
+        coverage_amount: form.coverage_amount !== "" ? parseFloat(form.coverage_amount) : null,
+        premium: form.premium !== "" ? parseFloat(form.premium) : null,
+        premium_period: form.premium_period || "annual",
+        deductible: form.deductible !== "" ? parseFloat(form.deductible) : null,
+        renewal_date: form.renewal_date || null,
+        insured_assets: form.insured_assets.trim(),
+        notes: form.notes.trim(),
+        created_by: userId || "",
+      };
+      const res = await fetch("/api/apps/home/insurance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const policy = await res.json();
+
+      if (pendingPhoto) {
+        const fd = new FormData();
+        fd.append("file", pendingPhoto);
+        fd.append("entity_type", "home_insurance_policy");
+        fd.append("entity_id", policy.id);
+        fd.append("uploaded_by", userId || "");
+        await fetch("/api/apps/images/upload", { method: "POST", body: fd });
+      }
+
+      onSave(policy);
+    } catch (err) {
+      alert("Failed to add policy: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputCls = "w-full surface-panel border border-subtle rounded px-2.5 py-1.5 text-xs text-default focus:outline-none focus:border-indigo-500";
+
+  return (
+    <form onSubmit={handleSubmit} className="surface-card border border-subtle rounded-lg p-4 space-y-3 mb-2">
+      <p className="text-xs font-semibold text-muted uppercase tracking-wide">New Policy</p>
+      <input className={inputCls} placeholder="Provider (e.g. State Farm) *" value={form.provider}
+        onChange={e => set("provider", e.target.value)} autoFocus required />
+      <div className="grid grid-cols-2 gap-2">
+        <input className={inputCls} placeholder="Type (e.g. Home)" value={form.policy_type}
+          onChange={e => set("policy_type", e.target.value)} list="policy-types" />
+        <datalist id="policy-types">
+          {[...new Set([...POLICY_TYPES, ...types])].map(t => <option key={t} value={t} />)}
+        </datalist>
+        <input className={inputCls} placeholder="Policy number" value={form.policy_number}
+          onChange={e => set("policy_number", e.target.value)} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-xs text-faint mb-1">Coverage amount</label>
+          <input className={inputCls} type="number" min="0" step="0.01" placeholder="0.00"
+            value={form.coverage_amount} onChange={e => set("coverage_amount", e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-xs text-faint mb-1">Deductible</label>
+          <input className={inputCls} type="number" min="0" step="0.01" placeholder="0.00"
+            value={form.deductible} onChange={e => set("deductible", e.target.value)} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-xs text-faint mb-1">Premium</label>
+          <input className={inputCls} type="number" min="0" step="0.01" placeholder="0.00"
+            value={form.premium} onChange={e => set("premium", e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-xs text-faint mb-1">Premium period</label>
+          <select className={inputCls} value={form.premium_period} onChange={e => set("premium_period", e.target.value)}>
+            <option value="annual">Annual</option>
+            <option value="semiannual">Semi-annual</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="monthly">Monthly</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs text-faint mb-1">Renewal date</label>
+        <input className={inputCls} type="date" value={form.renewal_date}
+          onChange={e => set("renewal_date", e.target.value)} />
+      </div>
+      <textarea className={`${inputCls} resize-none`} rows={2} placeholder="Insured assets (what does this cover?)"
+        value={form.insured_assets} onChange={e => set("insured_assets", e.target.value)} />
+      <textarea className={`${inputCls} resize-none`} rows={2} placeholder="Notes (optional)"
+        value={form.notes} onChange={e => set("notes", e.target.value)} />
+
+      {/* Document picker */}
+      <div className="flex items-center gap-3">
+        <label className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded border cursor-pointer transition-colors ${
+          pendingPhoto ? "border-indigo-500 bg-indigo-600/20 text-indigo-300" : "border-subtle text-muted hover:border-[var(--ds-border)] hover:text-[var(--ds-text)]"
+        }`}>
+          <Camera size={13} />
+          {pendingPhoto ? pendingPhoto.name : "Attach policy document (optional)"}
+          <input ref={photoRef} type="file" accept="image/*" capture="environment" className="hidden"
+            onChange={e => setPendingPhoto(e.target.files[0] || null)} />
+        </label>
+        {pendingPhoto && (
+          <button type="button" onClick={() => { setPendingPhoto(null); if (photoRef.current) photoRef.current.value = ""; }}
+            className="text-faint hover:text-red-400">
+            <X size={13} />
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center justify-end gap-2">
+        <button type="button" onClick={onCancel} className="px-3 py-1.5 text-xs text-muted hover:text-[var(--ds-text)]">Cancel</button>
+        <button type="submit" disabled={saving || !form.provider.trim()}
+          className="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-on-accent rounded">
+          {saving ? "Saving..." : "Add Policy"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/* ── Policy Card ── */
+function PolicyCard({ policy, expanded, onToggle, onUpdate, onDelete, userId, types = [] }) {
+  const [images, setImages] = useState([]);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (expanded && !imagesLoaded) {
+      fetch(`/api/apps/home/insurance/${policy.id}`)
+        .then(r => r.ok ? r.json() : { images: [] })
+        .then(d => { setImages(d.images || []); setImagesLoaded(true); })
+        .catch(() => setImagesLoaded(true));
+    }
+  }, [expanded, policy.id, imagesLoaded]);
+
+  async function handleEditSave() {
+    setSaving(true);
+    try {
+      const body = {
+        ...editForm,
+        coverage_amount: editForm.coverage_amount !== "" && editForm.coverage_amount != null
+          ? parseFloat(editForm.coverage_amount) : null,
+        premium: editForm.premium !== "" && editForm.premium != null
+          ? parseFloat(editForm.premium) : null,
+        deductible: editForm.deductible !== "" && editForm.deductible != null
+          ? parseFloat(editForm.deductible) : null,
+        renewal_date: editForm.renewal_date || null,
+      };
+      const res = await fetch(`/api/apps/home/insurance/${policy.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) { onUpdate(await res.json()); setEditMode(false); }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm(`Delete "${policy.provider}" policy?`)) return;
+    await fetch(`/api/apps/home/insurance/${policy.id}`, { method: "DELETE" });
+    onDelete(policy.id);
+  }
+
+  function startEdit() {
+    setEditForm({
+      provider: policy.provider,
+      policy_number: policy.policy_number || "",
+      policy_type: policy.policy_type || "Home",
+      coverage_amount: policy.coverage_amount ?? "",
+      premium: policy.premium ?? "",
+      premium_period: policy.premium_period || "annual",
+      deductible: policy.deductible ?? "",
+      renewal_date: policy.renewal_date || "",
+      insured_assets: policy.insured_assets || "",
+      notes: policy.notes || "",
+    });
+    setEditMode(true);
+  }
+
+  const inputCls = "w-full surface-panel border border-subtle rounded px-2 py-1 text-xs text-default outline-none focus:border-indigo-500";
+
+  return (
+    <div className="border rounded-lg overflow-hidden transition-all surface-card border-subtle">
+      <div className="flex items-start gap-2.5 px-3 py-2.5 cursor-pointer" onClick={onToggle}>
+        <span className="w-2 h-2 rounded-full shrink-0 mt-1.5 bg-indigo-500" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium text-default">{policy.provider}</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium surface-raised text-default">{policy.policy_type || "Home"}</span>
+            <RenewalBadge renewal_date={policy.renewal_date} />
+            {policy.policy_number && (
+              <span className="text-[10px] text-faint surface-raised px-1.5 py-0.5 rounded">#{policy.policy_number}</span>
+            )}
+          </div>
+          {policy.coverage_amount != null && !expanded && (
+            <p className="text-[11px] text-faint mt-0.5 truncate">{fmtPrice(policy.coverage_amount)} coverage</p>
+          )}
+        </div>
+        <ChevronDown size={14} className={`text-faint shrink-0 mt-0.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </div>
+
+      {expanded && (
+        <div className="border-t border-subtle px-3 py-3">
+          {editMode ? (
+            <div className="space-y-2">
+              <div>
+                <label className="text-[10px] text-faint">Provider</label>
+                <input className={inputCls} value={editForm.provider || ""}
+                  onChange={e => setEditForm(p => ({ ...p, provider: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-faint">Type</label>
+                  <input className={inputCls} value={editForm.policy_type || ""} list="policy-types-edit"
+                    onChange={e => setEditForm(p => ({ ...p, policy_type: e.target.value }))} />
+                  <datalist id="policy-types-edit">
+                    {[...new Set([...POLICY_TYPES, ...types])].map(t => <option key={t} value={t} />)}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="text-[10px] text-faint">Policy number</label>
+                  <input className={inputCls} value={editForm.policy_number || ""}
+                    onChange={e => setEditForm(p => ({ ...p, policy_number: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-faint">Coverage amount</label>
+                  <input className={inputCls} type="number" min="0" step="0.01" value={editForm.coverage_amount ?? ""}
+                    onChange={e => setEditForm(p => ({ ...p, coverage_amount: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-[10px] text-faint">Deductible</label>
+                  <input className={inputCls} type="number" min="0" step="0.01" value={editForm.deductible ?? ""}
+                    onChange={e => setEditForm(p => ({ ...p, deductible: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-faint">Premium</label>
+                  <input className={inputCls} type="number" min="0" step="0.01" value={editForm.premium ?? ""}
+                    onChange={e => setEditForm(p => ({ ...p, premium: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-[10px] text-faint">Premium period</label>
+                  <select className={inputCls} value={editForm.premium_period || "annual"}
+                    onChange={e => setEditForm(p => ({ ...p, premium_period: e.target.value }))}>
+                    <option value="annual">Annual</option>
+                    <option value="semiannual">Semi-annual</option>
+                    <option value="quarterly">Quarterly</option>
+                    <option value="monthly">Monthly</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] text-faint">Renewal date</label>
+                <input className={inputCls} type="date" value={editForm.renewal_date || ""}
+                  onChange={e => setEditForm(p => ({ ...p, renewal_date: e.target.value }))} />
+              </div>
+              <textarea className={`${inputCls} resize-none`} rows={2} placeholder="Insured assets"
+                value={editForm.insured_assets || ""} onChange={e => setEditForm(p => ({ ...p, insured_assets: e.target.value }))} />
+              <textarea className={`${inputCls} resize-none`} rows={2} placeholder="Notes"
+                value={editForm.notes || ""} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} />
+              <div className="flex gap-1">
+                <button onClick={handleEditSave} disabled={saving}
+                  className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-on-accent rounded disabled:opacity-50">
+                  {saving ? "Saving..." : "Save"}
+                </button>
+                <button onClick={() => setEditMode(false)} className="px-3 py-1 text-xs text-muted hover:text-[var(--ds-text)]">Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-2">
+                {policy.coverage_amount != null && <div><span className="text-faint">Coverage: </span><span className="text-muted">{fmtPrice(policy.coverage_amount)}</span></div>}
+                {policy.premium != null && <div><span className="text-faint">Premium: </span><span className="text-muted">{fmtPrice(policy.premium)}</span></div>}
+                {policy.premium != null && <div><span className="text-faint">Billed: </span><span className="text-muted">{PERIOD_LABEL[policy.premium_period] || policy.premium_period || "annual"}</span></div>}
+                {policy.deductible != null && <div><span className="text-faint">Deductible: </span><span className="text-muted">{fmtPrice(policy.deductible)}</span></div>}
+                {policy.renewal_date && <div><span className="text-faint">Renews: </span><span className="text-muted">{fmtDate(policy.renewal_date)}</span></div>}
+              </div>
+              {policy.insured_assets && <p className="text-xs text-muted mb-2"><span className="text-faint">Insured assets: </span>{policy.insured_assets}</p>}
+              {policy.notes && <p className="text-xs text-faint italic mb-2">{policy.notes}</p>}
+
+              {/* Policy documents */}
+              <p className="text-[10px] text-faint uppercase tracking-wide mt-2">Policy documents</p>
+              <IssueImageStrip issueId={policy.id} entityType="home_insurance_policy" images={images} userId={userId} />
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 mt-3">
+                <button onClick={startEdit}
+                  className="flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-[var(--ds-text)] border border-subtle rounded">
+                  <Edit2 size={11} /> Edit
+                </button>
+                <button onClick={handleDelete}
+                  className="flex items-center gap-1 px-2 py-1 text-xs text-red-500 hover:text-red-400 border border-red-900/40 rounded">
+                  <Trash2 size={11} /> Delete
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Coverage Summary Band ── */
+function CoverageSummary({ policies }) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+
+  let totalCoverage = 0;
+  let totalAnnualPremium = 0;
+  const byType = {};
+  let nextRenewal = null;
+
+  for (const p of policies) {
+    const cov = Number(p.coverage_amount) || 0;
+    totalCoverage += cov;
+
+    const prem = Number(p.premium) || 0;
+    const mult = PERIOD_MULTIPLIER[p.premium_period] ?? 1;
+    const annualized = prem * mult;
+    if (!Number.isNaN(annualized)) totalAnnualPremium += annualized;
+
+    const t = p.policy_type || "Other";
+    byType[t] = (byType[t] || 0) + 1;
+
+    if (p.renewal_date) {
+      const d = new Date(p.renewal_date + "T00:00:00");
+      d.setHours(0, 0, 0, 0);
+      if (!Number.isNaN(d.getTime()) && d >= today) {
+        if (nextRenewal === null || d < nextRenewal) nextRenewal = d;
+      }
+    }
+  }
+
+  const nextRenewalStr = nextRenewal
+    ? nextRenewal.toISOString().split("T")[0]
+    : null;
+
+  const typeEntries = Object.entries(byType).sort((a, b) => b[1] - a[1]);
+
+  return (
+    <div className="surface-card border border-subtle rounded-lg p-3 mb-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div>
+          <p className="text-[10px] text-faint uppercase tracking-wide">Policies</p>
+          <p className="text-sm font-semibold text-default">{policies.length}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-faint uppercase tracking-wide">Total coverage</p>
+          <p className="text-sm font-semibold text-default">{fmtPrice(totalCoverage) || "$0.00"}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-faint uppercase tracking-wide">Total annual premium</p>
+          <p className="text-sm font-semibold text-default">{fmtPrice(totalAnnualPremium) || "$0.00"}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-faint uppercase tracking-wide">Next renewal</p>
+          <p className="text-sm font-semibold text-default">{nextRenewalStr ? fmtDate(nextRenewalStr) : "—"}</p>
+        </div>
+      </div>
+      {typeEntries.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap mt-2 pt-2 border-t border-subtle">
+          {typeEntries.map(([t, n]) => (
+            <span key={t} className="px-1.5 py-0.5 rounded text-[10px] font-medium surface-raised text-default">
+              {t} · {n}
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Insurance Tab ── */
+function InsuranceTab({ userId }) {
+  const [policies, setPolicies] = useState([]);
+  const [types, setTypes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [showAdd, setShowAdd] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set("q", search.trim());
+      else if (typeFilter !== "All") params.set("policy_type", typeFilter);
+      const res = await fetch(`/api/apps/home/insurance?${params}`);
+      const d = await res.json();
+      setPolicies(d.policies || []);
+      if (d.types?.length) setTypes(d.types);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, typeFilter]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const allTypes = ["All", ...types];
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-subtle shrink-0">
+        <div className="relative flex-1">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-faint" />
+          <input
+            className="w-full surface-panel border border-subtle rounded pl-7 pr-2.5 py-1.5 text-xs text-default placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+            placeholder="Search policies..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setTypeFilter("All"); }}
+          />
+          {search && <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-faint hover:text-[var(--ds-text)]"><X size={12} /></button>}
+        </div>
+        {!search && allTypes.length > 1 && (
+          <select
+            className="surface-panel border border-subtle rounded px-2 py-1.5 text-xs text-default focus:outline-none focus:border-indigo-500"
+            value={typeFilter}
+            onChange={e => setTypeFilter(e.target.value)}
+          >
+            {allTypes.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        )}
+        <button
+          onClick={() => setShowAdd(v => !v)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded transition-colors ${
+            showAdd ? "surface-raised text-on-accent" : "bg-indigo-600 hover:bg-indigo-500 text-on-accent"
+          }`}
+        >
+          {showAdd ? <X size={13} /> : <Plus size={13} />}
+          {showAdd ? "Cancel" : "Add Policy"}
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0">
+        {showAdd && (
+          <AddPolicyForm
+            types={types}
+            userId={userId}
+            onSave={(policy) => { setPolicies(prev => [policy, ...prev]); setShowAdd(false); setExpandedId(policy.id); load(); }}
+            onCancel={() => setShowAdd(false)}
+          />
+        )}
+        {loading ? (
+          <div className="flex items-center justify-center h-32 text-faint text-sm">Loading...</div>
+        ) : policies.length === 0 ? (
+          <PristineEmpty
+            appId="home"
+            blurb={getAppManifest("home")?.heroes?.insurance}
+            records={policies}
+            loading={loading}
+            filterActive={!!search.trim() || typeFilter !== "All"}
+            fallback={
+              <div className="flex flex-col items-center justify-center h-48 text-faint">
+                <Shield size={32} className="text-default mb-3" />
+                <p className="text-sm font-medium text-muted">
+                  {search ? `No policies matching "${search}"` : "No policies yet"}
+                </p>
+                <p className="text-xs mt-1 text-faint">
+                  {!search && 'Click "Add Policy" to get started'}
+                </p>
+              </div>
+            }
+          />
+        ) : (
+          <>
+            <CoverageSummary policies={policies} />
+            <div className="space-y-2">
+              {policies.map(policy => (
+                <PolicyCard
+                  key={policy.id}
+                  policy={policy}
+                  expanded={expandedId === policy.id}
+                  onToggle={() => setExpandedId(prev => prev === policy.id ? null : policy.id)}
+                  onUpdate={(updated) => setPolicies(prev => prev.map(p => p.id === updated.id ? { ...p, ...updated } : p))}
+                  onDelete={(id) => { setPolicies(prev => prev.filter(p => p.id !== id)); if (expandedId === id) setExpandedId(null); }}
+                  userId={userId}
+                  types={types}
+                />
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -1428,6 +1965,8 @@ function IssueImageStrip({ issueId, entityType, images: initialImages, userId })
       ? `/api/apps/home/issues/${issueId}/images/${imgId}/unlink`
       : entityType === "home_appliance"
       ? `/api/apps/home/appliances/${issueId}/images/${imgId}/unlink`
+      : entityType === "home_insurance_policy"
+      ? `/api/apps/home/insurance/${issueId}/images/${imgId}/unlink`
       : `/api/apps/auto/issues/${issueId}/images/${imgId}/unlink`;
     await fetch(endpoint, { method: "DELETE" });
     setImages(prev => prev.filter(i => i.id !== imgId));

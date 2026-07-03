@@ -19,6 +19,9 @@ entity_types:
   - prefix: "ha"
     name: Home Appliance
     table: home_appliances
+  - prefix: "hip"
+    name: Home Insurance Policy
+    table: home_insurance_policies
 
 tool_category:
   description: >
@@ -78,3 +81,12 @@ tool_category:
     - warranty
     - serial number
     - model number
+    # Insurance
+    - insurance
+    - policy
+    - coverage
+    - premium
+    - deductible
+    - renewal
+    - insurer
+    - claim

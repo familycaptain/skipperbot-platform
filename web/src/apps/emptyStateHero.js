@@ -62,7 +62,7 @@ export const OPT_IN = {
   reminders: { mode: "per-view", views: ["reminders", "nags"] },
   meals: { mode: "per-view", views: ["browse"] },
   medical: { mode: "per-view", views: ["medications", "treatments", "events", "labs", "appointments", "equipment"] },
-  home: { mode: "per-view", views: ["maintenance", "appliances"] },
+  home: { mode: "per-view", views: ["maintenance", "appliances", "insurance"] },
 };
 
 // Keyed by PRIMARY entry id -> reason. Every excluded primary entry (issues,
