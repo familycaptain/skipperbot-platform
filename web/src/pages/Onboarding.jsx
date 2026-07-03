@@ -18,6 +18,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { setToken } from "../utils/api";
+import { tzOffset } from "../utils/tz";
 import ModelConfig from "../components/ModelConfig";
 import {
   ArrowRight, ArrowLeft, Check, Loader2, AlertCircle, User as UserIcon,
@@ -133,12 +134,16 @@ function CreatePrimaryUser({ onCreated, onBack }) {
   // Synchronous in-flight guard against rapid double-taps (issue #36).
   const inFlightRef = useRef(false);
 
-  // Surface the browser-detected zone in the dropdown even if it's
-  // not in COMMON_TIMEZONES.
+  // Surface the browser-detected zone in the dropdown even if it's not in
+  // COMMON_TIMEZONES, label each with its current (DST-aware) UTC offset, and
+  // sort by offset ascending then IANA name. An un-formattable zone degrades to
+  // an empty label (bare id) with a sentinel offset so it sorts last.
   const tzOptions = useMemo(() => {
     const base = [...COMMON_TIMEZONES];
     if (!base.includes(detected)) base.unshift(detected);
-    return base;
+    return base
+      .map((id) => ({ id, off: tzOffset(id) }))
+      .sort((a, b) => a.off.minutes - b.off.minutes || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   }, [detected]);
 
   const usernameOk = /^[a-z][a-z0-9_]{1,30}$/.test(username);
@@ -257,7 +262,9 @@ function CreatePrimaryUser({ onCreated, onBack }) {
             value={tz}
             onChange={(e) => setTz(e.target.value)}
           >
-            {tzOptions.map((z) => <option key={z} value={z}>{z}</option>)}
+            {tzOptions.map(({ id, off }) => (
+              <option key={id} value={id}>{off.text ? `${id} (${off.text})` : id}</option>
+            ))}
           </select>
           <p className="mt-1 text-xs text-faint">
             Detected from your browser: <code className="font-mono text-muted">{detected}</code>.
