@@ -34,6 +34,11 @@ _APPLIANCE_HINT = (
     "Focus on: appliance name, type, brand/model, serial number, location, "
     "purchase date and price, and warranty expiration."
 )
+_POLICY_HINT = (
+    "Focus on: insurance provider, policy number, policy type (Home/Auto/Life/etc), "
+    "coverage amount, premium and how often it is paid, deductible, renewal date, "
+    "and what assets the policy covers."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -753,6 +758,181 @@ def unlink_appliance_image(appliance_id: str, image_id: str):
 
 
 # ---------------------------------------------------------------------------
+# Home Insurance Policies (Insurance Tab)
+# ---------------------------------------------------------------------------
+
+def _policy_row(row: dict) -> dict:
+    if not row:
+        return {}
+    return {
+        "id": row["id"],
+        "provider": row.get("provider") or "",
+        "policy_number": row.get("policy_number") or "",
+        "policy_type": row.get("policy_type") or "Home",
+        "coverage_amount": float(row["coverage_amount"]) if row.get("coverage_amount") is not None else None,
+        "premium": float(row["premium"]) if row.get("premium") is not None else None,
+        "premium_period": row.get("premium_period") or "annual",
+        "deductible": float(row["deductible"]) if row.get("deductible") is not None else None,
+        "renewal_date": row["renewal_date"].isoformat() if row.get("renewal_date") else "",
+        "insured_assets": row.get("insured_assets") or "",
+        "notes": row.get("notes") or "",
+        "created_by": row.get("created_by") or "",
+        "created_at": row["created_at"].isoformat() if row.get("created_at") else "",
+        "updated_at": row["updated_at"].isoformat() if row.get("updated_at") else "",
+    }
+
+
+def create_policy(policy: dict) -> dict | None:
+    """Insert a new home insurance policy."""
+    row = execute_returning_in_schema(
+        SCHEMA,
+        """INSERT INTO home_insurance_policies (id, provider, policy_number, policy_type,
+                                                coverage_amount, premium, premium_period,
+                                                deductible, renewal_date, insured_assets,
+                                                notes, created_by, created_at, updated_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+           RETURNING *""",
+        (
+            policy["id"],
+            policy.get("provider", ""),
+            policy.get("policy_number", ""),
+            policy.get("policy_type", "Home"),
+            policy.get("coverage_amount"),
+            policy.get("premium"),
+            policy.get("premium_period", "annual"),
+            policy.get("deductible"),
+            policy.get("renewal_date") or None,
+            policy.get("insured_assets", ""),
+            policy.get("notes", ""),
+            policy.get("created_by", ""),
+            policy.get("created_at", _now()),
+            policy.get("updated_at", _now()),
+        ),
+    )
+    result = _policy_row(row) if row else None
+    if result:
+        digest_record(app_id="home", entity_type="home insurance policy", action="created",
+                      entity_id=result["id"], record=result,
+                      by=policy.get("created_by", ""), context_hint=_POLICY_HINT)
+    return result
+
+
+def get_policy(policy_id: str) -> dict | None:
+    row = fetch_one_in_schema(SCHEMA, "SELECT * FROM home_insurance_policies WHERE id = %s", (policy_id,))
+    return _policy_row(row) if row else None
+
+
+def get_all_policies(policy_type: str = None, limit: int = 200) -> list[dict]:
+    clauses, params = [], []
+    if policy_type:
+        clauses.append("policy_type = %s")
+        params.append(policy_type)
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+    params.append(limit)
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        f"""SELECT * FROM home_insurance_policies
+            {where}
+            ORDER BY renewal_date ASC NULLS LAST, created_at DESC
+            LIMIT %s""",
+        tuple(params),
+    )
+    return [_policy_row(r) for r in rows]
+
+
+def search_policies(query: str) -> list[dict]:
+    pattern = f"%{query}%"
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        """SELECT * FROM home_insurance_policies
+           WHERE provider ILIKE %s OR policy_number ILIKE %s OR policy_type ILIKE %s
+              OR insured_assets ILIKE %s OR notes ILIKE %s
+           ORDER BY renewal_date ASC NULLS LAST, created_at DESC""",
+        (pattern, pattern, pattern, pattern, pattern),
+    )
+    return [_policy_row(r) for r in rows]
+
+
+def update_policy(policy_id: str, updates: dict, by: str = "") -> bool:
+    allowed = {
+        "provider", "policy_number", "policy_type", "coverage_amount", "premium",
+        "premium_period", "deductible", "renewal_date", "insured_assets", "notes",
+    }
+    sets, vals = [], []
+    for key, val in updates.items():
+        if key not in allowed:
+            continue
+        sets.append(f"{key} = %s")
+        vals.append(val)
+    if not sets:
+        return False
+    sets.append("updated_at = %s")
+    vals.append(_now())
+    vals.append(policy_id)
+    ok = execute_in_schema(
+        SCHEMA, f"UPDATE home_insurance_policies SET {', '.join(sets)} WHERE id = %s", tuple(vals)
+    ) > 0
+    if ok:
+        updated = get_policy(policy_id)
+        if updated:
+            digest_record(app_id="home", entity_type="home insurance policy", action="updated",
+                          entity_id=policy_id, record=updated, by=by,
+                          context_hint=_POLICY_HINT)
+    return ok
+
+
+def delete_policy(policy_id: str, by: str = "") -> bool:
+    policy = get_policy(policy_id)
+    ok = execute_in_schema(SCHEMA, "DELETE FROM home_insurance_policies WHERE id = %s", (policy_id,)) > 0
+    if ok and policy:
+        digest_record(app_id="home", entity_type="home insurance policy", action="deleted",
+                      entity_id=policy_id, record=policy, by=by)
+    return ok
+
+
+def get_policy_types() -> list[str]:
+    """Distinct policy types in use."""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT DISTINCT policy_type FROM home_insurance_policies WHERE policy_type != '' ORDER BY policy_type",
+    )
+    return [r["policy_type"] for r in rows if r.get("policy_type")]
+
+
+# ---------------------------------------------------------------------------
+# Home Insurance Policy Images (soft FK to public.images)
+# ---------------------------------------------------------------------------
+
+def get_policy_images(policy_id: str) -> list[dict]:
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        """SELECT i.*, hipi.sort_order FROM public.images i
+           JOIN home_insurance_policy_images hipi ON hipi.image_id = i.id
+           WHERE hipi.policy_id = %s
+           ORDER BY hipi.sort_order, i.created_at""",
+        (policy_id,),
+    )
+    return [_image_row(r) for r in rows]
+
+
+def link_policy_image(policy_id: str, image_id: str, sort_order: int = 0):
+    execute_in_schema(
+        SCHEMA,
+        """INSERT INTO home_insurance_policy_images (image_id, policy_id, sort_order)
+           VALUES (%s, %s, %s) ON CONFLICT DO NOTHING""",
+        (image_id, policy_id, sort_order),
+    )
+
+
+def unlink_policy_image(policy_id: str, image_id: str):
+    execute_in_schema(
+        SCHEMA,
+        "DELETE FROM home_insurance_policy_images WHERE policy_id = %s AND image_id = %s",
+        (policy_id, image_id),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Backfill registry — consumed by backfill_app_memories.py via discover_apps()
 # ---------------------------------------------------------------------------
 BACKFILL_ENTITIES = [
@@ -765,4 +945,7 @@ BACKFILL_ENTITIES = [
     {"entity_type": "home appliance",
      "list_fn": get_all_appliances,
      "context_hint": _APPLIANCE_HINT},
+    {"entity_type": "home insurance policy",
+     "list_fn": get_all_policies,
+     "context_hint": _POLICY_HINT},
 ]

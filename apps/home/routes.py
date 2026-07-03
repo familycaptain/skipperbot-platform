@@ -265,6 +265,124 @@ async def api_unlink_home_appliance_image(appliance_id: str, image_id: str):
 
 
 # ---------------------------------------------------------------------------
+# Home Insurance Policies
+# ---------------------------------------------------------------------------
+
+class CreatePolicyRequest(BaseModel):
+    provider: str
+    policy_number: str = ""
+    policy_type: str = "Home"
+    coverage_amount: float | None = None
+    premium: float | None = None
+    premium_period: str = "annual"
+    deductible: float | None = None
+    renewal_date: str | None = None
+    insured_assets: str = ""
+    notes: str = ""
+    created_by: str = ""
+
+
+@router.get("/insurance")
+async def api_list_home_policies(q: str = "", policy_type: str = ""):
+    def _fetch():
+        if q.strip():
+            return _dl.search_policies(q.strip())
+        return _dl.get_all_policies(policy_type if policy_type else None)
+    policies = await asyncio.to_thread(_fetch)
+    types = await asyncio.to_thread(_dl.get_policy_types)
+    return {
+        "policies": policies,
+        "count": len(policies),
+        "types": types,
+    }
+
+
+@router.post("/insurance")
+async def api_create_home_policy(request: CreatePolicyRequest, http_request: Request):
+    request.created_by = _actor(http_request)
+    policy_id = f"hip-{uuid.uuid4().hex[:8]}"
+    policy = {
+        "id": policy_id,
+        "provider": request.provider.strip(),
+        "policy_number": request.policy_number.strip(),
+        "policy_type": request.policy_type.strip() or "Home",
+        "coverage_amount": request.coverage_amount,
+        "premium": request.premium,
+        "premium_period": request.premium_period.strip() or "annual",
+        "deductible": request.deductible,
+        "renewal_date": request.renewal_date or None,
+        "insured_assets": request.insured_assets.strip(),
+        "notes": request.notes.strip(),
+        "created_by": request.created_by.strip(),
+    }
+    result = await asyncio.to_thread(_dl.create_policy, policy)
+    if not result:
+        raise HTTPException(status_code=400, detail="Failed to create policy")
+    return result
+
+
+@router.get("/insurance/{policy_id}")
+async def api_get_home_policy(policy_id: str):
+    policy = await asyncio.to_thread(_dl.get_policy, policy_id)
+    if not policy:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    images = await asyncio.to_thread(_dl.get_policy_images, policy_id)
+    return {**policy, "images": images}
+
+
+class UpdatePolicyRequest(BaseModel):
+    provider: str | None = None
+    policy_number: str | None = None
+    policy_type: str | None = None
+    coverage_amount: float | None = None
+    premium: float | None = None
+    premium_period: str | None = None
+    deductible: float | None = None
+    renewal_date: str | None = None
+    insured_assets: str | None = None
+    notes: str | None = None
+
+
+@router.put("/insurance/{policy_id}")
+async def api_update_home_policy(policy_id: str, request: UpdatePolicyRequest):
+    updates = {k: v for k, v in request.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    ok = await asyncio.to_thread(_dl.update_policy, policy_id, updates)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    policy = await asyncio.to_thread(_dl.get_policy, policy_id)
+    images = await asyncio.to_thread(_dl.get_policy_images, policy_id)
+    return {**policy, "images": images}
+
+
+@router.delete("/insurance/{policy_id}")
+async def api_delete_home_policy(policy_id: str):
+    ok = await asyncio.to_thread(_dl.delete_policy, policy_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    return {"ok": True}
+
+
+@router.get("/insurance/{policy_id}/images")
+async def api_get_home_policy_images(policy_id: str):
+    images = await asyncio.to_thread(_dl.get_policy_images, policy_id)
+    return {"images": images, "count": len(images)}
+
+
+@router.post("/insurance/{policy_id}/images/{image_id}/link")
+async def api_link_home_policy_image(policy_id: str, image_id: str):
+    await asyncio.to_thread(_dl.link_policy_image, policy_id, image_id)
+    return {"ok": True}
+
+
+@router.delete("/insurance/{policy_id}/images/{image_id}/unlink")
+async def api_unlink_home_policy_image(policy_id: str, image_id: str):
+    await asyncio.to_thread(_dl.unlink_policy_image, policy_id, image_id)
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
 # Maintenance Tasks
 # ---------------------------------------------------------------------------
 

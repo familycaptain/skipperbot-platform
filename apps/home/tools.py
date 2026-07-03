@@ -649,6 +649,227 @@ def delete_home_appliance(appliance_id: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Home Insurance Policies
+# ---------------------------------------------------------------------------
+
+def create_home_insurance_policy(
+    provider: str,
+    created_by: str,
+    policy_number: str = "",
+    policy_type: str = "Home",
+    coverage_amount: float = -1.0,
+    premium: float = -1.0,
+    premium_period: str = "annual",
+    deductible: float = -1.0,
+    renewal_date: str = "",
+    insured_assets: str = "",
+    notes: str = "",
+) -> str:
+    """Add an insurance policy to track (provider, coverage, premium & renewal).
+
+    Use for things like "add our State Farm homeowners policy, $350k coverage,
+    $1200/year premium, renews 2026-03-01" or "track the auto insurance from Geico".
+
+    Args:
+        provider: Insurance provider/company (e.g. "State Farm", "Geico", "Allstate").
+        created_by: Who is adding it (a person's name).
+        policy_number: The policy number.
+        policy_type: Type — Home, Auto, Life, Umbrella, Flood, Health, Renters, Other.
+        coverage_amount: Coverage amount in dollars (-1 = not set).
+        premium: Premium amount in dollars (-1 = not set).
+        premium_period: How often the premium is paid — annual, semiannual, quarterly, monthly.
+        deductible: Deductible in dollars (-1 = not set).
+        renewal_date: Renewal date (YYYY-MM-DD).
+        insured_assets: Free text describing what the policy covers.
+        notes: Additional notes.
+
+    Returns:
+        Confirmation with policy ID.
+
+    Ack: Adding insurance policy "{provider}"...
+    """
+    try:
+        if not provider or not provider.strip():
+            return "Error: provider is required."
+        policy_id = f"hip-{uuid.uuid4().hex[:8]}"
+        policy = {
+            "id": policy_id,
+            "provider": provider.strip(),
+            "policy_number": policy_number.strip() if policy_number else "",
+            "policy_type": policy_type.strip() if policy_type else "Home",
+            "coverage_amount": coverage_amount if coverage_amount is not None and coverage_amount >= 0 else None,
+            "premium": premium if premium is not None and premium >= 0 else None,
+            "premium_period": premium_period.strip() if premium_period and premium_period.strip() else "annual",
+            "deductible": deductible if deductible is not None and deductible >= 0 else None,
+            "renewal_date": renewal_date.strip() if renewal_date and renewal_date.strip() else None,
+            "insured_assets": insured_assets.strip() if insured_assets else "",
+            "notes": notes.strip() if notes else "",
+            "created_by": created_by.strip() if created_by else "",
+        }
+        result = _dl.create_policy(policy)
+        if not result:
+            return "Error: Failed to create policy."
+        logger.info("HOME: Created insurance policy '%s' (%s)", provider.strip(), policy_id)
+        return f"Policy added: '{provider.strip()}' ({policy_id}) — type: {policy['policy_type']}"
+    except Exception as e:
+        return f"Error in create_home_insurance_policy: {str(e)}"
+
+
+def list_home_insurance_policies(policy_type: str = "") -> str:
+    """List insurance policies.
+
+    Args:
+        policy_type: Filter by type (e.g. "Home", "Auto"). Empty = all.
+
+    Returns:
+        Formatted list of policies with provider, coverage and renewal status.
+
+    Ack: Listing insurance policies...
+    """
+    try:
+        from datetime import date
+        policies = _dl.get_all_policies(
+            policy_type=policy_type.strip() if policy_type else None,
+        )
+        if not policies:
+            return "No insurance policies found."
+
+        today = date.today()
+        lines = [f"Insurance Policies ({len(policies)}):\n"]
+        for p in policies:
+            cov = f" — ${p['coverage_amount']:,.0f} coverage" if p.get("coverage_amount") is not None else ""
+            renewal = ""
+            if p.get("renewal_date"):
+                exp = date.fromisoformat(p["renewal_date"])
+                if exp < today:
+                    renewal = f" 🔴 renewal overdue {p['renewal_date']}"
+                elif (exp - today).days <= 30:
+                    renewal = f" 🟡 renews soon {p['renewal_date']}"
+                else:
+                    renewal = f" 🟢 renews {p['renewal_date']}"
+            lines.append(f"- {p['provider']} [{p['policy_type']}]{cov}{renewal} ({p['id']})")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error in list_home_insurance_policies: {str(e)}"
+
+
+def get_home_insurance_policy(policy_id: str) -> str:
+    """Get full details of an insurance policy.
+
+    Args:
+        policy_id: The policy ID (hip-xxx).
+
+    Returns:
+        Full policy details.
+
+    Ack: Loading policy details...
+    """
+    try:
+        if not policy_id or not policy_id.strip():
+            return "Error: policy_id is required."
+        p = _dl.get_policy(policy_id.strip())
+        if not p:
+            return f"Error: Policy '{policy_id}' not found."
+
+        num = f"\nPolicy #: {p['policy_number']}" if p.get("policy_number") else ""
+        cov = f"\nCoverage: ${p['coverage_amount']:,.2f}" if p.get("coverage_amount") is not None else ""
+        prem = f"\nPremium: ${p['premium']:,.2f} ({p.get('premium_period', 'annual')})" if p.get("premium") is not None else ""
+        ded = f"\nDeductible: ${p['deductible']:,.2f}" if p.get("deductible") is not None else ""
+        renewal = f"\nRenews: {p['renewal_date']}" if p.get("renewal_date") else ""
+        assets = f"\nInsured assets: {p['insured_assets']}" if p.get("insured_assets") else ""
+        notes = f"\nNotes: {p['notes']}" if p.get("notes") else ""
+
+        return (
+            f"{p['provider']} ({p['id']})\n"
+            f"Type: {p.get('policy_type', 'Home')}"
+            f"{num}{cov}{prem}{ded}{renewal}{assets}{notes}"
+        ).strip()
+    except Exception as e:
+        return f"Error in get_home_insurance_policy: {str(e)}"
+
+
+def update_home_insurance_policy(
+    policy_id: str,
+    provider: str = "",
+    policy_number: str = "",
+    policy_type: str = "",
+    coverage_amount: float = -1.0,
+    premium: float = -1.0,
+    premium_period: str = "",
+    deductible: float = -1.0,
+    renewal_date: str = "",
+    insured_assets: str = "",
+    notes: str = "",
+) -> str:
+    """Update an insurance policy. Only provided fields are changed.
+
+    Args:
+        policy_id: The policy ID (hip-xxx).
+        provider: New provider (empty = keep).
+        policy_number: New policy number (empty = keep).
+        policy_type: New type (empty = keep).
+        coverage_amount: New coverage amount (-1 = keep, 0 = clear).
+        premium: New premium (-1 = keep, 0 = clear).
+        premium_period: New premium period — annual/semiannual/quarterly/monthly (empty = keep).
+        deductible: New deductible (-1 = keep, 0 = clear).
+        renewal_date: New renewal date YYYY-MM-DD (empty = keep).
+        insured_assets: New insured assets text (empty = keep).
+        notes: New notes (empty = keep).
+
+    Returns:
+        Confirmation of update.
+
+    Ack: Updating policy {policy_id}...
+    """
+    try:
+        if not policy_id or not policy_id.strip():
+            return "Error: policy_id is required."
+        updates = {}
+        if provider: updates["provider"] = provider.strip()
+        if policy_number: updates["policy_number"] = policy_number.strip()
+        if policy_type: updates["policy_type"] = policy_type.strip()
+        if coverage_amount >= 0: updates["coverage_amount"] = coverage_amount or None
+        if premium >= 0: updates["premium"] = premium or None
+        if premium_period: updates["premium_period"] = premium_period.strip()
+        if deductible >= 0: updates["deductible"] = deductible or None
+        if renewal_date: updates["renewal_date"] = renewal_date.strip()
+        if insured_assets: updates["insured_assets"] = insured_assets.strip()
+        if notes: updates["notes"] = notes.strip()
+
+        if not updates:
+            return "No fields to update."
+        ok = _dl.update_policy(policy_id.strip(), updates)
+        if ok:
+            fields = ", ".join(updates.keys())
+            return f"Policy {policy_id} updated. Changed: {fields}"
+        return f"Error: Policy '{policy_id}' not found."
+    except Exception as e:
+        return f"Error in update_home_insurance_policy: {str(e)}"
+
+
+def delete_home_insurance_policy(policy_id: str) -> str:
+    """Delete an insurance policy permanently.
+
+    Args:
+        policy_id: The policy ID (hip-xxx).
+
+    Returns:
+        Confirmation or error.
+
+    Ack: Deleting policy {policy_id}...
+    """
+    try:
+        if not policy_id or not policy_id.strip():
+            return "Error: policy_id is required."
+        ok = _dl.delete_policy(policy_id.strip())
+        if ok:
+            return f"Policy '{policy_id}' deleted."
+        return f"Error: Policy '{policy_id}' not found."
+    except Exception as e:
+        return f"Error in delete_home_insurance_policy: {str(e)}"
+
+
+# ---------------------------------------------------------------------------
 # Maintenance Task — update / delete / log
 # ---------------------------------------------------------------------------
 
