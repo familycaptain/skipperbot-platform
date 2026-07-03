@@ -1,0 +1,15 @@
+kind: specification
+id: images.layout.root-fills-panel-width
+title: Images app root fills the full panel width
+state: live
+autonomy: gated
+behavior: When the Images app renders, its root container fills the full width of the app
+  panel (className includes w-full), matching every other app's root layout.
+implements:
+- apps/images/ui/ImagesApp.jsx
+tests: []
+links: {}
+notes: 'Verified live at Gate-2 validate on the test host: Images root 863px == panel 863px
+  (0 gap), vs 480px/383px-gap before. Web bundle compiles. Operator-confirmed one-class fix
+  matching the app-root pattern (flex flex-col h-full w-full).'
+verified: true

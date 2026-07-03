@@ -52,7 +52,7 @@ export default function ImagesApp({ appId, userId, context = {}, onTitle, onOpen
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-subtle shrink-0">
         <div className="flex items-center gap-2">
