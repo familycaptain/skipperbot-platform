@@ -41,6 +41,12 @@ _GREETED_KEY = "onboarding_greeted"
 # A guided-agenda goal in one of these states is CLOSED — no live greeting.
 _TERMINAL_GOAL_STATUSES = {"done", "deferred", "archived", "cancelled"}
 
+# An ORDERED-AGENDA project in one of these statuses is still OPEN (blocks the
+# app tours). done/deferred/cancelled/archived count as SATISFIED — a
+# legitimately skipped or declined step is marked done, a deferred step must not
+# block the tours forever. (See agenda_projects_complete.)
+_OPEN_PROJECT_STATUSES = {"not_started", "in_progress", "blocked"}
+
 # Platform-infra / admin apps don't get a "try this app" onboarding project —
 # they're not a feature the family "starts using" the way Recipes or Chores are.
 _INFRA_APPS = {"settings", "system", "tools", "finder", "jobs", "notifications", "timeline"}
@@ -198,7 +204,11 @@ def ensure_onboarding(apps_info: list[dict] | None = None) -> str:
             "once. Each topic is OPTIONAL — if a topic doesn't apply or they're not "
             "interested, mark it done and move on gracefully. AFTER the agenda, the "
             f"'Try the …' app tours follow: PRUNE and prioritize those to {chat_with}'s "
-            "stated intent rather than walking every app blindly. Progress is "
+            "stated intent rather than walking every app blindly. When you introduce an "
+            "app, frame its features as CAPABILITIES it CAN do once it's set up (e.g. "
+            "\"Chores can remind each kid at a set time once you add them\"), never "
+            f"asserting data {chat_with} hasn't created yet (don't claim it already "
+            "\"DMs each kid at 9 AM\" on a brand-new, empty install). Progress is "
             "tracked by marking tasks done, so this is resumable across sessions. "
             f"If {chat_with} says \"I'm good, I'll explore on my own,\" back off and "
             "close the goal — don't keep nudging.\n\n"
@@ -247,8 +257,12 @@ def ensure_onboarding(apps_info: list[dict] | None = None) -> str:
             f"Try the {name} app",
             f"PM: introduce the {name} app to {chat_with} — briefly say what it's "
             f"for, ask if they've tried it yet, and offer a tip on getting the "
-            f"most from it. One friendly nudge, no pressure."
-            + (f"\n\nWhat {name} does: {desc}" if desc else ""),
+            f"most from it. One friendly nudge, no pressure. Frame what {name} CAN "
+            f"do as a CAPABILITY, conditionally (e.g. \"it can DM each kid at a set "
+            f"time once you add them\") — never assert data {chat_with} hasn't "
+            f"created yet (on a fresh, empty install it doesn't already \"DM each "
+            f"kid at 9 AM\")."
+            + (f"\n\nWhat {name} can do: {desc}" if desc else ""),
         )
         _task(proj, f"Reach out about the {name} app — e.g. \"Have you tried {name} yet? Here's what it can do…\" — and offer a couple of tips.")
         if proj:
@@ -305,6 +319,111 @@ def onboarding_agenda_in_progress() -> str | None:
     if status in _TERMINAL_GOAL_STATUSES:
         return None
     return goal_id
+
+
+# ---------------------------------------------------------------------------
+# Agenda-before-tours ordering (platform.onboarding.message-coordination, #74).
+# The onboarding goal seeds an ORDERED setup agenda FOLLOWED BY one per-app
+# "Try the {app}" tour. Ordering used to be prompt-conveyed only, so the PM/goal
+# domain could nudge an app tour before the agenda was done. These helpers give
+# a STRUCTURAL, {who}-rename-proof guarantee, centralized in ONE shared gate
+# (tour_gated) called by every selection + produce site in domain.py/pm_domain.py.
+# ---------------------------------------------------------------------------
+
+def onboarding_project_kind(name: str) -> str:
+    """Classify an onboarding-goal project by NAME: ``'tour'`` or ``'agenda'``.
+
+    The onboarding goal seeds ONLY the ordered setup agenda (ONBOARDING_AGENDA)
+    plus one per-app ``Try the {app}`` tour — no catch-all — so the binary
+    negative test is complete: a name beginning with ``"Try the"`` is an app
+    tour, and EVERY other onboarding-goal project is an ordered agenda step.
+
+    Name-based (not schema-based) and deliberately NOT re-derived from the
+    ONBOARDING_AGENDA format strings: the intent step ``How {who} wants to use
+    Skipper`` embeds the primary user's name, so a rename/seed-drift would break
+    a format-string match. This is the SAME heuristic already shipped in
+    stop_onboarding (tools.py).
+    """
+    return "tour" if (name or "").startswith("Try the") else "agenda"
+
+
+def agenda_projects_complete(projects: list[dict]) -> bool:
+    """True IFF NO ordered-agenda project is still in an OPEN state.
+
+    OPEN == status in {not_started, in_progress, blocked}. A done / deferred /
+    cancelled / archived agenda step counts as SATISFIED — a legitimately
+    skipped or declined step is marked done; a deferred step must NOT block the
+    app tours forever. Tour projects are ignored here (only the agenda gates).
+
+    Args:
+        projects: the onboarding goal's project entities (dicts with ``name``
+            and ``status``).
+    """
+    for p in projects or []:
+        if onboarding_project_kind(p.get("name", "")) != "agenda":
+            continue
+        if (p.get("status") or "").strip().lower() in _OPEN_PROJECT_STATUSES:
+            return False
+    return True
+
+
+def _onboarding_goal_projects(goal_id: str) -> list[dict]:
+    """Best-effort load of an onboarding goal's project entities (name+status)."""
+    try:
+        from apps.goals.data import load_entity
+        goal = load_entity(goal_id)
+        if not goal:
+            return []
+        out = []
+        for pid in goal.get("projects", []):
+            pe = load_entity(pid)
+            if pe:
+                out.append(pe)
+        return out
+    except Exception:
+        logger.warning("onboarding: could not load projects for goal %s", goal_id, exc_info=True)
+        return []
+
+
+def tour_gated(goal, project, *, projects: list[dict] | None = None) -> bool:
+    """SINGLE SOURCE OF TRUTH for onboarding agenda-before-tours ordering.
+
+    Return True IFF ``project`` is an app-tour project of the IN-PROGRESS
+    onboarding goal whose ordered setup agenda is NOT yet complete — i.e. this
+    tour must NOT be selected, surfaced in the snapshot, or DM'd yet. Returns
+    False for any normal (non-onboarding) goal and once the agenda is satisfied,
+    so callers may invoke it unconditionally (it IS the is-onboarding gate).
+
+    Args:
+        goal: the goal id (str) or a loaded goal dict (needs ``id``).
+        project: a project id (str) or a loaded project dict (needs ``name``).
+        projects: OPTIONAL pre-loaded onboarding-goal project entities — pass
+            these when the caller already has them (e.g. the snapshot builder)
+            to avoid a re-load; otherwise loaded on demand.
+    """
+    # Gates ONLY the in-progress onboarding goal — everything else passes through.
+    in_progress_id = onboarding_agenda_in_progress()
+    if not in_progress_id:
+        return False
+    goal_id = goal.get("id") if isinstance(goal, dict) else goal
+    if goal_id != in_progress_id:
+        return False
+
+    # Resolve the project + its name.
+    proj = project
+    if isinstance(project, str):
+        try:
+            from apps.goals.data import load_entity
+            proj = load_entity(project)
+        except Exception:
+            proj = None
+    if not proj or onboarding_project_kind(proj.get("name", "")) != "tour":
+        return False
+
+    # A tour is gated only while the ordered agenda is still incomplete.
+    if projects is None:
+        projects = _onboarding_goal_projects(in_progress_id)
+    return not agenda_projects_complete(projects)
 
 
 def claim_onboarding_greeting() -> bool:

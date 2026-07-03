@@ -243,6 +243,25 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
                         "To communicate findings about a Skipper-owned project or task, "
                         "add a history note via update_item(item_id, updated_by='pm', history_note='...'), "
                         "or record it in working memory.")
+            # Produce-layer tour gate (defect 1a): block a DM whose subject
+            # resolves to a per-app tour project of the in-progress onboarding
+            # goal while its agenda is still open — the read tools can enumerate
+            # tours even though _pick_next_project won't select them. tour_gated()
+            # self-gates on the onboarding goal (resolved from the project's
+            # goal_id), so normal projects are untouched.
+            if subject_id and subject_id.startswith("p-"):
+                try:
+                    from apps.goals import onboarding
+                    from apps.goals.data import load_entity
+                    _proj = load_entity(subject_id)
+                    if _proj and onboarding.tour_gated(_proj.get("goal_id", ""), _proj):
+                        return (
+                            "That DM is about an app tour, but the onboarding "
+                            "setup agenda isn't complete yet — app tours come "
+                            "after the agenda. DM not sent."
+                        )
+                except Exception:
+                    logger.warning("PM_THINK: tour-gate DM check failed", exc_info=True)
             if dm_count >= 3:
                 return "DM limit reached (max 3 per cycle). DM not sent."
             if dm_to in dm_recipients:
@@ -583,6 +602,18 @@ def _pick_next_project(observations: list[dict]) -> str | None:
             proj = load_entity(pid)
             if not proj or proj.get("status") in _INACTIVE_STATUSES:
                 continue
+            # Onboarding ordering gate (defect 1a): never SELECT a per-app tour
+            # of the in-progress onboarding goal for review while its ordered
+            # setup agenda is still open — this is the live selector the repro
+            # showed picking 'Try the Chores app' while household was not_started.
+            # tour_gated() self-gates on the onboarding goal, so normal goals are
+            # untouched.
+            try:
+                from apps.goals import onboarding
+                if onboarding.tour_gated(g, proj):
+                    continue
+            except Exception:
+                logger.warning("PM_THINK: onboarding tour-gate selection filter failed", exc_info=True)
             project_ids.append(pid)
             project_meta[pid] = {
                 "priority": proj.get("priority", "medium"),

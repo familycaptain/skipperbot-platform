@@ -446,21 +446,26 @@ async def onboarding_live_greeting_status(request: Request):
     def _do():
         name = ((principal or {}).get("name") or "").strip().lower()
         if not name:
-            return {"pending": False}
+            return {"pending": False, "onboarding": False}
         try:
             from data_layer.users import get_primary_user
             primary = (get_primary_user() or "").strip().lower()
             if not primary or name != primary:
-                return {"pending": False}
+                return {"pending": False, "onboarding": False}
             from apps.goals.onboarding import onboarding_agenda_in_progress, _GREETED_KEY
+            # `onboarding` is UNGATED (independent of the greet-once _GREETED_KEY):
+            # it is true for the WHOLE onboarding-in-progress window, so the client
+            # can suppress the canned welcome-back on a mid-onboarding reload. The
+            # existing `pending` stays greet-once-gated (it drives the one-shot
+            # optimistic-typing path and is false after the first greeting).
             if not onboarding_agenda_in_progress():
-                return {"pending": False}
+                return {"pending": False, "onboarding": False}
             from app_platform import config as platform_config
             already_greeted = bool(platform_config.get(_GREETED_KEY, scope="app:goals"))
-            return {"pending": not already_greeted}
+            return {"pending": not already_greeted, "onboarding": True}
         except Exception:
             logger.debug("live-greeting-status check failed", exc_info=True)
-            return {"pending": False}
+            return {"pending": False, "onboarding": False}
 
     return await asyncio.to_thread(_do)
 
