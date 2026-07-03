@@ -89,16 +89,6 @@ def seed_members():
             create_user(name, display, password=_pw(name), role=role); _bump("members")
 
 
-def cleanup_stale():
-    """Hide the placeholder kid1/2/3 shipped by the chores seed migration."""
-    from app_platform.db import execute_in_schema
-    try:
-        n = execute_in_schema("app_chores", "UPDATE kids SET active=FALSE WHERE user_id IN ('kid1','kid2','kid3')")
-        _bump("stale_kids_hidden", n or 0)
-    except Exception as e:
-        print(f"    cleanup: {type(e).__name__}: {e}")
-
-
 def seed_weather():
     import json
     from app_platform import settings
@@ -590,7 +580,6 @@ def main() -> int:
     args = ap.parse_args()
 
     seed_members()
-    cleanup_stale()
     if args.members_only:
         print("members synced."); return 0
     todo = (args.only.split(",") if args.only else list(SEEDERS))

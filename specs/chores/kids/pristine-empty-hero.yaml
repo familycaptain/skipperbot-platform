@@ -1,0 +1,100 @@
+kind: specification
+id: chores.kids.pristine-empty-hero
+title: Chores has no placeholder kids and shows the empty-state hero when empty (zero active
+  kids)
+state: live
+behavior: 'A fresh install seeds NO placeholder kids: apps/chores/migrations/002_seed_from_sheet.sql
+  no longer INSERTs kid-one/two/three (users kid1/2/3) or their dependent seeded zones/zone_members/chores.
+  An already-upgraded install is cleaned by a NEW idempotent forward-only migration (apps/chores/migrations/007_remove_placeholder_kids.sql)
+  that removes the placeholder seed ONLY WHERE IT IS UNTOUCHED — the seed is a functional
+  starter household (kids + Bathroom/Bedroom zones + their chores) shipped active, and a real
+  family may have ADOPTED it (renamed a kid, checked off chores, added members). So 007 deletes
+  a seed kid/zone/chore ONLY when it still bears its seeded identity AND has NO activity/adoption:
+  a seed kid is removed only if its name is unchanged (Kid One/Two/Three), user_id in (kid1/2/3),
+  it has ZERO chore_completions, and no user-added children; a seed zone/chore is removed
+  only if it has no non-seed dependent (completions/zone_members). An adopted seed row is
+  LEFT INTACT (never delete user data, never ABORT on ON DELETE RESTRICT). DELETE order is
+  FK-safe (chore_completions -> zone_members -> chores -> zones -> kids), keyed on the fixed
+  ids, idempotent (re-run = no-op). 002 carries a comment noting it was gutted post-ship and
+  007 is its upgrade companion. The moot hide-hack (scripts/seed_mock_data.py cleanup_stale)
+  is removed, and the kid1/2/3 keyword examples in apps/chores/manifest.yaml + the store.py:117
+  docstring example are made generic. Chores OPTS IN to the ev-52 empty-state hero (web/src/apps/emptyStateHero.js:
+  chores removed from EXCLUDE, added to OPT_IN as {mode:''default''}; the LIVE spec specs/platform/app-ui/empty-state-hero.yaml
+  is AMENDED in lockstep — chores moves from its EXCLUDED list to opt-in and the app/hero
+  count is bumped; a ROLE-AWARE blurb in apps/chores/ui/index.js; the Today-view data.kids
+  render wrapped in <PristineEmpty>, copying apps/recipes/ui/RecipeListApp.jsx, passing a
+  PARENT-ONLY ''Add a family member'' CTA via PristineEmpty''s children slot that switches
+  to Manage>Kids so the empty state is self-sufficient — non-parents get a role-appropriate
+  blurb with no dead-end CTA) so the chores primary (Today) view shows the hero (app icon
+  + name + blurb + parent CTA) when there are ZERO ACTIVE kids, and shows the normal list
+  once a kid is added. ''No chores today'' with a kid present is per-group ''nothing today'',
+  NOT the hero. Zero active kids never crashes (list_kids(active_only) / today_by_kid return
+  {kids:[]}). The empty-state-hero prebuild guardrail (web/scripts/check-empty-state-hero.mjs)
+  stays green (the 3 opt-in parts consistent).'
+implements:
+- apps/chores/migrations/002_seed_from_sheet.sql — remove the kid-one/two/three INSERT + the
+  dependent seeded zones/zone_members/chores keyed to them (fresh installs seed no placeholder
+  kids).
+- apps/chores/migrations/007_remove_placeholder_kids.sql (NEW) — idempotent forward-only cleanup
+  that removes the placeholder seed ONLY WHERE UNTOUCHED (seeded name + zero completions +
+  no non-seed dependents), FK-safe order; leaves adopted rows intact (no user-data loss, no
+  RESTRICT abort).
+- scripts/seed_mock_data.py — remove the now-moot cleanup_stale hide-hack (def ~L92, call
+  ~L593).
+- apps/chores/manifest.yaml (~L66-68) — replace kid1/2/3 keyword examples with generic phrasing;
+  apps/chores/store.py:117 — generic docstring example.
+- web/src/apps/emptyStateHero.js — remove chores from EXCLUDE; add OPT_IN.chores={mode:'default'}.
+- 'apps/chores/ui/index.js — add a ROLE-AWARE hero blurb (parent: point at Manage>Kids; non-parent:
+  no dead-end CTA) + a parent-only ''Add a family member'' CTA via PristineEmpty children
+  slot.'
+- web/src/apps/chores/.../ChoresApp.jsx (TodayTab ~L193-249) — wrap the data.kids render in
+  <PristineEmpty> (pristine when zero active kids), copying apps/recipes/ui/RecipeListApp.jsx.
+- specs/platform/app-ui/empty-state-hero.yaml — AMEND in lockstep (chores EXCLUDED->opt-in;
+  bump the '18 apps / 19 heroes' count; drop the stale chores EXCLUDE reason) so the live
+  spec matches the code (interop).
+tests:
+- type: unit
+  path: tests/evolve/platform/test_chores_no_placeholder_kids.py
+  rubric: 'Migration guard (deterministic, offline DB): (a) UNTOUCHED seed (seeded names,
+    zero completions, no user members) -> 007 removes kid-one/two/three + their zones/chores/completions;
+    idempotent (re-run no-op). (b) ADOPTED seed -> a seed kid with a renamed name OR any chore_completion
+    OR a user-added zone member is LEFT INTACT (assert the row survives, and 007 does NOT
+    abort on the RESTRICT FKs). (c) Fresh migrate (gutted 002) seeds ZERO kids. Real/other
+    kids untouched.'
+- type: unit
+  path: tests/evolve/platform/test_chores_no_placeholder_kids.py
+  rubric: 'Zero-kids safety + hero opt-in: list_kids(active_only)/today_by_kid return {kids:[]}
+    for zero kids without raising. emptyStateHero.js has chores in OPT_IN and NOT in EXCLUDE;
+    apps/chores/ui/index.js has a non-empty blurb; the check-empty-state-hero.mjs guardrail
+    passes (3 opt-in parts consistent). manifest/store no longer reference kid1/2/3.'
+- type: e2e
+  path: (test host, validate-time)
+  rubric: 'On a chores state with ZERO active kids — note kids are BOX-WIDE (not user-scoped),
+    so use a FRESH/CLEAN chores schema (a fresh app-instance/test schema), not ''a user with
+    no kids'' on the shared box, the chores Today view renders the empty-state hero (app icon
+    + name + the blurb) in place of the kids list; ADD a kid -> the hero disappears and the
+    normal chores view shows. Also confirm NO kid1/2/3 (Kid One/Two/Three) appear anywhere
+    after the cleanup migration. Screenshot the hero -> attach to #59.'
+links: {}
+notes: 'Composes with the ev-52 hero infra (platform.app-ui.empty-state-hero — chores moves
+  EXCLUDE->OPT_IN, amending it). Forward-only migrator -> gut 002 (fresh) + new idempotent
+  007 (upgrades). 003/006 schedules LEFT (grounding: hand-run, not kid-tied). pristine-empty
+  = zero active kids (design). Zero-kids already safe. Gate-1 forks: (1) blurb copy (operator-owned);
+  (2) confirm 003/006 stay. Amends the empty-state-hero spec''s chores-EXCLUDE note. | REVISED
+  r1: 007 GUARDS on the untouched-seed signature (seed is an ADOPTABLE starter household —
+  never delete adopted data / never abort on RESTRICT) [spec-audit HIGH + architecture]; AMEND
+  the live empty-state-hero.yaml in lockstep (added to implements) [interop MED]; ROLE-AWARE
+  blurb + parent-only Add-a-family-member CTA via PristineEmpty children [ux MED]; e2e uses
+  a fresh chores schema (kids box-wide) [spec-audit MED]; 002 commented as gutted+007 companion;
+  guardrail covers OPT_IN/blurb (PristineEmpty wrap is e2e/screenshot-verified). r2 polish:
+  ''parent'' for the CTA = whoever can reach Manage>Kids (the existing isParent/Manage-tab
+  gate — ChoresApp.jsx L66-67); the hero renders regardless of role, only the CTA is role-gated.
+  Soft-delete edge: pristine-empty=zero ACTIVE kids, so a household that soft-deletes ALL
+  kids re-shows the hero (rows/history retained) — an intended re-onboarding view, not a regression.
+  | Gate-2: validated GREEN on test host — 13/13 bound tests (untouched-seed removed+idempotent,
+  ADOPTED seed preserved+no-RESTRICT-abort, gutted-002 fresh migrate seeds ZERO kids, zero-kids
+  safe, hero opt-in + spec-amend). Real migrator applies 002 (executable no-op after an install-breaking
+  comment-only bug was caught+fixed) + 007 on a fresh schema -> 0 kids. Guardrail green (chores
+  opt-in). Hero wrap unit-covered + static (live zero-kids not reachable non-destructively
+  on the shared box). v1 SINGLE neutral blurb per operator (role-aware CTA deferred). verified=true.'
+verified: true

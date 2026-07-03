@@ -4,5 +4,6 @@ import { lazy } from "react";
 import { ListChecks } from "lucide-react";
 
 export default [
-  { id: "chores", name: "Chores", icon: ListChecks, component: lazy(() => import("./ChoresApp")), singleton: true },
+  { id: "chores", name: "Chores", icon: ListChecks, component: lazy(() => import("./ChoresApp")), singleton: true,
+    blurb: "Set up chores for your household and track who does what. Add a chore to get started." },
 ];

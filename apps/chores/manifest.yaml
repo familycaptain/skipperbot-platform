@@ -63,9 +63,7 @@ tool_category:
     - bathroom chore
     - bedroom chore
     - my chore
-    - kid1's chores
-    - kid2's chores
-    - kid3's chores
+    - kid's chores
     # Specific chore actions (likely in a kid's reply)
     - vacuum
     - dust

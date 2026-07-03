@@ -112,9 +112,9 @@ def today_by_kid(target_date: dt.date | None = None) -> dict:
           "kids": [
             {
               "id": "kid-...",
-              "name": "Kid One",
+              "name": "...",
               "color": "...",
-              "user_id": "kid1",
+              "user_id": "...",
               "assignments": [
                 {
                   "chore_id": "ch-...",
