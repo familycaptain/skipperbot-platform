@@ -163,6 +163,61 @@ def _user_recently_active(username: str, within_minutes: int = 15) -> bool:
         return False
 
 
+def _dm_hold_core(recipient: str, rows: list) -> bool:
+    """Shared engagement/24h hold decision over a candidate set of pending DMs.
+
+    Given ``rows`` (pending_action rows already scoped to the caller's domain(s)
+    and subject-set), select the SINGLE most-recent DM to ``recipient`` by
+    ``sent_at`` and hold IFF it is < 24h old AND still has no genuine reply.
+
+    ONE definition of "engaged" (a real, non-marker user turn after the DM) and
+    ONE 24h daily floor, shared by the per-subject hold (``_dm_on_hold``) and the
+    global onboarding-tour hold (``_onboarding_tour_on_hold``) so the two can
+    never drift. Conservative on error — never blocks indefinitely.
+    """
+    recip = (recipient or "").strip().lower()
+    if not recip:
+        return False
+    try:
+        import json
+        from datetime import datetime, timezone, timedelta
+        from data_layer.chatlogs import get_turns_since
+
+        latest = ""
+        for r in rows:
+            raw = r.get("content", "")
+            try:
+                c = json.loads(raw) if isinstance(raw, str) else (raw or {})
+            except (json.JSONDecodeError, TypeError):
+                continue
+            if not isinstance(c, dict):
+                continue
+            if (c.get("dm_to", "") or "").strip().lower() != recip:
+                continue
+            sent = c.get("sent_at") or r.get("created_at") or ""
+            if sent and sent > latest:
+                latest = sent
+        if not latest:
+            return False  # no prior DM to this person — fine to send
+
+        sent_dt = datetime.fromisoformat(str(latest).replace("Z", "+00:00"))
+        if sent_dt.tzinfo is None:
+            sent_dt = sent_dt.replace(tzinfo=timezone.utc)
+        if (datetime.now(timezone.utc) - sent_dt) >= timedelta(hours=24):
+            return False  # daily floor reached — a check-in is allowed
+
+        # Replied since? A real (non-marker) user turn after the DM = engaged.
+        turns = get_turns_since(recip, latest, limit=5)
+        replied = any(
+            (t.get("user_message", "") or "").strip()
+            and not (t.get("user_message", "") or "").startswith("[")
+            for t in turns
+        )
+        return not replied  # hold only if unanswered and < 24h old
+    except Exception:
+        return False
+
+
 def _dm_on_hold(recipient: str, domain_name: str, subject_id: str = "") -> bool:
     """True if the most recent proactive DM to ``recipient`` is still UNANSWERED
     and less than 24h old — enforce one-at-a-time pacing.
@@ -184,47 +239,71 @@ def _dm_on_hold(recipient: str, domain_name: str, subject_id: str = "") -> bool:
     subj = (subject_id or "").strip()
     subj_filter = subj if subj and subj != "unknown" else ""
     try:
-        import json
-        from datetime import datetime, timezone, timedelta
         from data_layer.skipper_state import list_states
-        from data_layer.chatlogs import get_turns_since
 
         rows = list_states(domain=domain_name, state_type="pending_action",
                            status="active", limit=50)
-        latest = ""
-        for r in rows:
-            # Per-subject scoping (PM): only this thread's pending DMs hold it.
-            if subj_filter and (r.get("subject_id") or "") != subj_filter:
-                continue
-            raw = r.get("content", "")
-            try:
-                c = json.loads(raw) if isinstance(raw, str) else (raw or {})
-            except (json.JSONDecodeError, TypeError):
-                continue
-            if not isinstance(c, dict):
-                continue
-            if (c.get("dm_to", "") or "").strip().lower() != recip:
-                continue
-            sent = c.get("sent_at") or r.get("created_at") or ""
-            if sent and sent > latest:
-                latest = sent
-        if not latest:
-            return False  # no prior DM to this person/thread — fine to send
+        # Per-subject scoping (PM): only this thread's pending DMs hold it.
+        if subj_filter:
+            rows = [r for r in rows if (r.get("subject_id") or "") == subj_filter]
+        return _dm_hold_core(recip, rows)
+    except Exception:
+        return False
 
-        sent_dt = datetime.fromisoformat(str(latest).replace("Z", "+00:00"))
-        if sent_dt.tzinfo is None:
-            sent_dt = sent_dt.replace(tzinfo=timezone.utc)
-        if (datetime.now(timezone.utc) - sent_dt) >= timedelta(hours=24):
-            return False  # daily floor reached — a check-in is allowed
 
-        # Replied since? A real (non-marker) user turn after the DM = engaged.
-        turns = get_turns_since(recip, latest, limit=5)
-        replied = any(
-            (t.get("user_message", "") or "").strip()
-            and not (t.get("user_message", "") or "").startswith("[")
-            for t in turns
-        )
-        return not replied  # hold only if unanswered and < 24h old
+def _onboarding_tour_on_hold(recipient: str) -> bool:
+    """GLOBAL onboarding app-tour cadence hold (ev-75).
+
+    True when a "Try the {app}" tour nudge for the IN-PROGRESS onboarding goal is
+    still unanswered and < 24h old — holding ALL tour nudges (not just that app's)
+    so a no-reply can't march the app catalog to a different tour each cycle. The
+    per-subject ``_dm_on_hold`` can't do this: the PM selector switches apps every
+    cycle, so each nudge is a fresh ``subject_id`` and the per-subject hold misses.
+
+    CORRECTNESS: unions pending_action across BOTH the PM domain AND the
+    onboarding goal's OWN domain (goal-domain tour DMs are filed under
+    ``domain=goal_id``, not ``'pm'``) into ONE pool, keeps only rows whose subject
+    is a tour project of that goal, then runs the SINGLE shared 24h/engagement
+    check on the global-latest DM — NOT a per-domain OR (which would falsely hold
+    when the newest tour DM is replied-to but an older one is still < 24h open).
+    Conservative on error — never blocks indefinitely.
+    """
+    recip = (recipient or "").strip().lower()
+    if not recip:
+        return False
+    try:
+        from apps.goals import onboarding
+        from apps.goals.data import load_entity
+        from data_layer.skipper_state import list_states
+
+        onb_goal = onboarding.onboarding_agenda_in_progress()
+        if not onb_goal:
+            return False  # onboarding not in progress — no tour hold
+
+        # Union pending_action rows across BOTH domains into ONE pool.
+        pool = []
+        for dom in ("pm", onb_goal):
+            pool.extend(list_states(domain=dom, state_type="pending_action",
+                                    status="active", limit=50))
+
+        # Keep only rows whose subject is a TOUR project of THIS onboarding goal.
+        proj_cache: dict = {}
+        tour_rows = []
+        for r in pool:
+            sid = (r.get("subject_id") or "").strip()
+            if not sid.startswith("p-"):
+                continue
+            if sid not in proj_cache:
+                proj_cache[sid] = load_entity(sid)
+            proj = proj_cache[sid]
+            if not proj or proj.get("goal_id") != onb_goal:
+                continue
+            if onboarding.onboarding_project_kind(proj.get("name", "")) != "tour":
+                continue
+            tour_rows.append(r)
+
+        # ONE shared engagement/24h check on the single global-latest tour DM.
+        return _dm_hold_core(recip, tour_rows)
     except Exception:
         return False
 
@@ -415,6 +494,27 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
                         )
                 except Exception:
                     logger.warning("GOAL_THINK[%s]: tour-gate DM check failed", goal_id, exc_info=True)
+            # Global onboarding app-tour CADENCE hold (ev-75, site 3): once the
+            # agenda is complete tours pass the ORDER gate above, so hold ALL tour
+            # nudges for ~24h while a prior tour DM is unanswered — a no-reply must
+            # not march the catalog to a different app. Defense-in-depth parity
+            # with the PM domain guards; the per-subject _dm_on_hold below still
+            # paces everything else. tour_gated (ORDER) is untouched.
+            if is_onboarding and subject_id and subject_id.startswith("p-"):
+                try:
+                    from apps.goals import onboarding
+                    from apps.goals.data import load_entity as _load_tour_proj
+                    _tp = _load_tour_proj(subject_id)
+                    if (_tp and _tp.get("goal_id") == goal_id
+                            and onboarding.onboarding_project_kind(_tp.get("name", "")) == "tour"
+                            and await asyncio.to_thread(_onboarding_tour_on_hold, dm_to)):
+                        return (
+                            "That app-tour nudge is on a daily hold — a tour message "
+                            "is still unanswered and less than 24h old. Wait for their "
+                            "reply before nudging another app tour. DM not sent."
+                        )
+                except Exception:
+                    logger.warning("GOAL_THINK[%s]: onboarding tour-hold DM check failed", goal_id, exc_info=True)
             # Onboarding is a live, one-at-a-time conversation — a single DM per
             # cycle. The first-contact live arrival greeting is allowed TWO short
             # bubbles (a warm opener + the first agenda prompt). Other goals keep
