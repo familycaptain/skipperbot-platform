@@ -16,6 +16,7 @@ when the user says they're not interested).
 Idempotent: guarded by a `config` flag so re-running init_db never duplicates it.
 """
 
+import json
 import logging
 from datetime import date, timedelta
 from pathlib import Path
@@ -29,6 +30,16 @@ logger = logging.getLogger(__name__)
 
 SKIPPER_USER = "skipper"
 _SEEDED_KEY = "onboarding_seeded"
+
+# One-time greet-once claim flag for the event-driven live arrival greeting
+# (platform.onboarding.live-greeting). Co-located with the other onboarding
+# state. Set via an ATOMIC compare-and-set so a multi-tab / reconnect race
+# produces exactly one greeting; released on produce/deliver failure so a
+# later arrival can retry (no permanent strand).
+_GREETED_KEY = "onboarding_greeted"
+
+# A guided-agenda goal in one of these states is CLOSED — no live greeting.
+_TERMINAL_GOAL_STATUSES = {"done", "deferred", "archived", "cancelled"}
 
 # Platform-infra / admin apps don't get a "try this app" onboarding project —
 # they're not a feature the family "starts using" the way Recipes or Chores are.
@@ -251,3 +262,87 @@ def ensure_onboarding(apps_info: list[dict] | None = None) -> str:
 
     platform_config.set(_SEEDED_KEY, {"done": True, "goal_id": goal_id}, scope="app:goals")
     return f"created onboarding goal {goal_id} ({n_apps} app project(s))"
+
+
+# ---------------------------------------------------------------------------
+# Live arrival greeting (platform.onboarding.live-greeting) — the goals-layer
+# gate + atomic greet-once claim. The transport (agent.websocket_chat) only
+# emits a thin `desktop.arrival` event; ALL onboarding gating lives here.
+# ---------------------------------------------------------------------------
+
+def onboarding_goal_id() -> str | None:
+    """The seeded onboarding goal id, or None if onboarding was never seeded.
+
+    Sourced from the seed's stored ``goal_id`` — NOT a signal that onboarding
+    is still active (see ``onboarding_agenda_in_progress`` for that).
+    """
+    seed = platform_config.get(_SEEDED_KEY, scope="app:goals") or {}
+    return seed.get("goal_id") if seed.get("done") else None
+
+
+def onboarding_agenda_in_progress() -> str | None:
+    """Return the onboarding goal id IFF the guided agenda is still IN PROGRESS.
+
+    In progress == seeded AND the goal still exists AND its live status is not a
+    terminal/closed state. This is the goal's LIVE status, deliberately NOT the
+    ``onboarding_seeded.done`` boolean (which only means the goal was created):
+    an onboarded user whose agenda goal is closed gets no live greeting.
+
+    Returns the goal id (truthy) when a greeting is warranted, else ``None``.
+    """
+    goal_id = onboarding_goal_id()
+    if not goal_id:
+        return None
+    try:
+        from apps.goals.data import load_entity
+        goal = load_entity(goal_id)
+    except Exception:
+        logger.warning("onboarding: could not load goal %s for in-progress check", goal_id, exc_info=True)
+        return None
+    if not goal:
+        return None
+    status = (goal.get("status") or "").strip().lower()
+    if status in _TERMINAL_GOAL_STATUSES:
+        return None
+    return goal_id
+
+
+def claim_onboarding_greeting() -> bool:
+    """ATOMIC compare-and-set greet-once claim. Returns True IFF THIS caller won.
+
+    Single-writer via ``INSERT ... ON CONFLICT DO NOTHING`` — the DB is the
+    arbiter, never a read-then-write in Python — so two near-simultaneous
+    arrivals (multi-tab / reconnect) yield exactly ONE winner. The claim is set
+    ON ATTEMPT (before the greeting is produced), which both wins the race and
+    throttles the ungated priority-0 seam. Release it (see below) on failure.
+    """
+    try:
+        from data_layer.db import execute
+        rows = execute(
+            """
+            INSERT INTO public.app_config (scope, key, value, updated_by, updated_at)
+            VALUES (%s, %s, %s::jsonb, %s, now())
+            ON CONFLICT (scope, key) DO NOTHING
+            """,
+            ("app:goals", _GREETED_KEY, json.dumps(True), "onboarding_arrival"),
+        )
+        return bool(rows)
+    except Exception:
+        logger.warning("onboarding: greet-once claim failed", exc_info=True)
+        return False
+
+
+def release_onboarding_greeting() -> None:
+    """RELEASE the greet-once claim so a later arrival can retry.
+
+    Called when the produce/deliver of the greeting failed (or produced nothing)
+    so the claim never permanently strands an ungreeted user.
+    """
+    try:
+        from data_layer.db import execute
+        execute(
+            "DELETE FROM public.app_config WHERE scope = %s AND key = %s",
+            ("app:goals", _GREETED_KEY),
+        )
+    except Exception:
+        logger.warning("onboarding: greet-once release failed", exc_info=True)
