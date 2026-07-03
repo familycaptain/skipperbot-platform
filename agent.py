@@ -31,8 +31,6 @@ from app_platform.jobs import start_dispatcher
 from thinking_scheduler import start_thinking_scheduler
 from job_handlers import register_all_handlers
 from trello_sync import start_trello_sync
-from memory_store import backfill_embeddings
-from knowledge_store import migrate_chunk_embeddings
 from data_layer.db import close_pool
 from app_platform.loader import load_all_apps, get_app_tool_routes
 from app_platform import lifecycle
@@ -82,19 +80,19 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error("STARTUP: upgrade-seed failed: %s", e)
 
-    # Keyless boot (#44): suppress LLM-dependent background work until models are configured, so
-    # a fresh keyless install boots HEALTHY and the first-run model step is reachable with no LLM call.
+    # Keyless boot (#44, #73): LLM-dependent background work (the timer thinking domains and the
+    # one-shot embedding backfill/migrate) is gated LIVE inside the thinking scheduler's supervisor
+    # on models_configured(), so it self-activates within one supervisor interval after onboarding
+    # configures a model — no restart. The scheduler + the (LLM-free) priority-event consumer always
+    # start below; nothing LLM runs until models are configured, so a fresh keyless install boots
+    # HEALTHY and the first-run model step is reachable with no LLM call.
     try:
         from providers.tier_resolver import models_configured as _models_configured
-        _models_ready = _models_configured()
+        if not _models_configured():
+            logger.info("STARTUP: models not configured — thinking scheduler will self-gate LLM work "
+                        "until onboarding configures a model (keyless boot)")
     except Exception:
-        _models_ready = False
-    if _models_ready:
-        # One-time migrations: backfill memory embeddings + migrate knowledge to binary
-        await asyncio.to_thread(backfill_embeddings)
-        await asyncio.to_thread(migrate_chunk_embeddings)
-    else:
-        logger.info("STARTUP: models not configured — suppressing embedding/thinking work (keyless boot)")
+        pass
     await mcp_client.connect_to_mcp()
 
     # Build direct-call tool registry (bypasses MCP subprocess for execution)
@@ -142,8 +140,11 @@ async def lifespan(app: FastAPI):
     background_tasks = lifecycle.start_background_tasks()
     job_task = asyncio.create_task(start_dispatcher())
     trello_task = asyncio.create_task(start_trello_sync())
-    # Thinking scheduler is LLM-dependent — start it only when models are configured (keyless boot, #44).
-    thinking_task = asyncio.create_task(start_thinking_scheduler()) if _models_ready else None
+    # Thinking scheduler always starts (#73): it is LLM-free at the seam (the priority-event
+    # consumer routes events) and self-gates the LLM-spending timer domains + one-shot embedding
+    # backfill on models_configured() inside its supervisor, so it self-activates <=120s after
+    # onboarding — no restart. start_thinking_scheduler() is idempotent.
+    thinking_task = asyncio.create_task(start_thinking_scheduler())
     yield
     # Shutdown
     if discord_enabled_now:

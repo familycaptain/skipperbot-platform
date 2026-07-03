@@ -48,6 +48,20 @@ _domain_locks: dict[str, asyncio.Lock] = {}
 # Graceful shutdown flag
 _shutting_down = False
 
+# Idempotency guard for start_thinking_scheduler (#73) — set True SYNCHRONOUSLY on the
+# first call (before any await) so a re-entrant/concurrent call is a no-op and can't
+# double-start the supervisor + priority-event consumer.
+_scheduler_started = False
+
+# Run-once latch (#73): the one-shot embedding backfill/migrate fires exactly once, the
+# first time the supervisor observes models_configured()==True (moved off the boot-time
+# gate so it self-activates post-onboarding with no restart).
+_embedding_backfill_done = False
+
+# Rate-limit for the keyless "suppressing thinking" supervisor log (#73)
+_last_keyless_log = 0.0
+_KEYLESS_LOG_INTERVAL_SECONDS = 3600  # at most once/hour while keyless
+
 # ---------------------------------------------------------------------------
 # Priority dispatch state
 # ---------------------------------------------------------------------------
@@ -80,11 +94,26 @@ def is_shutting_down() -> bool:
 
 
 async def start_thinking_scheduler():
-    """Supervisor loop — manages per-domain tasks. Start as an asyncio task."""
+    """Supervisor loop — manages per-domain tasks. Start as an asyncio task.
+
+    Idempotent (#73): a second call is a no-op — the supervisor + the priority-event
+    consumer start exactly once. Always started at boot; the LLM-spending timer domains
+    self-gate live on models_configured() inside _supervise_domains, so a keyless boot
+    stays LLM-silent while the (LLM-free) priority-event consumer runs from t=0.
+    """
+    global _scheduler_started
+    if _scheduler_started:
+        logger.debug("THINKING: start_thinking_scheduler() called again — no-op (already started)")
+        return
+    # Set the flag SYNCHRONOUSLY, before the first await, so two concurrent create_task
+    # calls can't both pass the guard and double-start the consumer/supervisor.
+    _scheduler_started = True
+
     logger.info("THINKING: Supervisor started (checking domain config every %ds)",
                 SUPERVISOR_INTERVAL_SECONDS)
 
-    # Start the priority-0 event consumer (handles non-chat urgent events)
+    # Start the priority-0 event consumer (handles non-chat urgent events). LLM-free —
+    # it only routes events to their handlers — so it runs even on a keyless boot.
     asyncio.create_task(_priority_event_consumer(), name="think-priority-consumer")
 
     while True:
@@ -183,8 +212,55 @@ async def get_budget_status() -> dict:
 # Supervisor — manage domain task lifecycle
 # ---------------------------------------------------------------------------
 
+def _log_keyless_suppressed():
+    """Rate-limited (once/hour) log that timer thinking domains are suppressed while keyless."""
+    global _last_keyless_log
+    now = time.monotonic()
+    if now - _last_keyless_log >= _KEYLESS_LOG_INTERVAL_SECONDS:
+        _last_keyless_log = now
+        logger.info("THINKING: models not configured — suppressing timer thinking domains (keyless); "
+                    "they self-activate within %ds of onboarding", SUPERVISOR_INTERVAL_SECONDS)
+
+
 async def _supervise_domains():
-    """Load domain configs, start new tasks, cancel removed/disabled ones."""
+    """Load domain configs, start new tasks, cancel removed/disabled ones.
+
+    #73 LIVE model-readiness gate: while no models are configured (keyless boot) start NO
+    timer domain tasks and make NO LLM call — the supervisor re-runs every
+    SUPERVISOR_INTERVAL_SECONDS, so domains self-activate <=120s after onboarding configures
+    a model (no restart). Any error resolving readiness is treated as not-ready (fail closed,
+    keep the loop alive). The one-shot embedding backfill/migrate is run here, once, the first
+    time models are seen configured.
+    """
+    global _embedding_backfill_done
+
+    # (1) Live gate — do not start LLM-spending timer domains until models are configured.
+    try:
+        from providers.tier_resolver import models_configured
+        _ready = models_configured()
+    except Exception as e:
+        logger.debug("THINKING: readiness check failed (%s) — treating as not-ready", e)
+        _ready = False
+    if not _ready:
+        _log_keyless_suppressed()
+        return
+
+    # (2) Run-once embedding backfill/migrate (#73) — moved off the boot-time gate; fires
+    # exactly once, the first time the supervisor observes models configured. Its OWN
+    # try/except (and the latch set up front) so a backfill error can't abort domain
+    # supervision or retry-spam every tick.
+    if not _embedding_backfill_done:
+        _embedding_backfill_done = True
+        try:
+            from memory_store import backfill_embeddings
+            from knowledge_store import migrate_chunk_embeddings
+            await asyncio.to_thread(backfill_embeddings)
+            await asyncio.to_thread(migrate_chunk_embeddings)
+            logger.info("THINKING: one-time embedding backfill/migrate complete (models configured)")
+        except Exception as e:
+            logger.error("THINKING: embedding backfill/migrate failed: %s", e, exc_info=True)
+
+    # (3) Domain supervision.
     try:
         from data_layer.thinking_domains import list_domains
         all_domains = await asyncio.to_thread(list_domains, enabled_only=False)

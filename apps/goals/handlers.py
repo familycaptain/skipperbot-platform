@@ -66,6 +66,19 @@ async def onboarding_arrival_handler(payload: dict) -> dict:
         if not goal_id:
             return {"skipped": "onboarding agenda not in progress"}
 
+        # (b2) Defense-in-depth (#73): a pre-config (keyless) arrival is a CLEAN early skip
+        # that NEVER takes the greet-once claim, so onboarding still greets once models are
+        # configured — placed AFTER the agenda gate and BEFORE the claim to avoid claim churn
+        # + broad-except log noise on a produce that can't run. The normal flow has models
+        # configured by arrival, so this is a no-op there. Any error reading readiness fails
+        # open to the existing self-healing claim-release path.
+        try:
+            from providers.tier_resolver import models_configured
+            if not models_configured():
+                return {"skipped": "models not configured (keyless)"}
+        except Exception:
+            pass
+
         # (c) ATOMIC greet-once claim, set on ATTEMPT before producing.
         from apps.goals.onboarding import claim_onboarding_greeting
         won = await asyncio.to_thread(claim_onboarding_greeting)
