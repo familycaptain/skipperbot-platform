@@ -26,9 +26,9 @@ def anthropic_descriptor() -> ConnectorDescriptor:
     return ConnectorDescriptor(
         name="anthropic", requires_key=True, verified=False, base_url=_BASE_URL,
         models=[
-            ModelEntry("Anthropic", "claude-opus-4-8", CHAT, default=True),
+            ModelEntry("Anthropic", "claude-opus-4-8", CHAT, default_tiers=["smart"]),
             ModelEntry("Anthropic", "claude-sonnet-4-6", CHAT),
-            ModelEntry("Anthropic", "claude-haiku-4-5", CHAT),
+            ModelEntry("Anthropic", "claude-haiku-4-5", CHAT, default_tiers=["fast"]),
         ],
     ).validate()
 

@@ -17,40 +17,40 @@ from providers.openai_compat import OpenAICompatibleProvider
 # name -> (display, base_url, requires_key, [ModelEntry...])
 _VENDORS: dict = {
     "gemini": ("Gemini", "https://generativelanguage.googleapis.com/v1beta/openai/", True, [
-        ModelEntry("Gemini", "gemini-2.5-pro", CHAT, default=True),
-        ModelEntry("Gemini", "gemini-2.5-flash", CHAT),
-        ModelEntry("Gemini", "text-embedding-004", EMBEDDING, default=True, embedding_dim=768),
+        ModelEntry("Gemini", "gemini-2.5-pro", CHAT, default_tiers=["smart"]),
+        ModelEntry("Gemini", "gemini-2.5-flash", CHAT, default_tiers=["fast"]),
+        ModelEntry("Gemini", "text-embedding-004", EMBEDDING, default_tiers=["embedding"], embedding_dim=768),
     ]),
     "deepseek": ("DeepSeek", "https://api.deepseek.com/v1", True, [
-        ModelEntry("DeepSeek", "deepseek-chat", CHAT, default=True),
-        ModelEntry("DeepSeek", "deepseek-reasoner", CHAT),
+        ModelEntry("DeepSeek", "deepseek-reasoner", CHAT, default_tiers=["smart"]),
+        ModelEntry("DeepSeek", "deepseek-chat", CHAT, default_tiers=["fast"]),
     ]),
     "kimi": ("Kimi", "https://api.moonshot.cn/v1", True, [
-        ModelEntry("Kimi", "moonshot-v1-8k", CHAT, default=True),
-        ModelEntry("Kimi", "moonshot-v1-32k", CHAT),
+        ModelEntry("Kimi", "moonshot-v1-32k", CHAT, default_tiers=["smart"]),
+        ModelEntry("Kimi", "moonshot-v1-8k", CHAT, default_tiers=["fast"]),
     ]),
     "qwen": ("Qwen", "https://dashscope.aliyuncs.com/compatible-mode/v1", True, [
-        ModelEntry("Qwen", "qwen-max", CHAT, default=True),
-        ModelEntry("Qwen", "qwen-plus", CHAT),
-        ModelEntry("Qwen", "text-embedding-v3", EMBEDDING, default=True, embedding_dim=1024),
+        ModelEntry("Qwen", "qwen-max", CHAT, default_tiers=["smart"]),
+        ModelEntry("Qwen", "qwen-plus", CHAT, default_tiers=["fast"]),
+        ModelEntry("Qwen", "text-embedding-v3", EMBEDDING, default_tiers=["embedding"], embedding_dim=1024),
     ]),
     "grok": ("Grok", "https://api.x.ai/v1", True, [
-        ModelEntry("Grok", "grok-2", CHAT, default=True),
-        ModelEntry("Grok", "grok-2-mini", CHAT),
+        ModelEntry("Grok", "grok-2", CHAT, default_tiers=["smart"]),
+        ModelEntry("Grok", "grok-2-mini", CHAT, default_tiers=["fast"]),
     ]),
     "mistral": ("Mistral", "https://api.mistral.ai/v1", True, [
-        ModelEntry("Mistral", "mistral-large-latest", CHAT, default=True),
-        ModelEntry("Mistral", "mistral-small-latest", CHAT),
-        ModelEntry("Mistral", "mistral-embed", EMBEDDING, default=True, embedding_dim=1024),
+        ModelEntry("Mistral", "mistral-large-latest", CHAT, default_tiers=["smart"]),
+        ModelEntry("Mistral", "mistral-small-latest", CHAT, default_tiers=["fast"]),
+        ModelEntry("Mistral", "mistral-embed", EMBEDDING, default_tiers=["embedding"], embedding_dim=1024),
     ]),
     "llama": ("Llama", "https://api.llama.com/compat/v1", True, [
-        ModelEntry("Llama", "llama-3.3-70b", CHAT, default=True),
-        ModelEntry("Llama", "llama-3.1-8b", CHAT),
+        ModelEntry("Llama", "llama-3.3-70b", CHAT, default_tiers=["smart"]),
+        ModelEntry("Llama", "llama-3.1-8b", CHAT, default_tiers=["fast"]),
     ]),
     "ollama": ("Ollama", "http://localhost:11434/v1", False, [
-        ModelEntry("Ollama", "llama3.1", CHAT, default=True),
-        ModelEntry("Ollama", "qwen2.5", CHAT),
-        ModelEntry("Ollama", "nomic-embed-text", EMBEDDING, default=True, embedding_dim=768),
+        ModelEntry("Ollama", "llama3.1", CHAT, default_tiers=["smart"]),
+        ModelEntry("Ollama", "qwen2.5", CHAT, default_tiers=["fast"]),
+        ModelEntry("Ollama", "nomic-embed-text", EMBEDDING, default_tiers=["embedding"], embedding_dim=768),
     ]),
 }
 
@@ -59,7 +59,7 @@ VENDOR_NAMES = tuple(_VENDORS.keys())
 
 def _embedding_dim_for(models: list[ModelEntry]) -> int | None:
     for m in models:
-        if m.kind == EMBEDDING and m.default:
+        if m.kind == EMBEDDING and EMBEDDING in m.default_tiers:
             return m.embedding_dim
     return None
 

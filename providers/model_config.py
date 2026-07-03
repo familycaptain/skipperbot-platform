@@ -22,12 +22,22 @@ from providers.tier_resolver import TIERS, models_configured  # re-exported for 
 _SCOPE = "platform"
 _MASK = "********"
 
-# OpenAI seed defaults for an upgrading install (operator decision A).
-_SEED = {
-    "smart": ("openai", "gpt-5.2"),
-    "fast": ("openai", "gpt-5-mini"),
-    "embedding": ("openai", "text-embedding-3-small"),
-}
+# OpenAI seed defaults for an upgrading install (operator decision A). DERIVED from the OpenAI
+# descriptor's per-tier defaults (single source of truth; keeps the openai connector pin) rather
+# than a parallel hardcode, so the seed can never drift from the picker's declared defaults.
+def _openai_seed() -> dict:
+    from providers.connectors.builtins import openai_descriptor
+    d = openai_descriptor()
+    seed: dict = {}
+    for tier in ("smart", "fast", "embedding"):
+        for m in d.models:
+            if tier in getattr(m, "default_tiers", []):
+                seed[tier] = (d.name, m.model)
+                break
+    return seed
+
+
+_SEED = _openai_seed()
 _SEED_EMBEDDING_DIM = 1536
 _PROBE_MAX_TOKENS = 64   # validate chat round-trip cap (reasoning models reject tiny caps)
 
