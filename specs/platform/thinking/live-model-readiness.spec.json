@@ -1,0 +1,32 @@
+{
+  "spec_id": "platform.thinking.live-model-readiness",
+  "kind": "specification",
+  "title": "Proactive subsystem self-activates when models are configured \u2014 no restart (thinking scheduler + priority-event consumer live-gated)",
+  "behavior": [
+    "GIVEN a fresh keyless install (no models configured) WHEN the agent boots THEN it boots HEALTHY: the thinking scheduler starts, the priority-event consumer runs, but NO domain LLM loop runs and NO LLM call is made; the onboarding model step is reachable.",
+    "GIVEN a keyless install WHEN onboarding configures a provider/model via POST /api/onboarding/save-models WITHOUT restarting the agent THEN within one supervisor interval (<=120s) the proactive timer domains (nudges/PM/thinking/digests) begin running, and the one-shot embedding backfill/migrate runs exactly once \u2014 no restart required.",
+    "GIVEN models are configured and onboarding is in progress WHEN the primary user's desktop connects (desktop.arrival) THEN the priority-event consumer drains the event and the live onboarding greeting fires exactly once (optimistic typing within ~1s, the real greeting moments later).",
+    "GIVEN the agent is keyless (models not configured) WHEN any timer domain cycle would run THEN it is skipped (no LLM call, no error spam); a single rate-limited 'suppressing thinking (keyless)' log is acceptable.",
+    "GIVEN start_thinking_scheduler() is invoked more than once WHEN the second call runs THEN it is a no-op (no double consumer/supervisor start).",
+    "GIVEN an already-models-configured install WHEN the agent boots or restarts THEN behavior is unchanged from today (scheduler + consumer + domains all run)."
+  ],
+  "implements": [
+    "agent.py (always-start scheduler; move embedding backfill/migrate off the one-shot boot gate)",
+    "thinking_scheduler.py (idempotent start_thinking_scheduler; live models_configured gate in _supervise_domains; run-once embedding-backfill latch)",
+    "apps/goals/handlers.py (defense-in-depth: models_configured guard on the arrival produce path)"
+  ],
+  "tests": [
+    {
+      "type": "integration",
+      "path": "tests/platform/test_keyless_boot.py (or a new test_thinking_live_gating.py)",
+      "rubric": "Keyless boot: start_thinking_scheduler runs, _priority_event_consumer is started, but _supervise_domains starts NO domain tasks while models_configured()==False and makes no LLM call. After flipping models_configured()->True, the next _supervise_domains tick starts the domain tasks AND the embedding backfill runs exactly once (run-once latch). A second start_thinking_scheduler() call is a no-op."
+    },
+    {
+      "type": "integration",
+      "path": "tests/platform/test_priority_event_consumer.py",
+      "rubric": "With the consumer running, submit_priority_event('desktop.arrival', ...) is drained and routed to the registered handler (future resolves); regression guard for 'keyless boot -> models configured -> running priority-event consumer + drained desktop.arrival'."
+    }
+  ],
+  "notes": "HIGH fresh-install regression (operator-authored, #73). Removes the one-shot boot fragility from #44's keyless guard while PRESERVING the keyless-healthy invariant (no LLM before configuration). Arrival greeting immediate via the always-on consumer; timer domains + embedding backfill self-activate <=120s after onboarding. No restart. Out of scope: client-side 15s optimistic-typing fail-open (fine as-is); keyless-boot health must be unchanged.",
+  "verified": true
+}
