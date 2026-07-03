@@ -49,21 +49,27 @@ def requires_key(name: str) -> bool:
 
 def list_models(kind: str | None = None) -> list[dict]:
     """Aggregate every connector's baked model entries (optionally filtered by kind) for the
-    UI. Each row carries its connector's (default) flag + requires_key + verified so the
-    picker can render 'Provider / model', mark defaults, and signal experimental connectors.
-    Default-multiplicity is per-connector (enforced at load) — across connectors there may be
-    several defaults (one per provider) and NO forced single platform default."""
+    UI. Each row carries its connector's per-tier ``default_tiers`` + requires_key + verified so
+    the picker can render 'Provider / model', mark the tier-correct defaults, and signal
+    experimental connectors. Default-multiplicity is per-connector (enforced at load) — across
+    connectors there may be several defaults (one per provider per tier)."""
     rows: list[dict] = []
     for name, d in _descriptors.items():
         for m in getattr(d, "models", []) or []:
-            if kind is not None and getattr(m, "kind", None) != kind:
+            m_kind = getattr(m, "kind", "")
+            if kind is not None and m_kind != kind:
                 continue
+            tiers = list(getattr(m, "default_tiers", None) or [])
+            # backward-compat kind-correct primary-default flag: 'smart' is the chat primary,
+            # 'embedding' the embedding primary (keeps the Text-encoding marker working).
+            is_default = ("smart" in tiers) if m_kind == "chat" else ("embedding" in tiers)
             rows.append({
                 "connector": name,
                 "provider_display": getattr(m, "provider_display", name),
                 "model": getattr(m, "model", ""),
-                "kind": getattr(m, "kind", ""),
-                "default": bool(getattr(m, "default", False)),
+                "kind": m_kind,
+                "default_tiers": tiers,
+                "default": bool(is_default),
                 "embedding_dim": getattr(m, "embedding_dim", None),
                 "requires_key": bool(getattr(d, "requires_key", True)),
                 "verified": bool(getattr(d, "verified", False)),

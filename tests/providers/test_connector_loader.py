@@ -35,8 +35,8 @@ class _Chat:
 def connector():
     d = ConnectorDescriptor(
         name="fakevendor", requires_key=True, verified=False,
-        models=[ModelEntry("FakeVendor", "fv-large", CHAT, default=True),
-                ModelEntry("FakeVendor", "fv-small", CHAT)],
+        models=[ModelEntry("FakeVendor", "fv-large", CHAT, default_tiers=["smart"]),
+                ModelEntry("FakeVendor", "fv-small", CHAT, default_tiers=["fast"])],
     )
     return d, _Chat(), None
 '''

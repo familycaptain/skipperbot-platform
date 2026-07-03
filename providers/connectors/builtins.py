@@ -19,10 +19,10 @@ def openai_descriptor() -> ConnectorDescriptor:
         verified=True,
         base_url="https://api.openai.com/v1",
         models=[
-            ModelEntry("OpenAI", "gpt-5.2", CHAT, default=True),
-            ModelEntry("OpenAI", "gpt-5-mini", CHAT),
+            ModelEntry("OpenAI", "gpt-5.2", CHAT, default_tiers=["smart"]),
+            ModelEntry("OpenAI", "gpt-5-mini", CHAT, default_tiers=["fast"]),
             ModelEntry("OpenAI", "gpt-5-nano", CHAT),
-            ModelEntry("OpenAI", "text-embedding-3-small", EMBEDDING, default=True, embedding_dim=1536),
+            ModelEntry("OpenAI", "text-embedding-3-small", EMBEDDING, default_tiers=["embedding"], embedding_dim=1536),
             ModelEntry("OpenAI", "text-embedding-3-large", EMBEDDING, embedding_dim=3072),
         ],
     ).validate()
