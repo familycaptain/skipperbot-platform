@@ -1,0 +1,23 @@
+kind: specification
+id: jobs.empty-state.explanatory-hero
+title: Jobs app shows an explanatory empty-state hero when there are no jobs
+state: live
+autonomy: gated
+behavior: When the Jobs app has zero jobs (default 'all' filter), it shows the ev-52 EmptyStateHero
+  (Briefcase + 'Jobs' + an informational blurb about background work) instead of 'No jobs
+  found', with NO +New control. Jobs present -> normal list. A status filter that hides all
+  jobs still shows 'No jobs found' (filterActive), not the onboarding hero.
+implements:
+- web/src/apps/emptyStateHero.js
+- apps/jobs/ui/index.js
+- apps/jobs/ui/JobsApp.jsx
+- specs/platform/app-ui/empty-state-hero.yaml
+tests: []
+links: {}
+notes: 'Verified at Gate-2 (test host): web bundle compiled; empty-state-hero guardrail EXIT=0
+  (jobs opt-in mode:default with a non-empty blurb; OPT_IN/EXCLUDE exhaustive+disjoint). Live
+  pristine-empty hero NOT reachable — jobs are GLOBAL (user_id ignored), so the PristineEmpty
+  render is guardrail+build+static-confirmed; operator confirms live on a fresh install at
+  Gate 3 (as ev-59). 2 guardrail warnings are the unrelated optional ''anime'' app (pre-existing).
+  Informational (no CTA) matches Jobs'' nature; blurb operator-owned.'
+verified: true
