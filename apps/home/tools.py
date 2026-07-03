@@ -422,6 +422,233 @@ def delete_home_issue(issue_id: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Home Appliances
+# ---------------------------------------------------------------------------
+
+def create_home_appliance(
+    name: str,
+    created_by: str,
+    appliance_type: str = "General",
+    brand: str = "",
+    model: str = "",
+    serial_number: str = "",
+    location: str = "",
+    purchase_date: str = "",
+    purchase_price: float = -1.0,
+    warranty_expires: str = "",
+    notes: str = "",
+) -> str:
+    """Add a household appliance to track (brand, model, serial, purchase & warranty).
+
+    Use for things like "add our LG refrigerator in the kitchen, bought 2023-05-01
+    for $1800, warranty through 2028-05-01" or "track the garage water heater".
+
+    Args:
+        name: Appliance name (e.g. "Kitchen refrigerator", "Water heater").
+        created_by: Who is adding it (a person's name).
+        appliance_type: Type — Refrigerator, Dishwasher, Washer, Dryer, HVAC, Water Heater, General, etc.
+        brand: Manufacturer/brand (e.g. "LG", "Samsung", "Whirlpool").
+        model: Model number/name.
+        serial_number: Serial number.
+        location: Where it is (e.g. "Kitchen", "Garage", "Laundry room").
+        purchase_date: Date purchased (YYYY-MM-DD).
+        purchase_price: Purchase price in dollars (-1 = not set).
+        warranty_expires: Warranty expiration date (YYYY-MM-DD).
+        notes: Additional notes.
+
+    Returns:
+        Confirmation with appliance ID.
+
+    Ack: Adding appliance "{name}"...
+    """
+    try:
+        if not name or not name.strip():
+            return "Error: name is required."
+        appliance_id = f"ha-{uuid.uuid4().hex[:8]}"
+        appliance = {
+            "id": appliance_id,
+            "name": name.strip(),
+            "appliance_type": appliance_type.strip() if appliance_type else "General",
+            "brand": brand.strip() if brand else "",
+            "model": model.strip() if model else "",
+            "serial_number": serial_number.strip() if serial_number else "",
+            "location": location.strip() if location else "",
+            "purchase_date": purchase_date.strip() if purchase_date and purchase_date.strip() else None,
+            "purchase_price": purchase_price if purchase_price is not None and purchase_price >= 0 else None,
+            "warranty_expires": warranty_expires.strip() if warranty_expires and warranty_expires.strip() else None,
+            "notes": notes.strip() if notes else "",
+            "created_by": created_by.strip() if created_by else "",
+        }
+        result = _dl.create_appliance(appliance)
+        if not result:
+            return "Error: Failed to create appliance."
+        loc_str = f" in {location.strip()}" if location and location.strip() else ""
+        logger.info("HOME: Created appliance '%s' (%s)", name.strip(), appliance_id)
+        return f"Appliance added: '{name.strip()}' ({appliance_id}){loc_str} — type: {appliance['appliance_type']}"
+    except Exception as e:
+        return f"Error in create_home_appliance: {str(e)}"
+
+
+def list_home_appliances(appliance_type: str = "", location: str = "") -> str:
+    """List household appliances.
+
+    Args:
+        appliance_type: Filter by type (e.g. "Refrigerator", "Dishwasher"). Empty = all.
+        location: Filter by location (e.g. "Kitchen", "Garage"). Empty = all locations.
+
+    Returns:
+        Formatted list of appliances with brand/model and warranty status.
+
+    Ack: Listing home appliances...
+    """
+    try:
+        from datetime import date
+        appliances = _dl.get_all_appliances(
+            appliance_type=appliance_type.strip() if appliance_type else None,
+            location=location.strip() if location else None,
+        )
+        if not appliances:
+            return "No appliances found."
+
+        today = date.today()
+        lines = [f"Home Appliances ({len(appliances)}):\n"]
+        for a in appliances:
+            bm = " ".join(x for x in [a.get("brand"), a.get("model")] if x)
+            bm = f" — {bm}" if bm else ""
+            loc = f" @ {a['location']}" if a.get("location") else ""
+            warranty = ""
+            if a.get("warranty_expires"):
+                exp = date.fromisoformat(a["warranty_expires"])
+                if exp < today:
+                    warranty = f" 🔴 warranty expired {a['warranty_expires']}"
+                elif (exp - today).days <= 30:
+                    warranty = f" 🟡 warranty expires {a['warranty_expires']}"
+                else:
+                    warranty = f" 🟢 warranty until {a['warranty_expires']}"
+            lines.append(f"- {a['name']} [{a['appliance_type']}]{bm}{loc}{warranty} ({a['id']})")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error in list_home_appliances: {str(e)}"
+
+
+def get_home_appliance(appliance_id: str) -> str:
+    """Get full details of a household appliance.
+
+    Args:
+        appliance_id: The appliance ID (ha-xxx).
+
+    Returns:
+        Full appliance details.
+
+    Ack: Loading appliance details...
+    """
+    try:
+        if not appliance_id or not appliance_id.strip():
+            return "Error: appliance_id is required."
+        a = _dl.get_appliance(appliance_id.strip())
+        if not a:
+            return f"Error: Appliance '{appliance_id}' not found."
+
+        bm = " ".join(x for x in [a.get("brand"), a.get("model")] if x)
+        brand_model = f"\nBrand/Model: {bm}" if bm else ""
+        serial = f"\nSerial: {a['serial_number']}" if a.get("serial_number") else ""
+        loc = f"\nLocation: {a['location']}" if a.get("location") else ""
+        purchased = f"\nPurchased: {a['purchase_date']}" if a.get("purchase_date") else ""
+        price = f"\nPrice: ${a['purchase_price']:.2f}" if a.get("purchase_price") is not None else ""
+        warranty = f"\nWarranty expires: {a['warranty_expires']}" if a.get("warranty_expires") else ""
+        notes = f"\nNotes: {a['notes']}" if a.get("notes") else ""
+
+        return (
+            f"{a['name']} ({a['id']})\n"
+            f"Type: {a.get('appliance_type', 'General')}"
+            f"{brand_model}{serial}{loc}{purchased}{price}{warranty}{notes}"
+        ).strip()
+    except Exception as e:
+        return f"Error in get_home_appliance: {str(e)}"
+
+
+def update_home_appliance(
+    appliance_id: str,
+    name: str = "",
+    appliance_type: str = "",
+    brand: str = "",
+    model: str = "",
+    serial_number: str = "",
+    location: str = "",
+    purchase_date: str = "",
+    purchase_price: float = -1.0,
+    warranty_expires: str = "",
+    notes: str = "",
+) -> str:
+    """Update a household appliance. Only provided fields are changed.
+
+    Args:
+        appliance_id: The appliance ID (ha-xxx).
+        name: New name (empty = keep).
+        appliance_type: New type (empty = keep).
+        brand: New brand (empty = keep).
+        model: New model (empty = keep).
+        serial_number: New serial number (empty = keep).
+        location: New location (empty = keep).
+        purchase_date: New purchase date YYYY-MM-DD (empty = keep).
+        purchase_price: New price (-1 = keep, 0 = clear).
+        warranty_expires: New warranty date YYYY-MM-DD (empty = keep).
+        notes: New notes (empty = keep).
+
+    Returns:
+        Confirmation of update.
+
+    Ack: Updating appliance {appliance_id}...
+    """
+    try:
+        if not appliance_id or not appliance_id.strip():
+            return "Error: appliance_id is required."
+        updates = {}
+        if name: updates["name"] = name.strip()
+        if appliance_type: updates["appliance_type"] = appliance_type.strip()
+        if brand: updates["brand"] = brand.strip()
+        if model: updates["model"] = model.strip()
+        if serial_number: updates["serial_number"] = serial_number.strip()
+        if location: updates["location"] = location.strip()
+        if purchase_date: updates["purchase_date"] = purchase_date.strip()
+        if purchase_price >= 0: updates["purchase_price"] = purchase_price or None
+        if warranty_expires: updates["warranty_expires"] = warranty_expires.strip()
+        if notes: updates["notes"] = notes.strip()
+
+        if not updates:
+            return "No fields to update."
+        ok = _dl.update_appliance(appliance_id.strip(), updates)
+        if ok:
+            fields = ", ".join(updates.keys())
+            return f"Appliance {appliance_id} updated. Changed: {fields}"
+        return f"Error: Appliance '{appliance_id}' not found."
+    except Exception as e:
+        return f"Error in update_home_appliance: {str(e)}"
+
+
+def delete_home_appliance(appliance_id: str) -> str:
+    """Delete a household appliance permanently.
+
+    Args:
+        appliance_id: The appliance ID (ha-xxx).
+
+    Returns:
+        Confirmation or error.
+
+    Ack: Deleting appliance {appliance_id}...
+    """
+    try:
+        if not appliance_id or not appliance_id.strip():
+            return "Error: appliance_id is required."
+        ok = _dl.delete_appliance(appliance_id.strip())
+        if ok:
+            return f"Appliance '{appliance_id}' deleted."
+        return f"Error: Appliance '{appliance_id}' not found."
+    except Exception as e:
+        return f"Error in delete_home_appliance: {str(e)}"
+
+
+# ---------------------------------------------------------------------------
 # Maintenance Task — update / delete / log
 # ---------------------------------------------------------------------------
 

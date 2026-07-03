@@ -142,6 +142,129 @@ async def api_unlink_home_issue_image(issue_id: str, image_id: str):
 
 
 # ---------------------------------------------------------------------------
+# Home Appliances
+# ---------------------------------------------------------------------------
+
+class CreateApplianceRequest(BaseModel):
+    name: str
+    appliance_type: str = "General"
+    brand: str = ""
+    model: str = ""
+    serial_number: str = ""
+    location: str = ""
+    purchase_date: str | None = None
+    purchase_price: float | None = None
+    warranty_expires: str | None = None
+    notes: str = ""
+    created_by: str = ""
+
+
+@router.get("/appliances")
+async def api_list_home_appliances(q: str = "", appliance_type: str = "", location: str = ""):
+    def _fetch():
+        if q.strip():
+            return _dl.search_appliances(q.strip())
+        return _dl.get_all_appliances(
+            appliance_type if appliance_type else None,
+            location if location else None,
+        )
+    appliances = await asyncio.to_thread(_fetch)
+    types = await asyncio.to_thread(_dl.get_appliance_types)
+    locations = await asyncio.to_thread(_dl.get_appliance_locations)
+    return {
+        "appliances": appliances,
+        "count": len(appliances),
+        "types": types,
+        "all_locations": locations,
+    }
+
+
+@router.post("/appliances")
+async def api_create_home_appliance(request: CreateApplianceRequest, http_request: Request):
+    request.created_by = _actor(http_request)
+    appliance_id = f"ha-{uuid.uuid4().hex[:8]}"
+    appliance = {
+        "id": appliance_id,
+        "name": request.name.strip(),
+        "appliance_type": request.appliance_type.strip() or "General",
+        "brand": request.brand.strip(),
+        "model": request.model.strip(),
+        "serial_number": request.serial_number.strip(),
+        "location": request.location.strip(),
+        "purchase_date": request.purchase_date or None,
+        "purchase_price": request.purchase_price,
+        "warranty_expires": request.warranty_expires or None,
+        "notes": request.notes.strip(),
+        "created_by": request.created_by.strip(),
+    }
+    result = await asyncio.to_thread(_dl.create_appliance, appliance)
+    if not result:
+        raise HTTPException(status_code=400, detail="Failed to create appliance")
+    return result
+
+
+@router.get("/appliances/{appliance_id}")
+async def api_get_home_appliance(appliance_id: str):
+    appliance = await asyncio.to_thread(_dl.get_appliance, appliance_id)
+    if not appliance:
+        raise HTTPException(status_code=404, detail="Appliance not found")
+    images = await asyncio.to_thread(_dl.get_appliance_images, appliance_id)
+    return {**appliance, "images": images}
+
+
+class UpdateApplianceRequest(BaseModel):
+    name: str | None = None
+    appliance_type: str | None = None
+    brand: str | None = None
+    model: str | None = None
+    serial_number: str | None = None
+    location: str | None = None
+    purchase_date: str | None = None
+    purchase_price: float | None = None
+    warranty_expires: str | None = None
+    notes: str | None = None
+
+
+@router.put("/appliances/{appliance_id}")
+async def api_update_home_appliance(appliance_id: str, request: UpdateApplianceRequest):
+    updates = {k: v for k, v in request.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    ok = await asyncio.to_thread(_dl.update_appliance, appliance_id, updates)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Appliance not found")
+    appliance = await asyncio.to_thread(_dl.get_appliance, appliance_id)
+    images = await asyncio.to_thread(_dl.get_appliance_images, appliance_id)
+    return {**appliance, "images": images}
+
+
+@router.delete("/appliances/{appliance_id}")
+async def api_delete_home_appliance(appliance_id: str):
+    ok = await asyncio.to_thread(_dl.delete_appliance, appliance_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Appliance not found")
+    return {"ok": True}
+
+
+@router.get("/appliances/{appliance_id}/images")
+async def api_get_home_appliance_images(appliance_id: str):
+    images = await asyncio.to_thread(_dl.get_appliance_images, appliance_id)
+    return {"images": images, "count": len(images)}
+
+
+@router.post("/appliances/{appliance_id}/images/{image_id}/link")
+async def api_link_home_appliance_image(appliance_id: str, image_id: str):
+    await asyncio.to_thread(_dl.link_appliance_image, appliance_id, image_id)
+    return {"ok": True}
+
+
+@router.delete("/appliances/{appliance_id}/images/{image_id}/unlink")
+async def api_unlink_home_appliance_image(appliance_id: str, image_id: str):
+    await asyncio.to_thread(_dl.unlink_appliance_image, appliance_id, image_id)
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
 # Maintenance Tasks
 # ---------------------------------------------------------------------------
 
