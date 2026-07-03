@@ -242,6 +242,76 @@ and obtaining a service token from the platform.
 
 **Verify:** Say "Hey Skipper, what time is it?" — should respond.
 
+### Enable voice speaker identification (per-member attribution)
+
+**Two separate things — don't confuse them:**
+
+- The **`skipperbot-voice` satellite** above is what gives you voice *at all*
+  ("Hey Skipper"). It's required for any spoken interaction.
+- **Speaker identification** (this section) is an *optional, host-side* extra that
+  labels each spoken turn with *which enrolled household member* said it — so
+  "remind **me**", permissions, and personal data follow the right person. Voice
+  works fine without it (everyone is just treated as the same speaker).
+
+**Why it's opt-in:** speaker-ID uses `resemblyzer`, which pulls in **torch
+(~500MB)**. The majority of installs don't need per-member attribution, so it is
+**not** in the base install — you add it on demand.
+
+> **One-time setup.** Run it once after the base install; it persists across
+> restarts. Budget a few minutes for the download.
+
+**Native install** — one command installs the extra into the venv:
+
+```bash
+./skipper.sh enable-voice          # default: installs the CPU-only torch wheel
+./skipper.sh enable-voice --gpu    # installs the CUDA (GPU) torch build instead
+./skipper.sh enable-voice --cpu    # force the CPU wheel explicitly
+./skipper.sh enable-voice --dry-run  # print the exact pip command, install nothing
+```
+
+- **Default is the CPU wheel** (`--extra-index-url
+  https://download.pytorch.org/whl/cpu`) — smaller, faster to install, and the
+  right choice for the vast majority of homes. Inference already runs on CPU.
+- **`--gpu`** installs the CUDA build from the default index for machines with an
+  NVIDIA GPU.
+- **A torch you already installed is honored** — if a compatible torch is present,
+  `enable-voice` won't reinstall or override it, so your existing build is kept.
+- It requires the base install to have run first (it installs into `.venv`) and is
+  safe to re-run (idempotent).
+
+**Docker install** — dependencies are baked into the image, so a host-side pip
+won't reach the container. Add the extra to the image and rebuild:
+
+1. In the `Dockerfile`, right after `RUN pip install -r requirements.txt`, add:
+   ```dockerfile
+   RUN pip install -r requirements-voice.txt \
+       --extra-index-url https://download.pytorch.org/whl/cpu
+   ```
+   Drop the `--extra-index-url` line to build the CUDA/GPU torch instead.
+2. Rebuild and recycle the stack:
+   ```bash
+   ./skipper.sh update
+   ```
+
+Running `./skipper.sh enable-voice` under Docker prints these same steps.
+
+**Supported platforms:** anywhere a prebuilt `torch` wheel exists — Linux
+(x86-64 and aarch64) and macOS are the common cases. On an unsupported OS/arch
+`enable-voice` stops with a clear message naming your platform and pointing back
+here, rather than dumping a raw pip error.
+
+**Verify:**
+
+```bash
+./skipper.sh status
+```
+
+should now report **Voice speaker-ID: installed**. (Or directly:
+`./.venv/bin/python -c 'from app_platform.voice import speaker_id;
+print(speaker_id.available())'` should print `True`.) Then, in a voice session,
+say "Skipper, this is <your name>" to enroll, and it will attribute your later
+turns to you.
+
 ---
 
 ## Google Drive Backups

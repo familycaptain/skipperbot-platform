@@ -115,8 +115,9 @@ When it's up, open the web UI to pick your **LLM provider** and enter its key.
 (Everything else in `.env` is optional — integrations you can add later.)
 
 **First boot takes a while — be patient.** Docker downloads the Postgres image,
-builds the agent image, installs all the Python dependencies (including the
-voice/speaker-ID stack, which compiles some native code), and builds the web UI.
+builds the agent image, installs all the Python dependencies, and builds the web UI.
+(Multi-speaker voice attribution is an opt-in extra, not part of this base build —
+enable it later with `./skipper.sh enable-voice`; see the Voice docs.)
 You're effectively installing a small operating system with a lot of components,
 so plan for **around 10 minutes** (longer on a Pi or slower disk) — it is not
 hung, just working. Subsequent boots take seconds, since everything is cached.

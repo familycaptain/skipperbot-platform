@@ -1,0 +1,14 @@
+# ---- Voice speaker identification (opt-in extra) ----
+# Installed on demand by `./skipper.sh enable-voice`, NOT part of the base install
+# (requirements.txt). resemblyzer produces the 256-d voice embeddings the host
+# relay uses to attribute each spoken turn to an enrolled household member; see
+# app_platform/voice/speaker_id.py.
+#
+# torch is resemblyzer's heavy dependency (~500MB). The BUILD is chosen at ENABLE
+# time, not pinned here: `enable-voice` defaults to the CPU wheel
+# (--extra-index-url https://download.pytorch.org/whl/cpu), `--gpu` installs the
+# CUDA build, and a pre-installed torch is honored. So this file pins only a floor
+# and deliberately does NOT hard-pin a `+cpu` local version — that would forbid a
+# GPU build. See docs/03-extended-functionality.md → Voice.
+resemblyzer>=0.1.4
+torch>=1.0.1

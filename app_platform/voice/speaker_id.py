@@ -5,10 +5,11 @@ the right identity to a voice turn (permissions, personal data, "remind *me*").
 The relay (app_platform/voice/relay.py) buffers each turn's user audio and calls
 identify(); enrollment is voice-driven ("Skipper, this is <name>").
 
-Uses resemblyzer voice embeddings (256-d). resemblyzer ships in the base
-requirements, so this is on for everyone. available() still guards every call
-defensively — if the import ever fails, enroll/identify degrade to no-ops and
-voice keeps working without speaker-ID.
+Uses resemblyzer voice embeddings (256-d). resemblyzer is an OPT-IN extra — it is
+NOT in the base install; enable it after setup with `./skipper.sh enable-voice`
+(see requirements-voice.txt / docs/03-extended-functionality.md → Voice).
+available() guards every call defensively, so when the extra is absent
+enroll/identify degrade to no-ops and voice keeps working without speaker-ID.
 
 Scope: per-TURN attribution (each VAD-segmented turn → one speaker). It does NOT
 separate two people talking simultaneously in the same segment ("cocktail party"

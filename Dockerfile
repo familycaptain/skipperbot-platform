@@ -61,9 +61,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# ----- Python dependencies (incl. resemblyzer for voice speaker-ID) -----
-# build-essential (installed above) is needed here to compile resemblyzer's
-# webrtcvad dep from source on aarch64.
+# ----- Python dependencies -----
+# Voice speaker-ID (resemblyzer + torch) is an OPT-IN extra, NOT installed here —
+# see requirements-voice.txt and docs/03-extended-functionality.md → Voice for the
+# image-rebuild path. build-essential (installed above) stays available so that
+# extra can compile resemblyzer's webrtcvad dep from source on aarch64 when voice
+# is enabled via a rebuild.
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
