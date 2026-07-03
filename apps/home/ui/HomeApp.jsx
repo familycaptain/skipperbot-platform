@@ -4,6 +4,7 @@ import {
   CheckCircle, Plus, ChevronDown, ChevronUp, X, Search,
   Clock, AlertCircle, CalendarCheck, RotateCcw, Trash2, Edit2,
   AlertTriangle, Camera, Image as ImageIcon,
+  Star, Phone, Mail,
 } from "lucide-react";
 import PristineEmpty from "../../../web/src/components/PristineEmpty";
 import { getAppManifest } from "../../../web/src/apps/registry";
@@ -71,7 +72,7 @@ export default function HomeApp({ appId, userId, context = {}, onTitle, onOpenAp
           <InsuranceTab userId={userId} />
         )}
         {activeTab === "contractors" && (
-          <ContractorsTab />
+          <ContractorsTab userId={userId} />
         )}
       </div>
     </div>
@@ -92,6 +93,18 @@ function fmtDate(dateStr) {
   return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
     month: "short", day: "numeric", year: "numeric",
   });
+}
+
+function fmtRelative(dateStr) {
+  const diff = daysDiff(dateStr);
+  if (diff == null) return "—";
+  const ago = -diff;
+  if (ago < 0) return fmtDate(dateStr);
+  if (ago === 0) return "today";
+  if (ago === 1) return "yesterday";
+  if (ago < 30) return `${ago} days ago`;
+  if (ago < 365) { const m = Math.round(ago / 30); return `${m} month${m === 1 ? "" : "s"} ago`; }
+  const y = Math.round(ago / 365); return `${y} year${y === 1 ? "" : "s"} ago`;
 }
 
 function intervalLabel(days) {
@@ -2443,12 +2456,384 @@ function HomeIssueCard({ issue, expanded, onToggle, onUpdate, onDelete, userId, 
 }
 
 
-function ContractorsTab() {
+/* ── Star rating (interactive + readonly) ── */
+function StarRating({ value, onChange, readonly = false }) {
+  const [hover, setHover] = useState(0);
   return (
-    <div className="flex flex-col items-center justify-center h-full text-faint">
-      <HardHat size={36} className="text-faint mb-3" />
-      <p className="text-sm font-medium text-muted">Contractors</p>
-      <p className="text-xs mt-1">Electricians, plumbers, roofers, painters &amp; more — coming soon</p>
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map(n => (
+        <Star
+          key={n}
+          size={14}
+          className={`transition-colors ${
+            n <= (hover || value || 0)
+              ? "fill-amber-400 text-amber-400"
+              : "text-faint"
+          } ${readonly ? "cursor-default" : "cursor-pointer"}`}
+          onClick={() => !readonly && onChange && onChange(n === value ? null : n)}
+          onMouseEnter={() => !readonly && setHover(n)}
+          onMouseLeave={() => !readonly && setHover(0)}
+        />
+      ))}
+    </div>
+  );
+}
+
+const CONTRACTOR_TRADES = [
+  "Electrician", "Plumber", "Roofer", "Painter", "HVAC", "Landscaper", "Handyman", "General",
+];
+
+/* ── Add Contractor Form ── */
+function AddContractorForm({ trades = [], userId, onSave, onCancel }) {
+  const [form, setForm] = useState({
+    name: "", trade: "General", company: "", phone: "", email: "",
+    rating: null, last_used: "", jobs_history: "", notes: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!form.name.trim()) return;
+    setSaving(true);
+    try {
+      const body = {
+        name: form.name.trim(),
+        trade: form.trade.trim() || "General",
+        company: form.company.trim(),
+        phone: form.phone.trim(),
+        email: form.email.trim(),
+        rating: form.rating || null,
+        last_used: form.last_used || null,
+        jobs_history: form.jobs_history.trim(),
+        notes: form.notes.trim(),
+        created_by: userId || "",
+      };
+      const res = await fetch("/api/apps/home/contractors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const contractor = await res.json();
+      onSave(contractor);
+    } catch (err) {
+      alert("Failed to add contractor: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const datalistTrades = [...new Set([...CONTRACTOR_TRADES, ...trades])];
+  const inputCls = "w-full surface-panel border border-subtle rounded px-2.5 py-1.5 text-xs text-default focus:outline-none focus:border-indigo-500";
+
+  return (
+    <form onSubmit={handleSubmit} className="surface-card border border-subtle rounded-lg p-4 space-y-3 mb-2">
+      <p className="text-xs font-semibold text-muted uppercase tracking-wide">New Contractor</p>
+      <input className={inputCls} placeholder="Name (e.g. Mike Jones) *" value={form.name}
+        onChange={e => set("name", e.target.value)} autoFocus required />
+      <div className="grid grid-cols-2 gap-2">
+        <input className={inputCls} placeholder="Trade (e.g. Electrician)" value={form.trade}
+          onChange={e => set("trade", e.target.value)} list="contractor-trades" />
+        <datalist id="contractor-trades">
+          {datalistTrades.map(t => <option key={t} value={t} />)}
+        </datalist>
+        <input className={inputCls} placeholder="Company (optional)" value={form.company}
+          onChange={e => set("company", e.target.value)} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <input className={inputCls} type="tel" placeholder="Phone" value={form.phone}
+          onChange={e => set("phone", e.target.value)} />
+        <input className={inputCls} type="email" placeholder="Email" value={form.email}
+          onChange={e => set("email", e.target.value)} />
+      </div>
+      <div className="flex items-center gap-3">
+        <label className="text-xs text-faint">Rating</label>
+        <StarRating value={form.rating} onChange={v => set("rating", v)} />
+      </div>
+      <div>
+        <label className="block text-xs text-faint mb-1">Last used</label>
+        <input className={inputCls} type="date" value={form.last_used}
+          onChange={e => set("last_used", e.target.value)} />
+      </div>
+      <textarea className={`${inputCls} resize-none`} rows={2} placeholder="Jobs history (past work done)"
+        value={form.jobs_history} onChange={e => set("jobs_history", e.target.value)} />
+      <textarea className={`${inputCls} resize-none`} rows={2} placeholder="Notes (optional)"
+        value={form.notes} onChange={e => set("notes", e.target.value)} />
+
+      <div className="flex items-center justify-end gap-2">
+        <button type="button" onClick={onCancel} className="px-3 py-1.5 text-xs text-muted hover:text-[var(--ds-text)]">Cancel</button>
+        <button type="submit" disabled={saving || !form.name.trim()}
+          className="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-on-accent rounded">
+          {saving ? "Saving..." : "Add Contractor"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/* ── Contractor Card ── */
+function ContractorCard({ contractor, expanded, onToggle, onUpdate, onDelete, trades = [] }) {
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  async function handleEditSave() {
+    setSaving(true);
+    try {
+      const body = {
+        ...editForm,
+        rating: editForm.rating || null,
+        last_used: editForm.last_used || null,
+      };
+      const res = await fetch(`/api/apps/home/contractors/${contractor.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) { onUpdate(await res.json()); setEditMode(false); }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm(`Delete "${contractor.name}"?`)) return;
+    await fetch(`/api/apps/home/contractors/${contractor.id}`, { method: "DELETE" });
+    onDelete(contractor.id);
+  }
+
+  function startEdit() {
+    setEditForm({
+      name: contractor.name,
+      trade: contractor.trade || "General",
+      company: contractor.company || "",
+      phone: contractor.phone || "",
+      email: contractor.email || "",
+      rating: contractor.rating || null,
+      last_used: contractor.last_used || "",
+      jobs_history: contractor.jobs_history || "",
+      notes: contractor.notes || "",
+    });
+    setEditMode(true);
+  }
+
+  const datalistTrades = [...new Set([...CONTRACTOR_TRADES, ...trades])];
+  const inputCls = "w-full surface-panel border border-subtle rounded px-2 py-1 text-xs text-default outline-none focus:border-indigo-500";
+
+  return (
+    <div className="border rounded-lg overflow-hidden transition-all surface-card border-subtle">
+      <div className="flex items-start gap-2.5 px-3 py-2.5 cursor-pointer" onClick={onToggle}>
+        <span className="w-2 h-2 rounded-full shrink-0 mt-1.5 bg-indigo-500" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium text-default">{contractor.name}</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium surface-raised text-default">{contractor.trade || "General"}</span>
+            {contractor.rating != null && <StarRating value={contractor.rating} readonly />}
+            {contractor.company && (
+              <span className="text-[10px] text-faint surface-raised px-1.5 py-0.5 rounded">{contractor.company}</span>
+            )}
+          </div>
+        </div>
+        <ChevronDown size={14} className={`text-faint shrink-0 mt-0.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </div>
+
+      {expanded && (
+        <div className="border-t border-subtle px-3 py-3">
+          {editMode ? (
+            <div className="space-y-2">
+              <div>
+                <label className="text-[10px] text-faint">Name</label>
+                <input className={inputCls} value={editForm.name || ""}
+                  onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-faint">Trade</label>
+                  <input className={inputCls} value={editForm.trade || ""} list="contractor-trades-edit"
+                    onChange={e => setEditForm(p => ({ ...p, trade: e.target.value }))} />
+                  <datalist id="contractor-trades-edit">
+                    {datalistTrades.map(t => <option key={t} value={t} />)}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="text-[10px] text-faint">Company</label>
+                  <input className={inputCls} value={editForm.company || ""}
+                    onChange={e => setEditForm(p => ({ ...p, company: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-faint">Phone</label>
+                  <input className={inputCls} type="tel" value={editForm.phone || ""}
+                    onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-[10px] text-faint">Email</label>
+                  <input className={inputCls} type="email" value={editForm.email || ""}
+                    onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="text-[10px] text-faint">Rating</label>
+                <StarRating value={editForm.rating} onChange={v => setEditForm(p => ({ ...p, rating: v }))} />
+              </div>
+              <div>
+                <label className="text-[10px] text-faint">Last used</label>
+                <input className={inputCls} type="date" value={editForm.last_used || ""}
+                  onChange={e => setEditForm(p => ({ ...p, last_used: e.target.value }))} />
+              </div>
+              <textarea className={`${inputCls} resize-none`} rows={2} placeholder="Jobs history"
+                value={editForm.jobs_history || ""} onChange={e => setEditForm(p => ({ ...p, jobs_history: e.target.value }))} />
+              <textarea className={`${inputCls} resize-none`} rows={2} placeholder="Notes"
+                value={editForm.notes || ""} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} />
+              <div className="flex gap-1">
+                <button onClick={handleEditSave} disabled={saving}
+                  className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-on-accent rounded disabled:opacity-50">
+                  {saving ? "Saving..." : "Save"}
+                </button>
+                <button onClick={() => setEditMode(false)} className="px-3 py-1 text-xs text-muted hover:text-[var(--ds-text)]">Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-2">
+                {contractor.phone && <div className="flex items-center gap-1"><Phone size={11} className="text-faint" /><a href={`tel:${contractor.phone}`} className="text-muted hover:text-[var(--ds-text)]" onClick={e => e.stopPropagation()}>{contractor.phone}</a></div>}
+                {contractor.email && <div className="flex items-center gap-1"><Mail size={11} className="text-faint" /><a href={`mailto:${contractor.email}`} className="text-muted hover:text-[var(--ds-text)]" onClick={e => e.stopPropagation()}>{contractor.email}</a></div>}
+                {contractor.last_used && <div><span className="text-faint">Last used: </span><span className="text-muted">{fmtRelative(contractor.last_used)}</span></div>}
+              </div>
+              {contractor.jobs_history && <div className="text-xs mb-2"><span className="text-faint">Jobs: </span><span className="text-muted">{contractor.jobs_history}</span></div>}
+              {contractor.notes && <p className="text-xs text-faint italic mb-2">{contractor.notes}</p>}
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 mt-3">
+                <button onClick={startEdit}
+                  className="flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-[var(--ds-text)] border border-subtle rounded">
+                  <Edit2 size={11} /> Edit
+                </button>
+                <button onClick={handleDelete}
+                  className="flex items-center gap-1 px-2 py-1 text-xs text-red-500 hover:text-red-400 border border-red-900/40 rounded">
+                  <Trash2 size={11} /> Delete
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Contractors Tab ── */
+function ContractorsTab({ userId }) {
+  const [contractors, setContractors] = useState([]);
+  const [trades, setTrades] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [tradeFilter, setTradeFilter] = useState("All");
+  const [showAdd, setShowAdd] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set("q", search.trim());
+      else if (tradeFilter !== "All") params.set("trade", tradeFilter);
+      const res = await fetch(`/api/apps/home/contractors?${params}`);
+      const d = await res.json();
+      setContractors(d.contractors || []);
+      if (d.trades?.length) setTrades(d.trades);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, tradeFilter]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const allTrades = ["All", ...trades];
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-subtle shrink-0">
+        <div className="relative flex-1">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-faint" />
+          <input
+            className="w-full surface-panel border border-subtle rounded pl-7 pr-2.5 py-1.5 text-xs text-default placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+            placeholder="Search contractors..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setTradeFilter("All"); }}
+          />
+          {search && <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-faint hover:text-[var(--ds-text)]"><X size={12} /></button>}
+        </div>
+        {!search && allTrades.length > 1 && (
+          <select
+            className="surface-panel border border-subtle rounded px-2 py-1.5 text-xs text-default focus:outline-none focus:border-indigo-500"
+            value={tradeFilter}
+            onChange={e => setTradeFilter(e.target.value)}
+          >
+            {allTrades.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        )}
+        <button
+          onClick={() => setShowAdd(v => !v)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded transition-colors ${
+            showAdd ? "surface-raised text-on-accent" : "bg-indigo-600 hover:bg-indigo-500 text-on-accent"
+          }`}
+        >
+          {showAdd ? <X size={13} /> : <Plus size={13} />}
+          {showAdd ? "Cancel" : "Add Contractor"}
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0">
+        {showAdd && (
+          <AddContractorForm
+            trades={trades}
+            userId={userId}
+            onSave={(contractor) => { setContractors(prev => [contractor, ...prev]); setShowAdd(false); setExpandedId(contractor.id); load(); }}
+            onCancel={() => setShowAdd(false)}
+          />
+        )}
+        {loading ? (
+          <div className="flex items-center justify-center h-32 text-faint text-sm">Loading...</div>
+        ) : contractors.length === 0 ? (
+          <PristineEmpty
+            appId="home"
+            blurb={getAppManifest("home")?.heroes?.contractors}
+            records={contractors}
+            loading={loading}
+            filterActive={!!search.trim() || tradeFilter !== "All"}
+            fallback={
+              <div className="flex flex-col items-center justify-center h-48 text-faint">
+                <HardHat size={32} className="text-default mb-3" />
+                <p className="text-sm font-medium text-muted">
+                  {search ? `No contractors matching "${search}"` : "No contractors yet"}
+                </p>
+                <p className="text-xs mt-1 text-faint">
+                  {!search && 'Click "Add Contractor" to get started'}
+                </p>
+              </div>
+            }
+          />
+        ) : (
+          <div className="space-y-2">
+            {contractors.map(contractor => (
+              <ContractorCard
+                key={contractor.id}
+                contractor={contractor}
+                expanded={expandedId === contractor.id}
+                onToggle={() => setExpandedId(prev => prev === contractor.id ? null : contractor.id)}
+                onUpdate={(updated) => setContractors(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c))}
+                onDelete={(id) => { setContractors(prev => prev.filter(c => c.id !== id)); if (expandedId === id) setExpandedId(null); }}
+                trades={trades}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

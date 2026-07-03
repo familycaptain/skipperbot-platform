@@ -22,6 +22,9 @@ entity_types:
   - prefix: "hip"
     name: Home Insurance Policy
     table: home_insurance_policies
+  - prefix: "hc"
+    name: Home Contractor
+    table: home_contractors
 
 tool_category:
   description: >
@@ -90,3 +93,13 @@ tool_category:
     - renewal
     - insurer
     - claim
+    # Contractors
+    - contractor
+    - electrician
+    - plumber
+    - roofer
+    - painter
+    - handyman
+    - landscaper
+    - hvac
+    - service provider

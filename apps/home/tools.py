@@ -649,6 +649,223 @@ def delete_home_appliance(appliance_id: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Home Contractors
+# ---------------------------------------------------------------------------
+
+def _norm_contractor_rating(rating):
+    """Coerce a rating to an int in 1..5, else None (sentinel -1/0 = not set)."""
+    try:
+        r = int(rating)
+    except (TypeError, ValueError):
+        return None
+    return r if 1 <= r <= 5 else None
+
+
+def create_home_contractor(
+    name: str,
+    created_by: str,
+    trade: str = "General",
+    company: str = "",
+    phone: str = "",
+    email: str = "",
+    rating: int = -1,
+    last_used: str = "",
+    jobs_history: str = "",
+    notes: str = "",
+) -> str:
+    """Add a home service provider / contractor to the directory (trade, contact, rating).
+
+    Use for things like "add our electrician Mike from Bright Sparks, phone 555-1234,
+    rated 5 stars" or "track the plumber we used last month".
+
+    Args:
+        name: Contractor / person name (e.g. "Mike Jones", "Bright Sparks Electric").
+        created_by: Who is adding it (a person's name).
+        trade: Trade — Electrician, Plumber, Roofer, Painter, HVAC, Landscaper, Handyman, General, etc.
+        company: Company / business name.
+        phone: Phone number.
+        email: Email address.
+        rating: Rating 1-5 (-1 = not set).
+        last_used: Date last used (YYYY-MM-DD).
+        jobs_history: Free-text notes on past jobs done.
+        notes: Additional notes.
+
+    Returns:
+        Confirmation with contractor ID.
+
+    Ack: Adding contractor "{name}"...
+    """
+    try:
+        if not name or not name.strip():
+            return "Error: name is required."
+        contractor_id = f"hc-{uuid.uuid4().hex[:8]}"
+        contractor = {
+            "id": contractor_id,
+            "name": name.strip(),
+            "trade": trade.strip() if trade else "General",
+            "company": company.strip() if company else "",
+            "phone": phone.strip() if phone else "",
+            "email": email.strip() if email else "",
+            "rating": _norm_contractor_rating(rating),
+            "last_used": last_used.strip() if last_used and last_used.strip() else None,
+            "jobs_history": jobs_history.strip() if jobs_history else "",
+            "notes": notes.strip() if notes else "",
+            "created_by": created_by.strip() if created_by else "",
+        }
+        result = _dl.create_contractor(contractor)
+        if not result:
+            return "Error: Failed to create contractor."
+        logger.info("HOME: Created contractor '%s' (%s)", name.strip(), contractor_id)
+        return f"Contractor added: '{name.strip()}' ({contractor_id}) — trade: {contractor['trade']}"
+    except Exception as e:
+        return f"Error in create_home_contractor: {str(e)}"
+
+
+def list_home_contractors(trade: str = "") -> str:
+    """List home contractors / service providers.
+
+    Args:
+        trade: Filter by trade (e.g. "Electrician", "Plumber"). Empty = all.
+
+    Returns:
+        Formatted list of contractors with trade, company and rating.
+
+    Ack: Listing home contractors...
+    """
+    try:
+        contractors = _dl.get_all_contractors(
+            trade=trade.strip() if trade else None,
+        )
+        if not contractors:
+            return "No contractors found."
+
+        lines = [f"Home Contractors ({len(contractors)}):\n"]
+        for c in contractors:
+            company = f" — {c['company']}" if c.get("company") else ""
+            rating = ""
+            if c.get("rating"):
+                rating = f" {'★' * c['rating']} ({c['rating']}/5)"
+            phone = f" · {c['phone']}" if c.get("phone") else ""
+            lines.append(f"- {c['name']} [{c['trade']}]{company}{rating}{phone} ({c['id']})")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error in list_home_contractors: {str(e)}"
+
+
+def get_home_contractor(contractor_id: str) -> str:
+    """Get full details of a home contractor.
+
+    Args:
+        contractor_id: The contractor ID (hc-xxx).
+
+    Returns:
+        Full contractor details.
+
+    Ack: Loading contractor details...
+    """
+    try:
+        if not contractor_id or not contractor_id.strip():
+            return "Error: contractor_id is required."
+        c = _dl.get_contractor(contractor_id.strip())
+        if not c:
+            return f"Error: Contractor '{contractor_id}' not found."
+
+        company = f"\nCompany: {c['company']}" if c.get("company") else ""
+        phone = f"\nPhone: {c['phone']}" if c.get("phone") else ""
+        email = f"\nEmail: {c['email']}" if c.get("email") else ""
+        rating = f"\nRating: {'★' * c['rating']} ({c['rating']}/5)" if c.get("rating") else ""
+        last_used = f"\nLast used: {c['last_used']}" if c.get("last_used") else ""
+        jobs = f"\nJobs: {c['jobs_history']}" if c.get("jobs_history") else ""
+        notes = f"\nNotes: {c['notes']}" if c.get("notes") else ""
+
+        return (
+            f"{c['name']} ({c['id']})\n"
+            f"Trade: {c.get('trade', 'General')}"
+            f"{company}{phone}{email}{rating}{last_used}{jobs}{notes}"
+        ).strip()
+    except Exception as e:
+        return f"Error in get_home_contractor: {str(e)}"
+
+
+def update_home_contractor(
+    contractor_id: str,
+    name: str = "",
+    trade: str = "",
+    company: str = "",
+    phone: str = "",
+    email: str = "",
+    rating: int = -1,
+    last_used: str = "",
+    jobs_history: str = "",
+    notes: str = "",
+) -> str:
+    """Update a home contractor. Only provided fields are changed.
+
+    Args:
+        contractor_id: The contractor ID (hc-xxx).
+        name: New name (empty = keep).
+        trade: New trade (empty = keep).
+        company: New company (empty = keep).
+        phone: New phone (empty = keep).
+        email: New email (empty = keep).
+        rating: New rating 1-5 (-1 = keep, 0 = clear).
+        last_used: New last-used date YYYY-MM-DD (empty = keep).
+        jobs_history: New jobs history (empty = keep).
+        notes: New notes (empty = keep).
+
+    Returns:
+        Confirmation of update.
+
+    Ack: Updating contractor {contractor_id}...
+    """
+    try:
+        if not contractor_id or not contractor_id.strip():
+            return "Error: contractor_id is required."
+        updates = {}
+        if name: updates["name"] = name.strip()
+        if trade: updates["trade"] = trade.strip()
+        if company: updates["company"] = company.strip()
+        if phone: updates["phone"] = phone.strip()
+        if email: updates["email"] = email.strip()
+        if rating >= 0: updates["rating"] = _norm_contractor_rating(rating)
+        if last_used: updates["last_used"] = last_used.strip()
+        if jobs_history: updates["jobs_history"] = jobs_history.strip()
+        if notes: updates["notes"] = notes.strip()
+
+        if not updates:
+            return "No fields to update."
+        ok = _dl.update_contractor(contractor_id.strip(), updates)
+        if ok:
+            fields = ", ".join(updates.keys())
+            return f"Contractor {contractor_id} updated. Changed: {fields}"
+        return f"Error: Contractor '{contractor_id}' not found."
+    except Exception as e:
+        return f"Error in update_home_contractor: {str(e)}"
+
+
+def delete_home_contractor(contractor_id: str) -> str:
+    """Delete a home contractor permanently.
+
+    Args:
+        contractor_id: The contractor ID (hc-xxx).
+
+    Returns:
+        Confirmation or error.
+
+    Ack: Deleting contractor {contractor_id}...
+    """
+    try:
+        if not contractor_id or not contractor_id.strip():
+            return "Error: contractor_id is required."
+        ok = _dl.delete_contractor(contractor_id.strip())
+        if ok:
+            return f"Contractor '{contractor_id}' deleted."
+        return f"Error: Contractor '{contractor_id}' not found."
+    except Exception as e:
+        return f"Error in delete_home_contractor: {str(e)}"
+
+
+# ---------------------------------------------------------------------------
 # Home Insurance Policies
 # ---------------------------------------------------------------------------
 

@@ -265,6 +265,112 @@ async def api_unlink_home_appliance_image(appliance_id: str, image_id: str):
 
 
 # ---------------------------------------------------------------------------
+# Home Contractors
+# ---------------------------------------------------------------------------
+
+def _norm_rating(val):
+    """Coerce a rating to an int in 1..5, else None."""
+    try:
+        r = int(val)
+    except (TypeError, ValueError):
+        return None
+    return r if 1 <= r <= 5 else None
+
+
+class CreateContractorRequest(BaseModel):
+    name: str
+    trade: str = "General"
+    company: str = ""
+    phone: str = ""
+    email: str = ""
+    rating: int | None = None
+    last_used: str | None = None
+    jobs_history: str = ""
+    notes: str = ""
+    created_by: str = ""
+
+
+@router.get("/contractors")
+async def api_list_home_contractors(q: str = "", trade: str = ""):
+    def _fetch():
+        if q.strip():
+            return _dl.search_contractors(q.strip())
+        return _dl.get_all_contractors(trade if trade else None)
+    contractors = await asyncio.to_thread(_fetch)
+    trades = await asyncio.to_thread(_dl.get_contractor_trades)
+    return {
+        "contractors": contractors,
+        "count": len(contractors),
+        "trades": trades,
+    }
+
+
+@router.post("/contractors")
+async def api_create_home_contractor(request: CreateContractorRequest, http_request: Request):
+    request.created_by = _actor(http_request)
+    contractor_id = f"hc-{uuid.uuid4().hex[:8]}"
+    contractor = {
+        "id": contractor_id,
+        "name": request.name.strip(),
+        "trade": request.trade.strip() or "General",
+        "company": request.company.strip(),
+        "phone": request.phone.strip(),
+        "email": request.email.strip(),
+        "rating": _norm_rating(request.rating),
+        "last_used": request.last_used or None,
+        "jobs_history": request.jobs_history.strip(),
+        "notes": request.notes.strip(),
+        "created_by": request.created_by.strip(),
+    }
+    result = await asyncio.to_thread(_dl.create_contractor, contractor)
+    if not result:
+        raise HTTPException(status_code=400, detail="Failed to create contractor")
+    return result
+
+
+@router.get("/contractors/{contractor_id}")
+async def api_get_home_contractor(contractor_id: str):
+    contractor = await asyncio.to_thread(_dl.get_contractor, contractor_id)
+    if not contractor:
+        raise HTTPException(status_code=404, detail="Contractor not found")
+    return contractor
+
+
+class UpdateContractorRequest(BaseModel):
+    name: str | None = None
+    trade: str | None = None
+    company: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    rating: int | None = None
+    last_used: str | None = None
+    jobs_history: str | None = None
+    notes: str | None = None
+
+
+@router.put("/contractors/{contractor_id}")
+async def api_update_home_contractor(contractor_id: str, request: UpdateContractorRequest):
+    updates = {k: v for k, v in request.model_dump().items() if v is not None}
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    if "rating" in updates:
+        updates["rating"] = _norm_rating(updates["rating"])
+    ok = await asyncio.to_thread(_dl.update_contractor, contractor_id, updates)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Contractor not found")
+    contractor = await asyncio.to_thread(_dl.get_contractor, contractor_id)
+    return contractor
+
+
+@router.delete("/contractors/{contractor_id}")
+async def api_delete_home_contractor(contractor_id: str):
+    ok = await asyncio.to_thread(_dl.delete_contractor, contractor_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Contractor not found")
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
 # Home Insurance Policies
 # ---------------------------------------------------------------------------
 
