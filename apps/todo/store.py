@@ -113,14 +113,18 @@ def ensure_default_list(user_id: str, display_name: str = "") -> dict:
 
     Returns the (possibly freshly-created) config dict.
     """
-    cfg = _dl_todo.get_config(user_id)
-    if cfg and cfg["default_list_id"]:
-        from apps.lists.data import get_list
-        if get_list(cfg["default_list_id"]):
-            return cfg
+    from apps.lists.data import get_list
 
+    # Fast path: config already points at a live list — no lock, no writes.
+    cfg = _dl_todo.get_config(user_id)
+    if cfg and cfg["default_list_id"] and get_list(cfg["default_list_id"]):
+        return cfg
+
+    # Miss: bootstrap atomically. The To-Do UI opens /config and /items
+    # concurrently (separate threads), so a plain create-here races and makes
+    # two "<user>'s To-Do" lists. claim_default_list serializes bootstrappers
+    # with a per-user advisory lock so exactly ONE list is created. The cross-app
+    # calls are injected so apps/todo/data.py stays free of apps.lists imports.
     from apps.lists.store import create_list
     name = f"{display_name or user_id.title()}'s To-Do"
-    lst = create_list(name=name, created_by=user_id)
-
-    return _dl_todo.upsert_config(user_id, default_list_id=lst["id"])
+    return _dl_todo.claim_default_list(user_id, create_list, get_list, name)

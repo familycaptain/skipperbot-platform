@@ -1,0 +1,28 @@
+kind: specification
+id: todo.default-list.idempotent-bootstrap
+title: To-Do default-list bootstrap is idempotent under concurrent first-load
+state: live
+autonomy: gated
+behavior: 'ensure_default_list is an atomic get-or-create: fast path returns when the config
+  points at a live list; on a miss a per-user pg_advisory_xact_lock serializes bootstrappers
+  so N concurrent first-load callers create EXACTLY ONE ''<user>''s To-Do'' list (winner creates,
+  losers reuse). A forward-only idempotent migration collapses existing duplicates: per user
+  it repoints default_list_id to the data-bearing survivor and deletes only zero-item non-keeper
+  same-name siblings not referenced by any default/backlog list (never a list with items;
+  never leaves config dangling).'
+implements:
+- apps/todo/store.py
+- apps/todo/data.py
+- apps/todo/migrations/002_dedupe_default_lists.sql
+tests: []
+links: {}
+notes: 'Verified live at Gate-2 (test host): existing dups collapsed (2->1, global dup scan
+  0); fresh user + 5x10-way concurrent burst => exactly 1 list/user; data-safety (config on
+  empty twin, items under the other) repoints to the item-bearing survivor with zero loss;
+  idempotent (re-run removes 0). KNOWN LIMITATION: under a synthetic 10-way same-user burst
+  one /config hit a pool-exhaustion 500 (losers park a conn while blocked on the 3s lock vs
+  the small shared pool) — NOT a duplicate (end state still 1 list); real first-open concurrency
+  is ~2. Possible follow-up: pg_try_advisory_xact_lock + release-and-retry to avoid holding
+  a conn during the wait. Auto-create-on-read KEPT; Lists-app visibility unchanged (both deferred
+  per operator).'
+verified: true
