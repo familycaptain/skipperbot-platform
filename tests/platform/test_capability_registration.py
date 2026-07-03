@@ -99,10 +99,11 @@ class TestDynamicRegistration(_RegistryTestBase):
 
 class TestStaticSetAuthoritative(_RegistryTestBase):
     def test_static_name_collision_rejected(self):
-        # 'openai' is a static platform capability (env OPENAI_API_KEY).
+        # 'openai' is a static platform capability. Post #44/#71 it is provider-agnostic:
+        # env_vars=() and its state is driven by extra_check=_llm_configured (a model tier must be
+        # configured), NOT by OPENAI_API_KEY. The stubbed settings layer reads no tiers configured,
+        # so the baseline is OFF regardless of env — which is what lets us prove the impostor loses.
         with mock.patch.dict("os.environ", {}, clear=False):
-            # Force openai OFF baseline (clear key) so we can prove the
-            # registered impostor didn't change behavior.
             with mock.patch.dict("os.environ", {"OPENAI_API_KEY": ""}):
                 baseline_enabled = capabilities.is_enabled("openai")
                 baseline_msg = capabilities.not_configured_message("openai")

@@ -107,7 +107,8 @@ class ChatProvider(Protocol):
     def chat(self, *, turns: list[Turn], tools: list[dict] | None,
              model: str, temperature: float | None = None,
              max_output_tokens: int | None = None,
-             force_tool: str | None = None) -> ChatResult:
+             force_tool: str | None = None,
+             api_key: str | None = None) -> ChatResult:
         ...
 
     def capabilities(self, model: str) -> ModelCapabilities:
@@ -117,7 +118,8 @@ class ChatProvider(Protocol):
 @runtime_checkable
 class EmbeddingProvider(Protocol):
     """Vendor-agnostic embeddings."""
-    def embed(self, *, texts: list[str], model: str) -> list[list[float]]:
+    def embed(self, *, texts: list[str], model: str,
+              api_key: str | None = None) -> list[list[float]]:
         ...
 
     @property

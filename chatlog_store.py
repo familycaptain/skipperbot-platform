@@ -17,17 +17,17 @@ import data_layer.chatlogs as _dl_chat
 
 load_dotenv()
 
-EMBEDDING_MODEL = "text-embedding-3-small"
 from providers.model_config import provisioned_embedding_dim as _provisioned_embedding_dim
 EMBEDDING_DIM = _provisioned_embedding_dim()  # provisioned at setup; default 1536 (MODEL_FLEXIBILITY #44)
 
 def _get_embedding(text: str) -> list[float]:
-    """Get an embedding vector via the vendor-neutral provider (issue #39).
+    """Get an embedding vector via the vendor-neutral provider (MODEL_FLEXIBILITY #44/#71).
 
-    Truncation + model string stay caller-side so vectors are unchanged; the
-    provider never truncates or rewrites the model."""
-    from providers.registry import get_embedding_provider
-    vecs = get_embedding_provider().embed(texts=[text[:8000]], model=EMBEDDING_MODEL)
+    Connector, embedding MODEL, and key ALL come from the "embedding" tier — no hardcoded model
+    and no OPENAI_API_KEY assumption. Truncation stays caller-side so vectors are unchanged."""
+    from providers.tier_resolver import resolve_embedding
+    provider, model, api_key = resolve_embedding("embedding")
+    vecs = provider.embed(texts=[text[:8000]], model=model, api_key=api_key)
     return vecs[0]
 
 

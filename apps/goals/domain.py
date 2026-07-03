@@ -17,11 +17,9 @@ import json
 import os
 from datetime import datetime, timedelta
 
-from config import logger, SMART_MODEL, PROMPTS_DIR
+from config import logger, PROMPTS_DIR
 from app_platform.time import get_timezone
 import agent_loop
-DUMB_MODEL = os.getenv("DUMB_MODEL", "gpt-5-mini")
-
 # Threshold: below this many state items we use the cheaper model
 CHEAP_MODEL_THRESHOLD = 5
 
@@ -314,19 +312,21 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
         logger.warning("GOAL_THINK[%s]: Failed to set focus: %s", goal_id, e)
 
     # ---------- MODEL SELECTION ----------
-    model = DUMB_MODEL if total_items <= CHEAP_MODEL_THRESHOLD else SMART_MODEL
-    model_tier = "cheap" if model == DUMB_MODEL else "standard"
+    # The cheap/standard decision maps to a model TIER (MODEL_FLEXIBILITY #44/#71); agent_loop
+    # resolves the connector+model+key from the tier. No raw model id / OPENAI_API_KEY here.
+    tier = "fast" if total_items <= CHEAP_MODEL_THRESHOLD else "smart"
+    model_tier = "cheap" if tier == "fast" else "standard"
 
-    # Always use smart model for goals with many projects/tasks
+    # Always use the smart tier for goals with many projects/tasks
     if goal_snap and goal_snap.get("total_task_count", 0) > 10:
-        model = SMART_MODEL
+        tier = "smart"
         model_tier = "standard"
 
     remaining = budget_status.get("remaining", 999_999)
-    if remaining < 50_000 and model == SMART_MODEL:
-        model = DUMB_MODEL
+    if remaining < 50_000 and tier == "smart":
+        tier = "fast"
         model_tier = "cheap"
-        logger.info("GOAL_THINK[%s]: Downgraded to cheap model — budget low (%d remaining)",
+        logger.info("GOAL_THINK[%s]: Downgraded to fast tier — budget low (%d remaining)",
                      goal_id, remaining)
 
     # ---------- BUILD MESSAGES + TOOLS ----------
@@ -353,8 +353,8 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
         {"role": "user", "content": user_prompt},
     ]
 
-    logger.info("GOAL_THINK[%s]: Calling %s — %d pending, %d observations, %d tools",
-                goal_id, model, ctx["pending_actions_count"],
+    logger.info("GOAL_THINK[%s]: Calling %s tier — %d pending, %d observations, %d tools",
+                goal_id, tier, ctx["pending_actions_count"],
                 ctx["observations_count"], len(tools))
 
     # ---------- TOOL DISPATCH + HOOKS ----------
@@ -484,7 +484,7 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
         loop_result = await agent_loop.run(
             messages=messages,
             tools=tools,
-            model=model,
+            tier=tier,
             max_turns=8,
             max_tool_calls=25,
             tool_dispatch=_dispatch,

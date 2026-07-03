@@ -16,21 +16,6 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-def _resolve_embedding_model() -> str:
-    """Platform-wide embedding model (Settings → System: embedding_model).
-
-    Read once at import; changing it requires a restart AND re-embedding existing
-    content (the vector column dimension is fixed). Falls back to the 1536-dim
-    default if settings aren't available yet.
-    """
-    try:
-        from app_platform import settings as _settings
-        return _settings.get("embedding_model", scope="platform", default="") or "text-embedding-3-small"
-    except Exception:
-        return "text-embedding-3-small"
-
-
-EMBEDDING_MODEL = _resolve_embedding_model()
 from providers.model_config import provisioned_embedding_dim as _provisioned_embedding_dim
 EMBEDDING_DIM = _provisioned_embedding_dim()  # provisioned at setup; default 1536 (MODEL_FLEXIBILITY #44)
 
@@ -39,12 +24,14 @@ EMBEDDING_DIM = _provisioned_embedding_dim()  # provisioned at setup; default 15
 # ---------------------------------------------------------------------------
 
 def _get_embedding(text: str) -> list[float]:
-    """Get an embedding vector via the vendor-neutral provider (issue #39).
+    """Get an embedding vector via the vendor-neutral provider (MODEL_FLEXIBILITY #44/#71).
 
-    Truncation + model string stay HERE (caller-side) so the stored vectors are
-    identical to before — the provider never truncates or rewrites the model."""
-    from providers.registry import get_embedding_provider
-    vecs = get_embedding_provider().embed(texts=[text[:8000]], model=EMBEDDING_MODEL)
+    The connector, embedding MODEL, and key ALL come from the "embedding" tier — no hardcoded
+    'text-embedding-3-small' and no OPENAI_API_KEY assumption. Truncation stays caller-side so
+    the provider never rewrites the input; the tier's model matches the provisioned dimension."""
+    from providers.tier_resolver import resolve_embedding
+    provider, model, api_key = resolve_embedding("embedding")
+    vecs = provider.embed(texts=[text[:8000]], model=model, api_key=api_key)
     return vecs[0]
 
 def get_embedding(text: str) -> list[float]:

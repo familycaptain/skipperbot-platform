@@ -16,9 +16,23 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable, Awaitable, Optional
 
-from config import logger, OPENAI_MODEL
-from providers.registry import get_chat_provider
+from config import logger
 from providers.base import Turn, ToolCall
+from providers.tier_resolver import resolve_chat, TierNotConfigured
+
+
+# Soft-fail message when no model is configured (keyless boot before onboarding) or the selected
+# tier has no key. str() of this reaches the user directly as the assistant's reply.
+_SETUP_NEEDED_MSG = (
+    "I can't respond yet — no language model is configured for this Skipper. "
+    "Finish onboarding → Models to choose a provider and model."
+)
+
+
+def _is_no_api_key(exc: Exception) -> bool:
+    """A provider raised the sanitized keyless failure (mirrors the '<name> call failed (NoApiKey)'
+    shape from openai_provider / openai_compat) — never inspects a key value."""
+    return "NoApiKey" in str(exc)
 
 
 # ---------------------------------------------------------------------------
@@ -119,7 +133,7 @@ def _assistant_dict(chat_result) -> dict:
 async def run(
     messages: list[dict],
     tools: list[dict] | None = None,
-    model: str | None = None,
+    tier: str = "smart",
     max_turns: int = 20,
     max_tool_calls: int = 50,
     tool_dispatch: Callable[[str, dict], Awaitable[str]] = None,
@@ -130,7 +144,9 @@ async def run(
     Args:
         messages: Full message list (system + history + current user turn).
         tools: OpenAI-format tool definitions (or None for no tools).
-        model: Model name (defaults to OPENAI_MODEL from config).
+        tier: Model tier ("smart" | "fast"). The connector, MODEL, and key are ALL resolved
+            from the selected tier (MODEL_FLEXIBILITY #44/#71) — the loop no longer reads a
+            model id or an OPENAI_API_KEY from config/env.
         max_turns: Max LLM round-trips before forced stop.
         max_tool_calls: Max total tool calls before forced stop.
         tool_dispatch: async (name, args) -> result string. REQUIRED if tools are provided.
@@ -138,23 +154,40 @@ async def run(
 
     Returns:
         AgentResult with response text, full message history, tool call
-        records, token counts, and number of turns.
+        records, token counts, and number of turns. If no model is configured (or the tier
+        has no key), returns a soft-fail AgentResult whose response_text is an actionable
+        "Finish onboarding → Models" message — it never crashes the caller.
     """
-    model = model or OPENAI_MODEL
     hooks = hooks or LoopHooks()
-    provider = get_chat_provider()
     result = AgentResult(response_text=None, messages=messages)
+
+    # Resolve the tier -> (provider, model, key) ONCE. The key is threaded into every provider
+    # call below; it is never logged or reprd. A missing tier (keyless boot) soft-fails here.
+    try:
+        provider, model, api_key = resolve_chat(tier)
+    except TierNotConfigured:
+        result.response_text = _SETUP_NEEDED_MSG
+        return result
 
     total_tool_calls = 0
 
     for turn in range(max_turns):
         t_start = time.monotonic()
-        chat_result = await asyncio.to_thread(
-            provider.chat,
-            turns=_messages_to_turns(messages),
-            tools=tools if tools else None,
-            model=model,
-        )
+        try:
+            chat_result = await asyncio.to_thread(
+                provider.chat,
+                turns=_messages_to_turns(messages),
+                tools=tools if tools else None,
+                model=model,
+                api_key=api_key,
+            )
+        except RuntimeError as exc:
+            # The tier resolved a connector but no usable key -> sanitized soft-fail (the key is
+            # never inspected). Any other RuntimeError is a genuine call failure — re-raise.
+            if _is_no_api_key(exc):
+                result.response_text = _SETUP_NEEDED_MSG
+                return result
+            raise
         elapsed = time.monotonic() - t_start
         logger.info("AGENT_LOOP: turn=%d llm_call=%.2fs", turn + 1, elapsed)
 
@@ -258,6 +291,7 @@ async def run(
                 turns=_messages_to_turns(messages),
                 tools=None,
                 model=model,
+                api_key=api_key,
             )
             result.prompt_tokens += final.usage.prompt_tokens
             result.completion_tokens += final.usage.completion_tokens
@@ -272,6 +306,7 @@ async def run(
             turns=_messages_to_turns(messages),
             tools=None,
             model=model,
+            api_key=api_key,
         )
         result.prompt_tokens += final.usage.prompt_tokens
         result.completion_tokens += final.usage.completion_tokens

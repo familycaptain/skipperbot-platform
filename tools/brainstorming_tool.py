@@ -25,7 +25,7 @@ from data_layer.brainstorming import (
     get_part as _get_part,
 )
 
-from config import SMART_MODEL, logger
+from config import logger
 from providers.compat import chat_completion
 import diff_match_patch as dmp_module
 
@@ -457,7 +457,7 @@ def revise_idea_document(
 
         logger.info("BRAINSTORM: Generating revision for %s part %s: %s", idea_id, part_id, instruction[:80])
         response = chat_completion(
-            model=SMART_MODEL,
+            tier="smart",
             messages=[
                 {"role": "system", "content": "You are a creative writing assistant helping revise brainstorming documents. Output only the revised document content, nothing else."},
                 {"role": "user", "content": revision_prompt},

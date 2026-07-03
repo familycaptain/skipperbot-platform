@@ -29,7 +29,11 @@ import sys
 # importable so `config` resolves.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from config import openai_client, SMART_MODEL
+# Dev harness: resolve the SMART tier's connector+model+key (MODEL_FLEXIBILITY #44/#71) instead
+# of the removed config.openai_client / the OPENAI_API_KEY env assumption.
+from providers.tier_resolver import resolve_chat as _resolve_chat
+_smart_provider, SMART_MODEL, _smart_key = _resolve_chat("smart")
+openai_client = _smart_provider._get_client(_smart_key)
 
 # ---------------------------------------------------------------------------
 # Mock category universe — mirrors Skipper's real apps (names matter; schemas are stubs).

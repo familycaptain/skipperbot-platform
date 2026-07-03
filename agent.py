@@ -622,6 +622,18 @@ async def onboarding_save_models(request: SaveModelsRequest, http_request: Reque
             sel = tiers.get(tier) or {}
             if not sel.get("connector") or not sel.get("model"):
                 return {"ok": False, "error": f"Missing selection for the {tier} tier."}
+        # Embedding-dim lock (MODEL_FLEXIBILITY #44/#71, interop): once the embedding dimension is
+        # provisioned, the embedding connector/model is FROZEN — a change would emit vectors of a
+        # different dimension than the live pgvector columns (silent corruption). Reject the change
+        # server-side (the UI already sets embedding_locked; this enforces it regardless of client).
+        if model_config.embedding_dim():
+            emb_sel = tiers["embedding"]
+            cur_emb = model_config.read_tier("embedding")
+            if (emb_sel["connector"] != cur_emb.get("connector")
+                    or emb_sel["model"] != cur_emb.get("model")):
+                return {"ok": False, "error": (
+                    "The embedding model is locked after first setup (the vector dimension is "
+                    "fixed). Keep the existing embedding selection; smart/fast can still change.")}
         for tier in ("smart", "fast", "embedding"):
             sel = tiers[tier]
             model_config.save_tier(tier, connector=sel["connector"], model=sel["model"],

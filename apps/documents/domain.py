@@ -17,10 +17,9 @@ import os
 import re
 from datetime import datetime
 
-from config import logger, SMART_MODEL, PROMPTS_DIR
+from config import logger, PROMPTS_DIR
 from app_platform.time import get_timezone
 import agent_loop
-DUMB_MODEL = os.getenv("DUMB_MODEL", "gpt-5-mini")
 
 # How many useful memories to feed per cycle (after noise filtering).
 # Configurable via Settings → Documents (domain_memories_per_cycle).
@@ -230,16 +229,18 @@ async def document_domain_handler(domain: dict, budget_status: dict) -> dict:
         logger.warning("DOC_THINK: Failed to set focus: %s", e)
 
     # ---------- MODEL SELECTION ----------
+    # Map the cheap/standard decision to a model TIER (MODEL_FLEXIBILITY #44/#71); agent_loop
+    # resolves the connector+model+key from the tier. No raw model id / OPENAI_API_KEY here.
     remaining = budget_status.get("remaining", 999999)
     if remaining < 100_000:
-        model = DUMB_MODEL
+        tier = "fast"
         model_tier = "cheap"
-        logger.info("DOC_THINK: Using cheap model — budget low (%d remaining)", remaining)
+        logger.info("DOC_THINK: Using fast tier — budget low (%d remaining)", remaining)
     elif unprocessed_count > 15:
-        model = SMART_MODEL
+        tier = "smart"
         model_tier = "standard"
     else:
-        model = DUMB_MODEL
+        tier = "fast"
         model_tier = "cheap"
 
     # ---------- BUILD MESSAGES + TOOLS ----------
@@ -263,8 +264,8 @@ async def document_domain_handler(domain: dict, budget_status: dict) -> dict:
 
     relevant_doc_count = len(ctx.get("relevant_docs", []))
     logger.info(
-        "DOC_THINK: Calling %s with %d unprocessed memories, %d relevant docs (of %d total), %d folders, %d tools",
-        model, unprocessed_count, relevant_doc_count, existing_doc_count, existing_folder_count, len(tools),
+        "DOC_THINK: Calling %s tier with %d unprocessed memories, %d relevant docs (of %d total), %d folders, %d tools",
+        tier, unprocessed_count, relevant_doc_count, existing_doc_count, existing_folder_count, len(tools),
     )
 
     # ---------- TOOL DISPATCH + HOOKS ----------
@@ -363,7 +364,7 @@ async def document_domain_handler(domain: dict, budget_status: dict) -> dict:
         loop_result = await agent_loop.run(
             messages=messages,
             tools=tools,
-            model=model,
+            tier=tier,
             max_turns=8,
             max_tool_calls=50,
             tool_dispatch=_doc_dispatch,
@@ -447,8 +448,8 @@ async def document_domain_handler(domain: dict, budget_status: dict) -> dict:
         else:
             logger.warning("DOC_THINK: LLM did not mark any memories as processed")
 
-    logger.info("DOC_THINK: model=%s, tokens=%d, actions=%d, memories_offered=%d",
-                model, tokens_used, len(actions_taken), unprocessed_count)
+    logger.info("DOC_THINK: tier=%s, tokens=%d, actions=%d, memories_offered=%d",
+                tier, tokens_used, len(actions_taken), unprocessed_count)
 
     # Dynamic rhythm: catchup mode vs steady state
     total_remaining = ctx.get("total_unprocessed_before_filter", 0)
