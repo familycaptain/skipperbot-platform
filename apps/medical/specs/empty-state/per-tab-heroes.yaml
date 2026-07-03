@@ -1,0 +1,25 @@
+kind: specification
+id: medical.empty-state.per-tab-heroes
+title: Medical app shows a per-tab empty-state hero on each of its 6 record tabs
+state: live
+autonomy: gated
+behavior: Each Medical record tab (medications/treatments/events/labs/appointments/equipment),
+  when genuinely empty at All Members, shows its own EmptyStateHero (tab-specific title +
+  blurb) instead of the bare 'No x yet.' text. A tab with records shows its list. A specific-member
+  scoped-empty (memberId set) OR any active tab-local filter (showInactive/typeFilter/filterTestId/filterEventId/showPast/showCancelled)
+  keeps the bare fallback (filterActive), not the onboarding hero.
+implements:
+- web/src/apps/emptyStateHero.js
+- apps/medical/ui/index.js
+- apps/medical/ui/MedicalApp.jsx
+- specs/platform/app-ui/empty-state-hero.yaml
+tests: []
+links: {}
+notes: 'Verified at Gate-2 (test host): web bundle compiled; empty-state-hero guardrail EXIT=0
+  (medical per-view, heroes-map keys == 6 views, each blurb non-empty). Member-scope FALLBACK
+  proven LIVE (specific member with 0 labs -> bare ''No lab results yet.'', no hero). Hero-at-All-Members
+  not reachable (all tabs seeded) -> build+guardrail+static confirmed; operator confirms the
+  heroes live on a fresh install at Gate 3. Member-scope matches ev-52''s shipped medications
+  behavior. 2 guardrail warnings = unrelated optional ''anime'' app (pre-existing). Blurbs
+  operator-owned.'
+verified: true
