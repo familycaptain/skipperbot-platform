@@ -3,6 +3,7 @@ import {
   Edit3, Save, Trash2, Plus, X, Wrench, AlertTriangle,
   TrendingUp, Activity, Loader2, RotateCcw, Car, CalendarClock, CheckCircle2, PenLine, User, Droplet, Camera,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
 
 /**
  * Auto Maintenance Detail App — view/edit a single vehicle with tabs.
@@ -18,6 +19,18 @@ const TABS = [
   { id: "condition", label: "Condition", icon: Activity },
   { id: "value", label: "Value", icon: TrendingUp },
 ];
+
+// Per-tab empty-state hero copy for the vehicle detail view (operator-owned).
+// AutoDetailApp is a subview (not in the ev-52 primary registry), so the heroes
+// render directly via <EmptyStateHero> with this local copy rather than through
+// web/src/apps/emptyStateHero.js.
+const DETAIL_HEROES = {
+  maintenance: "Set up maintenance schedules for this vehicle so nothing's overdue. Add a maintenance item to get started.",
+  services: "Log every service and repair for this vehicle. Add a service record to get started.",
+  issues: "Track known issues and things to fix on this vehicle. Add an issue to get started.",
+  condition: "Record condition reports for this vehicle over time. Add a condition report to get started.",
+  value: "Track this vehicle's value over time. Add a valuation to get started.",
+};
 
 const SEVERITY_COLORS = {
   critical: "bg-red-600 text-on-accent",
@@ -42,6 +55,10 @@ export default function AutoDetailApp({ appId, userId, context = {}, onTitle, on
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [activeTab, setActiveTab] = useState("maintenance");
+  // Gates the per-tab empty-state heroes: true while the concurrent sub-data
+  // fetch is in flight, so a tab doesn't flash its hero on the initial [] arrays
+  // (loadVehicle clears `loading` before loadSubData's 5-fetch resolves).
+  const [subLoading, setSubLoading] = useState(true);
 
   const [form, setForm] = useState({});
 
@@ -78,18 +95,23 @@ export default function AutoDetailApp({ appId, userId, context = {}, onTitle, on
 
   const loadSubData = useCallback(async (id) => {
     if (!id) return;
-    const [svcRes, issRes, condRes, valRes, maintRes] = await Promise.all([
-      fetch(`/api/apps/auto/${id}/services`),
-      fetch(`/api/apps/auto/${id}/issues`),
-      fetch(`/api/apps/auto/${id}/conditions`),
-      fetch(`/api/apps/auto/${id}/valuations`),
-      fetch(`/api/apps/auto/${id}/maintenance`),
-    ]);
-    if (svcRes.ok) { const d = await svcRes.json(); setServices(d.services || []); }
-    if (issRes.ok) { const d = await issRes.json(); setIssues(d.issues || []); }
-    if (condRes.ok) { const d = await condRes.json(); setConditions(d.conditions || []); }
-    if (valRes.ok) { const d = await valRes.json(); setValuations(d.valuations || []); }
-    if (maintRes.ok) { const d = await maintRes.json(); setMaintenance(d.schedules || []); }
+    setSubLoading(true);
+    try {
+      const [svcRes, issRes, condRes, valRes, maintRes] = await Promise.all([
+        fetch(`/api/apps/auto/${id}/services`),
+        fetch(`/api/apps/auto/${id}/issues`),
+        fetch(`/api/apps/auto/${id}/conditions`),
+        fetch(`/api/apps/auto/${id}/valuations`),
+        fetch(`/api/apps/auto/${id}/maintenance`),
+      ]);
+      if (svcRes.ok) { const d = await svcRes.json(); setServices(d.services || []); }
+      if (issRes.ok) { const d = await issRes.json(); setIssues(d.issues || []); }
+      if (condRes.ok) { const d = await condRes.json(); setConditions(d.conditions || []); }
+      if (valRes.ok) { const d = await valRes.json(); setValuations(d.valuations || []); }
+      if (maintRes.ok) { const d = await maintRes.json(); setMaintenance(d.schedules || []); }
+    } finally {
+      setSubLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -256,11 +278,11 @@ export default function AutoDetailApp({ appId, userId, context = {}, onTitle, on
 
             {/* Tab content */}
             <div className="p-4">
-              {activeTab === "maintenance" && <MaintenanceTab maintenance={maintenance} vehicleId={vehicleId} vehicle={vehicle} userId={userId} show={showAddMaint} setShow={setShowAddMaint} onRefresh={() => { loadSubData(vehicleId); loadVehicle(vehicleId); }} />}
-              {activeTab === "services" && <ServicesTab services={services} vehicleId={vehicleId} userId={userId} show={showAddService} setShow={setShowAddService} onRefresh={() => { loadSubData(vehicleId); loadVehicle(vehicleId); }} />}
-              {activeTab === "issues" && <IssuesTab issues={issues} vehicleId={vehicleId} userId={userId} show={showAddIssue} setShow={setShowAddIssue} onRefresh={() => loadSubData(vehicleId)} />}
-              {activeTab === "condition" && <ConditionTab conditions={conditions} vehicleId={vehicleId} userId={userId} show={showAddCondition} setShow={setShowAddCondition} onRefresh={() => { loadSubData(vehicleId); loadVehicle(vehicleId); }} />}
-              {activeTab === "value" && <ValueTab valuations={valuations} vehicleId={vehicleId} userId={userId} show={showAddValuation} setShow={setShowAddValuation} onRefresh={() => loadSubData(vehicleId)} />}
+              {activeTab === "maintenance" && <MaintenanceTab maintenance={maintenance} subLoading={subLoading} vehicleId={vehicleId} vehicle={vehicle} userId={userId} show={showAddMaint} setShow={setShowAddMaint} onRefresh={() => { loadSubData(vehicleId); loadVehicle(vehicleId); }} />}
+              {activeTab === "services" && <ServicesTab services={services} subLoading={subLoading} vehicleId={vehicleId} userId={userId} show={showAddService} setShow={setShowAddService} onRefresh={() => { loadSubData(vehicleId); loadVehicle(vehicleId); }} />}
+              {activeTab === "issues" && <IssuesTab issues={issues} subLoading={subLoading} vehicleId={vehicleId} userId={userId} show={showAddIssue} setShow={setShowAddIssue} onRefresh={() => loadSubData(vehicleId)} />}
+              {activeTab === "condition" && <ConditionTab conditions={conditions} subLoading={subLoading} vehicleId={vehicleId} userId={userId} show={showAddCondition} setShow={setShowAddCondition} onRefresh={() => { loadSubData(vehicleId); loadVehicle(vehicleId); }} />}
+              {activeTab === "value" && <ValueTab valuations={valuations} subLoading={subLoading} vehicleId={vehicleId} userId={userId} show={showAddValuation} setShow={setShowAddValuation} onRefresh={() => loadSubData(vehicleId)} />}
             </div>
           </>
         )}
@@ -349,7 +371,7 @@ function EditForm({ form, updateForm }) {
 }
 
 /* ── Services Tab ── */
-function ServicesTab({ services, vehicleId, userId, show, setShow, onRefresh }) {
+function ServicesTab({ services, subLoading, vehicleId, userId, show, setShow, onRefresh }) {
   const [svcForm, setSvcForm] = useState({ service_type: "", date_performed: "", odometer_at_service: "", cost: "", shop_name: "", description: "", notes: "" });
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -444,7 +466,15 @@ function ServicesTab({ services, vehicleId, userId, show, setShow, onRefresh }) 
         </form>
       )}
       {services.length === 0 ? (
-        <p className="text-sm text-faint italic">No service records yet.</p>
+        <PristineEmpty
+          appId="auto"
+          title="Service History"
+          blurb={DETAIL_HEROES.services}
+          records={services}
+          loading={subLoading}
+          filterActive={false}
+          fallback={<p className="text-sm text-faint italic">No service records yet.</p>}
+        />
       ) : (
         <div className="space-y-1.5">
           {services.map(s => editId === s.id ? (
@@ -561,7 +591,7 @@ function AutoIssuePhotoPanel({ issueId, userId }) {
 
 
 /* ── Issues Tab ── */
-function IssuesTab({ issues, vehicleId, userId, show, setShow, onRefresh }) {
+function IssuesTab({ issues, subLoading, vehicleId, userId, show, setShow, onRefresh }) {
   const [issForm, setIssForm] = useState({ title: "", severity: "minor", description: "", date_noticed: "" });
   const [editId, setEditId] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -647,7 +677,15 @@ function IssuesTab({ issues, vehicleId, userId, show, setShow, onRefresh }) {
         </form>
       )}
       {open.length === 0 && fixed.length === 0 ? (
-        <p className="text-sm text-faint italic">No issues reported.</p>
+        <PristineEmpty
+          appId="auto"
+          title="Issues"
+          blurb={DETAIL_HEROES.issues}
+          records={issues}
+          loading={subLoading}
+          filterActive={false}
+          fallback={<p className="text-sm text-faint italic">No issues reported.</p>}
+        />
       ) : (
         <>
           {open.map(i => editId === i.id ? (
@@ -720,7 +758,7 @@ function IssuesTab({ issues, vehicleId, userId, show, setShow, onRefresh }) {
 }
 
 /* ── Condition Tab ── */
-function ConditionTab({ conditions, vehicleId, userId, show, setShow, onRefresh }) {
+function ConditionTab({ conditions, subLoading, vehicleId, userId, show, setShow, onRefresh }) {
   const [condForm, setCondForm] = useState({
     date_recorded: "", mileage_at_report: "", brakes: "good", tires: "good",
     tire_tread_depth: "", oil_life_pct: "", battery: "good",
@@ -894,7 +932,15 @@ function ConditionTab({ conditions, vehicleId, userId, show, setShow, onRefresh 
         </form>
       )}
       {conditions.length === 0 ? (
-        <p className="text-sm text-faint italic">No condition reports yet.</p>
+        <PristineEmpty
+          appId="auto"
+          title="Condition"
+          blurb={DETAIL_HEROES.condition}
+          records={conditions}
+          loading={subLoading}
+          filterActive={false}
+          fallback={<p className="text-sm text-faint italic">No condition reports yet.</p>}
+        />
       ) : (
         <div className="space-y-1.5">
           {conditions.map(c => <CondRow key={c.id} c={c} />)}
@@ -905,7 +951,7 @@ function ConditionTab({ conditions, vehicleId, userId, show, setShow, onRefresh 
 }
 
 /* ── Value Tab ── */
-function ValueTab({ valuations, vehicleId, userId, show, setShow, onRefresh }) {
+function ValueTab({ valuations, subLoading, vehicleId, userId, show, setShow, onRefresh }) {
   const [valForm, setValForm] = useState({ private_party_value: "", trade_in_value: "", condition: "good", mileage_at_valuation: "", source: "kbb", date_recorded: "", notes: "" });
 
   async function handleAdd(e) {
@@ -967,6 +1013,17 @@ function ValueTab({ valuations, vehicleId, userId, show, setShow, onRefresh }) {
             <button type="submit" className="px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-on-accent rounded">Save</button>
           </div>
         </form>
+      )}
+      {valuations.length === 0 && (
+        <PristineEmpty
+          appId="auto"
+          title="Value"
+          blurb={DETAIL_HEROES.value}
+          records={valuations}
+          loading={subLoading}
+          filterActive={false}
+          fallback={null}
+        />
       )}
       {latest && (
         <div className="surface-card border border-subtle rounded-lg p-3">
@@ -1258,7 +1315,7 @@ const RECURRENCE_PRESETS = [
   { label: "Custom interval", type: "interval", rule: { days: 30 } },
 ];
 
-function MaintenanceTab({ maintenance, vehicleId, vehicle, userId, show, setShow, onRefresh }) {
+function MaintenanceTab({ maintenance, subLoading, vehicleId, vehicle, userId, show, setShow, onRefresh }) {
   const [mForm, setMForm] = useState({ title: "", preset: 0, custom_days: "180", start_date: "" });
   const [completing, setCompleting] = useState(null); // schedule id being completed
   const [compForm, setCompForm] = useState({ date_performed: "", odometer: "", cost: "", shop_name: "", notes: "" });
@@ -1405,7 +1462,15 @@ function MaintenanceTab({ maintenance, vehicleId, vehicle, userId, show, setShow
       )}
 
       {maintenance.length === 0 ? (
-        <p className="text-sm text-faint italic">No maintenance schedules yet. Add one to start tracking recurring service.</p>
+        <PristineEmpty
+          appId="auto"
+          title="Maintenance"
+          blurb={DETAIL_HEROES.maintenance}
+          records={maintenance}
+          loading={subLoading}
+          filterActive={false}
+          fallback={<p className="text-sm text-faint italic">No maintenance schedules yet. Add one to start tracking recurring service.</p>}
+        />
       ) : (
         <div className="space-y-2">
           {maintenance.map(m => {
