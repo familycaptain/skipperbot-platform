@@ -27,5 +27,6 @@
       "rubric": "With the consumer running, submit_priority_event('desktop.arrival', ...) is drained and routed to the registered handler (future resolves); regression guard for 'keyless boot -> models configured -> running priority-event consumer + drained desktop.arrival'."
     }
   ],
-  "notes": "HIGH fresh-install regression (operator-authored, #73). Removes the one-shot boot fragility from #44's keyless guard while PRESERVING the keyless-healthy invariant (no LLM before configuration). Arrival greeting immediate via the always-on consumer; timer domains + embedding backfill self-activate <=120s after onboarding. No restart. Out of scope: client-side 15s optimistic-typing fail-open (fine as-is); keyless-boot health must be unchanged."
+  "notes": "HIGH fresh-install regression (operator-authored, #73). Removes the one-shot boot fragility from #44's keyless guard while PRESERVING the keyless-healthy invariant (no LLM before configuration). Arrival greeting immediate via the always-on consumer; timer domains + embedding backfill self-activate <=120s after onboarding. No restart. Out of scope: client-side 15s optimistic-typing fail-open (fine as-is); keyless-boot health must be unchanged.",
+  "verified": true
 }
