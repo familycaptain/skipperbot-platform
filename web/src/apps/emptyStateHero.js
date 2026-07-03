@@ -61,7 +61,7 @@ export const OPT_IN = {
   todo: { mode: "page" },
   reminders: { mode: "per-view", views: ["reminders", "nags"] },
   meals: { mode: "per-view", views: ["browse"] },
-  medical: { mode: "per-view", views: ["medications"] },
+  medical: { mode: "per-view", views: ["medications", "treatments", "events", "labs", "appointments", "equipment"] },
   home: { mode: "per-view", views: ["maintenance"] },
 };
 

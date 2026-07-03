@@ -28,11 +28,11 @@ behavior: 'A reusable EmptyStateHero (web/src/components/EmptyStateHero.jsx) tak
   or {mode:''per-view'', views:[...]} (one hero per named tab/view, fired when THAT view''s
   slice is pristine-empty) — and every exclude carries a reason. A static-parsing node guardrail
   enforces that a new app cannot silently skip the decision and that every declared hero has
-  copy. FINAL OPT-IN (20 apps / 21 heroes): default-view heroes on auto, goals, tasks, chores, brainstorming,
+  copy. FINAL OPT-IN (20 apps / 26 heroes): default-view heroes on auto, goals, tasks, chores, brainstorming,
   documents, folders, images, lists, locator, recipes, timeline, bounties, schedules, jobs; per-view
   heroes on todo (one page hero when no todo AND no backlog), reminders (TWO — Reminders tab
-  + Nags tab), meals (Browse tab), medical (Medications tab; copy describes the whole medical
-  app), home (Maintenance tab). EXCLUDED (no hero): issues (removed from scope), prioritize,
+  + Nags tab), meals (Browse tab), medical (SIX — one per record tab: Medications, Treatments,
+  Events, Labs, Appointments, Equipment; each tab has its own tab-specific copy), home (Maintenance tab). EXCLUDED (no hero): issues (removed from scope), prioritize,
   and the system/tool apps. Build proceeds STAGED under this one spec/slug: BATCH 1 (pilot)
   = the shared infra + auto, goals, timeline, recipes (locks the hero design on both-theme
   screenshots at Gate 2); BATCH 2+ = the remaining heroes, each fully screenshot-verified.'
@@ -61,7 +61,7 @@ tests:
     has a non-empty `blurb`; each per-view entry has a `heroes` map with a non-empty blurb
     for EACH view it declares. The goals file must carry blurbs for BOTH goals and tasks.
     The heroes-map KEYS are the component''s REAL tab ids (lowercase: reminders->{reminders,nags};
-    medical->{medications}; home->{maintenance}; meals->{browse}); OPT_IN.views, if present,
+    medical->{medications,treatments,events,labs,appointments,equipment}; home->{maintenance}; meals->{browse}); OPT_IN.views, if present,
     is DERIVED from the heroes-map keys (single source of truth) — operator label strings
     (''Reminders''/''Nags''/''Maintenance'') are display copy, not keys. (4) Every EXCLUDE
     entry has a non-empty reason. Per-app integration (branch placement, the per-view slice,
@@ -76,10 +76,11 @@ tests:
     the hero. Follow-on batches add the remaining heroes, each screenshot-verified.'
 links: {}
 notes: 'Operator-authored (#52). Staged build under one slug: pilot batch = auto, goals, timeline,
-  recipes; follow-on batches add the remaining heroes (20 apps / 21 heroes total; ev-59 opted chores in, ev-64 opted jobs in). Blurbs
+  recipes; follow-on batches add the remaining heroes (20 apps / 26 heroes total; ev-59 opted chores in, ev-64 opted jobs in, ev-65 expanded medical to per-tab heroes on all 6 record tabs). Blurbs
   are operator-final (verbatim). Test = Option B static node guardrail (no new infra). Guardrail
   on an UNCLASSIFIED primary entry: warn + default-exclude, build stays GREEN (preserve the
-  zero-touch app-package contract). medical: whole-app copy on the Medications-tab-empty trigger
-  (operator-confirmed). verified flips true per-batch as the bound guardrail passes on the
+  zero-touch app-package contract). medical: per-tab copy, one hero per record tab (Medications,
+  Treatments, Events, Labs, Appointments, Equipment), each fired when THAT tab is empty at All
+  Members (specific-member/tab-filter scoped-empty keeps the bare fallback) — operator-confirmed (ev-65). verified flips true per-batch as the bound guardrail passes on the
   test host.'
 verified: true
