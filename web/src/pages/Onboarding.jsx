@@ -128,6 +128,7 @@ function CreatePrimaryUser({ onCreated, onBack }) {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [tz, setTz] = useState(detected);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -148,6 +149,8 @@ function CreatePrimaryUser({ onCreated, onBack }) {
 
   const usernameOk = /^[a-z][a-z0-9_]{1,30}$/.test(username);
   const passwordOk = password.length >= 8;
+  // Equality forces equal length, so this subsumes "confirm non-empty and >=8".
+  const confirmOk = passwordOk && password === confirm;
 
   const submit = async (e) => {
     e?.preventDefault();
@@ -158,6 +161,13 @@ function CreatePrimaryUser({ onCreated, onBack }) {
     }
     if (!passwordOk) {
       setError("A password is required and must be at least 8 characters.");
+      return;
+    }
+    // Backstop for the button gate: a mistyped confirmation must never save the
+    // account (no self-service reset exists — a typo'd sole-admin password locks
+    // everyone out).
+    if (password !== confirm) {
+      setError("Passwords don't match");
       return;
     }
     // In-flight guard set only after the synchronous validation early-returns,
@@ -256,6 +266,27 @@ function CreatePrimaryUser({ onCreated, onBack }) {
           <p className="mt-1 text-xs text-faint">Used to sign in to the web UI. Minimum 8 characters — you can change it later from Settings.</p>
         </div>
         <div>
+          <label className="text-sm text-default">Confirm password</label>
+          <input
+            type="password"
+            name="confirm_password"
+            autoComplete="new-password"
+            className="mt-1 w-full rounded input px-3 py-2 text-sm"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            onKeyDown={onInputKeyDown}
+            required
+            minLength={8}
+            placeholder="re-enter password"
+          />
+          {/* Non-nagging live mismatch hint: fires only once the second entry is
+              plausibly complete (confirm as long as password), not on every
+              keystroke. Rose (error) color, matching ErrorLine — not the faint hint. */}
+          {confirm.length >= password.length && password !== confirm && (
+            <p className="mt-1 text-xs text-rose-400">Passwords don't match</p>
+          )}
+        </div>
+        <div>
           <label className="text-sm text-default">Timezone</label>
           <select
             className="mt-1 w-full rounded input px-3 py-2 text-sm"
@@ -288,12 +319,19 @@ function CreatePrimaryUser({ onCreated, onBack }) {
           type="button"
           onClick={submit}
           className="inline-flex items-center gap-2 rounded btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed"
-          disabled={saving || !usernameOk || !passwordOk}
+          disabled={saving || !usernameOk || !passwordOk || !confirmOk}
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <UserIcon size={14} />}
           {saving ? "Creating…" : "Create account"}
         </button>
       </div>
+      {/* Disabled-reason affordance, mirroring ModelStep's "Validate all three
+          tiers to continue." line. */}
+      {!saving && !(usernameOk && confirmOk) && (
+        <p className="mt-2 text-right text-xs text-faint">
+          Enter a username and matching passwords (8+ chars) to continue.
+        </p>
+      )}
     </form>
   );
 }
