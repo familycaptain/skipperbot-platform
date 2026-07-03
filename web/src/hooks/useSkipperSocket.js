@@ -145,9 +145,17 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
       // suppress the canned client greeting and show typing optimistically. A
       // fresh NON-primary user (pending=false) still gets their client greeting.
       let liveGreeting = false;
+      let onboarding = false;
       try {
         const gRes = await fetch("/api/onboarding/live-greeting-status");
-        if (gRes.ok) liveGreeting = !!(await gRes.json()).pending;
+        if (gRes.ok) {
+          const gData = await gRes.json();
+          liveGreeting = !!gData.pending;
+          // UNGATED onboarding-in-progress flag (issue #74): true for the whole
+          // onboarding window, unlike `pending` (greet-once-gated, stale after
+          // the first greeting). Drives welcome-back suppression on reload.
+          onboarding = !!gData.onboarding;
+        }
       } catch {
         // Offline or error — leave false so the canned greeting still shows.
       }
@@ -157,16 +165,23 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
       // beat so Skipper feels present rather than dumping text instantly (issue #16).
       if (hist.length) setMessages((prev) => [...hist, ...prev]);
 
-      // NARROWED removal (platform.onboarding.live-greeting): ONLY the fresh-
-      // onboarding PRIMARY branch becomes server-driven. Show the typing indicator
-      // OPTIMISTICALLY (no empty-silence gap) with a BOUNDED fail-open timeout that
-      // clears it if no greeting arrives; the delivered greeting turn (a
-      // chat_response frame) clears isTyping via the onmessage handler below.
-      if (hist.length === 0 && liveGreeting) {
-        setIsTyping(true);
-        greetingTimer = setTimeout(() => {
-          if (!cancelled) setIsTyping(false);
-        }, OPTIMISTIC_GREETING_TIMEOUT_MS);
+      // Onboarding-in-progress (primary): the canned greeting is ALWAYS
+      // suppressed for ALL hist.length (issue #74) — at most the single
+      // server-driven live onboarding greeting shows, never a client
+      // 'Welcome back'. A FRESH arrival (no history) still expecting that
+      // server greeting gets OPTIMISTIC typing (no empty-silence gap) with a
+      // BOUNDED fail-open timeout; the delivered greeting turn (a chat_response
+      // frame) clears isTyping via the onmessage handler below. A reload WITH
+      // history shows history only and returns WITHOUT setIsTyping (no stuck
+      // dots). Keyed off the UNGATED `onboarding` flag, not `pending` (which is
+      // greet-once-gated and false after the first greeting — see issue #74).
+      if (onboarding) {
+        if (hist.length === 0 && liveGreeting) {
+          setIsTyping(true);
+          greetingTimer = setTimeout(() => {
+            if (!cancelled) setIsTyping(false);
+          }, OPTIMISTIC_GREETING_TIMEOUT_MS);
+        }
         return;
       }
 

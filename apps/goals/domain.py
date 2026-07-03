@@ -398,6 +398,23 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
                 return "Error: to_user and message are required"
             if dm_to == "skipper":
                 return "You cannot DM yourself. DM not sent."
+            # Produce-layer tour gate (defect 1a, layer 2): the snapshot-filter
+            # alone is defeatable — the goal agent's baseline read tools
+            # (get_goal_detail/search_goals) can enumerate the hidden tour
+            # projects and the goal_id is printed in-prompt, so block a DM whose
+            # subject resolves to a gated tour project. tour_gated() self-gates on
+            # the in-progress onboarding goal, so normal goals are untouched.
+            if is_onboarding and subject_id:
+                try:
+                    from apps.goals import onboarding
+                    if onboarding.tour_gated(goal_id, subject_id):
+                        return (
+                            "That DM is about an app tour, but the ordered setup "
+                            "agenda isn't complete yet. Finish the agenda projects "
+                            "first — app tours come after. DM not sent."
+                        )
+                except Exception:
+                    logger.warning("GOAL_THINK[%s]: tour-gate DM check failed", goal_id, exc_info=True)
             # Onboarding is a live, one-at-a-time conversation — a single DM per
             # cycle. The first-contact live arrival greeting is allowed TWO short
             # bubbles (a warm opener + the first agenda prompt). Other goals keep
@@ -588,16 +605,36 @@ def _build_goal_snapshot(goal: dict) -> dict:
     """Build a comprehensive snapshot of the goal and all its children."""
     from apps.goals.data import load_entity, get_top_level_tasks, get_subtasks
 
+    # Pre-load project entities so onboarding tour-gating (defect 1a, layer 1)
+    # can EXCLUDE the per-app "Try the {app}" tour projects while the ordered
+    # setup agenda is still open. Filtering HERE keeps the snapshot, the memory
+    # recall, AND the total/done progress counts all free of tours, so the goal
+    # LLM never sees — and thus can't nudge — an app tour early. Gated on the
+    # onboarding goal only via the shared tour_gated() helper.
+    loaded = []
+    for pid in goal.get("projects", []):
+        proj = load_entity(pid)
+        if not proj:
+            continue
+        loaded.append((pid, proj))
+
+    if goal.get("name", "") == ONBOARDING_GOAL_NAME:
+        try:
+            from apps.goals import onboarding
+            proj_entities = [p for _, p in loaded]
+            loaded = [
+                (pid, proj) for (pid, proj) in loaded
+                if not onboarding.tour_gated(goal, proj, projects=proj_entities)
+            ]
+        except Exception:
+            logger.warning("GOAL_THINK: onboarding tour-gate snapshot filter failed", exc_info=True)
+
     projects = []
     total_task_count = 0
     total_done = 0
     total_blocked = 0
 
-    for pid in goal.get("projects", []):
-        proj = load_entity(pid)
-        if not proj:
-            continue
-
+    for pid, proj in loaded:
         top_tasks = get_top_level_tasks(pid)
         task_summaries = []
         p_counts = {"total": 0, "done": 0, "in_progress": 0, "blocked": 0, "not_started": 0}
