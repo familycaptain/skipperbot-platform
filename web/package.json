@@ -14,7 +14,8 @@
     "check:empty-state-hero": "node scripts/check-empty-state-hero.mjs",
     "check:tz-offset": "node scripts/check-tz-offset.mjs",
     "check:onboarding-confirm": "node scripts/check-onboarding-confirm.mjs",
-    "prebuild": "node scripts/check-no-native-submit.mjs && node scripts/check-empty-state-hero.mjs && node scripts/check-tz-offset.mjs && node scripts/check-onboarding-confirm.mjs && node packaged-app-deps.mjs --emit-sources",
+    "check:onboarding-theme": "node scripts/check-onboarding-theme.mjs",
+    "prebuild": "node scripts/check-no-native-submit.mjs && node scripts/check-empty-state-hero.mjs && node scripts/check-tz-offset.mjs && node scripts/check-onboarding-confirm.mjs && node scripts/check-onboarding-theme.mjs && node packaged-app-deps.mjs --emit-sources",
     "build": "vite build",
     "preview": "vite preview"
   },

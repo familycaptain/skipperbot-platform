@@ -19,9 +19,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { setToken } from "../utils/api";
 import { tzOffset } from "../utils/tz";
+import { useTheme } from "../utils/theme";
 import ModelConfig from "../components/ModelConfig";
 import {
-  ArrowRight, ArrowLeft, Check, Loader2, AlertCircle, User as UserIcon,
+  ArrowRight, ArrowLeft, Check, Loader2, AlertCircle, User as UserIcon, Sun, Moon,
 } from "lucide-react";
 
 const API = "";
@@ -132,6 +133,13 @@ function CreatePrimaryUser({ onCreated, onBack }) {
   const [tz, setTz] = useState(detected);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Live Dark/Light picker: a pure consumer of the shared theme API (same hook
+  // Shell.jsx uses). setTheme -> applyTheme (data-theme + meta + localStorage
+  // persist + instant CSS-var recolor). State lives INSIDE this step, so a click
+  // re-renders in place — it must NOT remount step-3 or the entered
+  // username/password/confirm/timezone would be lost. Persistence is
+  // per-browser (localStorage), not part of the create-user payload.
+  const { theme, setTheme } = useTheme();
   // Synchronous in-flight guard against rapid double-taps (issue #36).
   const inFlightRef = useRef(false);
 
@@ -300,6 +308,44 @@ function CreatePrimaryUser({ onCreated, onBack }) {
           <p className="mt-1 text-xs text-faint">
             Detected from your browser: <code className="font-mono text-muted">{detected}</code>.
           </p>
+        </div>
+        <div>
+          <label className="text-sm text-default">Theme</label>
+          {/* Unified segmented Dark/Light selector — one pill, single selected
+              fill (mirrors Shell.jsx's mobile segmented toggle idiom). A
+              radiogroup so it reflects + drives the global theme live; the
+              selected option recolors the WHOLE UI instantly on click and
+              persists (setTheme -> applyTheme). Selected = accent fill; both
+              states use theme tokens so contrast stays legible in dark + light. */}
+          <div
+            role="radiogroup"
+            aria-label="Theme"
+            className="mt-1 flex items-center surface-card border border-subtle rounded-full p-0.5 text-sm"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={theme === "dark"}
+              onClick={() => setTheme("dark")}
+              className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${
+                theme === "dark" ? "bg-indigo-600 text-on-accent" : "icon-btn"
+              }`}
+            >
+              <Moon size={14} /> Dark
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={theme === "light"}
+              onClick={() => setTheme("light")}
+              className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${
+                theme === "light" ? "bg-indigo-600 text-on-accent" : "icon-btn"
+              }`}
+            >
+              <Sun size={14} /> Light
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-faint">You can change this later in Settings.</p>
         </div>
       </div>
       <ErrorLine>{error}</ErrorLine>

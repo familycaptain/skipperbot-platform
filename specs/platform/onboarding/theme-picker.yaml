@@ -1,0 +1,62 @@
+kind: specification
+id: platform.onboarding.theme-picker
+title: Onboarding step-3 has a live Dark/Light theme picker (default dark)
+state: live
+behavior: 'In the first-run onboarding step-3 (web/src/pages/Onboarding.jsx CreatePrimaryUser,
+  ''Your admin account''), a labeled segmented Dark/Light theme control is shown near the
+  Timezone field. It consumes the existing theme API (`const {theme,setTheme}=useTheme()`
+  from web/src/utils/theme.js — the same hook Shell.jsx uses) and its selected state REFLECTS
+  the current `theme` (equals dark IFF no stored theme; a returning browser holding ''light''
+  correctly shows Light). Clicking Dark/Light calls `setTheme(''dark''|''light'')` -> applyTheme
+  sets html data-theme, syncs meta theme-color, and persists to localStorage ''skipperbot_theme''
+  (best-effort; the live switch still applies if storage is blocked). The WHOLE UI recolors
+  INSTANTLY via CSS-var inversion with NO reload. The control is consumed INSIDE CreatePrimaryUser
+  so a click RE-RENDERS step-3 in place — it MUST NOT remount/re-key the step, so entered
+  username/password/confirm/timezone values are preserved. The create-user POST body is UNCHANGED
+  ({username, display_name, password, timezone}) — theme persistence is client-only and PER-BROWSER
+  (localStorage), not per-account. Accessibility: the two options are a radiogroup (role=radio
+  + aria-checked, or aria-pressed buttons) with a ''Theme'' accessible group label and legible
+  selected-state contrast in BOTH themes. Part 1 (fresh browser boots dark) is owned by platform.webui.theme
+  and is NOT changed here (referenced as a non-regression only).'
+implements:
+- web/src/pages/Onboarding.jsx (CreatePrimaryUser) — import + call useTheme(); render a UNIFIED
+  segmented Dark/Light control (radiogroup/aria, 'Theme' label, single selected fill mirroring
+  Shell's mobile segmented idiom + Sun/Moon) near the Timezone <select>, following the step-3
+  field idiom; onClick -> setTheme('dark'|'light'). Theme state stays INSIDE CreatePrimaryUser
+  (no remount/key change). Optional faint 'You can change this later in Settings' hint. No
+  change to the create-user POST body.
+- (reuse, unchanged) web/src/utils/theme.js applyTheme/useTheme — canonical owner platform.webui.theme;
+  picker is a pure consumer (no second persistence path, no reading data-theme off the DOM).
+tests:
+- type: e2e
+  path: (test host, validate-time)
+  rubric: 'Drive onboarding to step-3 via the proven non-destructive route-intercept; CLEAR
+    localStorage first. ASSERT: (1) a Dark/Light theme control is present with DARK selected
+    by default (no stored theme -> data-theme=''dark''); (2) FILL username+password+confirm+timezone,
+    then click LIGHT -> data-theme=''light'' AND a concrete recolor signal (computed background
+    / a theme CSS var on a known element e.g. surface-page changes) AND localStorage ''skipperbot_theme''===''light'',
+    with NO reload (a window sentinel set before the click survives); (3) the entered field
+    values are RETAINED across the toggle (proves re-render not remount) and NO create-user
+    POST fired; (4) click DARK -> back to data-theme=''dark'', localStorage ''dark''. Screenshot
+    the picker in dark AND light states -> attach to #57. REGRESSION (owned by platform.webui.theme,
+    asserted here as non-regression): a truly-fresh browser (cleared storage, SW blocked)
+    boots data-theme=''dark''.'
+- type: unit
+  path: web/scripts/check-onboarding-theme.mjs (node static guard; no JS unit runner)
+  rubric: 'Presence-only guard (wired into web prebuild like the sibling check-*.mjs): assert
+    Onboarding.jsx uses useTheme (or applyTheme) + renders a Dark/Light theme control (radiogroup/aria),
+    and the create-user fetch body still lists exactly {username,display_name,password,timezone}
+    (no theme). Exit non-zero on failure. Secondary to the e2e.'
+links: {}
+notes: 'SCOPE=Part 2 (reproduce proved Part 1/default-dark already works, owned by platform.webui.theme).
+  Pure consumer of the theme API (no new mechanism, no FOUC risk). Persistence client-only
+  + PER-BROWSER (localStorage), not per-account — surfaced at Gate 1. ''Default dark'' = reflects
+  current theme; dark iff no stored theme (e2e clears storage). No remount: theme state inside
+  CreatePrimaryUser. a11y radiogroup + contrast (ux). Placed under platform.onboarding, sibling
+  to timezone-offset (ev-55) + admin-password-confirm (ev-56) on step-3 — third independent
+  prebuild guard; build from current release. | Gate-2: validated GREEN on test host — node
+  guard exit 0 (theme never sent) + prebuild guards green; e2e: default dark (storage cleared),
+  live Light switch (data-theme flip + surface-page/--ds-page recolor + localStorage persist
+  + NO reload via window sentinel + entered fields RETAINED [re-render not remount] + zero
+  create-user POST), back-to-dark; Part-1 fresh-boot regression = dark. verified=true.'
+verified: true
