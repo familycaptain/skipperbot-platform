@@ -1,0 +1,42 @@
+kind: specification
+id: platform.llm.provider-agnostic-key-resolution
+title: Every LLM call resolves the selected connector's per-tier key+model (no OPENAI_API_KEY
+  env assumption)
+state: live
+autonomy: gated
+behavior: Every LLM/embedding call resolves (connector, model, key) from the selected tier
+  via providers.tier_resolver (resolve_chat/resolve_embedding) and threads the key to the
+  provider, provider-agnostically (openai/8 compat vendors/anthropic). A provider-agnostic
+  install with a validated per-tier key and NO OPENAI_API_KEY in env chats + embeds; a non-OpenAI
+  provider works; no code path constructs an env-keyed OpenAI client; a missing/misconfigured
+  tier key raises a sanitized NoApiKey / 'Finish onboarding -> Models' message (never the
+  raw OpenAI SDK 'Missing credentials'); the key is never logged. (Voice OpenAI-Realtime +
+  the one-time upgrade-seed migration keep their own OPENAI_API_KEY reads — out of scope.)
+implements:
+- providers/tier_resolver.py
+- providers/openai_provider.py
+- providers/base.py
+- providers/registry.py
+- providers/compat.py
+- agent_loop.py
+- app_platform/capabilities.py
+- config.py
+- memory_store.py
+- chatlog_store.py
+- knowledge_store.py
+- agent.py (save-models embedding-dim lock)
+- '(leaf sites: chat_domain, apps/documents/domain+tools, apps/goals/domain+pm_domain, apps/folders/intelligence,
+  apps/meals/tools, thinking_digest, chat_digest, research_runner, tools/brainstorming_tool,
+  app_platform/memory)'
+tests: []
+links: {}
+notes: 'Verified LIVE at Gate-2 (test host) against the operator''s hard bar (the negative
+  test #44 never ran): app boots healthy; 37 offline provider suites pass; KEYLESS LIVE chat
+  returns a real reply with OPENAI_API_KEY popped (stored tier key resolved); non-OpenAI provider-generic
+  threading proven (fast tier->anthropic+dummy key -> Anthropic 401 to api.anthropic.com,
+  NOT the OpenAI ''Missing credentials''); no env-keyed OpenAI client remains; misconfig ->
+  sanitized NoApiKey. Both model AND key resolved per-tier. Panel-folded hardening all present:
+  provider fail-fast, registry full-builtins fallback, embedding-tier dim-lock, TierNotConfigured
+  soft-fail, base Protocol api_key, no-key-logging. Completes #44. Out-of-scope follow-ups
+  (operator noted): CLI onboarding prompt, voice OpenAI dependency, docs/.env.example.'
+verified: true
