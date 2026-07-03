@@ -39,6 +39,10 @@ _POLICY_HINT = (
     "coverage amount, premium and how often it is paid, deductible, renewal date, "
     "and what assets the policy covers."
 )
+_CONTRACTOR_HINT = (
+    "Focus on: contractor name, trade (electrician/plumber/roofer/etc), company, "
+    "phone and email, rating (1-5), when last used, past jobs, and any notes."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -758,6 +762,146 @@ def unlink_appliance_image(appliance_id: str, image_id: str):
 
 
 # ---------------------------------------------------------------------------
+# Home Contractors (Contractors Tab)
+# ---------------------------------------------------------------------------
+
+def _contractor_row(row: dict) -> dict:
+    if not row:
+        return {}
+    return {
+        "id": row["id"],
+        "name": row.get("name") or "",
+        "trade": row.get("trade") or "General",
+        "company": row.get("company") or "",
+        "phone": row.get("phone") or "",
+        "email": row.get("email") or "",
+        "rating": row.get("rating"),
+        "last_used": row["last_used"].isoformat() if row.get("last_used") else "",
+        "jobs_history": row.get("jobs_history") or "",
+        "notes": row.get("notes") or "",
+        "created_by": row.get("created_by") or "",
+        "created_at": row["created_at"].isoformat() if row.get("created_at") else "",
+        "updated_at": row["updated_at"].isoformat() if row.get("updated_at") else "",
+    }
+
+
+def create_contractor(contractor: dict) -> dict | None:
+    """Insert a new home contractor."""
+    row = execute_returning_in_schema(
+        SCHEMA,
+        """INSERT INTO home_contractors (id, name, trade, company, phone, email,
+                                         rating, last_used, jobs_history, notes,
+                                         created_by, created_at, updated_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+           RETURNING *""",
+        (
+            contractor["id"],
+            contractor.get("name", ""),
+            contractor.get("trade", "General"),
+            contractor.get("company", ""),
+            contractor.get("phone", ""),
+            contractor.get("email", ""),
+            contractor.get("rating"),
+            contractor.get("last_used") or None,
+            contractor.get("jobs_history", ""),
+            contractor.get("notes", ""),
+            contractor.get("created_by", ""),
+            contractor.get("created_at", _now()),
+            contractor.get("updated_at", _now()),
+        ),
+    )
+    result = _contractor_row(row) if row else None
+    if result:
+        digest_record(app_id="home", entity_type="home contractor", action="created",
+                      entity_id=result["id"], record=result,
+                      by=contractor.get("created_by", ""), context_hint=_CONTRACTOR_HINT)
+    return result
+
+
+def get_contractor(contractor_id: str) -> dict | None:
+    row = fetch_one_in_schema(SCHEMA, "SELECT * FROM home_contractors WHERE id = %s", (contractor_id,))
+    return _contractor_row(row) if row else None
+
+
+def get_all_contractors(trade: str = None, limit: int = 200) -> list[dict]:
+    clauses, params = [], []
+    if trade:
+        clauses.append("trade = %s")
+        params.append(trade)
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+    params.append(limit)
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        f"""SELECT * FROM home_contractors
+            {where}
+            ORDER BY created_at DESC
+            LIMIT %s""",
+        tuple(params),
+    )
+    return [_contractor_row(r) for r in rows]
+
+
+def search_contractors(query: str) -> list[dict]:
+    pattern = f"%{query}%"
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        """SELECT * FROM home_contractors
+           WHERE name ILIKE %s OR trade ILIKE %s OR company ILIKE %s
+              OR phone ILIKE %s OR email ILIKE %s OR jobs_history ILIKE %s
+              OR notes ILIKE %s
+           ORDER BY created_at DESC""",
+        (pattern, pattern, pattern, pattern, pattern, pattern, pattern),
+    )
+    return [_contractor_row(r) for r in rows]
+
+
+def update_contractor(contractor_id: str, updates: dict, by: str = "") -> bool:
+    allowed = {
+        "name", "trade", "company", "phone", "email",
+        "rating", "last_used", "jobs_history", "notes",
+    }
+    sets, vals = [], []
+    for key, val in updates.items():
+        if key not in allowed:
+            continue
+        sets.append(f"{key} = %s")
+        vals.append(val)
+    if not sets:
+        return False
+    sets.append("updated_at = %s")
+    vals.append(_now())
+    vals.append(contractor_id)
+    ok = execute_in_schema(
+        SCHEMA, f"UPDATE home_contractors SET {', '.join(sets)} WHERE id = %s", tuple(vals)
+    ) > 0
+    if ok:
+        updated = get_contractor(contractor_id)
+        if updated:
+            digest_record(app_id="home", entity_type="home contractor", action="updated",
+                          entity_id=contractor_id, record=updated, by=by,
+                          context_hint=_CONTRACTOR_HINT)
+    return ok
+
+
+def delete_contractor(contractor_id: str, by: str = "") -> bool:
+    contractor = get_contractor(contractor_id)
+    ok = execute_in_schema(SCHEMA, "DELETE FROM home_contractors WHERE id = %s", (contractor_id,)) > 0
+    if ok and contractor:
+        digest_record(app_id="home", entity_type="home contractor", action="deleted",
+                      entity_id=contractor_id, record=contractor, by=by)
+    return ok
+
+
+def get_contractor_trades() -> list[str]:
+    """Distinct contractor trades in use."""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT DISTINCT trade FROM home_contractors WHERE trade != '' ORDER BY trade",
+    )
+    return [r["trade"] for r in rows if r.get("trade")]
+
+
+# ---------------------------------------------------------------------------
 # Home Insurance Policies (Insurance Tab)
 # ---------------------------------------------------------------------------
 
@@ -948,4 +1092,7 @@ BACKFILL_ENTITIES = [
     {"entity_type": "home insurance policy",
      "list_fn": get_all_policies,
      "context_hint": _POLICY_HINT},
+    {"entity_type": "home contractor",
+     "list_fn": get_all_contractors,
+     "context_hint": _CONTRACTOR_HINT},
 ]
