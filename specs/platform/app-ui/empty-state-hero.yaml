@@ -28,11 +28,11 @@ behavior: 'A reusable EmptyStateHero (web/src/components/EmptyStateHero.jsx) tak
   or {mode:''per-view'', views:[...]} (one hero per named tab/view, fired when THAT view''s
   slice is pristine-empty) — and every exclude carries a reason. A static-parsing node guardrail
   enforces that a new app cannot silently skip the decision and that every declared hero has
-  copy. FINAL OPT-IN (18 apps / 19 heroes): default-view heroes on auto, goals, tasks, brainstorming,
+  copy. FINAL OPT-IN (19 apps / 20 heroes): default-view heroes on auto, goals, tasks, chores, brainstorming,
   documents, folders, images, lists, locator, recipes, timeline, bounties, schedules; per-view
   heroes on todo (one page hero when no todo AND no backlog), reminders (TWO — Reminders tab
   + Nags tab), meals (Browse tab), medical (Medications tab; copy describes the whole medical
-  app), home (Maintenance tab). EXCLUDED (no hero): issues (removed from scope), chores, prioritize,
+  app), home (Maintenance tab). EXCLUDED (no hero): issues (removed from scope), prioritize,
   and the system/tool apps. Build proceeds STAGED under this one spec/slug: BATCH 1 (pilot)
   = the shared infra + auto, goals, timeline, recipes (locks the hero design on both-theme
   screenshots at Gate 2); BATCH 2+ = the remaining heroes, each fully screenshot-verified.'
@@ -76,7 +76,7 @@ tests:
     the hero. Follow-on batches add the remaining heroes, each screenshot-verified.'
 links: {}
 notes: 'Operator-authored (#52). Staged build under one slug: pilot batch = auto, goals, timeline,
-  recipes; follow-on batches add the remaining 15 heroes (18 apps / 19 heroes total). Blurbs
+  recipes; follow-on batches add the remaining heroes (19 apps / 20 heroes total; ev-59 opted chores in). Blurbs
   are operator-final (verbatim). Test = Option B static node guardrail (no new infra). Guardrail
   on an UNCLASSIFIED primary entry: warn + default-exclude, build stays GREEN (preserve the
   zero-touch app-package contract). medical: whole-app copy on the Medications-tab-empty trigger

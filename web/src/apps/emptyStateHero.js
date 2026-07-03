@@ -46,6 +46,7 @@ export const OPT_IN = {
   auto: { mode: "default" },
   goals: { mode: "default" },
   tasks: { mode: "default" },
+  chores: { mode: "default" },
   brainstorming: { mode: "default" },
   documents: { mode: "default" },
   folders: { mode: "default" },
@@ -68,7 +69,6 @@ export const OPT_IN = {
 // no hero.
 export const EXCLUDE = {
   issues: "operator removed it from scope — no hero (the issues feature may be retired)",
-  chores: "grouped per zone/person ('nothing today' is per-group, not a pristine-empty collection)",
   prioritize: "a focusing tool over OTHER apps' items, not its own record collection",
   behaviors: "LLM behavior config, not user content",
   automation: "Home-Assistant device/alias config, not user records",

@@ -4,6 +4,8 @@ import {
   Check, ChevronLeft, ChevronRight, X,
 } from "lucide-react";
 import { hasAnyRole } from "../../../web/src/utils/roles";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 const API = "/api/apps/chores";
 
@@ -190,7 +192,17 @@ function TodayTab({ userId, isParent, refreshKey }) {
 
       {!data && <div className="text-faint text-sm">Loading…</div>}
 
-      {data && (
+      {data && data.kids.length === 0 && (
+        <PristineEmpty
+          appId="chores"
+          blurb={getAppManifest("chores")?.blurb}
+          records={data.kids}
+          loading={!data}
+          filterActive={false}
+        />
+      )}
+
+      {data && data.kids.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {data.kids.map(kid => {
             const isYou = kid.user_id === userId;
