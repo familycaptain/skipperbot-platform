@@ -415,6 +415,42 @@ async def onboarding_status():
     return await asyncio.to_thread(_do)
 
 
+@app.get("/api/onboarding/live-greeting-status")
+async def onboarding_live_greeting_status(request: Request):
+    """Whether the CURRENT user should get the event-driven live onboarding greeting.
+
+    True IFF the authenticated user is the primary user, the guided-agenda goal is
+    still IN PROGRESS, and the one-time greeting hasn't been claimed yet. The web
+    client consumes this synchronous 'primary + onboarding-in-progress' signal to
+    (a) suppress the canned fresh-onboarding greeting and (b) show the typing
+    indicator OPTIMISTICALLY while the real server-driven greeting is produced
+    (platform.onboarding.live-greeting). A fresh NON-primary user gets ``false``
+    and keeps their client-side greeting.
+    """
+    principal = principal_from_request(request)
+
+    def _do():
+        name = ((principal or {}).get("name") or "").strip().lower()
+        if not name:
+            return {"pending": False}
+        try:
+            from data_layer.users import get_primary_user
+            primary = (get_primary_user() or "").strip().lower()
+            if not primary or name != primary:
+                return {"pending": False}
+            from apps.goals.onboarding import onboarding_agenda_in_progress, _GREETED_KEY
+            if not onboarding_agenda_in_progress():
+                return {"pending": False}
+            from app_platform import config as platform_config
+            already_greeted = bool(platform_config.get(_GREETED_KEY, scope="app:goals"))
+            return {"pending": not already_greeted}
+        except Exception:
+            logger.debug("live-greeting-status check failed", exc_info=True)
+            return {"pending": False}
+
+    return await asyncio.to_thread(_do)
+
+
 class DisabledAppsRequest(BaseModel):
     disabled: list[str]
 
@@ -973,6 +1009,18 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
     await manager.connect(user_id, websocket, subprotocol=ws_bearer_subprotocol(websocket))
     # Send build ID so client can detect agent restarts
     await websocket.send_json({"type": "build_id", "build_id": BUILD_ID})
+
+    # Emit a THIN `desktop.arrival` event (transport carries NO onboarding/goals
+    # logic — the goals-layer handler owns all gating + greet-once). Fire-and-
+    # forget so the WS handshake never blocks; best-effort (any error is ignored).
+    try:
+        import thinking_scheduler
+        asyncio.create_task(
+            thinking_scheduler.submit_priority_event("desktop.arrival", {"user_id": user_id})
+        )
+    except Exception:
+        logger.debug("websocket_chat: could not emit desktop.arrival event", exc_info=True)
+
     try:
         while True:
             data = await websocket.receive_json()

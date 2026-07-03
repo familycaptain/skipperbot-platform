@@ -105,6 +105,38 @@ UPDATE_WORKING_MEMORY_TOOL = {
 # one item at a time, 1-month auto-close). Identified by its fixed seed name.
 ONBOARDING_GOAL_NAME = "Get started with Skipper"
 
+# Notification source_type for the live first-contact arrival greeting. Delivery
+# (apps/notifications/delivery._deliver_one) recognizes this source and pushes it
+# over the WS as a typing-clearing `chat_response` frame (live render = chat
+# bubble), while it still persists/reloads from history as a notification row —
+# consistent with other proactive DMs (platform.onboarding.live-greeting).
+ONBOARDING_GREETING_SOURCE = "onboarding_greeting"
+
+# Appended to the goal-think user prompt on a live ARRIVAL cycle so the model
+# opens with a warm first-contact hello instead of a mid-conversation nudge.
+_FIRST_CONTACT_FRAMING = """
+## FIRST CONTACT — LIVE ARRIVAL GREETING (act now)
+{who} just arrived on their desktop for the FIRST TIME, moments after finishing setup.
+This is your VERY FIRST message to them — a live hello, NOT a resumed conversation.
+- Greet them warmly and BY NAME ({who}) in 1-2 short sentences — like a present
+  person saying hi, not a wall of text.
+- Then OPEN the current (first not-done) agenda topic above as a single friendly
+  question — introduce it fresh; assume no prior context.
+- Use send_dm to {who} (the primary user). Send at most TWO short bubbles (a warm
+  opener, then the first agenda prompt), then STOP and yield so they can reply.
+  Do NOT dump the whole agenda.
+"""
+
+
+def _first_contact_framing() -> str:
+    """First-contact greeting instructions, personalized with the primary user's name."""
+    try:
+        from data_layer.users import get_primary_user
+        who = (get_primary_user() or "").strip() or "the primary user"
+    except Exception:
+        who = "the primary user"
+    return _FIRST_CONTACT_FRAMING.format(who=who)
+
 
 def _user_recently_active(username: str, within_minutes: int = 15) -> bool:
     """True if the user has chatted within the last ``within_minutes``.
@@ -215,8 +247,15 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
     """Run one thinking cycle for a goal domain.
 
     ``domain["name"]`` is the goal ID (e.g. ``g-b9cd5ae6``).
+
+    ``domain["arrival"]`` (optional) marks an event-driven LIVE arrival cycle
+    for the onboarding goal (platform.onboarding.live-greeting): the produce
+    path switches to a warm FIRST-CONTACT greeting (personalized, opening — not
+    resuming — the current agenda step) delivered as a typing-clearing frame.
     """
     goal_id = domain["name"]
+    # First-contact live arrival greeting (vs the normal timer-driven nudge cycle).
+    is_arrival = bool(domain.get("arrival"))
 
     # ---------- OBSERVE ----------
     ctx = await asyncio.to_thread(_observe, goal_id, domain["name"])
@@ -298,6 +337,11 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
     user_prompt = _build_user_prompt(ctx)
     tools, routed_tool_names = _build_tools(user_prompt)
 
+    # Live arrival cycle: prepend warm first-contact greeting framing so the model
+    # opens with a personalized hello (not a mid-conversation nudge).
+    if is_onboarding and is_arrival:
+        user_prompt = user_prompt + "\n\n" + _first_contact_framing()
+
     from tool_router import get_guides_for_categories
     # Baseline guides are a fixed set — appended to static system for caching
     guide_content = get_guides_for_categories(BASELINE_CATEGORIES)
@@ -355,21 +399,31 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
             if dm_to == "skipper":
                 return "You cannot DM yourself. DM not sent."
             # Onboarding is a live, one-at-a-time conversation — a single DM per
-            # cycle. Other goals keep the looser cap.
-            _cap = 1 if is_onboarding else 3
+            # cycle. The first-contact live arrival greeting is allowed TWO short
+            # bubbles (a warm opener + the first agenda prompt). Other goals keep
+            # the looser cap.
+            _cap = (2 if (is_onboarding and is_arrival) else 1) if is_onboarding else 3
             if dm_count >= _cap:
                 return f"DM limit reached (max {_cap} per cycle). DM not sent."
-            if dm_to in dm_recipients:
+            # The first-contact arrival burst is an INTENTIONAL 2-bubble greeting
+            # to the same primary user, so it bypasses the same-recipient and
+            # one-at-a-time gates below (the cap still bounds it to 2). The
+            # pending_action rows it writes still HOLD the later cadence cycle.
+            _arrival_burst = is_onboarding and is_arrival
+            if dm_to in dm_recipients and not _arrival_burst:
                 return f"Already sent a DM to {dm_to} this cycle. DM not sent."
             # One-at-a-time pacing: if the prior DM to this person is still
             # unanswered and < 24h old, hold and wait for their reply.
-            if await asyncio.to_thread(_dm_on_hold, dm_to, domain_name):
+            if not _arrival_burst and await asyncio.to_thread(_dm_on_hold, dm_to, domain_name):
                 return (
                     f"Your previous message to {dm_to} is unanswered and less than "
                     "24h old. Wait for their reply before sending another — DM not sent."
                 )
 
-            await _send_dm(dm_to, dm_text, subject_id)
+            # On a live arrival cycle the greeting delivers as a chat_response
+            # bubble (clears the client's optimistic typing) via this source_type.
+            _dm_source = ONBOARDING_GREETING_SOURCE if (is_onboarding and is_arrival) else "goal_thinking"
+            await _send_dm(dm_to, dm_text, subject_id, source_type=_dm_source)
             dm_count += 1
             dm_recipients.add(dm_to)
 
@@ -875,7 +929,7 @@ def _build_tools(context_text: str) -> tuple[list[dict], set[str]]:
 # DM helper
 # =========================================================================
 
-async def _send_dm(person: str, text: str, subject_id: str = ""):
+async def _send_dm(person: str, text: str, subject_id: str = "", *, source_type: str = "goal_thinking"):
     """DM a real household user from the goal thinking loop.
 
     Delivers through the platform's multi-surface notification path (web UI,
@@ -883,6 +937,10 @@ async def _send_dm(person: str, text: str, subject_id: str = ""):
     sender directly. The recipient is validated: an unknown/placeholder name is
     redirected to the primary user so the nudge still reaches a real person
     (never a phantom like an example name the LLM might invent).
+
+    ``source_type`` tags the notification (default ``goal_thinking``); the live
+    first-contact arrival greeting passes ``onboarding_greeting`` so delivery
+    surfaces it as a typing-clearing chat_response bubble.
     """
     from config import PM_QUIET_MODE
     if PM_QUIET_MODE:
@@ -904,7 +962,7 @@ async def _send_dm(person: str, text: str, subject_id: str = ""):
             create_notification,
             recipient=recipient,
             message=text,
-            source_type="goal_thinking",
+            source_type=source_type,
             source_id=subject_id or "",
             channel="all",
             delivered=False,

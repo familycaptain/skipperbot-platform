@@ -160,12 +160,27 @@ async def _deliver_one(notif: dict):
     try:
         from connections import manager
         active_users = manager.list_connected_users()
-        ws_sent = await manager.send_to_user(recipient, {
-            "type": "notification",
-            "source": notif.get("source_type", "system"),
-            "message": message,
-            "user_id": recipient,
-        })
+        source_type = notif.get("source_type", "system")
+        # The live onboarding first-contact greeting delivers as a typing-clearing
+        # `chat_response` bubble so it clears the client's optimistic typing dots
+        # (platform.onboarding.live-greeting). It still persists to chat history
+        # and reloads as a notification row — consistent with other proactive DMs.
+        if source_type == "onboarding_greeting":
+            from datetime import datetime as _dt, timezone as _tz
+            ws_frame = {
+                "type": "chat_response",
+                "response": message,
+                "user_id": recipient,
+                "ts": _dt.now(_tz.utc).isoformat(),
+            }
+        else:
+            ws_frame = {
+                "type": "notification",
+                "source": source_type,
+                "message": message,
+                "user_id": recipient,
+            }
+        ws_sent = await manager.send_to_user(recipient, ws_frame)
         if ws_sent:
             logger.info("NOTIF_DELIVERY: WebSocket sent to %s", recipient)
         else:

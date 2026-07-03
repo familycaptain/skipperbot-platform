@@ -1,0 +1,128 @@
+kind: specification
+id: platform.onboarding.live-greeting
+title: Immediate event-driven onboarding greeting on desktop arrival (live-agent kickoff)
+state: live
+behavior: 'When the PRIMARY user''s authenticated desktop chat WebSocket connects (agent.py
+  websocket_chat), the transport emits a THIN `desktop.arrival` event (user_id) and does NO
+  onboarding logic itself. A GOALS-LAYER arrival handler (registered like the ''g-'' pattern)
+  consumes it: if the connecting principal is the primary user (normalized compare vs get_primary_user)
+  AND the guided-agenda goal is IN PROGRESS (not complete; the seed-done flag is NOT the signal)
+  AND an ATOMIC compare-and-set CLAIM on `onboarding_greeted` succeeds (claim set on ATTEMPT,
+  before producing — this both wins the multi-tab/reconnect race and throttles the ungated
+  priority-0 seam), it runs the onboarding produce cycle in the BACKGROUND (fire-and-forget;
+  never awaited on the WS handshake) via goal_domain_handler, producing a warm FIRST-CONTACT
+  greeting personalized with the onboarding-captured name that opens (not resumes) the current
+  agenda step. The greeting is delivered through the SINGLE canonical primitive — create_notification
+  then deliver-now INLINE (deliver_pending_notifications/_deliver_one) — so it is marked delivered=True,
+  fans across ALL surfaces (cross-surface parity), and is saved as a chat-log turn; there
+  is NO separate direct WS push of the message, so the ~30s delivery poll cannot re-fan it
+  (no double-render). The same _send_dm `pending_action` row is the SINGLE dedup state the
+  cadence worker''s _dm_on_hold reads, so the next cadence tick HOLDS (no double-greet). On
+  a produce/deliver FAILURE the claim is RELEASED so a later arrival retries (no permanent
+  strand). The typing indicator is shown CLIENT-OPTIMISTICALLY the instant an onboarding-in-progress
+  primary user reaches the desktop (independent of the socket round-trip — no empty-silence
+  gap) and clears when the delivered greeting turn arrives. The client''s canned greeting
+  is removed ONLY for the fresh-onboarding case; the welcome-back and non-primary greetings
+  are UNCHANGED (reconciling platform.agent.greeting-typing-beat — no regression). A non-primary
+  user, or an onboarded user (agenda complete), gets NO immediate onboarding greeting. Everything
+  is best-effort. Later follow-ups remain cadence-driven (thinking_scheduler unchanged).'
+implements:
+- agent.py websocket_chat (~L962-1030) — after auth, emit a thin `desktop.arrival` event (user_id).
+  NO onboarding/goals gating in the transport handler.
+- 'apps/goals/handlers.py — register a DEDICATED single-payload arrival-event handler (like
+  ''g-'') that: normalized primary-user check, guided-agenda-in-progress check, ATOMIC CAS
+  claim on onboarding_greeted (set-on-attempt), then background-runs the onboarding cycle
+  via an adapter -> goal_domain_handler(domain, budget_status); RELEASE the claim on failure.'
+- apps/goals/domain.py goal_domain_handler/_send_dm — reused to produce the greeting (personalized
+  name, first-contact framing) and deliver via create_notification + deliver-now INLINE (delivered=True,
+  multi-surface, chat-log); writes the pending_action dedup row.
+- thinking_scheduler.submit_priority_event/_priority_event_consumer — the arrival event runs
+  priority-0 (no timer/budget gate) routed to the registered adapter handler.
+- platform_config onboarding_greeted — ATOMIC claim flag (CAS), released on failure.
+- 'web/src/hooks/useSkipperSocket.js (~L138-159) — (a) NARROW: remove only the fresh-onboarding
+  greeting branch (keep welcome-back + non-primary); (b) show the typing indicator OPTIMISTICALLY
+  on onboarding-in-progress primary arrival; ensure the delivered greeting turn clears isTyping
+  (delivery surfaces as a turn the onmessage handler toggles typing off on).'
+- 'CLIENT SIGNAL (ux r2 MED): the web client must gate BOTH the narrowed canned-greeting removal
+  AND the optimistic typing on a synchronous ''primary + onboarding-in-progress'' signal (the
+  fresh-onboarding branch is hist.length===0 which also serves fresh NON-primary users) —
+  source it from the onboarding status the app already fetches (/api/onboarding/status or
+  an is_primary + onboarding-in-progress field passed to useSkipperSocket), NOT from hist.length
+  alone.'
+- 'OPTIMISTIC-TYPING TIMEOUT (spec-audit r2 MED): clear the client-optimistic typing after
+  a bounded timeout if no greeting turn arrives (fail-open to the normal input state) so a
+  produce/deliver failure or a second tab never leaves it spinning.'
+- 'LIVE FRAME TYPE (ux r2 low): the live greeting delivery frame must be the typing-clearing
+  type (chat_response); for staged bubbles re-assert typing between and clear after the last.'
+- 'ARRIVAL->GOAL RESOLUTION (spec-audit r2 low): the arrival handler resolves the onboarding
+  goal id (domain) from the stored onboarding seed (goal_id / ONBOARDING_GOAL_NAME) and computes
+  budget_status for the goal_domain_handler adapter call.'
+- 'DOC-TRUTH (interop r2 low): annotate specs/platform/agent/greeting-typing-beat.yaml to
+  carve out ''(except the fresh-onboarding primary arrival, now server-driven per platform.onboarding.live-greeting)''.'
+- 'PARITY (architecture r2 low): keep channel=''all'' on the produce/deliver path (platform
+  default) — no desktop-only override.'
+tests:
+- type: unit
+  path: tests/evolve/platform/test_onboarding_live_greeting.py
+  rubric: 'Deterministic (mock the produce/deliver path + platform_config CAS): the arrival
+    handler, for a PRIMARY user with agenda-in-progress and onboarding_greeted unclaimed,
+    WINS the atomic claim and schedules exactly one background produce; a SECOND concurrent/reconnect
+    arrival with the claim held does NOT produce (greet-once, race-safe — simulate two arrivals,
+    assert one produce). A NON-primary user or an AGENDA-COMPLETE user -> no produce. On a
+    produce failure the claim is RELEASED (a subsequent arrival can retry). The transport
+    (websocket_chat) only EMITS the event and contains no onboarding gating (assert the gating
+    lives in the goals handler).'
+- type: unit
+  path: tests/evolve/platform/test_onboarding_live_greeting.py
+  rubric: 'Delivery + no-double-render: the greeting is delivered via the canonical primitive
+    with delivered=True (assert create_notification row ends delivered=True / delivered inline)
+    so deliver_pending_notifications does NOT re-fan it; the same pending_action dedup row
+    is written so the cadence _dm_on_hold holds. Personalization: the produce context includes
+    the onboarding-captured name.'
+- type: unit
+  path: tests/evolve/platform/test_onboarding_live_greeting.py
+  rubric: 'Client resilience: the optimistic typing indicator clears after a bounded timeout
+    if no greeting turn arrives (assert it does not spin forever on a simulated no-delivery);
+    the primary+onboarding-in-progress gate for the removal + optimistic typing derives from
+    the onboarding-status signal (not hist.length), so a fresh NON-primary user still gets
+    their greeting and no stuck dots.'
+- type: unit
+  path: tests/evolve/platform/test_onboarding_live_greeting.py
+  rubric: 'Client: the fresh-onboarding canned greeting branch is removed but the welcome-back
+    + non-primary branches REMAIN (source/AST check on useSkipperSocket.js); the onboarding-primary
+    arrival shows the typing indicator optimistically.'
+- type: e2e
+  path: (test host, validate-time)
+  rubric: 'Live acceptance on the test host. Concrete reset (non-destructive, PRIMARY user
+    only): delete the `onboarding_greeted` platform_config key and set the guided-agenda goal
+    to an in-progress state for the primary user (name the exact keys at implement); do NOT
+    touch the other 6 users. Then drive the desktop as the primary user and assert: (1) a
+    typing indicator appears within ~1s of arrival (client-optimistic, deterministic); (2)
+    a REAL agent-authored greeting (personalized, walking the agenda — NOT the old canned
+    string) SUBSEQUENTLY arrives and renders as a chat turn (no hard ms bound on the model
+    message); (3) it appears EXACTLY ONCE — a reload/reconnect does NOT re-greet, and it is
+    NOT double-rendered (no second notification copy); (4) it persists to history (reload
+    shows it, web-visible). Repeat >=3x (probabilistic). Also assert a returning/onboarded
+    arrival still gets its welcome-back greeting (no regression). Genuinely-fresh-install
+    timing is the operator''s Gate-3 UAT.'
+links: {}
+notes: 'REVISED r1 (folds spec-audit sound=false + ux/architecture/interop non-approvals).
+  Re-architected: thin arrival event (transport decoupled) -> goals-layer handler with an
+  ATOMIC greet-once claim (release-on-failure) -> background produce -> CANONICAL deliver-now-inline
+  (delivered=True, multi-surface parity, chat-log, single pending_action dedup shared with
+  cadence) -> NO direct WS message push (no double-render). Typing = client-optimistic (no
+  empty-silence gap). Canned-greeting removal NARROWED to fresh-onboarding only (welcome-back/non-primary
+  kept; greeting-typing-beat reconciled). Timing oracle split: hard client typing<1s + greeting-follows
+  (no ms bound). Fire-and-forget produce. Personalized first-contact framing. 3 Gate-1 forks
+  (staging, greeting-typing-beat reconciliation, history-role). Cadence unchanged. | r2 panel
+  CLEAR: spec-audit sound=true; architecture/interop/ux approve. Folded r2 directives: client
+  primary+in-progress signal (from onboarding status, not hist.length); bounded optimistic-typing
+  timeout (fail-open); live frame=chat_response; arrival->goal-id from seed; annotate greeting-typing-beat
+  carve-out; channel=''all''. | Gate-2: validated GREEN on test host — 22/22 bound unittests
+  + LIVE acceptance: on the primary user''s desktop arrival a real agent-authored greeting
+  (''Hey admin — welcome to Skipper...'') delivers as a chat_response bubble at 3.6-11.6s
+  (typing signal via /api/onboarding/live-greeting-status), EXACTLY once (reconnect -> no
+  re-greet; onboarding_greeted holds), persists in /api/chat/history (notification role),
+  3/3 + UI screenshot; delivered via canonical _deliver_one (delivered=True, channel=''all'',
+  no double-render). dep via app_platform.notifications facade. verified=true.'
+verified: true

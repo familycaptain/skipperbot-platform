@@ -70,6 +70,14 @@ function greetingTypingDelay() {
   return GREETING_TYPING_MS;
 }
 
+// Live onboarding greeting (platform.onboarding.live-greeting): for a fresh
+// PRIMARY onboarding arrival the greeting is SERVER-driven, so the client shows
+// the typing indicator OPTIMISTICALLY (no empty-silence gap) until the real
+// greeting turn arrives. Bounded fail-open timeout: if no greeting arrives (a
+// produce/deliver failure or a second tab that lost the greet-once claim), clear
+// the dots and fall back to the normal input state rather than spinning forever.
+const OPTIMISTIC_GREETING_TIMEOUT_MS = 15000;
+
 export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDocsUpdated, onRemindersUpdated, onRecipesUpdated, onBrainstormUpdated, onEditProposal, onTodoUpdated) {
   const [connected, setConnected] = useState(false);
   // Coarse connection state for the chat surface: 'connecting' | 'connected' | 'auth_failed'.
@@ -131,10 +139,39 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
         // Offline or fresh session — fall through to a plain greeting.
       }
       if (cancelled) return;
+
+      // Synchronous 'primary + onboarding-in-progress' signal (NOT hist.length):
+      // a fresh PRIMARY onboarding user gets a SERVER-driven live greeting, so we
+      // suppress the canned client greeting and show typing optimistically. A
+      // fresh NON-primary user (pending=false) still gets their client greeting.
+      let liveGreeting = false;
+      try {
+        const gRes = await fetch("/api/onboarding/live-greeting-status");
+        if (gRes.ok) liveGreeting = !!(await gRes.json()).pending;
+      } catch {
+        // Offline or error — leave false so the canned greeting still shows.
+      }
+      if (cancelled) return;
+
       // Show history immediately; the GREETING is deferred behind a short typing
       // beat so Skipper feels present rather than dumping text instantly (issue #16).
       if (hist.length) setMessages((prev) => [...hist, ...prev]);
 
+      // NARROWED removal (platform.onboarding.live-greeting): ONLY the fresh-
+      // onboarding PRIMARY branch becomes server-driven. Show the typing indicator
+      // OPTIMISTICALLY (no empty-silence gap) with a BOUNDED fail-open timeout that
+      // clears it if no greeting arrives; the delivered greeting turn (a
+      // chat_response frame) clears isTyping via the onmessage handler below.
+      if (hist.length === 0 && liveGreeting) {
+        setIsTyping(true);
+        greetingTimer = setTimeout(() => {
+          if (!cancelled) setIsTyping(false);
+        }, OPTIMISTIC_GREETING_TIMEOUT_MS);
+        return;
+      }
+
+      // UNCHANGED: the welcome-back (returning) greeting and the fresh NON-primary
+      // greeting stay client-side (reconciles platform.agent.greeting-typing-beat).
       const greeting = {
         id: nextId(),
         role: "bot",
