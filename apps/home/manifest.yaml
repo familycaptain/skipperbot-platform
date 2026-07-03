@@ -16,6 +16,9 @@ entity_types:
   - prefix: "hmtl"
     name: Home Task Log
     table: home_task_log
+  - prefix: "ha"
+    name: Home Appliance
+    table: home_appliances
 
 tool_category:
   description: >
@@ -62,3 +65,16 @@ tool_category:
     - around the house
     - clean the
     - service the
+    # Appliances
+    - appliance
+    - refrigerator
+    - fridge
+    - dishwasher
+    - washer
+    - dryer
+    - hvac
+    - furnace
+    - water heater
+    - warranty
+    - serial number
+    - model number

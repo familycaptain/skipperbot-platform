@@ -30,6 +30,10 @@ _ISSUE_HINT = (
     "Focus on: issue title, location in the home, severity (minor/moderate/major/critical), "
     "current status, description of the problem, and any fix information."
 )
+_APPLIANCE_HINT = (
+    "Focus on: appliance name, type, brand/model, serial number, location, "
+    "purchase date and price, and warranty expiration."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -561,6 +565,194 @@ def unlink_issue_image(issue_id: str, image_id: str):
 
 
 # ---------------------------------------------------------------------------
+# Home Appliances (Appliances Tab)
+# ---------------------------------------------------------------------------
+
+def _appliance_row(row: dict) -> dict:
+    if not row:
+        return {}
+    return {
+        "id": row["id"],
+        "name": row.get("name") or "",
+        "appliance_type": row.get("appliance_type") or "General",
+        "brand": row.get("brand") or "",
+        "model": row.get("model") or "",
+        "serial_number": row.get("serial_number") or "",
+        "location": row.get("location") or "",
+        "purchase_date": row["purchase_date"].isoformat() if row.get("purchase_date") else "",
+        "purchase_price": float(row["purchase_price"]) if row.get("purchase_price") is not None else None,
+        "warranty_expires": row["warranty_expires"].isoformat() if row.get("warranty_expires") else "",
+        "notes": row.get("notes") or "",
+        "created_by": row.get("created_by") or "",
+        "created_at": row["created_at"].isoformat() if row.get("created_at") else "",
+        "updated_at": row["updated_at"].isoformat() if row.get("updated_at") else "",
+    }
+
+
+def create_appliance(appliance: dict) -> dict | None:
+    """Insert a new home appliance."""
+    row = execute_returning_in_schema(
+        SCHEMA,
+        """INSERT INTO home_appliances (id, name, appliance_type, brand, model,
+                                        serial_number, location, purchase_date,
+                                        purchase_price, warranty_expires, notes,
+                                        created_by, created_at, updated_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+           RETURNING *""",
+        (
+            appliance["id"],
+            appliance.get("name", ""),
+            appliance.get("appliance_type", "General"),
+            appliance.get("brand", ""),
+            appliance.get("model", ""),
+            appliance.get("serial_number", ""),
+            appliance.get("location", ""),
+            appliance.get("purchase_date") or None,
+            appliance.get("purchase_price"),
+            appliance.get("warranty_expires") or None,
+            appliance.get("notes", ""),
+            appliance.get("created_by", ""),
+            appliance.get("created_at", _now()),
+            appliance.get("updated_at", _now()),
+        ),
+    )
+    result = _appliance_row(row) if row else None
+    if result:
+        digest_record(app_id="home", entity_type="home appliance", action="created",
+                      entity_id=result["id"], record=result,
+                      by=appliance.get("created_by", ""), context_hint=_APPLIANCE_HINT)
+    return result
+
+
+def get_appliance(appliance_id: str) -> dict | None:
+    row = fetch_one_in_schema(SCHEMA, "SELECT * FROM home_appliances WHERE id = %s", (appliance_id,))
+    return _appliance_row(row) if row else None
+
+
+def get_all_appliances(appliance_type: str = None, location: str = None, limit: int = 200) -> list[dict]:
+    clauses, params = [], []
+    if appliance_type:
+        clauses.append("appliance_type = %s")
+        params.append(appliance_type)
+    if location:
+        clauses.append("location ILIKE %s")
+        params.append(location)
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+    params.append(limit)
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        f"""SELECT * FROM home_appliances
+            {where}
+            ORDER BY created_at DESC
+            LIMIT %s""",
+        tuple(params),
+    )
+    return [_appliance_row(r) for r in rows]
+
+
+def search_appliances(query: str) -> list[dict]:
+    pattern = f"%{query}%"
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        """SELECT * FROM home_appliances
+           WHERE name ILIKE %s OR appliance_type ILIKE %s OR brand ILIKE %s
+              OR model ILIKE %s OR serial_number ILIKE %s OR location ILIKE %s
+              OR notes ILIKE %s
+           ORDER BY created_at DESC""",
+        (pattern, pattern, pattern, pattern, pattern, pattern, pattern),
+    )
+    return [_appliance_row(r) for r in rows]
+
+
+def update_appliance(appliance_id: str, updates: dict, by: str = "") -> bool:
+    allowed = {
+        "name", "appliance_type", "brand", "model", "serial_number",
+        "location", "purchase_date", "purchase_price", "warranty_expires", "notes",
+    }
+    sets, vals = [], []
+    for key, val in updates.items():
+        if key not in allowed:
+            continue
+        sets.append(f"{key} = %s")
+        vals.append(val)
+    if not sets:
+        return False
+    sets.append("updated_at = %s")
+    vals.append(_now())
+    vals.append(appliance_id)
+    ok = execute_in_schema(
+        SCHEMA, f"UPDATE home_appliances SET {', '.join(sets)} WHERE id = %s", tuple(vals)
+    ) > 0
+    if ok:
+        updated = get_appliance(appliance_id)
+        if updated:
+            digest_record(app_id="home", entity_type="home appliance", action="updated",
+                          entity_id=appliance_id, record=updated, by=by,
+                          context_hint=_APPLIANCE_HINT)
+    return ok
+
+
+def delete_appliance(appliance_id: str, by: str = "") -> bool:
+    appliance = get_appliance(appliance_id)
+    ok = execute_in_schema(SCHEMA, "DELETE FROM home_appliances WHERE id = %s", (appliance_id,)) > 0
+    if ok and appliance:
+        digest_record(app_id="home", entity_type="home appliance", action="deleted",
+                      entity_id=appliance_id, record=appliance, by=by)
+    return ok
+
+
+def get_appliance_types() -> list[str]:
+    """Distinct appliance types in use."""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT DISTINCT appliance_type FROM home_appliances WHERE appliance_type != '' ORDER BY appliance_type",
+    )
+    return [r["appliance_type"] for r in rows if r.get("appliance_type")]
+
+
+def get_appliance_locations() -> list[str]:
+    """Distinct locations that have appliances."""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT DISTINCT location FROM home_appliances WHERE location != '' ORDER BY location",
+    )
+    return [r["location"] for r in rows if r.get("location")]
+
+
+# ---------------------------------------------------------------------------
+# Home Appliance Images (soft FK to public.images)
+# ---------------------------------------------------------------------------
+
+def get_appliance_images(appliance_id: str) -> list[dict]:
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        """SELECT i.*, hai.sort_order FROM public.images i
+           JOIN home_appliance_images hai ON hai.image_id = i.id
+           WHERE hai.appliance_id = %s
+           ORDER BY hai.sort_order, i.created_at""",
+        (appliance_id,),
+    )
+    return [_image_row(r) for r in rows]
+
+
+def link_appliance_image(appliance_id: str, image_id: str, sort_order: int = 0):
+    execute_in_schema(
+        SCHEMA,
+        """INSERT INTO home_appliance_images (image_id, appliance_id, sort_order)
+           VALUES (%s, %s, %s) ON CONFLICT DO NOTHING""",
+        (image_id, appliance_id, sort_order),
+    )
+
+
+def unlink_appliance_image(appliance_id: str, image_id: str):
+    execute_in_schema(
+        SCHEMA,
+        "DELETE FROM home_appliance_images WHERE appliance_id = %s AND image_id = %s",
+        (appliance_id, image_id),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Backfill registry — consumed by backfill_app_memories.py via discover_apps()
 # ---------------------------------------------------------------------------
 BACKFILL_ENTITIES = [
@@ -570,4 +762,7 @@ BACKFILL_ENTITIES = [
     {"entity_type": "home issue",
      "list_fn": get_all_issues,
      "context_hint": _ISSUE_HINT},
+    {"entity_type": "home appliance",
+     "list_fn": get_all_appliances,
+     "context_hint": _APPLIANCE_HINT},
 ]

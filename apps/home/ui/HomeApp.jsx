@@ -65,7 +65,7 @@ export default function HomeApp({ appId, userId, context = {}, onTitle, onOpenAp
           <HomeIssuesTab userId={userId} />
         )}
         {activeTab === "appliances" && (
-          <AppliancesTab />
+          <AppliancesTab userId={userId} />
         )}
         {activeTab === "insurance" && (
           <InsuranceTab />
@@ -920,12 +920,466 @@ function CategoriesManager({ catObjects, onChanged }) {
   );
 }
 
-function AppliancesTab() {
+/* ── Appliance warranty helpers ── */
+function warrantyStatus(dateStr) {
+  if (!dateStr) return "none";
+  const diff = daysDiff(dateStr);
+  if (diff < 0) return "expired";
+  if (diff <= 30) return "soon";
+  return "covered";
+}
+
+const WARRANTY_STYLES = {
+  expired: { badge: "bg-red-500/20 text-red-400",     label: "Warranty expired" },
+  soon:    { badge: "bg-amber-500/20 text-amber-400", label: "Expires soon" },
+  covered: { badge: "bg-green-500/20 text-green-400", label: "Under warranty" },
+  none:    { badge: "surface-raised text-muted",      label: "No warranty" },
+};
+
+function WarrantyBadge({ warranty_expires }) {
+  const status = warrantyStatus(warranty_expires);
+  if (status === "none") return null;
+  const s = WARRANTY_STYLES[status];
+  const suffix = warranty_expires ? ` · ${fmtDate(warranty_expires)}` : "";
   return (
-    <div className="flex flex-col items-center justify-center h-full text-faint">
-      <ShoppingCart size={36} className="text-faint mb-3" />
-      <p className="text-sm font-medium text-muted">Appliances</p>
-      <p className="text-xs mt-1">Purchase history — coming soon</p>
+    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${s.badge}`}>
+      {s.label}{status !== "expired" ? suffix : ""}
+    </span>
+  );
+}
+
+function fmtPrice(val) {
+  if (val === null || val === undefined || val === "") return "";
+  const n = Number(val);
+  if (Number.isNaN(n)) return "";
+  return "$" + n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/* ── Add Appliance Form ── */
+function AddApplianceForm({ types = [], userId, onSave, onCancel }) {
+  const [form, setForm] = useState({
+    name: "", appliance_type: "General", brand: "", model: "", serial_number: "",
+    location: "", purchase_date: "", purchase_price: "", warranty_expires: "", notes: "",
+  });
+  const [pendingPhoto, setPendingPhoto] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const photoRef = useRef();
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!form.name.trim()) return;
+    setSaving(true);
+    try {
+      const body = {
+        name: form.name.trim(),
+        appliance_type: form.appliance_type.trim() || "General",
+        brand: form.brand.trim(),
+        model: form.model.trim(),
+        serial_number: form.serial_number.trim(),
+        location: form.location.trim(),
+        purchase_date: form.purchase_date || null,
+        purchase_price: form.purchase_price !== "" ? parseFloat(form.purchase_price) : null,
+        warranty_expires: form.warranty_expires || null,
+        notes: form.notes.trim(),
+        created_by: userId || "",
+      };
+      const res = await fetch("/api/apps/home/appliances", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const appliance = await res.json();
+
+      if (pendingPhoto) {
+        const fd = new FormData();
+        fd.append("file", pendingPhoto);
+        fd.append("entity_type", "home_appliance");
+        fd.append("entity_id", appliance.id);
+        fd.append("uploaded_by", userId || "");
+        await fetch("/api/apps/images/upload", { method: "POST", body: fd });
+      }
+
+      onSave(appliance);
+    } catch (err) {
+      alert("Failed to add appliance: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputCls = "w-full surface-panel border border-subtle rounded px-2.5 py-1.5 text-xs text-default focus:outline-none focus:border-indigo-500";
+
+  return (
+    <form onSubmit={handleSubmit} className="surface-card border border-subtle rounded-lg p-4 space-y-3 mb-2">
+      <p className="text-xs font-semibold text-muted uppercase tracking-wide">New Appliance</p>
+      <input className={inputCls} placeholder="Appliance name (e.g. Kitchen refrigerator) *" value={form.name}
+        onChange={e => set("name", e.target.value)} autoFocus required />
+      <div className="grid grid-cols-2 gap-2">
+        <input className={inputCls} placeholder="Type (e.g. Refrigerator)" value={form.appliance_type}
+          onChange={e => set("appliance_type", e.target.value)} list="appliance-types" />
+        <datalist id="appliance-types">
+          {types.map(t => <option key={t} value={t} />)}
+        </datalist>
+        <input className={inputCls} placeholder="Location (e.g. Kitchen)" value={form.location}
+          onChange={e => set("location", e.target.value)} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <input className={inputCls} placeholder="Brand (e.g. LG)" value={form.brand}
+          onChange={e => set("brand", e.target.value)} />
+        <input className={inputCls} placeholder="Model" value={form.model}
+          onChange={e => set("model", e.target.value)} />
+      </div>
+      <input className={inputCls} placeholder="Serial number" value={form.serial_number}
+        onChange={e => set("serial_number", e.target.value)} />
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="block text-xs text-faint mb-1">Purchase date</label>
+          <input className={inputCls} type="date" value={form.purchase_date}
+            onChange={e => set("purchase_date", e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-xs text-faint mb-1">Purchase price</label>
+          <input className={inputCls} type="number" min="0" step="0.01" placeholder="0.00"
+            value={form.purchase_price} onChange={e => set("purchase_price", e.target.value)} />
+        </div>
+      </div>
+      <div>
+        <label className="block text-xs text-faint mb-1">Warranty expires</label>
+        <input className={inputCls} type="date" value={form.warranty_expires}
+          onChange={e => set("warranty_expires", e.target.value)} />
+      </div>
+      <textarea className={`${inputCls} resize-none`} rows={2} placeholder="Notes (optional)"
+        value={form.notes} onChange={e => set("notes", e.target.value)} />
+
+      {/* Photo picker */}
+      <div className="flex items-center gap-3">
+        <label className={`flex items-center gap-2 px-3 py-1.5 text-xs rounded border cursor-pointer transition-colors ${
+          pendingPhoto ? "border-indigo-500 bg-indigo-600/20 text-indigo-300" : "border-subtle text-muted hover:border-[var(--ds-border)] hover:text-[var(--ds-text)]"
+        }`}>
+          <Camera size={13} />
+          {pendingPhoto ? pendingPhoto.name : "Attach receipt / photo (optional)"}
+          <input ref={photoRef} type="file" accept="image/*" capture="environment" className="hidden"
+            onChange={e => setPendingPhoto(e.target.files[0] || null)} />
+        </label>
+        {pendingPhoto && (
+          <button type="button" onClick={() => { setPendingPhoto(null); if (photoRef.current) photoRef.current.value = ""; }}
+            className="text-faint hover:text-red-400">
+            <X size={13} />
+          </button>
+        )}
+      </div>
+
+      <div className="flex items-center justify-end gap-2">
+        <button type="button" onClick={onCancel} className="px-3 py-1.5 text-xs text-muted hover:text-[var(--ds-text)]">Cancel</button>
+        <button type="submit" disabled={saving || !form.name.trim()}
+          className="px-4 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-on-accent rounded">
+          {saving ? "Saving..." : "Add Appliance"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/* ── Appliance Card ── */
+function ApplianceCard({ appliance, expanded, onToggle, onUpdate, onDelete, userId, types = [] }) {
+  const [images, setImages] = useState([]);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (expanded && !imagesLoaded) {
+      fetch(`/api/apps/home/appliances/${appliance.id}`)
+        .then(r => r.ok ? r.json() : { images: [] })
+        .then(d => { setImages(d.images || []); setImagesLoaded(true); })
+        .catch(() => setImagesLoaded(true));
+    }
+  }, [expanded, appliance.id, imagesLoaded]);
+
+  async function handleEditSave() {
+    setSaving(true);
+    try {
+      const body = {
+        ...editForm,
+        purchase_price: editForm.purchase_price !== "" && editForm.purchase_price != null
+          ? parseFloat(editForm.purchase_price) : null,
+        purchase_date: editForm.purchase_date || null,
+        warranty_expires: editForm.warranty_expires || null,
+      };
+      const res = await fetch(`/api/apps/home/appliances/${appliance.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) { onUpdate(await res.json()); setEditMode(false); }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete() {
+    if (!confirm(`Delete "${appliance.name}"?`)) return;
+    await fetch(`/api/apps/home/appliances/${appliance.id}`, { method: "DELETE" });
+    onDelete(appliance.id);
+  }
+
+  function startEdit() {
+    setEditForm({
+      name: appliance.name,
+      appliance_type: appliance.appliance_type || "General",
+      brand: appliance.brand || "",
+      model: appliance.model || "",
+      serial_number: appliance.serial_number || "",
+      location: appliance.location || "",
+      purchase_date: appliance.purchase_date || "",
+      purchase_price: appliance.purchase_price ?? "",
+      warranty_expires: appliance.warranty_expires || "",
+      notes: appliance.notes || "",
+    });
+    setEditMode(true);
+  }
+
+  const bm = [appliance.brand, appliance.model].filter(Boolean).join(" ");
+  const inputCls = "w-full surface-panel border border-subtle rounded px-2 py-1 text-xs text-default outline-none focus:border-indigo-500";
+
+  return (
+    <div className="border rounded-lg overflow-hidden transition-all surface-card border-subtle">
+      <div className="flex items-start gap-2.5 px-3 py-2.5 cursor-pointer" onClick={onToggle}>
+        <span className="w-2 h-2 rounded-full shrink-0 mt-1.5 bg-indigo-500" />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium text-default">{appliance.name}</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium surface-raised text-default">{appliance.appliance_type || "General"}</span>
+            <WarrantyBadge warranty_expires={appliance.warranty_expires} />
+            {appliance.location && (
+              <span className="flex items-center gap-0.5 text-[10px] text-faint surface-raised px-1.5 py-0.5 rounded">
+                <MapPin size={8} /> {appliance.location}
+              </span>
+            )}
+          </div>
+          {bm && !expanded && (
+            <p className="text-[11px] text-faint mt-0.5 truncate">{bm}</p>
+          )}
+        </div>
+        <ChevronDown size={14} className={`text-faint shrink-0 mt-0.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+      </div>
+
+      {expanded && (
+        <div className="border-t border-subtle px-3 py-3">
+          {editMode ? (
+            <div className="space-y-2">
+              <div>
+                <label className="text-[10px] text-faint">Name</label>
+                <input className={inputCls} value={editForm.name || ""}
+                  onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-faint">Type</label>
+                  <input className={inputCls} value={editForm.appliance_type || ""} list="appliance-types-edit"
+                    onChange={e => setEditForm(p => ({ ...p, appliance_type: e.target.value }))} />
+                  <datalist id="appliance-types-edit">
+                    {types.map(t => <option key={t} value={t} />)}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="text-[10px] text-faint">Location</label>
+                  <input className={inputCls} value={editForm.location || ""}
+                    onChange={e => setEditForm(p => ({ ...p, location: e.target.value }))} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-faint">Brand</label>
+                  <input className={inputCls} value={editForm.brand || ""}
+                    onChange={e => setEditForm(p => ({ ...p, brand: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-[10px] text-faint">Model</label>
+                  <input className={inputCls} value={editForm.model || ""}
+                    onChange={e => setEditForm(p => ({ ...p, model: e.target.value }))} />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] text-faint">Serial number</label>
+                <input className={inputCls} value={editForm.serial_number || ""}
+                  onChange={e => setEditForm(p => ({ ...p, serial_number: e.target.value }))} />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-faint">Purchase date</label>
+                  <input className={inputCls} type="date" value={editForm.purchase_date || ""}
+                    onChange={e => setEditForm(p => ({ ...p, purchase_date: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="text-[10px] text-faint">Purchase price</label>
+                  <input className={inputCls} type="number" min="0" step="0.01" value={editForm.purchase_price ?? ""}
+                    onChange={e => setEditForm(p => ({ ...p, purchase_price: e.target.value }))} />
+                </div>
+              </div>
+              <div>
+                <label className="text-[10px] text-faint">Warranty expires</label>
+                <input className={inputCls} type="date" value={editForm.warranty_expires || ""}
+                  onChange={e => setEditForm(p => ({ ...p, warranty_expires: e.target.value }))} />
+              </div>
+              <textarea className={`${inputCls} resize-none`} rows={2} placeholder="Notes"
+                value={editForm.notes || ""} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} />
+              <div className="flex gap-1">
+                <button onClick={handleEditSave} disabled={saving}
+                  className="px-3 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 text-on-accent rounded disabled:opacity-50">
+                  {saving ? "Saving..." : "Save"}
+                </button>
+                <button onClick={() => setEditMode(false)} className="px-3 py-1 text-xs text-muted hover:text-[var(--ds-text)]">Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs mb-2">
+                {bm && <div><span className="text-faint">Brand/Model: </span><span className="text-muted">{bm}</span></div>}
+                {appliance.serial_number && <div><span className="text-faint">Serial: </span><span className="text-muted">{appliance.serial_number}</span></div>}
+                {appliance.purchase_date && <div><span className="text-faint">Purchased: </span><span className="text-muted">{fmtDate(appliance.purchase_date)}</span></div>}
+                {appliance.purchase_price != null && <div><span className="text-faint">Price: </span><span className="text-muted">{fmtPrice(appliance.purchase_price)}</span></div>}
+                {appliance.warranty_expires && <div><span className="text-faint">Warranty: </span><span className="text-muted">{fmtDate(appliance.warranty_expires)}</span></div>}
+              </div>
+              {appliance.notes && <p className="text-xs text-faint italic mb-2">{appliance.notes}</p>}
+
+              {/* Receipt / photos */}
+              <p className="text-[10px] text-faint uppercase tracking-wide mt-2">Receipt / photos</p>
+              <IssueImageStrip issueId={appliance.id} entityType="home_appliance" images={images} userId={userId} />
+
+              {/* Actions */}
+              <div className="flex items-center gap-2 mt-3">
+                <button onClick={startEdit}
+                  className="flex items-center gap-1 px-2 py-1 text-xs text-muted hover:text-[var(--ds-text)] border border-subtle rounded">
+                  <Edit2 size={11} /> Edit
+                </button>
+                <button onClick={handleDelete}
+                  className="flex items-center gap-1 px-2 py-1 text-xs text-red-500 hover:text-red-400 border border-red-900/40 rounded">
+                  <Trash2 size={11} /> Delete
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ── Appliances Tab ── */
+function AppliancesTab({ userId }) {
+  const [appliances, setAppliances] = useState([]);
+  const [types, setTypes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState("All");
+  const [showAdd, setShowAdd] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set("q", search.trim());
+      else if (typeFilter !== "All") params.set("appliance_type", typeFilter);
+      const res = await fetch(`/api/apps/home/appliances?${params}`);
+      const d = await res.json();
+      setAppliances(d.appliances || []);
+      if (d.types?.length) setTypes(d.types);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, typeFilter]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const allTypes = ["All", ...types];
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Toolbar */}
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-subtle shrink-0">
+        <div className="relative flex-1">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-faint" />
+          <input
+            className="w-full surface-panel border border-subtle rounded pl-7 pr-2.5 py-1.5 text-xs text-default placeholder-slate-600 focus:outline-none focus:border-indigo-500"
+            placeholder="Search appliances..."
+            value={search}
+            onChange={e => { setSearch(e.target.value); setTypeFilter("All"); }}
+          />
+          {search && <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-faint hover:text-[var(--ds-text)]"><X size={12} /></button>}
+        </div>
+        {!search && allTypes.length > 1 && (
+          <select
+            className="surface-panel border border-subtle rounded px-2 py-1.5 text-xs text-default focus:outline-none focus:border-indigo-500"
+            value={typeFilter}
+            onChange={e => setTypeFilter(e.target.value)}
+          >
+            {allTypes.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        )}
+        <button
+          onClick={() => setShowAdd(v => !v)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded transition-colors ${
+            showAdd ? "surface-raised text-on-accent" : "bg-indigo-600 hover:bg-indigo-500 text-on-accent"
+          }`}
+        >
+          {showAdd ? <X size={13} /> : <Plus size={13} />}
+          {showAdd ? "Cancel" : "Add Appliance"}
+        </button>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0">
+        {showAdd && (
+          <AddApplianceForm
+            types={types}
+            userId={userId}
+            onSave={(appliance) => { setAppliances(prev => [appliance, ...prev]); setShowAdd(false); setExpandedId(appliance.id); load(); }}
+            onCancel={() => setShowAdd(false)}
+          />
+        )}
+        {loading ? (
+          <div className="flex items-center justify-center h-32 text-faint text-sm">Loading...</div>
+        ) : appliances.length === 0 ? (
+          <PristineEmpty
+            appId="home"
+            blurb={getAppManifest("home")?.heroes?.appliances}
+            records={appliances}
+            loading={loading}
+            filterActive={!!search.trim() || typeFilter !== "All"}
+            fallback={
+              <div className="flex flex-col items-center justify-center h-48 text-faint">
+                <ShoppingCart size={32} className="text-default mb-3" />
+                <p className="text-sm font-medium text-muted">
+                  {search ? `No appliances matching "${search}"` : "No appliances yet"}
+                </p>
+                <p className="text-xs mt-1 text-faint">
+                  {!search && 'Click "Add Appliance" to get started'}
+                </p>
+              </div>
+            }
+          />
+        ) : (
+          <div className="space-y-2">
+            {appliances.map(appliance => (
+              <ApplianceCard
+                key={appliance.id}
+                appliance={appliance}
+                expanded={expandedId === appliance.id}
+                onToggle={() => setExpandedId(prev => prev === appliance.id ? null : appliance.id)}
+                onUpdate={(updated) => setAppliances(prev => prev.map(a => a.id === updated.id ? { ...a, ...updated } : a))}
+                onDelete={(id) => { setAppliances(prev => prev.filter(a => a.id !== id)); if (expandedId === id) setExpandedId(null); }}
+                userId={userId}
+                types={types}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -972,6 +1426,8 @@ function IssueImageStrip({ issueId, entityType, images: initialImages, userId })
   async function handleRemove(imgId) {
     const endpoint = entityType === "home_issue"
       ? `/api/apps/home/issues/${issueId}/images/${imgId}/unlink`
+      : entityType === "home_appliance"
+      ? `/api/apps/home/appliances/${issueId}/images/${imgId}/unlink`
       : `/api/apps/auto/issues/${issueId}/images/${imgId}/unlink`;
     await fetch(endpoint, { method: "DELETE" });
     setImages(prev => prev.filter(i => i.id !== imgId));
