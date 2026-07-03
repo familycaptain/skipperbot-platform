@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Mail, Plus, Trash2, RefreshCw, Loader2, CheckCircle, XCircle,
   ChevronDown, ChevronUp, PenLine, GripVertical, ToggleLeft, ToggleRight,
@@ -13,6 +13,11 @@ export default function EmailApp({ appId, userId, isActive }) {
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
   const [ruleTemplate, setRuleTemplate] = useState(null);
+  // Route the initial tab exactly once, on the first SUCCESSFUL accounts load: a
+  // 0-account user opens on Accounts (the connect box) instead of the empty Activity
+  // tab. A ref (not state) so it never re-renders, never re-hijacks a later manual tab
+  // choice, and never fires off the error path (where the count is unknown).
+  const didInitialRoute = useRef(false);
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
 
@@ -20,16 +25,18 @@ export default function EmailApp({ appId, userId, isActive }) {
     if (accounts.length === 0) setLoading(true);
     fetch(`/api/apps/email/accounts?user=${userId}`)
       .then(r => r.json())
-      .then(d => { setAccounts(d.accounts || []); setLoading(false); })
+      .then(d => {
+        const accs = d.accounts || [];
+        setAccounts(accs);
+        setLoading(false);
+        if (!didInitialRoute.current) {
+          didInitialRoute.current = true;
+          // authoritative count in hand — 0 accounts → open on Accounts
+          if (accs.length === 0) setTab("Accounts");
+        }
+      })
       .catch(() => setLoading(false));
   }, [userId, refreshKey]);
-
-  // Auto-switch to Rules or Activity once accounts exist
-  useEffect(() => {
-    if (accounts.length > 0 && tab === "Accounts") {
-      // stay on Accounts if user navigated there
-    }
-  }, [accounts]);
 
   if (loading) {
     return (
