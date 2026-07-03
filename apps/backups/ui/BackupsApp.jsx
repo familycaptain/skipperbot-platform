@@ -6,6 +6,10 @@ import {
 
 const TRADING_URL = import.meta.env.VITE_TRADING_URL || "https://skippertrader.yourdomain.example";
 const TRADING_KEY = import.meta.env.VITE_TRADING_KEY || "";
+// The Trading Service is an operator-specific, per-instance backup source. Only
+// surface it when it's actually configured, so a generic install never sees an
+// always-errored "not configured" card (charter: build for the masses).
+const TRADING_ENABLED = Boolean(TRADING_URL && TRADING_KEY);
 
 function fmtBytes(b) {
   if (!b) return "0 B";
@@ -61,12 +65,12 @@ const EMPTY_SOURCE = {
 const SOURCE_META = {
   skipperbot: {
     label: "Skipperbot",
-    subtitle: "Windows server",
+    subtitle: "Skipper server",
     icon: HardDrive,
   },
   trading: {
     label: "Trading Service",
-    subtitle: "AWS EC2 / Linux",
+    subtitle: "External service",
     icon: Server,
   },
 };
@@ -90,11 +94,9 @@ async function fetchJson(url, options = {}) {
 export default function BackupsApp({ isActive }) {
   const [sources, setSources] = useState({
     skipperbot: { ...EMPTY_SOURCE },
-    trading: {
-      ...EMPTY_SOURCE,
-      available: Boolean(TRADING_URL && TRADING_KEY),
-      error: TRADING_URL && TRADING_KEY ? "" : "Trading service URL or API key is not configured.",
-    },
+    // Include the trading slot only when configured — the rendered set is gated
+    // by the same TRADING_ENABLED flag, so state and render keys never mismatch.
+    ...(TRADING_ENABLED ? { trading: { ...EMPTY_SOURCE, available: true, error: "" } } : {}),
   });
   const pollRef = useRef(null);
 
@@ -186,7 +188,7 @@ export default function BackupsApp({ isActive }) {
   const loadAll = useCallback(async (showSpinner = false) => {
     await Promise.all([
       loadSkipperbot(showSpinner),
-      loadTrading(showSpinner),
+      ...(TRADING_ENABLED ? [loadTrading(showSpinner)] : []),
     ]);
   }, [loadSkipperbot, loadTrading]);
 
@@ -323,7 +325,9 @@ export default function BackupsApp({ isActive }) {
 
       <div className="flex-1 overflow-y-auto p-3">
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-          {Object.entries(SOURCE_META).map(([sourceKey, meta]) => (
+          {Object.entries(SOURCE_META)
+            .filter(([sourceKey]) => sourceKey !== "trading" || TRADING_ENABLED)
+            .map(([sourceKey, meta]) => (
             <BackupSection
               key={sourceKey}
               sourceKey={sourceKey}
