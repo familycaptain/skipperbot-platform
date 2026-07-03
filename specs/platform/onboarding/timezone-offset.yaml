@@ -1,0 +1,58 @@
+kind: specification
+id: platform.onboarding.timezone-offset
+title: Onboarding timezone dropdown shows UTC offset per option and sorts by offset then name
+state: live
+behavior: 'In the first-run onboarding step-3 Timezone `<select>` (web/src/pages/Onboarding.jsx),
+  each option''s LABEL reads `<IANA zone> (UTC±HH:MM)` (operator''s format; see the offset-first
+  Gate-1 fork) where the offset is the CURRENT (DST-aware) offset computed via `Intl.DateTimeFormat`
+  (timeZoneName:''shortOffset'') normalized to a signed `UTC±HH:MM` that PRESERVES MINUTES
+  (e.g. `Asia/Kolkata (UTC+05:30)`, `America/New_York (UTC-05:00)`, `Etc/UTC (UTC+00:00)`).
+  Options are SORTED by offset minutes ascending, then IANA name ascending — a total, deterministic
+  order. Each option `value` stays the raw IANA id (NOT the label): the `tz` state + create-user
+  POST are unchanged and preselection is intrinsic to controlled `value={tz}`; the detected/selected
+  zone stays present post-sort. An un-formattable zone DEGRADES gracefully: its label shows
+  the bare id with NO offset and it sorts LAST (a large sentinel key) — it is NEVER mislabeled
+  as UTC+00:00. Offset logic lives in a pure, testable helper `web/src/utils/tz.js` -> {text,
+  minutes}.'
+implements:
+- web/src/utils/tz.js (NEW) — pure `tzOffset(zone)` -> {text:'UTC±HH:MM', minutes:<int>};
+  Intl shortOffset + normalization; try/catch fallback.
+- web/src/pages/Onboarding.jsx — import tzOffset; tzOptions useMemo builds {id,label,minutes},
+  keeps detected zone, sorts by (minutes, id); option render uses label for text, id for value.
+tests:
+- type: unit
+  path: web/scripts/check-tz-offset.mjs (node; no JS unit runner exists)
+  rubric: 'Deterministic node test of the pure helper: (a) tzOffset(''Etc/UTC'') == {text:''UTC+00:00'',
+    minutes:0}; (b) tzOffset(''America/New_York'').text matches /^UTC-0[45]:00$/ with minutes
+    in {-300,-240} (DST range); (c) HALF-HOUR zone tzOffset(''Asia/Kolkata'') == {text:''UTC+05:30'',
+    minutes:330} — minutes MUST survive normalization (Intl emits ''GMT+5:30''); (d) text
+    always matches /^UTC[+-]\d{2}:\d{2}$/; (e) SORT invariant: sorting a fixture by (minutes,id)
+    is monotonic non-decreasing in minutes with ties broken by id asc (e.g. America/Los_Angeles(-480)
+    < America/New_York(-300) < Etc/UTC(0) < Asia/Kolkata(330) < Asia/Tokyo(540)); (f) an INVALID
+    zone returns the degrade fallback: label has NO offset (bare id) and sorts LAST, and does
+    NOT throw. Exit non-zero on any failure (mirrors web/scripts/check-*.mjs).'
+- type: e2e
+  path: (test host, validate-time)
+  rubric: 'Onboarding step-3 Timezone dropdown. REACHABILITY (concrete): on the DISPOSABLE
+    test host, reach step 3 by EITHER (i) a destructive onboarding reset (acceptable on the
+    disposable box — clear users / needs_onboarding, then drive welcome->model step->user
+    step; the host already has a model configured so the step-2 gate passes) OR (ii) Playwright
+    route-intercept of `/api/onboarding/status` to force needs_onboarding=true and advance
+    past the already-configured model step. Then ASSERT: (1) every option LABEL matches `<zone>
+    (UTC±HH:MM)`; (2) every option VALUE attribute is the raw IANA id (value != label — load-bearing:
+    app_platform/time.py::_zoneinfo silently falls back to UTC on an unparseable tz); (3)
+    the option ORDER satisfies the MONOTONIC INVARIANT — each option''s parsed offset minutes
+    >= the previous, ties by name asc (NOT a hardcoded seasonal sequence); (4) the detected/selected
+    zone is preselected. Screenshot the open dropdown -> attach to #55.'
+links: {}
+notes: 'Frontend-only (Intl built-in; no deps/backend). Offset is CURRENT DST-aware. Helper
+  extracted to web/src/utils/tz.js for a node test (no vitest/jest; repo uses vite + check-*.mjs).
+  Degrade fallback (audit): un-formattable zone -> no-offset label, sort last (never fake
+  UTC). value=IANA id is LOAD-BEARING (interop: _zoneinfo silently -> UTC on bad string) —
+  e2e asserts value!=label. Gate-1 forks: (A) curated ~24 vs full IANA list; (B) label format
+  zone-first `<zone> (UTC±off)` [operator''s written acceptance] vs offset-first `(UTC±off)
+  <zone>` [ux MED — scans better since the list is offset-sorted]. Built to zone-first + curated
+  by default. | Gate-2: validated GREEN on test host — node check-tz-offset.mjs exit 0 (offset/minutes/sort/degrade-fallback
+  incl. Asia/Kolkata UTC+05:30) AND live onboarding step-3 dropdown (24/24 zone-first labels,
+  monotonic offset-then-name order, value=raw IANA id, DST-aware). verified=true.'
+verified: true
