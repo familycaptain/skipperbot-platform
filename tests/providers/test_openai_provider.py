@@ -175,6 +175,44 @@ class TestRetryAndSecrets(unittest.TestCase):
         self.assertNotIn(secret, str(ctx.exception))  # key never echoed
         self.assertEqual(self._sleeps, [])
 
+    def test_no_env_fallback_none_key_fails_fast_sanitized(self):
+        # #71: _get_client MUST NOT fall back to OPENAI_API_KEY in env. With no api_key it raises
+        # the SANITIZED NoApiKey error BEFORE any OpenAI() SDK call — and never echoes the env key.
+        secret = "sk-ENV-SHOULD-NOT-BE-USED-999"
+        os.environ["OPENAI_API_KEY"] = secret
+        try:
+            p = op.OpenAIProvider()
+            with self.assertRaises(RuntimeError) as ctx:
+                p._get_client(None)
+            msg = str(ctx.exception)
+            self.assertIn("NoApiKey", msg)
+            self.assertNotIn(secret, msg)
+            self.assertNotIn("OPENAI_API_KEY", msg)   # no SDK 'set OPENAI_API_KEY' hint
+            self.assertEqual(p._clients, {})          # never constructed a client from env
+        finally:
+            os.environ.pop("OPENAI_API_KEY", None)
+
+    def test_embed_threads_key_and_never_logs_it(self):
+        # #71: the resolved key is threaded into embed and never appears in captured logs.
+        import logging
+        secret = "sk-EMBED-SECRET-777"
+        data = [types.SimpleNamespace(embedding=[0.5, 0.5])]
+        p = _provider_with(embed_data=data)
+        captured: list[str] = []
+
+        class _Cap(logging.Handler):
+            def emit(self, record):
+                captured.append(self.format(record))
+        root = logging.getLogger()
+        h = _Cap()
+        root.addHandler(h)
+        try:
+            out = p.embed(texts=["hi"], model="text-embedding-3-small", api_key=secret)
+        finally:
+            root.removeHandler(h)
+        self.assertEqual(out, [[0.5, 0.5]])
+        self.assertNotIn(secret, "\n".join(captured))
+
 
 class TestCapabilities(unittest.TestCase):
     def test_token_limit_param_and_reasoning(self):

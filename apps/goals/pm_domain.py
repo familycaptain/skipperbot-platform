@@ -16,11 +16,10 @@ from datetime import datetime, timedelta
 
 from config import (
     logger, pm_audit_logger,
-    SMART_MODEL, PROMPTS_DIR, PM_QUIET_MODE,
+    PROMPTS_DIR, PM_QUIET_MODE,
 )
 from app_platform.time import get_timezone
 import agent_loop
-DUMB_MODEL = os.getenv("DUMB_MODEL", "gpt-5-mini")
 
 def _default_cadence_minutes() -> int:
     """Global anti-spam window (Settings → Goals: pm_cadence_hours), in minutes.
@@ -152,18 +151,20 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
         logger.warning("PM_THINK: Failed to set focus: %s", e)
 
     # ---------- MODEL SELECTION ----------
+    # The cheap/standard decision maps to a model TIER (MODEL_FLEXIBILITY #44/#71); agent_loop
+    # resolves the connector+model+key from the tier. No raw model id / OPENAI_API_KEY here.
     if has_project:
-        model = SMART_MODEL
+        tier = "smart"
         model_tier = "standard"
     else:
-        model = DUMB_MODEL if total_items <= CHEAP_MODEL_THRESHOLD else SMART_MODEL
-        model_tier = "cheap" if model == DUMB_MODEL else "standard"
+        tier = "fast" if total_items <= CHEAP_MODEL_THRESHOLD else "smart"
+        model_tier = "cheap" if tier == "fast" else "standard"
 
     remaining = budget_status.get("remaining", 999999)
-    if remaining < 50_000 and model == SMART_MODEL:
-        model = DUMB_MODEL
+    if remaining < 50_000 and tier == "smart":
+        tier = "fast"
         model_tier = "cheap"
-        logger.info("PM_THINK: Downgraded to cheap model — budget low (%d remaining)", remaining)
+        logger.info("PM_THINK: Downgraded to fast tier — budget low (%d remaining)", remaining)
 
     # ---------- BUILD MESSAGES + TOOLS ----------
     static_system = _load_pm_think_prompt()
@@ -193,8 +194,8 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
         messages.append({"role": "system", "content": dynamic_context})
     messages.append({"role": "user", "content": user_prompt})
 
-    pm_audit_logger.info("PM_THINK: Calling %s with %d pending actions, %d observations, %d memory entries, %d tools",
-                         model, ctx["pending_actions_count"], ctx["observations_count"],
+    pm_audit_logger.info("PM_THINK: Calling %s tier with %d pending actions, %d observations, %d memory entries, %d tools",
+                         tier, ctx["pending_actions_count"], ctx["observations_count"],
                          ctx["working_memory_count"], len(tools))
     pm_audit_logger.info("PM_THINK user prompt:\n%s", user_prompt[:2000])
 
@@ -327,7 +328,7 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
         loop_result = await agent_loop.run(
             messages=messages,
             tools=tools,
-            model=model,
+            tier=tier,
             max_turns=4,
             max_tool_calls=12,
             tool_dispatch=_pm_dispatch,
@@ -351,8 +352,8 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
         except Exception as e:
             logger.error("PM_THINK: Failed to record project review for %s: %s", reviewed_pid, e)
 
-    pm_audit_logger.info("PM_THINK: model=%s, tokens=%d, actions=%d, project=%s",
-                         model, tokens_used, len(actions_taken),
+    pm_audit_logger.info("PM_THINK: tier=%s, tokens=%d, actions=%d, project=%s",
+                         tier, tokens_used, len(actions_taken),
                          reviewed_pid or "none")
 
     # Dynamic rhythm: more activity → come back sooner

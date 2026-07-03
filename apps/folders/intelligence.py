@@ -24,7 +24,6 @@ import logging
 import re
 from typing import Optional
 
-from config import DUMB_MODEL
 from providers.compat import chat_completion
 import apps.folders.data as _dl_folders
 import app_platform.documents as _dl_doc
@@ -39,15 +38,9 @@ CHUNK_SIZE = 500
 CHUNK_OVERLAP = 50
 
 
-def _extraction_model() -> str:
-    """Model the folder-intelligence fact extractor uses
-    (Settings → Folders: intelligence_extraction_model)."""
-    try:
-        from app_platform import settings as _settings
-        return (_settings.get("intelligence_extraction_model", scope="app:folders",
-                              default=DUMB_MODEL) or DUMB_MODEL)
-    except Exception:
-        return DUMB_MODEL
+# The folder-intelligence fact extractor runs on the "fast" model tier (MODEL_FLEXIBILITY
+# #44/#71): connector, model, and key resolved from the tier (operator-approved retirement of
+# the per-app intelligence_extraction_model override), not a per-app model string.
 CHARS_PER_TOKEN = 4
 
 FOLDER_DIGEST_PROMPT = """\
@@ -222,7 +215,7 @@ def _extract_facts(content: str, title: str) -> list[dict]:
 
     try:
         completion = chat_completion(
-            model=_extraction_model(),
+            tier="fast",
             messages=[
                 {"role": "system", "content": FOLDER_DIGEST_PROMPT},
                 {"role": "user", "content": user_content},

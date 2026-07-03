@@ -38,7 +38,13 @@ sys.path.insert(0, BASE_DIR)
 from dotenv import load_dotenv
 load_dotenv(os.path.join(BASE_DIR, ".env"))
 
-from config import logger, openai_client, load_system_prompt, get_dynamic_system_context, OPENAI_MODEL
+from config import logger, load_system_prompt, get_dynamic_system_context
+# Dev harness (out of scope for the provider-neutral product path): resolve the SMART tier's
+# connector+model+key (MODEL_FLEXIBILITY #44/#71) instead of the removed config.openai_client /
+# the OPENAI_API_KEY env assumption. The connector's own client factory threads the per-tier key.
+from providers.tier_resolver import resolve_chat as _resolve_chat
+_smart_provider, OPENAI_MODEL, _smart_key = _resolve_chat("smart")
+openai_client = _smart_provider._get_client(_smart_key)
 import mcp_client
 from local_tools import LOCAL_TOOLS, LOCAL_TOOL_NAMES, handle_local_tool
 from memory_store import get_relevant_memories, format_memories_for_context, MEMORY_FILE, get_embedding

@@ -496,6 +496,7 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     loop_result = await agent_loop.run(
         messages=messages,
         tools=tools,
+        tier="smart",
         hooks=agent_loop.LoopHooks(
             before_tool_call=_before_tool,
             after_tool_call=_after_tool,

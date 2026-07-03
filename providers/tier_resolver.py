@@ -93,6 +93,28 @@ def resolve_model(tier: str) -> str:
     return resolve_tier(tier).model
 
 
+def resolve_chat(tier: str):
+    """Resolve a chat ``tier`` to ``(ChatProvider, model, key)`` (MODEL_FLEXIBILITY #44).
+
+    The one choke point every chat call site funnels through: BOTH the model AND the key come
+    from the SELECTED tier's connector, so a non-OpenAI connector never receives an OpenAI model
+    id (or an OpenAI key). Lazy-imports the registry (one-way dep). Lets ``TierNotConfigured``
+    propagate — the call site (agent_loop / compat) catches it and soft-fails. NEVER logs or
+    reprs the resolution or the key."""
+    res = resolve_tier(tier)
+    from providers import registry  # lazy: one-way dep, avoids import cycle
+    return registry.get_chat_provider(res.connector), res.model, res.key
+
+
+def resolve_embedding(tier: str):
+    """Resolve an embedding ``tier`` to ``(EmbeddingProvider, model, key)``. See ``resolve_chat``:
+    model + key both come from the tier so the embedding connector always gets its own model/key
+    (and the provisioned dimension matches). Propagates ``TierNotConfigured``; never logs the key."""
+    res = resolve_tier(tier)
+    from providers import registry  # lazy: one-way dep, avoids import cycle
+    return registry.get_embedding_provider(res.connector), res.model, res.key
+
+
 def models_configured() -> bool:
     """True iff every required tier has a model selected.
 

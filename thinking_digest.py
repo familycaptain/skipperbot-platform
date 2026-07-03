@@ -15,7 +15,7 @@ Called by thinking_scheduler.py after each non-skip cycle completes.
 import json
 import re
 
-from config import logger, DUMB_MODEL
+from config import logger
 from providers.compat import chat_completion
 from memory_store import save_memory
 
@@ -115,7 +115,7 @@ def digest_thinking_cycle(
 
     try:
         completion = chat_completion(
-            model=DUMB_MODEL,
+            tier="fast",
             messages=[
                 {"role": "system", "content": THINKING_DIGEST_PROMPT},
                 {"role": "user", "content": cycle_text},

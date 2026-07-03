@@ -78,14 +78,18 @@ def list_models(kind: str | None = None) -> list[dict]:
 
 
 def register_builtin_providers() -> None:
-    """Idempotent registration of the bundled `openai` connector. Safe to call
-    repeatedly (at boot AND lazily). Core imports the connector HERE (not at module
-    load) so the dependency direction stays one-way for the P3 plugin model."""
+    """Idempotent registration of the FULL bundled connector set (MODEL_FLEXIBILITY #44/#71):
+    openai + the 8 OpenAI-compatible vendors + the bespoke anthropic connector. Safe to call
+    repeatedly (at boot AND lazily). Core imports the connectors HERE (not at module load) so the
+    dependency direction stays one-way for the P3 plugin model.
+
+    Registering the FULL set (not just openai) is an interop requirement: a tier may resolve to a
+    non-openai connector, and get_chat/embedding_provider(<vendor>) must never KeyError in ANY
+    process (server, scripts, workers, tests) whether or not agent.py's boot registration ran."""
     if _DEFAULT in _chat_providers and _DEFAULT in _embedding_providers:
         return
-    from providers.openai_provider import OpenAIProvider
-    prov = OpenAIProvider()
-    register_model_provider(_DEFAULT, chat=prov, embedding=prov)
+    from providers.connectors.builtins import register_builtins
+    register_builtins()
 
 
 def get_chat_provider(name: str = _DEFAULT) -> ChatProvider:
