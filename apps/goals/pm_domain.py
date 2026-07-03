@@ -262,6 +262,28 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
                         )
                 except Exception:
                     logger.warning("PM_THINK: tour-gate DM check failed", exc_info=True)
+            # Global onboarding app-tour CADENCE hold (ev-75, site 2): after the
+            # agenda is complete tours pass tour_gated (ORDER) above; hold ALL app
+            # tour nudges for ~24h once one is out and unanswered so a no-reply
+            # can't march the catalog to a DIFFERENT app. Global (not per-subject),
+            # so it complements — not replaces — the per-subject _dm_on_hold below.
+            if subject_id and subject_id.startswith("p-"):
+                try:
+                    from apps.goals import onboarding
+                    from apps.goals.data import load_entity as _load_tour_proj
+                    from apps.goals.domain import _onboarding_tour_on_hold
+                    _tp = _load_tour_proj(subject_id)
+                    if (_tp
+                            and onboarding.onboarding_agenda_in_progress() == _tp.get("goal_id")
+                            and onboarding.onboarding_project_kind(_tp.get("name", "")) == "tour"
+                            and await asyncio.to_thread(_onboarding_tour_on_hold, dm_to)):
+                        return (
+                            "That app-tour nudge is on a daily hold — a tour message "
+                            "is still unanswered and less than 24h old. Wait for their "
+                            "reply before nudging another app tour. DM not sent."
+                        )
+                except Exception:
+                    logger.warning("PM_THINK: onboarding tour-hold DM check failed", exc_info=True)
             if dm_count >= 3:
                 return "DM limit reached (max 3 per cycle). DM not sent."
             if dm_to in dm_recipients:
@@ -592,6 +614,12 @@ def _pick_next_project(observations: list[dict]) -> str | None:
     # (done/deferred/archived/cancelled) so a cancelled or archived goal is no
     # longer surfaced for PM review — aligning this filter with the per-goal
     # goal-think domain, which already treats all four as inactive.
+    # Global onboarding app-tour CADENCE hold (ev-75, site 1): resolved ONCE per
+    # cycle (it is GLOBAL across all tour apps, not per-subject). Tri-state:
+    # None = not yet resolved, resolved lazily the first time a tour candidate is
+    # seen so non-onboarding cycles pay nothing.
+    _tour_hold = None
+
     goals = list_entities("g-")
     project_ids = []
     project_meta = {}  # project_id -> {priority, goal_name, pm_cadence_minutes}
@@ -614,6 +642,23 @@ def _pick_next_project(observations: list[dict]) -> str | None:
                     continue
             except Exception:
                 logger.warning("PM_THINK: onboarding tour-gate selection filter failed", exc_info=True)
+            # Onboarding CADENCE gate (ev-75): once the agenda is complete a tour
+            # passes tour_gated (ORDER); do not SELECT a SECOND (different) tour
+            # while a prior tour DM is unanswered and < 24h old — a no-reply must
+            # not advance to another app. Global (per primary user), resolved once.
+            try:
+                from apps.goals import onboarding as _onb
+                if (_onb.onboarding_project_kind(proj.get("name", "")) == "tour"
+                        and _onb.onboarding_agenda_in_progress() == proj.get("goal_id")):
+                    if _tour_hold is None:
+                        from apps.goals.domain import _onboarding_tour_on_hold
+                        from data_layer.users import get_primary_user
+                        _recip = (get_primary_user() or "").strip().lower()
+                        _tour_hold = _onboarding_tour_on_hold(_recip) if _recip else False
+                    if _tour_hold:
+                        continue
+            except Exception:
+                logger.warning("PM_THINK: onboarding tour-cadence selection filter failed", exc_info=True)
             project_ids.append(pid)
             project_meta[pid] = {
                 "priority": proj.get("priority", "medium"),
