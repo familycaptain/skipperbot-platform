@@ -145,6 +145,18 @@ def _install_stubs() -> None:
     delivery.deliver_pending_notifications = _deliver_pending
     sys.modules["apps.notifications.delivery"] = delivery
 
+    # app_platform.notifications — the PLATFORM FACADE the handler actually
+    # imports (`from app_platform.notifications import deliver_pending_notifications`
+    # inside _run_arrival_greeting). The facade re-exports the same canonical
+    # primitive; the dep-guard REQUIRES the handler use this path, so the offline
+    # stub must be installed here (not on apps.notifications.delivery) or the real
+    # facade import runs offline, throws, and the swallowed error aborts the
+    # produce/deliver/claim path the arrival-handler tests assert. Stubbed the
+    # same way app_platform.config is above (app_platform itself is light-import).
+    plat_notif = types.ModuleType("app_platform.notifications")
+    plat_notif.deliver_pending_notifications = _deliver_pending
+    sys.modules["app_platform.notifications"] = plat_notif
+
 
 _install_stubs()
 
