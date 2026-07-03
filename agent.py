@@ -174,7 +174,7 @@ app = FastAPI(title="SkipperBot Agent", version="0.1.0", lifespan=lifespan)
 # non-public path with 401. Enforcement is unconditional — there is no off switch.
 # ---------------------------------------------------------------------------
 _PUBLIC_EXACT = {"/", "/api/health", "/auth/login", "/auth/logout",
-                 "/api/onboarding/status"}
+                 "/api/onboarding/status", "/api/onboarding/timezones"}
 _PUBLIC_PREFIXES = ("/assets/", "/static/", "/web/")
 
 
@@ -414,6 +414,19 @@ async def onboarding_status():
             "db_ok": True,  # The fact this endpoint replied means the DB is up.
         }
     return await asyncio.to_thread(_do)
+
+
+@app.get("/api/onboarding/timezones")
+async def onboarding_timezones():
+    """Full IANA timezone list (offset-labeled, offset-then-name sorted) for the
+    onboarding timezone picker. Pre-login (in ``_PUBLIC_EXACT``): the list is
+    non-sensitive reference data the browser's Intl API already exposes, and it
+    must render before the first user exists. Shares the platform's single
+    source (``app_platform.time.timezone_choices``) with the Settings app, so
+    both dropdowns show the identical list. Recomputed per request (no cache) to
+    keep offsets DST-current."""
+    from app_platform.time import timezone_choices
+    return {"timezones": await asyncio.to_thread(timezone_choices)}
 
 
 @app.get("/api/onboarding/live-greeting-status")

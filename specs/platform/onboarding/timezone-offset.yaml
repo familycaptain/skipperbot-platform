@@ -3,56 +3,46 @@ id: platform.onboarding.timezone-offset
 title: Onboarding timezone dropdown shows UTC offset per option and sorts by offset then name
 state: live
 behavior: 'In the first-run onboarding step-3 Timezone `<select>` (web/src/pages/Onboarding.jsx),
-  each option''s LABEL reads `<IANA zone> (UTC±HH:MM)` (operator''s format; see the offset-first
-  Gate-1 fork) where the offset is the CURRENT (DST-aware) offset computed via `Intl.DateTimeFormat`
-  (timeZoneName:''shortOffset'') normalized to a signed `UTC±HH:MM` that PRESERVES MINUTES
-  (e.g. `Asia/Kolkata (UTC+05:30)`, `America/New_York (UTC-05:00)`, `Etc/UTC (UTC+00:00)`).
-  Options are SORTED by offset minutes ascending, then IANA name ascending — a total, deterministic
-  order. Each option `value` stays the raw IANA id (NOT the label): the `tz` state + create-user
-  POST are unchanged and preselection is intrinsic to controlled `value={tz}`; the detected/selected
-  zone stays present post-sort. An un-formattable zone DEGRADES gracefully: its label shows
-  the bare id with NO offset and it sorts LAST (a large sentinel key) — it is NEVER mislabeled
-  as UTC+00:00. Offset logic lives in a pure, testable helper `web/src/utils/tz.js` -> {text,
-  minutes}.'
+  each option''s LABEL reads `<IANA zone> (UTC±HH:MM)` (operator''s format) where the offset is the
+  CURRENT (DST-aware) offset, and options are SORTED by offset minutes ascending then IANA name
+  ascending — a total, deterministic order (e.g. `Asia/Kolkata (UTC+05:30)`, `America/New_York
+  (UTC-05:00)`, `Etc/UTC (UTC+00:00)`, minutes PRESERVED). Each option `value` stays the raw IANA id
+  (NOT the label): the `tz` state + create-user POST are unchanged and preselection is intrinsic to
+  the controlled `value={tz}`; the detected/selected zone stays present post-sort. SUPERSEDED BY #72
+  (platform.onboarding.timezone-shared-source): the label+sort logic now lives SERVER-SIDE in the
+  shared `app_platform/time.py::timezone_choices()` (full IANA set, stdlib datetime+zoneinfo), served
+  to onboarding via the pre-login `GET /api/onboarding/timezones` and used byte-identically by the
+  Settings app — replacing the retired frontend `web/src/utils/tz.js` helper and the curated 24-zone
+  list. An un-formattable zone is skipped (never mislabeled as UTC+00:00).'
 implements:
-- web/src/utils/tz.js (NEW) — pure `tzOffset(zone)` -> {text:'UTC±HH:MM', minutes:<int>};
-  Intl shortOffset + normalization; try/catch fallback.
-- web/src/pages/Onboarding.jsx — import tzOffset; tzOptions useMemo builds {id,label,minutes},
-  keeps detected zone, sorts by (minutes, id); option render uses label for text, id for value.
+- app_platform/time.py — `timezone_choices() -> [{value,label}]`: full `available_timezones()`,
+  DST-aware `<name> (UTC±HH:MM)` labels, sort by (offset, name); stdlib-only offset logic.
+- agent.py — pre-login `GET /api/onboarding/timezones` (in `_PUBLIC_EXACT`) returns the list via
+  `asyncio.to_thread(timezone_choices)`; no `apps.*` import (platform->platform).
+- web/src/pages/Onboarding.jsx — fetches `/api/onboarding/timezones` on mount, renders the server
+  `{value,label}` list, preserves browser auto-detect + hint, dedups the detected option, falls back
+  to `[detected,'Etc/UTC']` on fetch failure.
 tests:
 - type: unit
-  path: web/scripts/check-tz-offset.mjs (node; no JS unit runner exists)
-  rubric: 'Deterministic node test of the pure helper: (a) tzOffset(''Etc/UTC'') == {text:''UTC+00:00'',
-    minutes:0}; (b) tzOffset(''America/New_York'').text matches /^UTC-0[45]:00$/ with minutes
-    in {-300,-240} (DST range); (c) HALF-HOUR zone tzOffset(''Asia/Kolkata'') == {text:''UTC+05:30'',
-    minutes:330} — minutes MUST survive normalization (Intl emits ''GMT+5:30''); (d) text
-    always matches /^UTC[+-]\d{2}:\d{2}$/; (e) SORT invariant: sorting a fixture by (minutes,id)
-    is monotonic non-decreasing in minutes with ties broken by id asc (e.g. America/Los_Angeles(-480)
-    < America/New_York(-300) < Etc/UTC(0) < Asia/Kolkata(330) < Asia/Tokyo(540)); (f) an INVALID
-    zone returns the degrade fallback: label has NO offset (bare id) and sorts LAST, and does
-    NOT throw. Exit non-zero on any failure (mirrors web/scripts/check-*.mjs).'
+  path: tests/test_timezone_choices.py (python unittest)
+  rubric: 'Deterministic test of app_platform.time.timezone_choices(): (a) full IANA set (>100);
+    (b) every label matches `<name> (UTC±HH:MM)`; (c) Etc/UTC -> ''Etc/UTC (UTC+00:00)''; (d)
+    America/New_York label in {UTC-04:00, UTC-05:00} (DST range); (e) HALF-HOUR zone Asia/Kolkata
+    -> ''Asia/Kolkata (UTC+05:30)'' (minutes survive); (f) SORT invariant: monotonic non-decreasing
+    by (offset-minutes, name); (g) never raises across the full set (invalid zones skipped).
+    (Re-homes the retired web/scripts/check-tz-offset.mjs #55 assertions onto the server function.)'
 - type: e2e
   path: (test host, validate-time)
-  rubric: 'Onboarding step-3 Timezone dropdown. REACHABILITY (concrete): on the DISPOSABLE
-    test host, reach step 3 by EITHER (i) a destructive onboarding reset (acceptable on the
-    disposable box — clear users / needs_onboarding, then drive welcome->model step->user
-    step; the host already has a model configured so the step-2 gate passes) OR (ii) Playwright
-    route-intercept of `/api/onboarding/status` to force needs_onboarding=true and advance
-    past the already-configured model step. Then ASSERT: (1) every option LABEL matches `<zone>
-    (UTC±HH:MM)`; (2) every option VALUE attribute is the raw IANA id (value != label — load-bearing:
-    app_platform/time.py::_zoneinfo silently falls back to UTC on an unparseable tz); (3)
-    the option ORDER satisfies the MONOTONIC INVARIANT — each option''s parsed offset minutes
-    >= the previous, ties by name asc (NOT a hardcoded seasonal sequence); (4) the detected/selected
-    zone is preselected. Screenshot the open dropdown -> attach to #55.'
+  rubric: 'Onboarding step-3 Timezone dropdown on the disposable test host: ASSERT (1) every option
+    LABEL matches `<zone> (UTC±HH:MM)`; (2) every option VALUE is the raw IANA id (value != label);
+    (3) options are the FULL IANA list from the shared source (not 24 curated) — count matches the
+    Settings dropdown; (4) the MONOTONIC INVARIANT holds (each parsed offset >= previous, ties by
+    name asc); (5) the detected/selected zone is preselected. Screenshot the open dropdown -> #72.'
 links: {}
-notes: 'Frontend-only (Intl built-in; no deps/backend). Offset is CURRENT DST-aware. Helper
-  extracted to web/src/utils/tz.js for a node test (no vitest/jest; repo uses vite + check-*.mjs).
-  Degrade fallback (audit): un-formattable zone -> no-offset label, sort last (never fake
-  UTC). value=IANA id is LOAD-BEARING (interop: _zoneinfo silently -> UTC on bad string) —
-  e2e asserts value!=label. Gate-1 forks: (A) curated ~24 vs full IANA list; (B) label format
-  zone-first `<zone> (UTC±off)` [operator''s written acceptance] vs offset-first `(UTC±off)
-  <zone>` [ux MED — scans better since the list is offset-sorted]. Built to zone-first + curated
-  by default. | Gate-2: validated GREEN on test host — node check-tz-offset.mjs exit 0 (offset/minutes/sort/degrade-fallback
-  incl. Asia/Kolkata UTC+05:30) AND live onboarding step-3 dropdown (24/24 zone-first labels,
-  monotonic offset-then-name order, value=raw IANA id, DST-aware). verified=true.'
+notes: 'Offset is CURRENT DST-aware. SUPERSEDED BY #72 (platform.onboarding.timezone-shared-source):
+  the offset label+sort moved from the frontend `web/src/utils/tz.js` helper (retired, with its
+  node gate `web/scripts/check-tz-offset.mjs`) to the shared server function
+  `app_platform/time.py::timezone_choices()`, so onboarding and Settings render ONE full-IANA list.
+  value=IANA id stays LOAD-BEARING (interop). Original #55 shipped zone-first labels + a curated
+  ~24-zone list; #72 keeps the label format but converges onboarding onto the full Settings source.'
 verified: true

@@ -28,6 +28,7 @@ from app_platform.auth import enforce_admin, require_user
 from app_platform import config as platform_config
 from app_platform import settings as platform_settings
 from app_platform import secrets as platform_secrets
+from app_platform.time import timezone_choices as _timezone_choices
 
 logger = logging.getLogger(__name__)
 
@@ -105,27 +106,6 @@ PLATFORM_PANELS: dict[str, dict] = {
         ],
     },
 }
-
-
-def _timezone_choices() -> list[dict]:
-    """All IANA timezones as ``{value, label}`` pairs, label showing the zone's
-    current UTC offset (DST-aware), sorted by offset then name. The stored value
-    is the bare IANA name; the offset is display-only."""
-    from datetime import datetime
-    from zoneinfo import ZoneInfo, available_timezones
-    out = []
-    for name in available_timezones():
-        try:
-            off = datetime.now(ZoneInfo(name)).utcoffset()
-        except Exception:
-            continue
-        minutes = int(off.total_seconds() // 60) if off else 0
-        sign = "+" if minutes >= 0 else "-"
-        am = abs(minutes)
-        out.append({"value": name, "label": f"{name} (UTC{sign}{am // 60:02d}:{am % 60:02d})",
-                    "_off": minutes})
-    out.sort(key=lambda z: (z["_off"], z["value"]))
-    return [{"value": z["value"], "label": z["label"]} for z in out]
 
 
 def _resolve_choices(f: dict) -> list:

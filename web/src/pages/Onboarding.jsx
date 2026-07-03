@@ -18,7 +18,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { setToken } from "../utils/api";
-import { tzOffset } from "../utils/tz";
 import { useTheme } from "../utils/theme";
 import ModelConfig from "../components/ModelConfig";
 import {
@@ -35,36 +34,6 @@ function detectTimezone() {
     return "Etc/UTC";
   }
 }
-
-// A short list of common IANA zones for the dropdown. Users with a
-// different zone can keep the browser-detected default (always
-// preselected in the input).
-const COMMON_TIMEZONES = [
-  "Etc/UTC",
-  "America/New_York",
-  "America/Chicago", // noqa: family-name — generic US-zone dropdown option, not a household locator
-  "America/Denver",
-  "America/Los_Angeles",
-  "America/Anchorage",
-  "America/Phoenix",
-  "America/Halifax",
-  "America/Sao_Paulo",
-  "Europe/London",
-  "Europe/Paris",
-  "Europe/Berlin",
-  "Europe/Madrid",
-  "Europe/Stockholm",
-  "Europe/Istanbul",
-  "Africa/Johannesburg",
-  "Asia/Jerusalem",
-  "Asia/Dubai",
-  "Asia/Kolkata",
-  "Asia/Shanghai",
-  "Asia/Singapore",
-  "Asia/Tokyo",
-  "Australia/Sydney",
-  "Pacific/Auckland",
-];
 
 function ErrorLine({ children }) {
   if (!children) return null;
@@ -131,6 +100,11 @@ function CreatePrimaryUser({ onCreated, onBack }) {
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [tz, setTz] = useState(detected);
+  // Full IANA timezone list (offset-labeled, offset-then-name sorted) fetched
+  // from the platform so this picker matches the Settings app exactly. null
+  // while the fetch is in flight or if it fails — the memo below falls back to
+  // a minimal always-submittable list in that case.
+  const [serverTz, setServerTz] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   // Live Dark/Light picker: a pure consumer of the shared theme API (same hook
@@ -143,17 +117,41 @@ function CreatePrimaryUser({ onCreated, onBack }) {
   // Synchronous in-flight guard against rapid double-taps (issue #36).
   const inFlightRef = useRef(false);
 
-  // Surface the browser-detected zone in the dropdown even if it's not in
-  // COMMON_TIMEZONES, label each with its current (DST-aware) UTC offset, and
-  // sort by offset ascending then IANA name. An un-formattable zone degrades to
-  // an empty label (bare id) with a sentinel offset so it sorts last.
+  // Fetch the canonical timezone list once on mount. Pre-login, unauthenticated
+  // endpoint (same full-IANA source the Settings app uses). On failure serverTz
+  // stays null and the memo below degrades to a minimal fallback so the step is
+  // never blank or stuck.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/onboarding/timezones`);
+        const data = await res.json();
+        const list = data && data.timezones;
+        if (!cancelled && Array.isArray(list) && list.length) setServerTz(list);
+      } catch {
+        /* keep serverTz null -> fallback list below */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Options the dropdown renders. The server list is already offset-labeled and
+  // offset-then-name sorted, so no client-side sorting/labeling is needed. While
+  // the fetch is in flight or if it failed, fall back to at least the detected
+  // zone + Etc/UTC so the step is always submittable. The browser-detected zone
+  // is unconditionally included (the full IANA server list normally contains it)
+  // and de-duped so the controlled <select> never coerces to a blank value or
+  // renders a duplicate React key.
   const tzOptions = useMemo(() => {
-    const base = [...COMMON_TIMEZONES];
-    if (!base.includes(detected)) base.unshift(detected);
-    return base
-      .map((id) => ({ id, off: tzOffset(id) }))
-      .sort((a, b) => a.off.minutes - b.off.minutes || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
-  }, [detected]);
+    const base = serverTz && serverTz.length
+      ? serverTz
+      : [...new Set([detected, "Etc/UTC"])].map((v) => ({ value: v, label: v }));
+    if (!base.some((o) => o.value === detected)) {
+      return [{ value: detected, label: detected }, ...base];
+    }
+    return base;
+  }, [serverTz, detected]);
 
   const usernameOk = /^[a-z][a-z0-9_]{1,30}$/.test(username);
   const passwordOk = password.length >= 8;
@@ -301,8 +299,8 @@ function CreatePrimaryUser({ onCreated, onBack }) {
             value={tz}
             onChange={(e) => setTz(e.target.value)}
           >
-            {tzOptions.map(({ id, off }) => (
-              <option key={id} value={id}>{off.text ? `${id} (${off.text})` : id}</option>
+            {tzOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
           <p className="mt-1 text-xs text-faint">
