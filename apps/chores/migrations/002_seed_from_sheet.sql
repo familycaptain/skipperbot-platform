@@ -15,3 +15,9 @@
 -- placeholder (an adopted starter household is left intact).
 --
 -- Intentionally a no-op on fresh installs. Do not re-add seed data here.
+
+-- Executable no-op so the migrator does not choke on a comment-only file
+-- (psycopg2 rejects a comment-only string with "can't execute an empty query").
+-- The placeholder-kid seed this file used to ship was removed (see 007 for the
+-- upgrade-path cleanup of already-seeded installs).
+SELECT 1;
