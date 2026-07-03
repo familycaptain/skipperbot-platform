@@ -1,0 +1,25 @@
+kind: specification
+id: home.issues.empty-state-hero
+title: Home Issues tab shows an explanatory empty-state hero when there are no issues
+state: live
+autonomy: gated
+behavior: The Home Issues tab, when there are zero issues (and no active search/status/location
+  filter), shows the per-view EmptyStateHero (Home + an Issues blurb + AlertTriangle) instead
+  of the bare 'No issues found' text. Issues present -> normal list. A filter that scopes
+  the view to empty (only-fixed at the default 'open', a search miss, or a location filter)
+  keeps the bare fallback (records={issues} full-list + filterActive), not the onboarding
+  hero.
+implements:
+- web/src/apps/emptyStateHero.js
+- apps/home/ui/index.js
+- apps/home/ui/HomeApp.jsx
+tests: []
+links: {}
+notes: 'Verified at Gate-2 (test host): web bundle compiled; empty-state-hero guardrail EXIT
+  0 (home per-view now maintenance+issues+appliances+insurance+contractors, all 5 blurbs).
+  Fixed-filter empty correctly shows the bare fallback (not the hero), proving filterActive.
+  Zero-total-issues hero not live-reachable (160 seeded issues) -> guardrail+build+static-confirmed;
+  operator confirms live at Gate 3. COMPLETES the Home per-tab hero set (the other 4 shipped
+  via ev-52/67/68/69). Mirrors the shipped home heroes (no title). 2 guardrail warnings =
+  unrelated anime app.'
+verified: true
