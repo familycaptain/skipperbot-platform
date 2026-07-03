@@ -1,0 +1,20 @@
+kind: specification
+id: email.accounts.open-to-accounts-when-empty
+title: Email opens on the Accounts tab when the user has 0 connected accounts
+state: live
+autonomy: gated
+behavior: With 0 connected email accounts, the Email app opens on the Accounts tab (the connect
+  box) on the first successful accounts load, instead of the empty Activity tab. With >=1
+  account it opens on Activity (unchanged). The initial routing fires exactly once and never
+  overrides the user's manual tab selection, and never re-hijacks the tab if accounts later
+  drop to 0. Routing occurs only on a confirmed-successful accounts fetch, so a transient
+  error never misroutes a user who has accounts.
+implements:
+- apps/email/ui/EmailApp.jsx
+tests: []
+links: {}
+notes: 'Verified live at Gate-2 validate on the test host (0 accounts -> Accounts; web bundle
+  compiles; manual nav intact; before/after evidence on issue #60). Repo has no JS component
+  test runner, so proof is live E2E + the vite build gate. Email stays excluded from the ev-52
+  whole-app hero; Accounts-first is its own empty-state treatment.'
+verified: true
