@@ -1,0 +1,20 @@
+kind: specification
+id: backups.sources.neutral-subtitles
+title: Backups sources show no assumed server OS or operator-specific infra
+state: live
+autonomy: gated
+behavior: 'The Backups app shows no hardcoded server OS: the Skipperbot source subtitle is
+  ''Skipper server'' (never ''Windows server''), and no operator-specific infra label (e.g.
+  ''AWS EC2 / Linux'') is shown. The operator-specific Trading Service source is config-gated:
+  absent on an install without TRADING_URL/TRADING_KEY, present (with a neutral subtitle)
+  when configured. The rendered source set and the sources state are gated by one TRADING_ENABLED
+  flag so they never mismatch.'
+implements:
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: 'Verified live at Gate-2 (test host, unconfigured): subtitle ''Skipper server''; no
+  ''Windows server''/''AWS EC2 / Linux''; Trading card absent; app renders cleanly (no undefined-destructure
+  crash). Direct instance of the CHARTER ''build for the masses''. runner.py cross-platform
+  restore instructions untouched.'
+verified: true
