@@ -16,5 +16,6 @@ export default [
     component: lazy(() => import("./JobsApp")),
     singleton: true,
     page: 3,
+    blurb: "Background work Skipper runs for you — research, backups, scheduled tasks, and app jobs. Anything you or your apps kick off shows up here to track, retry, or cancel.",
   },
 ];

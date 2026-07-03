@@ -4,6 +4,8 @@ import {
   Loader2, AlertCircle, Clock, CheckCircle2, XCircle, Pause,
   Terminal, Settings2, Calendar, Filter,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 const API = window.__API_BASE || "";
 
@@ -167,9 +169,18 @@ export default function JobsApp({ userId, context, refreshKey }) {
       {/* Job list */}
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-faint text-xs">
-            No jobs found
-          </div>
+          <PristineEmpty
+            appId="jobs"
+            blurb={getAppManifest("jobs")?.blurb}
+            records={jobs}
+            loading={loading}
+            filterActive={filter !== "all"}
+            fallback={
+              <div className="flex items-center justify-center h-32 text-faint text-xs">
+                No jobs found
+              </div>
+            }
+          />
         ) : (
           <div className="divide-y divide-[var(--ds-border)]">
             {filtered.map(job => (
