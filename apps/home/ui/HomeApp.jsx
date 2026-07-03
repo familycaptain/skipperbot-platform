@@ -2158,13 +2158,22 @@ function HomeIssuesTab({ userId }) {
         {loading ? (
           <div className="flex items-center justify-center h-32 text-faint text-sm">Loading...</div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-faint">
-            <AlertTriangle size={32} className="text-default mb-2" />
-            <p className="text-sm text-muted">{search ? `No issues matching "${search}"` : "No issues found"}</p>
-            {filterStatus === "open" && !search && (
-              <p className="text-xs text-faint mt-1">Click &quot;Add Issue&quot; to log one</p>
-            )}
-          </div>
+          <PristineEmpty
+            appId="home"
+            blurb={getAppManifest("home")?.heroes?.issues}
+            records={issues}
+            loading={loading}
+            filterActive={!!search.trim() || filterStatus !== "open" || !!filterLoc}
+            fallback={
+              <div className="flex flex-col items-center justify-center h-40 text-faint">
+                <AlertTriangle size={32} className="text-default mb-2" />
+                <p className="text-sm text-muted">{search ? `No issues matching "${search}"` : "No issues found"}</p>
+                {filterStatus === "open" && !search && (
+                  <p className="text-xs text-faint mt-1">Click &quot;Add Issue&quot; to log one</p>
+                )}
+              </div>
+            }
+          />
         ) : (
           <div className="space-y-2">
             {filtered.map(issue => (
