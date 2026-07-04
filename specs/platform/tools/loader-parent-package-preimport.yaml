@@ -26,4 +26,4 @@ tests:
 links: {}
 notes: Fixes a partial-module circular import in the loader's import ordering (not artifact_tool
   itself). Reproduce-verified in-container (114 vs 109 tools). No plain-import failure — loader-order-specific.
-verified: false
+verified: true
