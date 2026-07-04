@@ -71,30 +71,35 @@ ONBOARDING_AGENDA = [
         "key": "household",
         "project": "Get to know the household",
         "task": "Get to know {who}'s household — who's in the family, how they're related, and who will use Skipper themselves.",
+        # NOTE: the goal-think snapshot truncates a project's notes AND its
+        # definition_of_done to 300 chars each (see #88), so the LOAD-BEARING
+        # instruction is FRONT-LOADED here (probe relationships, don't finish on
+        # bare names) and the completion gate lives in `dod` below — both survive
+        # truncation. Illustrative detail follows and may be trimmed.
         "desc": (
-            "PM: in friendly chat with {who}, learn about their household so Skipper can "
-            "personalize reminders, chores, and notifications. For each person, learn their "
-            "RELATIONSHIP to {who} (partner/spouse, child, or someone else) and — inferring "
-            "naturally — an internal role: a parent/guardian is a 'parent', a child is a "
-            "'kid', any other capable adult (including non-family like a nanny or housemate) "
-            "is a 'member'. Infer the role from the relationship whenever it's obvious; only "
-            "ask to clarify when it's genuinely ambiguous, and for a larger household confirm "
-            "in a natural batch (\"so it's you, your partner Sam, and three kids?\") rather "
-            "than a person-by-person interrogation. These role words are INTERNAL labels — "
-            "record them, but NEVER surface them as a question (\"is she a kid or a member?\" "
-            "is jargon; don't say it) — and NEVER infer 'admin' from a relationship (admin is "
-            "granted deliberately in Settings, not from who someone is). Record the household "
-            "structure — each person's name, relationship, and internal role — to your working "
-            "memory (update_working_memory on this onboarding project) so you can personalize "
-            "later; if someone's role isn't clear, still record them with the role left blank "
-            "and move on — don't nag. This note is for YOUR own personalization; it does not "
-            "by itself create accounts or wire up chores/permissions. Then, for anyone who "
-            "will actually USE Skipper themselves, let {who} know they can create that "
-            "person's login account in Settings → Members (offer to walk them through it, or "
-            "note it as a next step): being named here is just for personalization — only "
-            "creating an account there lets someone log in, and a young child tracked for "
-            "chores doesn't need one. The only Settings destination for this step is "
-            "Members, for accounts; everything else here is learned in chat."
+            "PM: DON'T just collect names. For EACH person {who} names, learn their "
+            "RELATIONSHIP to {who} (partner/spouse, child, or someone else) so you can infer "
+            "a role — and if {who} gives ONLY names, FOLLOW UP for relationships before moving "
+            "on (a bare list of names does NOT finish this step). Then tell {who} that anyone "
+            "who'll use Skipper themselves gets a login in Settings → Members (offer to help, "
+            "or note it as a next step): being named here is just for personalization — only a "
+            "Settings → Members account lets someone log in, and a young child tracked for "
+            "chores needs none. Map each person to an INTERNAL role — parent/guardian -> "
+            "'parent', child -> 'kid', other capable adult (incl. non-family) -> 'member'; "
+            "infer it from the relationship, NEVER surface these words as a question (\"is she "
+            "a kid or a member?\" is jargon), and NEVER infer 'admin' from a relationship. "
+            "Record the structure (name + relationship + role) to your working memory "
+            "(update_working_memory on this onboarding project) for your OWN personalization — "
+            "it does not by itself create accounts or wire up chores/permissions. For a larger "
+            "household confirm in a natural batch (\"you, your partner Sam, and three kids?\") "
+            "rather than an interrogation; if a role is unclear, record the person with role "
+            "blank. Don't nag."
+        ),
+        "dod": (
+            "Done ONLY when each member's relationship + role is captured (to working memory) "
+            "AND {who} is pointed to Settings → Members to create logins for anyone who'll use "
+            "it — OR {who} says 'just me'/declines. A names-only reply is NOT done; follow up "
+            "for relationships first."
         ),
     },
     {
@@ -266,6 +271,13 @@ def ensure_onboarding(apps_info: list[dict] | None = None) -> str:
             + " " + _SECRETS_NOTE
         )
         proj = _project(item["project"].format(who=chat_with), desc)
+        # A per-topic definition_of_done acts as the completion GATE the PM sees
+        # in the goal-think snapshot (separate 300-char field). Used by the
+        # household step so a names-only answer can't mark it done before
+        # relationships/roles are captured + the Settings → Members hand-off given.
+        if proj and item.get("dod"):
+            store.update_item(proj["id"], SKIPPER_USER,
+                              fields={"definition_of_done": item["dod"].format(who=chat_with)})
         _task(proj, item["task"].format(who=chat_with))
 
     n_apps = 0

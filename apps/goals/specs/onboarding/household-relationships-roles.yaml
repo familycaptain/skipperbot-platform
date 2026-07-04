@@ -14,13 +14,18 @@ behavior: The onboarding 'household' agenda step directs the PM to learn each ho
   records the household structure (name + relationship + internal role) to its working memory
   via update_working_memory on the onboarding project; this is DESCRIPTIVE personalization
   memory and does not by itself grant users.role, register a chores 'kid', or activate role-gated
-  features. A member with no clear role is still recorded (role blank) with no nagging. The
-  step guides the user to Settings -> Members as the LOGIN-account path for people who will
-  use Skipper themselves (accounts carry member/parent/admin, not 'kid'), distinguishing 'named
-  for personalization' from 'has a login', offering to help, never auto-creating accounts
-  or collecting credentials in chat. A 'just me'/minimal answer completes gracefully (done-on-skip).
-  The agenda order (household -> intent -> location -> discord -> integrations -> tours) is
-  unchanged.
+  features. COMPLETION GATE (ev-80 uat fix): a names-only answer is NOT sufficient to finish
+  the step — when the user gives only names, the PM MUST follow up for relationships/roles
+  before completing; the step is marked done ONLY when each member's relationship + role is
+  captured AND the user has been guided to Settings -> Members (the LOGIN-account path for
+  people who will use Skipper themselves; accounts carry member/parent/admin, not 'kid';
+  'named for personalization' is distinguished from 'has a login'), OR the user explicitly says
+  'just me'/declines. The gate is enforced by (i) FRONT-LOADING the 'don't finish on bare names,
+  follow up for relationships' imperative in the step's notes and (ii) a per-topic
+  definition_of_done seeded on the household project — BOTH kept within the goal-think snapshot's
+  300-char-per-field truncation (see #88) so the PM actually sees them. Accounts are never
+  auto-created and credentials are never collected in chat. The agenda order (household -> intent
+  -> location -> discord -> integrations -> tours) is unchanged.
 implements:
 - apps/goals/onboarding.py
 - tests/evolve/goals/test_onboarding_household_depth.py
