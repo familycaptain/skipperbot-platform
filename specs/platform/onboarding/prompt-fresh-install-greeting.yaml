@@ -70,4 +70,4 @@ notes: 'Fix for the fresh-install connect-then-configure ordering that #58/#73 d
   (re-emit arrival vs kick supervisor vs both); client dead-air handling (re-arm on config
   vs raise timeout vs persistent presence). save-models restart_required copy is #78 (out
   of scope).'
-verified: false
+verified: true
