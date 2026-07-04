@@ -902,6 +902,75 @@ def get_contractor_trades() -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Home Contractor Trades (configurable) — mirrors Home Task Categories (minus
+# color). Drives the Add/Edit trade <select> + the Manage-trades screen. NOTE:
+# home_contractors.trade stays a FREE-FORM label; this table is a lookup only.
+# Rename/delete of a trade NEVER rewrites any contractor row.
+# ---------------------------------------------------------------------------
+
+def _trade_row(row: dict) -> dict:
+    if not row:
+        return {}
+    return {
+        "id": row["id"],
+        "name": row.get("name") or "",
+        "sort_order": row.get("sort_order", 0),
+        "created_at": row["created_at"].isoformat() if row.get("created_at") else "",
+    }
+
+
+def get_all_contractor_trades() -> list[dict]:
+    """Return all configured contractor trades with full detail."""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT * FROM home_contractor_trades ORDER BY sort_order, name",
+    )
+    return [_trade_row(r) for r in rows]
+
+
+def create_contractor_trade(trade_id: str, name: str) -> dict | None:
+    row = execute_returning_in_schema(
+        SCHEMA,
+        """INSERT INTO home_contractor_trades (id, name, sort_order)
+           VALUES (%s, %s, COALESCE((SELECT MAX(sort_order)+1 FROM home_contractor_trades), 0))
+           RETURNING *""",
+        (trade_id, name),
+    )
+    return _trade_row(row) if row else None
+
+
+def update_contractor_trade(trade_id: str, updates: dict) -> bool:
+    allowed = {"name", "sort_order"}
+    sets, vals = [], []
+    for key, val in updates.items():
+        if key not in allowed:
+            continue
+        sets.append(f"{key} = %s")
+        vals.append(val)
+    if not sets:
+        return False
+    vals.append(trade_id)
+    return execute_in_schema(
+        SCHEMA, f"UPDATE home_contractor_trades SET {', '.join(sets)} WHERE id = %s", tuple(vals)
+    ) > 0
+
+
+def delete_contractor_trade(trade_id: str) -> bool:
+    return execute_in_schema(SCHEMA, "DELETE FROM home_contractor_trades WHERE id = %s", (trade_id,)) > 0
+
+
+def contractor_trade_name_exists(name: str, exclude_id: str = "") -> bool:
+    """True if a trade with this name (case-insensitive) already exists — for a
+    clean 400 on create/rename instead of a raw UNIQUE-violation 500."""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT id FROM home_contractor_trades WHERE lower(name) = lower(%s)",
+        (name,),
+    )
+    return any(r["id"] != exclude_id for r in rows)
+
+
+# ---------------------------------------------------------------------------
 # Home Insurance Policies (Insurance Tab)
 # ---------------------------------------------------------------------------
 

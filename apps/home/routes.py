@@ -328,6 +328,68 @@ async def api_create_home_contractor(request: CreateContractorRequest, http_requ
     return result
 
 
+# ---------------------------------------------------------------------------
+# Contractor Trades (configurable list) — mirrors /maintenance/categories.
+# IMPORTANT: these literal /contractors/trades routes MUST be declared BEFORE
+# the parameterized /contractors/{contractor_id} routes below, or FastAPI would
+# match "trades" as a contractor_id and 404 the picker/manager.
+# ---------------------------------------------------------------------------
+
+@router.get("/contractors/trades")
+async def api_list_contractor_trades():
+    trades = await asyncio.to_thread(_dl.get_all_contractor_trades)
+    return {"trades": trades}
+
+
+class CreateContractorTradeRequest(BaseModel):
+    name: str
+
+
+@router.post("/contractors/trades")
+async def api_create_contractor_trade(request: CreateContractorTradeRequest):
+    name = request.name.strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="Trade name is required")
+    if await asyncio.to_thread(_dl.contractor_trade_name_exists, name):
+        raise HTTPException(status_code=400, detail="A trade with that name already exists")
+    trade_id = f"hctr-{uuid.uuid4().hex[:8]}"
+    trade = await asyncio.to_thread(_dl.create_contractor_trade, trade_id, name)
+    if not trade:
+        raise HTTPException(status_code=400, detail="Failed to create trade")
+    return trade
+
+
+class UpdateContractorTradeRequest(BaseModel):
+    name: str | None = None
+    sort_order: int | None = None
+
+
+@router.put("/contractors/trades/{trade_id}")
+async def api_update_contractor_trade(trade_id: str, request: UpdateContractorTradeRequest):
+    updates = {k: v for k, v in request.model_dump().items() if v is not None}
+    if "name" in updates:
+        updates["name"] = updates["name"].strip()
+        if not updates["name"]:
+            raise HTTPException(status_code=400, detail="Trade name cannot be empty")
+        if await asyncio.to_thread(_dl.contractor_trade_name_exists, updates["name"], trade_id):
+            raise HTTPException(status_code=400, detail="A trade with that name already exists")
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update")
+    ok = await asyncio.to_thread(_dl.update_contractor_trade, trade_id, updates)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Trade not found")
+    trades = await asyncio.to_thread(_dl.get_all_contractor_trades)
+    return next((t for t in trades if t["id"] == trade_id), {"ok": True})
+
+
+@router.delete("/contractors/trades/{trade_id}")
+async def api_delete_contractor_trade(trade_id: str):
+    ok = await asyncio.to_thread(_dl.delete_contractor_trade, trade_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Trade not found")
+    return {"ok": True}
+
+
 @router.get("/contractors/{contractor_id}")
 async def api_get_home_contractor(contractor_id: str):
     contractor = await asyncio.to_thread(_dl.get_contractor, contractor_id)

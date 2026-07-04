@@ -1,0 +1,58 @@
+kind: specification
+id: home.contractors.managed-trades
+title: Contractor trades are a household-configurable list (Manage-trades gear + <select> picker)
+state: live
+autonomy: gated
+behavior: >
+  The Home Contractors tab offers a household-configurable list of trades, mirroring the
+  Home Task Categories sub-feature (minus color). app_home.home_contractor_trades (id, name,
+  sort_order) is seeded idempotently (ON CONFLICT DO NOTHING) with 15 common trades (General,
+  Plumber, Electrician, HVAC, Lawn, Landscaping, Roofer, Gutters, Painter, Handyman, Pest
+  Control, Appliance Repair, Cleaning, Flooring, Garage Door). A CRUD API at
+  /api/apps/home/contractors/trades (GET/POST/PUT/DELETE) — with the literal /contractors/trades
+  routes registered BEFORE the parameterized /contractors/{contractor_id} routes — manages the
+  list; POST/PUT return 400 on a duplicate name (never a raw 500) and 404 on a missing id.
+  A 'Manage trades' gear on the Contractors tab opens a TradesManager (add/rename/delete; delete
+  confirm says contractors keep their trade value). The Add/Edit contractor trade control is a
+  <select> populated from the managed list (adding a new trade is done via Manage, not free-text),
+  with a guaranteed 'General' fallback so the picker is never empty; the Edit <select> injects a
+  record's current out-of-list value so legacy/custom trades round-trip without loss. Four MCP
+  tools (list/create/update/delete_contractor_trade) give the chat surface parity with categories.
+  contractor.trade STAYS a free-form label — no migration, no FK; renaming or deleting a trade
+  never rewrites any contractor row; the toolbar trade filter STAYS in-use-driven (every option
+  yields results).
+implements:
+- apps/home/migrations/008_contractor_trades.sql
+- apps/home/data.py
+- apps/home/routes.py
+- apps/home/tools.py
+- apps/home/ui/HomeApp.jsx
+- web/scripts/check-contractor-trades.mjs
+- web/package.json
+tests:
+- type: unit
+  path: web/scripts/check-contractor-trades.mjs
+  rubric: >
+    Static-parse prebuild gate: migration 008 creates home_contractor_trades and seeds all 15
+    required trades idempotently; HomeApp.jsx renders the trade control as a <select> (add + edit)
+    with no legacy contractor-trades datalist; a TradesManager component calls
+    /api/apps/home/contractors/trades.
+- type: integration
+  path: live-acceptance (test host UI, screenshots)
+  rubric: >
+    Fresh install: GET /contractors/trades returns the 15 seeds (route order correct);
+    Manage-trades gear lists them with add/rename/delete; the Add form trade control is a <select>;
+    error paths (dup name -> 400, rename-to-existing -> 400 not 500, missing id -> 404);
+    rename-doesn't-rewrite (contractor stored 'Plumber' still reads 'Plumber' after the managed
+    'Plumber' is renamed); a legacy out-of-list trade ('Landscaper') still displays.
+links: {}
+notes: >
+  Verified LIVE at Gate-2 (test host, fresh install of feature/ev-83): bound check-*.mjs green at
+  prebuild; API returned all 15 seeds with correct route ordering; POST dup->400, PUT
+  rename-to-existing->400, DELETE missing->404, valid CRUD 200; rename managed 'Plumber'->'Plumbing'
+  left contractor 'Bob Plumb' still reading 'Plumber'; out-of-list 'Landscaper' contractor persisted
+  and displayed; 4 MCP tools registered + list tool smoke-tested; RENDERED screenshots of the
+  Manage-trades UI (15 trades) and the Add-form <select>. Re-designed from ev-83 Gate-1 change
+  (operator directed a configurable table over an expanded hardcoded constant); mirrors Home Task
+  Categories minus color. Operator fork A: MCP tools added for cross-surface parity.
+verified: true
