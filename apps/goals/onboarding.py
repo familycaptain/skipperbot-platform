@@ -70,12 +70,31 @@ ONBOARDING_AGENDA = [
     {
         "key": "household",
         "project": "Get to know the household",
-        "task": "Ask {who} about their household — who's in the family and what each person would like help with.",
+        "task": "Get to know {who}'s household — who's in the family, how they're related, and who will use Skipper themselves.",
         "desc": (
-            "PM: in friendly chat with {who}, learn about their household — who's in the "
-            "family and what each person might want help with — so Skipper can personalize "
-            "reminders, chores, and notifications. This is learned in chat; there is no "
-            "Settings page for it. Ask a little at a time, never interrogate."
+            "PM: in friendly chat with {who}, learn about their household so Skipper can "
+            "personalize reminders, chores, and notifications. For each person, learn their "
+            "RELATIONSHIP to {who} (partner/spouse, child, or someone else) and — inferring "
+            "naturally — an internal role: a parent/guardian is a 'parent', a child is a "
+            "'kid', any other capable adult (including non-family like a nanny or housemate) "
+            "is a 'member'. Infer the role from the relationship whenever it's obvious; only "
+            "ask to clarify when it's genuinely ambiguous, and for a larger household confirm "
+            "in a natural batch (\"so it's you, your partner Sam, and three kids?\") rather "
+            "than a person-by-person interrogation. These role words are INTERNAL labels — "
+            "record them, but NEVER surface them as a question (\"is she a kid or a member?\" "
+            "is jargon; don't say it) — and NEVER infer 'admin' from a relationship (admin is "
+            "granted deliberately in Settings, not from who someone is). Record the household "
+            "structure — each person's name, relationship, and internal role — to your working "
+            "memory (update_working_memory on this onboarding project) so you can personalize "
+            "later; if someone's role isn't clear, still record them with the role left blank "
+            "and move on — don't nag. This note is for YOUR own personalization; it does not "
+            "by itself create accounts or wire up chores/permissions. Then, for anyone who "
+            "will actually USE Skipper themselves, let {who} know they can create that "
+            "person's login account in Settings → Members (offer to walk them through it, or "
+            "note it as a next step): being named here is just for personalization — only "
+            "creating an account there lets someone log in, and a young child tracked for "
+            "chores doesn't need one. The only Settings destination for this step is "
+            "Members, for accounts; everything else here is learned in chat."
         ),
     },
     {

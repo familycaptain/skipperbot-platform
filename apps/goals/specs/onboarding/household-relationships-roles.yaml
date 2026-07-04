@@ -1,0 +1,39 @@
+kind: specification
+id: goals.onboarding.household-relationships-roles
+title: Onboarding household step captures relationships + roles (for personalization) and
+  guides member-account creation
+state: live
+autonomy: gated
+behavior: The onboarding 'household' agenda step directs the PM to learn each household member's
+  RELATIONSHIP to the primary user naturally (never a per-person form; batching/confirming
+  for larger households) and to infer an INTERNAL role mapped to the existing platform vocabulary
+  — parent/guardian -> 'parent', child -> 'kid', other capable adult (incl. non-family) ->
+  'member'. These role labels are internal only, never surfaced as user-facing jargon, and
+  'admin' is never inferred from a relationship (granted deliberately in Settings). The PM
+  records the household structure (name + relationship + internal role) to its working memory
+  via update_working_memory on the onboarding project; this is DESCRIPTIVE personalization
+  memory and does not by itself grant users.role, register a chores 'kid', or activate role-gated
+  features. A member with no clear role is still recorded (role blank) with no nagging. The
+  step guides the user to Settings -> Members as the LOGIN-account path for people who will
+  use Skipper themselves (accounts carry member/parent/admin, not 'kid'), distinguishing 'named
+  for personalization' from 'has a login', offering to help, never auto-creating accounts
+  or collecting credentials in chat. A 'just me'/minimal answer completes gracefully (done-on-skip).
+  The agenda order (household -> intent -> location -> discord -> integrations -> tours) is
+  unchanged.
+implements:
+- apps/goals/onboarding.py
+- tests/evolve/goals/test_onboarding_household_depth.py
+tests:
+- type: unit
+  path: tests/evolve/goals/test_onboarding_household_depth.py
+  rubric: The household agenda step directs relationship capture + internal role mapping (parent/kid/member,
+    never surfaced as jargon, admin never inferred), records to working memory (update_working_memory),
+    does not overpromise chores/permissions, guides Settings -> Members as the login path
+    distinguishing named-vs-login, collects no credentials in chat, and keeps household first
+    / agenda order unchanged. Live acceptance (PM asks relationships naturally + points to
+    Settings, 'just me' completes) is validated on the test host, N>=3.
+links: {}
+notes: 'ev-80: operator approved option A (working-memory persistence) + A (guide to Settings
+  -> Members). Reuses data_layer/users role vocabulary + update_working_memory; no new schema,
+  no user/role MCP tool in the goals domain. Machine-queryable role interop (chores/permissions)
+  is a possible follow-on (structured store).'
