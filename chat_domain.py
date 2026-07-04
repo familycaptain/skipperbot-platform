@@ -943,17 +943,21 @@ async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
         if not agenda:
             return system_prompt, False
 
-        # A topic is resolved if it's done OR was skipped (cancelled); only a genuinely pending
-        # topic is "current". Without excluding cancelled, a skipped topic gets re-asked forever.
-        _RESOLVED = ("done", "cancelled")
+        # A topic is resolved if it's done, skipped (cancelled), or DEFERRED ('later'); only a
+        # genuinely pending topic is "current". Without excluding these a resolved topic gets
+        # re-asked forever. 'deferred' (ev-82: a Settings-only step the user will apply LATER) is
+        # resolved for the driver — matching the agenda→tours gate — so it is NOT re-nudged.
+        _RESOLVED = ("done", "cancelled", "deferred")
         done = [p for p in agenda if p.get("status") in _RESOLVED]
         current = next((p for p in agenda if p.get("status") not in _RESOLVED), None)
         # Every topic resolved but NONE actually completed (all skipped/cancelled) => the user
         # abandoned onboarding, didn't finish it — don't re-inject the agenda.
         if current is None and not any(p.get("status") == "done" for p in agenda):
             return system_prompt, False
+        def _glyph(st):
+            return {"done": "✅", "cancelled": "⏭️", "deferred": "⏸"}.get(st, "⬜")
         rows = "\n".join(
-            f"  {'✅' if p.get('status') == 'done' else ('⏭️' if p.get('status') == 'cancelled' else '⬜')} {p.get('name')} ({p.get('id')})"
+            f"  {_glyph(p.get('status'))} {p.get('name')} ({p.get('id')})"
             for p in agenda
         )
         # Surface the CURRENT topic's GUIDANCE (its project description/notes) AND its
@@ -1001,6 +1005,16 @@ async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
             "household names without relationships/roles do NOT cover the household topic). A bare "
             "greeting/'hey'/'ok'/'thanks' covers NOTHING — greet or re-ask the current topic, "
             "never mark it done.\n"
+            "- HONESTY — never fake completion. For any step whose real effect is applied in "
+            "Settings (you have NO tool to apply it), you CANNOT change that setting yourself — "
+            "so NEVER claim you did: 'I've set / updated / enabled / connected your …' is "
+            "FORBIDDEN. You MAY truthfully say you NOTED it to memory for personalization. Give "
+            "the EXACT Settings path and offer to check back. Mark such a step done ONLY when the "
+            "user CONFIRMS they applied it, OR explicitly DECLINES; if they'll do it LATER, call "
+            "update_item(item_id, status=\"deferred\") (a resolved status — you won't re-nudge "
+            "it), NOT a false 'done'. Follow each topic's Completion criteria; one gentle nudge, "
+            "not repeated. (A topic with no Settings step — e.g. learning how they want to use "
+            "Skipper — completes on the in-chat capture as its criteria say.)\n"
             "- CAPTURE, don't configure: remember household members + their stated intent so you "
             "can personalize — but remember each fact ONCE; don't re-save the household roster or "
             "intent every turn (it's already saved). Do NOT do deep app setup during the agenda (no full chore "
@@ -1011,10 +1025,12 @@ async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
             "includes kids; for a couple or a single person, match what you suggest to who's there. "
             "Read the household FIRST and let it decide what's even relevant before going down an "
             "app's path.\n"
-            "- SKIPPING A TOPIC IS NOT QUITTING. If they skip or decline ONE topic (e.g. 'skip "
-            "Discord'), mark just THAT topic done and CONTINUE to the next ⬜ — do NOT close, "
-            "cancel, or pause the whole onboarding. Only end onboarding entirely if they clearly "
-            "want to stop ALL setup (e.g. 'I'm good, I'll explore on my own').\n"
+            "- SKIPPING A TOPIC IS NOT QUITTING. If they genuinely DECLINE / aren't interested in "
+            "ONE topic (e.g. 'skip Discord'), mark just THAT topic done and CONTINUE to the next "
+            "⬜; if they instead want to do it LATER, mark it \"deferred\" (per the honesty rule) "
+            "and continue — either way do NOT close, cancel, or pause the whole onboarding. Only "
+            "end onboarding entirely if they clearly want to stop ALL setup (e.g. 'I'm good, I'll "
+            "explore on my own').\n"
             "- AGENDA DONE ≠ ONBOARDING DONE. When every agenda topic is done, do NOT close the "
             "goal yet — the per-app tours are the rest of it. PRUNE the tours HARD to their stated "
             "intent: proactively walk only the few apps that match how they want to use Skipper "

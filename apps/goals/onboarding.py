@@ -133,6 +133,12 @@ ONBOARDING_AGENDA = [
             "(Keep these examples for your own guidance; don't present them to {who} as "
             "required formats.)"
         ),
+        "dod": (
+            "Done ONLY when {who} CONFIRMS they set it in Settings → System → Location, OR "
+            "declines / says later (→ deferred, NOT done). You have NO tool to set the "
+            "location — give that exact path; NEVER say you set the location or timezone. "
+            "Not done off a bare mention."
+        ),
     },
     {
         "key": "discord",
@@ -144,6 +150,12 @@ ONBOARDING_AGENDA = [
             "Settings → Integrations; an individual LINKING THEIR OWN Discord account is in "
             "Settings → Members → My Discord."
         ),
+        "dod": (
+            "Done ONLY when {who} CONFIRMS they connected Discord in Settings, OR declines / "
+            "says later (→ deferred, NOT done). You have NO tool to connect it — give the "
+            "Settings path (bridge: Integrations; personal link: Members → My Discord); NEVER "
+            "say you enabled it. Not done off a bare mention."
+        ),
     },
     {
         "key": "integrations",
@@ -154,6 +166,12 @@ ONBOARDING_AGENDA = [
             "(web search, notification channels, etc.) live in Settings → Integrations. NOTE: "
             "Trello for lists/boards is set up in the Lists app's OWN settings (its Trello tab), "
             "not the Integrations panel — point them there for Trello specifically."
+        ),
+        "dod": (
+            "Done ONLY when {who} CONFIRMS they set up the integration(s) in Settings → "
+            "Integrations, OR declines / says later (→ deferred, NOT done). You have NO tool to "
+            "configure them — give that path; NEVER say you connected/enabled them (you may say "
+            "you noted the interest). Not done off a bare mention."
         ),
     },
 ]
