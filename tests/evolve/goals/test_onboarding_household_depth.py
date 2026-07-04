@@ -134,6 +134,19 @@ class HouseholdDepthCopy(unittest.TestCase):
         # the misleading 'named the household = covered' example must be gone
         self.assertNotIn("named the household", inj)
 
+    # --- ev-80 uat CHANGE #2: relationship + role ONLY, never ages ---
+
+    def test_does_not_ask_for_ages(self):
+        # The live PM was improvising an "approx age?" prompt off the 'child'/'kid'
+        # role words; the platform doesn't use ages. The copy must EXPLICITLY forbid
+        # asking for / recording ages, so the agent captures relationship + role only.
+        self.assertIn("do not ask for, require, or record ages", self.lower)
+        # 'child'/'kid' framed as a ROLE, not an age cue.
+        self.assertIn("denotes a role, not an age", self.lower)
+        # and must not instruct the agent to ASK for an age.
+        self.assertNotIn("ask their age", self.lower)
+        self.assertNotIn("approximate age?", self.lower)
+
 
 if __name__ == "__main__":
     unittest.main()

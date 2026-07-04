@@ -10,7 +10,10 @@ behavior: The onboarding 'household' agenda step directs the PM to learn each ho
   for larger households) and to infer an INTERNAL role mapped to the existing platform vocabulary
   — parent/guardian -> 'parent', child -> 'kid', other capable adult (incl. non-family) ->
   'member'. These role labels are internal only, never surfaced as user-facing jargon, and
-  'admin' is never inferred from a relationship (granted deliberately in Settings). The PM
+  'admin' is never inferred from a relationship (granted deliberately in Settings). The step
+  captures RELATIONSHIP + ROLE ONLY: the PM never asks for, requires, or records a member's AGE
+  (the platform does not use ages) — 'child'/'kid' denotes a ROLE, not an age, so the PM must not
+  ask how old anyone is or for an approximate age (ev-80 uat CHANGE #2). The PM
   records the household structure (name + relationship + internal role) to its working memory
   via update_working_memory on the onboarding project; this is DESCRIPTIVE personalization
   memory and does not by itself grant users.role, register a chores 'kid', or activate role-gated
@@ -40,9 +43,10 @@ tests:
   rubric: The household agenda step directs relationship capture + internal role mapping (parent/kid/member,
     never surfaced as jargon, admin never inferred), records to working memory (update_working_memory),
     does not overpromise chores/permissions, guides Settings -> Members as the login path
-    distinguishing named-vs-login, collects no credentials in chat, and keeps household first
-    / agenda order unchanged. Live acceptance (PM asks relationships naturally + points to
-    Settings, 'just me' completes) is validated on the test host, N>=3.
+    distinguishing named-vs-login, collects no credentials in chat, captures relationship + role
+    ONLY and never asks for/records ages, and keeps household first / agenda order unchanged. Live
+    acceptance (PM asks relationships/roles naturally with NO age prompt + points to Settings,
+    'just me' completes) is validated on the test host, N>=3.
 links: {}
 notes: 'ev-80: operator approved option A (working-memory persistence) + A (guide to Settings
   -> Members). Reuses data_layer/users role vocabulary + update_working_memory; no new schema,
