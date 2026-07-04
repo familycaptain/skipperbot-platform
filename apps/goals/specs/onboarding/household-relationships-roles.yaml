@@ -20,14 +20,19 @@ behavior: The onboarding 'household' agenda step directs the PM to learn each ho
   captured AND the user has been guided to Settings -> Members (the LOGIN-account path for
   people who will use Skipper themselves; accounts carry member/parent/admin, not 'kid';
   'named for personalization' is distinguished from 'has a login'), OR the user explicitly says
-  'just me'/declines. The gate is enforced by (i) FRONT-LOADING the 'don't finish on bare names,
-  follow up for relationships' imperative in the step's notes and (ii) a per-topic
-  definition_of_done seeded on the household project — BOTH kept within the goal-think snapshot's
-  300-char-per-field truncation (see #88) so the PM actually sees them. Accounts are never
+  'just me'/declines. The gate is enforced where interactive onboarding is actually DRIVEN —
+  chat_domain._inject_onboarding_context (the chat thinking-domain that walks the agenda) now
+  surfaces the CURRENT topic's definition_of_done as explicit 'Completion criteria' and instructs
+  the agent NOT to call update_item(status=done) until they are met (a partial answer like bare
+  names does not satisfy them); the misleading 'named the household = covered' example is removed.
+  The household completion gate is seeded as a per-topic definition_of_done on the household
+  project (kept within the 300-char snapshot budget, #88), and the step's notes FRONT-LOAD the
+  'don't finish on bare names, follow up for relationships' imperative. Accounts are never
   auto-created and credentials are never collected in chat. The agenda order (household -> intent
   -> location -> discord -> integrations -> tours) is unchanged.
 implements:
 - apps/goals/onboarding.py
+- chat_domain.py
 - tests/evolve/goals/test_onboarding_household_depth.py
 tests:
 - type: unit

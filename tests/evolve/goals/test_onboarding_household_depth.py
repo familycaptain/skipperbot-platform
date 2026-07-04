@@ -121,6 +121,19 @@ class HouseholdDepthCopy(unittest.TestCase):
         self.assertIn("definition_of_done", src)
         self.assertIn('item.get("dod")', src)
 
+    def test_chat_domain_surfaces_completion_criteria(self):
+        # THE enforcement surface (ev-80 uat root cause): the CHAT onboarding
+        # driver — not the goal-thinking snapshot — must surface the current
+        # topic's definition_of_done and gate update_item(done) on it. Without
+        # this the chat agent only sees the topic NAME+status and completes the
+        # household step on bare names.
+        chat = (pathlib.Path(__file__).resolve().parents[3] / "chat_domain.py").read_text()
+        inj = chat[chat.index("_inject_onboarding_context"):]
+        self.assertIn("definition_of_done", inj)
+        self.assertIn("Completion criteria", inj)
+        # the misleading 'named the household = covered' example must be gone
+        self.assertNotIn("named the household", inj)
+
 
 if __name__ == "__main__":
     unittest.main()

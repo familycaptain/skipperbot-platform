@@ -956,12 +956,24 @@ async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
             f"  {'✅' if p.get('status') == 'done' else ('⏭️' if p.get('status') == 'cancelled' else '⬜')} {p.get('name')} ({p.get('id')})"
             for p in agenda
         )
-        focus = (
-            f"Current focus: **{current['name']}** ({current['id']}).\n"
-            if current else
-            "All agenda topics are done — now move to the per-app tours (pruned HARD to their "
-            "intent). Do NOT close the goal until those are done or they say they're all set.\n"
-        )
+        # Surface the CURRENT topic's completion criteria (its definition_of_done) so the
+        # chat agent gates update_item->done on it — e.g. the household step must capture
+        # relationships/roles + hand off to Settings → Members before it's 'done', not just
+        # collect bare names (ev-80). Without this the agent only sees the topic NAME+status.
+        _dod = (current.get("definition_of_done") or "").strip() if current else ""
+        if current:
+            focus = f"Current focus: **{current['name']}** ({current['id']}).\n"
+            if _dod:
+                focus += (
+                    f"  ↳ Completion criteria — do NOT call update_item(status=\"done\") for this "
+                    f"topic until these are met (a partial answer like bare names does NOT satisfy "
+                    f"them; follow up first): {_dod}\n"
+                )
+        else:
+            focus = (
+                "All agenda topics are done — now move to the per-app tours (pruned HARD to their "
+                "intent). Do NOT close the goal until those are done or they say they're all set.\n"
+            )
         system_prompt += (
             "\n\n## You are ONBOARDING this user RIGHT NOW (active — not background work)\n"
             "This is your live first-run setup. Walk the agenda below IN ORDER, ONE gentle nudge "
@@ -970,9 +982,12 @@ async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
             "update_item(item_id, status=\"done\") for that agenda project, THEN move to the next "
             "⬜ topic in the SAME reply. Do NOT keep re-drilling a topic you've already covered — "
             "advancing the agenda matters more than exhaustively configuring one area. A topic is "
-            "'covered' ONLY when the user actually PROVIDED its info (named the household, stated "
-            "their intent, gave a location…); a bare greeting/'hey'/'ok'/'thanks' covers NOTHING — "
-            "greet or re-ask the current topic, never mark it done.\n"
+            "'covered' ONLY when the user actually PROVIDED what it needs (stated their intent, "
+            "gave a location…) — and if the CURRENT topic lists Completion criteria below, it is "
+            "covered ONLY when THOSE are met (do not mark it done on a partial answer — e.g. bare "
+            "household names without relationships/roles do NOT cover the household topic). A bare "
+            "greeting/'hey'/'ok'/'thanks' covers NOTHING — greet or re-ask the current topic, "
+            "never mark it done.\n"
             "- CAPTURE, don't configure: remember household members + their stated intent so you "
             "can personalize — but remember each fact ONCE; don't re-save the household roster or "
             "intent every turn (it's already saved). Do NOT do deep app setup during the agenda (no full chore "
