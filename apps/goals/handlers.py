@@ -103,6 +103,23 @@ async def _run_arrival_greeting(goal_id: str) -> None:
     ends delivered=True (multi-surface, chat-log) and the ~30s poll can't re-fan it.
     """
     delivered = False
+
+    # ev-79: server-driven presence. Light the primary's typing indicator at produce
+    # START so a fresh-install greeting shows CONTINUOUS presence for the whole produce
+    # (which can exceed the client's old ~15s optimistic window) — no silent dead-air.
+    # Best-effort; the client already lights presence on a server 'typing' frame, and its
+    # bounded fail-open still clears the dots if no greeting is ever produced.
+    async def _set_typing(on: bool) -> None:
+        try:
+            from data_layer.users import get_primary_user
+            from connections import manager
+            primary = (await asyncio.to_thread(get_primary_user) or "").strip().lower()
+            if primary:
+                await manager.send_to_user(primary, {"type": "typing", "status": on})
+        except Exception:
+            logger.debug("goals.handlers: could not emit arrival typing frame", exc_info=True)
+
+    await _set_typing(True)
     try:
         from apps.goals.domain import goal_domain_handler
         # `arrival=True` switches the produce path to first-contact greeting framing.
@@ -119,7 +136,9 @@ async def _run_arrival_greeting(goal_id: str) -> None:
         logger.warning("goals.handlers: arrival greeting produce/deliver failed", exc_info=True)
 
     if not delivered:
-        # Nothing was greeted — RELEASE the claim so a later arrival can retry.
+        # Nothing was greeted — clear the presence dots we lit (the client fail-open is
+        # the backstop) and RELEASE the claim so a later arrival can retry.
+        await _set_typing(False)
         from apps.goals.onboarding import release_onboarding_greeting
         await asyncio.to_thread(release_onboarding_greeting)
 
