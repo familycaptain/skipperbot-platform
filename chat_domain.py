@@ -956,13 +956,26 @@ async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
             f"  {'✅' if p.get('status') == 'done' else ('⏭️' if p.get('status') == 'cancelled' else '⬜')} {p.get('name')} ({p.get('id')})"
             for p in agenda
         )
-        # Surface the CURRENT topic's completion criteria (its definition_of_done) so the
-        # chat agent gates update_item->done on it — e.g. the household step must capture
-        # relationships/roles + hand off to Settings → Members before it's 'done', not just
-        # collect bare names (ev-80). Without this the agent only sees the topic NAME+status.
+        # Surface the CURRENT topic's GUIDANCE (its project description/notes) AND its
+        # completion criteria (definition_of_done) so the chat agent follows the authored
+        # copy — e.g. the location step must ask city/region/country, not a street address
+        # (ev-81), and the household step must capture relationships/roles + hand off to
+        # Settings → Members before it's 'done' (ev-80). Without the description the agent
+        # only sees the topic NAME+status and IMPROVISES each ask from the title alone
+        # (which is how location asked for a 'home address' and other topics drift).
         _dod = (current.get("definition_of_done") or "").strip() if current else ""
+        _notes = (current.get("notes") or "").strip() if current else ""
+        # Drop the leading "# {name}" header create_project prepends to the notes.
+        if _notes.startswith("#") and "\n" in _notes:
+            _notes = _notes.split("\n", 1)[1].strip()
+        _desc = _notes[:2000]
         if current:
             focus = f"Current focus: **{current['name']}** ({current['id']}).\n"
+            if _desc:
+                focus += (
+                    f"  ↳ How to handle this topic (follow this guidance; ask exactly what it "
+                    f"says and nothing more): {_desc}\n"
+                )
             if _dod:
                 focus += (
                     f"  ↳ Completion criteria — do NOT call update_item(status=\"done\") for this "
