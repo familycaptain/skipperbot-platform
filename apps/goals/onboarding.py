@@ -134,10 +134,10 @@ ONBOARDING_AGENDA = [
             "required formats.)"
         ),
         "dod": (
-            "Done ONLY when {who} CONFIRMS they set it in Settings → System → Location, OR "
-            "declines / says later (→ deferred, NOT done). You have NO tool to set the "
-            "location — give that exact path; NEVER say you set the location or timezone. "
-            "Not done off a bare mention."
+            "Done ONLY when {who} CONFIRMS they set it in Settings → System → Location — "
+            "knowing/remembering the place is NOT it being set, so never complete off a "
+            "remembered value or write 'set to …'. Else declines/later → deferred. "
+            "NO tool sets it; NEVER say you set the location or timezone."
         ),
     },
     {

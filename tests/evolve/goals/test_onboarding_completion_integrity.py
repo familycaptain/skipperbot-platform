@@ -83,6 +83,11 @@ class CompletionIntegrity(unittest.TestCase):
         self.assertIn("honesty", low)
         self.assertIn("forbidden", low)                 # 'I've set/enabled …' is forbidden
         self.assertIn('status=\\"deferred\\"', self.inj)  # 'later' → deferred
+        # remembered/known value is NOT applied — the load-bearing gap validation caught.
+        # (substrings kept within single string literals so implicit concatenation across
+        # source lines doesn't break the raw-text match)
+        self.assertIn("knowing or remembering", low)
+        self.assertIn("history_note", low)
         # the clause is capability-based, not topic-hardcoded (no per-topic identity in the clause)
 
     def test_driver_still_allows_recorded_to_memory(self):
