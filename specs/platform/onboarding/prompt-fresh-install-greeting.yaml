@@ -1,0 +1,73 @@
+kind: specification
+id: platform.onboarding.prompt-fresh-install-greeting
+title: Fresh-install arrival greeting fires promptly after models are configured, with no
+  silent typing dead-air gap
+state: live
+autonomy: gated
+behavior:
+- GIVEN a genuinely fresh install where the primary user's desktop WS connected while keyless
+  (arrival greeting early-skipped, no greet-once claim taken) WHEN the user configures models
+  via POST /api/onboarding/save-models AND the save succeeds for the first time (keyless ->
+  configured) THEN the server re-submits the desktop.arrival priority event for the primary
+  user, so the always-on priority-event consumer produces and delivers the arrival greeting
+  within a few seconds — NOT waiting for the <=120s supervisor tick.
+- GIVEN the greeting is produced by either the re-fired arrival path OR the supervisor's later
+  domain cycle WHEN both could run THEN the atomic greet-once claim guarantees the greeting
+  is delivered EXACTLY ONCE (the loser early-skips).
+- GIVEN a fresh primary onboarding arrival where the desktop connected keyless before config
+  WHEN the server begins producing the arrival greeting THEN the client shows a CONTINUOUS
+  presence/typing indicator driven by a server signal (the arrival-produce path emits a WS
+  typing frame when produce starts — the client already lights presence on server 'typing'),
+  NOT only the one-shot optimistic window armed at keyless load, so presence stays lit for
+  the whole produce even if it runs longer than the old ~15s bound; the bounded fail-open
+  still clears the dots if no greeting is ever produced.
+- GIVEN the greeting is delivered on the fallback path (missed WS push, or produced by the
+  ~120s supervisor after the optimistic window) WHEN the greeting frame eventually arrives
+  OR the client reloads THEN it MUST still surface (a late greeting frame always renders;
+  a missed delivery is reconciled via history + live-greeting-status) — the greeting is NEVER
+  silently dropped, and dead air never recurs on the fallback path.
+- GIVEN the re-fired greeting is produced while the primary's desktop WS is absent or mid-reconnect
+  WHEN the greet-once claim would be taken THEN delivery must be safe (deliver-then-claim,
+  or the produced greeting is persisted/redelivered and 'pending' stays true until confirmed
+  delivery) — the claim is NEVER consumed with the greeting lost (which would leave the user
+  with NO greeting, worse than dead air).
+- GIVEN no primary user exists yet, or the save fails, or models were already configured (no
+  keyless transition) WHEN save-models runs THEN the re-fire is a NO-OP and save-models still
+  returns its normal result — the re-emit fires only when get_primary_user() resolves AND
+  the save succeeded AND models are now configured.
+- 'GIVEN keyless boot (no models configured) WHEN nothing has been saved THEN the system stays
+  LLM-silent and the re-fire does NOT occur (it only fires after a successful model save);
+  #73 no-restart self-activation is preserved.'
+- 'GIVEN models were ALREADY configured at desktop-connect time (the #73 case) WHEN the desktop
+  connects THEN behavior is unchanged (the arrival greeting already fires on connect).'
+implements:
+- agent.py POST /api/onboarding/save-models (re-emit desktop.arrival for the primary user
+  on first-time successful save)
+- web/src/hooks/useSkipperSocket.js (align the optimistic-typing/presence window with the
+  models-configured greeting trigger; keep the bounded fail-open)
+tests:
+- type: unit
+  path: tests/evolve/platform/test_prompt_fresh_install_greeting.py
+  rubric: save-models on a first-time keyless->configured save re-submits a desktop.arrival
+    priority event for the primary (assert submit_priority_event called with 'desktop.arrival'
+    + the primary user_id); it does NOT re-fire when models were already configured (no keyless
+    transition). Exactly-once across a re-fire + a supervisor cycle is preserved by the unchanged
+    atomic greet-once claim.
+- type: integration
+  path: web/scripts/check-fresh-greeting-presence.mjs
+  rubric: 'Client source presence-guard (the repo''s web bound-test mechanism — no JS unit
+    runner; vite + node check-*.mjs gates wired into prebuild): the bounded optimistic fail-open
+    (OPTIMISTIC_GREETING_TIMEOUT_MS) is held in a ref and CANCELLED on a server ''typing:true''
+    frame so presence stays lit through a produce longer than the load window; ws.onclose
+    clears presence (crash backstop). The LIVE fresh-keyless-install acceptance (greeting
+    within seconds, continuous typing, exactly once, no #74 ''Welcome back'') is the authoritative
+    behavior oracle.'
+links: {}
+notes: 'Fix for the fresh-install connect-then-configure ordering that #58/#73 didn''t cover.
+  Server: reuse the #73 always-on consumer + arrival handler by re-firing desktop.arrival
+  from save-models. Client: align optimistic-typing with the real greeting trigger. Exactly-once
+  preserved by the atomic greet-once claim. Design decisions (Gate 1): server re-trigger mechanism
+  (re-emit arrival vs kick supervisor vs both); client dead-air handling (re-arm on config
+  vs raise timeout vs persistent presence). save-models restart_required copy is #78 (out
+  of scope).'
+verified: false

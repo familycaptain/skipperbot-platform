@@ -668,7 +668,35 @@ async def onboarding_save_models(request: SaveModelsRequest, http_request: Reque
         # resolution); no restart is required after a model save. (Embedding is
         # provisioned once above; its dimension is fixed, not a live restart.)
         return {"ok": True, "restart_required": False}
-    return await asyncio.to_thread(_do)
+
+    # ev-79: on a genuinely fresh install the primary's desktop WS connected while
+    # keyless, so the desktop.arrival greeting early-skipped (models not configured)
+    # WITHOUT taking the greet-once claim. Capture readiness BEFORE the save so we can
+    # detect the first-time keyless -> configured transition, then RE-FIRE desktop.arrival
+    # for the primary once configured — the #73 always-on consumer produces the greeting
+    # within a few seconds instead of waiting for the <=120s supervisor. The arrival
+    # handler (apps/goals/handlers.py) is UNCHANGED: it re-checks the primary/agenda/
+    # models-configured gates and the ATOMIC greet-once claim, so exactly-once holds and a
+    # later (already-configured) model change never re-greets.
+    from providers.tier_resolver import models_configured
+    was_configured = await asyncio.to_thread(models_configured)
+    result = await asyncio.to_thread(_do)
+    if (result or {}).get("ok") and not was_configured:
+        try:
+            # Only when the save actually made models configured (never on a keyless
+            # no-op — keeps #73 LLM-silence) and a primary user exists.
+            if await asyncio.to_thread(models_configured):
+                from data_layer.users import get_primary_user
+                primary = (await asyncio.to_thread(get_primary_user) or "").strip().lower()
+                if primary:
+                    import thinking_scheduler
+                    asyncio.create_task(
+                        thinking_scheduler.submit_priority_event(
+                            "desktop.arrival", {"user_id": primary})
+                    )
+        except Exception:
+            logger.debug("save-models: could not re-fire desktop.arrival", exc_info=True)
+    return result
 
 
 @app.post("/api/onboarding/create-user")

@@ -94,6 +94,11 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
   const pingTimer = useRef(null);
   const msgIdRef = useRef(0);
   const buildIdRef = useRef(null);
+  // ev-79: the bounded optimistic-typing fail-open armed at keyless load (the #74
+  // fresh-primary-arrival branch). Held in a ref so a SERVER-driven 'typing' frame in
+  // the ws effect can cancel it once the arrival greeting is actually being produced —
+  // keeping presence lit through a produce longer than OPTIMISTIC_GREETING_TIMEOUT_MS.
+  const optimisticGreetTimer = useRef(null);
 
   // Keep stable refs to event callbacks so ws.onmessage always calls the latest
   const onOpenAppRef = useRef(onOpenApp);
@@ -178,8 +183,13 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
       if (onboarding) {
         if (hist.length === 0 && liveGreeting) {
           setIsTyping(true);
-          greetingTimer = setTimeout(() => {
+          // Bounded fail-open BACKSTOP: clears the dots if no server presence ever
+          // arrives (produce/deliver failure, or a second tab that lost the greet-once
+          // claim). Once the server sends its 'typing' frame (produce started), the ws
+          // effect cancels this so presence persists for the whole produce (ev-79).
+          optimisticGreetTimer.current = setTimeout(() => {
             if (!cancelled) setIsTyping(false);
+            optimisticGreetTimer.current = null;
           }, OPTIMISTIC_GREETING_TIMEOUT_MS);
         }
         return;
@@ -213,6 +223,10 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
     return () => {
       cancelled = true;
       if (greetingTimer) clearTimeout(greetingTimer);
+      if (optimisticGreetTimer.current) {
+        clearTimeout(optimisticGreetTimer.current);
+        optimisticGreetTimer.current = null;
+      }
     };
   }, [userId]);
 
@@ -251,6 +265,16 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
       switch (data.type) {
         case "typing":
           setIsTyping(data.status);
+          // ev-79: a server-driven 'typing:true' frame means the arrival greeting is now
+          // actively being produced — cancel the bounded optimistic fail-open armed at
+          // keyless load so presence stays lit through a produce longer than
+          // OPTIMISTIC_GREETING_TIMEOUT_MS (no silent dead-air gap). The greeting turn
+          // (chat_response) or a server 'typing:false' then clears the dots. Scoped to the
+          // onboarding optimistic timer only — never re-arms the #74 'Welcome back' path.
+          if (data.status && optimisticGreetTimer.current) {
+            clearTimeout(optimisticGreetTimer.current);
+            optimisticGreetTimer.current = null;
+          }
           break;
 
         case "progress":
@@ -359,6 +383,9 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
 
     ws.onclose = (event) => {
       setConnected(false);
+      // ev-79: a dropped socket clears presence — backstop if a produce dies mid-greeting
+      // after emitting its 'typing:true' frame (which cancelled the optimistic timer).
+      setIsTyping(false);
       wsRef.current = null;
       clearInterval(pingTimer.current);
       if (event && event.code === WS_AUTH_FAILED) {
