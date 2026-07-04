@@ -4,6 +4,7 @@ title: Onboarding home-location step asks city/region/country (international), n
   address
 state: live
 autonomy: gated
+verified: true
 behavior: The onboarding 'location' agenda step directs the PM to ask NATURALLY (in a sentence)
   for the user's town/city, state/province/region, and country — explicitly NOT a street or
   mailing address, framed country-NEUTRALLY (never presuming a US 'state'), leading with the
