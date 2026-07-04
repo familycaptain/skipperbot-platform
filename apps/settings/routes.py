@@ -50,10 +50,11 @@ PLATFORM_PANELS: dict[str, dict] = {
              "description": "Used everywhere times are shown. Stored as the IANA name.",
              "default": "", "choices_provider": "timezones"},
             {"key": "default_location", "type": "string", "label": "Location",
-             "description": "Your home location for weather and other location lookups. "
-                            "Enter any place name or postal,country — it's geocoded and stored. "
+             "description": "Your home location (city / region / country) for weather and other "
+                            "location lookups — no street address needed. Enter any place name or "
+                            "postal,country — it's geocoded and stored. "
                             "Chat, Discord, and voice all use it by default.",
-             "placeholder": "e.g. Austin, Texas, US  —or—  SW1A 1AA, UK",
+             "placeholder": "e.g. London, UK  —or—  Van Buren, AR, USA",
              "default": ""},
             {"key": "smart_model", "type": "string", "label": "Smart model",
              "description": "Model for complex reasoning.", "default": "", "requires_restart": True},

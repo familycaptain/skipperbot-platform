@@ -306,7 +306,7 @@ same panel.
 **Editing settings.** The **Settings** app aggregates configuration in one
 place:
 - **System** and **Integrations** panels — platform-wide settings (timezone,
-  default ZIP code, AI models, URLs, Discord/Brave/Weather keys, etc.). Settings
+  default location, AI models, URLs, Discord/Brave/Weather keys, etc.). Settings
   that only take effect at startup are marked "↻ restart" and prompt you to
   restart after saving.
 - **Per-app settings** — each installed app that has options shows its own

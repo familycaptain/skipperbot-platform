@@ -13,7 +13,7 @@ are marked.
 
 ## Screens (panels)
 
-- **System.** Timezone, default ZIP code, AI model names, LAN/public URLs, and
+- **System.** Timezone, default location (city / region / country), AI model names, LAN/public URLs, and
   display/debug flags. Items marked **↻ restart** apply after a server restart.
 - **Integrations.** Cross-cutting service credentials — Discord, Brave Search,
   Weather, OpenAI admin, etc.
@@ -27,8 +27,8 @@ are marked.
 ## Example workflows
 
 **Set up the basics**
-- *In the app:* System → set your timezone and default ZIP (the Weather app and
-  chat use the ZIP). Restart if a setting is flagged ↻.
+- *In the app:* System → set your timezone and default location — your city /
+  region / country (the Weather app and chat use it). Restart if a setting is flagged ↻.
 
 **Add an integration**
 - *In the app:* Integrations → paste the key (e.g. a Weather or Discord token);

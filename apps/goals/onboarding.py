@@ -114,8 +114,16 @@ ONBOARDING_AGENDA = [
         "task": "Help {who} set the home location in Settings → System → Location.",
         "desc": (
             "PM: help {who} set their home location so weather, daylight, and time-of-day "
-            "features work. Where: Settings → System → Location — a free-text place or postal "
-            "field (e.g. \"Austin, Texas, US\" or \"SW1A 1AA, UK\"), not specifically a ZIP code."
+            "features work. Ask NATURALLY, in a sentence — for their town or city, their "
+            "state/province/region, and their country. Lead with the WHY as gentle "
+            "reassurance: it's just their general area for weather and daylight — NOT a "
+            "street or mailing address. Stay country-NEUTRAL: never presume a US 'state'. "
+            "ANY level of detail is enough — a bare \"London, UK\" or just a city + country "
+            "completes it; take what they give and don't re-ask or interrogate (one gentle "
+            "nudge). Where to set it: Settings → System → Location, a free-text place field "
+            "(illustrative range: \"Van Buren, AR, USA\" or \"London, UK\") — not a ZIP code. "
+            "(Keep these examples for your own guidance; don't present them to {who} as "
+            "required formats.)"
         ),
     },
     {

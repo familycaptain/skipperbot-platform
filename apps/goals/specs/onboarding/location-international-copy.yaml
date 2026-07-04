@@ -1,0 +1,36 @@
+kind: specification
+id: goals.onboarding.location-international-copy
+title: Onboarding home-location step asks city/region/country (international), never a street
+  address
+state: live
+autonomy: gated
+behavior: The onboarding 'location' agenda step directs the PM to ask NATURALLY (in a sentence)
+  for the user's town/city, state/province/region, and country — explicitly NOT a street or
+  mailing address, framed country-NEUTRALLY (never presuming a US 'state'), leading with the
+  WHY (weather/daylight/time-of-day) as warm privacy reassurance. Any level of granularity
+  completes the step (a bare 'London, UK' or city+country is enough); the PM does not re-ask
+  or interrogate. The Settings → System → Location destination, skippability (_OPTIONAL_NOTE),
+  no-secrets-in-chat (_SECRETS_NOTE), and the agenda ORDER are unchanged. The stale US-only
+  'default ZIP' copy is removed from the Settings help doc (both occurrences) and README,
+  replaced by the default LOCATION (city/region/country); the Settings default_location field
+  example leads with a non-US example. Location resolution (app_platform/location.py) is byte-identical
+  — copy-only, no logic change.
+implements:
+- apps/goals/onboarding.py
+- apps/settings/help.md
+- apps/settings/routes.py
+- README.md
+- tests/evolve/goals/test_onboarding_location_copy.py
+tests:
+- type: unit
+  path: tests/evolve/goals/test_onboarding_location_copy.py
+  rubric: The location agenda desc asks city/region/country, not a street/mailing address,
+    is country-neutral, accepts any granularity without re-asking, keeps Settings → System
+    → Location, and agenda order is unchanged; help.md and README no longer contain 'default
+    ZIP'. Live acceptance (PM asks the location naturally + internationally, never a street
+    address, a non-US city+country completes it) is validated on the test host, N>=3.
+links: {}
+notes: 'ev-81: operator approved the FULL SWEEP (onboarding desc + both help.md ZIP + README
+  + Settings field). Copy-only; app_platform/location.py resolution unchanged (already international).
+  Preserve test_onboarding_agenda.py assertions green. Companion #82 (completion integrity)
+  out of scope.'
