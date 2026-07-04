@@ -7,6 +7,7 @@ Each user has their own OAuth tokens stored in email_accounts.credentials.
 import os
 import base64
 import logging
+import threading
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 
@@ -86,13 +87,48 @@ def exchange_code(code: str, code_verifier: str = None) -> dict:
     }
 
 
-def _build_service(credentials: dict):
-    """Build a Gmail API service from stored credentials dict.
+# Cache one Gmail service per account (keyed by the stable refresh_token). The
+# service reuses its httplib2/SSL transport, so the Gmail discovery doc AND the
+# OS trust store load ONCE per account — not on every call. Rebuilding a service
+# per call re-parsed the discovery doc and re-loaded the OS cert store (via
+# truststore) on every HTTPS connection, churning hundreds of millions of tiny
+# allocations that fragmented the heap and staircased RSS to OOM (daily reboot).
+# google-auth refreshes the access token in place on the cached creds; we mirror
+# it back into `credentials` so the stored token stays current.
+_service_cache: dict[str, tuple] = {}
+_service_cache_lock = threading.Lock()
 
-    If the access token is expired (or missing expiry), proactively refreshes
-    and updates the *credentials* dict in-place so every caller sharing the
-    same dict benefits from the fresh token.
+
+def _service_cache_key(credentials: dict) -> str:
+    return credentials.get("refresh_token") or credentials.get("token") or ""
+
+
+def invalidate_service(credentials: dict) -> None:
+    """Drop the cached service for these credentials (call on a 401/invalid_grant)."""
+    with _service_cache_lock:
+        _service_cache.pop(_service_cache_key(credentials), None)
+
+
+def _build_service(credentials: dict):
+    """Return a per-account cached Gmail API service (built once, reused).
+
+    Reusing the service reuses its HTTP/SSL transport, so the Gmail discovery
+    document and the OS trust store are loaded ONCE per account rather than on
+    every call. google-auth refreshes the access token on the cached creds; we
+    mirror the fresh token back into *credentials* so callers/DB stay current.
     """
+    key = _service_cache_key(credentials)
+    with _service_cache_lock:
+        cached = _service_cache.get(key)
+    if cached is not None:
+        service, creds = cached
+        # google-auth may have refreshed the token under us — mirror it back.
+        if creds.token and creds.token != credentials.get("token"):
+            credentials["token"] = creds.token
+            credentials["expiry"] = creds.expiry.isoformat() if creds.expiry else None
+            credentials["_refreshed"] = True
+        return service
+
     expiry = None
     expiry_str = credentials.get("expiry")
     if expiry_str:
@@ -121,7 +157,10 @@ def _build_service(credentials: dict):
         except Exception as e:
             logger.warning("GMAIL: Proactive token refresh failed: %s", e)
 
-    return build("gmail", "v1", credentials=creds, cache_discovery=False)
+    service = build("gmail", "v1", credentials=creds, cache_discovery=False)
+    with _service_cache_lock:
+        _service_cache[key] = (service, creds)
+    return service
 
 
 def get_user_email(credentials: dict) -> str:
