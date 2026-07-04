@@ -120,4 +120,4 @@ notes: 'no-spec bug (triage); generalizes ev-80''s household gate to all Setting
   over self-report; (security) keep Discord/integrations dod pointed at Settings (never solicit
   tokens) + _SECRETS_NOTE preserved. Spec-audit round-1 blockers already resolved (deferred
   status, decline valid, no phantom exit, intent exempt, front-loaded dod).'
-verified: false
+verified: true
