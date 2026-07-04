@@ -4,6 +4,7 @@ title: Onboarding household step captures relationships + roles (for personaliza
   guides member-account creation
 state: live
 autonomy: gated
+verified: true
 behavior: The onboarding 'household' agenda step directs the PM to learn each household member's
   RELATIONSHIP to the primary user naturally (never a per-person form; batching/confirming
   for larger households) and to infer an INTERNAL role mapped to the existing platform vocabulary
