@@ -664,7 +664,10 @@ async def onboarding_save_models(request: SaveModelsRequest, http_request: Reque
                     if r["connector"] == emb["connector"] and r["model"] == emb["model"]]
             if rows and rows[0].get("embedding_dim"):
                 model_config.set_embedding_dim(rows[0]["embedding_dim"])
-        return {"ok": True, "restart_required": True}
+        # Smart/Fast models take effect immediately post-#73 (call-time tier
+        # resolution); no restart is required after a model save. (Embedding is
+        # provisioned once above; its dimension is fixed, not a live restart.)
+        return {"ok": True, "restart_required": False}
     return await asyncio.to_thread(_do)
 
 
