@@ -1314,6 +1314,117 @@ def delete_task_category(cat_id: str) -> str:
         return f"Error in delete_task_category: {str(e)}"
 
 
+# ---------------------------------------------------------------------------
+# Contractor Trades (configurable list) — mirrors the Task Category tools.
+# The trade label on a contractor stays free-form; these manage the pick-list
+# offered in the Contractors Add/Edit form + Manage-trades screen.
+# ---------------------------------------------------------------------------
+
+def list_contractor_trades() -> str:
+    """List the configurable contractor trades (the trade pick-list for the Contractors tab).
+
+    Returns:
+        Formatted list of trades with IDs.
+
+    Ack: Loading contractor trades...
+    """
+    try:
+        trades = _dl.get_all_contractor_trades()
+        if not trades:
+            return "No contractor trades defined."
+        lines = [f"Contractor trades ({len(trades)}):\n"]
+        for t in trades:
+            lines.append(f"- {t['name']} ({t['id']})")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error in list_contractor_trades: {str(e)}"
+
+
+def create_contractor_trade(name: str) -> str:
+    """Add a contractor trade to the configurable pick-list.
+
+    Args:
+        name: Trade name (e.g. "Pool Service", "Chimney Sweep").
+
+    Returns:
+        Confirmation with trade ID.
+
+    Ack: Adding contractor trade "{name}"...
+    """
+    try:
+        if not name or not name.strip():
+            return "Error: name is required."
+        if _dl.contractor_trade_name_exists(name.strip()):
+            return f"Error: a trade named '{name.strip()}' already exists."
+        trade_id = f"hctr-{uuid.uuid4().hex[:8]}"
+        trade = _dl.create_contractor_trade(trade_id, name.strip())
+        if trade:
+            return f"Contractor trade created: '{trade['name']}' ({trade['id']})"
+        return "Error: Trade creation failed (name may already exist)."
+    except Exception as e:
+        return f"Error in create_contractor_trade: {str(e)}"
+
+
+def update_contractor_trade(trade_id: str, name: str = "", sort_order: int = -1) -> str:
+    """Rename or reorder a contractor trade in the pick-list.
+
+    Note: renaming a trade does NOT change any existing contractor's stored trade
+    label (a contractor's trade is a free-form value).
+
+    Args:
+        trade_id: Trade ID (hctr-xxx).
+        name: New name (empty = keep).
+        sort_order: New sort position (-1 = keep).
+
+    Returns:
+        Confirmation or error.
+
+    Ack: Updating contractor trade {trade_id}...
+    """
+    try:
+        if not trade_id or not trade_id.strip():
+            return "Error: trade_id is required."
+        updates = {}
+        if name:
+            if _dl.contractor_trade_name_exists(name.strip(), trade_id.strip()):
+                return f"Error: a trade named '{name.strip()}' already exists."
+            updates["name"] = name.strip()
+        if sort_order >= 0:
+            updates["sort_order"] = sort_order
+        if not updates:
+            return "No fields to update."
+        ok = _dl.update_contractor_trade(trade_id.strip(), updates)
+        if ok:
+            return f"Contractor trade {trade_id} updated. Changed: {', '.join(updates.keys())}"
+        return f"Error: Trade '{trade_id}' not found."
+    except Exception as e:
+        return f"Error in update_contractor_trade: {str(e)}"
+
+
+def delete_contractor_trade(trade_id: str) -> str:
+    """Delete a contractor trade from the pick-list.
+
+    Note: existing contractors using this trade keep their trade value (free-form).
+
+    Args:
+        trade_id: Trade ID (hctr-xxx).
+
+    Returns:
+        Confirmation or error.
+
+    Ack: Deleting contractor trade {trade_id}...
+    """
+    try:
+        if not trade_id or not trade_id.strip():
+            return "Error: trade_id is required."
+        ok = _dl.delete_contractor_trade(trade_id.strip())
+        if ok:
+            return f"Contractor trade '{trade_id}' deleted."
+        return f"Error: Trade '{trade_id}' not found."
+    except Exception as e:
+        return f"Error in delete_contractor_trade: {str(e)}"
+
+
 def get_overdue_home_tasks() -> str:
     """Get all overdue or due-soon home maintenance tasks.
 

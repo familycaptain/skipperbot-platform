@@ -2488,18 +2488,182 @@ function StarRating({ value, onChange, readonly = false }) {
   );
 }
 
-const CONTRACTOR_TRADES = [
-  "Electrician", "Plumber", "Roofer", "Painter", "HVAC", "Landscaper", "Handyman", "General",
-];
+// Contractor trades are a household-configurable list (see TradesManager + the
+// /api/apps/home/contractors/trades API). 'General' is a guaranteed fallback so
+// the Add <select> is never empty even if the household deletes every trade.
+// contractor.trade stays a free-form label; this list only drives the picker.
+const CONTRACTOR_TRADE_FALLBACK = "General";
+
+function tradeOptions(managedTrades = [], current = "") {
+  const names = (managedTrades || []).map(t => t.name).filter(Boolean);
+  const base = names.length ? names : [CONTRACTOR_TRADE_FALLBACK];
+  // Preserve an existing out-of-list value (a legacy/custom trade) so editing a
+  // record never silently loses or rewrites its trade.
+  if (current && !base.includes(current)) return [current, ...base];
+  return base;
+}
+
+/* ── Manage Contractor Trades (configurable list; mirrors CategoriesManager, no color) ── */
+function TradesManager({ trades: tradeObjects, onChanged }) {
+  const [trades, setTrades] = useState(tradeObjects || []);
+  const [editId, setEditId] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [newName, setNewName] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const API = "/api/apps/home/contractors/trades";
+
+  useEffect(() => {
+    fetch(API).then(r => r.json()).then(d => {
+      const updated = d.trades || [];
+      setTrades(updated);
+      onChanged(updated);
+    });
+  }, []);
+
+  async function refresh() {
+    const d = await fetch(API).then(r => r.json());
+    const updated = d.trades || [];
+    setTrades(updated);
+    onChanged(updated);
+  }
+
+  async function handleAdd() {
+    if (!newName.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName.trim() }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      await refresh();
+      setNewName("");
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleSaveEdit(tradeId) {
+    if (!editName.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`${API}/${tradeId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName.trim() }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      await refresh();
+      setEditId(null);
+    } catch (err) {
+      alert("Error: " + err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(tradeId, tradeName) {
+    if (!confirm(`Delete trade "${tradeName}"? Contractors using it will keep their trade value.`)) return;
+    await fetch(`${API}/${tradeId}`, { method: "DELETE" });
+    const next = trades.filter(t => t.id !== tradeId);
+    setTrades(next);
+    onChanged(next);
+  }
+
+  const inCls = "surface-panel border border-subtle rounded px-2.5 py-1.5 text-sm text-default focus:outline-none focus:border-indigo-500";
+
+  return (
+    <div>
+      <p className="text-xs font-semibold text-muted uppercase tracking-wide mb-3">Manage Trades</p>
+
+      <div className="space-y-1.5 mb-5">
+        {trades.map(trade => (
+          <div key={trade.id} className="flex items-center gap-2 surface-card border border-subtle rounded-lg px-3 py-2">
+            {editId === trade.id ? (
+              <>
+                <input
+                  className={`flex-1 min-w-0 ${inCls} py-1 text-sm`}
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") handleSaveEdit(trade.id); if (e.key === "Escape") setEditId(null); }}
+                  autoFocus
+                />
+                <button
+                  onClick={() => handleSaveEdit(trade.id)}
+                  disabled={saving || !editName.trim()}
+                  className="px-2 py-1 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-on-accent rounded"
+                >
+                  Save
+                </button>
+                <button onClick={() => setEditId(null)} className="p-1 text-faint hover:text-[var(--ds-text)]">
+                  <X size={13} />
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1 text-sm text-default">{trade.name}</span>
+                <button
+                  onClick={() => { setEditId(trade.id); setEditName(trade.name); }}
+                  className="p-1 text-faint hover:text-[var(--ds-text)] rounded"
+                  title="Rename"
+                >
+                  <Edit2 size={13} />
+                </button>
+                <button
+                  onClick={() => handleDelete(trade.id, trade.name)}
+                  className="p-1 text-red-500/60 hover:text-red-400 rounded"
+                  title="Delete"
+                >
+                  <Trash2 size={13} />
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+        {trades.length === 0 && (
+          <p className="text-xs text-faint italic px-1">No trades yet.</p>
+        )}
+      </div>
+
+      {/* Add form */}
+      <div className="border-t border-subtle pt-4">
+        <p className="text-xs font-medium text-faint mb-2">Add Trade</p>
+        <div className="flex items-center gap-2">
+          <input
+            className={`flex-1 min-w-0 ${inCls}`}
+            placeholder="Trade name..."
+            value={newName}
+            onChange={e => setNewName(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && handleAdd()}
+          />
+          <button
+            onClick={handleAdd}
+            disabled={saving || !newName.trim()}
+            className="flex items-center gap-1 px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-on-accent rounded whitespace-nowrap"
+          >
+            <Plus size={12} /> Add
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* ── Add Contractor Form ── */
-function AddContractorForm({ trades = [], userId, onSave, onCancel }) {
+function AddContractorForm({ trades = [], managedTrades = [], userId, onSave, onCancel }) {
   const [form, setForm] = useState({
-    name: "", trade: "General", company: "", phone: "", email: "",
+    name: "", trade: "", company: "", phone: "", email: "",
     rating: null, last_used: "", jobs_history: "", notes: "",
   });
   const [saving, setSaving] = useState(false);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const tradeOpts = tradeOptions(managedTrades, form.trade);
+  const selectedTrade = form.trade || tradeOpts[0] || CONTRACTOR_TRADE_FALLBACK;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -2508,7 +2672,7 @@ function AddContractorForm({ trades = [], userId, onSave, onCancel }) {
     try {
       const body = {
         name: form.name.trim(),
-        trade: form.trade.trim() || "General",
+        trade: (form.trade || tradeOpts[0] || CONTRACTOR_TRADE_FALLBACK).trim() || "General",
         company: form.company.trim(),
         phone: form.phone.trim(),
         email: form.email.trim(),
@@ -2533,7 +2697,6 @@ function AddContractorForm({ trades = [], userId, onSave, onCancel }) {
     }
   }
 
-  const datalistTrades = [...new Set([...CONTRACTOR_TRADES, ...trades])];
   const inputCls = "w-full surface-panel border border-subtle rounded px-2.5 py-1.5 text-xs text-default focus:outline-none focus:border-indigo-500";
 
   return (
@@ -2542,11 +2705,9 @@ function AddContractorForm({ trades = [], userId, onSave, onCancel }) {
       <input className={inputCls} placeholder="Name (e.g. Mike Jones) *" value={form.name}
         onChange={e => set("name", e.target.value)} autoFocus required />
       <div className="grid grid-cols-2 gap-2">
-        <input className={inputCls} placeholder="Trade (e.g. Electrician)" value={form.trade}
-          onChange={e => set("trade", e.target.value)} list="contractor-trades" />
-        <datalist id="contractor-trades">
-          {datalistTrades.map(t => <option key={t} value={t} />)}
-        </datalist>
+        <select className={inputCls} value={selectedTrade} onChange={e => set("trade", e.target.value)} aria-label="Trade">
+          {tradeOpts.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
         <input className={inputCls} placeholder="Company (optional)" value={form.company}
           onChange={e => set("company", e.target.value)} />
       </div>
@@ -2582,7 +2743,7 @@ function AddContractorForm({ trades = [], userId, onSave, onCancel }) {
 }
 
 /* ── Contractor Card ── */
-function ContractorCard({ contractor, expanded, onToggle, onUpdate, onDelete, trades = [] }) {
+function ContractorCard({ contractor, expanded, onToggle, onUpdate, onDelete, trades = [], managedTrades = [] }) {
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [saving, setSaving] = useState(false);
@@ -2627,7 +2788,7 @@ function ContractorCard({ contractor, expanded, onToggle, onUpdate, onDelete, tr
     setEditMode(true);
   }
 
-  const datalistTrades = [...new Set([...CONTRACTOR_TRADES, ...trades])];
+  const tradeOpts = tradeOptions(managedTrades, editForm.trade || contractor.trade || "");
   const inputCls = "w-full surface-panel border border-subtle rounded px-2 py-1 text-xs text-default outline-none focus:border-indigo-500";
 
   return (
@@ -2659,11 +2820,10 @@ function ContractorCard({ contractor, expanded, onToggle, onUpdate, onDelete, tr
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[10px] text-faint">Trade</label>
-                  <input className={inputCls} value={editForm.trade || ""} list="contractor-trades-edit"
-                    onChange={e => setEditForm(p => ({ ...p, trade: e.target.value }))} />
-                  <datalist id="contractor-trades-edit">
-                    {datalistTrades.map(t => <option key={t} value={t} />)}
-                  </datalist>
+                  <select className={inputCls} value={editForm.trade || contractor.trade || tradeOpts[0] || ""}
+                    onChange={e => setEditForm(p => ({ ...p, trade: e.target.value }))} aria-label="Trade">
+                    {tradeOpts.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label className="text-[10px] text-faint">Company</label>
@@ -2736,11 +2896,13 @@ function ContractorCard({ contractor, expanded, onToggle, onUpdate, onDelete, tr
 /* ── Contractors Tab ── */
 function ContractorsTab({ userId }) {
   const [contractors, setContractors] = useState([]);
-  const [trades, setTrades] = useState([]);
+  const [trades, setTrades] = useState([]);            // in-use trades (drives the filter)
+  const [managedTrades, setManagedTrades] = useState([]); // configured trades (drives the picker)
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [tradeFilter, setTradeFilter] = useState("All");
   const [showAdd, setShowAdd] = useState(false);
+  const [showManage, setShowManage] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
 
   const load = useCallback(async () => {
@@ -2758,7 +2920,15 @@ function ContractorsTab({ userId }) {
     }
   }, [search, tradeFilter]);
 
+  const loadManagedTrades = useCallback(async () => {
+    try {
+      const d = await fetch("/api/apps/home/contractors/trades").then(r => r.json());
+      setManagedTrades(d.trades || []);
+    } catch { /* non-fatal: the picker falls back to 'General' */ }
+  }, []);
+
   useEffect(() => { load(); }, [load]);
+  useEffect(() => { loadManagedTrades(); }, [loadManagedTrades]);
 
   const allTrades = ["All", ...trades];
 
@@ -2786,7 +2956,7 @@ function ContractorsTab({ userId }) {
           </select>
         )}
         <button
-          onClick={() => setShowAdd(v => !v)}
+          onClick={() => { setShowAdd(v => !v); setShowManage(false); }}
           className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded transition-colors ${
             showAdd ? "surface-raised text-on-accent" : "bg-indigo-600 hover:bg-indigo-500 text-on-accent"
           }`}
@@ -2794,13 +2964,28 @@ function ContractorsTab({ userId }) {
           {showAdd ? <X size={13} /> : <Plus size={13} />}
           {showAdd ? "Cancel" : "Add Contractor"}
         </button>
+        <button
+          onClick={() => { setShowManage(v => !v); setShowAdd(false); }}
+          className={`p-1.5 rounded transition-colors ${showManage ? "surface-raised text-indigo-400" : "text-faint hover:text-[var(--ds-text)] hover:bg-[var(--ds-card)]"}`}
+          title="Manage trades"
+        >
+          <Settings size={14} />
+        </button>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 min-h-0">
+        {showManage ? (
+          <TradesManager
+            trades={managedTrades}
+            onChanged={(updated) => setManagedTrades(updated)}
+          />
+        ) : (
+        <>
         {showAdd && (
           <AddContractorForm
             trades={trades}
+            managedTrades={managedTrades}
             userId={userId}
             onSave={(contractor) => { setContractors(prev => [contractor, ...prev]); setShowAdd(false); setExpandedId(contractor.id); load(); }}
             onCancel={() => setShowAdd(false)}
@@ -2838,9 +3023,12 @@ function ContractorsTab({ userId }) {
                 onUpdate={(updated) => setContractors(prev => prev.map(c => c.id === updated.id ? { ...c, ...updated } : c))}
                 onDelete={(id) => { setContractors(prev => prev.filter(c => c.id !== id)); if (expandedId === id) setExpandedId(null); }}
                 trades={trades}
+                managedTrades={managedTrades}
               />
             ))}
           </div>
+        )}
+        </>
         )}
       </div>
     </div>
