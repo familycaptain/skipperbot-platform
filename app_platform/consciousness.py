@@ -236,3 +236,74 @@ def domain_for_source_type(source_type: str) -> str:
     if st in ("job", "system", ""):
         return "system"
     return st
+
+
+# ── real producers (Phase 2) ─────────────────────────────────────────────────
+
+def send_message(
+    *,
+    who_to: str,
+    content: str,
+    domain: str,
+    thread_id: Optional[str] = None,
+    reply_to: Optional[str] = None,
+    surface: Optional[str] = None,
+    payload: Optional[dict] = None,
+) -> dict:
+    """Skipper speaks: append the REAL outbound message row, then hand transport
+    to the notifications app (§16). One mouth: the row IS the record; delivery
+    receipts stay in app_notifications (source_type='consciousness',
+    source_id=<cl-id> — the §11.7 linkback). A message with no thread starts
+    one (§11.4: a new initiative's thread root is its own id).
+    """
+    import uuid as _uuid
+    eid = f"cl-{_uuid.uuid4().hex[:8]}"
+    row = log_event(
+        kind="message", who_from=SKIPPER, who_to=(who_to or "").lower().strip(),
+        domain=domain, surface=surface, content=content,
+        reply_to=reply_to, thread_id=thread_id or eid,
+        payload=payload, event_id=eid,
+    )
+    try:
+        from app_platform.notifications import create_notification
+        create_notification(
+            recipient=row["lane"].split(":", 1)[1] if row["lane"].startswith("person:") else who_to,
+            message=content,
+            source_type="consciousness",
+            source_id=row["id"],
+            channel="all",
+            delivered=False,
+        )
+    except Exception as exc:  # transport failure must not un-say the said
+        logger.error("CONSCIOUSNESS: transport handoff failed for %s: %s", row["id"], exc)
+    return row
+
+
+def log_inbound_message(
+    *,
+    who_from: str,
+    content: str,
+    surface: Optional[str] = None,
+    domain: str = "chat",
+    payload: Optional[dict] = None,
+) -> dict:
+    """A person speaks: append the REAL inbound row, owed a turn
+    (``needs_attention=True``), inheriting the thread of Skipper's most recent
+    threaded outbound to them (§11.4's default reply candidate, 24h window).
+    """
+    person = (who_from or "").lower().strip()
+    parent = fetch_one(
+        "SELECT id, thread_id FROM consciousness_log "
+        "WHERE kind = 'message' AND who_from = %s AND who_to = %s "
+        "  AND thread_id IS NOT NULL "
+        "  AND created_at > now() - interval '24 hours' "
+        "ORDER BY seq DESC LIMIT 1",
+        (SKIPPER, person),
+    )
+    return log_event(
+        kind="message", who_from=person, who_to=SKIPPER,
+        domain=domain, surface=surface, content=content,
+        reply_to=(parent or {}).get("id"),
+        thread_id=(parent or {}).get("thread_id"),
+        payload=payload, needs_attention=True,
+    )

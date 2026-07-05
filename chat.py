@@ -104,6 +104,7 @@ async def process_chat(
     channel: str = "discord",
     app_context: dict | None = None,
     send_event: Optional[Callable[[dict], Awaitable[None]]] = None,
+    log_event_id: str | None = None,
 ) -> str:
     """
     Process a chat message — session management + domain dispatch.
@@ -170,7 +171,7 @@ async def process_chat(
     try:
         from app_platform.context import consciousness_chat_enabled, build_chat_timeline
         if consciousness_chat_enabled():
-            _history = await asyncio.to_thread(build_chat_timeline, user_id)
+            _history = await asyncio.to_thread(build_chat_timeline, user_id, None, log_event_id)
             _session_for_request = _history + [{"role": "user", "content": user_message}]
             logger.debug("SESSION [%s]: log-timeline history (%d msgs)", user_id, len(_history))
     except Exception:
@@ -248,23 +249,36 @@ async def process_chat(
         # (§11.5 state 3); shadow_log_event can never raise into this task.
         try:
             from app_platform.consciousness import shadow_log_event
-            _inbound = await asyncio.to_thread(
-                shadow_log_event, kind="message", who_from=user_id, who_to="skipper",
-                domain="chat", surface=channel, content=user_message,
-                payload={"chat_turn_id": current_turn_id},
-                pre_attended_by="legacy-pipeline",
-            )
-            if response_text:
-                await asyncio.to_thread(
-                    shadow_log_event, kind="message", who_from="skipper", who_to=user_id,
-                    domain="chat", surface=channel, content=response_text,
-                    reply_to=(_inbound or {}).get("id"),
-                    # write_actions -> the timeline re-renders the anti-re-execution
-                    # marker the legacy session stored inline (§12.4).
-                    payload={"chat_turn_id": current_turn_id,
-                             **({"write_actions": list(_writes)} if _writes else {})},
+            if log_event_id:
+                # Attention mode (Phase 2): the inbound row already exists as
+                # the REAL record; write only the outbound reply — a pure
+                # record (§11.5 state 3b: Skipper's own output is never owed).
+                if response_text:
+                    await asyncio.to_thread(
+                        shadow_log_event, kind="message", who_from="skipper",
+                        who_to=user_id, domain="chat", surface=channel,
+                        content=response_text, reply_to=log_event_id,
+                        payload={"chat_turn_id": current_turn_id,
+                                 **({"write_actions": list(_writes)} if _writes else {})},
+                    )
+            else:
+                _inbound = await asyncio.to_thread(
+                    shadow_log_event, kind="message", who_from=user_id, who_to="skipper",
+                    domain="chat", surface=channel, content=user_message,
+                    payload={"chat_turn_id": current_turn_id},
                     pre_attended_by="legacy-pipeline",
                 )
+                if response_text:
+                    await asyncio.to_thread(
+                        shadow_log_event, kind="message", who_from="skipper", who_to=user_id,
+                        domain="chat", surface=channel, content=response_text,
+                        reply_to=(_inbound or {}).get("id"),
+                        # write_actions -> the timeline re-renders the anti-re-execution
+                        # marker the legacy session stored inline (§12.4).
+                        payload={"chat_turn_id": current_turn_id,
+                                 **({"write_actions": list(_writes)} if _writes else {})},
+                        pre_attended_by="legacy-pipeline",
+                    )
         except Exception:
             logger.debug("CONSCIOUSNESS: chat shadow write skipped", exc_info=True)
         try:

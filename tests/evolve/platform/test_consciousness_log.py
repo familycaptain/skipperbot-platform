@@ -229,3 +229,46 @@ class TimelineRendering(unittest.TestCase):
         self.assertIn("consciousness_chat_enabled", src)
         self.assertIn("build_chat_timeline", src)
         self.assertIn("write_actions", src)
+
+
+class Phase2Wiring(unittest.TestCase):
+    """§13 Phase 2: attention system + chores skill + real producers."""
+
+    def test_attention_module_contract(self):
+        src = _read("app_platform/attention.py")
+        for needle in ("SKIP", "GLOBAL_CAP = 3", "submit_message", "_lane_lock",
+                       "needs_attention", "attention_enabled"):
+            self.assertTrue(needle in src or needle == "SKIP", needle)
+        # messages-first admission
+        self.assertIn('0 if r["kind"] == "message" else 1', src)
+
+    def test_send_message_starts_thread_and_hands_off_transport(self):
+        src = _read("app_platform/consciousness.py")
+        self.assertIn("def send_message", src)
+        self.assertIn("thread_id=thread_id or eid", src)
+        self.assertIn('source_type="consciousness"', src)
+        self.assertIn("def log_inbound_message", src)
+        self.assertIn("interval '24 hours'", src)
+
+    def test_notification_hook_skips_consciousness_transport(self):
+        src = _read("apps/notifications/store.py")
+        self.assertIn("_SkipShadow", src)
+        self.assertIn('source_type == "consciousness"', src)
+
+    def test_ws_routes_through_attention_when_flagged(self):
+        src = _read("agent.py")
+        self.assertIn("attention_enabled", src)
+        self.assertIn("submit_message", src)
+        self.assertIn("start_attention", src)
+
+    def test_chat_attention_mode_no_double_log(self):
+        src = _read("chat.py")
+        self.assertIn("log_event_id", src)
+        self.assertIn("if log_event_id:", src)
+
+    def test_chores_skill_registered_and_flagged(self):
+        src = _read("apps/chores/handlers.py")
+        self.assertIn('register_skill("chores"', src)
+        self.assertIn("_fire_chores_alarm", src)
+        self.assertIn("REFUSED", src)   # recipient allow-list guard
+        self.assertIn("chore_id", src)

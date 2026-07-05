@@ -118,7 +118,8 @@ def render_event(row: dict, focal_person: str) -> Optional[dict]:
     return None
 
 
-def build_chat_timeline(person: str, limit: Optional[int] = None) -> list[dict]:
+def build_chat_timeline(person: str, limit: Optional[int] = None,
+                        exclude_event_id: Optional[str] = None) -> list[dict]:
     """The recent log tail as native turns, for a chat turn with ``person``.
 
     ONE seq-ordered multi-speaker stream (§12.4): the focal person's exchange,
@@ -133,6 +134,8 @@ def build_chat_timeline(person: str, limit: Optional[int] = None) -> list[dict]:
     rows = tail(limit or timeline_event_limit())
     out: list[dict] = [{"role": "assistant", "content": TIMELINE_BOUNDARY}]
     for row in rows:
+        if exclude_event_id and row.get("id") == exclude_event_id:
+            continue  # attention mode: the triggering inbound is appended by the caller
         msg = render_event(row, person)
         if msg:
             out.append(msg)

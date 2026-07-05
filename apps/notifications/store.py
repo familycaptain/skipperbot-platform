@@ -23,6 +23,10 @@ from typing import Optional
 
 from config import logger
 from app_platform.time import get_timezone
+
+
+class _SkipShadow(Exception):
+    """Marker: a consciousness-originated notification is transport, not a new event."""
 from auto_memory import log_entity_change
 from app_platform.memory import digest_record
 from apps.notifications import data as _dl_notif
@@ -95,6 +99,8 @@ def create_notification(
     # the engaged responder during the shadow period.
     try:
         from app_platform.consciousness import shadow_log_event, domain_for_source_type
+        if source_type == "consciousness":
+            raise _SkipShadow()  # the cl- row already exists; this notification IS its transport
         shadow_log_event(
             kind="message", who_from="skipper", who_to=clean_recipient,
             domain=domain_for_source_type(notif["source_type"]),
@@ -103,6 +109,8 @@ def create_notification(
             payload={"notification_id": notif["id"], "source_type": notif["source_type"]},
             pre_attended_by="legacy-pipeline",
         )
+    except _SkipShadow:
+        pass
     except Exception:
         logger.debug("CONSCIOUSNESS: notification shadow write skipped", exc_info=True)
 

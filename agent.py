@@ -145,6 +145,10 @@ async def lifespan(app: FastAPI):
     # backfill on models_configured() inside its supervisor, so it self-activates <=120s after
     # onboarding — no restart. start_thinking_scheduler() is idempotent.
     thinking_task = asyncio.create_task(start_thinking_scheduler())
+    # The consciousness attention system (specs/CONSCIOUSNESS.md §15) — idles
+    # cheaply unless `consciousness_attention` producers write owed rows.
+    from app_platform.attention import start_attention
+    asyncio.create_task(start_attention())
     yield
     # Shutdown
     if discord_enabled_now:
@@ -1084,13 +1088,26 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
         # event enters the consciousness log (pre-attended — the legacy
         # arrival handler is still the engaged responder).
         from app_platform.consciousness import shadow_log_event
-        asyncio.create_task(asyncio.to_thread(
-            shadow_log_event, kind="event", who_from="system", who_to=user_id,
-            domain="system", surface="web",
-            content=f"{user_id} connected on web",
-            payload={"event": "desktop.arrival"},
-            pre_attended_by="legacy-pipeline",
-        ))
+        from app_platform.attention import attention_enabled as _att_on, kick as _att_kick
+        if _att_on():
+            # Phase 2: a REAL owed connection event — attention consumes it
+            # (ack-only until onboarding converts in Phase 3).
+            def _log_arrival_owed():
+                shadow_log_event(kind="event", who_from="system", who_to=user_id,
+                                 domain="system", surface="web",
+                                 content=f"{user_id} connected on web",
+                                 payload={"event": "desktop.arrival"},
+                                 needs_attention=True)
+                _att_kick()
+            asyncio.create_task(asyncio.to_thread(_log_arrival_owed))
+        else:
+            asyncio.create_task(asyncio.to_thread(
+                shadow_log_event, kind="event", who_from="system", who_to=user_id,
+                domain="system", surface="web",
+                content=f"{user_id} connected on web",
+                payload={"event": "desktop.arrival"},
+                pre_attended_by="legacy-pipeline",
+            ))
     except Exception:
         logger.debug("websocket_chat: could not emit desktop.arrival event", exc_info=True)
 
@@ -1124,13 +1141,27 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
                 await websocket.send_json(event)
 
             try:
-                response_text = await process_chat(
-                    user_id, message,
-                    send_progress=_ws_progress,
-                    channel="web",
-                    app_context=_user_app_context.get(user_id),
-                    send_event=_ws_event,
-                )
+                # Phase 2 (specs/CONSCIOUSNESS.md §15/§16): with
+                # `consciousness_attention` on, the inbound message becomes an
+                # owed log row and the ATTENTION system runs the turn; the WS
+                # just awaits the outbound. Legacy path otherwise.
+                from app_platform.attention import attention_enabled, submit_message
+                if attention_enabled():
+                    response_text = await submit_message(
+                        user_id, message,
+                        channel="web",
+                        app_context=_user_app_context.get(user_id),
+                        send_progress=_ws_progress,
+                        send_event=_ws_event,
+                    )
+                else:
+                    response_text = await process_chat(
+                        user_id, message,
+                        send_progress=_ws_progress,
+                        channel="web",
+                        app_context=_user_app_context.get(user_id),
+                        send_event=_ws_event,
+                    )
                 from datetime import datetime as _now_dt, timezone as _now_tz
                 await websocket.send_json({
                     "type": "chat_response",

@@ -31,9 +31,142 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def _consciousness_chores_enabled() -> bool:
+    """Phase 2 flag (specs/CONSCIOUSNESS.md §13): chores runs as a SKILL of the
+    one consciousness — the scheduled job fires an owed alarm EVENT into the
+    log and the attention system runs the chores skill turn — instead of
+    building notifications directly."""
+    try:
+        from app_platform import settings as _settings
+        v = _settings.get("consciousness_chores", default=False)
+        return v is True or str(v or "").strip().lower() in ("1", "true", "yes", "on")
+    except Exception:
+        return False
+
+
+def _fire_chores_alarm(alarm: str) -> str:
+    """Append the owed alarm event (lane domain:chores) and wake attention."""
+    from app_platform.consciousness import log_event
+    row = log_event(
+        kind="event", who_from="system", domain="chores",
+        content=f"⏰ chores: {alarm.replace('chores_', '')} round",
+        payload={"alarm": alarm}, needs_attention=True,
+    )
+    try:
+        from app_platform.attention import kick
+        kick()
+    except Exception:
+        pass
+    logger.info("CHORES: alarm event %s logged (%s)", row["id"], alarm)
+    return f"Alarm event {row['id']} logged; the chores skill runs it (consciousness mode)."
+
+
+# ── the chores SKILL (specs/CONSCIOUSNESS.md §14) ────────────────────────────
+# Voice-layer skill: the alarm event triggers ONE bounded fast-tier turn that
+# composes and sends a short per-kid message (each send starts that kid's
+# thread; chore IDs included so the reply resolves unambiguously in-thread).
+
+_CHORES_GUIDANCE = (
+    "You are Skipper, the family's household assistant, doing the {round} chore "
+    "round. For EACH kid listed below, call send_message exactly once with a "
+    "short, warm, personal message: greet them by name, list their chores "
+    "including each chore's id in backticks exactly as given (e.g. `[ch-123]`), "
+    "and ask them to reply when done. Evening round = gentle bedtime check-in "
+    "about the UNFINISHED chores only. Do not invent chores, do not message "
+    "anyone not listed, no other tools, then stop."
+)
+
+_SEND_MESSAGE_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "send_message",
+        "description": "Send one chat message to one family member.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "to_user": {"type": "string", "description": "Recipient username, exactly as listed."},
+                "message": {"type": "string", "description": "The message text."},
+            },
+            "required": ["to_user", "message"],
+        },
+    },
+}
+
+
+async def _chores_skill_runner(event: dict) -> dict:
+    """Run the chores skill turn for an owed alarm event row."""
+    import json as _json
+    import agent_loop
+    from apps.chores import store as _store
+    from app_platform.consciousness import send_message
+
+    payload = event.get("payload") or {}
+    if isinstance(payload, str):
+        try:
+            payload = _json.loads(payload)
+        except Exception:
+            payload = {}
+    alarm = payload.get("alarm", "chores_morning")
+    is_evening = "evening" in alarm
+
+    view = _store.today_by_kid(_store.today_local())
+    kids_block, allowed = [], set()
+    for kid in view["kids"]:
+        notify = kid.get("notify_evening", True) if is_evening else kid.get("notify_morning", True)
+        if not notify or not kid.get("user_id"):
+            continue
+        chores = [a for a in kid["assignments"] if not (is_evening and a["completed"])]
+        if not chores:
+            continue
+        lines = [f"  - {a['chore_name']} ({a['zone_name']}) id=`[{a['chore_id']}]`"
+                 + (" NOTE: " + a["note"] if a.get("note") else "")
+                 for a in chores]
+        kids_block.append(f"{kid['name']} (username: {kid['user_id']}):\n" + "\n".join(lines))
+        allowed.add(kid["user_id"].lower())
+
+    if not kids_block:
+        return {"summary": "no kids to message this round"}
+
+    sent = []
+
+    async def _dispatch(name: str, args: dict) -> str:
+        if name != "send_message":
+            return "unknown tool"
+        to_user = (args.get("to_user") or "").lower().strip()
+        if to_user not in allowed:
+            return f"REFUSED: {to_user!r} is not in this round's recipient list"
+        row = send_message(
+            who_to=to_user, content=args.get("message") or "",
+            domain="chores", payload={"alarm": alarm},
+        )
+        sent.append(to_user)
+        return f"sent ({row['id']})"
+
+    messages = [
+        {"role": "system", "content": _CHORES_GUIDANCE.format(
+            round="evening" if is_evening else "morning")},
+        {"role": "user", "content": "Kids and today's chores:\n\n" + "\n\n".join(kids_block)},
+    ]
+    await agent_loop.run(messages=messages, tools=[_SEND_MESSAGE_TOOL], tier="fast",
+                         max_turns=3, max_tool_calls=8, tool_dispatch=_dispatch)
+    return {"summary": f"messaged {len(sent)} kid(s): {', '.join(sent)}"}
+
+
+try:  # register with the platform skill registry at app load
+    from app_platform.skills import register_skill
+    register_skill("chores", _chores_skill_runner, layer="voice",
+                   description="Morning/evening chore rounds as one-consciousness turns")
+except Exception:  # platform too old — legacy path still works
+    logger.debug("CHORES: skill registration unavailable", exc_info=True)
+
+
 async def handle_chores_morning(job: dict, ctx) -> str:
     """Insert a morning chore notification per kid (delivered async by
     notification_delivery)."""
+    if _consciousness_chores_enabled():
+        ctx.update_progress(100, "Consciousness mode — alarm event logged")
+        return _fire_chores_alarm("chores_morning")
+
     from apps.chores import store as _store
     from apps.chores.store import _emit
     from app_platform.notifications import create_notification
@@ -116,6 +249,10 @@ async def handle_chores_morning(job: dict, ctx) -> str:
 
 async def handle_chores_evening(job: dict, ctx) -> str:
     """Insert an evening nudge notification for any kid with unchecked chores."""
+    if _consciousness_chores_enabled():
+        ctx.update_progress(100, "Consciousness mode — alarm event logged")
+        return _fire_chores_alarm("chores_evening")
+
     from apps.chores import store as _store
     from apps.chores.store import _emit
     from app_platform.notifications import create_notification
