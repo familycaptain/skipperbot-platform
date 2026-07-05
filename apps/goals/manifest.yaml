@@ -154,4 +154,8 @@ thinking:
     enabled_by_default: false
 
 # Job handlers — none currently; future use for async PM checks if needed.
-job_types: []
+job_types:
+  - type: goal_work
+    handler: goal_work.handle_goal_work
+    max_concurrent: 2
+    cancel_on_shutdown: true

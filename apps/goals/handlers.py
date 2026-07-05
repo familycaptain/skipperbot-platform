@@ -136,12 +136,74 @@ async def _connection_skill_runner(event: dict) -> dict:
     return {"summary": f"greeted {user}"}
 
 
+async def _goals_milestone_runner(event: dict) -> dict:
+    """Voice runner for goals-domain events raised by the HANDS (§14): a
+    goal_work session hit a family-worthy milestone; the VOICE decides whether
+    and how to tell someone. One fast, bounded turn; silence is valid."""
+    import asyncio as _aio
+    import json as _json
+    import agent_loop
+    from data_layer.users import get_primary_user
+    from app_platform.consciousness import send_message
+
+    payload = event.get("payload") or {}
+    if isinstance(payload, str):
+        try:
+            payload = _json.loads(payload)
+        except Exception:
+            payload = {}
+    milestone = payload.get("milestone") or event.get("content") or ""
+    if not milestone:
+        return {"summary": "no milestone content"}
+    primary = ((await _aio.to_thread(get_primary_user)) or "").strip().lower()
+    if not primary:
+        return {"summary": "no primary user"}
+
+    sent = []
+
+    async def _dispatch(name: str, args: dict) -> str:
+        if name != "send_message":
+            return "unknown tool"
+        if sent:
+            return "already delivered"
+        row = await _aio.to_thread(
+            lambda: send_message(who_to=primary, content=args.get("message") or "",
+                                 domain="goals", subject_id=payload.get("goal_id"),
+                                 payload={"milestone_event": event.get("id")}))
+        sent.append(row["id"])
+        return f"sent ({row['id']})"
+
+    tool = {"type": "function", "function": {
+        "name": "send_message",
+        "description": f"Tell {primary} about the milestone, briefly and self-contained.",
+        "parameters": {"type": "object", "properties": {
+            "message": {"type": "string"}}, "required": ["message"]}}}
+    await agent_loop.run(
+        messages=[
+            {"role": "system", "content":
+             "You are Skipper. A background work session on a family goal just "
+             "reported a milestone. If it is genuinely worth telling the primary "
+             "user, call send_message ONCE with a brief, self-contained note "
+             "(name the goal). If it is routine progress, do nothing."},
+            {"role": "user", "content": f"Milestone: {milestone}"},
+        ],
+        tools=[tool], tier="fast", max_turns=2, max_tool_calls=2,
+        tool_dispatch=_dispatch,
+    )
+    return {"summary": f"milestone {'delivered' if sent else 'held (not newsworthy)'}"}
+
+
 try:
     from app_platform.skills import register_skill
     register_skill("connection", _connection_skill_runner, layer="voice",
                    description="Connection-event responder (onboarding greeting overlay)")
+    from apps.goals.pm_domain import pm_skill_runner
+    register_skill("pm", pm_skill_runner, layer="voice",
+                   description="PM sweep + router (goals/projects oversight)")
+    register_skill("goals", _goals_milestone_runner, layer="voice",
+                   description="Delivers goal_work milestones in Skipper's voice")
 except Exception:
-    logger.debug("GOALS: connection skill registration unavailable", exc_info=True)
+    logger.debug("GOALS: skill registration unavailable", exc_info=True)
 
 
 async def onboarding_arrival_handler(payload: dict) -> dict:

@@ -106,6 +106,22 @@ UPDATE_WORKING_MEMORY_TOOL = {
 
 
 async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
+    # Phase 3b: under consciousness_pm the scheduler stays the ALARM CLOCK but
+    # the turn runs through the attention system as the pm SKILL.
+    if _consciousness_pm_enabled():
+        from app_platform.consciousness import log_event
+        row = log_event(kind="event", who_from="system", domain="pm",
+                        content="⏰ pm: review goals & projects",
+                        payload={"alarm": "pm"}, needs_attention=True)
+        try:
+            from app_platform.attention import kick
+            kick()
+        except Exception:
+            pass
+        return {"trigger": "timer", "input_summary": "pm alarm handed to attention",
+                "context_snapshot": {}, "reasoning": f"owed event {row['id']} logged",
+                "actions_taken": [], "memories_extracted": [], "model_used": "skip",
+                "tokens_used": 0, "next_check_seconds": 1800}
     """Run one PM thinking cycle via the unified agent loop.
 
     Flow: observe → build messages → agent_loop.run() (multi-turn tool execution)
@@ -449,7 +465,20 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
 # OBSERVE — gather context from skipper_state + entity store
 # ---------------------------------------------------------------------------
 
-def _observe() -> dict:
+def _consciousness_pm_enabled() -> bool:
+    """Phase 3b flag (specs/CONSCIOUSNESS.md §13): PM runs as a SKILL of the one
+    consciousness — the scheduler cadence fires an owed alarm event; the
+    attention system runs the pm sweep turn (timeline replaces the private
+    conversation gatherer; sends via send_message; routes goal work)."""
+    try:
+        from app_platform import settings as _settings
+        v = _settings.get("consciousness_pm", scope="platform", default=False)
+        return v is True or str(v or "").strip().lower() in ("1", "true", "yes", "on")
+    except Exception:
+        return False
+
+
+def _observe(include_conversations: bool = True) -> dict:
     """Gather all PM-relevant state + pick a project for deep review + conversation context."""
     from data_layer.skipper_state import (
         list_states, get_due_actions,
@@ -485,7 +514,10 @@ def _observe() -> dict:
         logger.error("PM_THINK: Failed to load project snapshot: %s", e)
 
     # --- Conversation context: pull recent chatlogs for people we're tracking ---
-    recent_conversations = _gather_conversation_context(pending_actions, project_snapshot)
+    recent_conversations = (
+        _gather_conversation_context(pending_actions, project_snapshot)
+        if include_conversations else []
+    )  # consciousness mode: the TIMELINE supersedes the private gatherer (§12.3)
 
     # Memory recall — search shared memory store for context about the reviewed project
     memories = _recall_memories(reviewed_project_id, project_snapshot)
@@ -1174,3 +1206,135 @@ def _safe_snapshot(ctx: dict) -> dict:
             "total_turns": sum(len(t) for t in convos.values()),
         }
     return snap
+
+
+# ── the pm SKILL (specs/CONSCIOUSNESS.md §13 Phase 3b) ───────────────────────
+# The sweep + ROUTER as one attention turn: structured state from _observe
+# (conversation gatherer OFF — the timeline is the conversation source), the
+# recent timeline as native multi-speaker turns, sends via send_message (one
+# voice), and goal work routed to the HANDS via schedule_goal_work.
+
+_PM_SKILL_GUIDANCE = (
+    "You are Skipper wearing the PROJECT-MANAGER skill: review the household's "
+    "goals and projects like a good PM. You see the household timeline below — "
+    "each person only sees their own chat, so any message you send must stand "
+    "on its own for its reader. Actions available: send_message to follow up "
+    "with a person about THEIR items (brief, specific, at most one message per "
+    "person per review; don't re-nudge someone the timeline shows you nudged "
+    "recently or who hasn't replied yet); schedule_goal_work(goal_id) for goals "
+    "whose open items are assigned to Skipper and are tool-executable (research, "
+    "drafting, building) — that queues an autonomous work session, do NOT try "
+    "to do that work here; update_working_memory / resolve_state / expire_state "
+    "to keep your PM state tidy. Doing NOTHING is a valid outcome — only act "
+    "where a PM genuinely would."
+)
+
+_SEND_MESSAGE_TOOL_PM = {
+    "type": "function",
+    "function": {
+        "name": "send_message",
+        "description": "Send one chat message to one family member (as Skipper's own voice).",
+        "parameters": {"type": "object", "properties": {
+            "to_user": {"type": "string"}, "message": {"type": "string"}},
+            "required": ["to_user", "message"]},
+    },
+}
+_SCHEDULE_GOAL_WORK_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "schedule_goal_work",
+        "description": "Queue one autonomous Skipper work session for a goal whose open items are Skipper-assigned and tool-executable.",
+        "parameters": {"type": "object", "properties": {
+            "goal_id": {"type": "string", "description": "The g- goal id."}},
+            "required": ["goal_id"]},
+    },
+}
+
+
+async def pm_skill_runner(event: dict) -> dict:
+    """Attention runner for the pm alarm event."""
+    import asyncio
+    import agent_loop
+    from data_layer.users import get_human_users
+    from app_platform.consciousness import tail, send_message
+    from app_platform.context import render_event
+
+    ctx = await asyncio.to_thread(_observe, False)
+    state = _build_user_prompt(ctx)
+
+    rows = await asyncio.to_thread(tail, 40)
+    timeline = []
+    for r in rows:
+        m = render_event(r, "")  # no focal person: PM sees everyone tagged
+        if m:
+            timeline.append(m)
+
+    humans = {((u.get("name") or "") if isinstance(u, dict) else str(u)).lower()
+              for u in (await asyncio.to_thread(get_human_users) or [])}
+    actions_taken: list[dict] = []
+    messaged: set[str] = set()
+    scheduled: set[str] = set()
+
+    async def _dispatch(name: str, args: dict) -> str:
+        if name == "send_message":
+            to_user = (args.get("to_user") or "").lower().strip()
+            if to_user not in humans:
+                return f"REFUSED: {to_user!r} is not a known household member"
+            if to_user in messaged:
+                return f"ALREADY messaged {to_user} this review"
+            row = await asyncio.to_thread(
+                lambda: send_message(who_to=to_user, content=args.get("message") or "",
+                                     domain="pm", payload={"pm_review": event.get("id")}))
+            messaged.add(to_user)
+            actions_taken.append({"type": "dm_sent", "dm_to": to_user})
+            return f"sent ({row['id']})"
+        if name == "schedule_goal_work":
+            gid = (args.get("goal_id") or "").strip()
+            if not gid.startswith("g-"):
+                return "REFUSED: goal_id must be a g- id"
+            if gid in scheduled:
+                return f"already scheduled this review"
+            from apps.jobs.data import count_running
+            if count_running("goal_work") >= 2:
+                return "work slots busy — try next review"
+            from app_platform.jobs import submit_job
+            job = await asyncio.to_thread(
+                lambda: submit_job(job_type="goal_work", name=f"goal work: {gid}",
+                                   created_by="pm-skill", config={"goal_id": gid}))
+            scheduled.add(gid)
+            actions_taken.append({"type": "goal_work_scheduled", "goal_id": gid})
+            return f"work session queued ({job.get('id')})"
+        if name == "update_working_memory":
+            from data_layer.skipper_state import upsert_working_memory
+            await asyncio.to_thread(
+                upsert_working_memory, "pm", args.get("subject_id") or "pm", "note",
+                args.get("summary") or args.get("content") or "")
+            actions_taken.append({"type": "memory_updated"})
+            return "working memory updated"
+        if name in ("resolve_state", "expire_state"):
+            from data_layer.skipper_state import update_state
+            sid = args.get("state_id") or ""
+            new_status = "resolved" if name == "resolve_state" else "expired"
+            await asyncio.to_thread(update_state, sid, status=new_status)
+            actions_taken.append({"type": new_status, "target_id": sid})
+            return f"state {sid} {new_status}"
+        import tool_dispatch
+        result = await tool_dispatch.call_tool(name, args)
+        actions_taken.append({"type": "tool_executed", "tool": name})
+        return result
+
+    tools = [_SEND_MESSAGE_TOOL_PM, _SCHEDULE_GOAL_WORK_TOOL,
+             UPDATE_WORKING_MEMORY_TOOL, RESOLVE_STATE_TOOL, EXPIRE_STATE_TOOL]
+
+    await agent_loop.run(
+        messages=[
+            {"role": "system", "content": _PM_SKILL_GUIDANCE},
+            {"role": "system", "content": "STRUCTURED PM STATE:\n" + state},
+            *timeline,
+            {"role": "user", "content": "[alarm] ⏰ pm review time — sweep, follow up, route work. Silence is fine."},
+        ],
+        tools=tools, tier="smart", max_turns=4, max_tool_calls=10,
+        tool_dispatch=_dispatch,
+    )
+    return {"summary": f"pm sweep: {len(actions_taken)} action(s) "
+                       f"({len(messaged)} msg, {len(scheduled)} work session(s))"}

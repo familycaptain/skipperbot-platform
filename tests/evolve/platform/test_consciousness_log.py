@@ -317,3 +317,37 @@ class Phase3aOnboarding(unittest.TestCase):
     def test_attention_dispatches_connection_skill(self):
         src = _read("app_platform/attention.py")
         self.assertIn('get_skill("connection")', src)
+
+
+class Phase3bGoalsSplit(unittest.TestCase):
+    """§13 Phase 3b: oversight → pm sweep/router; execution → goal_work (hands)."""
+
+    def test_goal_work_is_mouthless(self):
+        src = _read("apps/goals/goal_work.py")
+        self.assertIn("REFUSED: work sessions cannot message anyone", src)
+        self.assertIn('!= "send_dm"', src)          # send_dm filtered from tools
+        self.assertIn("report_milestone", src)       # results go via events
+        self.assertIn("needs_attention=True", src)   # ... owed to the voice
+        self.assertIn("update_working_memory", src)  # resumable sessions
+
+    def test_goal_work_registered_as_job(self):
+        self.assertIn("goal_work", _read("apps/goals/manifest.yaml"))
+
+    def test_pm_alarm_hands_off_under_flag(self):
+        src = _read("apps/goals/pm_domain.py")
+        self.assertIn("_consciousness_pm_enabled", src)
+        self.assertIn('"alarm": "pm"', src)
+        self.assertIn("include_conversations", src)  # timeline supersedes the gatherer
+
+    def test_pm_skill_routes_and_speaks_in_one_voice(self):
+        src = _read("apps/goals/pm_domain.py")
+        self.assertIn("pm_skill_runner", src)
+        self.assertIn("schedule_goal_work", src)
+        self.assertIn("count_running", src)          # work-slot dedup
+        self.assertIn("ALREADY messaged", src)       # one message per person per review
+
+    def test_milestone_voice_and_g_star_stand_down(self):
+        self.assertIn("_goals_milestone_runner", _read("apps/goals/handlers.py"))
+        self.assertIn('register_skill("pm"', _read("apps/goals/handlers.py"))
+        self.assertIn('register_skill("goals"', _read("apps/goals/handlers.py"))
+        self.assertIn("_consciousness_goals_enabled", _read("apps/goals/domain.py"))

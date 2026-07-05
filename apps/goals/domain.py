@@ -320,7 +320,28 @@ def _past_target_date(goal_snap: dict) -> bool:
         return False
 
 
+def _consciousness_goals_enabled() -> bool:
+    """Phase 3b flag: goal execution moves to goal_work jobs (hands) routed by
+    the pm sweep; the per-goal thinking domains stand down (arrival greetings
+    already stood down via the connection skill, Phase 3a)."""
+    try:
+        from app_platform import settings as _settings
+        v = _settings.get("consciousness_goals", scope="platform", default=False)
+        return v is True or str(v or "").strip().lower() in ("1", "true", "yes", "on")
+    except Exception:
+        return False
+
+
 async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
+    # Phase 3b (specs/CONSCIOUSNESS.md §13): under consciousness_goals the g-*
+    # domains stand down — oversight belongs to the pm sweep, execution to
+    # goal_work sessions. Long sleep so the scheduler barely touches us.
+    if _consciousness_goals_enabled():
+        return {"trigger": "timer",
+                "input_summary": "g-* stood down (consciousness: pm sweep + goal_work own goals)",
+                "context_snapshot": {}, "reasoning": "", "actions_taken": [],
+                "memories_extracted": [], "model_used": "skip", "tokens_used": 0,
+                "next_check_seconds": 3600}
     """Run one thinking cycle for a goal domain.
 
     ``domain["name"]`` is the goal ID (e.g. ``g-b9cd5ae6``).
