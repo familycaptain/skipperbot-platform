@@ -82,6 +82,7 @@ notes: >
   speaker-ID on a routine `skipper update` rebuild. New approach: stateful SKIPPER_VOICE flag in .env + compose
   build-arg interpolation + conditional Dockerfile install (ARG after the base pip layer); a hand-set flag alone
   suffices. Out of scope (operator): an automatic previously-enabled-install upgrade guard. Native path + runtime
-  degradation guards unchanged. Prior merge on release: 0c2710a (superseded). verified set true after the Gate-2
-  real flagged rebuild on the test host.
-verified: false
+  degradation guards unchanged. Prior merge on release: 0c2710a (superseded). Gate-2: 17/17 bound tests GREEN
+  on the test host; REAL flagged rebuild proven — SKIPPER_VOICE=1 + rebuild -> resemblyzer imports (torch
+  2.12.1+cpu, cuda=None) + status "installed"; SKIPPER_VOICE=0 + rebuild -> torch-free + status "not installed".
+verified: true

@@ -51,15 +51,27 @@ class VoiceBuildWiring(unittest.TestCase):
         self.assertIn("requirements-voice.txt", tail)
         self.assertIn("download.pytorch.org/whl/cpu", tail)
 
+    @staticmethod
+    def _dep_lines(text):
+        return [
+            ln.split("#", 1)[0].strip()
+            for ln in text.splitlines()
+            if ln.strip() and not ln.lstrip().startswith("#")
+        ]
+
     def test_base_requirements_free_of_speaker_id_stack(self):
-        base = (REPO / "requirements.txt").read_text().lower()
-        self.assertNotIn("resemblyzer", base, "resemblyzer must stay out of the base install")
-        self.assertNotIn("torch", base, "torch must stay out of the base install")
+        deps = self._dep_lines((REPO / "requirements.txt").read_text())
+        for pkg in ("resemblyzer", "torch"):
+            offenders = [ln for ln in deps if re.match(rf"(?i)^{pkg}\b", ln)]
+            self.assertEqual(offenders, [], f"{pkg} must stay out of the base install: {offenders}")
 
     def test_voice_manifest_has_speaker_id_stack(self):
-        voice = (REPO / "requirements-voice.txt").read_text().lower()
-        self.assertIn("resemblyzer", voice)
-        self.assertIn("torch", voice)
+        deps = self._dep_lines((REPO / "requirements-voice.txt").read_text())
+        for pkg in ("resemblyzer", "torch"):
+            self.assertTrue(
+                any(re.match(rf"(?i)^{pkg}\b", ln) for ln in deps),
+                f"requirements-voice.txt must pin {pkg}",
+            )
 
 
 if __name__ == "__main__":

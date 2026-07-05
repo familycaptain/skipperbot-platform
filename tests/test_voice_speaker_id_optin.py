@@ -258,8 +258,8 @@ class EnablePathShape(unittest.TestCase):
                              "dry-run must not persist the flag")
             # real (stubbed) install: persists the flag
             r = _run_enable_voice([], venv_py=stub, env_file=envf)
-        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
-        self.assertEqual(open(envf).read().count("SKIPPER_VOICE=1"), 1)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertEqual(open(envf).read().count("SKIPPER_VOICE=1"), 1)
 
     def test_enable_voice_listed_in_help(self):
         r = subprocess.run(
