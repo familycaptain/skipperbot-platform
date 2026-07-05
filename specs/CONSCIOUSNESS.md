@@ -622,14 +622,18 @@ flag; prod promotes only at phase boundaries. Legacy paths keep working until §
 - **Ship test:** chat quality ≥ today; a proactive DM sent by the (still-legacy) domains is now
   *visible* to chat via the log (first half of the scrum bug dies here).
 
-### Phase 2 — the attention loop + first alarm skill (the scrum-scenario proof)
-- Single-threaded attention consumer over `needs_attention` rows (§15).
+### Phase 2 — the attention system + first alarm skill: `chores` (the scrum-scenario proof)
+- The laned, concurrent attention system over `needs_attention` rows (§15).
 - Inbound chat routed through attention; `desktop.arrival` becomes a logged `event` it consumes.
-- Convert **one** alarm skill end-to-end (candidate: a minimal `standup` skill — §18 Q2): the
-  scheduler appends an alarm `event` → attention runs the skill → outbound `message`s → replies
-  thread back → skill sees both people's answers in one thread.
-- **Milestone (the whole point):** the §1.1 scrum scenario passes live: alarm fires, two family
-  members answer, Skipper understands each reply in context and can name the cross-dependency.
+- Convert **`chores`** end-to-end (§18 Q2 — in-repo, scheduled daily, really used, and shaped
+  exactly like the scrum scenario): the chores alarm `event` → the chores skill sends per-kid
+  `message`s (parallel person-lanes) → each kid's reply arrives in their thread → the **chat**
+  skill resolves it (thread context + routed chores tools; §14 routing rule) — completes the
+  chore, never hallucinates.
+- **Milestone (the whole point — keeps the scrum SHAPE):** alarm fires → messages to ≥2 people in
+  parallel lanes → both reply → each reply correctly resolved in its own thread with zero
+  hallucinated actions → AND the cross-person synthesis check: "who's finished their chores?"
+  answered correctly from the log alone (the one-mind proof).
 
 ### Phase 3 — all voice skills converge
 - **onboarding**: greeting becomes the onboarding skill's response to the connection `event` —
@@ -638,6 +642,10 @@ flag; prod promotes only at phase boundaries. Legacy paths keep working until §
 - **goals / g-\*** and **pm**: handlers become skill definitions (§14); their private context
   builders (`_observe`/`_build_user_prompt`/`_gather_conversation_context`) die; scheduler rows
   stay as the alarms.
+- **the real scrum** (prod runs it as an untracked optional app — absent from this repo): once the
+  Phase-2 machinery is proven on chores, scrum becomes just another alarm + skill guidance file
+  plugging into the optional app's state; the son's actual standup flow is verified HERE, on
+  prod's own app.
 - **chores / bounty digest**: their sends become `log_event` messages (bounty replies stop being
   context-blind).
 - `pending_action` DM plumbing + `_inject_proactive_dm_context` dissolved (the thread is the state).
@@ -682,6 +690,12 @@ skill = {
 - **Conscious skills** never run themselves: their alarms append `event` rows and the attention
   loop runs them. **Subconscious skills** keep today's model (their own loop off the scheduler),
   must never emit user-facing messages, and may append sparse `activity` rows (§18 Q6).
+- **Routing rule (§18 Q2): inbound replies run the `chat` skill, always.** Domain skills are
+  **alarm-driven initiators**; when a person answers, that inbound message runs Skipper's one
+  conversational voice (chat), made competent by the THREAD (source 1 carries the question +
+  sibling answers) and by keyword tool-routing (the domain's tools surface when the content
+  matches). There is no reply-handler hand-off to fumble — which is precisely what kills the
+  scrum-bug class.
 - One skill per attention turn. Skills share the entity (identity prompt, log, context); they
   differ only in guidance, tools, providers, tier.
 
@@ -705,6 +719,9 @@ skill = {
   (c) **enforcement is in-memory** — per-lane `asyncio.Lock`s in the (single-process) attention
   pool. Correctness never depends on the locks: restart-safety comes from the log itself
   (unattended rows are the queue; locks evaporate harmlessly with the process).
+- **Which skill a turn runs:** inbound `message` → the `chat` skill (universal responder — §14
+  routing rule); alarm `event` → the alarm's declared skill; connection `event` → the skill bound
+  to that event kind (e.g. onboarding while the agenda is open, else a plain welcome via chat).
 - Each turn: claim → snapshot-read → `assemble_context` → run the skill's bounded loop → append
   results (`message`/`activity` rows) → stamp `attended_at`. Failures append an `activity` error
   note and stamp `attended_at` with error payload after N retries (never wedge the queue).
@@ -763,9 +780,12 @@ skill = {
    sparing users) — collision frequency is inherently low; design for coherence, not contention.
    Priority classes / mid-turn yield dropped as unnecessary; cap-admission priority for messages
    kept. See §4.3 + §15.
-2. **First converted alarm skill (Phase 2 milestone).** Position: a minimal new `standup` skill
-   (the scrum app is absent on `release`; the son's complaint traces to pm/goals DMs). Alternative:
-   convert `pm` first.
+2. **First converted alarm skill — RESOLVED (operator).** **`chores`** converts first: in-repo,
+   daily-scheduled, really used, and scrum-shaped (alarm → multi-person sends → replies →
+   per-thread resolution). Milestone keeps the scrum shape incl. the cross-person synthesis check
+   (§13 Phase 2). `pm` defers to Phase 3; the REAL scrum (an untracked optional app on prod) plugs
+   into the proven machinery in Phase 3 and is verified on prod's own app. Companion rule: inbound
+   replies always run the `chat` skill (§14) — domain skills only initiate.
 3. **Registry shape.** Position: keep `thinking_domains` as the scheduler registry + declare
    skills in app manifests; retire the observe/evaluate/act_tool columns. Alternative: new
    `skills` table.
