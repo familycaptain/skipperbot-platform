@@ -210,7 +210,9 @@ def claim_unattended(limit: int = 20) -> list[dict]:
     processed) — acceptable for a single short turn; the inbound message still
     exists in the log and the person can re-ask. Returns the claimed rows.
     """
-    return fetch_all(
+    # execute_returning_all: a COMMITTING UPDATE...RETURNING (fetch_all would
+    # roll the claim back, re-claiming forever). Defined below.
+    return _execute_returning_all(
         "UPDATE consciousness_log SET attended_at = now() WHERE id IN ("
         "  SELECT id FROM consciousness_log "
         "  WHERE needs_attention AND attended_at IS NULL "
@@ -218,6 +220,18 @@ def claim_unattended(limit: int = 20) -> list[dict]:
         ") RETURNING *",
         (limit,),
     )
+
+
+def _execute_returning_all(query: str, params: tuple) -> list[dict]:
+    """A write query with RETURNING that COMMITS and returns all rows."""
+    import psycopg2.extras as _extras
+    from data_layer.db import get_conn
+    with get_conn() as conn:
+        with conn.cursor(cursor_factory=_extras.RealDictCursor) as cur:
+            cur.execute(query, params)
+            rows = [dict(r) for r in cur.fetchall()]
+        conn.commit()
+        return rows
 
 
 def mark_attended(event_id: str) -> bool:
