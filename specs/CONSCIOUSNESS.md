@@ -492,6 +492,26 @@ house convention for append-only core tables):
 - **Rollback stays trivial** — legacy stores untouched, so `pre-consciousness` rollback simply
   ignores the new table.
 
+### 11.9 Write path & concurrency guarantees (operator requirement)
+
+Parallel turns all append to the one log, so the writer must be **low-latency, synchronous, and
+collision-free**:
+
+- **`log_event()` is a single-statement INSERT, autocommit, and nothing else.** No embedding
+  (async backfill), no transport fan-out (handoff after commit), no LLM work inside the append.
+  Milliseconds; callers block on it — when it returns, the event is durably in the log with its
+  `seq` assigned.
+- **`seq` uniqueness + monotonicity comes from the Postgres sequence** (`bigserial`): `nextval()`
+  is atomic under any concurrency — incremental, never duplicative, no app-side coordination.
+  Gaps are permitted (a rollback burns a value); `seq` is ordinal, not a count.
+- **Commit-visibility skew, handled:** T1 takes seq=100, T2 takes seq=101, T2 commits first —
+  for ~ms, a reader sees 101 but not 100. Discipline: (1) the attention claim NEVER uses a
+  high-water cursor — it scans the `needs_attention AND attended_at IS NULL` partial index, so a
+  briefly-invisible row is simply claimed on the next pass, never skipped permanently; (2)
+  subconscious cursor consumers (summarizer `covers_to_seq`, embedding backfill, memory
+  ingestion) use a **lagged watermark** — never advance the cursor into the most recent ~2
+  seconds — closing the race at zero cost for background work.
+
 ---
 
 ## 12. `assemble_context(event, skill, budget)` — the contract (draft)
