@@ -143,7 +143,7 @@ registration. A file's mere presence wires it in:
 | `guide.md` | for any app with tools | Agent-facing guide, loaded into context when the app's tool category is active. |
 | `help.md` | yes (any app a user interacts with) | **User-facing manual**, shown via the in-app **?** button and returned by the `get_app_help` chat tool. Distinct from `guide.md`. |
 | `ui/index.js` | for any app with a UI | Default-exports the launcher registry array (see UI Collector). |
-| `think.md` | if `thinking` is declared | The thinking-domain system prompt (filename comes from `manifest.thinking.prompt_file`). |
+| `think.md` | convention | Your thinking-domain prompt, if you keep one — **your own handler loads it**; the platform does not (the manifest `thinking:` block is inert, see extension point #8). |
 | `data.py` / `store.py` / `runner.py` | convention | App-internal data layer / business logic / background pipeline. Not discovered by name — imported by the app's own `tools.py`/`routes.py`. |
 | `specs/SPEC.md` | convention | The app's own prose design spec. |
 | `specs/**/*.yaml` | convention | The app's C/F/S tree (Evolve's source of truth), co-located so it travels with the app whether in-repo or in its own repo. See [EVOLVE.md §4](EVOLVE.md). |
@@ -241,7 +241,7 @@ Anything else in the file is ignored.
 | `emits` / `subscribes` | — | Event names this app publishes / listens for. |
 | `ui.apps[]` | — | UI registrations: `id`, `name`, `icon`, `component`, `singleton`, `hidden`. Mirrors `ui/index.js`. |
 | `job_types[]` | — | Background job handlers: `type`, `handler` (`module.fn`), `max_concurrent`, `cancel_on_shutdown`. |
-| `thinking` | — | Thinking-domain declaration (extension point #8). |
+| `thinking` | — | Thinking-domain declaration — **parsed but currently INERT** (documentation of intent only; the working mechanism is `register_domain` — see extension point #8). |
 | `config[]` | — | Per-app settings surfaced in the UI cog wheel (see below). |
 
 > **Note:** the loader does **not** read `package`, `web`, or `requires` —
@@ -271,6 +271,15 @@ them in the app's toolbar cog wheel (and the Settings app), and stores values
 in `public.app_config` scoped to `app:<id>`. Read them through the platform
 settings service rather than parsing the manifest yourself. Uninstalling an app
 with full purge also clears its `app_config` rows.
+
+> **⚠ The auto-scope trap.** `app_platform.settings.get(key)` **auto-scopes to
+> the calling app** (`app:<id>`) when no `scope=` is given. That's what you
+> want for your own settings — but it means reading a **platform-level**
+> setting from app code silently returns your `default` instead of the real
+> value unless you pass `scope="platform"` explicitly. This bug is invisible
+> (no error, just a wrong default) and has bitten core apps in production.
+> Rule: your own settings → no scope; anything platform-wide →
+> `scope="platform"`, always.
 
 #### Declared dependencies between apps
 
@@ -328,7 +337,8 @@ app_migrations
 
 **Benefits of per-app schemas:**
 - **Namespace isolation** — no table name collisions between apps
-- **Clean uninstall** — `DROP SCHEMA app_recipes CASCADE` removes everything
+- **Clean uninstall** — `--purge` drops the schema (`DROP SCHEMA … RESTRICT`;
+  see Migration Strategy for why RESTRICT, never CASCADE)
 - **Visibility** — `\dn` in psql shows all installed apps at a glance
 - **Permissions** — future option to restrict an app's DB user to only its
   own schema
@@ -541,56 +551,54 @@ job_types:
 
 ### 8. Thinking Domain Registrar
 
-Apps can declare **thinking domains** — autonomous LLM reasoning cycles that
-run on a schedule, giving the app its own "inner voice." The platform's
-`thinking_scheduler` discovers these from manifests and runs them alongside
-core thinking domains.
+Apps can run **periodic autonomous LLM passes** ("thinking domains") — but the
+mechanism is NOT the manifest.
 
-```yaml
-# In manifest.yaml
-thinking:
-  domain: investment_analysis
-  description: "Analyze market conditions and portfolio health"
-  schedule: "0 6 * * 1-5"   # weekdays at 6am
-  prompt_file: think.md       # thinking prompt in the app folder
-  tools:                      # tools available during thinking
-    - get_ticker_price
-    - get_tastytrade_positions
-    - create_doc
-  model: smart                # 'smart' or 'dumb'
-```
+> **⚠ The manifest `thinking:` block is currently INERT.** The loader parses it
+> and logs the registration, and that is all
+> (`app_platform/loader.py::_register_thinking_domain` is an acknowledged
+> stub). No cron `schedule:` is honored, `prompt_file:` is never loaded as a
+> system prompt, `tools:` is not scoped, `model:` is not consumed, and nothing
+> is written to the scheduler. An app that declares `thinking:` in its manifest
+> and stops there has an inner voice that **silently never runs** (a real
+> shipped app made exactly this mistake). You may still declare the block as
+> documentation of intent, but do not rely on it.
 
-```markdown
-<!-- apps/investment/think.md -->
-You are the investment analysis thinking domain.
-Review current positions, market conditions, and recent news.
-If you identify risks or opportunities, create a document and notify the user.
-```
+**The working mechanism** (what the core apps actually do — see
+`apps/documents/handlers.py` for the minimal example):
 
-The platform:
-1. Reads `thinking` from each manifest at startup
-2. Registers the domain with `thinking_scheduler`
-3. On schedule, loads the app's `think.md` as the system prompt
-4. Gives the LLM access to the declared tools (scoped to the app + platform)
-5. Logs the thinking cycle to `thinking_log`
+1. **Register a handler** from your `handlers.py` at import time:
 
-This is the critical link in the **autonomous app creation loop**:
+   ```python
+   # apps/<id>/handlers.py — the platform loader imports this at app-load time
+   from domain_modules import register_domain
 
-```
-Skipper has a goal
-  → Skipper's own thinking domain reasons about the goal
-  → Skipper decides it needs a new capability
-  → Skipper creates a new app package (folder + manifest + code)
-  → Platform loads the app on restart
-  → The new app's thinking domain starts running
-  → The app performs actions toward the goal autonomously
-  → Results feed back into Skipper's thinking via events
-```
+   async def my_domain_handler(domain: dict, budget_status: dict) -> dict:
+       """One thinking cycle. Build your own prompt (read your think.md
+       yourself if you keep one), call agent_loop.run(...), and return the
+       cycle-result dict (reasoning, actions_taken, next_check_seconds, ...)."""
+       ...
 
-The app doesn't just sit there waiting to be used — it **thinks for itself**
-on its own schedule, using its own tools, toward whatever purpose it was
-created for. Skipper becomes a creator of autonomous agents, each scoped to
-a domain, each with its own thinking loop.
+   register_domain("my_domain", my_domain_handler)
+   ```
+
+2. **Create the scheduler row** — the scheduler runs rows in the
+   `public.thinking_domains` table (interval-driven via `check_interval` /
+   `next_check`, **not cron**). Seed the row idempotently (a Python seed
+   script run once at install — see the Python-migration note in the
+   Schedules section).
+
+The handler owns everything the manifest block *implies*: it loads its own
+prompt file, picks its own model tier, and builds its own tool list.
+
+> **Direction of travel (specs/CONSCIOUSNESS.md):** Skipper is ONE
+> consciousness; thinking domains are **alarm clocks, not separate minds**. The
+> platform's own domains are being converted so the scheduler merely raises an
+> owed event and a voice **skill** runs the turn through the shared attention
+> system. Prefer that shape for anything user-facing: background work belongs
+> in `job_types` + `public.schedules`; anything said to a user goes through
+> `create_notification`. A periodic silent analysis pass is fine as a plain
+> domain handler.
 
 ---
 
@@ -602,7 +610,7 @@ These are capabilities provided by the platform that any app can use. They are
 
 | Service | Import | Purpose |
 |---------|--------|---------|
-| `app_platform.db` | `execute_in_schema`, `execute_returning_in_schema`, `fetch_one`, `fetch_all` | Database access |
+| `app_platform.db` | `execute_in_schema`, `execute_returning_in_schema`, `fetch_one_in_schema`, `fetch_all_in_schema`, `fetch_all_vector_in_schema`, `scoped_conn` (+ re-exported `fetch_one`, `fetch_all` for platform tables) | Database access — use the `*_in_schema` forms for your own tables |
 | `app_platform.events` | `emit`, `subscribe` | Event bus |
 | `app_platform.memory` | `digest_record` | **Semantic memory ingestion (required on every CRUD — see below)** |
 | `app_platform.links` | `create_link`, `ensure_edge`, `get_links`, `get_blast_radius`, `delete_link`, `delete_links_for_entity` | Entity linking — the platform `link` entity type (soft references in `public.links`) |
@@ -760,6 +768,14 @@ sender directly from a handler, runner, or job. That bypasses:
 * **Async/sync safety** — `send_dm` is async; calling it without `await`
   from a sync handler returns an unevaluated coroutine and silently fails
   with no Discord delivery (lesson from the chores 9 AM bug in May 2026).
+* **Skipper's own memory of having spoken** — `create_notification` also
+  enters the message into Skipper's **consciousness log**
+  (see `specs/CONSCIOUSNESS.md`), so when the user replies to your app's
+  message, Skipper knows what it said and answers in context. A raw channel
+  send leaves Skipper **context-blind about its own words** — the user
+  replies "yes, do that" and Skipper has no idea what "that" is. (A real
+  shipped app had exactly this bug — hand-rolled Discord/Pushover/WS sends —
+  and was fixed by replacing all three with one `create_notification` call.)
 
 **Pattern (mirror this exactly):**
 
@@ -785,14 +801,21 @@ and fans them out. Your handler is done the moment the row is inserted.
 
 | `channel` | Discord DM | Pushover | FCM mobile | WebSocket | Chat log |
 |-----------|:----------:|:--------:|:----------:|:---------:|:--------:|
+| `""` *(unset — the default)* | *per the `default_channels` setting* | | | ✓ | ✓ |
 | `"discord"` | ✓ | | | ✓ | ✓ |
 | `"push"` | | ✓ | | ✓ | ✓ |
-| `"both"` *(default)* | ✓ | ✓ | | ✓ | ✓ |
+| `"both"` | ✓ | ✓ | | ✓ | ✓ |
 | `"app"` | ✓ | | | ✓ | ✓ |
 | `"mobile"` | | | ✓ | ✓ | ✓ |
 | `"all"` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `"none"` | | | | ✓ | ✓ |
 
-WebSocket and chat-log delivery happen on every row regardless of `channel`.
+An **empty/unset** channel resolves to the operator-configurable
+`default_channels` setting (Settings → Notifications; factory default
+`discord,pushover`) — so omit `channel` unless your app has a real reason to
+force a surface. `"none"` sends no external push at all (used e.g. by schedule
+seeds whose *job* does its own notifying). WebSocket and chat-log delivery
+happen on every row regardless of `channel`.
 
 **When you'd legitimately reach past the abstraction:** you wouldn't. If
 your app needs a new surface (e.g. SMS), add it to `notification_delivery`
@@ -882,9 +905,19 @@ only when you need calendar arithmetic the simpler types can't express
 **Rules:**
 
 1. **The seeder is a Python migration**, not SQL. Naming convention:
-   `apps/<id>/migrations/NNN_seed_<name>_schedule.py`. The SQL migrator
-   only runs `.sql` files; Python migrations are invoked manually by the
-   installer or one-shot on first deploy.
+   `apps/<id>/migrations/NNN_seed_<name>_schedule.py`. **The migrator runs
+   `.sql` files ONLY — nothing runs `.py` migrations automatically.** There is
+   no installer hook: after installing/updating the app you (or your install
+   notes) must run it by hand, once, inside the agent container:
+
+   ```bash
+   docker compose exec agent python apps/<id>/migrations/NNN_seed_<name>_schedule.py
+   ```
+
+   (Native runtime: `.venv/bin/python apps/<id>/...`.) That's why rule 2 —
+   idempotence — is mandatory: the script must be safe to run again on every
+   redeploy. Document the command in your app's README install steps; an app
+   that forgets this ships a schedule that never fires.
 2. **It's idempotent.** Check `list_schedules` for an existing row with the
    same `linked_entity_id` before inserting. Re-running the migration on
    redeploy must be safe.
@@ -994,6 +1027,14 @@ Modify files in the app folder. On restart:
 ---
 
 ## Skipper-Built Apps
+
+> *(Aspirational: this section is the design direction, not current platform
+> behavior. Today there is **no** `reload_app` hot-load — installing means
+> restart; the loader does **not** enforce the cross-app import ban (it's a
+> reviewed convention — see The dependency rule); there are **no** resource
+> limits; and safety tiers exist only as an `app_registry` column. Don't
+> build against these as capabilities, and don't assume the import ban is
+> machine-checked — review for it.)*
 
 This architecture directly enables Skipper to create apps autonomously:
 
@@ -1306,7 +1347,10 @@ Apps are designed for an **app store** model from day one:
     manifest      JSONB          -- cached manifest content
   ```
 
-- **Install/uninstall commands** exposed as platform tools:
+- **Install/uninstall commands** *(partially aspirational: today only
+  `app_platform.loader.uninstall_app(app_id, purge=False)` exists, as a Python
+  function — none of these are exposed as chat tools yet; "install" = drop the
+  folder in and restart)*:
   - `install_app(app_id)` — creates schema, runs migrations, registers
   - `uninstall_app(app_id, purge=False)` — deregisters; `purge=True` drops
     schema

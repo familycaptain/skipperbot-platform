@@ -9,7 +9,7 @@ Three documents work together — know which is which:
 | Document | Role |
 |---|---|
 | **docs/BUILDING_APPS.md** (this file) | The step-by-step authoring workflow. **Start here — this is the doc for humans.** |
-| [**specs/APP_PACKAGES.md**](../specs/APP_PACKAGES.md) | The **app contract** — the rules every app must satisfy (extension points, the `manifest.yaml` schema, memory digestion on every CRUD, notify via `create_notification`, recurring work via schedules, UI ↔ chat parity). It's written as **prompt guidance for an AI assistant** — point your AI at it rather than reading it cover to cover yourself. |
+| [**specs/APP_PACKAGES.md**](../specs/APP_PACKAGES.md) | The **app contract** — the rules every app must satisfy (extension points, the `manifest.yaml` schema, memory digestion on every CRUD, notify via `create_notification`, recurring work via schedules, UI ↔ chat parity). It's written as **prompt guidance for an AI assistant**; the scaffolded repo's `CLAUDE.md` points AI sessions at it automatically, so you don't need to read it cover to cover yourself. |
 | [**docs/02-adding-apps.md**](02-adding-apps.md) | How to **install and test** an app (yours or someone else's) into a running platform. |
 
 You're in the right place: **read this guide**, then follow the steps below.
@@ -70,6 +70,7 @@ skipperbot-app-<name>/
   specs/
     SPEC.md              # this app's spec
     APP_PACKAGES.md      # a copy of the canonical contract (kept in sync)
+  CLAUDE.md              # auto-loaded by Claude Code: binds AI sessions to the contract
   README.md  LICENSE  .gitignore  pyproject.toml
   tests/test_smoke.py
 ```
@@ -84,7 +85,8 @@ can add by hand when you need them:
   extra prompt blocks for the `voice`/`chat` surfaces) without the platform
   importing your app.
 - `store.py` / `runner.py` — app-internal business logic / background pipeline.
-- `think.md` — a thinking-domain prompt, if your manifest declares `thinking`.
+- `think.md` — a thinking-domain prompt your own handler loads (the manifest
+  `thinking:` block alone is inert — see APP_PACKAGES.md extension point #8).
 
 **`guide.md` vs `help.md` — they are different and you want both.** `guide.md`
 is for *the agent* (tool names, arguments, edge cases). `help.md` is a full

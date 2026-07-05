@@ -565,6 +565,56 @@ TEST_SMOKE = """def test_smoke() -> None:
     assert True
 """
 
+# Auto-loaded by Claude Code (and read by other AI assistants) at the start of
+# every session in this repo — the standing instruction that makes AI-assisted
+# development follow the app contract without the human having to remember to
+# say so. Keep it short: it points at the contract, it doesn't duplicate it.
+CLAUDE_MD = """# __APP_NAME__ — a Skipperbot app package
+
+This repo is a **Skipperbot app** (app id `__APP_ID__`, entity prefix
+`__PREFIX__-`, Postgres schema `__SCHEMA__`). It installs by being dropped
+into a Skipperbot platform's `apps/__APP_ID__/` folder.
+
+## The binding contract — read it FIRST
+
+**`specs/APP_PACKAGES.md` in this repo is the app contract.** Before writing
+or reviewing any code here, read it. It is written as prompt guidance for an
+AI assistant; every rule in it is binding. Do not invent conventions this
+file already settles.
+
+Non-negotiables it will hold you to (headlines only — the contract has the
+details and the patterns to mirror):
+
+- **Memory digestion**: every data-layer mutation (create/update/delete/
+  complete) calls `app_platform.memory.digest_record` — an app that skips
+  this is invisible to chat recall.
+- **Messaging**: anything said to a user goes through
+  `app_platform.notifications.create_notification` — NEVER a channel-specific
+  sender (`send_dm`, pushover, FCM, raw WebSocket).
+- **Recurring work**: `public.schedules` (via `app_platform.schedules`), never
+  self-inserted job rows; one-off work via `app_platform.jobs.submit_job`.
+  A Python schedule-seed migration is NOT run automatically — see the
+  contract's Schedules section.
+- **Time**: `app_platform.time` (`now`/`utcnow`/`to_local`) — never naive
+  `datetime.now()` / `date.today()`.
+- **Settings**: your own settings auto-scope to `app:__APP_ID__`;
+  platform-wide reads need an explicit `scope="platform"`.
+- **UI ↔ chat parity**: every meaningful UI capability has a matching tool in
+  `tools.py` + `guide.md` coverage; ship `help.md` for users.
+- **Styling**: semantic design-system classes only (`surface-card`,
+  `btn-primary`, `text-muted`, …) — raw Tailwind color scales fail the build.
+- **Isolation**: import only `app_platform.*` and this package — never
+  `apps.<other>.*`; cross-app reads via `query_entities`, writes via events.
+
+## Working in this repo
+
+- Tests live in `tests/` and ship with the app: `python -m pytest tests/`.
+- To try the app on a platform: copy/clone this folder to
+  `<platform>/apps/__APP_ID__/` and restart the agent.
+- `specs/APP_PACKAGES.md` is a synced copy of the platform's canonical
+  contract — don't edit it here; it gets overwritten by the sync.
+"""
+
 
 def create_app_skeleton(app_name: str, folder_name: str) -> None:
     repo_root = Path(__file__).resolve().parent.parent
@@ -616,6 +666,7 @@ def create_app_skeleton(app_name: str, folder_name: str) -> None:
         f"ui/{component}App.jsx": UI_APP,
         "specs/SPEC.md": SPEC,
         "README.md": README,
+        "CLAUDE.md": CLAUDE_MD,
         "LICENSE": LICENSE,
         ".gitignore": GITIGNORE,
         "pyproject.toml": PYPROJECT,
@@ -646,8 +697,9 @@ def create_app_skeleton(app_name: str, folder_name: str) -> None:
     print("Next steps:")
     print(f"  1. cd {app_dir}")
     print("  2. Read docs/BUILDING_APPS.md (in the platform repo) — the human")
-    print("     authoring guide. Building with AI? Point it at specs/APP_PACKAGES.md")
-    print("     (the contract), which is shipped in this app repo.")
+    print("     authoring guide. Building with AI? Just run `claude` here —")
+    print("     the generated CLAUDE.md wires it to specs/APP_PACKAGES.md")
+    print("     (the contract) automatically.")
     print("  3. Replace the 'items' placeholder entity with your real model")
     print("     (manifest entity_types, migrations, data.py, tools.py, UI).")
     print("  4. To test in a platform: clone/copy this folder into")
