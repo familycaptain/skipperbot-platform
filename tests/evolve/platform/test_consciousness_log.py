@@ -224,14 +224,16 @@ class TimelineRendering(unittest.TestCase):
         self.assertIn("between", out[2]["content"])
         self.assertIn("msg2", out[3]["content"])
 
-    def test_visibility_rule_is_strong(self):
+    def test_visibility_rule_is_coherence_not_privacy(self):
         from app_platform import context as X
         b = X.TIMELINE_BOUNDARY.lower()
-        # the load-bearing cross-person visibility instruction (operator requirement)
-        self.assertIn("only see their own", b)
-        self.assertIn("critical", b)
-        self.assertIn("attribute", b)      # relay cross-person info explicitly
-        self.assertIn("current person", b)  # answer who you're talking to
+        # Coherence: replies must stand on their own for a reader who only saw
+        # their own chat — bring context in. Explicitly NOT a privacy/secrecy rule.
+        self.assertIn("only ever saw their own chat", b)
+        self.assertIn("stands on its own", b)
+        self.assertIn("not about secrecy", b)
+        self.assertIn("sharing across the family is fine", b)
+        self.assertIn("another one", b)   # the good/bad example is present
 
     def test_chat_seam_present(self):
         src = _read("chat.py")

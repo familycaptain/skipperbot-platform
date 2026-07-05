@@ -652,16 +652,19 @@ Consequences accepted: prefix caching loses a little (the static identity+skill 
 expensive part — still caches; the window churns per turn), and mis-addressing is guarded by the
 named final turn + skill guidance ("respond to {person}") — watch in Phase 1.
 
-**VISIBILITY RULE (load-bearing, operator requirement).** The multi-speaker timeline means the LLM
-sees EVERY person's conversation, but each person's UI shows only their OWN 1-1 chat. The prompt
-MUST strongly instruct: (1) answer the CURRENT person and only what they just said — never answer
-another person's question in this person's window, never continue someone else's conversation
-here; (2) this person has NOT seen any other person's messages, so never reference cross-person
-info as if they saw it — if sharing is relevant, attribute it explicitly and bring them up to
-speed; (3) address whoever you're currently talking to. This is NOT a permission wall (consistent
-with the "no secrets" family model — sharing across the family is fine); it is about each person
-only SEEING their own view. Implemented in the timeline boundary line (`app_platform/context.py`
-`TIMELINE_BOUNDARY`). Without it the one-timeline design leaks/misattributes across people.
+**VISIBILITY RULE (load-bearing, operator requirement) — it is about COHERENCE, not privacy.**
+The multi-speaker timeline means the LLM sees EVERY person's conversation, but the person being
+replied to only ever saw their OWN 1-1 chat — not other people's messages, not Skipper's own
+activities/events. The prompt MUST instruct: whenever a reply draws on anything this person hasn't
+seen (another person's message, something Skipper did, an event), bring that context INTO the reply
+so it stands on its own for the reader; never reply as if they saw what only Skipper saw; and
+always answer what THIS person actually said (never answer another person's question in this
+person's chat). Worked example: Tyler says "I broke the lamp", then Katie asks "what's new?" —
+GOOD: "Tyler just broke the living-room lamp" (self-contained); BAD: "It'll be okay, we can get
+another one" (Katie has no idea what "another" refers to). This is explicitly NOT a permission wall
+and NOT secrecy — sharing across the family is fine (no-secrets household); the rule is purely that
+each person only SEES their own view, so replies must be self-contained and unambiguous to them.
+Implemented in `app_platform/context.py` `TIMELINE_BOUNDARY`.
 
 ### 12.5 What this absorbs (and retires)
 

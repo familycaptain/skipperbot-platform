@@ -37,39 +37,30 @@ SYSTEM = "system"
 # lived memory, never as pending work (plays the role of the legacy
 # "[Session resumed…]" marker, which the durable timeline makes obsolete).
 # CRITICAL: this timeline is Skipper's OWN memory of EVERY family member's
-# conversation, but each person only sees THEIR OWN chat. The instruction below
-# is load-bearing — without it Skipper leaks/misattributes across people.
+# conversation, but each person only sees THEIR OWN chat. The rule below is
+# about COHERENCE — replies must stand on their own for the reader — NOT
+# privacy (sharing across the family is fine; this is a no-secrets household).
 TIMELINE_BOUNDARY = (
-    "[This is MY (Skipper's) private memory of the whole household's activity — "
+    "[This is MY (Skipper's) memory of the whole household's activity — "
     "everything below already happened; completed actions are done and must not "
     "be re-executed. Notation: \"[name → skipper]:\" lines are messages that "
-    "family member sent me IN THEIR OWN private conversation with me; "
-    "\"[to name]:\" lines are what I said to that person; \"[activity]\"/"
-    "\"[system event]\" lines are things I did or that happened. "
-    "\n\n*** VISIBILITY RULE — CRITICAL, NON-NEGOTIABLE ***  I can see EVERY "
-    "family member's conversation in this memory, but each person can ONLY see "
-    "their OWN 1-on-1 chat with me. They CANNOT see what anyone else said to me "
-    "or what I said to anyone else. Every \"[other-name → skipper]:\" line is "
-    "PRIVATE to that person's conversation. So when I reply to the current "
-    "person:\n"
-    "  (1) I answer ONLY what THIS person just said. I never answer someone "
-    "else's question in this person's chat, never continue a different person's "
-    "conversation here, never address the wrong person.\n"
-    "  (2) I do NOT proactively volunteer what another person told me. If this "
-    "person asks something OPEN (\"what's new?\", \"anything going on?\") I "
-    "answer from THIS person's own context + shared household facts (chores, "
-    "calendar, tasks) — NOT by spilling another person's private messages. "
-    "Another person mentioning something to me is NOT my news to broadcast.\n"
-    "  (3) I surface what another person told me ONLY when THIS person's "
-    "message specifically and directly calls for it (e.g. they ask \"did Tyler "
-    "finish his chores?\"), and then I ATTRIBUTE it (\"Tyler told me…\") "
-    "rather than stating it as if they'd seen it.\n"
-    "  (4) I honor any confidentiality a person asks for (\"keep this between "
-    "us\", \"don't make a big deal\") and never repeat it elsewhere.\n"
-    "This is a shared-family assistant, so I CAN share across the family when "
-    "someone directly and appropriately asks — the rule is that each person "
-    "only SEES their own view, so I treat each conversation as that person's "
-    "private space and never leak or misattribute across people.]"
+    "family member sent me in their OWN 1-on-1 chat with me; \"[to name]:\" "
+    "lines are what I said to that person; \"[activity]\"/\"[system event]\" "
+    "lines are things I did or that happened. "
+    "\n\n*** VISIBILITY RULE — write replies that make sense to the reader ***  "
+    "I can see EVERY family member's conversation here, but the person I am "
+    "replying to only ever saw their OWN chat with me — NOT the other people's "
+    "messages, and NOT my own activities/events. This is about being CLEAR, not "
+    "about secrecy (sharing across the family is fine — nothing here is hidden). "
+    "So whenever my reply draws on ANYTHING this person hasn't seen — something "
+    "another person told me, something I did, an event — I bring that context "
+    "INTO the reply so it stands on its own for them. I never answer as if they "
+    "saw what only I saw. Example — Tyler said \"I broke the lamp\"; then Katie "
+    "asks \"what's new?\":  GOOD → \"Tyler just broke the living-room lamp.\" "
+    "(self-contained).  BAD → \"It'll be okay, we can get another one.\" (Katie "
+    "has no idea what \"another\" means). And I always reply to what THIS person "
+    "actually said — I never answer someone else's question in this person's "
+    "chat or address the wrong person.]"
 )
 
 _COMPLETED_TMPL = (
