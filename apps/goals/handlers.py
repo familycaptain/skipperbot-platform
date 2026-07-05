@@ -33,6 +33,117 @@ logger = logging.getLogger("apps.goals.handlers")
 ARRIVAL_EVENT = "desktop.arrival"
 
 
+def _consciousness_onboarding_enabled() -> bool:
+    """Phase 3a flag: the onboarding greeting is a chat-skill turn run by the
+    attention system (specs/CONSCIOUSNESS.md §13), not the legacy goal-think
+    produce."""
+    try:
+        from app_platform import settings as _settings
+        v = _settings.get("consciousness_onboarding", scope="platform", default=False)
+        return v is True or str(v or "").strip().lower() in ("1", "true", "yes", "on")
+    except Exception:
+        return False
+
+
+# ── the CONNECTION skill (specs/CONSCIOUSNESS.md §13 Phase 3a) ───────────────
+# Registered under the name "connection"; the attention system dispatches
+# connection events here. The greeting = the CHAT skill answering the
+# connection event with the onboarding focus overlay active (today's
+# _inject_onboarding_context serves as the overlay) — one context assembly,
+# ONE model call, delivered as Skipper's own voice. No greet-once claim: the
+# LOG is the memory ("did I greet recently?"), and there is only one producer.
+
+_GREETING_TRIGGER = (
+    "[system event] {user} just connected to the web desktop. Respond as "
+    "Skipper: greet {user} warmly and pick up the current onboarding step — "
+    "ONE gentle opener, then stop and wait for their reply.]"
+)
+_RECENT_GREETING_MINUTES = 15
+
+
+async def _connection_skill_runner(event: dict) -> dict:
+    """Attention runner for connection events: greet when onboarding is live."""
+    import asyncio as _aio
+
+    user = (event.get("who_to") or "").lower().strip()
+    if not user:
+        return {"summary": "no user on connection event"}
+    if not _consciousness_onboarding_enabled():
+        return {"summary": "consciousness onboarding off — legacy path owns greeting"}
+
+    # Gates (mirror the legacy handler's, minus the claim): primary user,
+    # agenda in progress, models configured.
+    from data_layer.users import get_primary_user
+    primary = ((await _aio.to_thread(get_primary_user)) or "").strip().lower()
+    if user != primary:
+        return {"summary": f"{user} is not the primary — no onboarding greeting"}
+    from apps.goals.onboarding import onboarding_agenda_in_progress
+    goal_id = await _aio.to_thread(onboarding_agenda_in_progress)
+    if not goal_id:
+        return {"summary": "onboarding agenda not in progress"}
+    try:
+        from providers.tier_resolver import models_configured
+        if not models_configured():
+            return {"summary": "models not configured — silent"}
+    except Exception:
+        pass
+
+    # Log-native greet-once: if I spoke to them in the onboarding domain within
+    # the last N minutes, this is a reload/reconnect — stay quiet.
+    from data_layer.db import fetch_one
+    recent = await _aio.to_thread(
+        fetch_one,
+        "SELECT id FROM consciousness_log WHERE kind='message' AND who_from='skipper' "
+        "AND who_to=%s AND domain='onboarding' "
+        "AND created_at > now() - make_interval(mins => %s) LIMIT 1",
+        (user, _RECENT_GREETING_MINUTES),
+    )
+    if recent:
+        return {"summary": "greeted recently — reconnect, staying quiet"}
+
+    # THE GREETING TURN: chat skill + timeline + onboarding overlay, one call.
+    from chat_domain import ChatRequest, handle_chat
+    from chatlog_store import generate_turn_id
+    from app_platform.context import build_chat_timeline
+    timeline = await _aio.to_thread(build_chat_timeline, user, None, event.get("id"))
+    trigger = _GREETING_TRIGGER.format(user=user)
+    req = ChatRequest(
+        user_id=user,
+        user_message=trigger,
+        session_messages=timeline + [{"role": "user", "content": trigger}],
+        turn_id=generate_turn_id(),
+        channel="web",
+        loaded_categories=[],
+    )
+    result = await handle_chat(req)
+    text = (result.response_text or "").strip()
+    if not text:
+        return {"summary": "greeting turn produced no text"}
+
+    from app_platform.consciousness import send_message
+    row = await _aio.to_thread(
+        lambda: send_message(who_to=user, content=text, domain="onboarding",
+                             surface="web", payload={"connection_event": event.get("id")}))
+
+    # Client-UX compat: the web client's optimistic-typing endpoint keys on the
+    # legacy greeted flag; set it so reloads don't re-show the typing beat.
+    try:
+        from apps.goals.onboarding import claim_onboarding_greeting
+        await _aio.to_thread(claim_onboarding_greeting)
+    except Exception:
+        pass
+    logger.info("CONNECTION-SKILL: greeted %s (%s)", user, row["id"])
+    return {"summary": f"greeted {user}"}
+
+
+try:
+    from app_platform.skills import register_skill
+    register_skill("connection", _connection_skill_runner, layer="voice",
+                   description="Connection-event responder (onboarding greeting overlay)")
+except Exception:
+    logger.debug("GOALS: connection skill registration unavailable", exc_info=True)
+
+
 async def onboarding_arrival_handler(payload: dict) -> dict:
     """Priority-0 ``desktop.arrival`` handler (single-payload signature).
 
@@ -51,6 +162,13 @@ async def onboarding_arrival_handler(payload: dict) -> dict:
     Best-effort throughout — any error is swallowed so the socket never blocks.
     """
     try:
+        # Phase 3a (specs/CONSCIOUSNESS.md §13): when consciousness onboarding is
+        # on, the greeting is the chat skill answering the connection EVENT via
+        # the attention system — this legacy produce path stands down entirely
+        # (exactly-one by single-producer, no claim needed).
+        if _consciousness_onboarding_enabled():
+            return {"skipped": "consciousness onboarding owns the greeting"}
+
         user_id = (payload or {}).get("user_id", "") or ""
 
         # (a) Primary-user gate — normalized compare. A non-primary arrival gets

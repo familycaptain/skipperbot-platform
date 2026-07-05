@@ -165,7 +165,10 @@ async def _deliver_one(notif: dict):
         # `chat_response` bubble so it clears the client's optimistic typing dots
         # (platform.onboarding.live-greeting). It still persists to chat history
         # and reloads as a notification row — consistent with other proactive DMs.
-        if source_type == "onboarding_greeting":
+        if source_type in ("onboarding_greeting", "consciousness"):
+            # §16 (specs/CONSCIOUSNESS.md): an outbound consciousness message IS
+            # Skipper speaking — it renders as a chat bubble on every surface,
+            # not as a notification card. The onboarding special-case is now the rule.
             from datetime import datetime as _dt, timezone as _tz
             ws_frame = {
                 "type": "chat_response",

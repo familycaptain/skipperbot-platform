@@ -284,3 +284,36 @@ class Phase2Wiring(unittest.TestCase):
         self.assertIn("_fire_chores_alarm", src)
         self.assertIn("REFUSED", src)   # recipient allow-list guard
         self.assertIn("chore_id", src)
+
+
+class Phase3aOnboarding(unittest.TestCase):
+    """§13 Phase 3a: the greeting is a chat-skill turn on the connection event."""
+
+    def test_connection_skill_registered_by_goals_app(self):
+        src = _read("apps/goals/handlers.py")
+        self.assertIn('register_skill("connection"', src)
+        self.assertIn("_connection_skill_runner", src)
+
+    def test_log_native_greet_once_no_claims(self):
+        src = _read("apps/goals/handlers.py")
+        # suppression reads the LOG (recent onboarding message), not a claim
+        self.assertIn("domain='onboarding'", src)
+        self.assertIn("_RECENT_GREETING_MINUTES", src)
+
+    def test_one_call_greeting_uses_chat_skill_and_timeline(self):
+        src = _read("apps/goals/handlers.py")
+        self.assertIn("handle_chat", src)
+        self.assertIn("build_chat_timeline", src)
+        self.assertIn("send_message", src)
+
+    def test_legacy_arrival_stands_down_under_flag(self):
+        src = _read("apps/goals/handlers.py")
+        self.assertIn("consciousness onboarding owns the greeting", src)
+
+    def test_consciousness_messages_render_as_chat_response(self):
+        src = _read("apps/notifications/delivery.py")
+        self.assertIn('in ("onboarding_greeting", "consciousness")', src)
+
+    def test_attention_dispatches_connection_skill(self):
+        src = _read("app_platform/attention.py")
+        self.assertIn('get_skill("connection")', src)

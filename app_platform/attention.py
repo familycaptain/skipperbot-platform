@@ -140,9 +140,16 @@ async def _dispatch(row: dict) -> Optional[str]:
 
     if kind == "event":
         if payload.get("event") == "desktop.arrival":
-            # Phase 2: acknowledged only — the legacy arrival handler still
-            # produces the greeting (onboarding converts in Phase 3).
-            logger.info("ATTENTION: connection event %s acknowledged", row["id"])
+            # Phase 3a: the registered "connection" skill answers (the greeting
+            # as a chat-skill turn); ack if no app registered one.
+            from app_platform.skills import get_skill
+            conn = get_skill("connection")
+            if conn:
+                result = await conn["runner"](row)
+                logger.info("ATTENTION: connection skill ran for %s: %s",
+                            row["id"], (result or {}).get("summary", ""))
+            else:
+                logger.info("ATTENTION: connection event %s acknowledged", row["id"])
             return None
         # alarm event → the domain's registered skill
         from app_platform.skills import get_skill
