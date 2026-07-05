@@ -501,9 +501,14 @@ collision-free**:
   (async backfill), no transport fan-out (handoff after commit), no LLM work inside the append.
   Milliseconds; callers block on it — when it returns, the event is durably in the log with its
   `seq` assigned.
+- **The append is ONE atomic transaction — never grab-a-seq-then-commit-later.** `nextval()` fires
+  inside the INSERT statement itself; the row and its `seq` commit together or not at all. It is
+  just a database record: completely contained, near-instant.
 - **`seq` uniqueness + monotonicity comes from the Postgres sequence** (`bigserial`): `nextval()`
   is atomic under any concurrency — incremental, never duplicative, no app-side coordination.
-  Gaps are permitted (a rollback burns a value); `seq` is ordinal, not a count.
+  Gaps are permitted (a rollback burns a value); `seq` is ordinal, not a count. (The §skew note
+  below is about two SEPARATE atomic appends racing each other's commits — not any split in the
+  writer.)
 - **Commit-visibility skew, handled:** T1 takes seq=100, T2 takes seq=101, T2 commits first —
   for ~ms, a reader sees 101 but not 100. Discipline: (1) the attention claim NEVER uses a
   high-water cursor — it scans the `needs_attention AND attended_at IS NULL` partial index, so a
