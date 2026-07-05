@@ -280,20 +280,27 @@ and obtaining a service token from the platform.
   safe to re-run (idempotent).
 
 **Docker install** — dependencies are baked into the image, so a host-side pip
-won't reach the container. Add the extra to the image and rebuild:
+won't reach the container. Enablement is **stateful**: the choice is persisted in
+the gitignored `.env` as `SKIPPER_VOICE=1`, and every image build honors it (no
+tracked-file edit, so it survives `git pull` and, crucially, `skipper update`):
 
-1. In the `Dockerfile`, right after `RUN pip install -r requirements.txt`, add:
-   ```dockerfile
-   RUN pip install -r requirements-voice.txt \
-       --extra-index-url https://download.pytorch.org/whl/cpu
-   ```
-   Drop the `--extra-index-url` line to build the CUDA/GPU torch instead.
-2. Rebuild and recycle the stack:
+1. Persist the choice and rebuild:
    ```bash
-   ./skipper.sh update
+   ./skipper.sh enable-voice   # writes SKIPPER_VOICE=1 to .env
+   ./skipper.sh update         # rebuilds + recycles the stack with the extra baked in
    ```
+   Setting `SKIPPER_VOICE=1` in `.env` by hand and running `./skipper.sh update`
+   is equally sufficient (useful for scripted/non-interactive installs).
+2. Docker builds install the **CPU** torch wheel. For a CUDA/GPU build you must
+   edit the `Dockerfile`'s voice install step by hand (the `--gpu` flag applies to
+   the native runtime only).
 
-Running `./skipper.sh enable-voice` under Docker prints these same steps.
+Because the flag lives in `.env`, a routine `./skipper.sh update` **keeps** voice
+speaker-ID installed — it is never silently stripped on a rebuild.
+
+**Lost speaker-ID after an update?** If an older Docker install had voice but a
+rebuild dropped it, add `SKIPPER_VOICE=1` to your `.env` and run
+`./skipper.sh update` (or just re-run `./skipper.sh enable-voice`).
 
 **Supported platforms:** anywhere a prebuilt `torch` wheel exists — Linux
 (x86-64 and aarch64) and macOS are the common cases. On an unsupported OS/arch

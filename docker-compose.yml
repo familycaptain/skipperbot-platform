@@ -49,7 +49,13 @@ services:
     restart: always
 
   agent:
-    build: .
+    build:
+      context: .
+      args:
+        # Voice speaker-ID opt-in: interpolated from .env (default 0). Persisted by
+        # `./skipper.sh enable-voice`; the Dockerfile installs requirements-voice.txt
+        # only when 1, so `skipper update` rebuilds honor it with no tracked-file edit.
+        SKIPPER_VOICE: ${SKIPPER_VOICE:-0}
     depends_on:
       db:
         condition: service_healthy

@@ -147,11 +147,13 @@ exit 0
     return path
 
 
-def _run_enable_voice(args, *, runtime="native", venv_py=None):
+def _run_enable_voice(args, *, runtime="native", venv_py=None, env_file=None):
     env = dict(os.environ)
     env["SKIPPER_RUNTIME"] = runtime
     if venv_py is not None:
         env["SKIPPER_VENV_PY"] = venv_py
+    if env_file is not None:
+        env["SKIPPER_ENV_FILE"] = env_file
     return subprocess.run(
         ["bash", SKIPPER_SH, "enable-voice", *args],
         cwd=REPO,
@@ -208,17 +210,56 @@ class EnablePathShape(unittest.TestCase):
         expected_platform = f"{platform.system()} {platform.machine()}"
         self.assertIn(expected_platform, out, "warn must name the platform")
 
-    def test_docker_runtime_prints_rebuild_guidance_and_skips_host_pip(self):
+    def test_docker_runtime_persists_flag_and_skips_host_pip(self):
+        """Docker enable-voice writes SKIPPER_VOICE=1 to .env, points at the rebuild,
+        and never invokes the host venv python or docker (CI-safe)."""
         with tempfile.TemporaryDirectory() as d:
             marker = os.path.join(d, "pip-was-called")
             stub = _write_stub_python(d, torch_ok=False, marker=marker)
-            r = _run_enable_voice([], runtime="docker", venv_py=stub)
+            envf = os.path.join(d, ".env")
+            with open(envf, "w") as f:
+                f.write("SKIPPER_RUNTIME=docker\n")
+            r = _run_enable_voice([], runtime="docker", venv_py=stub, env_file=envf)
             out = r.stdout + r.stderr
             self.assertFalse(
                 os.path.exists(marker), "docker path must NOT invoke the host venv python"
             )
-        self.assertIn("update", out.lower(), "docker path should point at the image rebuild")
-        self.assertRegex(out.lower(), r"rebuild")
+            env_text = open(envf).read()
+        self.assertEqual(r.returncode, 0, out)
+        self.assertEqual(
+            env_text.count("SKIPPER_VOICE=1"), 1,
+            f"docker enable-voice must persist exactly one SKIPPER_VOICE=1 line; got:\n{env_text}",
+        )
+        self.assertIn("update", out.lower(), "docker path should point at ./skipper.sh update")
+
+    def test_docker_enable_is_idempotent(self):
+        """A second enable-voice leaves exactly one SKIPPER_VOICE=1 line; a pre-set
+        flag is preserved as a single line."""
+        with tempfile.TemporaryDirectory() as d:
+            stub = _write_stub_python(d, torch_ok=False)
+            envf = os.path.join(d, ".env")
+            with open(envf, "w") as f:
+                f.write("SKIPPER_RUNTIME=docker\nSKIPPER_VOICE=1\n")
+            _run_enable_voice([], runtime="docker", venv_py=stub, env_file=envf)
+            _run_enable_voice([], runtime="docker", venv_py=stub, env_file=envf)
+            self.assertEqual(open(envf).read().count("SKIPPER_VOICE=1"), 1)
+
+    def test_native_install_persists_flag(self):
+        """A successful native enable-voice (pip runs) persists SKIPPER_VOICE=1;
+        --dry-run is a preview and does NOT persist."""
+        with tempfile.TemporaryDirectory() as d:
+            stub = _write_stub_python(d, torch_ok=False)
+            envf = os.path.join(d, ".env")
+            with open(envf, "w") as f:
+                f.write("SKIPPER_RUNTIME=native\n")
+            # dry-run first: preview only, no persistence
+            _run_enable_voice(["--dry-run"], venv_py=stub, env_file=envf)
+            self.assertNotIn("SKIPPER_VOICE=1", open(envf).read(),
+                             "dry-run must not persist the flag")
+            # real (stubbed) install: persists the flag
+            r = _run_enable_voice([], venv_py=stub, env_file=envf)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertEqual(open(envf).read().count("SKIPPER_VOICE=1"), 1)
 
     def test_enable_voice_listed_in_help(self):
         r = subprocess.run(
