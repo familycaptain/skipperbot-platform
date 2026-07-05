@@ -70,6 +70,19 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install -r requirements.txt
 
+# Voice speaker-ID opt-in extra: installed at build time ONLY when SKIPPER_VOICE=1.
+# The flag is persisted in the gitignored .env by `./skipper.sh enable-voice` and
+# passed through here as a build ARG by docker-compose.yml (${SKIPPER_VOICE:-0}), so
+# every image rebuild (incl. `skipper update`) honors it with no tracked-file edit.
+# Declared AFTER the base `pip install -r requirements.txt` so toggling the flag never
+# invalidates the base install layer cache. Docker builds are CPU-only (native
+# `enable-voice --gpu` handles CUDA); the CPU torch wheel comes from the pytorch index.
+ARG SKIPPER_VOICE=0
+COPY requirements-voice.txt ./
+RUN if [ "$SKIPPER_VOICE" = "1" ]; then \
+        pip install -r requirements-voice.txt --extra-index-url https://download.pytorch.org/whl/cpu; \
+    fi
+
 # ----- Web dependencies (cached separately so changes to JSX/code don't
 #       force a full npm reinstall) -----
 COPY web/package.json web/package-lock.json* ./web/

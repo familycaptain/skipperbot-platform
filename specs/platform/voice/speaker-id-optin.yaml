@@ -1,85 +1,87 @@
 kind: specification
 id: platform.voice.speaker-id-optin
-title: Voice speaker-ID is an opt-in install extra (CPU-only), not a base dependency
+title: Voice speaker-ID is an opt-in install extra whose enablement is STATEFUL across Docker
+  rebuilds (SKIPPER_VOICE in .env), so `skipper update` never strips it
 state: live
-behavior: 'The default install (`skipper.sh` -> `pip install -r requirements.txt`) MUST NOT
-  pull the speaker-ID stack: `resemblyzer` (and its transitive torch) is removed from base
-  `requirements.txt` and lives only in a new opt-in `requirements-voice.txt` (it lists `resemblyzer`
-  and a torch floor; it does NOT hard-pin a CPU-only build, which would forbid GPU). The torch
-  build is the USER''s choice at enable time: `skipper.sh enable-voice` DEFAULTS to the CPU
-  wheel (via `--extra-index-url https://download.pytorch.org/whl/cpu` — works everywhere,
-  smaller/faster, the right default for the majority), a `--gpu` flag installs the CUDA build
-  (default/CUDA index) and `--cpu` forces CPU, and if a compatible torch is ALREADY installed
-  the command honors it rather than overriding. CUDA is never forbidden. The enable path is
-  runtime-aware: NATIVE pip-installs into the venv; DOCKER (the default; deps baked at Dockerfile:67-68)
-  is a documented image rebuild carrying the extra. It requires an existing install (clear
-  error if run before base setup) and is idempotent on re-run. On an unsupported OS/arch (no
-  wheel for the chosen build) it fails with the repo-standard warn naming the platform and
-  linking the supported-platforms docs — never a raw pip traceback. `docs/03-extended-functionality.md`
-  §Voice documents the flow (CPU default + the GPU/pre-installed options), distinguishing
-  the separate skipperbot-voice satellite from this host-side per-member attribution, with
-  a verify step. With the extra absent the platform runs normally (no crash): `speaker_id.available()`
-  is False and every public speaker_id fn no-ops; and when a user asks to enroll/''remember
-  my voice'' while unavailable, the returned message points at the enable path (not a transient-retry
-  hint). Stale ''shipped for everyone'' / ''installs the voice-ID stack'' notes are corrected
-  in `requirements.txt`, `app_platform/voice/speaker_id.py` docstring, and `README.md`.'
+behavior: >
+  The default install (`skipper.sh` -> `pip install -r requirements.txt`) MUST NOT pull the
+  speaker-ID stack: `resemblyzer` (and its transitive torch, ~500MB) lives only in the opt-in
+  `requirements-voice.txt` (it lists `resemblyzer` and a torch floor; it does NOT hard-pin a
+  CPU-only build, which would forbid GPU). Enablement is PERSISTED and REBUILD-SAFE via a single
+  source of truth, `SKIPPER_VOICE` in the gitignored `.env`:
+
+  (A) `./skipper.sh enable-voice` persists `SKIPPER_VOICE=1` into `.env` via set_env (guarded on
+  .env existing). Setting `SKIPPER_VOICE=1` in `.env` by hand is by itself sufficient to enable
+  voice on the next build. --dry-run is a PREVIEW: it prints the pip command and persists nothing.
+
+  (B) NATIVE runtime: a successful enable-voice pip-installs `requirements-voice.txt` into the venv
+  (DEFAULT the CPU wheel via `--extra-index-url .../whl/cpu`; `--gpu` installs the CUDA build; `--cpu`
+  forces CPU; a pre-installed compatible torch is HONORED, not overridden) AND persists the flag.
+  Precondition (venv exists) + idempotent + repo-standard warn on unsupported arch are unchanged.
+
+  (C) DOCKER runtime: enable-voice persists the flag, notes it takes effect on the next rebuild, and
+  points at `./skipper.sh update` — it does NOT invoke docker or a host-venv pip (returns immediately,
+  CI-safe). `docker-compose.yml`'s agent service `build` passes `args: SKIPPER_VOICE: ${SKIPPER_VOICE:-0}`
+  (docker compose interpolates `.env`), so EVERY image build from `skipper` (first run) and
+  `skipper update` receives the flag as a build ARG with no tracked-file edit. The `Dockerfile`
+  declares `ARG SKIPPER_VOICE=0` AFTER the base `RUN pip install -r requirements.txt` (so toggling the
+  flag never invalidates the base pip layer cache), COPYs `requirements-voice.txt`, and a conditional
+  `RUN` referencing the ARG installs `pip install -r requirements-voice.txt --extra-index-url
+  https://download.pytorch.org/whl/cpu` ONLY when `SKIPPER_VOICE=1`. Docker builds are CPU-only (`--gpu`
+  applies to native only; enable-voice warns if `--gpu` is passed on Docker). When the flag is absent/0
+  the built image is behaviorally identical to today (the conditional RUN is a no-op layer; no torch).
+
+  (D) Because the flag lives in `.env` (gitignored, untouched by `git pull` and by image rebuilds), a
+  routine `./skipper.sh update` on a voice-enabled Docker install REBUILDS WITH voice still installed —
+  the regression where an update silently stripped speaker-ID cannot recur.
+
+  With the extra absent the platform runs normally (no crash): `speaker_id.available()` is False and every
+  public speaker_id fn no-ops; an enroll/"remember my voice" request while unavailable points at the enable
+  path. `docs/03-extended-functionality.md` §Voice documents the stateful enable, that Docker builds are
+  CPU-only, and the one-line remediation for an install that lost speaker-ID (add `SKIPPER_VOICE=1` to `.env`,
+  then `./skipper.sh update`, or re-run enable-voice). SKIPPER_VOICE is a BUILD-TIME signal only; no runtime
+  code branches on it (its presence in the container env via env_file is inert).
 implements:
-- requirements.txt — remove `resemblyzer>=0.1.4` (line 67); correct the 62-66 comment.
-- requirements-voice.txt (NEW) — `resemblyzer>=0.1.4` + a torch floor (e.g. `torch>=1.0.1`);
-  NO hard `+cpu` pin (build chosen by the enable command, not the file).
-- 'skipper.sh — new runtime-aware `enable-voice` subcommand: DEFAULT installs the CPU wheel
-  (`--extra-index-url .../whl/cpu`); `--gpu` installs the CUDA build (default index), `--cpu`
-  forces CPU; detect + HONOR a pre-installed compatible torch (don''t override); native pip-into-.venv
-  vs docker documented-rebuild; precondition (venv exists) + idempotent re-run + repo-standard
-  warn on unsupported arch; added to help. Base install step unchanged.'
-- 'docs/03-extended-functionality.md — §Voice: enable steps (CPU default + --gpu/--cpu + honor-preinstalled),
-  satellite-vs-host-side framing, supported platforms, verify.'
-- app_platform/voice/speaker_id.py — docstring (8-11) corrected; no logic change.
-- README.md (~117-119) — correct the 'base install includes the voice/speaker-ID stack (~10-min
-  build)' narrative.
-- app_platform/voice/relay.py — (low) enroll-unavailable message points at the enable path;
-  else unchanged (guards already present).
-- skipper.sh status (or one-time at-use log) — surface speaker-ID available/absent (discoverability).
+- 'skipper.sh — enable_voice() persists SKIPPER_VOICE=1 to .env on both runtimes (guarded on .env);
+  the Docker branch writes the flag + points at `./skipper.sh update` (no docker/host-pip invoke);
+  native writes the flag on a successful pip. Adds a SKIPPER_ENV_FILE test seam.'
+- 'docker-compose.yml — agent service `build` expanded to long form with `args: SKIPPER_VOICE: ${SKIPPER_VOICE:-0}`.'
+- 'Dockerfile — `ARG SKIPPER_VOICE=0` AFTER the base pip layer; COPY requirements-voice.txt; conditional
+  `RUN if [ "$SKIPPER_VOICE" = "1" ]` install of the voice extra (CPU wheel).'
+- 'docs/03-extended-functionality.md — §Voice: stateful Docker enable + remediation one-liner; Docker CPU-only.'
+- requirements.txt / requirements-voice.txt — base free of resemblyzer/torch; extra holds them (unchanged from prior).
+- app_platform/voice/speaker_id.py, relay.py — degradation guards unchanged.
 tests:
 - type: unit
   path: tests/test_voice_speaker_id_optin.py
-  rubric: 'Packaging contract (deterministic, no install): base requirements.txt has NO resemblyzer/torch
-    line; requirements-voice.txt contains `resemblyzer` and a torch floor and does NOT hard-pin
-    a `+cpu` build (must not forbid GPU). Stale ''shipped for everyone''/voice-stack phrases
-    absent from requirements.txt, speaker_id.py, README.md. (Text parse = necessary check,
-    not the torch-free oracle.)'
+  rubric: >
+    Packaging + enable-path (deterministic, no heavy install; SKIPPER_RUNTIME/SKIPPER_VENV_PY/SKIPPER_ENV_FILE
+    seams + a temp .env): base requirements.txt has NO resemblyzer/torch; requirements-voice.txt holds them.
+    DOCKER enable-voice writes exactly one SKIPPER_VOICE=1 line, points at `./skipper.sh update`, and does NOT
+    invoke the host venv python or docker; idempotent (second run + a pre-set flag => one line). NATIVE --dry-run
+    is a preview (prints the requirements-voice CPU pip command, persists nothing); a successful native install
+    persists the flag. --gpu dry-run omits the CPU index; a pre-installed torch is honored; missing venv exits
+    non-zero with a clear message; a stubbed pip failure emits the repo-standard warn. enable-voice is in help.
 - type: unit
-  path: tests/test_voice_speaker_id_optin.py
-  rubric: 'Graceful degradation (regression): with `resemblyzer` import forced to fail, `speaker_id.available()`
-    is False and embed/identify/enroll return None/(None,0.0) without raising.'
-- type: integration
-  path: tests/test_voice_speaker_id_optin.py
-  rubric: 'Enable-path shape + choice semantics (no heavy install, via dry-run): (a) DEFAULT
-    dry-run prints a pip command using the CPU `--extra-index-url .../whl/cpu`; (b) `--gpu`
-    dry-run prints the CUDA/default-index path and does NOT force the cpu index; (c) with
-    a compatible torch already importable, the command HONORS it (skips torch reinstall) —
-    assert via dry-run/log; (d) run before a venv exists exits non-zero with a clear ''run
-    base setup first'' message; (e) pip step stubbed to fail exits non-zero with the repo-standard
-    warn (named platform + docs link), not raw pip output; (f) runtime stubbed to DOCKER emits
-    the image-rebuild guidance and does NOT run a host-venv pip; (g) listed in `skipper.sh`
-    help.'
+  path: tests/test_voice_build_wiring.py
+  rubric: >
+    Static wiring (no build): docker-compose build.args passes `SKIPPER_VOICE: ${SKIPPER_VOICE:-0}`; the
+    Dockerfile declares `ARG SKIPPER_VOICE` AFTER the base `pip install -r requirements.txt`, COPYs
+    requirements-voice.txt, and installs it only under an `if [ "$SKIPPER_VOICE" = "1" ]` guard referencing the
+    pytorch cpu extra-index; base requirements.txt is free of resemblyzer/torch; requirements-voice.txt holds them.
 - type: e2e
   path: (test host, validate-time)
-  rubric: 'REAL torch-free + choice oracle (accept EITHER build; never forbid CUDA): clean
-    base install -> `import torch` FAILS (torch-free) and platform healthy. Then DEFAULT enable
-    -> `speaker_id.available()` True AND torch is a CPU build (`torch.version.cuda is None`)
-    for the no-flag path. Separately assert the GPU choice is AVAILABLE/HONORED: the `--gpu`
-    path targets the CUDA build (verify by the selected index/command since the test host
-    lacks a GPU) and a pre-installed torch is not overridden. Do NOT assert `cuda is None`
-    globally. One-time real install; validate-time only.'
+  rubric: >
+    REAL flagged rebuild oracle: set SKIPPER_VOICE=1 in .env + `./skipper.sh update` -> `import resemblyzer`
+    succeeds in the container and status reports voice speaker-ID installed; then SKIPPER_VOICE=0 + rebuild ->
+    torch-free again (import fails, platform healthy). Dry-runs + static checks alone do NOT satisfy this.
 links: {}
-notes: 'GATE-1 CHANGE APPLIED (operator): torch build is the USER''s choice at enable time
-  — DEFAULT CPU wheel, `--gpu`/`--cpu` flags, and honor a pre-installed torch; acceptance
-  accepts EITHER outcome, CUDA never forbidden (removed the hard `+cpu` pin and the unconditional
-  `cuda is None` assertion). Runtime already CPU-capable (VoiceEncoder(''cpu'')) and graceful.
-  Everything else from the prior approve stands. Two live human forks: (A) Docker enable =
-  rebuild-with-build-arg; (B) subcommand name = ''enable-voice'' (+help line). Doc-home resolved
-  (host-side §Voice; satellite untouched). | Gate-2: validated GREEN on test host (11/11 bound
-  tests pass; base torch-free + healthy; enable-voice dry-run CPU/GPU index selection + docker
-  rebuild-guidance verified). verified=true.'
-verified: true
+notes: >
+  GATE-3 CHANGE re-spec (operator): the prior approach (Docker enable-voice only printed Dockerfile hand-edit
+  steps; nothing persisted) FAILED verification — a production Docker install that had voice for months lost
+  speaker-ID on a routine `skipper update` rebuild. New approach: stateful SKIPPER_VOICE flag in .env + compose
+  build-arg interpolation + conditional Dockerfile install (ARG after the base pip layer); a hand-set flag alone
+  suffices. Out of scope (operator): an automatic previously-enabled-install upgrade guard. Native path + runtime
+  degradation guards unchanged. Prior merge on release: 0c2710a (superseded). verified set true after the Gate-2
+  real flagged rebuild on the test host.
+verified: false

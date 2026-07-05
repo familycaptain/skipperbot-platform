@@ -34,7 +34,9 @@ _real="$(readlink -f "$_src" 2>/dev/null || echo "$_src")"
 REPO="$(cd "$(dirname "$_real")" && pwd)"
 cd "$REPO"
 
-ENV_FILE="$REPO/.env"
+# SKIPPER_ENV_FILE overrides the .env path (used by the bound tests to isolate
+# writes, mirroring the SKIPPER_RUNTIME / SKIPPER_VENV_PY test seams).
+ENV_FILE="${SKIPPER_ENV_FILE:-$REPO/.env}"
 EXAMPLE_ENV="$REPO/.env.example"
 WATCHER_SVC="skipperbot-deploy-watcher"
 
@@ -523,20 +525,21 @@ enable_voice() {
     if [ -z "$runtime" ]; then resolve_runtime; runtime="$RUNTIME"; fi
 
     if [ "$runtime" = "docker" ]; then
-        # Docker bakes Python deps into the image at build time, so a pip run on
-        # the host venv would never reach the container. The supported path is a
-        # documented image rebuild that carries the extra.
-        log "Docker runtime detected — voice speaker-ID is enabled by REBUILDING the image."
-        cat <<'EOF'
-   A host-side pip install cannot reach the container, so add the extra to the
-   image and rebuild:
-     1. In the Dockerfile, after 'RUN pip install -r requirements.txt', add:
-          RUN pip install -r requirements-voice.txt \
-              --extra-index-url https://download.pytorch.org/whl/cpu
-        (drop the --extra-index-url line to build the CUDA/GPU torch instead.)
-     2. Rebuild + recycle the stack:  ./skipper.sh update
-   See docs/03-extended-functionality.md → Voice for the full walkthrough.
-EOF
+        # Docker bakes Python deps into the image at build time, so a host-venv pip
+        # would never reach the container. Instead PERSIST the choice in .env; the
+        # image build reads SKIPPER_VOICE as a build ARG (via docker-compose.yml) and
+        # installs the extra on the next rebuild — so it survives `skipper update`.
+        # Docker builds are CPU-only; --gpu applies to the native runtime only.
+        if [ "$mode" = "gpu" ]; then
+            warn "Docker builds install the CPU torch wheel; --gpu applies to the native runtime only."
+        fi
+        if [ -f "$ENV_FILE" ]; then
+            set_env SKIPPER_VOICE 1
+            ok "Voice speaker-ID enabled — SKIPPER_VOICE=1 written to .env."
+        else
+            warn "No .env found — set SKIPPER_VOICE=1 in .env (run './skipper.sh setup' first)."
+        fi
+        log "It takes effect on the next image rebuild. Rebuild + recycle now with:  ./skipper.sh update"
         return 0
     fi
 
@@ -569,7 +572,10 @@ EOF
 
     log "Enabling voice speaker identification (this can take a few minutes)…"
     if "${pip_cmd[@]}"; then
-        ok "Voice speaker-ID enabled. Verify:"
+        # Persist the choice in .env for parity with the Docker path (single source
+        # of truth); a hand-set SKIPPER_VOICE=1 is equally sufficient.
+        if [ -f "$ENV_FILE" ]; then set_env SKIPPER_VOICE 1; fi
+        ok "Voice speaker-ID enabled (SKIPPER_VOICE=1 written to .env). Verify:"
         printf "   %s -c 'from app_platform.voice import speaker_id; print(speaker_id.available())'\n" "$venv_py"
         printf "   (should print True; then restart Skipper to pick it up).\n"
     else
