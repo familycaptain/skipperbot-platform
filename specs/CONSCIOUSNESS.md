@@ -159,17 +159,16 @@ Context must be **relevance-first, not recency-first** — a naive "last N" fail
 is huge and heterogeneous (interleaved people and domains). For a given event, assemble from several
 sources, ranked into a **token budget**:
 
-1. **Thread** — reconstruct the *logical* thread this event belongs to via tags (`in-reply-to` /
-   `from/to/domain`), not chronology. A scrum reply pulls the scrum prompt it answers **and** the
-   sibling replies. *This is what actually kills the scrum bug* — one log makes it possible, threaded
-   retrieval makes it happen.
-2. **Retrieval** — embedding search over **memory + documents** (and older log) for what's semantically
-   relevant. Top-K.
-3. **Recency** — a bounded recent-activity window ("what has Skipper been doing lately"), summarized if
-   long.
-4. **Structured state** — skill-relevant facts pulled deterministically (goal state for `goals`, the
+1. **Timeline** — the recent log tail PLUS the active thread's older entries, rendered as ONE
+   strictly `seq`-ordered, multi-speaker stream (§12.3-12.4). The scrum reply sees the question it
+   answers, the sibling answers, and everything else that happened in between — in true
+   chronological order. *This is what actually kills the scrum bug.*
+2. **Retrieval** — embedding search over **log-history + memories + documents + knowledge** for
+   what's semantically relevant. Top-K.
+3. **Structured state** — skill-relevant facts pulled deterministically (goal state for `goals`, the
    family roster for `onboarding`, the speaker's profile, etc.).
-5. **Rolling summary** — a maintained digest of the long tail, for continuity without re-reading the log.
+4. **Rolling summary** — a maintained digest of everything OLDER than the timeline window, for
+   continuity without re-reading the log.
 
 ### 4.5 Speak-or-stay-silent
 A voice alarm firing must often do **nothing** (don't spam the family). That decision belongs to the
@@ -545,34 +544,45 @@ Identity + skill: `SOUL.md`/`BEHAVIOR.md` core identity (as today, `config.py:32
 guidance prompt (e.g. the onboarding agenda-walk script, the scrum question script — what today
 lives inside each domain's handler/prompt file). One entity, wearing one skill.
 
-### 12.3 DYNAMIC system message — five sources, fixed order, budgeted
+### 12.3 Context sources — TIMELINE vs REFERENCE (per §18 Q4)
 
-Rendered in this order, each with a token cap (defaults below of a ~12k-token dynamic budget,
-tunable via Settings; unused budget spills to the next source; trim oldest-first within a source):
+The classifying question for every source: *is this part of the live timeline the model must
+interleave, or reference material Skipper consults?* Timeline renders as **native turns**
+(§12.4); reference renders in the **DYNAMIC system block**, explicitly framed as "background —
+not the live conversation." Budgets (of a ~12k-token dynamic budget, tunable via Settings; unused
+budget spills to the next source; trim oldest-first within a source; splits tuned per §18 Q9):
 
-1. **THREAD (~25%)** — if `event.thread_id` (or `reply_to` chain): the full thread, oldest→newest.
-   The scrum reply sees the question it answers and the sibling answers. *Generalizes PM's
-   `_gather_conversation_context` (`pm_domain.py:492`) — then that code dies.*
-2. **CONVERSATION WINDOW (~30%)** — full-fidelity recent exchange with the counterpart
-   (`who_from`/`who_to` = the person), newest N entries. Replaces the in-memory session.
-3. **GLOBAL AWARENESS STRIP (~10%)** — compact one-liners of the log tail across *everyone and
-   everything else* (`[10:02 jacob→skipper: "item 2 done…"] [10:00 pm: checked website goal]`).
-   This is the "one mind that knows what B said while talking to A" — cheap, terse, always on.
-4. **RETRIEVAL (~20%)** — one embedding of the event content, fanned in parallel across
-   **log-history + memories + knowledge + folders** (extends `_retrieve_context`,
+1. **TIMELINE (~55%, native turns)** — ONE strictly `seq`-ordered, multi-speaker slice of the log:
+   the contiguous recent tail, plus the active thread's older entries (when the thread reaches
+   back past the window) spliced in their true `seq` positions with a gap marker. Chronology is
+   correct **by construction** — array order IS log order; there is no cross-representation
+   interleaving to reconstruct. Contains the 1-1 exchange, the thread, AND recent cross-person
+   activity in one stream (the separate "global awareness strip" dissolves into this). Replaces
+   the in-memory session AND PM's `_gather_conversation_context` (`pm_domain.py:492`).
+2. **RETRIEVAL (~20%, system block)** — one embedding of the event content, fanned in parallel
+   across **log-history + memories + knowledge + folders** (extends `_retrieve_context`,
    `chat_domain.py:1127`, adding the log's vector index — the piece that's conspicuously missing
-   today, §10.4). Top-K each, deduped.
-5. **STRUCTURED STATE + ROLLING SUMMARY (~15%)** — the skill's declared providers (goal snapshot
-   for `goals`, roster+agenda for `onboarding`, scrum items for `scrum`, desktop `app_context`
-   for web chat), then the latest `summary` row(s) (global + this person's).
+   today, §10.4). Top-K each, deduped. Timeless facts — genuinely reference.
+3. **STRUCTURED STATE (~15%, system block)** — the skill's declared providers (goal snapshot for
+   `goals`, roster+agenda for `onboarding`, scrum items for `scrum`, desktop `app_context` for
+   web chat). A snapshot of the world, not dialogue.
+4. **ROLLING SUMMARY (~10%, system block)** — the latest `summary` row(s) covering everything
+   OLDER than the timeline window (global + this person's). The window boundary is a budget knob;
+   the principle is fixed: contiguous tail in native turns, everything older summarized.
 
-### 12.4 `exchange` (the message list)
+### 12.4 `exchange` (the message list) — the log tail AS native turns
 
-The triggering event as the final user-role message (a person's words, or a synthetic alarm/event
-prompt like "⏰ scrum: it's 10:00 — run the standup"), preceded by nothing: history lives in the
-DYNAMIC block, keeping the array short and the prefix cache warm. (If practice shows models track
-dialogue better with a short native turn array, the CONVERSATION WINDOW may render as real turns
-instead — implementation freedom, contract unchanged.)
+The message array IS the timeline (§12.3 source 1), read straight off the log in `seq` order,
+multi-speaker: every non-Skipper `message` renders as a `user` turn carrying its speaker (the
+`name` field / a `[jacob]:` prefix — standard group-chat modeling); every Skipper `message`
+renders as `assistant`; compact `activity`/`event` entries render as bracketed one-liners in
+sequence position. The triggering event is the **final** turn (a person's words, or a synthetic
+alarm prompt like "⏰ chores: it's 7:00 — morning round"). This is the prompt-level realization of
+the one-chat-room model: the array is Skipper reading its own timeline.
+
+Consequences accepted: prefix caching loses a little (the static identity+skill block — the
+expensive part — still caches; the window churns per turn), and mis-addressing is guarded by the
+named final turn + skill guidance ("respond to {person}") — watch in Phase 1.
 
 ### 12.5 What this absorbs (and retires)
 
@@ -580,8 +590,8 @@ instead — implementation freedom, contract unchanged.)
 |---|---|
 | `_inject_proactive_dm_context` + `pending_action` reply plumbing | **dissolved** — the thread IS the pending state |
 | goals `_observe`/`_build_user_prompt` | becomes the `goals` skill's structured-state provider + guidance |
-| PM `_gather_conversation_context` | superseded by source 1 |
-| in-memory `sessions` dict + `load_recent_turns` bootstrap | superseded by source 2 |
+| PM `_gather_conversation_context` | superseded by the TIMELINE (source 1) |
+| in-memory `sessions` dict + `load_recent_turns` bootstrap | superseded by the TIMELINE (source 1) |
 | `_inject_onboarding_context` | becomes `onboarding` skill guidance (static) + its state provider |
 | `_retrieve_context` | extended into source 4 |
 | `_inject_app_context`, `_inject_voice_context`, behavior rules, channel blocks | kept — surface/skill providers |
@@ -593,8 +603,8 @@ instead — implementation freedom, contract unchanged.)
   walk, no 120-tool routing, no multi-turn planning loop — this is the structural fix for the
   45–60s greeting (§10.4).
 - Voice skills default to the fast tier for speak-or-silent decisions, escalating to smart only
-  when acting; skip-decisions should cost near-zero (source 3 + 5 alone may suffice — an
-  implementation option: a cheap pre-gate before full assembly).
+  when acting; skip-decisions should cost near-zero (summary + structured state alone may suffice
+  — an implementation option: a cheap pre-gate before full assembly).
 
 ---
 
@@ -803,9 +813,14 @@ skill = {
    migration); code/manifest = versioned skill definitions (`skills:` block, loader-registered).
    Legacy *_tool columns nullable now, dropped Phase 5; cosmetic renames deferred to Phase 5.
    Skipper self-created alarms bind to a generic `custom` skill. See §14.
-4. **Exchange rendering (§12.4).** Position: history in the DYNAMIC block, single user-role
-   trigger message. Alternative: render the conversation window as native turns if model behavior
-   demands it.
+4. **Exchange rendering — RESOLVED (operator).** Unified chronological native-turn window: the
+   whole recent timeline (1-1 exchange + thread + cross-person activity) is ONE strictly
+   `seq`-ordered multi-speaker turn array — order correct by construction, answering the
+   operator's interleaving concern (splitting the timeline across system block + native turns
+   would force error-prone cross-representation ordering). The system block holds only genuine
+   reference (retrieval, structured state, pre-window summary). The "global awareness strip"
+   dissolves into the window. See §12.3-12.4. Interaction with Q7 (voice native history) flagged
+   there.
 5. **Summary cadence.** Position: summarize when unsummarized span > ~150 events or ~24h,
    whichever first; per-person summaries only for people active in the span.
 6. **Do subconscious skills log `activity` rows?** Position: yes, sparse (e.g. one per
