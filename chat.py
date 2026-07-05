@@ -162,10 +162,24 @@ async def process_chat(
     # --- Dispatch to chat domain via thinking scheduler (priority-0) ---
     from thinking_scheduler import dispatch_chat
 
+    # Phase 1 (specs/CONSCIOUSNESS.md §13): when `consciousness_chat` is on, the
+    # conversation history is the LOG TIMELINE — one seq-ordered multi-speaker
+    # stream from the consciousness log — instead of the in-memory session.
+    # The sessions dict is still maintained above for instant flip-back.
+    _session_for_request = sessions[user_id]
+    try:
+        from app_platform.context import consciousness_chat_enabled, build_chat_timeline
+        if consciousness_chat_enabled():
+            _history = await asyncio.to_thread(build_chat_timeline, user_id)
+            _session_for_request = _history + [{"role": "user", "content": user_message}]
+            logger.debug("SESSION [%s]: log-timeline history (%d msgs)", user_id, len(_history))
+    except Exception:
+        logger.warning("SESSION [%s]: log-timeline unavailable — legacy session", user_id, exc_info=True)
+
     request = ChatRequest(
         user_id=user_id,
         user_message=user_message,
-        session_messages=sessions[user_id],
+        session_messages=_session_for_request,
         turn_id=current_turn_id,
         channel=channel,
         app_context=app_context,
@@ -187,6 +201,7 @@ async def process_chat(
     # re-executes the previous turn's write tool (e.g. re-adding a to-do). Pairs with the
     # "Don't Repeat Completed Actions" rule in BEHAVIOR.md.
     _stored = response_text or ""
+    _writes: set[str] = set()
     try:
         _WRITE_PREFIXES = ("add_", "create_", "send_", "update_", "set_", "log_", "delete_",
                            "remove_", "save_", "mark_", "schedule_", "connect_", "revise_")
@@ -244,7 +259,10 @@ async def process_chat(
                     shadow_log_event, kind="message", who_from="skipper", who_to=user_id,
                     domain="chat", surface=channel, content=response_text,
                     reply_to=(_inbound or {}).get("id"),
-                    payload={"chat_turn_id": current_turn_id},
+                    # write_actions -> the timeline re-renders the anti-re-execution
+                    # marker the legacy session stored inline (§12.4).
+                    payload={"chat_turn_id": current_turn_id,
+                             **({"write_actions": list(_writes)} if _writes else {})},
                     pre_attended_by="legacy-pipeline",
                 )
         except Exception:

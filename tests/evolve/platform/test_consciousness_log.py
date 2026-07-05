@@ -157,3 +157,75 @@ class ShadowHooksPresent(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TimelineRendering(unittest.TestCase):
+    """Phase 1 (§12.4): the log tail as one multi-speaker native-turn array."""
+
+    def setUp(self):
+        from app_platform import context as X
+        self.X = X
+
+    def _row(self, **kw):
+        base = dict(kind="message", who_from="rodney", who_to="skipper",
+                    content="hi", payload=None)
+        base.update(kw)
+        return base
+
+    def test_focal_person_plain_user_turn(self):
+        m = self.X.render_event(self._row(), "rodney")
+        self.assertEqual(m, {"role": "user", "content": "hi"})
+
+    def test_other_person_is_speaker_tagged(self):
+        m = self.X.render_event(self._row(who_from="jacob"), "rodney")
+        self.assertEqual(m["role"], "user")
+        self.assertTrue(m["content"].startswith("[jacob → skipper]:"))
+
+    def test_skipper_to_focal_is_plain_assistant(self):
+        m = self.X.render_event(
+            self._row(who_from="skipper", who_to="rodney", content="hello"), "rodney")
+        self.assertEqual(m, {"role": "assistant", "content": "hello"})
+
+    def test_skipper_to_other_is_addressee_tagged(self):
+        m = self.X.render_event(
+            self._row(who_from="skipper", who_to="jacob", content="chores!"), "rodney")
+        self.assertEqual(m["role"], "assistant")
+        self.assertTrue(m["content"].startswith("[to jacob]:"))
+
+    def test_write_actions_render_completed_marker(self):
+        m = self.X.render_event(
+            self._row(who_from="skipper", who_to="rodney", content="done",
+                      payload={"write_actions": ["add_todo"]}), "rodney")
+        self.assertIn("✓ Completed this turn", m["content"])
+        self.assertIn("add_todo", m["content"])
+
+    def test_activity_event_one_liners(self):
+        a = self.X.render_event(self._row(kind="activity", who_from="skipper",
+                                          who_to=None, content="checked goal X"), "rodney")
+        self.assertEqual(a["role"], "assistant")
+        self.assertTrue(a["content"].startswith("[activity]"))
+        e = self.X.render_event(self._row(kind="event", who_from="system",
+                                          who_to="rodney", content="rodney connected"), "rodney")
+        self.assertEqual(e["role"], "user")
+        self.assertTrue(e["content"].startswith("[system event]"))
+
+    def test_chronology_is_array_order(self):
+        rows = [
+            self._row(content="A: msg1"),
+            self._row(who_from="jacob", content="B: between"),
+            self._row(content="A: msg2"),
+        ]
+        with mock.patch("app_platform.consciousness.tail", return_value=rows):
+            out = self.X.build_chat_timeline("rodney")
+        # boundary + 3 messages, interleaved exactly in log order (Q4)
+        self.assertEqual(len(out), 4)
+        self.assertIn("timeline", out[0]["content"].lower())
+        self.assertIn("msg1", out[1]["content"])
+        self.assertIn("between", out[2]["content"])
+        self.assertIn("msg2", out[3]["content"])
+
+    def test_chat_seam_present(self):
+        src = _read("chat.py")
+        self.assertIn("consciousness_chat_enabled", src)
+        self.assertIn("build_chat_timeline", src)
+        self.assertIn("write_actions", src)
