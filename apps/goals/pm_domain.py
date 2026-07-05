@@ -110,6 +110,23 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
     # the turn runs through the attention system as the pm SKILL.
     if _consciousness_pm_enabled():
         from app_platform.consciousness import log_event
+        # De-stack (soak finding: two full sweeps 8 minutes apart): never log a
+        # new owed pm alarm while one is still unattended, and never within
+        # 15 minutes of the last one — one sweep per alarm, alarms well apart.
+        from data_layer.db import fetch_one
+        recent = await asyncio.to_thread(
+            fetch_one,
+            "SELECT id FROM consciousness_log "
+            "WHERE kind='event' AND domain='pm' AND payload->>'alarm' = 'pm' "
+            "  AND (attended_at IS NULL "
+            "       OR created_at > now() - interval '15 minutes') "
+            "ORDER BY seq DESC LIMIT 1")
+        if recent:
+            return {"trigger": "timer",
+                    "input_summary": "pm alarm suppressed (recent/pending sweep)",
+                    "context_snapshot": {}, "reasoning": f"alarm {recent['id']} still fresh",
+                    "actions_taken": [], "memories_extracted": [], "model_used": "skip",
+                    "tokens_used": 0, "next_check_seconds": 1800}
         row = log_event(kind="event", who_from="system", domain="pm",
                         content="⏰ pm: review goals & projects",
                         payload={"alarm": "pm"}, needs_attention=True)
@@ -1227,6 +1244,19 @@ _PM_SKILL_GUIDANCE = (
     "to do that work here; update_working_memory / resolve_state / expire_state "
     "to keep your PM state tidy. Doing NOTHING is a valid outcome — only act "
     "where a PM genuinely would."
+    "\n\nTIMING — read the [time] stamps on every timeline line and the current "
+    "time in the alarm, and reason about elapsed time before you speak: "
+    "(1) If someone said they WILL do something at a future time (\"tomorrow "
+    "morning\", \"next week\"), it has NOT happened yet — never ask how it went "
+    "or whether they did it until that time has clearly passed. A good PM does "
+    "not nag ahead of the plan; note the commitment in working memory with WHEN "
+    "to follow up, and stay silent until then. "
+    "(2) If your own recent message is still unanswered, do not re-ask or "
+    "re-nudge — minutes of silence means they're busy, not that they forgot. "
+    "(3) The timeline is the freshest truth: when an old memory, note, or "
+    "pending action conflicts with what someone said more recently in the "
+    "timeline, the timeline wins — update or expire the stale state instead of "
+    "repeating it back."
 )
 
 _SEND_MESSAGE_TOOL_PM = {
@@ -1326,12 +1356,16 @@ async def pm_skill_runner(event: dict) -> dict:
     tools = [_SEND_MESSAGE_TOOL_PM, _SCHEDULE_GOAL_WORK_TOOL,
              UPDATE_WORKING_MEMORY_TOOL, RESOLVE_STATE_TOOL, EXPIRE_STATE_TOOL]
 
+    _now = datetime.now(get_timezone())
+    trigger = (f"[alarm] ⏰ pm review time — it is now {_now:%A, %B} {_now.day}, "
+               f"{_now:%Y, %I:%M %p}. Sweep, follow up, route work — respecting "
+               f"the TIMING rules. Silence is fine.")
     await agent_loop.run(
         messages=[
             {"role": "system", "content": _PM_SKILL_GUIDANCE},
             {"role": "system", "content": "STRUCTURED PM STATE:\n" + state},
             *timeline,
-            {"role": "user", "content": "[alarm] ⏰ pm review time — sweep, follow up, route work. Silence is fine."},
+            {"role": "user", "content": trigger},
         ],
         tools=tools, tier="smart", max_turns=4, max_tool_calls=10,
         tool_dispatch=_dispatch,

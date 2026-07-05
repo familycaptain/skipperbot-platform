@@ -40,7 +40,9 @@ _SUMMARY_GUIDANCE = (
     "a rolling summary. You get the PREVIOUS summary and the NEW events since. "
     "Write the updated summary: carry forward still-relevant context and open "
     "loops from the previous summary, fold in what the new events add, drop "
-    "what's resolved or stale. Dense, factual, third-person, no preamble, "
+    "what's resolved or stale. Keep concrete dates and times that matter "
+    "(deadlines, planned follow-ups, when things happened) — downstream readers "
+    "reason about timing from them. Dense, factual, third-person, no preamble, "
     "under 250 words."
 )
 
@@ -131,10 +133,12 @@ def _covers_to(summary_row) -> int:
 
 
 def _render_span(rows: list[dict]) -> str:
+    from app_platform.context import event_stamp
     lines = []
     for r in rows:
         who = r["who_from"] + (f"→{r['who_to']}" if r.get("who_to") else "")
-        lines.append(f"[{r['kind']}/{r['domain']}] {who}: {(r['content'] or '')[:200]}")
+        lines.append(f"{event_stamp(r)}[{r['kind']}/{r['domain']}] {who}: "
+                     f"{(r['content'] or '')[:200]}")
     return "\n".join(lines)
 
 

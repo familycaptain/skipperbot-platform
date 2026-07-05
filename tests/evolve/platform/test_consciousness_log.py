@@ -420,3 +420,71 @@ class Phase5aCutover(unittest.TestCase):
                   "apps/goals/handlers.py", "apps/goals/pm_domain.py",
                   "apps/goals/domain.py"):
             self.assertNotIn('scope="platform", default=False', _read(f), f)
+
+
+class TimeAwareness(unittest.TestCase):
+    """Soak finding: the timeline was TIME-BLIND — the model saw order but not
+    elapsed time, so the PM asked about outcomes of plans whose stated time
+    ("tomorrow morning") had not arrived, re-nudged an 8-minute-old unanswered
+    question, and trusted a stale memory over fresher timeline statements."""
+
+    def test_every_timeline_line_is_time_stamped(self):
+        src = _read("app_platform/context.py")
+        self.assertIn("def event_stamp", src)
+        # all render branches carry the stamp
+        self.assertGreaterEqual(src.count("{stamp}"), 5)
+
+    def test_boundary_teaches_temporal_reasoning(self):
+        src = _read("app_platform/context.py")
+        self.assertIn("TIME AWARENESS", src)
+        self.assertIn("has NOT happened yet", src)
+        self.assertIn("timeline wins", src)
+        # the NOW anchor rides with the boundary
+        self.assertIn("current date/time NOW", src)
+
+    def test_pm_skill_has_timing_rules_and_now_anchor(self):
+        src = _read("apps/goals/pm_domain.py")
+        self.assertIn("TIMING", src)
+        self.assertIn("never ask how it went", src)
+        self.assertIn("it is now", src)                   # alarm trigger carries NOW
+
+    def test_pm_alarms_do_not_stack(self):
+        src = _read("apps/goals/pm_domain.py")
+        self.assertIn("attended_at IS NULL", src)          # pending alarm blocks a new one
+        self.assertIn("interval '15 minutes'", src)        # recent sweep blocks a new one
+
+    def test_summarizer_preserves_dates(self):
+        src = _read("app_platform/summarizer.py")
+        self.assertIn("event_stamp", src)                  # span lines are stamped
+        self.assertIn("concrete dates", src)               # guidance says keep them
+
+    @staticmethod
+    def _fake_time_module():
+        # app_platform.time transitively imports psycopg2 — stub it (DB-free suite)
+        import types
+        from zoneinfo import ZoneInfo
+        m = types.ModuleType("app_platform.time")
+        m.get_timezone = lambda user_id=None: ZoneInfo("America/Chicago")
+        return m
+
+    def test_event_stamp_renders_local_time(self):
+        import sys
+        from datetime import datetime, timezone
+        from app_platform import context as C
+        row = {"created_at": datetime(2026, 7, 5, 17, 18, tzinfo=timezone.utc)}
+        with mock.patch.dict(sys.modules, {"app_platform.time": self._fake_time_module()}):
+            s = C.event_stamp(row)
+            self.assertEqual(s, "[Sun Jul 5, 12:18 PM] ")
+        self.assertEqual(C.event_stamp({"created_at": None}), "")
+
+    def test_render_event_prefixes_the_stamp(self):
+        import sys
+        from datetime import datetime, timezone
+        from app_platform import context as C
+        row = {"kind": "message", "who_from": "tyler", "who_to": "skipper",
+               "content": "I broke the lamp",
+               "created_at": datetime(2026, 7, 5, 17, 18, tzinfo=timezone.utc)}
+        with mock.patch.dict(sys.modules, {"app_platform.time": self._fake_time_module()}):
+            msg = C.render_event(row, "katie")
+        self.assertEqual(msg["role"], "user")
+        self.assertTrue(msg["content"].startswith("[Sun Jul 5, 12:18 PM] [tyler → skipper]:"))

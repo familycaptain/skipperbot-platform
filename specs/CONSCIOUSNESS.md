@@ -299,8 +299,27 @@ host); prod untouched at the `pre-consciousness` tag.
   summaries with the invariant holding, **beyond-window recall works** ("what happened with the
   lamp?" answered correctly from deep memory), cl- provenance confirmed on fresh memories.
 
-**Next: Phase 5** (cutover + demolition: web scrollback → log projection, end the double-write
-after a bake period, drop legacy columns/rows, tag `consciousness-v1`). PAUSED per operator.
+**Phase 5a (cutover)** — DONE, promoted to main and live on prod: history projection
+(`consciousness_history` — /api/chat/history reads the log; tool calls hydrated from chat_turns
+during the double-write bake), voice Q7 (utterance rows pre-attended by `voice-session`, both
+voice instruction builders seed from the timeline), all `consciousness_*` flags default TRUE
+(rollback = per-install flag flip until 5b). Prod backfill: 5,799 chat_turns → 7,789 events;
+subconscious digesting real history. **Soaking for several days before 5b (demolition).**
+
+**Soak findings (fixed during the soak):**
+- **The timeline was TIME-BLIND** (§12.4 amendment): rendered turns carried order but no
+  timestamps, so a skill could not distinguish "8 minutes ago" from "3 days ago" — the PM asked
+  whether a plan stated for *tomorrow* had been done yet, 8 minutes after it was stated. Fix:
+  every rendered timeline line now opens with a local-time stamp (`[Sun Jul 5, 12:18 PM]`), the
+  boundary carries a NOW anchor + a TIME AWARENESS rule (future plans have NOT happened; don't
+  re-ask a recent unanswered question; the timeline outranks older memories/notes), the PM skill
+  got explicit TIMING guidance + NOW in its alarm trigger, and summarizer spans are date-stamped
+  with guidance to preserve concrete dates.
+- **PM alarms could stack** (two full sweeps 8 minutes apart): the alarm producer now skips when
+  a pm alarm is still unattended or the last one is under 15 minutes old.
+
+**Next: Phase 5b** (demolition: end the double-write after the scrollback bake, drop legacy
+plumbing/columns/rows, tag `consciousness-v1`). GATED on the prod soak + operator go.
 
 ## 9b. Design reference
 

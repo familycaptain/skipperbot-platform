@@ -60,7 +60,18 @@ TIMELINE_BOUNDARY = (
     "(self-contained).  BAD → \"It'll be okay, we can get another one.\" (Katie "
     "has no idea what \"another\" means). And I always reply to what THIS person "
     "actually said — I never answer someone else's question in this person's "
-    "chat or address the wrong person.]"
+    "chat or address the wrong person. "
+    "\n\n*** TIME AWARENESS ***  Every line below starts with a [time] stamp — "
+    "my memory's notation (I NEVER write such stamps in my own replies). I use "
+    "the stamps plus the current time to reason about timing: how long ago "
+    "something was said, whether a planned time has arrived. If someone said "
+    "they WILL do something at a future time (\"tomorrow\", \"next week\"), it "
+    "has NOT happened yet — I do not ask how it went or whether they did it "
+    "until that time has clearly passed. If I asked a question recently and it "
+    "is still unanswered, I do not re-ask it minutes later — silence means "
+    "they're busy, not that they didn't hear. And when an old note or memory "
+    "conflicts with something said more recently in this timeline, the "
+    "timeline wins — it is newer.]"
 )
 
 _COMPLETED_TMPL = (
@@ -104,6 +115,25 @@ def _payload(row: dict) -> dict:
     return {}
 
 
+def event_stamp(row: dict) -> str:
+    """Compact local-time stamp for a log row — the timeline's temporal anchor.
+
+    Without stamps the model sees ORDER but not ELAPSED TIME: "I'll text Brian
+    tomorrow" said 8 minutes ago reads the same as 3 days ago, so it asks about
+    outcomes of plans whose time hasn't arrived (a live soak finding). The
+    TIMELINE_BOUNDARY explains the notation and forbids echoing it in replies.
+    """
+    ts = row.get("created_at")
+    if not ts:
+        return ""
+    try:
+        from app_platform.time import get_timezone
+        local = ts.astimezone(get_timezone())
+        return f"[{local:%a %b} {local.day}, {local:%I:%M %p}] "
+    except Exception:
+        return ""
+
+
 def render_event(row: dict, focal_person: str) -> Optional[dict]:
     """Render ONE log row as a native-turn message dict, or None to skip."""
     kind = row.get("kind")
@@ -112,6 +142,7 @@ def render_event(row: dict, focal_person: str) -> Optional[dict]:
     content = row.get("content") or ""
     if not content:
         return None
+    stamp = event_stamp(row)
 
     if kind == "message":
         if who_from == SKIPPER:
@@ -121,18 +152,18 @@ def render_event(row: dict, focal_person: str) -> Optional[dict]:
                 text += _COMPLETED_TMPL.format(names=", ".join(sorted(names)))
             if who_to and who_to != focal_person:
                 text = f"[to {who_to}]: {text}"
-            return {"role": "assistant", "content": text}
+            return {"role": "assistant", "content": f"{stamp}{text}"}
         # a person spoke
         if who_from == focal_person:
-            return {"role": "user", "content": content}
-        return {"role": "user", "content": f"[{who_from} → skipper]: {content}"}
+            return {"role": "user", "content": f"{stamp}{content}"}
+        return {"role": "user", "content": f"{stamp}[{who_from} → skipper]: {content}"}
 
     if kind == "activity":
-        return {"role": "assistant", "content": f"[activity] {content}"}
+        return {"role": "assistant", "content": f"{stamp}[activity] {content}"}
     if kind == "event":
-        return {"role": "user", "content": f"[system event] {content}"}
+        return {"role": "user", "content": f"{stamp}[system event] {content}"}
     if kind == "summary":
-        return {"role": "user", "content": f"[summary of earlier] {content}"}
+        return {"role": "user", "content": f"{stamp}[summary of earlier] {content}"}
     return None
 
 
@@ -149,7 +180,16 @@ def build_chat_timeline(person: str, limit: Optional[int] = None,
     from app_platform.consciousness import tail
 
     person = (person or "").lower().strip()
-    out: list[dict] = [{"role": "assistant", "content": TIMELINE_BOUNDARY}]
+    # The NOW anchor: stamps are useless without knowing what time it is now.
+    try:
+        from datetime import datetime
+        from app_platform.time import get_timezone
+        _now = datetime.now(get_timezone())
+        now_line = (f"\n\n[The current date/time NOW is "
+                    f"{_now:%A, %B} {_now.day}, {_now:%Y, %I:%M %p}.]")
+    except Exception:
+        now_line = ""
+    out: list[dict] = [{"role": "assistant", "content": TIMELINE_BOUNDARY + now_line}]
 
     # Phase 4 (§12.3 source 4): the latest rolling summaries render first, and
     # the verbatim window starts where the global summary ends — the NO-GAP
