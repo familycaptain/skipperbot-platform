@@ -427,6 +427,27 @@ the jobs dispatcher's claim pattern, `FOR UPDATE SKIP LOCKED`.) Subconscious ski
 | `thinking_log` rows | unchanged (audit); the *meaningful outcome* additionally logs one `activity` row |
 | chores/bounty/scrum job sends | all become `log_event(message, …)` through the one writer — kills the three send patterns and the reply-state fragmentation (§10.1) |
 
+### 11.7 Keys & linkage
+
+**PK = `id`** (`cl-<8hex>`); **`seq` is `UNIQUE NOT NULL`** and purely positional. Rule: *identity
+references use `id`* (prefix-typed, resolvable via the `entity_types` registry); *ordering and
+ranges use `seq`* (cursors, windows, a summary's covered span). Nothing FKs to `seq`.
+
+Inbound links to `cl-` rows (all **soft references** — plain text ids, no FK constraints, matching
+house convention for append-only core tables):
+
+- **self:** `reply_to` → parent message id; `thread_id` → thread-root id; `summary` rows carry
+  `payload.covers_from_seq/covers_to_seq` (a `seq` range).
+- **`memories.source_chat_id`** → the `cl-` event a distilled memory came from (provenance; today
+  this field holds `c-`/`tl-` ids — new memories point at the log). `related_entities[]` may also
+  hold `cl-` ids.
+- **`app_notifications.notifications.source_type/source_id`** = `'consciousness'`/`cl-` id — the
+  transport receipt for an outbound `message`; delivery status stays in the app, linked back.
+- **outbound from the log:** `activity.payload.thinking_log_id` → the verbose `tl-` audit row;
+  migration-era `message.payload.chat_turn_id` → the double-written `c-` row (legacy table
+  untouched).
+- **`entity_types`** registers `cl-` → `consciousness_log` so tools resolve log ids like any entity.
+
 ---
 
 ## 12. `assemble_context(event, skill, budget)` — the contract (draft)
