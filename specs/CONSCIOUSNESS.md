@@ -385,6 +385,7 @@ on `release`. If the rebuild goes badly, prod rolls back to the `pre-consciousne
 | `who_from` | `text NOT NULL` | `rodney`, `jacob`, `skipper`, `system` |
 | `who_to` | `text` | recipient for messages; NULL for internal entries |
 | `domain` | `text NOT NULL` | producing/handling skill: `chat`, `onboarding`, `goals`, `pm`, `scrum`, `chores`, `system`, … |
+| `lane` | `text NOT NULL` | **derived by `log_event()`, never caller-supplied**: `person:<who>` for messages/connection events, `domain:<domain>` for alarms — the serialization key (§15) |
 | `surface` | `text` | `web` \| `voice` \| `discord` \| `mobile` \| NULL (internal) |
 | `reply_to` | `text` | immediate parent `cl-` id (conversational linkage) |
 | `thread_id` | `text` | logical thread key (§11.4) — one indexed query returns a whole thread |
@@ -396,7 +397,7 @@ on `release`. If the rebuild goes badly, prod rolls back to the `pre-consciousne
 | `attended_at` | `timestamptz` | when the conscious turn that processed it completed |
 
 Indexes: `(seq)` unique; `(who_to, seq DESC)`; `(who_from, seq DESC)`; `(thread_id, seq)`;
-`(domain, seq DESC)`; partial `(seq) WHERE needs_attention AND attended_at IS NULL`; ivfflat
+`(domain, seq DESC)`; partial `(lane, seq) WHERE needs_attention AND attended_at IS NULL` (drives the per-lane claim); ivfflat
 cosine on `embedding`.
 
 ### 11.3 Kinds
@@ -672,6 +673,13 @@ skill = {
   - a turn that decides to SEND to person P acquires P's lane for the send (no interleaved
     double-speak), even if it ran in a domain lane.
   - when the global cap is saturated, inbound `message`s get admission priority over alarms.
+- **Where lanes are defined:** (a) the lane key is a **pure function** in platform core
+  (`lane_for(event)`) — apps/skills can never redefine coordination semantics; (b) it is
+  **persisted** as the derived `lane` column (§11.2), set by `log_event()` at append, making the
+  claim query one statement (oldest unattended per non-busy lane) and lanes observable in the log;
+  (c) **enforcement is in-memory** — per-lane `asyncio.Lock`s in the (single-process) attention
+  pool. Correctness never depends on the locks: restart-safety comes from the log itself
+  (unattended rows are the queue; locks evaporate harmlessly with the process).
 - Each turn: claim → snapshot-read → `assemble_context` → run the skill's bounded loop → append
   results (`message`/`activity` rows) → stamp `attended_at`. Failures append an `activity` error
   note and stamp `attended_at` with error payload after N retries (never wedge the queue).
