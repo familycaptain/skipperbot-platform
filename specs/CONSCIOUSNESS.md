@@ -315,13 +315,18 @@ Discord DM written to no store — replies are fully context-blind). A user repl
 | **6. Single attention** | Priority-0 queue + chat preemption; jobs claim machinery | One ordered conscious queue consuming messages+alarms; collapse the three polling loops; subconscious stays async |
 | **Speak-or-stay-silent (§4.5)** | Scattered holds: `_dm_on_hold`, tour gates, per-cycle caps, greet-once claim | One decision point inside the conscious turn |
 
-### 10.6 The one open storage decision
+### 10.6 The storage decision — DECIDED: new spine
 
-**Evolve `chat_turns`, or new spine?** Grounded facts: `chat_turns`'s grain is wrong
-(user+assistant pair-rows, no event tags) and it is load-bearing for session bootstrap, the
-history endpoint, embeddings, and the digest queue — mutating it in place is high-risk.
-`app_events` already has the right *shape* (append-only, typed, ordered) and zero consumers.
-**Leaning:** a new `consciousness log` (either a hardened `app_events` or a purpose-built
-table) as the spine; `chat_turns` becomes a legacy projection during migration, kept in
-lockstep by the log's writer until surfaces are cut over. To be decided with the operator
-before implementation.
+**Operator decision:** `chat_turns` is a request/response structure — right for chat, wrong for
+a consciousness that contains events and activities. We build a **new "thing"** (the
+consciousness log) as the spine and **hook chat into it**. `chat_turns` keeps serving the chat
+surface (session bootstrap, history endpoint, embeddings, digest queue) and becomes one
+producer/projection of the log during migration; surfaces cut over incrementally.
+
+### 10.7 The build baseline
+
+Clean cut point established before any consciousness code: `release` was merged to `main`
+(zero conflicts), both branches identical at the merge commit, tagged **`pre-consciousness`**.
+Prod (skipper-pi) was deployed to that commit and smoke-tested clean. The Evolve loop is
+**stopped** for the duration of this re-architecture; all consciousness work happens directly
+on `release`. If the rebuild goes badly, prod rolls back to the `pre-consciousness` tag.
