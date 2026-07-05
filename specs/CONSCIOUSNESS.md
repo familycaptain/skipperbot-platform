@@ -236,7 +236,36 @@ mechanics → §15 + §18 Q1; in-flight reconciliation → §17. The live list i
 - Supersedes/reconciles: `specs/THINKING.md`; touches `specs/ONBOARDING.md`,
   `specs/PROACTIVE_MESSAGING.md`.
 
-## 9. Next Step
+## 9. Build Progress
+
+**Phase 0 (spine, silently)** — DONE, live on the test host: `consciousness_log` migration,
+`log_event()` writer, shadow writes from every producer, idempotent backfill (129 chat_turns →
+130 events, re-run adds 0). Product byte-identical.
+
+**Phase 1 (one mind for chat)** — DONE, verified: `consciousness_chat` flag → chat history is the
+log timeline (one seq-ordered multi-speaker native-turn array, §12.4). Live proof: Katie tells
+Skipper X, Tyler tells Skipper Y (separate conversations); the primary asks "what did the kids
+say?" and Skipper answers both correctly — cross-person awareness, the first half of the scrum bug
+dead.
+
+**Phase 2 (attention system + chores skill)** — DONE, the scrum-shaped milestone PASSED on the
+test host: alarm event → attention runs the chores skill → per-kid messages in parallel person
+lanes, each in its own thread with chore IDs → both kids reply through attention, each resolved in
+its own lane → **"which kids finished a chore, and which?" answered correctly from the log alone**
+("Katie — Restock towels `ch-93b242f0`, Tyler — Vacuuming `ch-aa2072fe`"). The scrum bug is
+structurally dead: one log, one context assembly, no reply-handler hand-off to fumble.
+Implementation notes surfaced & fixed: atomic `SKIP LOCKED` claim (§11.5 — a plain SELECT
+double-dispatched across workers), the claim must COMMIT (fetch_all rolled it back → infinite
+reprocessing), platform-scoped flag reads, within-turn send idempotency. **Open (Phase 3 tuning,
+not a blocker):** the chat skill answering a kid's "I did my chore" is unfocused (sees the whole
+timeline) — skill guidance will tighten it; fast-tier chores skill occasionally messages a subset
+of kids. All Phase 0-2 code gated behind `consciousness_*` settings (OFF everywhere but the test
+host); prod untouched at the `pre-consciousness` tag.
+
+**Next: Phase 3** (all voice skills converge — onboarding as a focus overlay, goals→goal_work
+jobs, pm sweep/router) — PAUSED per operator.
+
+## 9b. Design reference
 
 Design complete and operator-reviewed — all ten §18 questions resolved (Q1 laned concurrency,
 Q2 chores-first, Q3 registry split, Q4 native-turn timeline, Q5 summary cadence, Q6
