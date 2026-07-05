@@ -76,8 +76,12 @@ async def handle_goal_work(job: dict, ctx) -> str:
     if not snapshot:
         return f"goal {goal_id} empty — nothing to do"
     memories = await asyncio.to_thread(G._recall_memories, goal_id, snapshot)
-    working = await asyncio.to_thread(
-        list_states, domain=goal_id, state_type="working_memory", status="active", limit=20)
+    # Working memory keys under the standing 'goals' domain with
+    # subject_id=goal_id (skipper_state.domain FKs to thinking_domains, and
+    # per-goal g-* rows no longer exist under Q8 — the subject carries the goal).
+    working_all = await asyncio.to_thread(
+        list_states, domain="goals", state_type="working_memory", status="active", limit=50)
+    working = [w for w in working_all if w.get("subject_id") == goal_id]
 
     state_lines = [f"GOAL: {snapshot.get('goal_name', goal_id)} ({goal_id})",
                    json.dumps(snapshot, default=str)[:6000]]
@@ -122,8 +126,7 @@ async def handle_goal_work(job: dict, ctx) -> str:
         if name == "update_working_memory":
             from data_layer.skipper_state import upsert_working_memory
             await asyncio.to_thread(
-                upsert_working_memory, goal_id,
-                args.get("subject_id") or goal_id, "goal",
+                upsert_working_memory, "goals", goal_id, "goal",
                 args.get("summary") or args.get("content") or "")
             actions.append({"type": "memory_updated"})
             return "working memory updated"
