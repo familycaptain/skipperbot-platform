@@ -1,0 +1,33 @@
+kind: specification
+id: settings.model-config.no-restart-copy
+title: Settings Smart/Fast model changes no longer claim they require a restart (post-#73)
+state: live
+autonomy: gated
+behavior: In the Settings Models panel, changing the Smart or Fast model shows NO 'requires
+  restart' hint and, on save, a plain 'Saved — takes effect immediately, no restart needed'
+  confirmation (post-#73 call-time tier resolution). Changing the Embedding model STILL shows
+  the 'requires restart' hint (genuine — restart + re-embed; vector dimension is fixed). The
+  Settings field schema marks smart_model + dumb_model requires_restart:False and embedding_model
+  requires_restart:True. POST /api/onboarding/save-models returns restart_required:False (key
+  kept for back-compat). The genuine restart paths (app-disable, .env/secret-key, manual Restart
+  button, embedding change) are untouched. Onboarding renders no restart copy (unchanged).
+implements:
+- 'apps/settings/ui/SettingsApp.jsx (ModelsPanel: remove the post-save restart banner; plain
+  ''Saved'')'
+- apps/settings/routes.py (smart_model + dumb_model requires_restart -> False; embedding_model
+  kept True)
+- agent.py (save-models restart_required -> False)
+tests:
+- type: unit
+  path: apps/settings/tests/test_model_fields_no_restart.py
+  rubric: 'smart_model + dumb_model requires_restart==False; embedding_model requires_restart==True;
+    the save-models handler success return has no restart_required:True; the ModelsPanel no
+    longer renders the ''restart required'' banner. Live (Gate-3): a Settings Smart/Fast save
+    shows plain ''Saved'' with no restart banner; an Embedding change still shows the restart
+    hint.'
+links: {}
+notes: 'ev-78: operator-approved full sweep. Depends on #73 (merged). Embedding restart preserved
+  (genuine, vector-dim lock). Dead save-models restart_required field flipped for correctness,
+  key kept. NOTE: feature dir is ''model-config'' (not ''models'') — a generic .gitignore
+  ''models/'' rule would ignore an apps/*/specs/models/ dir.'
+verified: true

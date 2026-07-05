@@ -4,5 +4,5 @@ import { lazy } from "react";
 import { Home } from "lucide-react";
 
 export default [
-  { id: "home", name: "Home", icon: Home, component: lazy(() => import("./HomeApp")), singleton: true },
+  { id: "home", name: "Home", icon: Home, component: lazy(() => import("./HomeApp")), singleton: true, heroes: { maintenance: "Stay on top of home upkeep — recurring and one-off maintenance. Add a task to get started.", issues: "Track home issues and repairs — things that need fixing around the house. Add an issue to get started.", appliances: "Track your household appliances — brand, model, serial, purchase and warranty. Add an appliance to get started.", insurance: "Track your insurance policies — provider, coverage, premium and renewal dates. Add a policy to get started.", contractors: "Keep a directory of your home service providers — electricians, plumbers, roofers, painters and more, with phone, rating and job history. Add a contractor to get started." } },
 ];

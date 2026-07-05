@@ -1,0 +1,85 @@
+kind: specification
+id: platform.config.model-tier-default
+title: Model picker marks + seeds a per-tier (smart vs fast) default, not one shared default
+state: live
+behavior: 'Every connector declares its defaults PER TIER via `ModelEntry.default_tiers` (a
+  subset of {''smart'',''fast'',''embedding''}); the legacy `default: bool` is kept ONLY as
+  a deprecated ModelEntry constructor kwarg (mapped in __post_init__: default=True -> the
+  tier matching the model''s kind — ''smart'' for chat, ''embedding'' for embedding) so out-of-tree
+  connectors don''t break. `ConnectorDescriptor.validate` is FAIL-CLOSED: a connector with
+  >=1 chat model MUST declare exactly one ''smart'' AND exactly one ''fast'' chat default
+  (a connector with a SINGLE chat model satisfies the rule with that one model as BOTH tiers
+  (default_tiers=[''smart'',''fast''], whether declared or AUTO-PROMOTED from a legacy default=True)
+  — so a minimal out-of-tree connector still loads); an embedding connector declares exactly
+  one ''embedding'' default; violations are a LOAD error, not a test-time surprise. `registry.list_models`
+  projects `default_tiers` into each emitted row (plus a backward-compat `default` = the row
+  is its kind''s primary default: ''smart'' in default_tiers for chat, ''embedding'' in default_tiers
+  for embedding — so the Text-encoding marker is preserved). `GET /api/onboarding/models`
+  passes rows through. In the shared `ModelConfig` picker (Onboarding + Settings>Models),
+  ALL THREE tiers are tier-aware: `optLabel(r,tierKey)` appends ''(default)'' iff tierKey
+  ∈ r.default_tiers, and `pickDefault(rows,tierKey)` seeds from the row whose default_tiers
+  includes tierKey, preferring a `verified` row (retain the existing verified-first tiebreak);
+  fallback rows[0] only if — impossible post-validate — none. So Smart marks/seeds the smart
+  default, Fast the FAST default, Text-encoding its embedding default — each tagged in its
+  own tier only, distinct models. Runtime chat routing is unaffected (tier_resolver reads
+  persisted settings). `providers/model_config._SEED` DERIVES its smart/fast values from the
+  OpenAI descriptor''s default_tiers (single source of truth), not a parallel hardcode.'
+implements:
+- 'providers/connectors/manifest.py — ModelEntry: `default_tiers: list[str]`; keep `default`
+  as a DEPRECATED constructor kwarg mapped in __post_init__ (plugin compat). ConnectorDescriptor.validate
+  FAIL-CLOSED: chat connector requires exactly one smart + one fast default; embedding requires
+  one embedding default.'
+- providers/connectors/builtins.py (openai), anthropic.py, compat_vendors.py (_VENDORS, 8
+  vendors) — each chat connector declares smart + fast per the operator-confirmed table (smart
+  != fast where >1 chat model); embedding rows -> default_tiers=['embedding'].
+- providers/connectors/compat_vendors.py:62 `_embedding_dim_for` — migrate `m.default` ->
+  `'embedding' in m.default_tiers`.
+- providers/registry.py — list_models emits default_tiers + kind-correct backward-compat `default`.
+- agent.py — GET /api/onboarding/models pass-through (verify serialization carries default_tiers;
+  confirm `current` payload excludes API keys — security note).
+- web/src/components/ModelConfig.jsx — optLabel(r,tierKey) + pickDefault(rows,tierKey) tier-aware
+  for ALL three tiers (smart/fast/embedding); seed loop L63 already has tierKey.
+- providers/model_config.py — _SEED DERIVES smart/fast from the OpenAI descriptor (single
+  source), replacing the parallel hardcode.
+tests:
+- type: unit
+  path: tests/test_model_tier_defaults.py
+  rubric: 'Backend emit (deterministic): registry.list_models() -> every chat connector has
+    exactly one row with ''smart'' in default_tiers AND exactly one with ''fast'' (DIFFERENT
+    models for >1-chat-model connectors; identical only for a single-chat-model connector).
+    Embedding connectors have exactly one ''embedding'' default. Backward-compat `default`
+    == kind-correct primary (smart for chat / embedding for embedding).'
+- type: unit
+  path: tests/test_model_tier_defaults.py
+  rubric: 'validate() FAIL-CLOSED (deterministic): a chat connector missing a ''fast'' (or
+    ''smart'') default RAISES; two ''smart'' (or two ''fast'') RAISES; one-each passes. A
+    constructed SINGLE-chat-model connector with default_tiers=[''smart'',''fast''] PASSES
+    (exercises the may-coincide branch). Deprecated `ModelEntry(default=True)` kwarg maps
+    to the kind-correct tier (compat).'
+- type: unit
+  path: tests/test_model_tier_defaults.py
+  rubric: 'Embedding regression: _embedding_dim_for still returns the embedding dim after
+    migration (reads ''embedding'' in default_tiers, not m.default).'
+- type: e2e
+  path: (test host, validate-time)
+  rubric: 'UI oracle (no JS unit runner in web/ — this is authoritative): in BOTH onboarding
+    and Settings>Models, extract each <select>''s option labels and assert for NAMED connectors
+    (OpenAI, Anthropic, Gemini): the smart-default label carries ''(default)'' in Smart but
+    NOT Fast, and the fast-default carries ''(default)'' in Fast but NOT Smart (distinct models);
+    the Text-encoding tier still marks its embedding default. Onboarding seeds Fast to the
+    fast model. Screenshot both dropdowns -> attach to #54 (before/after).'
+links: {}
+notes: 'REVISED r1 (folds all critic findings). validate() fail-closed closes the audit HIGH
+  (no undefined missing-default). Embedding tier migrated too (architecture+interop): _embedding_dim_for
+  + the Text-encoding marker. ModelEntry.default kept as a DEPRECATED constructor kwarg for
+  out-of-tree connector compat (interop). e2e is the authoritative UI oracle (no JS runner)
+  and names connectors (audit low). _SEED derives from the descriptor (architecture single-source).
+  Operator Gate-1 decision: the per-connector smart+fast table, incl. the 3 that change the
+  SMART default to keep smart!=fast (DeepSeek smart=reasoner/fast=chat; Kimi smart=32k/fast=8k;
+  Ollama pick distinct) — see design.decisions_needed. r1 polish: single-chat-model auto-promoted
+  to both tiers (legacy-plugin compat under fail-closed validate); pickDefault retains verified-first
+  tiebreak. | Placed under platform.config (Configuration & secrets — the shared config service)
+  rather than a new ''models'' feature. Gate-2: validated GREEN on test host (23/23 bound
+  tests; e2e Settings>Models shows distinct per-tier (default) markers across all 10 connectors,
+  Fast no longer echoes smart, embedding tier intact). verified=true.'
+verified: true

@@ -15,5 +15,6 @@ export default [
     icon: ListTodo,
     component: lazy(() => import("./TodoApp")),
     singleton: true,
+    blurb: "Your to-do board — capture what needs doing and move it from backlog to done. Add a card to get started.",
   },
 ];

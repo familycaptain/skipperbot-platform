@@ -5,6 +5,8 @@ import {
   Send, CreditCard, RefreshCw, Pencil, Trash2,
 } from "lucide-react";
 import { hasAnyRole } from "../../../web/src/utils/roles";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 const API = "/api/apps/bounties";
 
@@ -163,7 +165,14 @@ function BoardTab({ userId, userRole, refreshKey }) {
       {loading ? (
         <div className="text-faint text-sm">Loading...</div>
       ) : bounties.length === 0 ? (
-        <div className="text-faint text-sm">No bounties found.</div>
+        <PristineEmpty
+          appId="bounties"
+          blurb={getAppManifest("bounties")?.blurb}
+          records={bounties}
+          loading={loading}
+          filterActive={!!filterStatus || filterCat !== "All"}
+          fallback={<div className="text-faint text-sm">No bounties found.</div>}
+        />
       ) : (
         <div className="space-y-2">
           {bounties.map(b => (

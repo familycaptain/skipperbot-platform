@@ -21,7 +21,6 @@ import data_layer.knowledge as _dl_know
 
 logger = logging.getLogger(__name__)
 
-EMBEDDING_MODEL = "text-embedding-3-small"
 from providers.model_config import provisioned_embedding_dim as _provisioned_embedding_dim
 EMBEDDING_DIM = _provisioned_embedding_dim()  # provisioned at setup; default 1536 (MODEL_FLEXIBILITY #44)
 CHUNK_SIZE = 500        # target tokens per chunk (approx 4 chars per token)
@@ -29,12 +28,13 @@ CHUNK_OVERLAP = 50      # overlap tokens between chunks
 CHARS_PER_TOKEN = 4     # rough approximation
 
 def _get_embedding(text: str) -> list[float]:
-    """Get an embedding vector via the vendor-neutral provider (issue #39).
+    """Get an embedding vector via the vendor-neutral provider (MODEL_FLEXIBILITY #44/#71).
 
-    No truncation here (knowledge chunks are pre-sized via CHARS_PER_TOKEN) — the
-    provider never truncates or rewrites the model, so vectors are unchanged."""
-    from providers.registry import get_embedding_provider
-    vecs = get_embedding_provider().embed(texts=[text], model=EMBEDDING_MODEL)
+    Connector, embedding MODEL, and key ALL come from the "embedding" tier — no hardcoded model
+    and no OPENAI_API_KEY assumption. No truncation here (chunks are pre-sized via CHARS_PER_TOKEN)."""
+    from providers.tier_resolver import resolve_embedding
+    provider, model, api_key = resolve_embedding("embedding")
+    vecs = provider.embed(texts=[text], model=model, api_key=api_key)
     return vecs[0]
 
 

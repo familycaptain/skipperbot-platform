@@ -19,7 +19,12 @@ behavior: 'On web chat load, the assistant greeting is shown after a short typin
   concurrently-active server typing state). The delay defers ONLY the greeting; the message
   input is usable throughout, and timing for real server-driven responses is unchanged. Accessibility:
   the greeting renders into an aria-live=polite region so assistive tech announces it. No
-  backend or message-content change.'
+  backend or message-content change. CARVE-OUT (except the fresh-onboarding primary arrival, now
+  server-driven per platform.onboarding.live-greeting): when the client''s synchronous
+  ''primary + onboarding-in-progress'' signal is set, the canned fresh-onboarding greeting is
+  SUPPRESSED and the typing indicator is shown optimistically (with a bounded fail-open timeout)
+  until the real agent-authored greeting turn arrives over the socket. The welcome-back resume
+  greeting and the fresh NON-primary greeting are UNCHANGED and still covered by this spec.'
 implements:
 - web/src/hooks/useSkipperSocket.js
 - web/src/components/ChatPanel.jsx

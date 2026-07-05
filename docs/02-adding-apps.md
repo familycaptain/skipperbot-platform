@@ -77,7 +77,6 @@ These are **not** bundled. Install the ones you want by cloning into `apps/`
 | Scriptures | `skipperbot-app-scriptures` | Bible reader with daily passages |
 | Homeopathy | `skipperbot-app-homeopathy` | Homeopathy inventory + dose log |
 | Scrum | `skipperbot-app-scrum` | Daily standup / PM digest tracker |
-| Evolve | `skipperbot-app-evolve` | Autonomous self-improvement loop (requires the Issues app) |
 | Newsletter | `skipperbot-app-newsletter` | Generate + send a family newsletter (private/owner repo) |
 
 ---
@@ -259,6 +258,11 @@ loader picks up your version. See [docs/customizing.md](customizing.md).
 See [docs/BUILDING_APPS.md](BUILDING_APPS.md) for the app authoring workflow.
 `specs/APP_PACKAGES.md` is the canonical prompt guidance and app contract for
 AI-assisted app creation; it is not the only human-facing authoring guide.
+
+To **automate** that whole build → review → test SDLC from a GitHub issue, see
+[**Expand Skipper with Evolve**](BUILDING_APPS.md#expand-skipper-with-evolve) —
+the standalone **Evolve** engine. You run Evolve yourself; it is a tool, **not**
+an app you clone into `apps/`.
 
 To scaffold a new app repo from the platform root:
 

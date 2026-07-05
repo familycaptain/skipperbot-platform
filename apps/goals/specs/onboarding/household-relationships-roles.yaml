@@ -1,0 +1,54 @@
+kind: specification
+id: goals.onboarding.household-relationships-roles
+title: Onboarding household step captures relationships + roles (for personalization) and
+  guides member-account creation
+state: live
+autonomy: gated
+verified: true
+behavior: The onboarding 'household' agenda step directs the PM to learn each household member's
+  RELATIONSHIP to the primary user naturally (never a per-person form; batching/confirming
+  for larger households) and to infer an INTERNAL role mapped to the existing platform vocabulary
+  — parent/guardian -> 'parent', child -> 'kid', other capable adult (incl. non-family) ->
+  'member'. These role labels are internal only, never surfaced as user-facing jargon, and
+  'admin' is never inferred from a relationship (granted deliberately in Settings). The step
+  captures RELATIONSHIP + ROLE ONLY: the PM never asks for, requires, or records a member's AGE
+  (the platform does not use ages) — 'child'/'kid' denotes a ROLE, not an age, so the PM must not
+  ask how old anyone is or for an approximate age (ev-80 uat CHANGE #2). The PM
+  records the household structure (name + relationship + internal role) to its working memory
+  via update_working_memory on the onboarding project; this is DESCRIPTIVE personalization
+  memory and does not by itself grant users.role, register a chores 'kid', or activate role-gated
+  features. COMPLETION GATE (ev-80 uat fix): a names-only answer is NOT sufficient to finish
+  the step — when the user gives only names, the PM MUST follow up for relationships/roles
+  before completing; the step is marked done ONLY when each member's relationship + role is
+  captured AND the user has been guided to Settings -> Members (the LOGIN-account path for
+  people who will use Skipper themselves; accounts carry member/parent/admin, not 'kid';
+  'named for personalization' is distinguished from 'has a login'), OR the user explicitly says
+  'just me'/declines. The gate is enforced where interactive onboarding is actually DRIVEN —
+  chat_domain._inject_onboarding_context (the chat thinking-domain that walks the agenda) now
+  surfaces the CURRENT topic's definition_of_done as explicit 'Completion criteria' and instructs
+  the agent NOT to call update_item(status=done) until they are met (a partial answer like bare
+  names does not satisfy them); the misleading 'named the household = covered' example is removed.
+  The household completion gate is seeded as a per-topic definition_of_done on the household
+  project (kept within the 300-char snapshot budget, #88), and the step's notes FRONT-LOAD the
+  'don't finish on bare names, follow up for relationships' imperative. Accounts are never
+  auto-created and credentials are never collected in chat. The agenda order (household -> intent
+  -> location -> discord -> integrations -> tours) is unchanged.
+implements:
+- apps/goals/onboarding.py
+- chat_domain.py
+- tests/evolve/goals/test_onboarding_household_depth.py
+tests:
+- type: unit
+  path: tests/evolve/goals/test_onboarding_household_depth.py
+  rubric: The household agenda step directs relationship capture + internal role mapping (parent/kid/member,
+    never surfaced as jargon, admin never inferred), records to working memory (update_working_memory),
+    does not overpromise chores/permissions, guides Settings -> Members as the login path
+    distinguishing named-vs-login, collects no credentials in chat, captures relationship + role
+    ONLY and never asks for/records ages, and keeps household first / agenda order unchanged. Live
+    acceptance (PM asks relationships/roles naturally with NO age prompt + points to Settings,
+    'just me' completes) is validated on the test host, N>=3.
+links: {}
+notes: 'ev-80: operator approved option A (working-memory persistence) + A (guide to Settings
+  -> Members). Reuses data_layer/users role vocabulary + update_working_memory; no new schema,
+  no user/role MCP tool in the goals domain. Machine-queryable role interop (chores/permissions)
+  is a possible follow-on (structured store).'

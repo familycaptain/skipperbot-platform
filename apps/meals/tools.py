@@ -620,8 +620,6 @@ def _match_meal_with_llm(main_name: str, side_names: list[str], candidates: list
     described main dish, and returns the matched meal dict.
     Returns None if the LLM decides this is a new meal (no match found).
     """
-    from config import DUMB_MODEL
-
     if candidates is None:
         candidates = [{"meal": m, "sources": ["component library"], "score": 0.0}
                       for m in _dl.get_meals_with_components(limit=150)]
@@ -651,7 +649,7 @@ def _match_meal_with_llm(main_name: str, side_names: list[str], candidates: list
 
     try:
         response = chat_completion(
-            model=DUMB_MODEL,
+            tier="fast",
             messages=[
                 {"role": "system", "content": _MEAL_MATCH_SYSTEM},
                 {"role": "user", "content": user_prompt},

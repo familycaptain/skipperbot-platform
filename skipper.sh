@@ -13,8 +13,8 @@
 #       - Native: runs on the host; you must already have PostgreSQL 18 +
 #         pgvector, Python 3.12, and Node 24+ installed. The launcher then
 #         installs the project's own deps for you (venv + pip + npm ci).
-#   * First run (no usable .env): asks for your OpenAI key and a Postgres
-#     password, writes .env, offers to install the deploy-watcher service,
+#   * First run (no usable .env): asks for a Postgres password, writes .env,
+#     offers to install the deploy-watcher service,
 #     then starts Skipper.
 #   * Later runs: start Skipper, wait until it has finished booting, then drop
 #     you into the live log (Ctrl+C stops watching; Skipper keeps running).
@@ -146,7 +146,7 @@ resolve_runtime() {
 
 # Prerequisite checks come in two phases:
 #   Tooling  — Node + Python; checked BEFORE setup (no .env needed), so we
-#              never ask for your OpenAI key on a machine that can't run.
+#              never run setup on a machine that can't run Skipper.
 #   Database — Postgres reachability; checked AFTER setup, because setup is
 #              what asks you for the DB host and writes it into .env.
 # For native, the tooling phase auto-installs the project's own deps (venv, pip,
@@ -415,12 +415,7 @@ setup() {
     log "First-time setup — creating $ENV_FILE"
     [ -f "$ENV_FILE" ] || cp "$EXAMPLE_ENV" "$ENV_FILE"
 
-    local key pw pw2
-    while :; do
-        read -r -p "OpenAI API key (from https://platform.openai.com/api-keys): " key
-        [ -n "$key" ] && break
-        warn "An OpenAI key is required."
-    done
+    local pw pw2
     while :; do
         read -r -s -p "Choose a Postgres password (any strong value): " pw; echo
         read -r -s -p "Confirm password: " pw2; echo
@@ -428,7 +423,8 @@ setup() {
         warn "Passwords were empty or didn't match — try again."
     done
 
-    set_env OPENAI_API_KEY "$key"
+    # No LLM provider key is collected here (#44): the platform boots keyless and
+    # you choose your provider + enter its key in the web UI on first run.
     set_env POSTGRES_PASSWORD "$pw"
     # Remember how to run Skipper so later starts don't re-ask Docker-vs-native.
     set_env SKIPPER_RUNTIME "$RUNTIME"
@@ -459,16 +455,9 @@ setup() {
     # SKIPPERBOT_SECRET_KEY is intentionally left blank: the platform
     # auto-generates and persists it to .env on first boot (ensure_secret_key).
     ok ".env written (the secret-encryption key is auto-generated on first boot)."
-
-    # The deploy-watcher is a systemd service that pulls + rebuilds + recycles the
-    # Docker stack on a deploy request (the deploy_skipper flow / POST
-    # /api/admin/deploy). It is NOT needed for a plain restart. Only offer it for a
-    # Docker run on a systemd host (skips macOS, WSL without systemd, and native
-    # runs - matching the Windows launcher, which has none).
-    if [ "$RUNTIME" = "docker" ] && command -v systemctl >/dev/null 2>&1 \
-        && confirm "Install the deploy-watcher service now? (enables remote 'deploy' = git pull + rebuild)"; then
-        install_watcher || warn "Deploy watcher not installed — you can run 'skipper.sh' again later or install it by hand."
-    fi
+    # NOTE: the optional deploy-watcher (remote 'deploy' = git pull + rebuild) is
+    # NOT installed during setup — it's an advanced extra that confused first-run
+    # installs. Install it later on a Docker+systemd host with 'skipper.sh watcher'.
 }
 
 # --- deploy watcher (systemd) ------------------------------------------------
@@ -498,6 +487,101 @@ EOF
     sudo systemctl daemon-reload
     sudo systemctl enable --now "$WATCHER_SVC"
     ok "Deploy watcher installed and running."
+}
+
+# --- enable-voice (opt-in voice speaker-ID extra) ----------------------------
+# Multi-speaker voice attribution needs resemblyzer + torch (~500MB), which is
+# NOT in the base install. This installs the opt-in extra (requirements-voice.txt)
+# after setup. Like the deploy-watcher, it's a deliberately separate, on-demand
+# step. The torch BUILD is the user's choice: DEFAULT = the CPU wheel (smaller,
+# works everywhere), --gpu = the CUDA build, --cpu = force CPU. A compatible torch
+# that's already installed is honored (not overridden). Runtime-aware: native pips
+# into the .venv; Docker bakes deps into the image, so it prints the documented
+# rebuild path instead (a host-venv pip would never reach the container).
+#   --dry-run   print the exact pip command without running it.
+# SKIPPER_RUNTIME / SKIPPER_VENV_PY may be set in the environment to override the
+# saved runtime and the venv interpreter (used by the bound tests).
+enable_voice() {
+    local mode="cpu" dry_run=0
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --gpu)      mode="gpu" ;;
+            --cpu)      mode="cpu" ;;
+            --dry-run)  dry_run=1 ;;
+            -h|--help)
+                printf 'Usage: ./skipper.sh enable-voice [--gpu|--cpu] [--dry-run]\n'
+                printf '  Install the opt-in voice speaker-ID extra (per-speaker attribution).\n'
+                printf '  Default installs the CPU torch wheel; --gpu installs the CUDA build.\n'
+                return 0 ;;
+            *) warn "Unknown 'enable-voice' option: $1"; return 1 ;;
+        esac
+        shift
+    done
+
+    # Runtime: honor a live SKIPPER_RUNTIME override, else the saved choice.
+    local runtime="${SKIPPER_RUNTIME:-}"
+    if [ -z "$runtime" ]; then resolve_runtime; runtime="$RUNTIME"; fi
+
+    if [ "$runtime" = "docker" ]; then
+        # Docker bakes Python deps into the image at build time, so a pip run on
+        # the host venv would never reach the container. The supported path is a
+        # documented image rebuild that carries the extra.
+        log "Docker runtime detected — voice speaker-ID is enabled by REBUILDING the image."
+        cat <<'EOF'
+   A host-side pip install cannot reach the container, so add the extra to the
+   image and rebuild:
+     1. In the Dockerfile, after 'RUN pip install -r requirements.txt', add:
+          RUN pip install -r requirements-voice.txt \
+              --extra-index-url https://download.pytorch.org/whl/cpu
+        (drop the --extra-index-url line to build the CUDA/GPU torch instead.)
+     2. Rebuild + recycle the stack:  ./skipper.sh update
+   See docs/03-extended-functionality.md → Voice for the full walkthrough.
+EOF
+        return 0
+    fi
+
+    # Native: the .venv must already exist (base setup creates it).
+    local venv_py="${SKIPPER_VENV_PY:-$REPO/.venv/bin/python}"
+    if [ ! -x "$venv_py" ]; then
+        die "No Python virtual-env found (expected $venv_py). Run base setup first:  ./skipper.sh setup"
+    fi
+
+    # Honor a pre-installed compatible torch — don't override the user's build.
+    local have_torch=0
+    if "$venv_py" -c "import torch" >/dev/null 2>&1; then have_torch=1; fi
+
+    local pip_cmd=("$venv_py" -m pip install -r "$REPO/requirements-voice.txt")
+    if [ "$have_torch" -eq 1 ]; then
+        ok "A compatible torch is already installed — honoring it (won't reinstall torch)."
+        # No torch index: pip sees the floor satisfied and leaves the build as-is.
+    elif [ "$mode" = "gpu" ]; then
+        log "Installing the CUDA (GPU) torch build from the default index."
+        # Default PyPI index resolves the CUDA-capable wheel; no extra flags.
+    else
+        log "Installing the CPU-only torch build (default — smaller, works everywhere)."
+        pip_cmd+=(--extra-index-url https://download.pytorch.org/whl/cpu)
+    fi
+
+    if [ "$dry_run" -eq 1 ]; then
+        printf 'DRY RUN — would run:\n  %s\n' "${pip_cmd[*]}"
+        return 0
+    fi
+
+    log "Enabling voice speaker identification (this can take a few minutes)…"
+    if "${pip_cmd[@]}"; then
+        ok "Voice speaker-ID enabled. Verify:"
+        printf "   %s -c 'from app_platform.voice import speaker_id; print(speaker_id.available())'\n" "$venv_py"
+        printf "   (should print True; then restart Skipper to pick it up).\n"
+    else
+        # Repo-standard failure report: name the platform + link the docs, never a
+        # bare pip traceback. Most likely no prebuilt torch wheel for this OS/arch.
+        local plat; plat="$(uname -sm 2>/dev/null || echo unknown)"
+        warn "Could not install the voice speaker-ID extra on this platform ($plat)."
+        printf '   There may be no prebuilt torch wheel for your OS/arch, or the network was unreachable.\n'
+        printf '   Supported platforms + options:  docs/03-extended-functionality.md → Voice\n'
+        printf '   To retry by hand:  %s\n' "${pip_cmd[*]}"
+        return 1
+    fi
 }
 
 # Announce readiness from the BACKGROUND while the boot log streams in the
@@ -622,6 +706,21 @@ status() {
     local port; port="$(skipper_port)"
     printf '%sHealth (port %s):%s ' "$_dim" "$port" "$_rst"
     curl -fsS -o /dev/null -w 'HTTP %{http_code}\n' --max-time 5 "http://localhost:$port/api/onboarding/status" 2>/dev/null || echo "not responding yet"
+
+    # Voice speaker-ID is an opt-in extra — surface whether it's installed so the
+    # enable path (./skipper.sh enable-voice) is discoverable.
+    local voice_ok=1
+    if [ "$RUNTIME" = "docker" ]; then
+        docker compose exec -T agent python -c "import resemblyzer" >/dev/null 2>&1 || voice_ok=0
+    else
+        local venv_py="${SKIPPER_VENV_PY:-$REPO/.venv/bin/python}"
+        { [ -x "$venv_py" ] && "$venv_py" -c "import resemblyzer" >/dev/null 2>&1; } || voice_ok=0
+    fi
+    if [ "$voice_ok" -eq 1 ]; then
+        printf '%sVoice speaker-ID:%s installed\n' "$_dim" "$_rst"
+    else
+        printf "%sVoice speaker-ID:%s not installed (optional) — enable with './skipper.sh enable-voice'\n" "$_dim" "$_rst"
+    fi
 }
 # Runtime-aware update. git pull is the shared first step (both runtimes); only
 # the recycle differs. Docker rebuilds the image (up -d --build) so changes to
@@ -669,8 +768,9 @@ Usage: ./skipper.sh [command]   (or 'skipper' if installed)
   (no command)   Resolve runtime (asks once, then remembered), verify that
                  runtime's prerequisites, run first-time setup if needed, then
                  start Skipper and follow its log.
-  setup          (Re)configure .env (runtime choice + OpenAI key + Postgres
-                 password). Re-asks Docker-vs-native.
+  setup          (Re)configure .env (runtime choice + Postgres password;
+                 your LLM provider + key are set later in the web UI).
+                 Re-asks Docker-vs-native.
   start          Start Skipper, wait until it has booted, then follow the log
                  (Ctrl+C stops watching; Skipper keeps running).
   stop           Stop Skipper (Docker stack, or reminds you for native).
@@ -680,6 +780,11 @@ Usage: ./skipper.sh [command]   (or 'skipper' if installed)
   service <sub>  Auto-start on boot: install | uninstall | status | start |
                  stop | restart. systemd (Linux/WSL) or launchd (macOS), chosen
                  from your saved runtime. See docs/04-running-as-a-service.md.
+  watcher        Install the OPTIONAL deploy-watcher (Docker+systemd host):
+                 enables remote 'deploy' = git pull + rebuild. Not part of setup.
+  enable-voice   Install the OPTIONAL voice speaker-ID extra (adds per-speaker
+                 attribution). Default installs the CPU torch wheel; --gpu the
+                 CUDA build, --cpu forces CPU. Not part of setup.
   logs           Follow the agent logs.
   status         Show container + health status.
   install        Symlink this script to /usr/local/bin/skipper.
@@ -922,6 +1027,8 @@ case "$cmd" in
     restart)        ensure_runtime_tooling; needs_setup && setup; ensure_runtime_database; stop; start ;;
     update)         update ;;
     service)        service "${2:-help}" ;;
+    watcher)        install_watcher ;;
+    enable-voice)   shift; enable_voice "$@" ;;
     logs)           logs ;;
     status|ps)      status ;;
     install)        install_cli ;;

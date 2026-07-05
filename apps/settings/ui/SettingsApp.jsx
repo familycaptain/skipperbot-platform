@@ -928,11 +928,11 @@ function ModelsPanel() {
   const [tiersState, setTiersState] = useState({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [restart, setRestart] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const save = async () => {
     setError("");
-    setRestart(false);
+    setSaved(false);
     setSaving(true);
     try {
       const tiers = {};
@@ -948,7 +948,7 @@ function ModelsPanel() {
       });
       const data = await res.json();
       if (!data.ok) { setError(data.error || "Could not save your model selections."); return; }
-      setRestart(true);
+      setSaved(true);
     } catch (e) {
       setError(String(e.message || e));
     } finally {
@@ -975,19 +975,9 @@ function ModelsPanel() {
           <AlertCircle size={14} /> {error}
         </div>
       )}
-      {restart && (
-        <div className="mt-4 rounded border border-amber-500/30 bg-amber-500/5 p-4 text-sm text-default">
-          <div className="mb-2 font-medium text-amber-200">Saved — restart required to take effect</div>
-          <p className="mb-2 text-muted">Model changes apply on the next start. Nothing in progress is lost.</p>
-          <div className="space-y-1.5 font-mono text-xs">
-            <div className="rounded surface-page px-2 py-1.5 text-default">
-              <span className="text-faint"># Docker path</span><br />docker compose restart agent
-            </div>
-            <div className="rounded surface-page px-2 py-1.5 text-default">
-              <span className="text-faint"># Native path</span><br />
-              {"# Ctrl-C the running agent, then re-run ./start_agent.sh"}
-            </div>
-          </div>
+      {saved && (
+        <div className="mt-4 flex items-center gap-2 text-sm text-emerald-400">
+          <Check size={14} /> Saved — your Smart and Fast model changes take effect immediately, no restart needed.
         </div>
       )}
       <div className="mt-5">

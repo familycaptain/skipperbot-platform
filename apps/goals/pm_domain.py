@@ -16,11 +16,10 @@ from datetime import datetime, timedelta
 
 from config import (
     logger, pm_audit_logger,
-    SMART_MODEL, PROMPTS_DIR, PM_QUIET_MODE,
+    PROMPTS_DIR, PM_QUIET_MODE,
 )
 from app_platform.time import get_timezone
 import agent_loop
-DUMB_MODEL = os.getenv("DUMB_MODEL", "gpt-5-mini")
 
 def _default_cadence_minutes() -> int:
     """Global anti-spam window (Settings → Goals: pm_cadence_hours), in minutes.
@@ -152,18 +151,20 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
         logger.warning("PM_THINK: Failed to set focus: %s", e)
 
     # ---------- MODEL SELECTION ----------
+    # The cheap/standard decision maps to a model TIER (MODEL_FLEXIBILITY #44/#71); agent_loop
+    # resolves the connector+model+key from the tier. No raw model id / OPENAI_API_KEY here.
     if has_project:
-        model = SMART_MODEL
+        tier = "smart"
         model_tier = "standard"
     else:
-        model = DUMB_MODEL if total_items <= CHEAP_MODEL_THRESHOLD else SMART_MODEL
-        model_tier = "cheap" if model == DUMB_MODEL else "standard"
+        tier = "fast" if total_items <= CHEAP_MODEL_THRESHOLD else "smart"
+        model_tier = "cheap" if tier == "fast" else "standard"
 
     remaining = budget_status.get("remaining", 999999)
-    if remaining < 50_000 and model == SMART_MODEL:
-        model = DUMB_MODEL
+    if remaining < 50_000 and tier == "smart":
+        tier = "fast"
         model_tier = "cheap"
-        logger.info("PM_THINK: Downgraded to cheap model — budget low (%d remaining)", remaining)
+        logger.info("PM_THINK: Downgraded to fast tier — budget low (%d remaining)", remaining)
 
     # ---------- BUILD MESSAGES + TOOLS ----------
     static_system = _load_pm_think_prompt()
@@ -193,8 +194,8 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
         messages.append({"role": "system", "content": dynamic_context})
     messages.append({"role": "user", "content": user_prompt})
 
-    pm_audit_logger.info("PM_THINK: Calling %s with %d pending actions, %d observations, %d memory entries, %d tools",
-                         model, ctx["pending_actions_count"], ctx["observations_count"],
+    pm_audit_logger.info("PM_THINK: Calling %s tier with %d pending actions, %d observations, %d memory entries, %d tools",
+                         tier, ctx["pending_actions_count"], ctx["observations_count"],
                          ctx["working_memory_count"], len(tools))
     pm_audit_logger.info("PM_THINK user prompt:\n%s", user_prompt[:2000])
 
@@ -242,6 +243,47 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
                         "To communicate findings about a Skipper-owned project or task, "
                         "add a history note via update_item(item_id, updated_by='pm', history_note='...'), "
                         "or record it in working memory.")
+            # Produce-layer tour gate (defect 1a): block a DM whose subject
+            # resolves to a per-app tour project of the in-progress onboarding
+            # goal while its agenda is still open — the read tools can enumerate
+            # tours even though _pick_next_project won't select them. tour_gated()
+            # self-gates on the onboarding goal (resolved from the project's
+            # goal_id), so normal projects are untouched.
+            if subject_id and subject_id.startswith("p-"):
+                try:
+                    from apps.goals import onboarding
+                    from apps.goals.data import load_entity
+                    _proj = load_entity(subject_id)
+                    if _proj and onboarding.tour_gated(_proj.get("goal_id", ""), _proj):
+                        return (
+                            "That DM is about an app tour, but the onboarding "
+                            "setup agenda isn't complete yet — app tours come "
+                            "after the agenda. DM not sent."
+                        )
+                except Exception:
+                    logger.warning("PM_THINK: tour-gate DM check failed", exc_info=True)
+            # Global onboarding app-tour CADENCE hold (ev-75, site 2): after the
+            # agenda is complete tours pass tour_gated (ORDER) above; hold ALL app
+            # tour nudges for ~24h once one is out and unanswered so a no-reply
+            # can't march the catalog to a DIFFERENT app. Global (not per-subject),
+            # so it complements — not replaces — the per-subject _dm_on_hold below.
+            if subject_id and subject_id.startswith("p-"):
+                try:
+                    from apps.goals import onboarding
+                    from apps.goals.data import load_entity as _load_tour_proj
+                    from apps.goals.domain import _onboarding_tour_on_hold
+                    _tp = _load_tour_proj(subject_id)
+                    if (_tp
+                            and onboarding.onboarding_agenda_in_progress() == _tp.get("goal_id")
+                            and onboarding.onboarding_project_kind(_tp.get("name", "")) == "tour"
+                            and await asyncio.to_thread(_onboarding_tour_on_hold, dm_to)):
+                        return (
+                            "That app-tour nudge is on a daily hold — a tour message "
+                            "is still unanswered and less than 24h old. Wait for their "
+                            "reply before nudging another app tour. DM not sent."
+                        )
+                except Exception:
+                    logger.warning("PM_THINK: onboarding tour-hold DM check failed", exc_info=True)
             if dm_count >= 3:
                 return "DM limit reached (max 3 per cycle). DM not sent."
             if dm_to in dm_recipients:
@@ -327,7 +369,7 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
         loop_result = await agent_loop.run(
             messages=messages,
             tools=tools,
-            model=model,
+            tier=tier,
             max_turns=4,
             max_tool_calls=12,
             tool_dispatch=_pm_dispatch,
@@ -351,8 +393,8 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
         except Exception as e:
             logger.error("PM_THINK: Failed to record project review for %s: %s", reviewed_pid, e)
 
-    pm_audit_logger.info("PM_THINK: model=%s, tokens=%d, actions=%d, project=%s",
-                         model, tokens_used, len(actions_taken),
+    pm_audit_logger.info("PM_THINK: tier=%s, tokens=%d, actions=%d, project=%s",
+                         tier, tokens_used, len(actions_taken),
                          reviewed_pid or "none")
 
     # Dynamic rhythm: more activity → come back sooner
@@ -572,6 +614,12 @@ def _pick_next_project(observations: list[dict]) -> str | None:
     # (done/deferred/archived/cancelled) so a cancelled or archived goal is no
     # longer surfaced for PM review — aligning this filter with the per-goal
     # goal-think domain, which already treats all four as inactive.
+    # Global onboarding app-tour CADENCE hold (ev-75, site 1): resolved ONCE per
+    # cycle (it is GLOBAL across all tour apps, not per-subject). Tri-state:
+    # None = not yet resolved, resolved lazily the first time a tour candidate is
+    # seen so non-onboarding cycles pay nothing.
+    _tour_hold = None
+
     goals = list_entities("g-")
     project_ids = []
     project_meta = {}  # project_id -> {priority, goal_name, pm_cadence_minutes}
@@ -582,6 +630,35 @@ def _pick_next_project(observations: list[dict]) -> str | None:
             proj = load_entity(pid)
             if not proj or proj.get("status") in _INACTIVE_STATUSES:
                 continue
+            # Onboarding ordering gate (defect 1a): never SELECT a per-app tour
+            # of the in-progress onboarding goal for review while its ordered
+            # setup agenda is still open — this is the live selector the repro
+            # showed picking 'Try the Chores app' while household was not_started.
+            # tour_gated() self-gates on the onboarding goal, so normal goals are
+            # untouched.
+            try:
+                from apps.goals import onboarding
+                if onboarding.tour_gated(g, proj):
+                    continue
+            except Exception:
+                logger.warning("PM_THINK: onboarding tour-gate selection filter failed", exc_info=True)
+            # Onboarding CADENCE gate (ev-75): once the agenda is complete a tour
+            # passes tour_gated (ORDER); do not SELECT a SECOND (different) tour
+            # while a prior tour DM is unanswered and < 24h old — a no-reply must
+            # not advance to another app. Global (per primary user), resolved once.
+            try:
+                from apps.goals import onboarding as _onb
+                if (_onb.onboarding_project_kind(proj.get("name", "")) == "tour"
+                        and _onb.onboarding_agenda_in_progress() == proj.get("goal_id")):
+                    if _tour_hold is None:
+                        from apps.goals.domain import _onboarding_tour_on_hold
+                        from data_layer.users import get_primary_user
+                        _recip = (get_primary_user() or "").strip().lower()
+                        _tour_hold = _onboarding_tour_on_hold(_recip) if _recip else False
+                    if _tour_hold:
+                        continue
+            except Exception:
+                logger.warning("PM_THINK: onboarding tour-cadence selection filter failed", exc_info=True)
             project_ids.append(pid)
             project_meta[pid] = {
                 "priority": proj.get("priority", "medium"),

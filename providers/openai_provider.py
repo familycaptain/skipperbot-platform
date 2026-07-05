@@ -5,7 +5,8 @@ Implements ChatProvider + EmbeddingProvider by wrapping today's OpenAI SDK calls
 provider in P1; this changes the call PATH, not behavior.
 
 Design constraints (folded from the gate-1 reviews):
-  - LAZY client built at call time from OPENAI_API_KEY in env (NOT the settings store — §7/P4).
+  - LAZY client built at call time from the per-tier key threaded in via api_key= (resolved from
+    the encrypted settings store — #71). No OPENAI_API_KEY env fallback; None fails fast (NoApiKey).
   - PROVIDER owns transient retry (429/5xx) with bounded backoff; auth 4xx FAILS FAST; zero
     added latency on the happy path (no sleep unless a transient failure occurred).
   - SECRET-SAFE: the api_key is never logged, never placed in a raised error; the connector
@@ -18,14 +19,13 @@ Design constraints (folded from the gate-1 reviews):
 from __future__ import annotations
 
 import json
-import os
 import time
 
 from providers.base import (
     ChatProvider, EmbeddingProvider, ChatResult, ModelCapabilities, ToolCall, Turn, Usage,
 )
 
-# Transient infra failures — retry. Mirrors apps/evolve/agents/runner.py so the two retry
+# Transient infra failures — retry. Mirrors the extracted Evolve engine so the two retry
 # policies don't drift before later convergence. Deterministic failures are NOT retried.
 _TRANSIENT_MARKERS = ("overloaded", "rate limit", "rate_limit", "timeout", "timed out",
                       "connection", "econnreset", "temporarily", "503", "502", "500", "529",
@@ -92,19 +92,27 @@ def _turn_to_message(t: Turn) -> dict:
 
 
 class OpenAIProvider(ChatProvider, EmbeddingProvider):
+    #: OpenAI always needs a key (mirrors the descriptor's requires_key; keeps the compat check
+    #: symmetric with OpenAICompatibleProvider).
+    requires_key = True
+
     def __init__(self):
         self._clients = {}   # api_key -> client (per-key cache; keys not deduped across tiers)
 
-    # --- lazy client (per-tier key, falling back to env; never logged) ---
+    # --- lazy client (per-tier key; never logged) ---
     def _get_client(self, api_key: str | None = None):
-        # MODEL_FLEXIBILITY (#44): use the resolved per-tier key when supplied (a keyless install
-        # stores it encrypted and passes it here); fall back to OPENAI_API_KEY in env so the P1
-        # path + the seamless-upgrade path (key in .env) are unchanged.
-        key = api_key or os.getenv("OPENAI_API_KEY")
-        if key not in self._clients:
+        # MODEL_FLEXIBILITY (#44): the LLM path is provider-agnostic — the per-tier key resolved
+        # from the encrypted settings store is threaded here. There is NO OPENAI_API_KEY env
+        # fallback (that assumption is exactly what #71 removes). Fail fast with a SANITIZED error
+        # (mirrors openai_compat) BEFORE constructing OpenAI() so the SDK's 'set OPENAI_API_KEY'
+        # hint never surfaces and no key value is ever echoed. Never pass None to OpenAI().
+        if not api_key:
+            if self.requires_key:
+                raise RuntimeError("openai call failed (NoApiKey)")
+        if api_key not in self._clients:
             from openai import OpenAI
-            self._clients[key] = OpenAI(api_key=key)
-        return self._clients[key]
+            self._clients[api_key] = OpenAI(api_key=api_key)
+        return self._clients[api_key]
 
     def _call_with_retry(self, fn, **kwargs):
         last: Exception | None = None

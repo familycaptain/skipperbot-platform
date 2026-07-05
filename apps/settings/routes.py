@@ -28,6 +28,7 @@ from app_platform.auth import enforce_admin, require_user
 from app_platform import config as platform_config
 from app_platform import settings as platform_settings
 from app_platform import secrets as platform_secrets
+from app_platform.time import timezone_choices as _timezone_choices
 
 logger = logging.getLogger(__name__)
 
@@ -49,15 +50,18 @@ PLATFORM_PANELS: dict[str, dict] = {
              "description": "Used everywhere times are shown. Stored as the IANA name.",
              "default": "", "choices_provider": "timezones"},
             {"key": "default_location", "type": "string", "label": "Location",
-             "description": "Your home location for weather and other location lookups. "
-                            "Enter any place name or postal,country — it's geocoded and stored. "
+             "description": "Your home location (city / region / country) for weather and other "
+                            "location lookups — no street address needed. Enter any place name or "
+                            "postal,country — it's geocoded and stored. "
                             "Chat, Discord, and voice all use it by default.",
-             "placeholder": "e.g. Austin, Texas, US  —or—  SW1A 1AA, UK",
+             "placeholder": "e.g. London, UK  —or—  Van Buren, AR, USA",
              "default": ""},
             {"key": "smart_model", "type": "string", "label": "Smart model",
-             "description": "Model for complex reasoning.", "default": "", "requires_restart": True},
+             "description": "Model for complex reasoning. Takes effect immediately — no restart needed.",
+             "default": "", "requires_restart": False},
             {"key": "dumb_model", "type": "string", "label": "Fast model",
-             "description": "Cheaper model for light tasks.", "default": "", "requires_restart": True},
+             "description": "Cheaper model for light tasks. Takes effect immediately — no restart needed.",
+             "default": "", "requires_restart": False},
             {"key": "realtime_model", "type": "string", "label": "Realtime/voice model",
              "description": "Model used by the voice path.", "default": ""},
             {"key": "embedding_model", "type": "string", "label": "Embedding model",
@@ -105,27 +109,6 @@ PLATFORM_PANELS: dict[str, dict] = {
         ],
     },
 }
-
-
-def _timezone_choices() -> list[dict]:
-    """All IANA timezones as ``{value, label}`` pairs, label showing the zone's
-    current UTC offset (DST-aware), sorted by offset then name. The stored value
-    is the bare IANA name; the offset is display-only."""
-    from datetime import datetime
-    from zoneinfo import ZoneInfo, available_timezones
-    out = []
-    for name in available_timezones():
-        try:
-            off = datetime.now(ZoneInfo(name)).utcoffset()
-        except Exception:
-            continue
-        minutes = int(off.total_seconds() // 60) if off else 0
-        sign = "+" if minutes >= 0 else "-"
-        am = abs(minutes)
-        out.append({"value": name, "label": f"{name} (UTC{sign}{am // 60:02d}:{am % 60:02d})",
-                    "_off": minutes})
-    out.sort(key=lambda z: (z["_off"], z["value"]))
-    return [{"value": z["value"], "label": z["label"]} for z in out]
 
 
 def _resolve_choices(f: dict) -> list:

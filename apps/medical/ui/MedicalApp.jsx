@@ -4,6 +4,8 @@ import {
   ChevronDown, ChevronRight, FlaskConical, Pill, Activity, Syringe, CalendarClock, Bell, BellOff,
   Wrench, CheckCircle2, History, AlertTriangle,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 /**
  * Medical App — Medications, Treatments, Events, Labs
@@ -286,7 +288,17 @@ function MedicationsTab({ memberId, userId, refreshKey }) {
         <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus size={14} />Add Medication</button>
       </div>
 
-      {meds.length === 0 && <p className="text-faint text-sm text-center py-8">No medications yet.</p>}
+      {meds.length === 0 && (
+        <PristineEmpty
+          appId="medical"
+          title="Medications"
+          blurb={getAppManifest("medical")?.heroes?.medications}
+          records={meds}
+          loading={loading}
+          filterActive={!!memberId || showInactive}
+          fallback={<p className="text-faint text-sm text-center py-8">No medications yet.</p>}
+        />
+      )}
 
       <div className="space-y-2">
         {meds.map(med => {
@@ -497,7 +509,17 @@ function TreatmentsTab({ memberId, userId, refreshKey }) {
         <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus size={14} />Add Treatment</button>
       </div>
 
-      {treatments.length === 0 && <p className="text-faint text-sm text-center py-8">No treatments yet.</p>}
+      {treatments.length === 0 && (
+        <PristineEmpty
+          appId="medical"
+          title="Treatments"
+          blurb={getAppManifest("medical")?.heroes?.treatments}
+          records={treatments}
+          loading={loading}
+          filterActive={!!memberId || showInactive}
+          fallback={<p className="text-faint text-sm text-center py-8">No treatments yet.</p>}
+        />
+      )}
 
       <div className="space-y-2">
         {treatments.map(t => {
@@ -748,7 +770,17 @@ function EventsTab({ memberId, userId, refreshKey }) {
         <button onClick={() => setShowAdd(true)} className={btnPrimary}><Plus size={14} />Log Event</button>
       </div>
 
-      {events.length === 0 && <p className="text-faint text-sm text-center py-8">No events yet.</p>}
+      {events.length === 0 && (
+        <PristineEmpty
+          appId="medical"
+          title="Events"
+          blurb={getAppManifest("medical")?.heroes?.events}
+          records={events}
+          loading={loading}
+          filterActive={!!memberId || !!typeFilter}
+          fallback={<p className="text-faint text-sm text-center py-8">No events yet.</p>}
+        />
+      )}
 
       <div className="space-y-2">
         {events.map(ev => (
@@ -972,7 +1004,17 @@ function LabsTab({ memberId, userId, refreshKey }) {
 
       {showManage && <ManageLabTests tests={tests} onRefresh={load} />}
 
-      {rows.length === 0 && !showManage && <p className="text-faint text-sm text-center py-8">No lab results yet.</p>}
+      {rows.length === 0 && !showManage && (
+        <PristineEmpty
+          appId="medical"
+          title="Labs"
+          blurb={getAppManifest("medical")?.heroes?.labs}
+          records={rows}
+          loading={loading}
+          filterActive={!!memberId || !!filterTestId || !!filterEventId}
+          fallback={<p className="text-faint text-sm text-center py-8">No lab results yet.</p>}
+        />
+      )}
 
       {rows.length > 0 && (
         <div className="overflow-x-auto">
@@ -1302,7 +1344,15 @@ function AppointmentsTab({ memberId, userId, refreshKey }) {
       </div>
 
       {appts.length === 0 && (
-        <p className="text-faint text-sm text-center py-8">No appointments scheduled.</p>
+        <PristineEmpty
+          appId="medical"
+          title="Appointments"
+          blurb={getAppManifest("medical")?.heroes?.appointments}
+          records={appts}
+          loading={loading}
+          filterActive={!!memberId || showPast || showCancelled}
+          fallback={<p className="text-faint text-sm text-center py-8">No appointments scheduled.</p>}
+        />
       )}
 
       <div className="space-y-2">
@@ -1651,7 +1701,15 @@ function EquipmentTab({ memberId, userId, refreshKey }) {
       </div>
 
       {equipment.length === 0 && (
-        <p className="text-faint text-sm text-center py-8">No medical equipment tracked yet.</p>
+        <PristineEmpty
+          appId="medical"
+          title="Equipment"
+          blurb={getAppManifest("medical")?.heroes?.equipment}
+          records={equipment}
+          loading={loading}
+          filterActive={!!memberId || showInactive}
+          fallback={<p className="text-faint text-sm text-center py-8">No medical equipment tracked yet.</p>}
+        />
       )}
 
       <div className="space-y-3">

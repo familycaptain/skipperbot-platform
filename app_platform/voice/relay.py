@@ -681,10 +681,18 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                                     # attributed to them right away.
                                     await _set_locked_identity(
                                         person.strip().lower(), 1.0, relock=False)
-                                out = (f"Got it — I'll recognize {person}'s voice from now on."
-                                       if ok else
-                                       "I couldn't capture a clear voice sample. Make sure voice "
-                                       "recognition is set up, then say a full sentence and try again.")
+                                if ok:
+                                    out = f"Got it — I'll recognize {person}'s voice from now on."
+                                elif not speaker_id.available():
+                                    # The speaker-ID extra isn't installed, so there's
+                                    # nothing to enroll into — point at the enable path
+                                    # rather than a transient "try again" hint.
+                                    out = ("Voice speaker recognition isn't set up on this host, "
+                                           "so I can't remember individual voices yet. Ask whoever "
+                                           "runs Skipper to enable it with './skipper.sh enable-voice'.")
+                                else:
+                                    out = ("I couldn't capture a clear voice sample. Say a full "
+                                           "sentence and try again.")
                             await _apply_tool_events(oai, [
                                 {"type": "tool_result", "call_id": call_id, "output": out}])
                         else:

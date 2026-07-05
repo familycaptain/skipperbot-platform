@@ -1,0 +1,45 @@
+kind: specification
+id: platform.docs.pi-setup-nvme-swap
+title: Pi setup guide documents NVMe boot + 2GB zram + 6GB on-disk swap on a 16GB/2242 Pi 5
+state: live
+autonomy: gated
+verified: true
+behavior: >
+  docs/00-pi-hardware-and-setup.md documents the operator's target state — a 16 GB Raspberry Pi 5
+  with an M.2 2242 NVMe SSD, booting off the NVMe, plus 2 GB zram and 6 GB persistent on-disk swap —
+  as complete, current (Bookworm), copy-pasteable command blocks. Specifically: the shopping list and
+  the why-parts prose present the 16 GB Pi 5 as the minimum — worded as "recommended" OR "required"
+  (the operator confirmed Skipper requires 16 GB and will not run on 8 GB); the old "8 GB (16 GB better)"
+  / "8 GB practical floor" framing is gone. They also recommend an M.2 2242 (22x42 mm) SSD, with a prominent blockquote warning that
+  the official Pi 5 M.2 HAT+ fits only short 2230/2242 drives and the common 2280 will not seat; the
+  HAT+ row says 2230/2242 (not 2280). It references Jeff Geerling's Pi 5 NVMe writeups. The NVMe-boot
+  step updates the bootloader EEPROM (sudo rpi-eeprom-update -a) and sets BOOT_ORDER=0xf416 (NVMe first,
+  SD fallback), gets the OS onto the NVMe, removes the SD, and verifies root is on the nvme device
+  (findmnt / / lsblk). A new "Configure swap" section opens with the rationale (zram = fast compressed
+  in-RAM swap that spares the SSD; on-disk swap = an overflow safety net surviving OOM + reboot) and the
+  net target, then gives: (a) a 2 GB zram device via zram-tools with PERCENT disabled (it overrides SIZE,
+  default 50%) so SIZE=2048 yields a real 2 GB device, enabled + verified; (b) a 6 GB persistent on-disk
+  swap, leading with a MANUAL /swapfile (fallocate -l 6G + chmod 600 + mkswap + swapon + /etc/fstab —
+  the reliable path since dphys-swapfile is not always installed) with dphys-swapfile (CONF_SWAPSIZE +
+  CONF_MAXSWAP = 6144) as the alternative, the two flagged mutually exclusive, verified across a reboot.
+  Each runnable procedure is a fenced bash block with a verification command. The closing memory note +
+  a net-target line state: 16 GB RAM + 2 GB zram + 6 GB on-disk swap, booting off the NVMe.
+implements:
+- docs/00-pi-hardware-and-setup.md
+tests:
+- type: unit
+  path: tests/specs/test_pi_setup_doc.py
+  rubric: >
+    Offline content/structural assertions on docs/00-pi-hardware-and-setup.md: 16 GB is the spec'd
+    minimum (old 8 GB framing gone; the Pi shopping row qualifies '16 GB' as 'required' OR 'recommended',
+    cell-scoped so the always-present 'Required?' column can't satisfy it); '2242' present
+    and the SSD shopping row does not recommend a 2280, with a prominent 2242-not-2280 warning callout;
+    a Geerling reference; NVMe-boot commands (rpi-eeprom-update + BOOT_ORDER + findmnt/nvme0n1); 2 GB
+    zram (zram + SIZE=2048 + PERCENT disabled/flagged + zramswap); 6 GB on-disk swap (fallocate -l 6G or
+    dphys 6144, persistence via /etc/fstab or dphys, swapon --show/-s verify); the zram and 6 GB-swap
+    setups inside fenced bash blocks and >=4 fenced bash blocks total.
+links: {}
+notes: >
+  Issue #45 (operator-authored; follow-up to #37). Operator chose the manual /swapfile as the primary
+  6 GB method (dphys-swapfile was not installed on their Pi 5); dphys is documented as the alternative.
+  Review caught + fixed a real bug (zram PERCENT overrides SIZE). New feature slug platform.docs.

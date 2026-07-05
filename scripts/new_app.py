@@ -22,6 +22,7 @@ resolve.
 
 from __future__ import annotations
 
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -654,17 +655,29 @@ def create_app_skeleton(app_name: str, folder_name: str) -> None:
 
 
 def main() -> int:
-    print("Skipperbot app scaffold generator")
+    ap = argparse.ArgumentParser(
+        description="Scaffold a new skipperbot-app-<name> repo (the platform app contract — "
+                    "see specs/APP_PACKAGES.md). Pass NAME to run non-interactively (for agents/CI); "
+                    "run with no args for interactive prompts.")
+    ap.add_argument("name", nargs="?", help='App display name, proper case, e.g. "Recipes". Omit for interactive mode.')
+    ap.add_argument("folder", nargs="?", help="App folder name (default: skipperbot-app-<slug>).")
+    args = ap.parse_args()
 
-    app_name = ""
-    while not app_name.strip():
-        app_name = prompt("App display name (proper case)")
-        if not app_name.strip():
-            print("App name cannot be empty.")
+    app_name = (args.name or "").strip()
+    folder_name = (args.folder or "").strip()
 
-    default_folder = f"skipperbot-app-{slugify(app_name)}"
-    folder_name = prompt("App folder name", default_folder)
-    folder_name = folder_name.strip() or default_folder
+    if app_name:
+        # NON-INTERACTIVE — args supplied (how the `scaffold` adapter op / agents run it).
+        folder_name = folder_name or f"skipperbot-app-{slugify(app_name)}"
+    else:
+        # INTERACTIVE fallback — a human ran it with no args.
+        print("Skipperbot app scaffold generator")
+        while not app_name:
+            app_name = prompt("App display name (proper case)").strip()
+            if not app_name:
+                print("App name cannot be empty.")
+        default_folder = f"skipperbot-app-{slugify(app_name)}"
+        folder_name = prompt("App folder name", default_folder).strip() or default_folder
 
     try:
         create_app_skeleton(app_name, folder_name)
@@ -675,6 +688,7 @@ def main() -> int:
         print(f"Failed to create app scaffold: {exc}", file=sys.stderr)
         return 1
 
+    print(f"Scaffolded app '{app_name}' -> {folder_name}/ (follows specs/APP_PACKAGES.md)")
     return 0
 
 

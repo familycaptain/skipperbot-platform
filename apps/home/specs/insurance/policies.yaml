@@ -1,0 +1,33 @@
+kind: specification
+id: home.insurance.policies
+title: Home Insurance tab is a real feature (policies + coverage summary)
+state: live
+autonomy: gated
+behavior: The Home Insurance tab lists insurance policies (provider, policy_number, type,
+  coverage_amount, premium/period, deductible, renewal_date, insured_assets, notes, optional
+  policy document) with search + type filter + add/edit/delete, a client-computed coverage-summary
+  band (total coverage, total ANNUAL premium [premiums normalized by period], policy count,
+  per-type, next renewal), and a per-policy renewal badge — replacing the placeholder. Each
+  mutation persists to app_home.home_insurance_policies and emits digest_record; agent tools
+  give cross-surface parity. Empty tab (no active search/type filter) shows the per-view hero;
+  filtered zero-result keeps normal text.
+implements:
+- apps/home/migrations/006_insurance.sql
+- apps/home/data.py
+- apps/home/routes.py
+- apps/home/handlers.py
+- apps/home/tools.py
+- apps/home/manifest.yaml
+- apps/home/ui/HomeApp.jsx
+- apps/home/ui/index.js
+- web/src/apps/emptyStateHero.js
+tests: []
+links: {}
+notes: 'Verified LIVE at Gate-2 (test host): migration 006 applied; Home app LOADED with NO
+  cross-schema-FK error (soft-FK home_insurance_policy_images held; entity ''hip'' + image-link
+  handler ''home_insurance_policy'' registered); guardrail EXIT 0 (home per-view maintenance+appliances+insurance);
+  full CRUD round-trip (create hip-51928962/list-envelope/update/delete); digest firing; live
+  UI real Insurance tab + coverage-summary band (annualization proven: $1800 + $120*12 = $3240)
+  + renewal badges. Faithful clone of ev-67 Appliances. 2nd of 3 Home build-outs. Blurb +
+  field set per Gate-1.'
+verified: true

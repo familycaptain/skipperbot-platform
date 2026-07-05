@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Search, Plus, MapPin, Tag, X, Loader2, Package,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 /**
  * Item Locator List App — singleton for browsing, searching, and creating located items.
@@ -206,10 +208,19 @@ export default function LocatorListApp({ appId, userId, context = {}, onOpenApp,
             <Loader2 size={18} className="animate-spin mr-2" /> Loading items...
           </div>
         ) : items.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-faint text-sm">
-            <Package size={32} className="mb-2 opacity-40" />
-            {searchQuery ? "No items match your search." : "No items tracked yet. Click + New to add one!"}
-          </div>
+          <PristineEmpty
+            appId="locator"
+            blurb={getAppManifest("locator")?.blurb}
+            records={items}
+            loading={loading}
+            filterActive={!!searchQuery.trim() || !!activeLocation}
+            fallback={
+              <div className="flex flex-col items-center justify-center h-32 text-faint text-sm">
+                <Package size={32} className="mb-2 opacity-40" />
+                No items match your search.
+              </div>
+            }
+          />
         ) : (
           items.map((item) => (
             <button

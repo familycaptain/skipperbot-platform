@@ -70,6 +70,14 @@ function greetingTypingDelay() {
   return GREETING_TYPING_MS;
 }
 
+// Live onboarding greeting (platform.onboarding.live-greeting): for a fresh
+// PRIMARY onboarding arrival the greeting is SERVER-driven, so the client shows
+// the typing indicator OPTIMISTICALLY (no empty-silence gap) until the real
+// greeting turn arrives. Bounded fail-open timeout: if no greeting arrives (a
+// produce/deliver failure or a second tab that lost the greet-once claim), clear
+// the dots and fall back to the normal input state rather than spinning forever.
+const OPTIMISTIC_GREETING_TIMEOUT_MS = 15000;
+
 export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDocsUpdated, onRemindersUpdated, onRecipesUpdated, onBrainstormUpdated, onEditProposal, onTodoUpdated) {
   const [connected, setConnected] = useState(false);
   // Coarse connection state for the chat surface: 'connecting' | 'connected' | 'auth_failed'.
@@ -86,6 +94,11 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
   const pingTimer = useRef(null);
   const msgIdRef = useRef(0);
   const buildIdRef = useRef(null);
+  // ev-79: the bounded optimistic-typing fail-open armed at keyless load (the #74
+  // fresh-primary-arrival branch). Held in a ref so a SERVER-driven 'typing' frame in
+  // the ws effect can cancel it once the arrival greeting is actually being produced —
+  // keeping presence lit through a produce longer than OPTIMISTIC_GREETING_TIMEOUT_MS.
+  const optimisticGreetTimer = useRef(null);
 
   // Keep stable refs to event callbacks so ws.onmessage always calls the latest
   const onOpenAppRef = useRef(onOpenApp);
@@ -131,10 +144,59 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
         // Offline or fresh session — fall through to a plain greeting.
       }
       if (cancelled) return;
+
+      // Synchronous 'primary + onboarding-in-progress' signal (NOT hist.length):
+      // a fresh PRIMARY onboarding user gets a SERVER-driven live greeting, so we
+      // suppress the canned client greeting and show typing optimistically. A
+      // fresh NON-primary user (pending=false) still gets their client greeting.
+      let liveGreeting = false;
+      let onboarding = false;
+      try {
+        const gRes = await fetch("/api/onboarding/live-greeting-status");
+        if (gRes.ok) {
+          const gData = await gRes.json();
+          liveGreeting = !!gData.pending;
+          // UNGATED onboarding-in-progress flag (issue #74): true for the whole
+          // onboarding window, unlike `pending` (greet-once-gated, stale after
+          // the first greeting). Drives welcome-back suppression on reload.
+          onboarding = !!gData.onboarding;
+        }
+      } catch {
+        // Offline or error — leave false so the canned greeting still shows.
+      }
+      if (cancelled) return;
+
       // Show history immediately; the GREETING is deferred behind a short typing
       // beat so Skipper feels present rather than dumping text instantly (issue #16).
       if (hist.length) setMessages((prev) => [...hist, ...prev]);
 
+      // Onboarding-in-progress (primary): the canned greeting is ALWAYS
+      // suppressed for ALL hist.length (issue #74) — at most the single
+      // server-driven live onboarding greeting shows, never a client
+      // 'Welcome back'. A FRESH arrival (no history) still expecting that
+      // server greeting gets OPTIMISTIC typing (no empty-silence gap) with a
+      // BOUNDED fail-open timeout; the delivered greeting turn (a chat_response
+      // frame) clears isTyping via the onmessage handler below. A reload WITH
+      // history shows history only and returns WITHOUT setIsTyping (no stuck
+      // dots). Keyed off the UNGATED `onboarding` flag, not `pending` (which is
+      // greet-once-gated and false after the first greeting — see issue #74).
+      if (onboarding) {
+        if (hist.length === 0 && liveGreeting) {
+          setIsTyping(true);
+          // Bounded fail-open BACKSTOP: clears the dots if no server presence ever
+          // arrives (produce/deliver failure, or a second tab that lost the greet-once
+          // claim). Once the server sends its 'typing' frame (produce started), the ws
+          // effect cancels this so presence persists for the whole produce (ev-79).
+          optimisticGreetTimer.current = setTimeout(() => {
+            if (!cancelled) setIsTyping(false);
+            optimisticGreetTimer.current = null;
+          }, OPTIMISTIC_GREETING_TIMEOUT_MS);
+        }
+        return;
+      }
+
+      // UNCHANGED: the welcome-back (returning) greeting and the fresh NON-primary
+      // greeting stay client-side (reconciles platform.agent.greeting-typing-beat).
       const greeting = {
         id: nextId(),
         role: "bot",
@@ -161,6 +223,10 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
     return () => {
       cancelled = true;
       if (greetingTimer) clearTimeout(greetingTimer);
+      if (optimisticGreetTimer.current) {
+        clearTimeout(optimisticGreetTimer.current);
+        optimisticGreetTimer.current = null;
+      }
     };
   }, [userId]);
 
@@ -199,6 +265,16 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
       switch (data.type) {
         case "typing":
           setIsTyping(data.status);
+          // ev-79: a server-driven 'typing:true' frame means the arrival greeting is now
+          // actively being produced — cancel the bounded optimistic fail-open armed at
+          // keyless load so presence stays lit through a produce longer than
+          // OPTIMISTIC_GREETING_TIMEOUT_MS (no silent dead-air gap). The greeting turn
+          // (chat_response) or a server 'typing:false' then clears the dots. Scoped to the
+          // onboarding optimistic timer only — never re-arms the #74 'Welcome back' path.
+          if (data.status && optimisticGreetTimer.current) {
+            clearTimeout(optimisticGreetTimer.current);
+            optimisticGreetTimer.current = null;
+          }
           break;
 
         case "progress":
@@ -307,6 +383,9 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
 
     ws.onclose = (event) => {
       setConnected(false);
+      // ev-79: a dropped socket clears presence — backstop if a produce dies mid-greeting
+      // after emitting its 'typing:true' frame (which cancelled the optimistic timer).
+      setIsTyping(false);
       wsRef.current = null;
       clearInterval(pingTimer.current);
       if (event && event.code === WS_AUTH_FAILED) {

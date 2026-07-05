@@ -1,0 +1,34 @@
+kind: specification
+id: home.appliances.purchase-history
+title: Home Appliances tab is a real record-based feature (purchase history)
+state: live
+autonomy: gated
+behavior: The Home Appliances tab lists the household's appliances (name, type, brand/model,
+  serial, location, purchase date/price, warranty expiry, notes, optional receipt/photo) with
+  search + type filter + add/edit/delete, replacing the placeholder stub. Each mutation persists
+  to app_home.home_appliances and emits digest_record (created/updated/deleted); agent tools
+  (create/list/get/update/delete_home_appliance) give cross-surface parity. A passive warranty
+  badge shows expired/expiring/covered from warranty_expires. When the tab is genuinely empty
+  (no records, no active search/type filter) it shows the per-view empty-state hero; a filtered
+  zero-result view keeps the normal text.
+implements:
+- apps/home/migrations/005_appliances.sql
+- apps/home/data.py
+- apps/home/routes.py
+- apps/home/handlers.py
+- apps/home/tools.py
+- apps/home/manifest.yaml
+- apps/home/ui/HomeApp.jsx
+- apps/home/ui/index.js
+- web/src/apps/emptyStateHero.js
+tests: []
+links: {}
+notes: 'Verified LIVE at Gate-2 (test host): migration 005 applied; Home app LOADED with NO
+  cross-schema-FK error (the soft-FK home_appliance_images requirement — loader.validate_no_cross_schema_fks
+  did not raise; entity ''ha'' + image-link handler ''home_appliance'' registered, 23 tools,
+  routes mounted); empty-state-hero guardrail EXIT 0 (home per-view maintenance+appliances);
+  full CRUD round-trip green (create ha-4a4b7011/list-envelope/update/delete); digest firing
+  (memory queue app:home:ha-...:updated); live UI is a real tab with a working warranty badge.
+  Faithful mirror of Home Issues. First of the 3 Home build-outs (#67/#68/#69). Blurb + field
+  set per Gate-1.'
+verified: true

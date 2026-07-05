@@ -29,17 +29,21 @@ const TIERS = [
 ];
 
 const optValue = (r) => `${r.connector}::${r.model}`;
-const optLabel = (r) =>
+// Tier-aware: a row is a "(default)" for THIS tier iff tierKey ∈ its default_tiers, so the Smart
+// dropdown marks the smart default, Fast the FAST default, Text-encoding its embedding default.
+const isTierDefault = (r, tierKey) =>
+  Array.isArray(r.default_tiers) && r.default_tiers.includes(tierKey);
+const optLabel = (r, tierKey) =>
   `${r.provider_display} / ${r.model}` +
-  (r.default ? " (default)" : "") +
+  (isTierDefault(r, tierKey) ? " (default)" : "") +
   (r.verified ? "" : " — experimental");
 
-function pickDefault(rows) {
+function pickDefault(rows, tierKey) {
   if (!rows || !rows.length) return null;
-  // Happy path: prefer a verified connector's default, then any default, then the first row.
+  // Happy path: prefer a verified connector's tier default, then any tier default, then row 0.
   return (
-    rows.find((r) => r.verified && r.default) ||
-    rows.find((r) => r.default) ||
+    rows.find((r) => r.verified && isTierDefault(r, tierKey)) ||
+    rows.find((r) => isTierDefault(r, tierKey)) ||
     rows[0]
   );
 }
@@ -66,7 +70,7 @@ export default function ModelConfig({ mode = "onboarding", embeddingLocked = fal
           const chosen =
             (cur.connector && cur.model
               ? rows.find((r) => r.connector === cur.connector && r.model === cur.model)
-              : null) || pickDefault(rows);
+              : null) || pickDefault(rows, t.key);
           seed[t.key] = {
             connector: chosen ? chosen.connector : "",
             model: chosen ? chosen.model : "",
@@ -166,7 +170,7 @@ export default function ModelConfig({ mode = "onboarding", embeddingLocked = fal
               onChange={(e) => onSelect(tier, e.target.value)}
             >
               {rows.map((r) => (
-                <option key={optValue(r)} value={optValue(r)}>{optLabel(r)}</option>
+                <option key={optValue(r)} value={optValue(r)}>{optLabel(r, tier.key)}</option>
               ))}
             </select>
 

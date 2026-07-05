@@ -30,6 +30,19 @@ _ISSUE_HINT = (
     "Focus on: issue title, location in the home, severity (minor/moderate/major/critical), "
     "current status, description of the problem, and any fix information."
 )
+_APPLIANCE_HINT = (
+    "Focus on: appliance name, type, brand/model, serial number, location, "
+    "purchase date and price, and warranty expiration."
+)
+_POLICY_HINT = (
+    "Focus on: insurance provider, policy number, policy type (Home/Auto/Life/etc), "
+    "coverage amount, premium and how often it is paid, deductible, renewal date, "
+    "and what assets the policy covers."
+)
+_CONTRACTOR_HINT = (
+    "Focus on: contractor name, trade (electrician/plumber/roofer/etc), company, "
+    "phone and email, rating (1-5), when last used, past jobs, and any notes."
+)
 
 
 # ---------------------------------------------------------------------------
@@ -561,6 +574,578 @@ def unlink_issue_image(issue_id: str, image_id: str):
 
 
 # ---------------------------------------------------------------------------
+# Home Appliances (Appliances Tab)
+# ---------------------------------------------------------------------------
+
+def _appliance_row(row: dict) -> dict:
+    if not row:
+        return {}
+    return {
+        "id": row["id"],
+        "name": row.get("name") or "",
+        "appliance_type": row.get("appliance_type") or "General",
+        "brand": row.get("brand") or "",
+        "model": row.get("model") or "",
+        "serial_number": row.get("serial_number") or "",
+        "location": row.get("location") or "",
+        "purchase_date": row["purchase_date"].isoformat() if row.get("purchase_date") else "",
+        "purchase_price": float(row["purchase_price"]) if row.get("purchase_price") is not None else None,
+        "warranty_expires": row["warranty_expires"].isoformat() if row.get("warranty_expires") else "",
+        "notes": row.get("notes") or "",
+        "created_by": row.get("created_by") or "",
+        "created_at": row["created_at"].isoformat() if row.get("created_at") else "",
+        "updated_at": row["updated_at"].isoformat() if row.get("updated_at") else "",
+    }
+
+
+def create_appliance(appliance: dict) -> dict | None:
+    """Insert a new home appliance."""
+    row = execute_returning_in_schema(
+        SCHEMA,
+        """INSERT INTO home_appliances (id, name, appliance_type, brand, model,
+                                        serial_number, location, purchase_date,
+                                        purchase_price, warranty_expires, notes,
+                                        created_by, created_at, updated_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+           RETURNING *""",
+        (
+            appliance["id"],
+            appliance.get("name", ""),
+            appliance.get("appliance_type", "General"),
+            appliance.get("brand", ""),
+            appliance.get("model", ""),
+            appliance.get("serial_number", ""),
+            appliance.get("location", ""),
+            appliance.get("purchase_date") or None,
+            appliance.get("purchase_price"),
+            appliance.get("warranty_expires") or None,
+            appliance.get("notes", ""),
+            appliance.get("created_by", ""),
+            appliance.get("created_at", _now()),
+            appliance.get("updated_at", _now()),
+        ),
+    )
+    result = _appliance_row(row) if row else None
+    if result:
+        digest_record(app_id="home", entity_type="home appliance", action="created",
+                      entity_id=result["id"], record=result,
+                      by=appliance.get("created_by", ""), context_hint=_APPLIANCE_HINT)
+    return result
+
+
+def get_appliance(appliance_id: str) -> dict | None:
+    row = fetch_one_in_schema(SCHEMA, "SELECT * FROM home_appliances WHERE id = %s", (appliance_id,))
+    return _appliance_row(row) if row else None
+
+
+def get_all_appliances(appliance_type: str = None, location: str = None, limit: int = 200) -> list[dict]:
+    clauses, params = [], []
+    if appliance_type:
+        clauses.append("appliance_type = %s")
+        params.append(appliance_type)
+    if location:
+        clauses.append("location ILIKE %s")
+        params.append(location)
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+    params.append(limit)
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        f"""SELECT * FROM home_appliances
+            {where}
+            ORDER BY created_at DESC
+            LIMIT %s""",
+        tuple(params),
+    )
+    return [_appliance_row(r) for r in rows]
+
+
+def search_appliances(query: str) -> list[dict]:
+    pattern = f"%{query}%"
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        """SELECT * FROM home_appliances
+           WHERE name ILIKE %s OR appliance_type ILIKE %s OR brand ILIKE %s
+              OR model ILIKE %s OR serial_number ILIKE %s OR location ILIKE %s
+              OR notes ILIKE %s
+           ORDER BY created_at DESC""",
+        (pattern, pattern, pattern, pattern, pattern, pattern, pattern),
+    )
+    return [_appliance_row(r) for r in rows]
+
+
+def update_appliance(appliance_id: str, updates: dict, by: str = "") -> bool:
+    allowed = {
+        "name", "appliance_type", "brand", "model", "serial_number",
+        "location", "purchase_date", "purchase_price", "warranty_expires", "notes",
+    }
+    sets, vals = [], []
+    for key, val in updates.items():
+        if key not in allowed:
+            continue
+        sets.append(f"{key} = %s")
+        vals.append(val)
+    if not sets:
+        return False
+    sets.append("updated_at = %s")
+    vals.append(_now())
+    vals.append(appliance_id)
+    ok = execute_in_schema(
+        SCHEMA, f"UPDATE home_appliances SET {', '.join(sets)} WHERE id = %s", tuple(vals)
+    ) > 0
+    if ok:
+        updated = get_appliance(appliance_id)
+        if updated:
+            digest_record(app_id="home", entity_type="home appliance", action="updated",
+                          entity_id=appliance_id, record=updated, by=by,
+                          context_hint=_APPLIANCE_HINT)
+    return ok
+
+
+def delete_appliance(appliance_id: str, by: str = "") -> bool:
+    appliance = get_appliance(appliance_id)
+    ok = execute_in_schema(SCHEMA, "DELETE FROM home_appliances WHERE id = %s", (appliance_id,)) > 0
+    if ok and appliance:
+        digest_record(app_id="home", entity_type="home appliance", action="deleted",
+                      entity_id=appliance_id, record=appliance, by=by)
+    return ok
+
+
+def get_appliance_types() -> list[str]:
+    """Distinct appliance types in use."""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT DISTINCT appliance_type FROM home_appliances WHERE appliance_type != '' ORDER BY appliance_type",
+    )
+    return [r["appliance_type"] for r in rows if r.get("appliance_type")]
+
+
+def get_appliance_locations() -> list[str]:
+    """Distinct locations that have appliances."""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT DISTINCT location FROM home_appliances WHERE location != '' ORDER BY location",
+    )
+    return [r["location"] for r in rows if r.get("location")]
+
+
+# ---------------------------------------------------------------------------
+# Home Appliance Images (soft FK to public.images)
+# ---------------------------------------------------------------------------
+
+def get_appliance_images(appliance_id: str) -> list[dict]:
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        """SELECT i.*, hai.sort_order FROM public.images i
+           JOIN home_appliance_images hai ON hai.image_id = i.id
+           WHERE hai.appliance_id = %s
+           ORDER BY hai.sort_order, i.created_at""",
+        (appliance_id,),
+    )
+    return [_image_row(r) for r in rows]
+
+
+def link_appliance_image(appliance_id: str, image_id: str, sort_order: int = 0):
+    execute_in_schema(
+        SCHEMA,
+        """INSERT INTO home_appliance_images (image_id, appliance_id, sort_order)
+           VALUES (%s, %s, %s) ON CONFLICT DO NOTHING""",
+        (image_id, appliance_id, sort_order),
+    )
+
+
+def unlink_appliance_image(appliance_id: str, image_id: str):
+    execute_in_schema(
+        SCHEMA,
+        "DELETE FROM home_appliance_images WHERE appliance_id = %s AND image_id = %s",
+        (appliance_id, image_id),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Home Contractors (Contractors Tab)
+# ---------------------------------------------------------------------------
+
+def _contractor_row(row: dict) -> dict:
+    if not row:
+        return {}
+    return {
+        "id": row["id"],
+        "name": row.get("name") or "",
+        "trade": row.get("trade") or "General",
+        "company": row.get("company") or "",
+        "phone": row.get("phone") or "",
+        "email": row.get("email") or "",
+        "rating": row.get("rating"),
+        "last_used": row["last_used"].isoformat() if row.get("last_used") else "",
+        "jobs_history": row.get("jobs_history") or "",
+        "notes": row.get("notes") or "",
+        "created_by": row.get("created_by") or "",
+        "created_at": row["created_at"].isoformat() if row.get("created_at") else "",
+        "updated_at": row["updated_at"].isoformat() if row.get("updated_at") else "",
+    }
+
+
+def create_contractor(contractor: dict) -> dict | None:
+    """Insert a new home contractor."""
+    row = execute_returning_in_schema(
+        SCHEMA,
+        """INSERT INTO home_contractors (id, name, trade, company, phone, email,
+                                         rating, last_used, jobs_history, notes,
+                                         created_by, created_at, updated_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+           RETURNING *""",
+        (
+            contractor["id"],
+            contractor.get("name", ""),
+            contractor.get("trade", "General"),
+            contractor.get("company", ""),
+            contractor.get("phone", ""),
+            contractor.get("email", ""),
+            contractor.get("rating"),
+            contractor.get("last_used") or None,
+            contractor.get("jobs_history", ""),
+            contractor.get("notes", ""),
+            contractor.get("created_by", ""),
+            contractor.get("created_at", _now()),
+            contractor.get("updated_at", _now()),
+        ),
+    )
+    result = _contractor_row(row) if row else None
+    if result:
+        digest_record(app_id="home", entity_type="home contractor", action="created",
+                      entity_id=result["id"], record=result,
+                      by=contractor.get("created_by", ""), context_hint=_CONTRACTOR_HINT)
+    return result
+
+
+def get_contractor(contractor_id: str) -> dict | None:
+    row = fetch_one_in_schema(SCHEMA, "SELECT * FROM home_contractors WHERE id = %s", (contractor_id,))
+    return _contractor_row(row) if row else None
+
+
+def get_all_contractors(trade: str = None, limit: int = 200) -> list[dict]:
+    clauses, params = [], []
+    if trade:
+        clauses.append("trade = %s")
+        params.append(trade)
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+    params.append(limit)
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        f"""SELECT * FROM home_contractors
+            {where}
+            ORDER BY created_at DESC
+            LIMIT %s""",
+        tuple(params),
+    )
+    return [_contractor_row(r) for r in rows]
+
+
+def search_contractors(query: str) -> list[dict]:
+    pattern = f"%{query}%"
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        """SELECT * FROM home_contractors
+           WHERE name ILIKE %s OR trade ILIKE %s OR company ILIKE %s
+              OR phone ILIKE %s OR email ILIKE %s OR jobs_history ILIKE %s
+              OR notes ILIKE %s
+           ORDER BY created_at DESC""",
+        (pattern, pattern, pattern, pattern, pattern, pattern, pattern),
+    )
+    return [_contractor_row(r) for r in rows]
+
+
+def update_contractor(contractor_id: str, updates: dict, by: str = "") -> bool:
+    allowed = {
+        "name", "trade", "company", "phone", "email",
+        "rating", "last_used", "jobs_history", "notes",
+    }
+    sets, vals = [], []
+    for key, val in updates.items():
+        if key not in allowed:
+            continue
+        sets.append(f"{key} = %s")
+        vals.append(val)
+    if not sets:
+        return False
+    sets.append("updated_at = %s")
+    vals.append(_now())
+    vals.append(contractor_id)
+    ok = execute_in_schema(
+        SCHEMA, f"UPDATE home_contractors SET {', '.join(sets)} WHERE id = %s", tuple(vals)
+    ) > 0
+    if ok:
+        updated = get_contractor(contractor_id)
+        if updated:
+            digest_record(app_id="home", entity_type="home contractor", action="updated",
+                          entity_id=contractor_id, record=updated, by=by,
+                          context_hint=_CONTRACTOR_HINT)
+    return ok
+
+
+def delete_contractor(contractor_id: str, by: str = "") -> bool:
+    contractor = get_contractor(contractor_id)
+    ok = execute_in_schema(SCHEMA, "DELETE FROM home_contractors WHERE id = %s", (contractor_id,)) > 0
+    if ok and contractor:
+        digest_record(app_id="home", entity_type="home contractor", action="deleted",
+                      entity_id=contractor_id, record=contractor, by=by)
+    return ok
+
+
+def get_contractor_trades() -> list[str]:
+    """Distinct contractor trades in use."""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT DISTINCT trade FROM home_contractors WHERE trade != '' ORDER BY trade",
+    )
+    return [r["trade"] for r in rows if r.get("trade")]
+
+
+# ---------------------------------------------------------------------------
+# Home Contractor Trades (configurable) — mirrors Home Task Categories (minus
+# color). Drives the Add/Edit trade <select> + the Manage-trades screen. NOTE:
+# home_contractors.trade stays a FREE-FORM label; this table is a lookup only.
+# Rename/delete of a trade NEVER rewrites any contractor row.
+# ---------------------------------------------------------------------------
+
+def _trade_row(row: dict) -> dict:
+    if not row:
+        return {}
+    return {
+        "id": row["id"],
+        "name": row.get("name") or "",
+        "sort_order": row.get("sort_order", 0),
+        "created_at": row["created_at"].isoformat() if row.get("created_at") else "",
+    }
+
+
+def get_all_contractor_trades() -> list[dict]:
+    """Return all configured contractor trades with full detail."""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT * FROM home_contractor_trades ORDER BY sort_order, name",
+    )
+    return [_trade_row(r) for r in rows]
+
+
+def create_contractor_trade(trade_id: str, name: str) -> dict | None:
+    row = execute_returning_in_schema(
+        SCHEMA,
+        """INSERT INTO home_contractor_trades (id, name, sort_order)
+           VALUES (%s, %s, COALESCE((SELECT MAX(sort_order)+1 FROM home_contractor_trades), 0))
+           RETURNING *""",
+        (trade_id, name),
+    )
+    return _trade_row(row) if row else None
+
+
+def update_contractor_trade(trade_id: str, updates: dict) -> bool:
+    allowed = {"name", "sort_order"}
+    sets, vals = [], []
+    for key, val in updates.items():
+        if key not in allowed:
+            continue
+        sets.append(f"{key} = %s")
+        vals.append(val)
+    if not sets:
+        return False
+    vals.append(trade_id)
+    return execute_in_schema(
+        SCHEMA, f"UPDATE home_contractor_trades SET {', '.join(sets)} WHERE id = %s", tuple(vals)
+    ) > 0
+
+
+def delete_contractor_trade(trade_id: str) -> bool:
+    return execute_in_schema(SCHEMA, "DELETE FROM home_contractor_trades WHERE id = %s", (trade_id,)) > 0
+
+
+def contractor_trade_name_exists(name: str, exclude_id: str = "") -> bool:
+    """True if a trade with this name (case-insensitive) already exists — for a
+    clean 400 on create/rename instead of a raw UNIQUE-violation 500."""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT id FROM home_contractor_trades WHERE lower(name) = lower(%s)",
+        (name,),
+    )
+    return any(r["id"] != exclude_id for r in rows)
+
+
+# ---------------------------------------------------------------------------
+# Home Insurance Policies (Insurance Tab)
+# ---------------------------------------------------------------------------
+
+def _policy_row(row: dict) -> dict:
+    if not row:
+        return {}
+    return {
+        "id": row["id"],
+        "provider": row.get("provider") or "",
+        "policy_number": row.get("policy_number") or "",
+        "policy_type": row.get("policy_type") or "Home",
+        "coverage_amount": float(row["coverage_amount"]) if row.get("coverage_amount") is not None else None,
+        "premium": float(row["premium"]) if row.get("premium") is not None else None,
+        "premium_period": row.get("premium_period") or "annual",
+        "deductible": float(row["deductible"]) if row.get("deductible") is not None else None,
+        "renewal_date": row["renewal_date"].isoformat() if row.get("renewal_date") else "",
+        "insured_assets": row.get("insured_assets") or "",
+        "notes": row.get("notes") or "",
+        "created_by": row.get("created_by") or "",
+        "created_at": row["created_at"].isoformat() if row.get("created_at") else "",
+        "updated_at": row["updated_at"].isoformat() if row.get("updated_at") else "",
+    }
+
+
+def create_policy(policy: dict) -> dict | None:
+    """Insert a new home insurance policy."""
+    row = execute_returning_in_schema(
+        SCHEMA,
+        """INSERT INTO home_insurance_policies (id, provider, policy_number, policy_type,
+                                                coverage_amount, premium, premium_period,
+                                                deductible, renewal_date, insured_assets,
+                                                notes, created_by, created_at, updated_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+           RETURNING *""",
+        (
+            policy["id"],
+            policy.get("provider", ""),
+            policy.get("policy_number", ""),
+            policy.get("policy_type", "Home"),
+            policy.get("coverage_amount"),
+            policy.get("premium"),
+            policy.get("premium_period", "annual"),
+            policy.get("deductible"),
+            policy.get("renewal_date") or None,
+            policy.get("insured_assets", ""),
+            policy.get("notes", ""),
+            policy.get("created_by", ""),
+            policy.get("created_at", _now()),
+            policy.get("updated_at", _now()),
+        ),
+    )
+    result = _policy_row(row) if row else None
+    if result:
+        digest_record(app_id="home", entity_type="home insurance policy", action="created",
+                      entity_id=result["id"], record=result,
+                      by=policy.get("created_by", ""), context_hint=_POLICY_HINT)
+    return result
+
+
+def get_policy(policy_id: str) -> dict | None:
+    row = fetch_one_in_schema(SCHEMA, "SELECT * FROM home_insurance_policies WHERE id = %s", (policy_id,))
+    return _policy_row(row) if row else None
+
+
+def get_all_policies(policy_type: str = None, limit: int = 200) -> list[dict]:
+    clauses, params = [], []
+    if policy_type:
+        clauses.append("policy_type = %s")
+        params.append(policy_type)
+    where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+    params.append(limit)
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        f"""SELECT * FROM home_insurance_policies
+            {where}
+            ORDER BY renewal_date ASC NULLS LAST, created_at DESC
+            LIMIT %s""",
+        tuple(params),
+    )
+    return [_policy_row(r) for r in rows]
+
+
+def search_policies(query: str) -> list[dict]:
+    pattern = f"%{query}%"
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        """SELECT * FROM home_insurance_policies
+           WHERE provider ILIKE %s OR policy_number ILIKE %s OR policy_type ILIKE %s
+              OR insured_assets ILIKE %s OR notes ILIKE %s
+           ORDER BY renewal_date ASC NULLS LAST, created_at DESC""",
+        (pattern, pattern, pattern, pattern, pattern),
+    )
+    return [_policy_row(r) for r in rows]
+
+
+def update_policy(policy_id: str, updates: dict, by: str = "") -> bool:
+    allowed = {
+        "provider", "policy_number", "policy_type", "coverage_amount", "premium",
+        "premium_period", "deductible", "renewal_date", "insured_assets", "notes",
+    }
+    sets, vals = [], []
+    for key, val in updates.items():
+        if key not in allowed:
+            continue
+        sets.append(f"{key} = %s")
+        vals.append(val)
+    if not sets:
+        return False
+    sets.append("updated_at = %s")
+    vals.append(_now())
+    vals.append(policy_id)
+    ok = execute_in_schema(
+        SCHEMA, f"UPDATE home_insurance_policies SET {', '.join(sets)} WHERE id = %s", tuple(vals)
+    ) > 0
+    if ok:
+        updated = get_policy(policy_id)
+        if updated:
+            digest_record(app_id="home", entity_type="home insurance policy", action="updated",
+                          entity_id=policy_id, record=updated, by=by,
+                          context_hint=_POLICY_HINT)
+    return ok
+
+
+def delete_policy(policy_id: str, by: str = "") -> bool:
+    policy = get_policy(policy_id)
+    ok = execute_in_schema(SCHEMA, "DELETE FROM home_insurance_policies WHERE id = %s", (policy_id,)) > 0
+    if ok and policy:
+        digest_record(app_id="home", entity_type="home insurance policy", action="deleted",
+                      entity_id=policy_id, record=policy, by=by)
+    return ok
+
+
+def get_policy_types() -> list[str]:
+    """Distinct policy types in use."""
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        "SELECT DISTINCT policy_type FROM home_insurance_policies WHERE policy_type != '' ORDER BY policy_type",
+    )
+    return [r["policy_type"] for r in rows if r.get("policy_type")]
+
+
+# ---------------------------------------------------------------------------
+# Home Insurance Policy Images (soft FK to public.images)
+# ---------------------------------------------------------------------------
+
+def get_policy_images(policy_id: str) -> list[dict]:
+    rows = fetch_all_in_schema(
+        SCHEMA,
+        """SELECT i.*, hipi.sort_order FROM public.images i
+           JOIN home_insurance_policy_images hipi ON hipi.image_id = i.id
+           WHERE hipi.policy_id = %s
+           ORDER BY hipi.sort_order, i.created_at""",
+        (policy_id,),
+    )
+    return [_image_row(r) for r in rows]
+
+
+def link_policy_image(policy_id: str, image_id: str, sort_order: int = 0):
+    execute_in_schema(
+        SCHEMA,
+        """INSERT INTO home_insurance_policy_images (image_id, policy_id, sort_order)
+           VALUES (%s, %s, %s) ON CONFLICT DO NOTHING""",
+        (image_id, policy_id, sort_order),
+    )
+
+
+def unlink_policy_image(policy_id: str, image_id: str):
+    execute_in_schema(
+        SCHEMA,
+        "DELETE FROM home_insurance_policy_images WHERE policy_id = %s AND image_id = %s",
+        (policy_id, image_id),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Backfill registry — consumed by backfill_app_memories.py via discover_apps()
 # ---------------------------------------------------------------------------
 BACKFILL_ENTITIES = [
@@ -570,4 +1155,13 @@ BACKFILL_ENTITIES = [
     {"entity_type": "home issue",
      "list_fn": get_all_issues,
      "context_hint": _ISSUE_HINT},
+    {"entity_type": "home appliance",
+     "list_fn": get_all_appliances,
+     "context_hint": _APPLIANCE_HINT},
+    {"entity_type": "home insurance policy",
+     "list_fn": get_all_policies,
+     "context_hint": _POLICY_HINT},
+    {"entity_type": "home contractor",
+     "list_fn": get_all_contractors,
+     "context_hint": _CONTRACTOR_HINT},
 ]

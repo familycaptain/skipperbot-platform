@@ -5,6 +5,8 @@ import {
   ChevronsUp, ChevronsDown, GripVertical, Printer, Trash2,
   ArrowRight, ArrowLeft, Archive,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
 const DAY_LABELS = { sunday: "Sun", monday: "Mon", tuesday: "Tue", wednesday: "Wed", thursday: "Thu", friday: "Fri", saturday: "Sat" };
@@ -74,6 +76,15 @@ export default function TodoApp({ appId, userId, context = {}, onTitle, refreshK
 
   const hasBacklog = !!(config?.backlog_list_id);
 
+  // Page-level pristine judgment. The board holds two lists (To-Do + Backlog);
+  // it is pristine-empty only when there are NO cards at all — active OR archived.
+  // Judging on the FULL item set (not just the active subset) means a board whose
+  // only cards are archived/completed is NOT pristine (the user has used it), so it
+  // shows the normal columns rather than the onboarding hero. There is no board
+  // search/filter, so filterActive is always false here.
+  const boardItems = [...(todoData.items || []), ...(backlogData.items || [])];
+  const boardPristine = !loading && boardItems.length === 0;
+
   if (showSettings) {
     return (
       <SettingsPanel
@@ -122,47 +133,62 @@ export default function TodoApp({ appId, userId, context = {}, onTitle, refreshK
         </div>
       </div>
 
-      {/* ── Two-column layout ── */}
-      <div className={`flex-1 min-h-0 flex ${hasBacklog ? "" : "flex-col"}`}>
-        {/* To-Do column */}
-        <div className={`flex flex-col ${hasBacklog ? "w-1/2 border-r border-subtle" : "flex-1"}`}>
-          <TodoColumn
-            title="To-Do"
-            titleIcon={<ListTodo size={13} className="text-amber-400" />}
-            accentColor="amber"
-            listType="todo"
-            data={todoData}
-            userId={userId}
-            loading={loading}
-            onReload={loadTodo}
-            onReloadAll={() => Promise.all([loadTodo(), loadBacklog()])}
-            moveLabel={hasBacklog ? "Backlog" : null}
-            moveDirection="to_backlog"
-            onMoveItem={handleMoveItem}
-            MoveIcon={ArrowRight}
-          />
-        </div>
+      {/* ── Content: ONE page-level hero when the whole board is pristine-empty,
+             else the normal two-column board (which keeps every +New add form) ── */}
+      <div className="flex-1 min-h-0 flex flex-col">
+        <PristineEmpty
+          appId="todo"
+          blurb={getAppManifest("todo")?.blurb}
+          records={boardItems}
+          loading={loading}
+          filterActive={false}
+          fallback={null}
+        />
 
-        {/* Backlog column */}
-        {hasBacklog && (
-          <div className="flex flex-col w-1/2">
+        {/* ── Two-column layout ── */}
+        <div className={`flex-1 min-h-0 flex ${hasBacklog ? "" : "flex-col"}`}>
+          {/* To-Do column */}
+          <div className={`flex flex-col ${hasBacklog ? "w-1/2 border-r border-subtle" : "flex-1"}`}>
             <TodoColumn
-              title="Backlog"
-              titleIcon={<Archive size={13} className="text-violet-400" />}
-              accentColor="violet"
-              listType="backlog"
-              data={backlogData}
+              title="To-Do"
+              titleIcon={<ListTodo size={13} className="text-amber-400" />}
+              accentColor="amber"
+              listType="todo"
+              data={todoData}
               userId={userId}
               loading={loading}
-              onReload={loadBacklog}
+              suppressEmpty={boardPristine}
+              onReload={loadTodo}
               onReloadAll={() => Promise.all([loadTodo(), loadBacklog()])}
-              moveLabel="To-Do"
-              moveDirection="to_todo"
+              moveLabel={hasBacklog ? "Backlog" : null}
+              moveDirection="to_backlog"
               onMoveItem={handleMoveItem}
-              MoveIcon={ArrowLeft}
+              MoveIcon={ArrowRight}
             />
           </div>
-        )}
+
+          {/* Backlog column */}
+          {hasBacklog && (
+            <div className="flex flex-col w-1/2">
+              <TodoColumn
+                title="Backlog"
+                titleIcon={<Archive size={13} className="text-violet-400" />}
+                accentColor="violet"
+                listType="backlog"
+                data={backlogData}
+                userId={userId}
+                loading={loading}
+                suppressEmpty={boardPristine}
+                onReload={loadBacklog}
+                onReloadAll={() => Promise.all([loadTodo(), loadBacklog()])}
+                moveLabel="To-Do"
+                moveDirection="to_todo"
+                onMoveItem={handleMoveItem}
+                MoveIcon={ArrowLeft}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {!hasBacklog && (
@@ -183,7 +209,7 @@ export default function TodoApp({ appId, userId, context = {}, onTitle, refreshK
 // ── Reusable column for either To-Do or Backlog ──
 
 function TodoColumn({
-  title, titleIcon, accentColor, listType, data, userId, loading,
+  title, titleIcon, accentColor, listType, data, userId, loading, suppressEmpty = false,
   onReload, onReloadAll, moveLabel, moveDirection, onMoveItem, MoveIcon,
 }) {
   const items = data.items || [];
@@ -372,10 +398,15 @@ function TodoColumn({
             <Loader2 size={16} className="animate-spin" />
           </div>
         ) : activeItems.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-24 text-faint text-xs">
-            <ListTodo size={20} className="mb-1.5 text-faint" />
-            <p>{title} is empty</p>
-          </div>
+          // When the WHOLE board is pristine-empty, the page-level hero renders
+          // above these columns; suppress the per-column "X is empty" placeholder
+          // so the board isn't cluttered with redundant empty text under the hero.
+          suppressEmpty ? null : (
+            <div className="flex flex-col items-center justify-center h-24 text-faint text-xs">
+              <ListTodo size={20} className="mb-1.5 text-faint" />
+              <p>{title} is empty</p>
+            </div>
+          )
         ) : (
           <div className="py-0.5">
             {activeItems.map((item, idx) => (

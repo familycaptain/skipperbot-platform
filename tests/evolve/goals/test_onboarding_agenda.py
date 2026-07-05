@@ -51,9 +51,17 @@ def _install_stubs():
         store.events.append(("task", project_id, name))
         return {"id": "t-x"}
 
+    # The seed loop sets a per-topic definition_of_done on some agenda projects
+    # (the household completion gate, ev-80) via store.update_item — record it so
+    # this offline stub doesn't AttributeError.
+    def update_item(item_id, updated_by, status="", history_note="", fields=None, **k):
+        store.events.append(("update_item", item_id, (fields or {})))
+        return ""
+
     store.create_goal = create_goal
     store.create_project = create_project
     store.create_task = create_task
+    store.update_item = update_item
     sys.modules["apps.goals.store"] = store
 
     lifecycle = types.ModuleType("apps.goals.lifecycle")

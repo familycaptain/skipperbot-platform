@@ -27,7 +27,7 @@ if (Test-Path $VenvPython) {
 }
 
 if (-not (Test-Path (Join-Path $AppRoot ".env"))) {
-    Write-Error "ERROR: $AppRoot\.env not found. Copy .env.example to .env and fill in SKIPPERBOT_DB_DSN and OPENAI_API_KEY. See docs/01-base-platform-setup.md step 8."
+    Write-Error "ERROR: $AppRoot\.env not found. Copy .env.example to .env and fill in SKIPPERBOT_DB_DSN (your LLM provider + key are set later in the web UI). See docs/01-base-platform-setup.md step 8."
     exit 1
 }
 

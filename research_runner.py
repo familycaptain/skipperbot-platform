@@ -21,7 +21,7 @@ import urllib.request
 from datetime import datetime
 from html.parser import HTMLParser
 
-from config import logger, SMART_MODEL, DUMB_MODEL
+from config import logger
 from providers.compat import chat_completion
 from app_platform.time import get_timezone
 
@@ -180,7 +180,7 @@ def _summarize_source(title: str, url: str, page_text: str, research_query: str)
 
     try:
         resp = chat_completion(
-            model=DUMB_MODEL,
+            tier="fast",
             messages=[
                 {
                     "role": "system",
@@ -232,7 +232,7 @@ def _synthesize_doc(query: str, sources: list[dict],
 
     try:
         resp = chat_completion(
-            model=SMART_MODEL,
+            tier="smart",
             messages=[
                 {
                     "role": "system",
@@ -373,7 +373,7 @@ def _plan_research(query: str, num_sources: int,
 
     try:
         resp = chat_completion(
-            model=SMART_MODEL,
+            tier="smart",
             messages=[
                 {
                     "role": "system",
@@ -807,7 +807,7 @@ def _generate_refine_queries(original_content: str, instructions: str, num_queri
     """
     try:
         resp = chat_completion(
-            model=DUMB_MODEL,
+            tier="fast",
             messages=[
                 {
                     "role": "system",
@@ -913,7 +913,7 @@ def _identify_target_sections(
 
     try:
         resp = chat_completion(
-            model=DUMB_MODEL,
+            tier="fast",
             messages=[
                 {
                     "role": "system",
@@ -976,7 +976,7 @@ def _revise_section(
     """
     try:
         resp = chat_completion(
-            model=DUMB_MODEL,
+            tier="fast",
             messages=[
                 {
                     "role": "system",
@@ -1015,7 +1015,7 @@ def _create_new_section(heading: str, instructions: str, sources_text: str) -> s
     """Generate a brand-new section to be inserted into the document."""
     try:
         resp = chat_completion(
-            model=DUMB_MODEL,
+            tier="fast",
             messages=[
                 {
                     "role": "system",

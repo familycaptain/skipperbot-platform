@@ -16,7 +16,7 @@ if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
 from app_platform.memory import digest_record
-from config import DUMB_MODEL, logger
+from config import logger
 from providers.compat import chat_completion
 from apps.documents.store import (
     create_doc as _create_doc,
@@ -33,15 +33,9 @@ from apps.documents.store import (
 )
 
 
-def _enhance_model() -> str:
-    """Model used by the enhance_doc tool (Settings → Documents: enhance_model)."""
-    try:
-        from app_platform import settings as _settings
-        return (_settings.get("enhance_model", scope="app:documents",
-                              default=DUMB_MODEL) or DUMB_MODEL)
-    except Exception:
-        return DUMB_MODEL
-
+# The enhance_doc tool runs on the "fast" model tier (MODEL_FLEXIBILITY #44/#71): the connector,
+# model, and key are resolved from the tier (operator-approved retirement of the per-app
+# enhance_model override), not a per-app model string.
 
 def create_doc(
     title: str,
@@ -451,7 +445,7 @@ def _plan_enhancements(sections: list[dict], instructions: str) -> dict:
 
     try:
         resp = chat_completion(
-            model=_enhance_model(),
+            tier="fast",
             messages=[
                 {
                     "role": "system",
@@ -504,7 +498,7 @@ def _enhance_section(section_body: str, section_heading: str, instructions: str,
     """Enhance a single section using LLM. The rest of the doc is provided as read-only context."""
     try:
         resp = chat_completion(
-            model=_enhance_model(),
+            tier="fast",
             messages=[
                 {
                     "role": "system",
@@ -543,7 +537,7 @@ def _generate_new_section(heading: str, instructions: str, full_doc_context: str
     """Generate a brand-new section to insert into the document."""
     try:
         resp = chat_completion(
-            model=_enhance_model(),
+            tier="fast",
             messages=[
                 {
                     "role": "system",

@@ -32,6 +32,7 @@ from apps.notifications.store import (
     get_notifications,
     format_notifications,
 )
+from apps.notifications.delivery import deliver_pending_notifications
 from apps.notifications.data import (
     get_notification,
     get_notifications_for_user,
@@ -43,6 +44,7 @@ from apps.notifications.data import (
 
 __all__ = [
     "create_notification",
+    "deliver_pending_notifications",
     "get_notifications",
     "format_notifications",
     "get_notification",

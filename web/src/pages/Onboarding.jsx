@@ -18,9 +18,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { setToken } from "../utils/api";
+import { useTheme } from "../utils/theme";
 import ModelConfig from "../components/ModelConfig";
 import {
-  ArrowRight, ArrowLeft, Check, Loader2, AlertCircle, User as UserIcon,
+  ArrowRight, ArrowLeft, Check, Loader2, AlertCircle, User as UserIcon, Sun, Moon,
 } from "lucide-react";
 
 const API = "";
@@ -33,36 +34,6 @@ function detectTimezone() {
     return "Etc/UTC";
   }
 }
-
-// A short list of common IANA zones for the dropdown. Users with a
-// different zone can keep the browser-detected default (always
-// preselected in the input).
-const COMMON_TIMEZONES = [
-  "Etc/UTC",
-  "America/New_York",
-  "America/Chicago", // noqa: family-name — generic US-zone dropdown option, not a household locator
-  "America/Denver",
-  "America/Los_Angeles",
-  "America/Anchorage",
-  "America/Phoenix",
-  "America/Halifax",
-  "America/Sao_Paulo",
-  "Europe/London",
-  "Europe/Paris",
-  "Europe/Berlin",
-  "Europe/Madrid",
-  "Europe/Stockholm",
-  "Europe/Istanbul",
-  "Africa/Johannesburg",
-  "Asia/Jerusalem",
-  "Asia/Dubai",
-  "Asia/Kolkata",
-  "Asia/Shanghai",
-  "Asia/Singapore",
-  "Asia/Tokyo",
-  "Australia/Sydney",
-  "Pacific/Auckland",
-];
 
 function ErrorLine({ children }) {
   if (!children) return null;
@@ -127,22 +98,65 @@ function CreatePrimaryUser({ onCreated, onBack }) {
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [tz, setTz] = useState(detected);
+  // Full IANA timezone list (offset-labeled, offset-then-name sorted) fetched
+  // from the platform so this picker matches the Settings app exactly. null
+  // while the fetch is in flight or if it fails — the memo below falls back to
+  // a minimal always-submittable list in that case.
+  const [serverTz, setServerTz] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Live Dark/Light picker: a pure consumer of the shared theme API (same hook
+  // Shell.jsx uses). setTheme -> applyTheme (data-theme + meta + localStorage
+  // persist + instant CSS-var recolor). State lives INSIDE this step, so a click
+  // re-renders in place — it must NOT remount step-3 or the entered
+  // username/password/confirm/timezone would be lost. Persistence is
+  // per-browser (localStorage), not part of the create-user payload.
+  const { theme, setTheme } = useTheme();
   // Synchronous in-flight guard against rapid double-taps (issue #36).
   const inFlightRef = useRef(false);
 
-  // Surface the browser-detected zone in the dropdown even if it's
-  // not in COMMON_TIMEZONES.
+  // Fetch the canonical timezone list once on mount. Pre-login, unauthenticated
+  // endpoint (same full-IANA source the Settings app uses). On failure serverTz
+  // stays null and the memo below degrades to a minimal fallback so the step is
+  // never blank or stuck.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API}/api/onboarding/timezones`);
+        const data = await res.json();
+        const list = data && data.timezones;
+        if (!cancelled && Array.isArray(list) && list.length) setServerTz(list);
+      } catch {
+        /* keep serverTz null -> fallback list below */
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Options the dropdown renders. The server list is already offset-labeled and
+  // offset-then-name sorted, so no client-side sorting/labeling is needed. While
+  // the fetch is in flight or if it failed, fall back to at least the detected
+  // zone + Etc/UTC so the step is always submittable. The browser-detected zone
+  // is unconditionally included (the full IANA server list normally contains it)
+  // and de-duped so the controlled <select> never coerces to a blank value or
+  // renders a duplicate React key.
   const tzOptions = useMemo(() => {
-    const base = [...COMMON_TIMEZONES];
-    if (!base.includes(detected)) base.unshift(detected);
+    const base = serverTz && serverTz.length
+      ? serverTz
+      : [...new Set([detected, "Etc/UTC"])].map((v) => ({ value: v, label: v }));
+    if (!base.some((o) => o.value === detected)) {
+      return [{ value: detected, label: detected }, ...base];
+    }
     return base;
-  }, [detected]);
+  }, [serverTz, detected]);
 
   const usernameOk = /^[a-z][a-z0-9_]{1,30}$/.test(username);
   const passwordOk = password.length >= 8;
+  // Equality forces equal length, so this subsumes "confirm non-empty and >=8".
+  const confirmOk = passwordOk && password === confirm;
 
   const submit = async (e) => {
     e?.preventDefault();
@@ -153,6 +167,13 @@ function CreatePrimaryUser({ onCreated, onBack }) {
     }
     if (!passwordOk) {
       setError("A password is required and must be at least 8 characters.");
+      return;
+    }
+    // Backstop for the button gate: a mistyped confirmation must never save the
+    // account (no self-service reset exists — a typo'd sole-admin password locks
+    // everyone out).
+    if (password !== confirm) {
+      setError("Passwords don't match");
       return;
     }
     // In-flight guard set only after the synchronous validation early-returns,
@@ -251,17 +272,78 @@ function CreatePrimaryUser({ onCreated, onBack }) {
           <p className="mt-1 text-xs text-faint">Used to sign in to the web UI. Minimum 8 characters — you can change it later from Settings.</p>
         </div>
         <div>
+          <label className="text-sm text-default">Confirm password</label>
+          <input
+            type="password"
+            name="confirm_password"
+            autoComplete="new-password"
+            className="mt-1 w-full rounded input px-3 py-2 text-sm"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            onKeyDown={onInputKeyDown}
+            required
+            minLength={8}
+            placeholder="re-enter password"
+          />
+          {/* Non-nagging live mismatch hint: fires only once the second entry is
+              plausibly complete (confirm as long as password), not on every
+              keystroke. Rose (error) color, matching ErrorLine — not the faint hint. */}
+          {confirm.length >= password.length && password !== confirm && (
+            <p className="mt-1 text-xs text-rose-400">Passwords don't match</p>
+          )}
+        </div>
+        <div>
           <label className="text-sm text-default">Timezone</label>
           <select
             className="mt-1 w-full rounded input px-3 py-2 text-sm"
             value={tz}
             onChange={(e) => setTz(e.target.value)}
           >
-            {tzOptions.map((z) => <option key={z} value={z}>{z}</option>)}
+            {tzOptions.map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
+            ))}
           </select>
           <p className="mt-1 text-xs text-faint">
             Detected from your browser: <code className="font-mono text-muted">{detected}</code>.
           </p>
+        </div>
+        <div>
+          <label className="text-sm text-default">Theme</label>
+          {/* Unified segmented Dark/Light selector — one pill, single selected
+              fill (mirrors Shell.jsx's mobile segmented toggle idiom). A
+              radiogroup so it reflects + drives the global theme live; the
+              selected option recolors the WHOLE UI instantly on click and
+              persists (setTheme -> applyTheme). Selected = accent fill; both
+              states use theme tokens so contrast stays legible in dark + light. */}
+          <div
+            role="radiogroup"
+            aria-label="Theme"
+            className="mt-1 flex items-center surface-card border border-subtle rounded-full p-0.5 text-sm"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={theme === "dark"}
+              onClick={() => setTheme("dark")}
+              className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${
+                theme === "dark" ? "bg-indigo-600 text-on-accent" : "icon-btn"
+              }`}
+            >
+              <Moon size={14} /> Dark
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={theme === "light"}
+              onClick={() => setTheme("light")}
+              className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${
+                theme === "light" ? "bg-indigo-600 text-on-accent" : "icon-btn"
+              }`}
+            >
+              <Sun size={14} /> Light
+            </button>
+          </div>
+          <p className="mt-1 text-xs text-faint">You can change this later in Settings.</p>
         </div>
       </div>
       <ErrorLine>{error}</ErrorLine>
@@ -281,12 +363,19 @@ function CreatePrimaryUser({ onCreated, onBack }) {
           type="button"
           onClick={submit}
           className="inline-flex items-center gap-2 rounded btn-primary px-4 py-2 text-sm font-medium disabled:cursor-not-allowed"
-          disabled={saving || !usernameOk || !passwordOk}
+          disabled={saving || !usernameOk || !passwordOk || !confirmOk}
         >
           {saving ? <Loader2 size={14} className="animate-spin" /> : <UserIcon size={14} />}
           {saving ? "Creating…" : "Create account"}
         </button>
       </div>
+      {/* Disabled-reason affordance, mirroring ModelStep's "Validate all three
+          tiers to continue." line. */}
+      {!saving && !(usernameOk && confirmOk) && (
+        <p className="mt-2 text-right text-xs text-faint">
+          Enter a username and matching passwords (8+ chars) to continue.
+        </p>
+      )}
     </form>
   );
 }

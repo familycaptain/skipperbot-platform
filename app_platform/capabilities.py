@@ -72,6 +72,24 @@ def _file_exists(env_var: str) -> Callable[[], bool]:
     return check
 
 
+def _llm_configured() -> bool:
+    """True iff the provider-agnostic LLM path is usable (MODEL_FLEXIBILITY #44/#71): every model
+    tier has a model selected AND each tier whose connector requires a key has one stored. No
+    OPENAI_API_KEY assumption. Never raises (any error reads as not-configured)."""
+    try:
+        from providers import tier_resolver, registry
+        from providers.model_config import models_configured
+        if not models_configured():
+            return False
+        for tier in tier_resolver.TIERS:
+            res = tier_resolver.resolve_tier(tier)
+            if registry.requires_key(res.connector) and not res.key:
+                return False
+        return True
+    except Exception:
+        return False
+
+
 # ---------------------------------------------------------------------------
 # Registry — every optional integration the platform knows about.
 # Adding a new PLATFORM integration: add a row here. The startup banner picks
@@ -84,11 +102,16 @@ def _file_exists(env_var: str) -> Callable[[], bool]:
 
 CAPABILITIES: tuple[Capability, ...] = (
     Capability(
+        # Kept named 'openai' (a bound test + the tool router key on it), but the LLM path is now
+        # provider-agnostic (MODEL_FLEXIBILITY #44/#71): "configured" means a model tier is
+        # selected (any connector), NOT that OPENAI_API_KEY is in env. env_vars=() so the AND-gate
+        # doesn't re-introduce the OPENAI_API_KEY assumption; the extra_check drives the state.
         name="openai",
-        label="OpenAI",
-        env_vars=("OPENAI_API_KEY",),
+        label="LLM (model provider)",
+        env_vars=(),
         docs_anchor="01-base-platform-setup.md",
-        not_configured_message="OpenAI API key is missing. Set OPENAI_API_KEY in .env.",
+        not_configured_message="No model provider configured. Finish onboarding → Models.",
+        extra_check=lambda: _llm_configured(),
     ),
     Capability(
         name="discord",

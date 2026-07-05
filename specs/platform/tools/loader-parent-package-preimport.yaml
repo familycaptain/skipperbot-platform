@@ -1,0 +1,29 @@
+kind: specification
+id: platform.tools.loader-parent-package-preimport
+title: Legacy-tool loader pre-imports the parent 'tools' package so submodules with module-level
+  tools.* imports register
+state: live
+autonomy: gated
+behavior:
+- GIVEN a tools/*.py submodule with a module-level `from tools.X import Y` WHEN the agent
+  boots and the legacy-tool loader runs THEN the submodule loads and its tools register (no
+  partial-module ImportError).
+- GIVEN artifact_tool.py specifically WHEN the loader runs THEN attach_artifact / read_artifact
+  / list_entity_artifacts / delete_artifact_by_id register (and the 5 MCP artifact tools become
+  available) — the full legacy-tool set (114) loads, not 109.
+- GIVEN the loader WHEN it runs THEN behavior for all other tools is unchanged (idempotent
+  parent import; per-file loop reuses fully-built submodules).
+implements:
+- 'tool_dispatch.py (_discover_legacy_tools: pre-import parent ''tools'' before the per-file
+  loop)'
+tests:
+- type: integration
+  path: tests/test_tool_loader_artifact.py
+  rubric: 'After tool_dispatch.init()/_discover_legacy_tools(), attach_artifact (and the other
+    artifact tools) ARE in the legacy-tool registry; the loaded-tool count is the full set
+    (>=114 / includes artifact_tool''s 4). Regression guard: importing a submodule with a
+    module-level tools.* import via the loader does not raise a partial-module ImportError.'
+links: {}
+notes: Fixes a partial-module circular import in the loader's import ordering (not artifact_tool
+  itself). Reproduce-verified in-container (114 vs 109 tools). No plain-import failure — loader-order-specific.
+verified: true

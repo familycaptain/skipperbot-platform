@@ -16,6 +16,15 @@ entity_types:
   - prefix: "hmtl"
     name: Home Task Log
     table: home_task_log
+  - prefix: "ha"
+    name: Home Appliance
+    table: home_appliances
+  - prefix: "hip"
+    name: Home Insurance Policy
+    table: home_insurance_policies
+  - prefix: "hc"
+    name: Home Contractor
+    table: home_contractors
 
 tool_category:
   description: >
@@ -62,3 +71,35 @@ tool_category:
     - around the house
     - clean the
     - service the
+    # Appliances
+    - appliance
+    - refrigerator
+    - fridge
+    - dishwasher
+    - washer
+    - dryer
+    - hvac
+    - furnace
+    - water heater
+    - warranty
+    - serial number
+    - model number
+    # Insurance
+    - insurance
+    - policy
+    - coverage
+    - premium
+    - deductible
+    - renewal
+    - insurer
+    - claim
+    # Contractors
+    - contractor
+    - electrician
+    - plumber
+    - roofer
+    - painter
+    - handyman
+    - landscaper
+    - hvac
+    - service provider

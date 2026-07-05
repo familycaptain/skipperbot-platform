@@ -50,6 +50,23 @@ def _discover_legacy_tools():
     if not tools_dir.is_dir():
         return
 
+    # Pre-import the parent `tools` package ONCE before the per-file exec loop.
+    # A submodule with a module-level `from tools.X import Y` (e.g. artifact_tool's
+    # `from tools.secret_guard import is_secret_path`) triggers `import tools` while
+    # THAT submodule is only partially built by exec_module — and tools/__init__'s
+    # `from tools.artifact_tool import attach_artifact` then fails on the partial
+    # module, dropping the whole file's tools (ev-76: 114 -> 109). Importing the
+    # package first drives every submodule to completion in dependency order, so the
+    # per-file loop below hits the `module_name in sys.modules` reuse branch and
+    # registers the fully-built modules. Its own try/except so a broken tools/__init__
+    # degrades gracefully (skip pre-import; per-file loop still runs) instead of
+    # aborting all discovery.
+    try:
+        importlib.import_module("tools")
+    except Exception as e:
+        logger.error("TOOL_DISPATCH: Failed to pre-import parent 'tools' package "
+                     "(submodules with module-level tools.* imports may not register): %s", e)
+
     count = 0
     for py_file in sorted(tools_dir.glob("*.py")):
         if py_file.name.startswith("_"):
@@ -146,7 +163,7 @@ async def call_tool(tool_name: str, arguments: dict) -> str:
     if tool_name in DISABLED_CHAT_TOOLS:
         logger.warning("TOOL_DISPATCH: refused disabled tool '%s'", tool_name)
         return (f"Error: Tool '{tool_name}' is disabled. Code and app changes go "
-                f"through the Evolve workflow, not in-chat tools.")
+                f"through the development workflow, not in-chat tools.")
 
     fn = _registry.get(tool_name)
     if fn is None:

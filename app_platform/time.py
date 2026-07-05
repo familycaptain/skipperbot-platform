@@ -107,6 +107,32 @@ def to_local(dt: datetime, user_id: str | None = None) -> datetime:
     return dt.astimezone(get_timezone(user_id))
 
 
+def timezone_choices() -> list[dict]:
+    """All IANA timezones as ``{value, label}`` pairs, label showing the zone's
+    current UTC offset (DST-aware), sorted by offset then name. The stored value
+    is the bare IANA name; the offset is display-only.
+
+    Shared single source of truth for the timezone picker across the platform
+    (onboarding endpoint) and the Settings app. Stdlib-only (datetime +
+    zoneinfo) so any layer may import it without a platform->app dependency.
+    Recomputed on every call (no caching) so offsets stay DST-current."""
+    from datetime import datetime
+    from zoneinfo import ZoneInfo, available_timezones
+    out = []
+    for name in available_timezones():
+        try:
+            off = datetime.now(ZoneInfo(name)).utcoffset()
+        except Exception:
+            continue
+        minutes = int(off.total_seconds() // 60) if off else 0
+        sign = "+" if minutes >= 0 else "-"
+        am = abs(minutes)
+        out.append({"value": name, "label": f"{name} (UTC{sign}{am // 60:02d}:{am % 60:02d})",
+                    "_off": minutes})
+    out.sort(key=lambda z: (z["_off"], z["value"]))
+    return [{"value": z["value"], "label": z["label"]} for z in out]
+
+
 def _user_timezone(user_id: str) -> str | None:
     """Lookup a user's timezone override. Returns None if not set or user missing."""
     # Lazy import to avoid a hard dependency on the users data layer during

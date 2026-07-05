@@ -422,6 +422,671 @@ def delete_home_issue(issue_id: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Home Appliances
+# ---------------------------------------------------------------------------
+
+def create_home_appliance(
+    name: str,
+    created_by: str,
+    appliance_type: str = "General",
+    brand: str = "",
+    model: str = "",
+    serial_number: str = "",
+    location: str = "",
+    purchase_date: str = "",
+    purchase_price: float = -1.0,
+    warranty_expires: str = "",
+    notes: str = "",
+) -> str:
+    """Add a household appliance to track (brand, model, serial, purchase & warranty).
+
+    Use for things like "add our LG refrigerator in the kitchen, bought 2023-05-01
+    for $1800, warranty through 2028-05-01" or "track the garage water heater".
+
+    Args:
+        name: Appliance name (e.g. "Kitchen refrigerator", "Water heater").
+        created_by: Who is adding it (a person's name).
+        appliance_type: Type — Refrigerator, Dishwasher, Washer, Dryer, HVAC, Water Heater, General, etc.
+        brand: Manufacturer/brand (e.g. "LG", "Samsung", "Whirlpool").
+        model: Model number/name.
+        serial_number: Serial number.
+        location: Where it is (e.g. "Kitchen", "Garage", "Laundry room").
+        purchase_date: Date purchased (YYYY-MM-DD).
+        purchase_price: Purchase price in dollars (-1 = not set).
+        warranty_expires: Warranty expiration date (YYYY-MM-DD).
+        notes: Additional notes.
+
+    Returns:
+        Confirmation with appliance ID.
+
+    Ack: Adding appliance "{name}"...
+    """
+    try:
+        if not name or not name.strip():
+            return "Error: name is required."
+        appliance_id = f"ha-{uuid.uuid4().hex[:8]}"
+        appliance = {
+            "id": appliance_id,
+            "name": name.strip(),
+            "appliance_type": appliance_type.strip() if appliance_type else "General",
+            "brand": brand.strip() if brand else "",
+            "model": model.strip() if model else "",
+            "serial_number": serial_number.strip() if serial_number else "",
+            "location": location.strip() if location else "",
+            "purchase_date": purchase_date.strip() if purchase_date and purchase_date.strip() else None,
+            "purchase_price": purchase_price if purchase_price is not None and purchase_price >= 0 else None,
+            "warranty_expires": warranty_expires.strip() if warranty_expires and warranty_expires.strip() else None,
+            "notes": notes.strip() if notes else "",
+            "created_by": created_by.strip() if created_by else "",
+        }
+        result = _dl.create_appliance(appliance)
+        if not result:
+            return "Error: Failed to create appliance."
+        loc_str = f" in {location.strip()}" if location and location.strip() else ""
+        logger.info("HOME: Created appliance '%s' (%s)", name.strip(), appliance_id)
+        return f"Appliance added: '{name.strip()}' ({appliance_id}){loc_str} — type: {appliance['appliance_type']}"
+    except Exception as e:
+        return f"Error in create_home_appliance: {str(e)}"
+
+
+def list_home_appliances(appliance_type: str = "", location: str = "") -> str:
+    """List household appliances.
+
+    Args:
+        appliance_type: Filter by type (e.g. "Refrigerator", "Dishwasher"). Empty = all.
+        location: Filter by location (e.g. "Kitchen", "Garage"). Empty = all locations.
+
+    Returns:
+        Formatted list of appliances with brand/model and warranty status.
+
+    Ack: Listing home appliances...
+    """
+    try:
+        from datetime import date
+        appliances = _dl.get_all_appliances(
+            appliance_type=appliance_type.strip() if appliance_type else None,
+            location=location.strip() if location else None,
+        )
+        if not appliances:
+            return "No appliances found."
+
+        today = date.today()
+        lines = [f"Home Appliances ({len(appliances)}):\n"]
+        for a in appliances:
+            bm = " ".join(x for x in [a.get("brand"), a.get("model")] if x)
+            bm = f" — {bm}" if bm else ""
+            loc = f" @ {a['location']}" if a.get("location") else ""
+            warranty = ""
+            if a.get("warranty_expires"):
+                exp = date.fromisoformat(a["warranty_expires"])
+                if exp < today:
+                    warranty = f" 🔴 warranty expired {a['warranty_expires']}"
+                elif (exp - today).days <= 30:
+                    warranty = f" 🟡 warranty expires {a['warranty_expires']}"
+                else:
+                    warranty = f" 🟢 warranty until {a['warranty_expires']}"
+            lines.append(f"- {a['name']} [{a['appliance_type']}]{bm}{loc}{warranty} ({a['id']})")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error in list_home_appliances: {str(e)}"
+
+
+def get_home_appliance(appliance_id: str) -> str:
+    """Get full details of a household appliance.
+
+    Args:
+        appliance_id: The appliance ID (ha-xxx).
+
+    Returns:
+        Full appliance details.
+
+    Ack: Loading appliance details...
+    """
+    try:
+        if not appliance_id or not appliance_id.strip():
+            return "Error: appliance_id is required."
+        a = _dl.get_appliance(appliance_id.strip())
+        if not a:
+            return f"Error: Appliance '{appliance_id}' not found."
+
+        bm = " ".join(x for x in [a.get("brand"), a.get("model")] if x)
+        brand_model = f"\nBrand/Model: {bm}" if bm else ""
+        serial = f"\nSerial: {a['serial_number']}" if a.get("serial_number") else ""
+        loc = f"\nLocation: {a['location']}" if a.get("location") else ""
+        purchased = f"\nPurchased: {a['purchase_date']}" if a.get("purchase_date") else ""
+        price = f"\nPrice: ${a['purchase_price']:.2f}" if a.get("purchase_price") is not None else ""
+        warranty = f"\nWarranty expires: {a['warranty_expires']}" if a.get("warranty_expires") else ""
+        notes = f"\nNotes: {a['notes']}" if a.get("notes") else ""
+
+        return (
+            f"{a['name']} ({a['id']})\n"
+            f"Type: {a.get('appliance_type', 'General')}"
+            f"{brand_model}{serial}{loc}{purchased}{price}{warranty}{notes}"
+        ).strip()
+    except Exception as e:
+        return f"Error in get_home_appliance: {str(e)}"
+
+
+def update_home_appliance(
+    appliance_id: str,
+    name: str = "",
+    appliance_type: str = "",
+    brand: str = "",
+    model: str = "",
+    serial_number: str = "",
+    location: str = "",
+    purchase_date: str = "",
+    purchase_price: float = -1.0,
+    warranty_expires: str = "",
+    notes: str = "",
+) -> str:
+    """Update a household appliance. Only provided fields are changed.
+
+    Args:
+        appliance_id: The appliance ID (ha-xxx).
+        name: New name (empty = keep).
+        appliance_type: New type (empty = keep).
+        brand: New brand (empty = keep).
+        model: New model (empty = keep).
+        serial_number: New serial number (empty = keep).
+        location: New location (empty = keep).
+        purchase_date: New purchase date YYYY-MM-DD (empty = keep).
+        purchase_price: New price (-1 = keep, 0 = clear).
+        warranty_expires: New warranty date YYYY-MM-DD (empty = keep).
+        notes: New notes (empty = keep).
+
+    Returns:
+        Confirmation of update.
+
+    Ack: Updating appliance {appliance_id}...
+    """
+    try:
+        if not appliance_id or not appliance_id.strip():
+            return "Error: appliance_id is required."
+        updates = {}
+        if name: updates["name"] = name.strip()
+        if appliance_type: updates["appliance_type"] = appliance_type.strip()
+        if brand: updates["brand"] = brand.strip()
+        if model: updates["model"] = model.strip()
+        if serial_number: updates["serial_number"] = serial_number.strip()
+        if location: updates["location"] = location.strip()
+        if purchase_date: updates["purchase_date"] = purchase_date.strip()
+        if purchase_price >= 0: updates["purchase_price"] = purchase_price or None
+        if warranty_expires: updates["warranty_expires"] = warranty_expires.strip()
+        if notes: updates["notes"] = notes.strip()
+
+        if not updates:
+            return "No fields to update."
+        ok = _dl.update_appliance(appliance_id.strip(), updates)
+        if ok:
+            fields = ", ".join(updates.keys())
+            return f"Appliance {appliance_id} updated. Changed: {fields}"
+        return f"Error: Appliance '{appliance_id}' not found."
+    except Exception as e:
+        return f"Error in update_home_appliance: {str(e)}"
+
+
+def delete_home_appliance(appliance_id: str) -> str:
+    """Delete a household appliance permanently.
+
+    Args:
+        appliance_id: The appliance ID (ha-xxx).
+
+    Returns:
+        Confirmation or error.
+
+    Ack: Deleting appliance {appliance_id}...
+    """
+    try:
+        if not appliance_id or not appliance_id.strip():
+            return "Error: appliance_id is required."
+        ok = _dl.delete_appliance(appliance_id.strip())
+        if ok:
+            return f"Appliance '{appliance_id}' deleted."
+        return f"Error: Appliance '{appliance_id}' not found."
+    except Exception as e:
+        return f"Error in delete_home_appliance: {str(e)}"
+
+
+# ---------------------------------------------------------------------------
+# Home Contractors
+# ---------------------------------------------------------------------------
+
+def _norm_contractor_rating(rating):
+    """Coerce a rating to an int in 1..5, else None (sentinel -1/0 = not set)."""
+    try:
+        r = int(rating)
+    except (TypeError, ValueError):
+        return None
+    return r if 1 <= r <= 5 else None
+
+
+def create_home_contractor(
+    name: str,
+    created_by: str,
+    trade: str = "General",
+    company: str = "",
+    phone: str = "",
+    email: str = "",
+    rating: int = -1,
+    last_used: str = "",
+    jobs_history: str = "",
+    notes: str = "",
+) -> str:
+    """Add a home service provider / contractor to the directory (trade, contact, rating).
+
+    Use for things like "add our electrician Mike from Bright Sparks, phone 555-1234,
+    rated 5 stars" or "track the plumber we used last month".
+
+    Args:
+        name: Contractor / person name (e.g. "Mike Jones", "Bright Sparks Electric").
+        created_by: Who is adding it (a person's name).
+        trade: Trade — Electrician, Plumber, Roofer, Painter, HVAC, Landscaper, Handyman, General, etc.
+        company: Company / business name.
+        phone: Phone number.
+        email: Email address.
+        rating: Rating 1-5 (-1 = not set).
+        last_used: Date last used (YYYY-MM-DD).
+        jobs_history: Free-text notes on past jobs done.
+        notes: Additional notes.
+
+    Returns:
+        Confirmation with contractor ID.
+
+    Ack: Adding contractor "{name}"...
+    """
+    try:
+        if not name or not name.strip():
+            return "Error: name is required."
+        contractor_id = f"hc-{uuid.uuid4().hex[:8]}"
+        contractor = {
+            "id": contractor_id,
+            "name": name.strip(),
+            "trade": trade.strip() if trade else "General",
+            "company": company.strip() if company else "",
+            "phone": phone.strip() if phone else "",
+            "email": email.strip() if email else "",
+            "rating": _norm_contractor_rating(rating),
+            "last_used": last_used.strip() if last_used and last_used.strip() else None,
+            "jobs_history": jobs_history.strip() if jobs_history else "",
+            "notes": notes.strip() if notes else "",
+            "created_by": created_by.strip() if created_by else "",
+        }
+        result = _dl.create_contractor(contractor)
+        if not result:
+            return "Error: Failed to create contractor."
+        logger.info("HOME: Created contractor '%s' (%s)", name.strip(), contractor_id)
+        return f"Contractor added: '{name.strip()}' ({contractor_id}) — trade: {contractor['trade']}"
+    except Exception as e:
+        return f"Error in create_home_contractor: {str(e)}"
+
+
+def list_home_contractors(trade: str = "") -> str:
+    """List home contractors / service providers.
+
+    Args:
+        trade: Filter by trade (e.g. "Electrician", "Plumber"). Empty = all.
+
+    Returns:
+        Formatted list of contractors with trade, company and rating.
+
+    Ack: Listing home contractors...
+    """
+    try:
+        contractors = _dl.get_all_contractors(
+            trade=trade.strip() if trade else None,
+        )
+        if not contractors:
+            return "No contractors found."
+
+        lines = [f"Home Contractors ({len(contractors)}):\n"]
+        for c in contractors:
+            company = f" — {c['company']}" if c.get("company") else ""
+            rating = ""
+            if c.get("rating"):
+                rating = f" {'★' * c['rating']} ({c['rating']}/5)"
+            phone = f" · {c['phone']}" if c.get("phone") else ""
+            lines.append(f"- {c['name']} [{c['trade']}]{company}{rating}{phone} ({c['id']})")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error in list_home_contractors: {str(e)}"
+
+
+def get_home_contractor(contractor_id: str) -> str:
+    """Get full details of a home contractor.
+
+    Args:
+        contractor_id: The contractor ID (hc-xxx).
+
+    Returns:
+        Full contractor details.
+
+    Ack: Loading contractor details...
+    """
+    try:
+        if not contractor_id or not contractor_id.strip():
+            return "Error: contractor_id is required."
+        c = _dl.get_contractor(contractor_id.strip())
+        if not c:
+            return f"Error: Contractor '{contractor_id}' not found."
+
+        company = f"\nCompany: {c['company']}" if c.get("company") else ""
+        phone = f"\nPhone: {c['phone']}" if c.get("phone") else ""
+        email = f"\nEmail: {c['email']}" if c.get("email") else ""
+        rating = f"\nRating: {'★' * c['rating']} ({c['rating']}/5)" if c.get("rating") else ""
+        last_used = f"\nLast used: {c['last_used']}" if c.get("last_used") else ""
+        jobs = f"\nJobs: {c['jobs_history']}" if c.get("jobs_history") else ""
+        notes = f"\nNotes: {c['notes']}" if c.get("notes") else ""
+
+        return (
+            f"{c['name']} ({c['id']})\n"
+            f"Trade: {c.get('trade', 'General')}"
+            f"{company}{phone}{email}{rating}{last_used}{jobs}{notes}"
+        ).strip()
+    except Exception as e:
+        return f"Error in get_home_contractor: {str(e)}"
+
+
+def update_home_contractor(
+    contractor_id: str,
+    name: str = "",
+    trade: str = "",
+    company: str = "",
+    phone: str = "",
+    email: str = "",
+    rating: int = -1,
+    last_used: str = "",
+    jobs_history: str = "",
+    notes: str = "",
+) -> str:
+    """Update a home contractor. Only provided fields are changed.
+
+    Args:
+        contractor_id: The contractor ID (hc-xxx).
+        name: New name (empty = keep).
+        trade: New trade (empty = keep).
+        company: New company (empty = keep).
+        phone: New phone (empty = keep).
+        email: New email (empty = keep).
+        rating: New rating 1-5 (-1 = keep, 0 = clear).
+        last_used: New last-used date YYYY-MM-DD (empty = keep).
+        jobs_history: New jobs history (empty = keep).
+        notes: New notes (empty = keep).
+
+    Returns:
+        Confirmation of update.
+
+    Ack: Updating contractor {contractor_id}...
+    """
+    try:
+        if not contractor_id or not contractor_id.strip():
+            return "Error: contractor_id is required."
+        updates = {}
+        if name: updates["name"] = name.strip()
+        if trade: updates["trade"] = trade.strip()
+        if company: updates["company"] = company.strip()
+        if phone: updates["phone"] = phone.strip()
+        if email: updates["email"] = email.strip()
+        if rating >= 0: updates["rating"] = _norm_contractor_rating(rating)
+        if last_used: updates["last_used"] = last_used.strip()
+        if jobs_history: updates["jobs_history"] = jobs_history.strip()
+        if notes: updates["notes"] = notes.strip()
+
+        if not updates:
+            return "No fields to update."
+        ok = _dl.update_contractor(contractor_id.strip(), updates)
+        if ok:
+            fields = ", ".join(updates.keys())
+            return f"Contractor {contractor_id} updated. Changed: {fields}"
+        return f"Error: Contractor '{contractor_id}' not found."
+    except Exception as e:
+        return f"Error in update_home_contractor: {str(e)}"
+
+
+def delete_home_contractor(contractor_id: str) -> str:
+    """Delete a home contractor permanently.
+
+    Args:
+        contractor_id: The contractor ID (hc-xxx).
+
+    Returns:
+        Confirmation or error.
+
+    Ack: Deleting contractor {contractor_id}...
+    """
+    try:
+        if not contractor_id or not contractor_id.strip():
+            return "Error: contractor_id is required."
+        ok = _dl.delete_contractor(contractor_id.strip())
+        if ok:
+            return f"Contractor '{contractor_id}' deleted."
+        return f"Error: Contractor '{contractor_id}' not found."
+    except Exception as e:
+        return f"Error in delete_home_contractor: {str(e)}"
+
+
+# ---------------------------------------------------------------------------
+# Home Insurance Policies
+# ---------------------------------------------------------------------------
+
+def create_home_insurance_policy(
+    provider: str,
+    created_by: str,
+    policy_number: str = "",
+    policy_type: str = "Home",
+    coverage_amount: float = -1.0,
+    premium: float = -1.0,
+    premium_period: str = "annual",
+    deductible: float = -1.0,
+    renewal_date: str = "",
+    insured_assets: str = "",
+    notes: str = "",
+) -> str:
+    """Add an insurance policy to track (provider, coverage, premium & renewal).
+
+    Use for things like "add our State Farm homeowners policy, $350k coverage,
+    $1200/year premium, renews 2026-03-01" or "track the auto insurance from Geico".
+
+    Args:
+        provider: Insurance provider/company (e.g. "State Farm", "Geico", "Allstate").
+        created_by: Who is adding it (a person's name).
+        policy_number: The policy number.
+        policy_type: Type — Home, Auto, Life, Umbrella, Flood, Health, Renters, Other.
+        coverage_amount: Coverage amount in dollars (-1 = not set).
+        premium: Premium amount in dollars (-1 = not set).
+        premium_period: How often the premium is paid — annual, semiannual, quarterly, monthly.
+        deductible: Deductible in dollars (-1 = not set).
+        renewal_date: Renewal date (YYYY-MM-DD).
+        insured_assets: Free text describing what the policy covers.
+        notes: Additional notes.
+
+    Returns:
+        Confirmation with policy ID.
+
+    Ack: Adding insurance policy "{provider}"...
+    """
+    try:
+        if not provider or not provider.strip():
+            return "Error: provider is required."
+        policy_id = f"hip-{uuid.uuid4().hex[:8]}"
+        policy = {
+            "id": policy_id,
+            "provider": provider.strip(),
+            "policy_number": policy_number.strip() if policy_number else "",
+            "policy_type": policy_type.strip() if policy_type else "Home",
+            "coverage_amount": coverage_amount if coverage_amount is not None and coverage_amount >= 0 else None,
+            "premium": premium if premium is not None and premium >= 0 else None,
+            "premium_period": premium_period.strip() if premium_period and premium_period.strip() else "annual",
+            "deductible": deductible if deductible is not None and deductible >= 0 else None,
+            "renewal_date": renewal_date.strip() if renewal_date and renewal_date.strip() else None,
+            "insured_assets": insured_assets.strip() if insured_assets else "",
+            "notes": notes.strip() if notes else "",
+            "created_by": created_by.strip() if created_by else "",
+        }
+        result = _dl.create_policy(policy)
+        if not result:
+            return "Error: Failed to create policy."
+        logger.info("HOME: Created insurance policy '%s' (%s)", provider.strip(), policy_id)
+        return f"Policy added: '{provider.strip()}' ({policy_id}) — type: {policy['policy_type']}"
+    except Exception as e:
+        return f"Error in create_home_insurance_policy: {str(e)}"
+
+
+def list_home_insurance_policies(policy_type: str = "") -> str:
+    """List insurance policies.
+
+    Args:
+        policy_type: Filter by type (e.g. "Home", "Auto"). Empty = all.
+
+    Returns:
+        Formatted list of policies with provider, coverage and renewal status.
+
+    Ack: Listing insurance policies...
+    """
+    try:
+        from datetime import date
+        policies = _dl.get_all_policies(
+            policy_type=policy_type.strip() if policy_type else None,
+        )
+        if not policies:
+            return "No insurance policies found."
+
+        today = date.today()
+        lines = [f"Insurance Policies ({len(policies)}):\n"]
+        for p in policies:
+            cov = f" — ${p['coverage_amount']:,.0f} coverage" if p.get("coverage_amount") is not None else ""
+            renewal = ""
+            if p.get("renewal_date"):
+                exp = date.fromisoformat(p["renewal_date"])
+                if exp < today:
+                    renewal = f" 🔴 renewal overdue {p['renewal_date']}"
+                elif (exp - today).days <= 30:
+                    renewal = f" 🟡 renews soon {p['renewal_date']}"
+                else:
+                    renewal = f" 🟢 renews {p['renewal_date']}"
+            lines.append(f"- {p['provider']} [{p['policy_type']}]{cov}{renewal} ({p['id']})")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error in list_home_insurance_policies: {str(e)}"
+
+
+def get_home_insurance_policy(policy_id: str) -> str:
+    """Get full details of an insurance policy.
+
+    Args:
+        policy_id: The policy ID (hip-xxx).
+
+    Returns:
+        Full policy details.
+
+    Ack: Loading policy details...
+    """
+    try:
+        if not policy_id or not policy_id.strip():
+            return "Error: policy_id is required."
+        p = _dl.get_policy(policy_id.strip())
+        if not p:
+            return f"Error: Policy '{policy_id}' not found."
+
+        num = f"\nPolicy #: {p['policy_number']}" if p.get("policy_number") else ""
+        cov = f"\nCoverage: ${p['coverage_amount']:,.2f}" if p.get("coverage_amount") is not None else ""
+        prem = f"\nPremium: ${p['premium']:,.2f} ({p.get('premium_period', 'annual')})" if p.get("premium") is not None else ""
+        ded = f"\nDeductible: ${p['deductible']:,.2f}" if p.get("deductible") is not None else ""
+        renewal = f"\nRenews: {p['renewal_date']}" if p.get("renewal_date") else ""
+        assets = f"\nInsured assets: {p['insured_assets']}" if p.get("insured_assets") else ""
+        notes = f"\nNotes: {p['notes']}" if p.get("notes") else ""
+
+        return (
+            f"{p['provider']} ({p['id']})\n"
+            f"Type: {p.get('policy_type', 'Home')}"
+            f"{num}{cov}{prem}{ded}{renewal}{assets}{notes}"
+        ).strip()
+    except Exception as e:
+        return f"Error in get_home_insurance_policy: {str(e)}"
+
+
+def update_home_insurance_policy(
+    policy_id: str,
+    provider: str = "",
+    policy_number: str = "",
+    policy_type: str = "",
+    coverage_amount: float = -1.0,
+    premium: float = -1.0,
+    premium_period: str = "",
+    deductible: float = -1.0,
+    renewal_date: str = "",
+    insured_assets: str = "",
+    notes: str = "",
+) -> str:
+    """Update an insurance policy. Only provided fields are changed.
+
+    Args:
+        policy_id: The policy ID (hip-xxx).
+        provider: New provider (empty = keep).
+        policy_number: New policy number (empty = keep).
+        policy_type: New type (empty = keep).
+        coverage_amount: New coverage amount (-1 = keep, 0 = clear).
+        premium: New premium (-1 = keep, 0 = clear).
+        premium_period: New premium period — annual/semiannual/quarterly/monthly (empty = keep).
+        deductible: New deductible (-1 = keep, 0 = clear).
+        renewal_date: New renewal date YYYY-MM-DD (empty = keep).
+        insured_assets: New insured assets text (empty = keep).
+        notes: New notes (empty = keep).
+
+    Returns:
+        Confirmation of update.
+
+    Ack: Updating policy {policy_id}...
+    """
+    try:
+        if not policy_id or not policy_id.strip():
+            return "Error: policy_id is required."
+        updates = {}
+        if provider: updates["provider"] = provider.strip()
+        if policy_number: updates["policy_number"] = policy_number.strip()
+        if policy_type: updates["policy_type"] = policy_type.strip()
+        if coverage_amount >= 0: updates["coverage_amount"] = coverage_amount or None
+        if premium >= 0: updates["premium"] = premium or None
+        if premium_period: updates["premium_period"] = premium_period.strip()
+        if deductible >= 0: updates["deductible"] = deductible or None
+        if renewal_date: updates["renewal_date"] = renewal_date.strip()
+        if insured_assets: updates["insured_assets"] = insured_assets.strip()
+        if notes: updates["notes"] = notes.strip()
+
+        if not updates:
+            return "No fields to update."
+        ok = _dl.update_policy(policy_id.strip(), updates)
+        if ok:
+            fields = ", ".join(updates.keys())
+            return f"Policy {policy_id} updated. Changed: {fields}"
+        return f"Error: Policy '{policy_id}' not found."
+    except Exception as e:
+        return f"Error in update_home_insurance_policy: {str(e)}"
+
+
+def delete_home_insurance_policy(policy_id: str) -> str:
+    """Delete an insurance policy permanently.
+
+    Args:
+        policy_id: The policy ID (hip-xxx).
+
+    Returns:
+        Confirmation or error.
+
+    Ack: Deleting policy {policy_id}...
+    """
+    try:
+        if not policy_id or not policy_id.strip():
+            return "Error: policy_id is required."
+        ok = _dl.delete_policy(policy_id.strip())
+        if ok:
+            return f"Policy '{policy_id}' deleted."
+        return f"Error: Policy '{policy_id}' not found."
+    except Exception as e:
+        return f"Error in delete_home_insurance_policy: {str(e)}"
+
+
+# ---------------------------------------------------------------------------
 # Maintenance Task — update / delete / log
 # ---------------------------------------------------------------------------
 
@@ -647,6 +1312,117 @@ def delete_task_category(cat_id: str) -> str:
         return f"Error: Category '{cat_id}' not found."
     except Exception as e:
         return f"Error in delete_task_category: {str(e)}"
+
+
+# ---------------------------------------------------------------------------
+# Contractor Trades (configurable list) — mirrors the Task Category tools.
+# The trade label on a contractor stays free-form; these manage the pick-list
+# offered in the Contractors Add/Edit form + Manage-trades screen.
+# ---------------------------------------------------------------------------
+
+def list_contractor_trades() -> str:
+    """List the configurable contractor trades (the trade pick-list for the Contractors tab).
+
+    Returns:
+        Formatted list of trades with IDs.
+
+    Ack: Loading contractor trades...
+    """
+    try:
+        trades = _dl.get_all_contractor_trades()
+        if not trades:
+            return "No contractor trades defined."
+        lines = [f"Contractor trades ({len(trades)}):\n"]
+        for t in trades:
+            lines.append(f"- {t['name']} ({t['id']})")
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Error in list_contractor_trades: {str(e)}"
+
+
+def create_contractor_trade(name: str) -> str:
+    """Add a contractor trade to the configurable pick-list.
+
+    Args:
+        name: Trade name (e.g. "Pool Service", "Chimney Sweep").
+
+    Returns:
+        Confirmation with trade ID.
+
+    Ack: Adding contractor trade "{name}"...
+    """
+    try:
+        if not name or not name.strip():
+            return "Error: name is required."
+        if _dl.contractor_trade_name_exists(name.strip()):
+            return f"Error: a trade named '{name.strip()}' already exists."
+        trade_id = f"hctr-{uuid.uuid4().hex[:8]}"
+        trade = _dl.create_contractor_trade(trade_id, name.strip())
+        if trade:
+            return f"Contractor trade created: '{trade['name']}' ({trade['id']})"
+        return "Error: Trade creation failed (name may already exist)."
+    except Exception as e:
+        return f"Error in create_contractor_trade: {str(e)}"
+
+
+def update_contractor_trade(trade_id: str, name: str = "", sort_order: int = -1) -> str:
+    """Rename or reorder a contractor trade in the pick-list.
+
+    Note: renaming a trade does NOT change any existing contractor's stored trade
+    label (a contractor's trade is a free-form value).
+
+    Args:
+        trade_id: Trade ID (hctr-xxx).
+        name: New name (empty = keep).
+        sort_order: New sort position (-1 = keep).
+
+    Returns:
+        Confirmation or error.
+
+    Ack: Updating contractor trade {trade_id}...
+    """
+    try:
+        if not trade_id or not trade_id.strip():
+            return "Error: trade_id is required."
+        updates = {}
+        if name:
+            if _dl.contractor_trade_name_exists(name.strip(), trade_id.strip()):
+                return f"Error: a trade named '{name.strip()}' already exists."
+            updates["name"] = name.strip()
+        if sort_order >= 0:
+            updates["sort_order"] = sort_order
+        if not updates:
+            return "No fields to update."
+        ok = _dl.update_contractor_trade(trade_id.strip(), updates)
+        if ok:
+            return f"Contractor trade {trade_id} updated. Changed: {', '.join(updates.keys())}"
+        return f"Error: Trade '{trade_id}' not found."
+    except Exception as e:
+        return f"Error in update_contractor_trade: {str(e)}"
+
+
+def delete_contractor_trade(trade_id: str) -> str:
+    """Delete a contractor trade from the pick-list.
+
+    Note: existing contractors using this trade keep their trade value (free-form).
+
+    Args:
+        trade_id: Trade ID (hctr-xxx).
+
+    Returns:
+        Confirmation or error.
+
+    Ack: Deleting contractor trade {trade_id}...
+    """
+    try:
+        if not trade_id or not trade_id.strip():
+            return "Error: trade_id is required."
+        ok = _dl.delete_contractor_trade(trade_id.strip())
+        if ok:
+            return f"Contractor trade '{trade_id}' deleted."
+        return f"Error: Trade '{trade_id}' not found."
+    except Exception as e:
+        return f"Error in delete_contractor_trade: {str(e)}"
 
 
 def get_overdue_home_tasks() -> str:

@@ -105,6 +105,88 @@ def upsert_config(user_id: str, **kwargs) -> dict:
     return get_config(user_id)
 
 
+def claim_default_list(user_id, create_list_fn, resolve_list_fn, name):
+    """Atomically get-or-create the user's default to-do list (concurrency-safe).
+
+    The To-Do UI fires ``/config`` and ``/items`` on first open, and both call
+    ``ensure_default_list`` in separate threads; a plain read-check-then-create
+    races and produces TWO ``"<user>'s To-Do"`` lists. This serializes the
+    bootstrap with a per-user, *transaction-scoped* Postgres advisory lock so N
+    concurrent callers create EXACTLY ONE list: the winner creates it and
+    publishes the pointer; every loser blocks on the lock, then re-reads the
+    now-committed ``default_list_id`` and reuses it.
+
+    The two cross-app operations are **injected** as callables so this module
+    imports nothing from ``apps.lists`` (keeps the one-directional dependency —
+    ``store.py`` supplies ``apps.lists.store.create_list`` and
+    ``apps.lists.data.get_list``):
+
+    * ``create_list_fn(name=, created_by=)`` -> the created list dict (``["id"]``)
+    * ``resolve_list_fn(list_id)`` -> truthy iff that list still exists
+
+    Only reached on a *miss* (the caller's fast path already handled the common
+    case where the config points at a live list). Returns the config dict.
+    """
+    import psycopg2
+    import psycopg2.extras
+
+    try:
+        with scoped_conn(SCHEMA) as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                # Bound the wait so a stalled winner can't park pooled connections
+                # indefinitely (the platform shares a small connection pool).
+                cur.execute("SET LOCAL lock_timeout = '3s'")
+                # Serialize this user's bootstrappers. hashtext() over a BOUND
+                # param (never string-formatted) keys the lock per user; the
+                # xact-scoped variant auto-releases at COMMIT/ROLLBACK, so no
+                # lock leaks across pooled-connection reuse.
+                cur.execute(
+                    "SELECT pg_advisory_xact_lock(hashtext('todo-default:' || %s))",
+                    (user_id,),
+                )
+                # Guarantee a config row exists so the pointer write is a plain UPDATE.
+                cur.execute(
+                    "INSERT INTO todo_config (user_id) VALUES (%s) "
+                    "ON CONFLICT (user_id) DO NOTHING",
+                    (user_id,),
+                )
+                # Re-check UNDER the lock: a race loser sees the winner's pointer here.
+                cur.execute(
+                    "SELECT default_list_id FROM todo_config WHERE user_id = %s",
+                    (user_id,),
+                )
+                row = cur.fetchone()
+                existing = (row or {}).get("default_list_id")
+
+            if existing and resolve_list_fn(existing):
+                conn.commit()  # release the advisory lock; nothing to create
+                return get_config(user_id)
+
+            # Winner only. create_list_fn runs on its OWN connection/commit
+            # (the lists app's write-through path); we never raw-SQL app_lists.
+            lst = create_list_fn(name=name, created_by=user_id)
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE todo_config SET default_list_id = %s, updated_at = now() "
+                    "WHERE user_id = %s",
+                    (lst["id"], user_id),
+                )
+            conn.commit()  # publishes the pointer AND releases the lock atomically
+        return get_config(user_id)
+
+    except psycopg2.errors.LockNotAvailable:
+        # A concurrent bootstrap is mid-flight and held the lock past lock_timeout
+        # (e.g. a slow create_list). It has almost certainly committed the pointer
+        # by now — re-read and reuse it rather than double-create or crash first-load.
+        cfg = get_config(user_id)
+        if cfg and cfg["default_list_id"] and resolve_list_fn(cfg["default_list_id"]):
+            return cfg
+        # Still unresolved: surface a retryable miss (the next poll hits the fast path).
+        raise RuntimeError(
+            f"todo default-list bootstrap for {user_id!r} is contended; retry"
+        )
+
+
 def get_all_configs() -> list[dict]:
     """Get all to-do configs (for nudge delivery)."""
     rows = fetch_all_in_schema(SCHEMA, "SELECT * FROM todo_config ORDER BY user_id")

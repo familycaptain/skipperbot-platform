@@ -1,0 +1,123 @@
+kind: specification
+id: platform.onboarding.step-completion-integrity
+title: 'Onboarding steps are completed honestly: applied-or-guided-and-confirmed, an explicit
+  decline/defer resolves the step, and the agent never fabricates having applied a Settings-only
+  config'
+state: live
+autonomy: gated
+behavior:
+- GIVEN a Settings-only onboarding agenda step (home location, member accounts, Discord, integrations)
+  for which the agent has NO tool to apply the config WHEN the agent walks the step THEN it
+  gives the user the EXACT Settings path (e.g. 'Settings → System → Location', 'Settings →
+  Members', 'Settings → Integrations') and offers to wait / check back — it does NOT silently
+  move on to the next step.
+- 'GIVEN the agent has no tool to apply a Settings-only config WHEN it responds THEN it may
+  TRUTHFULLY say it recorded the info to its memory for personalization (e.g. ''I''ve noted
+  your location preference''), but it must NEVER claim it APPLIED/UPDATED/ENABLED the Settings
+  config on the user''s behalf (''I''ve set your home location'', ''I set your timezone'',
+  ''I enabled Discord'' are forbidden) — for a Settings-only step it can only GUIDE. (Allowed:
+  recorded-to-memory + here-is-the-path; Forbidden: applied/updated/enabled the setting.)'
+- GIVEN a Settings-only step WHEN the agent decides completion THEN it calls update_item(status='done')
+  only when EITHER the user CONFIRMS in-session that they applied it, OR the user explicitly
+  DECLINES the step (a genuine 'not interested / skip'); if the user says they'll do it LATER,
+  mark the step status='deferred' (a terminal status that resolves the topic so the app tours
+  are NOT starved — never invent a 'pending' status) — optionally with a light nudge. A bare
+  `remember` + update_item(done) with NO user confirmation and NO explicit decline does NOT
+  satisfy completion and is the forbidden false-done.
+- 'GIVEN the EXISTING optional-topic behavior (_OPTIONAL_NOTE: ''if {who} isn''t interested,
+  mark this done and move on'') WHEN this change lands THEN a genuine user DECLINE remains
+  a valid completion — the fix forbids ONLY marking done while IMPLYING the config was applied
+  when the user neither applied nor explicitly declined; declining/skipping is unchanged and
+  still completes the topic.'
+- GIVEN the chat-only `intent` topic (how the user wants to use Skipper) which has NO Settings
+  config and whose REAL EFFECT is the in-chat capture WHEN it is walked THEN capturing the
+  answer to memory IS its completion — the anti-false-completion rule is scoped to Settings-only
+  topics and does NOT apply to intent (or any pure chat-learn topic).
+- 'GIVEN each Settings-only agenda topic that lacked a completion gate (location, discord,
+  integrations) WHEN onboarding is seeded THEN the topic carries a definition_of_done seeded
+  to the project''s definition_of_done by the existing ensure_onboarding loop, whose LOAD-BEARING
+  gate is front-loaded (applied-or-declined-or-deferred + no-fabricated-apply-claim) so it
+  survives the #88 PM-snapshot 300-char truncation; the fuller per-topic path detail (e.g.
+  Discord''s two paths — bridge in Settings → Integrations, personal link in Settings → Members
+  → My Discord) lives in the topic `desc`, which the chat driver surfaces up to ~2000 chars.
+  (The dod is enforced UNTRUNCATED by chat_domain._inject_onboarding_context; the 300-char
+  cap applies only to the PM goal-think snapshot.)'
+- GIVEN the onboarding chat driver WHEN it assembles the agenda context THEN it carries a
+  Settings-only-scoped anti-false-completion clause (never claim you applied/updated/enabled
+  a Settings config; give the exact Settings path; mark done only on user confirmation or
+  explicit decline; 'later' → deferred) in addition to the per-topic definition_of_done —
+  worded so it does NOT forbid the truthful recorded-to-memory statement and does NOT apply
+  to the chat-only intent step.
+- GIVEN the existing onboarding behavior WHEN this change lands THEN the agenda order (household
+  → intent → location → discord → integrations → tours), ev-80's household completion gate,
+  ev-81's location copy, the _OPTIONAL_NOTE decline path, and the agenda→tours gate (deferred/declined
+  topics resolve; they do not starve the tours) are all unchanged.
+- GIVEN the driver treats topic status WHEN a topic is marked status='deferred' ('later')
+  THEN chat_domain._inject_onboarding_context MUST treat 'deferred' as RESOLVED (add it to
+  the driver's _RESOLVED set alongside done/cancelled, with its own row glyph) so a deferred
+  topic is NOT re-selected as the current focus and re-nudged every turn — reconciling with
+  the goals-layer agenda→tours gate, which already treats deferred as satisfied. Onboarding
+  as a whole can reach complete with steps in a deferred state.
+- 'GIVEN the existing driver ''SKIPPING A TOPIC IS NOT QUITTING → mark that topic done'' clause
+  WHEN the anti-false-completion clause is added THEN the two are reconciled in one place:
+  an explicit user DECLINE/not-interested → done; a ''later / remind me'' → deferred; a confirmed-applied
+  → done; never a fabricated-apply done. The model is not left with contradictory skip rules.'
+- 'GIVEN Settings-only steps WHEN the agent guides the user there THEN the flow is NON-BLOCKING
+  and NOT naggy: the agent gives the path, may continue the conversation past a deferred step,
+  nudges a deferred step at most ONCE (never re-nudging every turn), and surfaces any deferred
+  Settings items with their exact paths in a single end-of-onboarding recap. Where a config
+  read exists (e.g. location''s default_location), the agent MAY check the value to confirm
+  concretely rather than relying on self-report.'
+- GIVEN the platform driver clause WHEN authored THEN it is GENERIC/capability-based (there
+  is no apply tool → never claim you applied a Settings config → give the exact Settings path
+  → done only on confirm/decline, 'later'→deferred) and does NOT hard-code agenda-topic identity;
+  topic-specific carve-outs (household's truthful record-to-memory statement; the chat-only
+  intent step's memory-capture-is-completion) live in each topic's per-topic dod/desc DATA
+  — mirroring ev-80 (data carries the topic rule, the platform driver stays generic).
+implements:
+- 'chat_domain.py (_inject_onboarding_context: generic anti-false-completion clause; add ''deferred''
+  to _RESOLVED + a row glyph; reconcile the SKIPPING clause; one-nudge/non-blocking framing)'
+- 'apps/goals/onboarding.py (ONBOARDING_AGENDA: front-loaded `dod` on location, discord, integrations;
+  Discord dual-path detail + _SECRETS_NOTE-consistent phrasing in its desc)'
+- tests/evolve/goals/test_onboarding_completion_integrity.py
+tests:
+- type: unit
+  path: tests/evolve/goals/test_onboarding_completion_integrity.py
+  rubric: 'ast-parse ONBOARDING_AGENDA: location/discord/integrations each carry a `dod` (<=300
+    chars, front-loaded) that names the Settings path family and gates done on user-confirm-OR-explicit-decline,
+    ''later''→deferred, never a bare-remember/fabricated-apply done; intent carries NO Settings
+    gate. chat_domain._inject_onboarding_context: (a) carries the generic anti-false-completion
+    clause, (b) treats ''deferred'' as resolved (deferred in _RESOLVED), (c) still permits
+    the truthful recorded-to-memory statement, (d) does not apply the Settings gate to intent.
+    Household ev-80 gate + agenda order + _OPTIONAL_NOTE decline path unchanged. Pin exact
+    anchor substrings for determinism.'
+- type: integration
+  path: live-acceptance (test host, N>=3, incl. the FAILURE path)
+  rubric: 'Drive the location step. HAPPY: user says they set it → agent gave the Settings
+    → System → Location path and did NOT claim it applied the setting/timezone itself. FAILURE
+    (the load-bearing case, mirrors ev-80): user does NOT confirm / says ''I''ll do it later''
+    → assert the agent does NOT call update_item(status=done) with an applied-claim (it either
+    keeps the topic open with the Settings path, or marks it deferred), and never says ''I''ve
+    set your home location/timezone''. DECLINE: user says ''skip it'' → topic may complete
+    (decline is valid) but with no fabricated apply-claim.'
+links: {}
+notes: 'no-spec bug (triage); generalizes ev-80''s household gate to all Settings-only steps
+  + adds an anti-fabrication clause. REVISED after spec-audit: (1) ''later'' uses the real
+  `deferred` status so the agenda→tours gate isn''t starved (no invented ''pending''); (2)
+  a genuine DECLINE stays a valid completion (reconciled with _OPTIONAL_NOTE) — only a fabricated
+  apply-claim is forbidden; (3) dropped the phantom ''config verifiably present'' exit (no
+  read path; async Settings write) — completion is in-session confirm/decline/defer; (4) clause
+  2 carves out the truthful recorded-to-memory statement; (5) the chat-only intent step is
+  exempt (its memory-capture IS completion); (6) load-bearing gate front-loaded in the dod,
+  Discord dual-path detail in the desc (driver surfaces desc untruncated). No agent tool applies
+  onboarding config (all Settings-only). Operator forks at Gate 1: (1) gate scope location-only
+  vs all Settings-only steps; (2) prompt-only vs an additional OPTIONAL structural location
+  check (default_location set). REVIEW ROUND (architecture/security/interop/ux): (interop
+  HIGH) driver _RESOLVED must include ''deferred'' or a later→deferred topic unblocks tours
+  yet stalls the chat driver — folded in as a required change; (architecture) keep the driver
+  clause generic, topic-specifics in data, do NOT gate the generic store.update_item; (ux)
+  non-blocking + one nudge + end-of-onboarding recap + prefer checking location''s default_location
+  over self-report; (security) keep Discord/integrations dod pointed at Settings (never solicit
+  tokens) + _SECRETS_NOTE preserved. Spec-audit round-1 blockers already resolved (deferred
+  status, decline valid, no phantom exit, intent exempt, front-loaded dod).'
+verified: true

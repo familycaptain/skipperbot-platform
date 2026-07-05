@@ -17,11 +17,9 @@ import json
 import os
 from datetime import datetime, timedelta
 
-from config import logger, SMART_MODEL, PROMPTS_DIR
+from config import logger, PROMPTS_DIR
 from app_platform.time import get_timezone
 import agent_loop
-DUMB_MODEL = os.getenv("DUMB_MODEL", "gpt-5-mini")
-
 # Threshold: below this many state items we use the cheaper model
 CHEAP_MODEL_THRESHOLD = 5
 
@@ -105,6 +103,38 @@ UPDATE_WORKING_MEMORY_TOOL = {
 # one item at a time, 1-month auto-close). Identified by its fixed seed name.
 ONBOARDING_GOAL_NAME = "Get started with Skipper"
 
+# Notification source_type for the live first-contact arrival greeting. Delivery
+# (apps/notifications/delivery._deliver_one) recognizes this source and pushes it
+# over the WS as a typing-clearing `chat_response` frame (live render = chat
+# bubble), while it still persists/reloads from history as a notification row —
+# consistent with other proactive DMs (platform.onboarding.live-greeting).
+ONBOARDING_GREETING_SOURCE = "onboarding_greeting"
+
+# Appended to the goal-think user prompt on a live ARRIVAL cycle so the model
+# opens with a warm first-contact hello instead of a mid-conversation nudge.
+_FIRST_CONTACT_FRAMING = """
+## FIRST CONTACT — LIVE ARRIVAL GREETING (act now)
+{who} just arrived on their desktop for the FIRST TIME, moments after finishing setup.
+This is your VERY FIRST message to them — a live hello, NOT a resumed conversation.
+- Greet them warmly and BY NAME ({who}) in 1-2 short sentences — like a present
+  person saying hi, not a wall of text.
+- Then OPEN the current (first not-done) agenda topic above as a single friendly
+  question — introduce it fresh; assume no prior context.
+- Use send_dm to {who} (the primary user). Send at most TWO short bubbles (a warm
+  opener, then the first agenda prompt), then STOP and yield so they can reply.
+  Do NOT dump the whole agenda.
+"""
+
+
+def _first_contact_framing() -> str:
+    """First-contact greeting instructions, personalized with the primary user's name."""
+    try:
+        from data_layer.users import get_primary_user
+        who = (get_primary_user() or "").strip() or "the primary user"
+    except Exception:
+        who = "the primary user"
+    return _FIRST_CONTACT_FRAMING.format(who=who)
+
 
 def _user_recently_active(username: str, within_minutes: int = 15) -> bool:
     """True if the user has chatted within the last ``within_minutes``.
@@ -133,6 +163,61 @@ def _user_recently_active(username: str, within_minutes: int = 15) -> bool:
         return False
 
 
+def _dm_hold_core(recipient: str, rows: list) -> bool:
+    """Shared engagement/24h hold decision over a candidate set of pending DMs.
+
+    Given ``rows`` (pending_action rows already scoped to the caller's domain(s)
+    and subject-set), select the SINGLE most-recent DM to ``recipient`` by
+    ``sent_at`` and hold IFF it is < 24h old AND still has no genuine reply.
+
+    ONE definition of "engaged" (a real, non-marker user turn after the DM) and
+    ONE 24h daily floor, shared by the per-subject hold (``_dm_on_hold``) and the
+    global onboarding-tour hold (``_onboarding_tour_on_hold``) so the two can
+    never drift. Conservative on error — never blocks indefinitely.
+    """
+    recip = (recipient or "").strip().lower()
+    if not recip:
+        return False
+    try:
+        import json
+        from datetime import datetime, timezone, timedelta
+        from data_layer.chatlogs import get_turns_since
+
+        latest = ""
+        for r in rows:
+            raw = r.get("content", "")
+            try:
+                c = json.loads(raw) if isinstance(raw, str) else (raw or {})
+            except (json.JSONDecodeError, TypeError):
+                continue
+            if not isinstance(c, dict):
+                continue
+            if (c.get("dm_to", "") or "").strip().lower() != recip:
+                continue
+            sent = c.get("sent_at") or r.get("created_at") or ""
+            if sent and sent > latest:
+                latest = sent
+        if not latest:
+            return False  # no prior DM to this person — fine to send
+
+        sent_dt = datetime.fromisoformat(str(latest).replace("Z", "+00:00"))
+        if sent_dt.tzinfo is None:
+            sent_dt = sent_dt.replace(tzinfo=timezone.utc)
+        if (datetime.now(timezone.utc) - sent_dt) >= timedelta(hours=24):
+            return False  # daily floor reached — a check-in is allowed
+
+        # Replied since? A real (non-marker) user turn after the DM = engaged.
+        turns = get_turns_since(recip, latest, limit=5)
+        replied = any(
+            (t.get("user_message", "") or "").strip()
+            and not (t.get("user_message", "") or "").startswith("[")
+            for t in turns
+        )
+        return not replied  # hold only if unanswered and < 24h old
+    except Exception:
+        return False
+
+
 def _dm_on_hold(recipient: str, domain_name: str, subject_id: str = "") -> bool:
     """True if the most recent proactive DM to ``recipient`` is still UNANSWERED
     and less than 24h old — enforce one-at-a-time pacing.
@@ -154,47 +239,71 @@ def _dm_on_hold(recipient: str, domain_name: str, subject_id: str = "") -> bool:
     subj = (subject_id or "").strip()
     subj_filter = subj if subj and subj != "unknown" else ""
     try:
-        import json
-        from datetime import datetime, timezone, timedelta
         from data_layer.skipper_state import list_states
-        from data_layer.chatlogs import get_turns_since
 
         rows = list_states(domain=domain_name, state_type="pending_action",
                            status="active", limit=50)
-        latest = ""
-        for r in rows:
-            # Per-subject scoping (PM): only this thread's pending DMs hold it.
-            if subj_filter and (r.get("subject_id") or "") != subj_filter:
-                continue
-            raw = r.get("content", "")
-            try:
-                c = json.loads(raw) if isinstance(raw, str) else (raw or {})
-            except (json.JSONDecodeError, TypeError):
-                continue
-            if not isinstance(c, dict):
-                continue
-            if (c.get("dm_to", "") or "").strip().lower() != recip:
-                continue
-            sent = c.get("sent_at") or r.get("created_at") or ""
-            if sent and sent > latest:
-                latest = sent
-        if not latest:
-            return False  # no prior DM to this person/thread — fine to send
+        # Per-subject scoping (PM): only this thread's pending DMs hold it.
+        if subj_filter:
+            rows = [r for r in rows if (r.get("subject_id") or "") == subj_filter]
+        return _dm_hold_core(recip, rows)
+    except Exception:
+        return False
 
-        sent_dt = datetime.fromisoformat(str(latest).replace("Z", "+00:00"))
-        if sent_dt.tzinfo is None:
-            sent_dt = sent_dt.replace(tzinfo=timezone.utc)
-        if (datetime.now(timezone.utc) - sent_dt) >= timedelta(hours=24):
-            return False  # daily floor reached — a check-in is allowed
 
-        # Replied since? A real (non-marker) user turn after the DM = engaged.
-        turns = get_turns_since(recip, latest, limit=5)
-        replied = any(
-            (t.get("user_message", "") or "").strip()
-            and not (t.get("user_message", "") or "").startswith("[")
-            for t in turns
-        )
-        return not replied  # hold only if unanswered and < 24h old
+def _onboarding_tour_on_hold(recipient: str) -> bool:
+    """GLOBAL onboarding app-tour cadence hold (ev-75).
+
+    True when a "Try the {app}" tour nudge for the IN-PROGRESS onboarding goal is
+    still unanswered and < 24h old — holding ALL tour nudges (not just that app's)
+    so a no-reply can't march the app catalog to a different tour each cycle. The
+    per-subject ``_dm_on_hold`` can't do this: the PM selector switches apps every
+    cycle, so each nudge is a fresh ``subject_id`` and the per-subject hold misses.
+
+    CORRECTNESS: unions pending_action across BOTH the PM domain AND the
+    onboarding goal's OWN domain (goal-domain tour DMs are filed under
+    ``domain=goal_id``, not ``'pm'``) into ONE pool, keeps only rows whose subject
+    is a tour project of that goal, then runs the SINGLE shared 24h/engagement
+    check on the global-latest DM — NOT a per-domain OR (which would falsely hold
+    when the newest tour DM is replied-to but an older one is still < 24h open).
+    Conservative on error — never blocks indefinitely.
+    """
+    recip = (recipient or "").strip().lower()
+    if not recip:
+        return False
+    try:
+        from apps.goals import onboarding
+        from apps.goals.data import load_entity
+        from data_layer.skipper_state import list_states
+
+        onb_goal = onboarding.onboarding_agenda_in_progress()
+        if not onb_goal:
+            return False  # onboarding not in progress — no tour hold
+
+        # Union pending_action rows across BOTH domains into ONE pool.
+        pool = []
+        for dom in ("pm", onb_goal):
+            pool.extend(list_states(domain=dom, state_type="pending_action",
+                                    status="active", limit=50))
+
+        # Keep only rows whose subject is a TOUR project of THIS onboarding goal.
+        proj_cache: dict = {}
+        tour_rows = []
+        for r in pool:
+            sid = (r.get("subject_id") or "").strip()
+            if not sid.startswith("p-"):
+                continue
+            if sid not in proj_cache:
+                proj_cache[sid] = load_entity(sid)
+            proj = proj_cache[sid]
+            if not proj or proj.get("goal_id") != onb_goal:
+                continue
+            if onboarding.onboarding_project_kind(proj.get("name", "")) != "tour":
+                continue
+            tour_rows.append(r)
+
+        # ONE shared engagement/24h check on the single global-latest tour DM.
+        return _dm_hold_core(recip, tour_rows)
     except Exception:
         return False
 
@@ -215,8 +324,15 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
     """Run one thinking cycle for a goal domain.
 
     ``domain["name"]`` is the goal ID (e.g. ``g-b9cd5ae6``).
+
+    ``domain["arrival"]`` (optional) marks an event-driven LIVE arrival cycle
+    for the onboarding goal (platform.onboarding.live-greeting): the produce
+    path switches to a warm FIRST-CONTACT greeting (personalized, opening — not
+    resuming — the current agenda step) delivered as a typing-clearing frame.
     """
     goal_id = domain["name"]
+    # First-contact live arrival greeting (vs the normal timer-driven nudge cycle).
+    is_arrival = bool(domain.get("arrival"))
 
     # ---------- OBSERVE ----------
     ctx = await asyncio.to_thread(_observe, goal_id, domain["name"])
@@ -275,19 +391,21 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
         logger.warning("GOAL_THINK[%s]: Failed to set focus: %s", goal_id, e)
 
     # ---------- MODEL SELECTION ----------
-    model = DUMB_MODEL if total_items <= CHEAP_MODEL_THRESHOLD else SMART_MODEL
-    model_tier = "cheap" if model == DUMB_MODEL else "standard"
+    # The cheap/standard decision maps to a model TIER (MODEL_FLEXIBILITY #44/#71); agent_loop
+    # resolves the connector+model+key from the tier. No raw model id / OPENAI_API_KEY here.
+    tier = "fast" if total_items <= CHEAP_MODEL_THRESHOLD else "smart"
+    model_tier = "cheap" if tier == "fast" else "standard"
 
-    # Always use smart model for goals with many projects/tasks
+    # Always use the smart tier for goals with many projects/tasks
     if goal_snap and goal_snap.get("total_task_count", 0) > 10:
-        model = SMART_MODEL
+        tier = "smart"
         model_tier = "standard"
 
     remaining = budget_status.get("remaining", 999_999)
-    if remaining < 50_000 and model == SMART_MODEL:
-        model = DUMB_MODEL
+    if remaining < 50_000 and tier == "smart":
+        tier = "fast"
         model_tier = "cheap"
-        logger.info("GOAL_THINK[%s]: Downgraded to cheap model — budget low (%d remaining)",
+        logger.info("GOAL_THINK[%s]: Downgraded to fast tier — budget low (%d remaining)",
                      goal_id, remaining)
 
     # ---------- BUILD MESSAGES + TOOLS ----------
@@ -297,6 +415,11 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
 
     user_prompt = _build_user_prompt(ctx)
     tools, routed_tool_names = _build_tools(user_prompt)
+
+    # Live arrival cycle: prepend warm first-contact greeting framing so the model
+    # opens with a personalized hello (not a mid-conversation nudge).
+    if is_onboarding and is_arrival:
+        user_prompt = user_prompt + "\n\n" + _first_contact_framing()
 
     from tool_router import get_guides_for_categories
     # Baseline guides are a fixed set — appended to static system for caching
@@ -309,8 +432,8 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
         {"role": "user", "content": user_prompt},
     ]
 
-    logger.info("GOAL_THINK[%s]: Calling %s — %d pending, %d observations, %d tools",
-                goal_id, model, ctx["pending_actions_count"],
+    logger.info("GOAL_THINK[%s]: Calling %s tier — %d pending, %d observations, %d tools",
+                goal_id, tier, ctx["pending_actions_count"],
                 ctx["observations_count"], len(tools))
 
     # ---------- TOOL DISPATCH + HOOKS ----------
@@ -354,22 +477,70 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
                 return "Error: to_user and message are required"
             if dm_to == "skipper":
                 return "You cannot DM yourself. DM not sent."
+            # Produce-layer tour gate (defect 1a, layer 2): the snapshot-filter
+            # alone is defeatable — the goal agent's baseline read tools
+            # (get_goal_detail/search_goals) can enumerate the hidden tour
+            # projects and the goal_id is printed in-prompt, so block a DM whose
+            # subject resolves to a gated tour project. tour_gated() self-gates on
+            # the in-progress onboarding goal, so normal goals are untouched.
+            if is_onboarding and subject_id:
+                try:
+                    from apps.goals import onboarding
+                    if onboarding.tour_gated(goal_id, subject_id):
+                        return (
+                            "That DM is about an app tour, but the ordered setup "
+                            "agenda isn't complete yet. Finish the agenda projects "
+                            "first — app tours come after. DM not sent."
+                        )
+                except Exception:
+                    logger.warning("GOAL_THINK[%s]: tour-gate DM check failed", goal_id, exc_info=True)
+            # Global onboarding app-tour CADENCE hold (ev-75, site 3): once the
+            # agenda is complete tours pass the ORDER gate above, so hold ALL tour
+            # nudges for ~24h while a prior tour DM is unanswered — a no-reply must
+            # not march the catalog to a different app. Defense-in-depth parity
+            # with the PM domain guards; the per-subject _dm_on_hold below still
+            # paces everything else. tour_gated (ORDER) is untouched.
+            if is_onboarding and subject_id and subject_id.startswith("p-"):
+                try:
+                    from apps.goals import onboarding
+                    from apps.goals.data import load_entity as _load_tour_proj
+                    _tp = _load_tour_proj(subject_id)
+                    if (_tp and _tp.get("goal_id") == goal_id
+                            and onboarding.onboarding_project_kind(_tp.get("name", "")) == "tour"
+                            and await asyncio.to_thread(_onboarding_tour_on_hold, dm_to)):
+                        return (
+                            "That app-tour nudge is on a daily hold — a tour message "
+                            "is still unanswered and less than 24h old. Wait for their "
+                            "reply before nudging another app tour. DM not sent."
+                        )
+                except Exception:
+                    logger.warning("GOAL_THINK[%s]: onboarding tour-hold DM check failed", goal_id, exc_info=True)
             # Onboarding is a live, one-at-a-time conversation — a single DM per
-            # cycle. Other goals keep the looser cap.
-            _cap = 1 if is_onboarding else 3
+            # cycle. The first-contact live arrival greeting is allowed TWO short
+            # bubbles (a warm opener + the first agenda prompt). Other goals keep
+            # the looser cap.
+            _cap = (2 if (is_onboarding and is_arrival) else 1) if is_onboarding else 3
             if dm_count >= _cap:
                 return f"DM limit reached (max {_cap} per cycle). DM not sent."
-            if dm_to in dm_recipients:
+            # The first-contact arrival burst is an INTENTIONAL 2-bubble greeting
+            # to the same primary user, so it bypasses the same-recipient and
+            # one-at-a-time gates below (the cap still bounds it to 2). The
+            # pending_action rows it writes still HOLD the later cadence cycle.
+            _arrival_burst = is_onboarding and is_arrival
+            if dm_to in dm_recipients and not _arrival_burst:
                 return f"Already sent a DM to {dm_to} this cycle. DM not sent."
             # One-at-a-time pacing: if the prior DM to this person is still
             # unanswered and < 24h old, hold and wait for their reply.
-            if await asyncio.to_thread(_dm_on_hold, dm_to, domain_name):
+            if not _arrival_burst and await asyncio.to_thread(_dm_on_hold, dm_to, domain_name):
                 return (
                     f"Your previous message to {dm_to} is unanswered and less than "
                     "24h old. Wait for their reply before sending another — DM not sent."
                 )
 
-            await _send_dm(dm_to, dm_text, subject_id)
+            # On a live arrival cycle the greeting delivers as a chat_response
+            # bubble (clears the client's optimistic typing) via this source_type.
+            _dm_source = ONBOARDING_GREETING_SOURCE if (is_onboarding and is_arrival) else "goal_thinking"
+            await _send_dm(dm_to, dm_text, subject_id, source_type=_dm_source)
             dm_count += 1
             dm_recipients.add(dm_to)
 
@@ -430,7 +601,7 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
         loop_result = await agent_loop.run(
             messages=messages,
             tools=tools,
-            model=model,
+            tier=tier,
             max_turns=8,
             max_tool_calls=25,
             tool_dispatch=_dispatch,
@@ -534,16 +705,36 @@ def _build_goal_snapshot(goal: dict) -> dict:
     """Build a comprehensive snapshot of the goal and all its children."""
     from apps.goals.data import load_entity, get_top_level_tasks, get_subtasks
 
+    # Pre-load project entities so onboarding tour-gating (defect 1a, layer 1)
+    # can EXCLUDE the per-app "Try the {app}" tour projects while the ordered
+    # setup agenda is still open. Filtering HERE keeps the snapshot, the memory
+    # recall, AND the total/done progress counts all free of tours, so the goal
+    # LLM never sees — and thus can't nudge — an app tour early. Gated on the
+    # onboarding goal only via the shared tour_gated() helper.
+    loaded = []
+    for pid in goal.get("projects", []):
+        proj = load_entity(pid)
+        if not proj:
+            continue
+        loaded.append((pid, proj))
+
+    if goal.get("name", "") == ONBOARDING_GOAL_NAME:
+        try:
+            from apps.goals import onboarding
+            proj_entities = [p for _, p in loaded]
+            loaded = [
+                (pid, proj) for (pid, proj) in loaded
+                if not onboarding.tour_gated(goal, proj, projects=proj_entities)
+            ]
+        except Exception:
+            logger.warning("GOAL_THINK: onboarding tour-gate snapshot filter failed", exc_info=True)
+
     projects = []
     total_task_count = 0
     total_done = 0
     total_blocked = 0
 
-    for pid in goal.get("projects", []):
-        proj = load_entity(pid)
-        if not proj:
-            continue
-
+    for pid, proj in loaded:
         top_tasks = get_top_level_tasks(pid)
         task_summaries = []
         p_counts = {"total": 0, "done": 0, "in_progress": 0, "blocked": 0, "not_started": 0}
@@ -875,7 +1066,7 @@ def _build_tools(context_text: str) -> tuple[list[dict], set[str]]:
 # DM helper
 # =========================================================================
 
-async def _send_dm(person: str, text: str, subject_id: str = ""):
+async def _send_dm(person: str, text: str, subject_id: str = "", *, source_type: str = "goal_thinking"):
     """DM a real household user from the goal thinking loop.
 
     Delivers through the platform's multi-surface notification path (web UI,
@@ -883,6 +1074,10 @@ async def _send_dm(person: str, text: str, subject_id: str = ""):
     sender directly. The recipient is validated: an unknown/placeholder name is
     redirected to the primary user so the nudge still reaches a real person
     (never a phantom like an example name the LLM might invent).
+
+    ``source_type`` tags the notification (default ``goal_thinking``); the live
+    first-contact arrival greeting passes ``onboarding_greeting`` so delivery
+    surfaces it as a typing-clearing chat_response bubble.
     """
     from config import PM_QUIET_MODE
     if PM_QUIET_MODE:
@@ -904,7 +1099,7 @@ async def _send_dm(person: str, text: str, subject_id: str = ""):
             create_notification,
             recipient=recipient,
             message=text,
-            source_type="goal_thinking",
+            source_type=source_type,
             source_id=subject_id or "",
             channel="all",
             delivered=False,

@@ -1,0 +1,30 @@
+kind: specification
+id: home.contractors.directory
+title: Home Contractors tab is a real feature (service-provider directory)
+state: live
+autonomy: gated
+behavior: The Home Contractors tab lists home service providers (name, trade, company, phone,
+  email, rating [1-5 stars], last_used, jobs_history, notes) with search + trade filter +
+  add/edit/delete, replacing the placeholder. Each mutation persists to app_home.home_contractors
+  and emits digest_record; agent tools give cross-surface parity. Rating is validated 1-5
+  at the DB (CHECK) and normalized app-side (out-of-range -> null). Empty tab (no active search/trade
+  filter) shows the per-view hero; filtered zero-result keeps normal text.
+implements:
+- apps/home/migrations/007_contractors.sql
+- apps/home/data.py
+- apps/home/routes.py
+- apps/home/tools.py
+- apps/home/manifest.yaml
+- apps/home/ui/HomeApp.jsx
+- apps/home/ui/index.js
+- web/src/apps/emptyStateHero.js
+tests: []
+links: {}
+notes: 'Verified LIVE at Gate-2 (test host): migration 007 applied; Home app + entity ''hc''
+  loaded clean (no cross-schema-FK error; no attachments -> no handlers.py change); guardrail
+  EXIT 0 (home per-view maintenance+appliances+insurance+contractors); full CRUD round-trip
+  (create hc-c4e0dd63 rating 5/list/update 5->4/delete); RATING CLAMP verified (POST rating=9
+  stored as null); digest firing; live real Contractors tab + 5-star rendering. Flat clone
+  of ev-67 Appliances minus the image layer. 3rd/last of the Home build-outs. Blurb + field
+  set per Gate-1.'
+verified: true

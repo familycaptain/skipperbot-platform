@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Image as ImageIcon, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 /**
  * Images App — singleton list/gallery view of all saved images.
@@ -50,7 +52,7 @@ export default function ImagesApp({ appId, userId, context = {}, onTitle, onOpen
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full w-full">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-subtle shrink-0">
         <div className="flex items-center gap-2">
@@ -70,13 +72,22 @@ export default function ImagesApp({ appId, userId, context = {}, onTitle, onOpen
       {/* Gallery grid */}
       <div className="flex-1 overflow-y-auto p-4">
         {images.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-faint gap-3">
-            <ImageIcon size={40} className="opacity-20" />
-            <p className="text-sm">No images yet.</p>
-            <p className="text-xs text-faint text-center max-w-[220px] leading-relaxed">
-              Ask Skipper to generate a chart — e.g. "show me a chart of SPY"
-            </p>
-          </div>
+          <PristineEmpty
+            appId="images"
+            blurb={getAppManifest("images")?.blurb}
+            records={images}
+            loading={loading}
+            filterActive={false}
+            fallback={
+              <div className="flex flex-col items-center justify-center h-full text-faint gap-3">
+                <ImageIcon size={40} className="opacity-20" />
+                <p className="text-sm">No images yet.</p>
+                <p className="text-xs text-faint text-center max-w-[220px] leading-relaxed">
+                  Ask Skipper to generate a chart — e.g. "show me a chart of SPY"
+                </p>
+              </div>
+            }
+          />
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {images.map(img => (

@@ -1,7 +1,7 @@
 """App Memory Integration
 =========================
 Standard interface for app packages to generate memories from record CRUD
-operations. Extracts meaningful facts using DUMB_MODEL and saves them as
+operations. Extracts meaningful facts using the "fast" model tier and saves them as
 searchable memories in the shared memory store.
 
 **Pattern for app data.py files:**
@@ -329,12 +329,9 @@ def _run_digest(
 
     user_prompt = "\n".join(prompt_lines)
 
-    # Late import to avoid circular imports at module load time
-    from config import DUMB_MODEL
-
     try:
         completion = chat_completion(
-            model=DUMB_MODEL,
+            tier="fast",
             messages=[
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt},

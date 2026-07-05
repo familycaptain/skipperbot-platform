@@ -31,8 +31,6 @@ from app_platform.jobs import start_dispatcher
 from thinking_scheduler import start_thinking_scheduler
 from job_handlers import register_all_handlers
 from trello_sync import start_trello_sync
-from memory_store import backfill_embeddings
-from knowledge_store import migrate_chunk_embeddings
 from data_layer.db import close_pool
 from app_platform.loader import load_all_apps, get_app_tool_routes
 from app_platform import lifecycle
@@ -82,19 +80,19 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error("STARTUP: upgrade-seed failed: %s", e)
 
-    # Keyless boot (#44): suppress LLM-dependent background work until models are configured, so
-    # a fresh keyless install boots HEALTHY and the first-run model step is reachable with no LLM call.
+    # Keyless boot (#44, #73): LLM-dependent background work (the timer thinking domains and the
+    # one-shot embedding backfill/migrate) is gated LIVE inside the thinking scheduler's supervisor
+    # on models_configured(), so it self-activates within one supervisor interval after onboarding
+    # configures a model — no restart. The scheduler + the (LLM-free) priority-event consumer always
+    # start below; nothing LLM runs until models are configured, so a fresh keyless install boots
+    # HEALTHY and the first-run model step is reachable with no LLM call.
     try:
         from providers.tier_resolver import models_configured as _models_configured
-        _models_ready = _models_configured()
+        if not _models_configured():
+            logger.info("STARTUP: models not configured — thinking scheduler will self-gate LLM work "
+                        "until onboarding configures a model (keyless boot)")
     except Exception:
-        _models_ready = False
-    if _models_ready:
-        # One-time migrations: backfill memory embeddings + migrate knowledge to binary
-        await asyncio.to_thread(backfill_embeddings)
-        await asyncio.to_thread(migrate_chunk_embeddings)
-    else:
-        logger.info("STARTUP: models not configured — suppressing embedding/thinking work (keyless boot)")
+        pass
     await mcp_client.connect_to_mcp()
 
     # Build direct-call tool registry (bypasses MCP subprocess for execution)
@@ -142,8 +140,11 @@ async def lifespan(app: FastAPI):
     background_tasks = lifecycle.start_background_tasks()
     job_task = asyncio.create_task(start_dispatcher())
     trello_task = asyncio.create_task(start_trello_sync())
-    # Thinking scheduler is LLM-dependent — start it only when models are configured (keyless boot, #44).
-    thinking_task = asyncio.create_task(start_thinking_scheduler()) if _models_ready else None
+    # Thinking scheduler always starts (#73): it is LLM-free at the seam (the priority-event
+    # consumer routes events) and self-gates the LLM-spending timer domains + one-shot embedding
+    # backfill on models_configured() inside its supervisor, so it self-activates <=120s after
+    # onboarding — no restart. start_thinking_scheduler() is idempotent.
+    thinking_task = asyncio.create_task(start_thinking_scheduler())
     yield
     # Shutdown
     if discord_enabled_now:
@@ -173,7 +174,7 @@ app = FastAPI(title="SkipperBot Agent", version="0.1.0", lifespan=lifespan)
 # non-public path with 401. Enforcement is unconditional — there is no off switch.
 # ---------------------------------------------------------------------------
 _PUBLIC_EXACT = {"/", "/api/health", "/auth/login", "/auth/logout",
-                 "/api/onboarding/status"}
+                 "/api/onboarding/status", "/api/onboarding/timezones"}
 _PUBLIC_PREFIXES = ("/assets/", "/static/", "/web/")
 
 
@@ -415,6 +416,60 @@ async def onboarding_status():
     return await asyncio.to_thread(_do)
 
 
+@app.get("/api/onboarding/timezones")
+async def onboarding_timezones():
+    """Full IANA timezone list (offset-labeled, offset-then-name sorted) for the
+    onboarding timezone picker. Pre-login (in ``_PUBLIC_EXACT``): the list is
+    non-sensitive reference data the browser's Intl API already exposes, and it
+    must render before the first user exists. Shares the platform's single
+    source (``app_platform.time.timezone_choices``) with the Settings app, so
+    both dropdowns show the identical list. Recomputed per request (no cache) to
+    keep offsets DST-current."""
+    from app_platform.time import timezone_choices
+    return {"timezones": await asyncio.to_thread(timezone_choices)}
+
+
+@app.get("/api/onboarding/live-greeting-status")
+async def onboarding_live_greeting_status(request: Request):
+    """Whether the CURRENT user should get the event-driven live onboarding greeting.
+
+    True IFF the authenticated user is the primary user, the guided-agenda goal is
+    still IN PROGRESS, and the one-time greeting hasn't been claimed yet. The web
+    client consumes this synchronous 'primary + onboarding-in-progress' signal to
+    (a) suppress the canned fresh-onboarding greeting and (b) show the typing
+    indicator OPTIMISTICALLY while the real server-driven greeting is produced
+    (platform.onboarding.live-greeting). A fresh NON-primary user gets ``false``
+    and keeps their client-side greeting.
+    """
+    principal = principal_from_request(request)
+
+    def _do():
+        name = ((principal or {}).get("name") or "").strip().lower()
+        if not name:
+            return {"pending": False, "onboarding": False}
+        try:
+            from data_layer.users import get_primary_user
+            primary = (get_primary_user() or "").strip().lower()
+            if not primary or name != primary:
+                return {"pending": False, "onboarding": False}
+            from apps.goals.onboarding import onboarding_agenda_in_progress, _GREETED_KEY
+            # `onboarding` is UNGATED (independent of the greet-once _GREETED_KEY):
+            # it is true for the WHOLE onboarding-in-progress window, so the client
+            # can suppress the canned welcome-back on a mid-onboarding reload. The
+            # existing `pending` stays greet-once-gated (it drives the one-shot
+            # optimistic-typing path and is false after the first greeting).
+            if not onboarding_agenda_in_progress():
+                return {"pending": False, "onboarding": False}
+            from app_platform import config as platform_config
+            already_greeted = bool(platform_config.get(_GREETED_KEY, scope="app:goals"))
+            return {"pending": not already_greeted, "onboarding": True}
+        except Exception:
+            logger.debug("live-greeting-status check failed", exc_info=True)
+            return {"pending": False, "onboarding": False}
+
+    return await asyncio.to_thread(_do)
+
+
 class DisabledAppsRequest(BaseModel):
     disabled: list[str]
 
@@ -586,6 +641,18 @@ async def onboarding_save_models(request: SaveModelsRequest, http_request: Reque
             sel = tiers.get(tier) or {}
             if not sel.get("connector") or not sel.get("model"):
                 return {"ok": False, "error": f"Missing selection for the {tier} tier."}
+        # Embedding-dim lock (MODEL_FLEXIBILITY #44/#71, interop): once the embedding dimension is
+        # provisioned, the embedding connector/model is FROZEN — a change would emit vectors of a
+        # different dimension than the live pgvector columns (silent corruption). Reject the change
+        # server-side (the UI already sets embedding_locked; this enforces it regardless of client).
+        if model_config.embedding_dim():
+            emb_sel = tiers["embedding"]
+            cur_emb = model_config.read_tier("embedding")
+            if (emb_sel["connector"] != cur_emb.get("connector")
+                    or emb_sel["model"] != cur_emb.get("model")):
+                return {"ok": False, "error": (
+                    "The embedding model is locked after first setup (the vector dimension is "
+                    "fixed). Keep the existing embedding selection; smart/fast can still change.")}
         for tier in ("smart", "fast", "embedding"):
             sel = tiers[tier]
             model_config.save_tier(tier, connector=sel["connector"], model=sel["model"],
@@ -597,8 +664,39 @@ async def onboarding_save_models(request: SaveModelsRequest, http_request: Reque
                     if r["connector"] == emb["connector"] and r["model"] == emb["model"]]
             if rows and rows[0].get("embedding_dim"):
                 model_config.set_embedding_dim(rows[0]["embedding_dim"])
-        return {"ok": True, "restart_required": True}
-    return await asyncio.to_thread(_do)
+        # Smart/Fast models take effect immediately post-#73 (call-time tier
+        # resolution); no restart is required after a model save. (Embedding is
+        # provisioned once above; its dimension is fixed, not a live restart.)
+        return {"ok": True, "restart_required": False}
+
+    # ev-79: on a genuinely fresh install the primary's desktop WS connected while
+    # keyless, so the desktop.arrival greeting early-skipped (models not configured)
+    # WITHOUT taking the greet-once claim. Capture readiness BEFORE the save so we can
+    # detect the first-time keyless -> configured transition, then RE-FIRE desktop.arrival
+    # for the primary once configured — the #73 always-on consumer produces the greeting
+    # within a few seconds instead of waiting for the <=120s supervisor. The arrival
+    # handler (apps/goals/handlers.py) is UNCHANGED: it re-checks the primary/agenda/
+    # models-configured gates and the ATOMIC greet-once claim, so exactly-once holds and a
+    # later (already-configured) model change never re-greets.
+    from providers.tier_resolver import models_configured
+    was_configured = await asyncio.to_thread(models_configured)
+    result = await asyncio.to_thread(_do)
+    if (result or {}).get("ok") and not was_configured:
+        try:
+            # Only when the save actually made models configured (never on a keyless
+            # no-op — keeps #73 LLM-silence) and a primary user exists.
+            if await asyncio.to_thread(models_configured):
+                from data_layer.users import get_primary_user
+                primary = (await asyncio.to_thread(get_primary_user) or "").strip().lower()
+                if primary:
+                    import thinking_scheduler
+                    asyncio.create_task(
+                        thinking_scheduler.submit_priority_event(
+                            "desktop.arrival", {"user_id": primary})
+                    )
+        except Exception:
+            logger.debug("save-models: could not re-fire desktop.arrival", exc_info=True)
+    return result
 
 
 @app.post("/api/onboarding/create-user")
@@ -973,6 +1071,18 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
     await manager.connect(user_id, websocket, subprotocol=ws_bearer_subprotocol(websocket))
     # Send build ID so client can detect agent restarts
     await websocket.send_json({"type": "build_id", "build_id": BUILD_ID})
+
+    # Emit a THIN `desktop.arrival` event (transport carries NO onboarding/goals
+    # logic — the goals-layer handler owns all gating + greet-once). Fire-and-
+    # forget so the WS handshake never blocks; best-effort (any error is ignored).
+    try:
+        import thinking_scheduler
+        asyncio.create_task(
+            thinking_scheduler.submit_priority_event("desktop.arrival", {"user_id": user_id})
+        )
+    except Exception:
+        logger.debug("websocket_chat: could not emit desktop.arrival event", exc_info=True)
+
     try:
         while True:
             data = await websocket.receive_json()
@@ -3350,639 +3460,6 @@ async def api_accept_edit(idea_id: str, part_id: str, req: AcceptEditRequest):
     if not result:
         raise HTTPException(status_code=404, detail="Part not found")
     return result
-
-
-# ---------------------------------------------------------------------------
-# App API endpoints — Evolution Feed
-# ---------------------------------------------------------------------------
-
-import data_layer.evolution as dl_evolution
-
-
-class CreateEvolutionItemRequest(BaseModel):
-    type: str  # finding | proposal | question | goal | work_item | status_update
-    title: str
-    body: str
-    impact: str | None = None
-    effort: str | None = None
-    category: str | None = None
-    parent_id: str | None = None
-    created_by: str = "skipper"
-
-
-class UpdateEvolutionItemRequest(BaseModel):
-    status: str | None = None
-    title: str | None = None
-    body: str | None = None
-    impact: str | None = None
-    effort: str | None = None
-    category: str | None = None
-    parent_id: str | None = None
-    deferred_until: str | None = None
-    meta: dict | None = None
-    priority_pin: str | None = None
-
-
-class AddThreadMessageRequest(BaseModel):
-    author: str
-    body: str
-
-
-class TriggerEvolveRequest(BaseModel):
-    cycle_type: str = "deep"  # deep | feedback | assessment | planning | vision
-
-
-@app.get("/api/apps/evolve/items")
-async def api_list_evolution_items(
-    status: str = "",
-    type: str = "",
-    category: str = "",
-    parent_id: str = "",
-    include_completed: bool = False,
-    limit: int = 100,
-):
-    """List evolution items with optional filters."""
-    return {
-        "items": await asyncio.to_thread(
-            dl_evolution.list_items,
-            status=status or None,
-            item_type=type or None,
-            category=category or None,
-            parent_id=parent_id or None,
-            include_completed=include_completed,
-            limit=limit,
-        )
-    }
-
-
-@app.post("/api/apps/evolve/items")
-async def api_create_evolution_item(req: CreateEvolutionItemRequest, http_request: Request):
-    """Create a new evolution item."""
-    req.created_by = _actor_name(http_request)
-    item = await asyncio.to_thread(
-        dl_evolution.create_item,
-        item_type=req.type,
-        title=req.title,
-        body=req.body,
-        impact=req.impact,
-        effort=req.effort,
-        category=req.category,
-        parent_id=req.parent_id,
-        created_by=req.created_by,
-    )
-    return item
-
-
-@app.get("/api/apps/evolve/items/{item_id}")
-async def api_get_evolution_item(item_id: str):
-    """Get an evolution item with its thread and children."""
-    item = await asyncio.to_thread(dl_evolution.get_item_with_thread, item_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Evolution item not found")
-    return item
-
-
-@app.put("/api/apps/evolve/items/{item_id}")
-async def api_update_evolution_item(item_id: str, req: UpdateEvolutionItemRequest):
-    """Update an evolution item's fields."""
-    fields = {k: v for k, v in req.model_dump().items() if v is not None}
-    item = await asyncio.to_thread(dl_evolution.update_item, item_id, **fields)
-    if not item:
-        raise HTTPException(status_code=404, detail="Evolution item not found")
-    return item
-
-
-@app.post("/api/apps/evolve/items/{item_id}/status/{status}")
-async def api_set_evolution_status(item_id: str, status: str):
-    """Set an evolution item's status (approve, redirect, defer, reject, etc.)."""
-    valid = {"new", "reviewed", "approved", "redirected", "deferred",
-             "rejected", "dismissed", "in_progress", "completed"}
-    if status not in valid:
-        raise HTTPException(status_code=400, detail=f"Invalid status: {status}")
-    item = await asyncio.to_thread(dl_evolution.set_status, item_id, status)
-    if not item:
-        raise HTTPException(status_code=404, detail="Evolution item not found")
-    return item
-
-
-@app.delete("/api/apps/evolve/items/{item_id}")
-async def api_delete_evolution_item(item_id: str):
-    """Delete an evolution item and its threads."""
-    deleted = await asyncio.to_thread(dl_evolution.delete_item, item_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail="Evolution item not found")
-    return {"ok": True}
-
-
-@app.get("/api/apps/evolve/items/{item_id}/thread")
-async def api_get_evolution_thread(item_id: str):
-    """Get all messages in an evolution item's conversation thread."""
-    messages = await asyncio.to_thread(dl_evolution.get_thread, item_id)
-    return {"messages": messages}
-
-
-@app.post("/api/apps/evolve/items/{item_id}/thread")
-async def api_add_thread_message(item_id: str, req: AddThreadMessageRequest):
-    """Add a message to an evolution item's conversation thread."""
-    item = await asyncio.to_thread(dl_evolution.get_item, item_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Evolution item not found")
-    msg = await asyncio.to_thread(
-        dl_evolution.add_thread_message, item_id, req.author, req.body
-    )
-    return msg
-
-
-@app.get("/api/apps/evolve/stats")
-async def api_evolution_stats():
-    """Get Evolution Feed dashboard statistics."""
-    return await asyncio.to_thread(dl_evolution.get_stats)
-
-
-@app.get("/api/apps/evolve/items/{item_id}/children")
-async def api_get_evolution_children(item_id: str):
-    """Get all child items of an evolution item (hierarchy)."""
-    children = await asyncio.to_thread(dl_evolution.get_children, item_id)
-    return {"children": children}
-
-
-class PriorityDirectiveRequest(BaseModel):
-    text: str  # Free-text strategic guidance, e.g. "Focus on reliability before new features"
-
-
-@app.get("/api/apps/evolve/priority-directives")
-async def api_get_priority_directives():
-    """Get the current strategic priority directives."""
-    from domain_evolve import _load_working_memory
-    wm = _load_working_memory()
-    directives = wm.get("priority_directives")
-    if isinstance(directives, dict):
-        return directives
-    elif directives:
-        return {"text": str(directives)}
-    return {"text": ""}
-
-
-@app.put("/api/apps/evolve/priority-directives")
-async def api_set_priority_directives(req: PriorityDirectiveRequest):
-    """Set strategic priority directives (free-text guidance for ranking)."""
-    from domain_evolve import _save_working_memory
-    await _save_working_memory("priority_directives", {"text": req.text})
-    return {"ok": True, "text": req.text}
-
-
-@app.put("/api/apps/evolve/items/{item_id}/pin/{pin}")
-async def api_set_priority_pin(item_id: str, pin: str):
-    """Set a priority pin on an evolution item. Valid pins: top, high, low, bottom, lock, clear."""
-    valid_pins = {"top", "high", "low", "bottom", "lock"}
-    if pin == "clear":
-        item = await asyncio.to_thread(dl_evolution.update_item, item_id, priority_pin=None)
-    elif pin in valid_pins:
-        item = await asyncio.to_thread(dl_evolution.update_item, item_id, priority_pin=pin)
-    else:
-        raise HTTPException(status_code=400, detail=f"Invalid pin: {pin}. Use: top, high, low, bottom, lock, clear")
-    if not item:
-        raise HTTPException(status_code=404, detail="Evolution item not found")
-    return item
-
-
-class DiscussRequest(BaseModel):
-    message: str
-    author: str = "alice"
-
-
-@app.post("/api/apps/evolve/items/{item_id}/discuss")
-async def api_discuss_evolution_item(item_id: str, req: DiscussRequest):
-    """Live discussion with Skipper about an evolution item.
-
-    Saves the user message, calls the LLM with full item + thread context,
-    saves Skipper's response, and returns it.
-    """
-    import agent_loop
-    from config import SMART_MODEL
-
-    # Load item
-    item = await asyncio.to_thread(dl_evolution.get_item, item_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Evolution item not found")
-
-    # Load thread history
-    thread = await asyncio.to_thread(dl_evolution.get_thread, item_id)
-
-    # Save user message first
-    await asyncio.to_thread(
-        dl_evolution.add_thread_message, item_id, req.author, req.message
-    )
-
-    # Build system prompt
-    import os
-    prompt_path = os.path.join(os.path.dirname(__file__), "prompts", "evolve", "discuss.md")
-    try:
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            system_prompt = f.read()
-    except FileNotFoundError:
-        system_prompt = "You are Skipper, a helpful AI assistant. Discuss this evolution item with Alice."
-
-    # Load parent goal if this is a proposal under a goal
-    parent_context = ""
-    if item.get("parent_id"):
-        try:
-            parent = await asyncio.to_thread(dl_evolution.get_item, item["parent_id"])
-            if parent:
-                parent_context = (
-                    f"## Parent Goal: {parent['title']}\n"
-                    f"- **Status:** {parent.get('status', '?')}\n"
-                    f"- **Impact:** {parent.get('impact', '?')}\n"
-                    f"- **Priority rank:** {parent.get('priority', 'unranked')}\n"
-                    f"- **Category:** {parent.get('category', '?')}\n\n"
-                    f"### Goal Description\n{parent.get('body', '(no description)')}\n\n"
-                    f"---\n\n"
-                )
-        except Exception:
-            pass
-
-    # Build item context
-    type_info = TYPE_LABELS_BACKEND.get(item.get("type", ""), item.get("type", "unknown"))
-    item_context = parent_context + (
-        f"## Item: {item['title']}\n"
-        f"- **Type:** {type_info}\n"
-        f"- **Status:** {item.get('status', '?')}\n"
-        f"- **Impact:** {item.get('impact', '?')} | **Effort:** {item.get('effort', '?')}\n"
-        f"- **Category:** {item.get('category', '?')}\n"
-        f"- **Priority rank:** {item.get('priority', 'unranked')}\n\n"
-        f"### Description\n{item.get('body', '(no description)')}\n"
-    )
-
-    # Build conversation history as messages
-    messages = [{"role": "system", "content": system_prompt}]
-    messages.append({"role": "user", "content": item_context})
-    messages.append({"role": "assistant", "content": "I've reviewed the item. Let's discuss."})
-
-    for msg in (thread or []):
-        role = "assistant" if msg["author"] == "skipper" else "user"
-        messages.append({"role": role, "content": msg["body"]})
-
-    # Add the new user message
-    messages.append({"role": "user", "content": req.message})
-
-    # Call LLM
-    result = await agent_loop.run(
-        messages=messages,
-        tools=[],
-        model=SMART_MODEL,
-        max_turns=1,
-        tool_dispatch=None,
-    )
-
-    response_text = result.response_text or "I wasn't able to formulate a response."
-
-    # Save Skipper's response to thread
-    await asyncio.to_thread(
-        dl_evolution.add_thread_message, item_id, "skipper", response_text
-    )
-
-    return {
-        "response": response_text,
-        "tokens": result.prompt_tokens + result.completion_tokens,
-    }
-
-
-TYPE_LABELS_BACKEND = {
-    "goal": "Goal",
-    "proposal": "Proposal",
-    "finding": "Finding",
-    "work_item": "Work Item",
-    "question": "Question",
-    "status_update": "Status Update",
-}
-
-
-class PromoteRequest(BaseModel):
-    target_goal_id: str | None = None  # For proposals: which goal to create project under
-
-
-@app.post("/api/apps/evolve/items/{item_id}/promote")
-async def api_promote_evolution_item(item_id: str, req: PromoteRequest = PromoteRequest()):
-    """Promote an evolution item to the Goals system.
-
-    - Goal items → create a new goal in the goals system
-    - Proposals → create a new project under a specified goal
-    """
-    import uuid
-    from datetime import datetime
-    from app_platform.time import get_timezone
-    from apps.goals.data import save_entity
-
-    item = await asyncio.to_thread(dl_evolution.get_item, item_id)
-    if not item:
-        raise HTTPException(status_code=404, detail="Evolution item not found")
-
-    item_type = item.get("type", "")
-    now = datetime.now(get_timezone()).isoformat()
-
-    if item_type == "goal":
-        goal_id = f"g-{uuid.uuid4().hex[:8]}"
-        goal = {
-            "id": goal_id,
-            "name": item["title"],
-            "owners": ["alice"],
-            "collaborators": [],
-            "target_date": "",
-            "status": "not_started",
-            "stack_rank": 0,
-            "notes": item.get("body", ""),
-            "definition_of_done": "",
-            "history": [{"event": "promoted_from_evolve", "item_id": item_id, "at": now}],
-            "artifacts": [],
-            "created_by": "skipper",
-            "created_at": now,
-        }
-        await asyncio.to_thread(save_entity, goal)
-
-        # Update evolve item meta to link back
-        meta = item.get("meta") or {}
-        meta["promoted_to"] = goal_id
-        await asyncio.to_thread(dl_evolution.update_item, item_id, meta=meta, status="approved")
-
-        return {"ok": True, "promoted_to": goal_id, "type": "goal", "name": item["title"]}
-
-    elif item_type in ("proposal", "work_item", "finding"):
-        if not req.target_goal_id:
-            # Return available goals so UI can ask user to pick one
-            from apps.goals.data import list_entities
-            all_goals = await asyncio.to_thread(list_entities, "g-")
-            goals = [{"id": g["id"], "name": g["name"], "status": g.get("status", "")}
-                     for g in all_goals]
-            return {"needs_goal": True, "goals": goals}
-
-        project_id = f"p-{uuid.uuid4().hex[:8]}"
-        project = {
-            "id": project_id,
-            "name": item["title"],
-            "goal_id": req.target_goal_id,
-            "owners": ["alice"],
-            "due_date": "",
-            "priority": item.get("impact", "medium"),
-            "status": "not_started",
-            "stack_rank": 0,
-            "notes": item.get("body", ""),
-            "definition_of_done": "",
-            "history": [{"event": "promoted_from_evolve", "item_id": item_id, "at": now}],
-            "artifacts": [],
-            "auto_nag": None,
-            "trello": None,
-            "pm_cadence_minutes": None,
-            "created_by": "skipper",
-            "created_at": now,
-        }
-        await asyncio.to_thread(save_entity, project)
-
-        meta = item.get("meta") or {}
-        meta["promoted_to"] = project_id
-        await asyncio.to_thread(dl_evolution.update_item, item_id, meta=meta, status="approved")
-
-        return {"ok": True, "promoted_to": project_id, "type": "project", "name": item["title"],
-                "goal_id": req.target_goal_id}
-
-    else:
-        raise HTTPException(status_code=400, detail=f"Cannot promote item of type '{item_type}'")
-
-
-@app.get("/api/apps/evolve/cycles")
-async def api_evolve_cycles(limit: int = 5):
-    """Get recent evolve cycles with full phase/unit progress tree."""
-    from data_layer.db import fetch_all
-
-    def _build_cycles():
-        # Get recent cycles
-        cycles = fetch_all(
-            "SELECT * FROM jobs WHERE job_type = 'evolve_cycle' "
-            "ORDER BY created_at DESC LIMIT %s", (limit,)
-        )
-        result = []
-        for cycle in cycles:
-            cycle_id = cycle["id"]
-            config = cycle.get("config") or {}
-            cycle_type = config.get("cycle_type", "unknown")
-
-            # Get phases for this cycle
-            phases = fetch_all(
-                "SELECT * FROM jobs WHERE parent_job_id = %s "
-                "AND job_type = 'evolve_phase' ORDER BY config->>'phase_index'",
-                (cycle_id,)
-            )
-
-            phase_list = []
-            for phase in phases:
-                phase_id = phase["id"]
-                phase_config = phase.get("config") or {}
-
-                # Get unit counts by status for this phase
-                unit_rows = fetch_all(
-                    "SELECT status, COUNT(*) as cnt FROM jobs "
-                    "WHERE parent_job_id = %s AND job_type = 'evolve_unit' "
-                    "GROUP BY status", (phase_id,)
-                )
-                unit_counts = {r["status"]: r["cnt"] for r in unit_rows}
-                total_units = sum(unit_counts.values())
-
-                # Get synthesis findings (compact titles) for completed phases
-                synthesis_findings = []
-                if phase["status"] in ("completed", "failed"):
-                    synth = fetch_all(
-                        "SELECT output FROM jobs WHERE parent_job_id = %s "
-                        "AND job_type = 'evolve_unit' "
-                        "AND (config->>'is_synthesis')::boolean = true "
-                        "AND status = 'completed' LIMIT 1",
-                        (phase_id,)
-                    )
-                    if synth:
-                        s_output = synth[0].get("output") or {}
-                        if isinstance(s_output, str):
-                            import json as _json
-                            try: s_output = _json.loads(s_output)
-                            except Exception: s_output = {}
-                        for f in (s_output.get("findings") or [])[:20]:
-                            synthesis_findings.append({
-                                "title": f.get("title", f.get("summary", "Untitled")),
-                                "impact": f.get("impact", ""),
-                                "category": f.get("category", ""),
-                                "type": f.get("type", ""),
-                            })
-
-                phase_list.append({
-                    "id": phase_id,
-                    "name": phase.get("name", ""),
-                    "phase_key": phase_config.get("phase_key", ""),
-                    "phase_index": phase_config.get("phase_index", 0),
-                    "status": phase["status"],
-                    "progress_pct": phase.get("progress_pct", 0),
-                    "progress": phase.get("progress") or "",
-                    "started_at": phase["started_at"].isoformat() if phase.get("started_at") else "",
-                    "completed_at": phase["completed_at"].isoformat() if phase.get("completed_at") else "",
-                    "total_units": total_units,
-                    "units_completed": unit_counts.get("completed", 0),
-                    "units_running": unit_counts.get("running", 0),
-                    "units_queued": unit_counts.get("queued", 0),
-                    "units_failed": unit_counts.get("failed", 0),
-                    "synthesis_findings": synthesis_findings,
-                })
-
-            total_phases = len(phase_list)
-            phases_done = sum(1 for p in phase_list if p["status"] in ("completed", "failed"))
-            active_phase = next((p for p in phase_list if p["status"] == "running"), None)
-
-            result.append({
-                "id": cycle_id,
-                "name": cycle.get("name", ""),
-                "cycle_type": cycle_type,
-                "status": cycle["status"],
-                "created_at": cycle["created_at"].isoformat() if cycle.get("created_at") else "",
-                "started_at": cycle["started_at"].isoformat() if cycle.get("started_at") else "",
-                "completed_at": cycle["completed_at"].isoformat() if cycle.get("completed_at") else "",
-                "total_phases": total_phases,
-                "phases_done": phases_done,
-                "active_phase": active_phase["name"] if active_phase else None,
-                "phases": phase_list,
-            })
-
-        return result
-
-    cycles = await asyncio.to_thread(_build_cycles)
-    return {"cycles": cycles}
-
-
-@app.get("/api/apps/evolve/phases/{phase_id}/units")
-async def api_evolve_phase_units(phase_id: str):
-    """Get all units for a phase with their findings — for drill-down."""
-    from data_layer.db import fetch_all
-
-    def _build():
-        units = fetch_all(
-            "SELECT id, name, status, config, output, error, "
-            "started_at, completed_at FROM jobs "
-            "WHERE parent_job_id = %s AND job_type = 'evolve_unit' "
-            "ORDER BY created_at", (phase_id,)
-        )
-        result = []
-        for u in units:
-            config = u.get("config") or {}
-            output = u.get("output") or {}
-            if isinstance(output, str):
-                import json as _json
-                try: output = _json.loads(output)
-                except Exception: output = {}
-
-            findings = output.get("findings") or []
-            # Compact each finding to title + summary + impact
-            compact_findings = []
-            for f in findings[:30]:
-                # Build from structured fields (e.g. vision outputs)
-                if f.get("relevance"):
-                    title = f"Relevance: {f['relevance']}"
-                    if f.get("priority_change") and f["priority_change"] != "unchanged":
-                        title += f" (priority {f['priority_change']})"
-                elif f.get("progress_summary"):
-                    title = f.get("progress_summary", "")[:120]
-                elif f.get("summary"):
-                    title = f.get("summary", "")[:120]
-                else:
-                    # Last resort: first string value in the dict
-                    for v in f.values():
-                        if isinstance(v, str) and len(v) > 5:
-                            title = v[:120]
-                            break
-                    else:
-                        title = "Untitled"
-                # Extract best summary
-                summary = (
-                    f.get("summary")
-                    or f.get("body")
-                    or f.get("progress_summary")
-                    or f.get("description")
-                    or f.get("family_impact")
-                    or f.get("feasibility_notes")
-                    or f.get("project_status")
-                    or f.get("reason")
-                    or ""
-                )[:300]
-                compact_findings.append({
-                    "title": title,
-                    "summary": summary,
-                    "impact": f.get("impact", f.get("relevance", "")),
-                    "category": f.get("category", ""),
-                    "type": f.get("type", ""),
-                    "action": f.get("action", f.get("priority_change", "")),
-                })
-
-            result.append({
-                "id": u["id"],
-                "name": u.get("name", ""),
-                "status": u["status"],
-                "is_synthesis": config.get("is_synthesis", False),
-                "prompt_template": config.get("prompt_template", ""),
-                "error": u.get("error") or "",
-                "tokens_used": output.get("tokens_used", 0),
-                "started_at": u["started_at"].isoformat() if u.get("started_at") else "",
-                "completed_at": u["completed_at"].isoformat() if u.get("completed_at") else "",
-                "findings": compact_findings,
-                "response_preview": (output.get("response") or "")[:500],
-            })
-        return result
-
-    units = await asyncio.to_thread(_build)
-    return {"units": units}
-
-
-@app.get("/api/apps/evolve/cycle-types")
-async def api_evolve_cycle_types():
-    """Get available cycle types with their phase definitions."""
-    from domain_evolve import CYCLE_PHASES
-    result = []
-    descriptions = {
-        "deep": "Full strategic analysis — audits everything, finds gaps, plans, and proposes items",
-        "feedback": "Daily maintenance — processes your replies and reconciles active items",
-        "assessment": "Audit-only — self-assessment + gap analysis without planning or proposing",
-        "planning": "Planning cycle — takes existing findings and creates plans + proposals",
-        "vision": "Vision-only — re-evaluates goals and explores opportunities",
-        "solo_vision": "Solo — re-evaluate goals and ambitions, evolve vision items",
-        "solo_assessment": "Solo — audit tools, apps, and domains against current state",
-        "solo_gap": "Solo — compare specs to implementation, find deficiencies",
-        "solo_planning": "Solo — create plans from existing findings and gap items",
-        "solo_propose": "Solo — produce concrete work items from existing plans",
-        "solo_reconcile": "Solo — check active items against reality, update statuses",
-    }
-    for ct, phases in CYCLE_PHASES.items():
-        result.append({
-            "type": ct,
-            "description": descriptions.get(ct, ""),
-            "phase_count": len(phases),
-            "phases": [{"key": k, "name": n} for k, n in phases],
-        })
-    return {"cycle_types": result}
-
-
-@app.post("/api/apps/evolve/trigger")
-async def api_trigger_evolve_cycle(req: TriggerEvolveRequest):
-    """Manually trigger an Evolve cycle."""
-    from domain_evolve import CYCLE_PHASES
-    if req.cycle_type not in CYCLE_PHASES:
-        raise HTTPException(status_code=400, detail=f"Invalid cycle type: {req.cycle_type}. Valid: {list(CYCLE_PHASES.keys())}")
-    try:
-        from domain_evolve import _find_active_cycle
-        active = await _find_active_cycle()
-        if active:
-            return {"ok": False, "error": "A cycle is already in progress", "cycle_id": active["id"]}
-
-        from thinking_scheduler import get_budget_status
-        budget = await get_budget_status()
-
-        from domain_evolve import _start_cycle
-        result = await _start_cycle(req.cycle_type, budget)
-        return {"ok": True, "result": result}
-    except Exception as e:
-        logger.error("EVOLVE: Trigger failed: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ---------------------------------------------------------------------------

@@ -1,0 +1,327 @@
+# Skipper — Single-Consciousness Architecture
+
+> **Status: design draft, grounded.** This organizes the problem and a proposed direction,
+> now mapped onto the current code (§10). It supersedes/reconciles `THINKING.md`, and touches
+> `ONBOARDING.md` and `PROACTIVE_MESSAGING.md`. Grounded against branch `release`; note the
+> production Pi runs `main` (older), so a few legacy paths differ there.
+
+## Thesis
+
+Skipper is **one entity** — a single, persistent consciousness with one continuous train of
+thought — that is the same "him" regardless of which surface the words arrive through or which
+family member is speaking. Like a person holding several phones to their ears: it talks to each
+person individually, but it is still **one mind with one running memory**. Onboarding, chat,
+proactive nudges — all the same entity; only the *focus of the moment* differs.
+
+The desktop UI stays a per-person **1-1 conversation**. That view is a *filtered lens* on the one
+mind, not a separate mind.
+
+---
+
+## 1. The Problem
+
+### 1.1 Split consciousness
+Today Skipper is fractured into **separate code paths that assemble context independently**:
+
+- a **reactive** path (`chat_domain` / `process_chat`) that responds to a user, and
+- **proactive** paths (thinking domains: `goals`, `pm`, onboarding, the greeting) that initiate.
+
+They are effectively **two (or more) minds wearing one name**, each building its own view of "what's
+going on." That seam is the root cause of a recurring bug class:
+
+- **The scrum bug (the canonical example).** A scheduled scrum job DMs a family member a question.
+  The member replies via chat. The chat turn is processed by a *different* path that has no idea the
+  scrum prompt was ever sent → Skipper doesn't know what to do, or hallucinates a scrum action. We
+  have patched around this repeatedly; in a single-consciousness model the bug *cannot exist*.
+- **Duplicate onboarding greeting.** Two producers (the `desktop.arrival` greeting and the
+  thinking-cadence opener) each speak, because they don't share state.
+- **Wrong-source fixes.** Fixes applied to the reactive path while the proactive path — which
+  actually spoke first — still "knew" different things (e.g. the onboarding household/location copy).
+- **Misdiagnosed fixes.** Onboarding-greeting latency work built around a "keyless desktop" state that
+  cannot occur, because the paths were never reasoned about as one system.
+- **A pile of coordination workarounds** — greet-once claims, keyless re-fires, cadence gates — all
+  bolted on to make two paths *pretend* to be one. The pile is the split made concrete.
+
+### 1.2 Root cause: three conflated concerns
+"Thinking domain" welded together **three separate things**:
+
+1. a **scheduler** (something needs to run on a cadence),
+2. a **skill** (something needs its own prompt guidance + tools),
+3. a **consciousness** (an entity that thinks and remembers).
+
+Each time we needed a scheduler *and* a skill for a thing (pm, goals), we minted a whole new
+"domain" — and dragged a **separate consciousness** along with it by accident. Scheduling is **not**
+consciousness. Fragmenting the entity was never the intent; it was a side effect of the conflation.
+
+---
+
+## 2. Considerations
+
+- **One mind, many conversations.** The mind must hold multiple family members' conversations at once,
+  keep them straight, never restart on a surface switch, and be able to relay/coordinate between people
+  (Skipper as intermediary). Cross-dependencies across people/threads should be *visible in one place*
+  (e.g. "X finished item 1" + "Y finished item 2" where 1 and 2 are dependent).
+- **Not everything is the voice.** `memory` and `document` are not conversational — they are background
+  processing (a memory-ingestion queue post-processing memories; document self-organization of memories
+  into documents). They behave like **sub-agents / a subconscious**, not the speaking entity.
+- **The new hard problem is context.** A single mind with one ever-growing, heterogeneous log cannot use
+  a naive "last N messages" context. This is the central engineering challenge the new model introduces
+  (see §4.4).
+- **"No secrets" (shared-family model).** The single consciousness is **not** partitioned by per-person
+  privacy walls. Tagging keeps threads *coherent* (who said what), not *private*. A permission/visibility
+  layer is explicitly **out of scope** for this redesign; it can be added later if ever needed.
+- **Single attention, like a body.** If Skipper had a robot body it would be in one place at a time.
+  The conscious mind should have **one attention** — it does one thing at a time — even though many
+  alarms and many people feed it.
+
+---
+
+## 3. The Solution (model)
+
+### 3.1 Decompose "thinking domain" into a tuple
+A thinking domain is **not an atom**. It is:
+
+```
+thinking_domain = (scheduler, skill, which-consciousness)
+```
+
+- **Scheduler** — *when* (an alarm / cadence). Per-domain, independent.
+- **Skill** — *what guidance* (prompt + tools for that job). Per-domain, independent. (Same idea as a
+  Claude Code skill: scoped guidance that runs *inside* the agent's context, not a separate agent.)
+- **Consciousness** — *who is doing it* (the entity + its single log + its one way of reading context).
+  **Shared.**
+
+Most historical mess came from the tuple being welded shut.
+
+### 3.2 Two consciousnesses (layers)
+- **Conscious layer (the voice):** `chat`, `onboarding`, `goals`, `pm` are different
+  `(scheduler, skill)` pairs that **all run in the one conscious entity** — one log, one context
+  assembly. Separate alarms, separate guidance, same mind.
+- **Subconscious layer (the substrate):** `memory`, `document` are their own quieter consciousness —
+  sub-agents that **do not speak to the family**. They maintain the retrieval substrate the conscious
+  mind draws on, and run in the **background**, off the single conscious attention.
+
+Placement rule: a domain runs in the conscious layer if its product is **a message/action in the
+shared conversation**; it runs in the subconscious layer if its product is **substrate** (recallable
+memory / organized knowledge).
+
+### 3.3 Why the subconscious is required, not optional
+The single mind cannot hold an infinite log in an LLM context window. The subconscious exists to
+**compress the raw log into something queryable**: memory ingestion distills raw log → recallable
+facts; document organization → structured knowledge. The raw log is the **source of truth**; the
+subconscious is the **queryable index** over it. The two layers *need* each other.
+
+---
+
+## 4. Proposed Design
+
+### 4.1 The serial log (single running memory)
+- **Append-only, ordered, from Skipper's perspective** (not any one user's).
+- Contains **everything**: family messages, Skipper's replies, and internal domain events —
+  e.g. `rodney → skipper: X`, `skipper → rodney: Y`, `jacob → skipper: Z`,
+  `[pm skill checked goal A]`, `[goals skill did action C]`.
+- Every entry is **tagged**: `from`, `to`, `domain`, `type`, `in-reply-to` (and time).
+- The raw log is the source of truth for context; the subconscious indexes it.
+
+### 4.2 Per-user UI = a filtered projection
+Each person's desktop is a **filtered view** of the one log (their messages ↔ Skipper). One log,
+many lenses. Family-facing entries route to the right person's surface by their `to` tag.
+
+### 4.3 Single-threaded conscious attention
+- Skipper processes an **ordered queue of events** — incoming messages **and** fired alarms — **one at
+  a time**.
+- Each event: **assemble context → run the skill this event calls for → append the result to the log.**
+- "Drops what it's doing for scrum" is just: the scrum alarm is the **next event in the queue**. No
+  concurrency races between skills, because there is one attention.
+- **Subconscious skills (`memory`, `document`) run in the background**, asynchronously, off this single
+  attention.
+
+### 4.4 One shared context assembly (the spine)
+**Non-negotiable:** context is built by a **single shared function** — conceptually
+`assemble_context(event, skill)` — that **every** trigger calls (chat turn, pm alarm, onboarding step,
+scrum fire — all the same). The moment there are two context builders, the mind is split again. *This
+function, more than the log, is the consciousness.*
+
+Context must be **relevance-first, not recency-first** — a naive "last N" fails because the single log
+is huge and heterogeneous (interleaved people and domains). For a given event, assemble from several
+sources, ranked into a **token budget**:
+
+1. **Thread** — reconstruct the *logical* thread this event belongs to via tags (`in-reply-to` /
+   `from/to/domain`), not chronology. A scrum reply pulls the scrum prompt it answers **and** the
+   sibling replies. *This is what actually kills the scrum bug* — one log makes it possible, threaded
+   retrieval makes it happen.
+2. **Retrieval** — embedding search over **memory + documents** (and older log) for what's semantically
+   relevant. Top-K.
+3. **Recency** — a bounded recent-activity window ("what has Skipper been doing lately"), summarized if
+   long.
+4. **Structured state** — skill-relevant facts pulled deterministically (goal state for `goals`, the
+   family roster for `onboarding`, the speaker's profile, etc.).
+5. **Rolling summary** — a maintained digest of the long tail, for continuity without re-reading the log.
+
+### 4.5 Speak-or-stay-silent
+A voice alarm firing must often do **nothing** (don't spam the family). That decision belongs to the
+**consciousness reading the log**, not to the scheduler. (This is what the greeting/nudge cadence
+logic really is, unified in one place.)
+
+### 4.6 Primitives, summarized
+1. **One serial event log** (append-only, tagged) — the single running memory.
+2. **One `assemble_context(event, skill)`** (relevance-first, budgeted) — used by *every* trigger.
+3. **Skills** = `(scheduler, skill-guidance)` pairs firing events into the one conscious attention;
+   read context, append back.
+4. **Substrate skills** (`memory`, `document`) — subconscious, background, maintain the retrieval index.
+5. **Per-user UI** = a filtered projection of the log.
+6. **Attention model** — single-threaded conscious event queue; async subconscious.
+
+---
+
+## 5. What This Dissolves
+
+- The **split-consciousness bug class**: the scrum bug, the duplicate onboarding greeting, the
+  wrong-source onboarding-copy fixes — all "two context builders that should be one."
+- The **stack of coordination workarounds** (greet-once claims, keyless re-fires, cadence gates).
+- The **misdirected onboarding-greeting latency work** built on a state that can't occur.
+
+The proposed model is *smaller* than the pile of workarounds it replaces.
+
+---
+
+## 6. Open Questions (to resolve before/during implementation)
+
+- **Windowing & retrieval policy** — exactly what slice of the log + which retrieval per read; ranking
+  and token-budgeting across the five context sources. (The real engineering.)
+- **Is the unified log an evolution of `chat_turns`, or a new spine?** (Grounding pass.)
+- **Do subconscious skills also append lightweight events to the serial log** (so the conscious mind can
+  see "memory consolidated X"), while their *product* stays the retrieval substrate?
+- **Attention/queue mechanics** — ordering guarantees, backpressure, how alarms interleave with a
+  long-running conscious turn.
+- **Reconciliation of in-flight items** — how `ev-58`, `ev-73`, `ev-93`, `ev-80`, `ev-81` fold into this
+  (candidates to supersede rather than ship piecemeal). `ev-79` already rejected (invalid premise).
+
+## 7. Out of Scope
+
+- Per-person **privacy / permission** layer. Shared-family "no secrets" model; tagging is for coherence,
+  not access control. Addable later; **do not build toward it now.**
+
+## 8. Related
+
+- Epic: "Unify Skipper into a single consciousness" (GitHub #100).
+- `CHARTER.md` thesis — Skipper as one persistent entity across surfaces + people.
+- Supersedes/reconciles: `specs/THINKING.md`; touches `specs/ONBOARDING.md`,
+  `specs/PROACTIVE_MESSAGING.md`.
+
+## 9. Next Step
+
+Grounding pass **done** — see §10. Remaining before implementation: decide the serial-log storage
+question (§10.6), lock the log schema + tag set, and spec the `assemble_context` contract against
+the reusable pieces named in §10.5.
+
+---
+
+## 10. Grounding — the current code, mapped onto the primitives
+
+*(Read on branch `release`. File:line references are to that tree.)*
+
+### 10.1 How many minds are there today? Four.
+
+Each of these assembles its own context, independently:
+
+1. **Reactive chat** — `chat_domain.handle_chat` (`chat_domain.py:108`). The richest assembly:
+   a cacheable STATIC system message (SOUL/BEHAVIOR/MEMORY/KNOWLEDGE/DISCORD.md via
+   `config.py:323`) + a DYNAMIC second system message built by ~9 injectors
+   (`_inject_app_context`, `_inject_skipper_work_context`, `_inject_onboarding_context`,
+   `_inject_proactive_dm_context`, `_retrieve_context`, …) + the in-memory session
+   (bootstrapped once from the last 50 `chat_turns` by `user_id` only — `chat.py:131`,
+   `chatlogs.py:89` — then maintained in-process).
+2. **Goal/onboarding domain** — `goal_domain_handler` (`apps/goals/domain.py:323`). Builds a
+   goal snapshot + working memory + shared-memory search into ONE user message
+   (`_build_user_prompt`, `domain.py:878`). **Reads no conversation content at all** — only a
+   single latest-turn *timestamp* for cadence (`_user_recently_active`, `domain.py:139`).
+3. **PM domain** — `pm_domain_handler` (`apps/goals/pm_domain.py:108`). The **only proactive
+   path that reads real chat_turns**: `_gather_conversation_context` (`pm_domain.py:492`) pulls
+   `get_turns_since(person, dm_sent_at)` for people with pending DMs + last-24h turns for
+   project members. A hand-rolled, narrow prototype of exactly the threaded retrieval §4.4
+   calls for.
+4. **Document domain** — `apps/documents/domain.py:176`. Its own observe/act loop over
+   memories. Confirmed: **never messages users** (no send path at all) — already a clean
+   subconscious citizen.
+
+The scrum bug in mechanics: a proactive DM leaves reply-state in one of **four inconsistent
+places** — a `pending_action` in `skipper_state` (goals/pm), chore IDs embedded in chat-log
+*text* (chores), `scrum_items` rows (scrum standup — currently inert on `release`: the scrum
+app is absent and nothing schedules the `pm` job), or **nothing** (bounty digest sends a raw
+Discord DM written to no store — replies are fully context-blind). A user reply sits in
+`chat_turns` until the *next* PM cycle happens to poll it; goal domains never read it at all.
+
+### 10.2 There is no serial log — the running memory is smeared across 4+ stores
+
+- `chat_turns` (`migrations/000_baseline.sql:132`) — closest thing to the conscious log, but:
+  one row = a **user+assistant pair** (not one event); tags are only `user_id` + `channel`;
+  **no `from`/`to`/`domain`/`type`/`reply_to` columns**; proactive messages enter as
+  `"[context]"` pseudo-turns with `embedding=NULL` (`chatlog_store.py:97`); some producers
+  bypass it entirely.
+- `app_notifications.notifications` — the proactive delivery record; **double-written** into
+  `chat_turns` by the delivery loop (`delivery.py:194`).
+- `thinking_log` — append-only per-cycle audit of domain reasoning (the "[pm checked A]"
+  events §4.1 wants — already captured, but in a separate table nothing reads for context).
+- `skipper_state` — pending_actions + working memory (domain-private; nothing cross-reads).
+- **`app_events` (`app_platform/events.py`) — a durable, ordered, append-only event log with
+  ZERO consumers.** Reserved names (`job.completed`, `notification.sent`, `entity.*`) are
+  documented but unwired. Dormant infrastructure that is almost exactly the serial log's shape.
+
+### 10.3 The attention queue exists in pieces
+
+- A **priority-0 asyncio queue** already front-runs everything: `dispatch_chat` (chat turns)
+  and `desktop.arrival` (`thinking_scheduler.py:130-170,557`), with chat-preemption of timer
+  domains (`_chat_active`).
+- The **jobs dispatcher** (`apps/jobs/dispatcher.py`) has the durable-queue machinery: atomic
+  claim (`FOR UPDATE SKIP LOCKED`), retries, concurrency caps, hung-job recovery.
+- But there are **three independent polling loops** (dispatcher ~10s, legacy runner ~30s,
+  notification delivery on the reminder ~30s tick) and **three send patterns**
+  (`create_notification` vs raw `discord_bot.send_dm` vs send+manual chatlog write).
+
+### 10.4 Discovered facts that adjust the design
+
+- **The greeting latency mystery is solved.** The arrival greeting runs a FULL goal-think
+  cycle before anyone sees a word: entity-walk of the whole onboarding goal tree + semantic
+  memory search + up to 120 tool schemas, then a **smart-tier multi-turn agent loop**
+  (max_turns 8; the 2-bubble greeting = 2-3 model round-trips) — `handlers.py:96` →
+  `domain.py:323`. That's the real 45–60s, and it's an *architecture* cost: the "one
+  consciousness reads context and speaks" path §4.3 designs is also the fix (a greeting
+  should be one cheap read+speak, not a full planning cycle).
+- **The `goals` domain row is inert** (no handler matches the name "goals"; pattern is `g-*`;
+  enabled=false) and cron cadences on `document`/`self` are **not parsed** (interval-only
+  scheduler). The registry is already scheduler-shaped; the consciousness part is vestigial.
+- **PM's `_gather_conversation_context` proves partial convergence was already needed** — the
+  system grew a conversation-reader in one domain because the split hurt. §4.4 generalizes it.
+- **Two embedding writers, four vector fabrics.** memories / documents / knowledge /
+  chat_turns each have their own pgvector table + index; chat_turns are embedded but
+  semantic search over them is **absent from automatic context** (only an opt-in chat tool,
+  `tools/chatlog_tool.py`). Memories also have **no ingestion-time dedup** and take noise from
+  a second inline writer (`auto_memory.py`) that bypasses the queue.
+- **No rolling summary exists anywhere** — §4.4's source 5 is greenfield.
+- The delivery loop's `onboarding_greeting → chat_response` frame special-case
+  (`delivery.py:168`) is the lone precedent for "a proactive message rendered as Skipper's
+  normal voice" — the unified model makes that the rule, not a special case.
+
+### 10.5 Reuse vs. build, per primitive
+
+| Primitive (§4.6) | Exists today / reuse | Build |
+|---|---|---|
+| **1. Serial log** | `app_events` (durable ordered log, dormant); `chat_turns` (conversation, wrong grain); `thinking_log` (domain events) | The unified log: per-EVENT rows, tags `from/to/domain/type/reply_to`, one writer API. Decision in §10.6 |
+| **2. `assemble_context`** | `chat_domain`'s static/dynamic two-message shape (prefix-cache-friendly); `_retrieve_context`'s parallel fan-out on one embedding (`chat_domain.py:1127`); PM's `_gather_conversation_context` (threaded-retrieval prototype); goals' `_build_goal_snapshot` (structured-state source) | The ONE shared function; thread reconstruction from tags; ranking + token budget; retire the other three assemblers |
+| **3. Skills + schedulers** | `thinking_domains` table + supervisor/per-domain loops + dynamic `next_check` (the alarm system, reusable nearly as-is); skill guidance exists as per-domain prompts | Split the tuple: scheduler rows stay; domain handlers become **skill definitions** executed by the one consciousness instead of self-contained minds |
+| **4. Substrate (subconscious)** | Memory queue→digest→embed pipeline; document curator (already never speaks); knowledge store | Ingestion-time dedup; retire the bypassing `auto_memory` inline writer; eventually unify the four vector fabrics behind one retriever |
+| **5. Per-user projection** | The web history endpoint already filters `chat_turns` by user+channel (`WEB_VISIBLE_SQL`) | Projection over the new log (to-user + surface routing) |
+| **6. Single attention** | Priority-0 queue + chat preemption; jobs claim machinery | One ordered conscious queue consuming messages+alarms; collapse the three polling loops; subconscious stays async |
+| **Speak-or-stay-silent (§4.5)** | Scattered holds: `_dm_on_hold`, tour gates, per-cycle caps, greet-once claim | One decision point inside the conscious turn |
+
+### 10.6 The one open storage decision
+
+**Evolve `chat_turns`, or new spine?** Grounded facts: `chat_turns`'s grain is wrong
+(user+assistant pair-rows, no event tags) and it is load-bearing for session bootstrap, the
+history endpoint, embeddings, and the digest queue — mutating it in place is high-risk.
+`app_events` already has the right *shape* (append-only, typed, ordered) and zero consumers.
+**Leaning:** a new `consciousness log` (either a hardened `app_events` or a purpose-built
+table) as the spine; `chat_turns` becomes a legacy projection during migration, kept in
+lockstep by the log's writer until surfaces are cut over. To be decided with the operator
+before implementation.

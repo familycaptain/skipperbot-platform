@@ -1,7 +1,7 @@
 """Chat Digest
 ==============
 Post-turn content digestion: extracts key facts from chat messages and saves
-them as searchable memories using the DUMB_MODEL (cheap/fast).
+them as searchable memories using the "fast" model tier (cheap/fast).
 
 Called by chat.py after each turn completes.
 """
@@ -9,7 +9,7 @@ Called by chat.py after each turn completes.
 import json
 import re
 
-from config import logger, DUMB_MODEL
+from config import logger
 from providers.compat import chat_completion
 from memory_store import save_memory
 
@@ -81,7 +81,7 @@ def digest_turn(
 
     try:
         completion = chat_completion(
-            model=DUMB_MODEL,
+            tier="fast",
             messages=[
                 {"role": "system", "content": DIGEST_SYSTEM_PROMPT},
                 {"role": "user", "content": exchange},

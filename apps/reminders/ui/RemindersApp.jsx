@@ -4,6 +4,8 @@ import {
   ChevronDown, ChevronUp, Plus, Trash2, Edit3, Check, X, AlertCircle,
   Repeat, Zap, User,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 const API = window.__API_BASE || "";
 
@@ -221,10 +223,20 @@ export default function RemindersApp({ userId, refreshKey, sendChat, context = {
             Loading...
           </div>
         ) : displayList.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-faint gap-2">
-            <Bell size={24} className="opacity-30" />
-            <span className="text-xs">No {tab === "nags" ? "nags" : "reminders"} found.</span>
-          </div>
+          <PristineEmpty
+            appId="reminders"
+            title={tab === "nags" ? "Nags" : undefined}
+            blurb={getAppManifest("reminders")?.heroes?.[tab === "nags" ? "nags" : "reminders"]}
+            records={displayList}
+            loading={loading}
+            filterActive={selectedUser !== userId || showInactive}
+            fallback={
+              <div className="flex flex-col items-center justify-center h-32 text-faint gap-2">
+                <Bell size={24} className="opacity-30" />
+                <span className="text-xs">No {tab === "nags" ? "nags" : "reminders"} found.</span>
+              </div>
+            }
+          />
         ) : (
           displayList.map((r, idx) => (
             <ReminderCard

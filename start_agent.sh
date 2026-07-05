@@ -35,7 +35,7 @@ fi
 
 if [ ! -f "$APP_ROOT/.env" ]; then
     echo "ERROR: $APP_ROOT/.env not found." >&2
-    echo "       Copy .env.example to .env and fill in SKIPPERBOT_DB_DSN and OPENAI_API_KEY." >&2
+    echo "       Copy .env.example to .env and fill in SKIPPERBOT_DB_DSN (your LLM provider + key are set later in the web UI)." >&2
     echo "       See docs/01-base-platform-setup.md step 8." >&2
     exit 1
 fi

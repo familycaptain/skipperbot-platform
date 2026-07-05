@@ -1,0 +1,58 @@
+kind: specification
+id: platform.loader.no-evolve-app
+title: The Evolve SDLC app and the legacy in-core evolution-feed are not part of skipperbot-platform
+state: live
+autonomy: gated
+verified: true
+behavior: >
+  skipperbot-platform bundles NEITHER the extracted Evolve SDLC app NOR the legacy in-core
+  "evolution feed" self-improvement system. The Evolve app package directory is absent; because the
+  backend app loader and the web dashboard registry are pure auto-discovery, the platform simply no
+  longer discovers an "evolve" app and renders no Evolve tile, with no loader/registry change. The
+  vestigial in-platform Evolve operator-tooling (its CLI scripts and the bundled evolve operator
+  skills) is removed, while the generic dependency-rule checker (scripts/evolve_dep_check.py) is
+  RETAINED for its platform consumers. The legacy evolution-feed is fully retired: its thinking-domain
+  module, data layer, MCP tool module, and phase prompts are deleted; the agent's Evolution-Feed REST
+  routes are gone; the "evolve" thinking domain is no longer registered; the evolve_unit job handler is
+  no longer defined or registered; and the tool-router no longer advertises an "evolve" tool category
+  (so its tools are neither implemented nor offered). The platform still boots and serves: the domain
+  registry, the job-handler registry, and the tool-dispatch registry all build without any evolve
+  entry, and the main application module imports with its auth gate intact. No tracked file retains a
+  live code reference to the removed app, tooling, or feed, and nothing in the repository references the
+  separate standalone Evolve repository (it is not touched by this platform). On a live instance any
+  pre-existing evolution data rows and any orphaned "evolve" thinking-domain row are left in place (no
+  destructive migration); a leftover domain row is harmlessly skipped by the scheduler because no
+  handler is registered for it.
+implements:
+- apps/evolve (removed)
+- domain_evolve.py (removed)
+- data_layer/evolution.py (removed)
+- tools/evolve_tool.py (removed)
+- agent.py (Evolution-Feed REST routes removed)
+- domain_modules.py (evolve domain registration removed)
+- job_handlers.py (evolve_unit handler + registration removed)
+- tool_routes.json (evolve tool category removed)
+tests:
+- type: unit
+  path: tests/specs/test_no_evolve_app.py
+  rubric: >
+    Deterministic offline checks plus a test-host boot-safety check. OFFLINE: the apps/evolve dir, the
+    removed operator-tooling scripts and the bundled evolve operator skills, and the legacy-feed files
+    (domain_evolve.py, data_layer/evolution.py, tools/evolve_tool.py, prompts/evolve/, prompts/
+    EVOLVE_THINK.md, prompts/guides/evolve.md) are all absent; scripts/evolve_dep_check.py STILL EXISTS;
+    tool_routes.json is valid JSON with no "evolve" category; agent.py/domain_modules.py/job_handlers.py
+    source carry no /api/apps/evolve route, no dl_evolution/domain_evolve reference, no
+    register_domain('evolve'), no register_handler('evolve_unit'); discover_apps loads the remaining
+    apps (lower-bound count, "evolve" absent, a known app present); web/src/apps/registry.js has no
+    hardcoded evolve entry; no tracked file carries a live code-import/dispatch token for the removed
+    code (excluding this test and this spec file); and no tracked file references the standalone Evolve
+    repo path. BOOT-SAFETY (runs on the test host under validate, guarded-skip when runtime deps are
+    absent): importing domain_modules/job_handlers/tool_dispatch/agent.py succeeds and their registries
+    build with no evolve domain, no evolve_unit handler, and none of the seven evolution tool names.
+links: {}
+notes: >
+  Issue #49 (operator-authored; reproduced on the test host). Operator expanded scope at Gate 1 to
+  retire BOTH the extracted Evolve SDLC app AND the separate legacy in-core evolution-feed, plus the
+  vestigial operator-tooling cluster and the EVOLVE*.md docs; KEEP scripts/evolve_dep_check.py; and do
+  NOT touch the standalone Evolve repo. Legacy-feed removal is surgical (self-contained per the
+  grounding map: no web/test/cron/prompt consumers). DB tables left on existing instances by design.

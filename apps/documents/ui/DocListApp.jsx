@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import {
   FileText, Loader2, Plus, Search, RefreshCw, Tag, Link, X, ChevronRight,
 } from "lucide-react";
+import PristineEmpty from "../../../web/src/components/PristineEmpty";
+import { getAppManifest } from "../../../web/src/apps/registry";
 
 /**
  * Document List app — singleton app for browsing/searching/creating documents.
@@ -168,10 +170,19 @@ function DocList({ docs, searchQuery, onSearchChange, onSearch, onOpen, onCreate
 
       {/* Document list */}
       {(!docs || docs.length === 0) ? (
-        <div className="flex flex-col items-center justify-center py-12 text-faint">
-          <FileText size={32} className="text-faint mb-2" />
-          <p className="text-sm">{searchQuery ? "No matching documents" : "No documents yet"}</p>
-        </div>
+        <PristineEmpty
+          appId="documents"
+          blurb={getAppManifest("documents")?.blurb}
+          records={docs}
+          loading={loading}
+          filterActive={!!searchQuery}
+          fallback={
+            <div className="flex flex-col items-center justify-center py-12 text-faint">
+              <FileText size={32} className="text-faint mb-2" />
+              <p className="text-sm">No matching documents</p>
+            </div>
+          }
+        />
       ) : (
         <div className="space-y-1.5">
           {docs.map((d) => (
