@@ -516,7 +516,7 @@ def _observe(include_conversations: bool = True) -> dict:
     # --- Conversation context: pull recent chatlogs for people we're tracking ---
     recent_conversations = (
         _gather_conversation_context(pending_actions, project_snapshot)
-        if include_conversations else []
+        if include_conversations else {}
     )  # consciousness mode: the TIMELINE supersedes the private gatherer (§12.3)
 
     # Memory recall — search shared memory store for context about the reviewed project
