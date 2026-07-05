@@ -1,0 +1,8 @@
+kind: feature
+id: platform.deploy
+title: Deploy — container runtime + host provisioning
+state: live
+links: {}
+notes: The docker-compose runtime topology (services, resource limits, restart policy) and the
+  Raspberry Pi host provisioning steps that the container runtime depends on (swap, cgroup memory
+  controller). Not application logic.

@@ -70,6 +70,8 @@ services:
       # which is the compose service name of the database. Set SKIPPERBOT_DB_DSN
       # in .env only if you need a full custom/external connection string.
       DB_HOST: db
+      # glibc: retain fewer heap arenas so less RSS is held under allocation churn.
+      MALLOC_ARENA_MAX: "2"
     env_file:
       - .env
     volumes:
@@ -104,7 +106,19 @@ services:
       #
       # Logs
       - skipper-logs:/app/logs
-    restart: always
+    # Defensive memory containment: a future runaway restarts the container instead
+    # of OOM-killing the host process (on the Pi 5 that tripped a hardware-watchdog
+    # hard-reset). Overridable WITHOUT editing this tracked file via AGENT_MEM_LIMIT
+    # in .env (prod runs a hand-set cap; default 6g — baseline RSS ~4.7GB). memswap
+    # == mem_limit makes 6g a TRUE RAM ceiling (else Docker allows 2x in swap, which
+    # would swap-thrash the Pi before the OOM-kill). PREREQUISITE on Raspberry Pi OS:
+    # the kernel cgroup memory controller must be enabled or mem_limit is a silent
+    # no-op — see docs/00-pi-hardware-and-setup.md (cmdline.txt cgroup_enable=memory).
+    mem_limit: ${AGENT_MEM_LIMIT:-6g}
+    memswap_limit: ${AGENT_MEM_LIMIT:-6g}
+    # unless-stopped (not always): auto-restart a runaway, but respect a deliberate
+    # `docker stop`.
+    restart: unless-stopped
 
 volumes:
   skipper-db:
