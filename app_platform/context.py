@@ -61,7 +61,7 @@ def consciousness_chat_enabled() -> bool:
     """Settings flag for Phase 1: chat reads its history from the log."""
     try:
         from app_platform import settings as _settings
-        return _truthy(_settings.get("consciousness_chat", default=False))
+        return _truthy(_settings.get("consciousness_chat", scope="platform", default=False))
     except Exception:
         return False
 
@@ -69,7 +69,7 @@ def consciousness_chat_enabled() -> bool:
 def timeline_event_limit() -> int:
     try:
         from app_platform import settings as _settings
-        return int(_settings.get("consciousness_timeline_events", default=60) or 60)
+        return int(_settings.get("consciousness_timeline_events", scope="platform", default=60) or 60)
     except Exception:
         return 60
 

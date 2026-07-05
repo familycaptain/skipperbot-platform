@@ -38,7 +38,9 @@ def _consciousness_chores_enabled() -> bool:
     building notifications directly."""
     try:
         from app_platform import settings as _settings
-        v = _settings.get("consciousness_chores", default=False)
+        # scope="platform": consciousness flags are PLATFORM-wide (auto-scoping
+        # would resolve to app:chores here and read a different key).
+        v = _settings.get("consciousness_chores", scope="platform", default=False)
         return v is True or str(v or "").strip().lower() in ("1", "true", "yes", "on")
     except Exception:
         return False
