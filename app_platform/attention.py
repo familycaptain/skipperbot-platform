@@ -80,7 +80,7 @@ def kick() -> None:
 
 
 async def _loop() -> None:
-    from app_platform.consciousness import unattended
+    from app_platform.consciousness import claim_unattended
     while True:
         try:
             try:
@@ -89,15 +89,12 @@ async def _loop() -> None:
                 pass
             _kick.clear()
 
-            rows = await asyncio.to_thread(unattended, 50)
+            # ATOMIC claim (§11.5): flip attended_at under SKIP LOCKED so this
+            # is the ONLY worker (across loops/processes) that gets these rows.
+            rows = await asyncio.to_thread(claim_unattended, 50)
             # admission priority: messages before alarm events; seq within (§15)
             rows.sort(key=lambda r: (0 if r["kind"] == "message" else 1, r["seq"]))
             for row in rows:
-                if row["id"] in _in_flight:
-                    continue
-                lane = row["lane"]
-                if _lane_lock(lane).locked():
-                    continue  # lane busy — this row waits its turn, others proceed
                 _in_flight.add(row["id"])
                 asyncio.create_task(_run_turn(row))
         except Exception:
@@ -106,19 +103,14 @@ async def _loop() -> None:
 
 
 async def _run_turn(row: dict) -> None:
-    from app_platform.consciousness import get_event, mark_attended
+    # row is already atomically claimed (attended_at stamped). The per-lane lock
+    # preserves ORDERING within a person/domain lane (one turn at a time); the
+    # global sem caps concurrency across lanes.
     lane = row["lane"]
     try:
         async with _sem:
             async with _lane_lock(lane):
-                fresh = await asyncio.to_thread(get_event, row["id"])
-                if not fresh or fresh.get("attended_at"):
-                    return
-                result_text = None
-                try:
-                    result_text = await _dispatch(fresh)
-                finally:
-                    await asyncio.to_thread(mark_attended, row["id"])
+                result_text = await _dispatch(row)
                 fut = _futures.pop(row["id"], None)
                 if fut is not None and not fut.done():
                     fut.set_result(result_text)

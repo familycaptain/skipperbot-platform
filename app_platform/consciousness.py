@@ -201,6 +201,25 @@ def unattended(limit: int = 20) -> list[dict]:
     )
 
 
+def claim_unattended(limit: int = 20) -> list[dict]:
+    """ATOMICALLY claim owed rows: flip attended_at under FOR UPDATE SKIP LOCKED
+    so no two attention workers (or processes) can grab the same event (§11.5).
+
+    Claim-at-dispatch, exactly-once across any number of loops. Tradeoff: a
+    worker crash mid-turn orphans a claimed row (marked attended, never fully
+    processed) — acceptable for a single short turn; the inbound message still
+    exists in the log and the person can re-ask. Returns the claimed rows.
+    """
+    return fetch_all(
+        "UPDATE consciousness_log SET attended_at = now() WHERE id IN ("
+        "  SELECT id FROM consciousness_log "
+        "  WHERE needs_attention AND attended_at IS NULL "
+        "  ORDER BY seq ASC LIMIT %s FOR UPDATE SKIP LOCKED"
+        ") RETURNING *",
+        (limit,),
+    )
+
+
 def mark_attended(event_id: str) -> bool:
     """Stamp a queued row as attended (used by the attention system, Phase 2)."""
     return execute(

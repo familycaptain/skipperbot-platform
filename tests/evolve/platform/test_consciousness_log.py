@@ -236,9 +236,10 @@ class Phase2Wiring(unittest.TestCase):
 
     def test_attention_module_contract(self):
         src = _read("app_platform/attention.py")
-        for needle in ("SKIP", "GLOBAL_CAP = 3", "submit_message", "_lane_lock",
-                       "needs_attention", "attention_enabled"):
-            self.assertTrue(needle in src or needle == "SKIP", needle)
+        for needle in ("GLOBAL_CAP = 3", "submit_message", "_lane_lock",
+                       "claim_unattended", "attention_enabled"):
+            self.assertIn(needle, src)
+        self.assertIn("FOR UPDATE SKIP LOCKED", _read("app_platform/consciousness.py"))
         # messages-first admission
         self.assertIn('0 if r["kind"] == "message" else 1', src)
 
