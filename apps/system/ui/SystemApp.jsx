@@ -4,7 +4,7 @@ import {
   Brain, FileText, Bell, MessageSquare, List,
   HardDrive, Briefcase,
   Link, Image, Target, FolderKanban, CheckSquare, Clock,
-  RotateCcw, BookOpen, Inbox,
+  RotateCcw, BookOpen, Inbox, Sparkles,
 } from "lucide-react";
 
 const API = "";
@@ -182,6 +182,43 @@ export default function SystemApp({ appId, userId, isActive }) {
           <StatCard icon={Activity} label="Python" value={sys.python || "?"} sub={`PID ${sys.pid || "?"}`} color="text-amber-400" />
         </div>
       </div>
+
+      {/* Consciousness — the one serial log + its subconscious (specs/CONSCIOUSNESS.md) */}
+      {data.consciousness && data.consciousness.total != null && (
+        <div>
+          <SectionHeader icon={Sparkles} title="Consciousness" color="text-purple-400" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <StatCard
+              icon={MessageSquare}
+              label="Timeline Events"
+              value={fmtNum(data.consciousness.total)}
+              color="text-accent"
+            />
+            <StatCard
+              icon={Brain}
+              label="Embedded"
+              value={fmtNum(data.consciousness.embedded)}
+              sub={data.consciousness.embed_pending > 0
+                ? `${fmtNum(data.consciousness.embed_pending)} pending`
+                : "caught up"}
+              color={data.consciousness.embed_pending > 0 ? "text-amber-400" : "text-emerald-400"}
+            />
+            <StatCard
+              icon={BookOpen}
+              label="Summaries"
+              value={fmtNum(data.consciousness.summaries)}
+              color="text-purple-400"
+            />
+            <StatCard
+              icon={Inbox}
+              label="Attention Queue"
+              value={fmtNum(data.consciousness.attention_queue)}
+              sub={data.consciousness.attention_queue === 0 ? "all attended" : "owed a turn"}
+              color={data.consciousness.attention_queue === 0 ? "text-emerald-400" : "text-amber-400"}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Data Records */}
       <div>

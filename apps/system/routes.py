@@ -111,6 +111,23 @@ async def api_system_metrics():
         for label, sql in _PACKAGED_COUNTS + _PLATFORM_COUNTS:
             counts[label] = _count(sql)
 
+        # ---- consciousness log (specs/CONSCIOUSNESS.md) ---------------
+        consciousness = {}
+        try:
+            row = fetch_one(
+                "SELECT count(*) AS total, "
+                "count(*) FILTER (WHERE embedding IS NOT NULL) AS embedded, "
+                "count(*) FILTER (WHERE embedding IS NULL AND kind != 'event' "
+                "                 AND length(content) >= 20) AS embed_pending, "
+                "count(*) FILTER (WHERE kind = 'summary') AS summaries, "
+                "count(*) FILTER (WHERE needs_attention AND attended_at IS NULL) AS attention_queue "
+                "FROM consciousness_log"
+            )
+            if row:
+                consciousness = dict(row)
+        except Exception:
+            pass
+
         # ---- DB size -----------------------------------------------
         db_size = {"size": "?", "size_bytes": 0}
         try:
@@ -228,6 +245,7 @@ async def api_system_metrics():
 
         return {
             "counts": counts,
+            "consciousness": consciousness,
             "database": db_size,
             "latest_job": latest_job,
             "latest_backup": latest_backup,
