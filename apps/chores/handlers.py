@@ -137,6 +137,8 @@ async def _chores_skill_runner(event: dict) -> dict:
         to_user = (args.get("to_user") or "").lower().strip()
         if to_user not in allowed:
             return f"REFUSED: {to_user!r} is not in this round's recipient list"
+        if to_user in sent:
+            return f"ALREADY SENT to {to_user} this round — do not message anyone twice"
         row = send_message(
             who_to=to_user, content=args.get("message") or "",
             domain="chores", payload={"alarm": alarm},
