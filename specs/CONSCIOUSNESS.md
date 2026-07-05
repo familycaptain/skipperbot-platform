@@ -392,8 +392,8 @@ on `release`. If the rebuild goes badly, prod rolls back to the `pre-consciousne
 | `content` | `text NOT NULL` | the words said / a one-line account of the act |
 | `payload` | `jsonb` | structured detail (tool calls made, item ids, action results) |
 | `embedding` | `vector(1536)` | backfilled async by the subconscious; NULL until then |
-| `needs_attention` | `boolean NOT NULL DEFAULT false` | §11.5 — this row is queued for the conscious mind |
-| `attended_at` | `timestamptz` | when the conscious turn that processed it completed |
+| `needs_attention` | `boolean NOT NULL DEFAULT false` | **"a responder is owed and none is live"** — mode-based, surface-agnostic (§11.5) |
+| `attended_at` | `timestamptz` | when the responder's turn completed (attention-pool turn, or `created_at` for events pre-attended by a live channel — §11.5) |
 
 Indexes: `(seq)` unique; `(who_to, seq DESC)`; `(who_from, seq DESC)`; `(thread_id, seq)`;
 `(domain, seq DESC)`; partial `(lane, seq) WHERE needs_attention AND attended_at IS NULL` (drives the per-lane claim); ivfflat
@@ -442,6 +442,20 @@ cosine on `embedding`.
 - Chat smalltalk doesn't need threads: `thread_id` NULL is fine; recency covers it.
 
 ### 11.5 The log IS the attention queue
+
+**What "attention" means (§18 Q7 discussion):** the flag tracks *scheduling*, not worthiness —
+`needs_attention = true` means **"a responder is owed this event and none is currently engaged."**
+It is **mode-based, never surface-based**: a discrete inbound message from web, mobile, or Discord
+all flag `true` identically (no responder is live — one must be summoned). A **live voice call**
+flags `false` because a responder is ALREADY engaged: the realtime session is a **delegated
+continuous attention channel** — Skipper's attention locked onto one person for the duration of
+the call (deliberative vs reflexive attention; same mind, two modes). Three states:
+
+1. `needs_attention=true, attended_at=NULL` — owed and pending (the queue)
+2. `needs_attention=true, attended_at=set` — owed and paid (an attention-pool turn)
+3. `needs_attention=false` — never owed: `attended_at=created_at` + `payload.attended_by`
+   = attended live by a delegated channel (voice); `attended_at=NULL` = pure record (Skipper's own
+   outputs, `activity`, `summary`)
 
 The conscious mind's queue is not a separate structure: rows appended with
 `needs_attention = true` (inbound `message`s, alarm `event`s, connection `event`s) form the queue;
@@ -791,8 +805,18 @@ skill = {
   stay in `app_notifications`.
 - **History** (per-person view): a projection query over the log — `kind='message' AND (who_from=P
   OR who_to=P)` (+ surface filter as today) — replacing the `chat_turns` read at cutover.
-- **Voice** (realtime API) is a special surface: its live session transcript enters the log as
-  messages at utterance grain; §18 Q8.
+- **Voice** (realtime API) is a **delegated continuous attention channel**, not a queue consumer
+  (§18 Q7): one `message` row per completed utterance transcript, live (skip empty/non-verbal —
+  §11.1 curation), `surface=voice`, **pre-attended** (`needs_attention=false`,
+  `attended_at=created_at`, `payload.attended_by='voice-session'`) — record, not queue, so the
+  chat skill never double-replies to spoken words. The realtime latency path is untouched
+  mid-session (audio physics: sub-second turnaround; the session's native history is authoritative
+  for the call's flow). **Session start is seeded from the one `assemble_context`** (voice-flavored
+  timeline + summary + memories) — picking up the "phone" continues the conversation, both
+  directions (chat mid-call sees the utterances so far). **Accepted bounded split:** mid-call, the
+  voice loop runs on session-native context (minutes-long, seeded from the one mind, logging back
+  live). **V2 hooks noted, not built:** inject mid-call log events into the live session
+  ("[jacob just messaged: …]"), and route an alarm's outbound message through Skipper's live voice.
 
 ---
 
@@ -850,9 +874,12 @@ skill = {
    one row per productive cycle; notable one-offs (historical backfill) log one row. Rationale:
    under Q4's geometry every log row enters the timeline window — noise is directly worse
    context; apply §11.1's "would Skipper recall this tomorrow?" honestly. See §11.3, §14.
-7. **Voice surface grain.** Realtime voice transcripts → log at utterance level, or session
-   summary level? Position: utterances for the log, with the session's own realtime context
-   untouched (voice keeps its latency path).
+7. **Voice surface grain — RESOLVED (operator).** Utterance grain, live (the dropped-call
+   continuity test demands it: mid-session surface-switch must work). Voice rows are pre-attended
+   by the live session (the delegated-continuous-attention model — see §11.5's semantics: the flag
+   tracks scheduling, "a responder is owed and none is live"; voice's responder is already
+   engaged). Session start seeds from the one `assemble_context`. Accepted bounded mid-call
+   split + v2 injection hooks recorded in §16.
 8. **Per-goal `g-*` alarms.** Keep one scheduler row per active goal (today's model), or one
    `goals` alarm that sweeps all active goals? Position: one sweeping alarm — fewer rows, and the
    skill sees the whole goal landscape at once (cross-goal awareness).
