@@ -652,6 +652,17 @@ Consequences accepted: prefix caching loses a little (the static identity+skill 
 expensive part — still caches; the window churns per turn), and mis-addressing is guarded by the
 named final turn + skill guidance ("respond to {person}") — watch in Phase 1.
 
+**VISIBILITY RULE (load-bearing, operator requirement).** The multi-speaker timeline means the LLM
+sees EVERY person's conversation, but each person's UI shows only their OWN 1-1 chat. The prompt
+MUST strongly instruct: (1) answer the CURRENT person and only what they just said — never answer
+another person's question in this person's window, never continue someone else's conversation
+here; (2) this person has NOT seen any other person's messages, so never reference cross-person
+info as if they saw it — if sharing is relevant, attribute it explicitly and bring them up to
+speed; (3) address whoever you're currently talking to. This is NOT a permission wall (consistent
+with the "no secrets" family model — sharing across the family is fine); it is about each person
+only SEEING their own view. Implemented in the timeline boundary line (`app_platform/context.py`
+`TIMELINE_BOUNDARY`). Without it the one-timeline design leaks/misattributes across people.
+
 ### 12.5 What this absorbs (and retires)
 
 | Today's assembler / injector | Fate |

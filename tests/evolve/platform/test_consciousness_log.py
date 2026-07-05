@@ -219,10 +219,19 @@ class TimelineRendering(unittest.TestCase):
             out = self.X.build_chat_timeline("rodney")
         # boundary + 3 messages, interleaved exactly in log order (Q4)
         self.assertEqual(len(out), 4)
-        self.assertIn("timeline", out[0]["content"].lower())
+        self.assertIn("memory", out[0]["content"].lower())  # the boundary line
         self.assertIn("msg1", out[1]["content"])
         self.assertIn("between", out[2]["content"])
         self.assertIn("msg2", out[3]["content"])
+
+    def test_visibility_rule_is_strong(self):
+        from app_platform import context as X
+        b = X.TIMELINE_BOUNDARY.lower()
+        # the load-bearing cross-person visibility instruction (operator requirement)
+        self.assertIn("only see their own", b)
+        self.assertIn("critical", b)
+        self.assertIn("attribute", b)      # relay cross-person info explicitly
+        self.assertIn("current person", b)  # answer who you're talking to
 
     def test_chat_seam_present(self):
         src = _read("chat.py")

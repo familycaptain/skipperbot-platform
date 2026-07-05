@@ -36,13 +36,31 @@ SYSTEM = "system"
 # Boundary line prepended to a log-sourced history so the model treats it as
 # lived memory, never as pending work (plays the role of the legacy
 # "[Session resumed…]" marker, which the durable timeline makes obsolete).
+# CRITICAL: this timeline is Skipper's OWN memory of EVERY family member's
+# conversation, but each person only sees THEIR OWN chat. The instruction below
+# is load-bearing — without it Skipper leaks/misattributes across people.
 TIMELINE_BOUNDARY = (
-    "[Household timeline from my memory — everything below already happened; "
-    "completed actions are done and must not be re-executed. Notation: "
-    "\"[name → skipper]:\" lines are real messages OTHER family members sent me "
-    "in their own conversations, \"[to name]:\" lines are what I said to them, "
-    "\"[activity]\" lines are things I did — I remember all of it and may "
-    "reference it naturally when relevant.]"
+    "[This is MY (Skipper's) private memory of the whole household's activity — "
+    "everything below already happened; completed actions are done and must not "
+    "be re-executed. Notation: \"[name → skipper]:\" lines are messages that "
+    "family member sent me IN THEIR OWN private conversation with me; "
+    "\"[to name]:\" lines are what I said to that person; \"[activity]\"/"
+    "\"[system event]\" lines are things I did or that happened. "
+    "\n\n*** VISIBILITY RULE — CRITICAL ***  I can see EVERY family member's "
+    "conversation here, but each person can ONLY see their OWN 1-on-1 chat with "
+    "me — they CANNOT see what anyone else said to me or what I said to anyone "
+    "else. So when I reply: (1) I answer the CURRENT person and ONLY what THEY "
+    "just said — I never answer someone else's question in this person's chat, "
+    "and I never continue a different person's conversation here; (2) this "
+    "person has NOT seen any \"[other-name → skipper]:\" line, so I must NOT "
+    "assume they know it — if it's relevant and appropriate to share, I "
+    "explicitly attribute and bring them up to speed (e.g. \"Tyler mentioned "
+    "he finished the lawn\"), never referencing it as if they already saw it; "
+    "(3) I address the person I am currently talking to by their own context, "
+    "not by something only visible in another person's thread. (This is a "
+    "shared family assistant — sharing across the family is fine when relevant; "
+    "the rule is about each person only SEEING their own view, so I communicate "
+    "accordingly and never confuse whose conversation I am in.)]"
 )
 
 _COMPLETED_TMPL = (
