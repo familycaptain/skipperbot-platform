@@ -411,6 +411,23 @@ async def pm_domain_handler(domain: dict, budget_status: dict) -> dict:
     snap = ctx.get("project_snapshot")
     project_label = f", reviewed {snap['project_name']}" if snap else ""
 
+    # Phase-0 SHADOW WRITE (specs/CONSCIOUSNESS.md §13, §11.6): productive PM
+    # cycles log one outcome activity row (Q6). DMs mirror via create_notification.
+    _meaningful = [a for a in actions_taken if a.get("type") not in ("dm_skipped",)]
+    if _meaningful:
+        try:
+            from app_platform.consciousness import shadow_log_event
+            await asyncio.to_thread(
+                shadow_log_event, kind="activity", who_from="skipper", domain="pm",
+                subject_id=(snap or {}).get("project_id"),
+                content=(f"[pm] reviewed {snap['project_name'] if snap else 'projects'}: "
+                         f"{len(_meaningful)} action(s)"),
+                payload={"actions": len(_meaningful)},
+                pre_attended_by="legacy-pipeline",
+            )
+        except Exception:
+            logger.debug("CONSCIOUSNESS: pm shadow write skipped", exc_info=True)
+
     return {
         "trigger": "timer",
         "input_summary": (

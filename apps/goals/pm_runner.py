@@ -813,3 +813,14 @@ async def _deliver_pm_messages(actions: list[dict]):
             save_notification(person, message, context="pm_checkin")
         except Exception as e:
             logger.error("PM: Failed to log to chat history for %s: %s", person, e)
+
+        # Phase-0 SHADOW WRITE (specs/CONSCIOUSNESS.md §13): the standup DM path
+        # bypasses create_notification, so it mirrors itself into the log.
+        try:
+            from app_platform.consciousness import shadow_log_event
+            shadow_log_event(kind="message", who_from="skipper", who_to=person,
+                             domain="pm", surface="discord", content=message,
+                             payload={"context": "pm_checkin"},
+                             pre_attended_by="legacy-pipeline")
+        except Exception:
+            logger.debug("CONSCIOUSNESS: pm_runner shadow write skipped", exc_info=True)

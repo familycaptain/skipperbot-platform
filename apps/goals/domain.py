@@ -634,6 +634,25 @@ async def goal_domain_handler(domain: dict, budget_status: dict) -> dict:
 
     goal_name = goal_snap.get("goal_name", goal_id) if goal_snap else goal_id
 
+    # Phase-0 SHADOW WRITE (specs/CONSCIOUSNESS.md §13, §11.6): a PRODUCTIVE
+    # cycle logs ONE recallable activity row (Q6: outcomes, never per-cycle
+    # noise). DM messages already mirror via the create_notification hook;
+    # this row is the cycle's outcome line.
+    _meaningful = [a for a in actions_taken if a.get("type") not in ("dm_skipped",)]
+    if _meaningful:
+        try:
+            from app_platform.consciousness import shadow_log_event
+            await asyncio.to_thread(
+                shadow_log_event, kind="activity", who_from="skipper",
+                domain="goals", subject_id=goal_id,
+                content=(f"[goals] {goal_name}: {len(_meaningful)} action(s) — "
+                         + ", ".join(sorted({a.get("type", "?") for a in _meaningful}))),
+                payload={"goal_id": goal_id, "actions": len(_meaningful)},
+                pre_attended_by="legacy-pipeline",
+            )
+        except Exception:
+            logger.debug("CONSCIOUSNESS: goals shadow write skipped", exc_info=True)
+
     return {
         "trigger": "timer",
         "input_summary": (

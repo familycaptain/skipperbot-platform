@@ -87,6 +87,19 @@ def handle_daily_digest(job: dict, ctx) -> str:
     sent = 0
     from discord_bot import send_dm
 
+    def _shadow_bounty_dm(username: str, message: str) -> None:
+        # Phase-0 SHADOW WRITE (specs/CONSCIOUSNESS.md §13): bounty DMs bypass
+        # create_notification AND chat history — without this hook their replies
+        # stay context-blind in the log too.
+        try:
+            from app_platform.consciousness import shadow_log_event
+            shadow_log_event(kind="message", who_from="skipper", who_to=username,
+                             domain="bounties", surface="discord", content=message,
+                             payload={"context": "bounty_digest"},
+                             pre_attended_by="legacy-pipeline")
+        except Exception:
+            logger.debug("CONSCIOUSNESS: bounty shadow write skipped", exc_info=True)
+
     for username in kids:
         balance = _dl.get_balance(username)
         balance_str = f"${balance['balance_cents']/100:.2f}"
@@ -100,6 +113,7 @@ def handle_daily_digest(job: dict, ctx) -> str:
         try:
             send_dm(username, message)
             sent += 1
+            _shadow_bounty_dm(username, message)
         except Exception as e:
             logger.error("BOUNTY_DIGEST: Failed to DM %s: %s", username, e)
 
@@ -120,6 +134,7 @@ def handle_daily_digest(job: dict, ctx) -> str:
         try:
             send_dm(username, message)
             sent += 1
+            _shadow_bounty_dm(username, message)
         except Exception as e:
             logger.error("BOUNTY_DIGEST: Failed to DM %s: %s", username, e)
 

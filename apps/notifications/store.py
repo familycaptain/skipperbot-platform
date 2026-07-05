@@ -88,6 +88,24 @@ def create_notification(
         notif["id"], recipient, channel or "unknown",
     )
 
+    # Phase-0 SHADOW WRITE (specs/CONSCIOUSNESS.md §13): every proactive message
+    # mirrors into the consciousness log HERE — the one sanctioned entry point.
+    # delivery.py's chat-history write is deliberately NOT hooked (it would
+    # double-log this same message). Pre-attended: the legacy pipeline is still
+    # the engaged responder during the shadow period.
+    try:
+        from app_platform.consciousness import shadow_log_event, domain_for_source_type
+        shadow_log_event(
+            kind="message", who_from="skipper", who_to=clean_recipient,
+            domain=domain_for_source_type(notif["source_type"]),
+            content=message,
+            subject_id=notif["source_id"] or None,
+            payload={"notification_id": notif["id"], "source_type": notif["source_type"]},
+            pre_attended_by="legacy-pipeline",
+        )
+    except Exception:
+        logger.debug("CONSCIOUSNESS: notification shadow write skipped", exc_info=True)
+
     log_entity_change(
         "created", notif["id"], "notification",
         f"To {recipient}: {message[:80]}",

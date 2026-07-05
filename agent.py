@@ -1080,6 +1080,17 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
         asyncio.create_task(
             thinking_scheduler.submit_priority_event("desktop.arrival", {"user_id": user_id})
         )
+        # Phase-0 SHADOW WRITE (specs/CONSCIOUSNESS.md §13): the connection
+        # event enters the consciousness log (pre-attended — the legacy
+        # arrival handler is still the engaged responder).
+        from app_platform.consciousness import shadow_log_event
+        asyncio.create_task(asyncio.to_thread(
+            shadow_log_event, kind="event", who_from="system", who_to=user_id,
+            domain="system", surface="web",
+            content=f"{user_id} connected on web",
+            payload={"event": "desktop.arrival"},
+            pre_attended_by="legacy-pipeline",
+        ))
     except Exception:
         logger.debug("websocket_chat: could not emit desktop.arrival event", exc_info=True)
 

@@ -227,6 +227,28 @@ async def process_chat(
             )
         except Exception as e:
             logger.error("CHATLOG: Failed to save turn for '%s': %s", user_id, str(e))
+        # Phase-0 SHADOW WRITE (specs/CONSCIOUSNESS.md §13): mirror this turn into
+        # the consciousness log as TWO message events (one row = one event). The
+        # legacy pipeline remains the engaged responder — rows are pre-attended
+        # (§11.5 state 3); shadow_log_event can never raise into this task.
+        try:
+            from app_platform.consciousness import shadow_log_event
+            _inbound = await asyncio.to_thread(
+                shadow_log_event, kind="message", who_from=user_id, who_to="skipper",
+                domain="chat", surface=channel, content=user_message,
+                payload={"chat_turn_id": current_turn_id},
+                pre_attended_by="legacy-pipeline",
+            )
+            if response_text:
+                await asyncio.to_thread(
+                    shadow_log_event, kind="message", who_from="skipper", who_to=user_id,
+                    domain="chat", surface=channel, content=response_text,
+                    reply_to=(_inbound or {}).get("id"),
+                    payload={"chat_turn_id": current_turn_id},
+                    pre_attended_by="legacy-pipeline",
+                )
+        except Exception:
+            logger.debug("CONSCIOUSNESS: chat shadow write skipped", exc_info=True)
         try:
             from data_layer.memory_queue import enqueue
             enqueue(
