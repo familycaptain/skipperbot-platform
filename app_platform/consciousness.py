@@ -281,6 +281,7 @@ def send_message(
     thread_id: Optional[str] = None,
     reply_to: Optional[str] = None,
     surface: Optional[str] = None,
+    subject_id: Optional[str] = None,
     payload: Optional[dict] = None,
 ) -> dict:
     """Skipper speaks: append the REAL outbound message row, then hand transport
@@ -295,7 +296,7 @@ def send_message(
         kind="message", who_from=SKIPPER, who_to=(who_to or "").lower().strip(),
         domain=domain, surface=surface, content=content,
         reply_to=reply_to, thread_id=thread_id or eid,
-        payload=payload, event_id=eid,
+        subject_id=subject_id, payload=payload, event_id=eid,
     )
     try:
         from app_platform.notifications import create_notification
