@@ -70,9 +70,11 @@ consciousness. Fragmenting the entity was never the intent; it was a side effect
 - **"No secrets" (shared-family model).** The single consciousness is **not** partitioned by per-person
   privacy walls. Tagging keeps threads *coherent* (who said what), not *private*. A permission/visibility
   layer is explicitly **out of scope** for this redesign; it can be added later if ever needed.
-- **Single attention, like a body.** If Skipper had a robot body it would be in one place at a time.
-  The conscious mind should have **one attention** — it does one thing at a time — even though many
-  alarms and many people feed it.
+- **One mind, parallel motor actions.** A person has a single consciousness yet can pat their head
+  and rub their tummy at once. Skipper is ONE mind with ONE shared state (the log), but it need not
+  process one LLM turn at a time — concurrent turns each read the best available state when they
+  run and interleave their outputs into the same log. Coordination is needed only at genuine
+  conflict points (same person, same one-shot decision), not globally.
 
 ---
 
@@ -127,14 +129,25 @@ subconscious is the **queryable index** over it. The two layers *need* each othe
 Each person's desktop is a **filtered view** of the one log (their messages ↔ Skipper). One log,
 many lenses. Family-facing entries route to the right person's surface by their `to` tag.
 
-### 4.3 Single-threaded conscious attention
-- Skipper processes an **ordered queue of events** — incoming messages **and** fired alarms — **one at
-  a time**.
-- Each event: **assemble context → run the skill this event calls for → append the result to the log.**
-- "Drops what it's doing for scrum" is just: the scrum alarm is the **next event in the queue**. No
-  concurrency races between skills, because there is one attention.
-- **Subconscious skills (`memory`, `document`) run in the background**, asynchronously, off this single
-  attention.
+### 4.3 One mind, concurrent motor actions (laned attention)
+- Skipper processes log events (incoming messages **and** fired alarms) **concurrently**, under a
+  small global cap. Each turn: **snapshot-read the log (best available state at that moment) →
+  assemble context → run the skill → append results, interleaved into the same log.** One shared
+  state; many hands.
+- **Two narrow serialization rules** — the only places order semantically matters:
+  - **Per-person lane:** turns addressing person P (an inbound message from P, or any turn about
+    to send to P) serialize on P's lane — one mouth per conversation, no double-speak. Different
+    people run fully parallel.
+  - **Per-domain lane for alarms:** two fires of the same alarm never overlap (the scheduler's
+    existing per-domain lock, kept).
+- **One-shot decisions are structural, not lock-based:** e.g. the greeting has exactly ONE producer
+  (the connection event), so there is no race to referee. Rule for any future one-shot: append a
+  claim event to the log and act on the claim — never read-then-act.
+- **Scale honesty:** this is an isolated per-family tenant (~5 people using Skipper sparingly), not
+  a high-transaction system. Collisions are possible only under frequencies this deployment never
+  sees; we design for coherence at family scale, not for contention. (Optional v2 hardening: a
+  send-time watermark check — "did P's lane move since I read?" — that requeues instead of sending.)
+- **Subconscious skills (`memory`, `document`) run in the background**, asynchronously, as today.
 
 ### 4.4 One shared context assembly (the spine)
 **Non-negotiable:** context is built by a **single shared function** — conceptually
@@ -170,7 +183,8 @@ logic really is, unified in one place.)
    read context, append back.
 4. **Substrate skills** (`memory`, `document`) — subconscious, background, maintain the retrieval index.
 5. **Per-user UI** = a filtered projection of the log.
-6. **Attention model** — single-threaded conscious event queue; async subconscious.
+6. **Attention model** — concurrent laned turns over one shared log (serialize only per-person and
+   per-alarm-domain); async subconscious.
 
 ---
 
@@ -418,8 +432,8 @@ cosine on `embedding`.
 
 The conscious mind's queue is not a separate structure: rows appended with
 `needs_attention = true` (inbound `message`s, alarm `event`s, connection `event`s) form the queue;
-the **single-threaded attention loop** (§4.3) consumes them in `seq` order, runs
-`assemble_context` + the skill, appends the results, and stamps `attended_at`. Restart-safe by
+the **attention system** (§4.3, §15) claims them — concurrently across lanes, `seq` order within a
+lane — runs `assemble_context` + the skill, appends the results, and stamps `attended_at`. Restart-safe by
 construction — after a crash, unattended rows are exactly the pending queue. (Machinery precedent:
 the jobs dispatcher's claim pattern, `FOR UPDATE SKIP LOCKED`.) Subconscious skills never set
 `needs_attention`; they run off their own schedulers as today.
@@ -647,17 +661,26 @@ skill = {
 
 ---
 
-## 15. The Attention Loop (draft)
+## 15. The Attention System (laned, concurrent) — per §18 Q1 decision
 
-- **One asyncio consumer** (platform core). Claims the oldest unattended row — with a **priority
-  class**: inbound `message`s before alarm `event`s, `seq` order within a class (§18 Q1) — using
-  the jobs-dispatcher claim pattern.
-- Each turn: claim → `assemble_context` → run the skill's bounded loop → append results
-  (`message`/`activity` rows) → stamp `attended_at`. Failures append an `activity` error note and
-  stamp `attended_at` with error payload after N retries (never wedge the queue).
-- **Latency contract:** a chat reply must never wait behind a slow alarm turn. Enforced by (a) the
-  priority class, (b) bounded alarm loops (§14), and (c) alarm turns checking for pending inbound
-  messages between model rounds and yielding (re-queueing themselves) if one arrived.
+- **A small pool of concurrent turns** (platform core; global cap ~3–4 in flight for Pi/API
+  sanity), claiming unattended rows with the jobs-dispatcher claim pattern. **Lanes, not a single
+  thread:**
+  - lane key for an inbound `message` = the person; lane key for an alarm `event` = the domain;
+    connection `event`s = the person they concern.
+  - within a lane: strict `seq` order, one turn at a time. Across lanes: parallel.
+  - a turn that decides to SEND to person P acquires P's lane for the send (no interleaved
+    double-speak), even if it ran in a domain lane.
+  - when the global cap is saturated, inbound `message`s get admission priority over alarms.
+- Each turn: claim → snapshot-read → `assemble_context` → run the skill's bounded loop → append
+  results (`message`/`activity` rows) → stamp `attended_at`. Failures append an `activity` error
+  note and stamp `attended_at` with error payload after N retries (never wedge the queue).
+- **Latency contract:** a chat reply never queues behind an alarm — it starts immediately in its
+  own lane. (The old priority/yield machinery is unnecessary under concurrency; only cap-admission
+  priority survives.)
+- **Collision stance (operator decision):** isolated per-family tenant, ~5 sparing users, low
+  transaction volume — turns act on the best available state at their moment (accepted staleness,
+  seconds-wide, rare). Optional v2 hardening: send-time watermark check on the target lane.
 - **Speak-or-stay-silent (§4.5)** happens INSIDE the turn: the skill's guidance frames "given this
   context, is a message warranted?" — a silent outcome logs at most a sparse `activity` note.
   Cadence caps/quiet-hours live here as shared policy, not per-domain bolt-ons.
@@ -699,9 +722,14 @@ skill = {
 
 ## 18. Discussion Queue (open questions — settle one at a time, amend this doc per decision)
 
-1. **Attention ordering & chat latency.** Position: priority classes (inbound messages > alarms),
-   bounded alarm loops, mid-turn yield. Alternative: strict global `seq` order (purer, but a slow
-   alarm delays a human).
+1. **Attention ordering & chat latency — RESOLVED (operator).** Concurrency with lanes: one shared
+   log, concurrent turns snapshot-reading best-available state, outputs interleaved by `seq`.
+   Serialize ONLY per-person (conversation coherence) and per-alarm-domain; one-shots are
+   structural (single producer / claim-event), not locks. Rationale: single consciousness ≠ single
+   motor action ("pat your head, rub your tummy"); and this is an isolated family tenant (~5
+   sparing users) — collision frequency is inherently low; design for coherence, not contention.
+   Priority classes / mid-turn yield dropped as unnecessary; cap-admission priority for messages
+   kept. See §4.3 + §15.
 2. **First converted alarm skill (Phase 2 milestone).** Position: a minimal new `standup` skill
    (the scrum app is absent on `release`; the son's complaint traces to pm/goals DMs). Alternative:
    convert `pm` first.
