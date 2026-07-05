@@ -448,6 +448,26 @@ house convention for append-only core tables):
   untouched).
 - **`entity_types`** registers `cl-` → `consciousness_log` so tools resolve log ids like any entity.
 
+### 11.8 Zero-loss migration (operator requirement)
+
+**No existing chat turns or memories may be lost.** The migration is additive-only:
+
+- **`chat_turns` is never dropped or mutated.** It keeps serving the chat surface until cutover
+  and remains afterward as the legacy archive; the `c-` prefix stays registered and resolvable.
+- **History is backfilled INTO the log, not moved.** A one-time, idempotent backfill walks
+  `chat_turns` + historical `notifications` in `created_at` order and appends `cl-` events:
+  each pair-row → two `message` events (user→skipper, skipper→user, linked by `reply_to`),
+  old `"[context]"` proactive pseudo-turns → skipper→user messages (domain from `source_type`).
+  `payload.chat_turn_id` is the idempotency key; `seq` comes out chronological. Day one, the log
+  already contains the family's entire conversational past.
+- **`memories` needs no migration.** Untouched table; `source_chat_id` keeps pointing at `c-`
+  rows that still exist. Only new memories reference `cl-` ids.
+- **No recall gap.** Backfilled events start `embedding=NULL` (pair-level embeddings can't be
+  split); retrieval keeps `chat_turns`' existing vector index in its fan-out until the
+  subconscious has re-embedded the backfill, so semantic recall over old history never degrades.
+- **Rollback stays trivial** — legacy stores untouched, so `pre-consciousness` rollback simply
+  ignores the new table.
+
 ---
 
 ## 12. `assemble_context(event, skill, budget)` — the contract (draft)
