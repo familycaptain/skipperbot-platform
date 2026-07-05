@@ -185,7 +185,13 @@ The proposed model is *smaller* than the pile of workarounds it replaces.
 
 ---
 
-## 6. Open Questions (to resolve before/during implementation)
+## 6. Open Questions — SUPERSEDED
+
+*(Every question originally listed here is now resolved or tracked: storage decision → §10.6;
+windowing/retrieval → §12.3 + §18 Q9; subconscious activity entries → §18 Q6; attention/queue
+mechanics → §15 + §18 Q1; in-flight reconciliation → §17. The live list is **§18**.)*
+
+<details><summary>original list (historical)</summary>
 
 - **Windowing & retrieval policy** — exactly what slice of the log + which retrieval per read; ranking
   and token-budgeting across the five context sources. (The real engineering.)
@@ -196,6 +202,8 @@ The proposed model is *smaller* than the pile of workarounds it replaces.
   long-running conscious turn.
 - **Reconciliation of in-flight items** — how `ev-58`, `ev-73`, `ev-93`, `ev-80`, `ev-81` fold into this
   (candidates to supersede rather than ship piecemeal). `ev-79` already rejected (invalid premise).
+
+</details>
 
 ## 7. Out of Scope
 
