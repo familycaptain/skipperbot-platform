@@ -4147,6 +4147,128 @@ async def api_thinking_dispatch():
     return get_dispatch_status()
 
 
+# ── Consciousness observability (the Thinking app's window into the one mind;
+#    specs/CONSCIOUSNESS.md — soak tooling) ──────────────────────────────────
+
+@app.get("/api/apps/thinking/stream")
+async def api_thinking_stream(
+    kind: str | None = None,
+    domain: str | None = None,
+    person: str | None = None,
+    before_seq: int | None = None,
+    limit: int = 50,
+):
+    """The consciousness log itself — Skipper's stream of consciousness,
+    newest-last, filterable by kind/domain/person, keyset-paginated."""
+    def _load():
+        from data_layer.db import fetch_all
+        clauses, args = [], []
+        if kind:
+            clauses.append("kind = %s"); args.append(kind)
+        if domain:
+            clauses.append("domain = %s"); args.append(domain)
+        if person:
+            clauses.append("(who_from = %s OR who_to = %s)"); args += [person, person]
+        if before_seq:
+            clauses.append("seq < %s"); args.append(before_seq)
+        where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
+        args.append(min(max(limit, 1), 200))
+        rows = fetch_all(
+            f"SELECT id, seq, created_at, kind, who_from, who_to, domain, lane, "
+            f"surface, left(content, 500) AS content, needs_attention, "
+            f"attended_at, payload->>'attended_by' AS attended_by "
+            f"FROM (SELECT * FROM consciousness_log {where} "
+            f"      ORDER BY seq DESC LIMIT %s) t ORDER BY seq ASC", tuple(args))
+        return rows
+    return {"events": await asyncio.to_thread(_load)}
+
+
+@app.get("/api/apps/thinking/attention")
+async def api_thinking_attention():
+    """The conscious NOW: the owed queue + recently attended turns w/ latency."""
+    def _load():
+        from data_layer.db import fetch_all
+        queue = fetch_all(
+            "SELECT id, seq, created_at, kind, who_from, who_to, domain, lane, "
+            "left(content, 300) AS content FROM consciousness_log "
+            "WHERE needs_attention AND attended_at IS NULL ORDER BY seq ASC LIMIT 50")
+        recent = fetch_all(
+            "SELECT id, seq, created_at, attended_at, kind, who_from, who_to, domain, "
+            "lane, left(content, 300) AS content, "
+            "EXTRACT(EPOCH FROM (attended_at - created_at)) AS latency_s "
+            "FROM consciousness_log "
+            "WHERE needs_attention AND attended_at IS NOT NULL "
+            "ORDER BY attended_at DESC LIMIT 20")
+        return {"queue": queue, "recent": recent}
+    return await asyncio.to_thread(_load)
+
+
+@app.get("/api/apps/thinking/hands")
+async def api_thinking_hands():
+    """The hands layer: goal_work sessions, per-goal working memory, milestones."""
+    def _load():
+        from data_layer.db import fetch_all
+        out = {"sessions": [], "working_memory": [], "milestones": []}
+        try:
+            out["sessions"] = fetch_all(
+                "SELECT id, name, status, progress_pct, left(last_result, 300) AS last_result, "
+                "created_at, completed_at FROM app_jobs.jobs "
+                "WHERE job_type = 'goal_work' ORDER BY created_at DESC LIMIT 10")
+        except Exception:
+            pass
+        try:
+            out["working_memory"] = fetch_all(
+                "SELECT subject_id, left(content, 400) AS content, updated_at "
+                "FROM skipper_state WHERE domain = 'goals' AND state_type = 'working_memory' "
+                "AND status = 'active' ORDER BY updated_at DESC LIMIT 10")
+        except Exception:
+            pass
+        try:
+            out["milestones"] = fetch_all(
+                "SELECT id, created_at, subject_id, left(content, 300) AS content, "
+                "attended_at IS NOT NULL AS delivered "
+                "FROM consciousness_log WHERE kind = 'event' AND domain = 'goals' "
+                "AND payload ? 'milestone' ORDER BY seq DESC LIMIT 10")
+        except Exception:
+            pass
+        return out
+    return await asyncio.to_thread(_load)
+
+
+@app.get("/api/apps/thinking/subconscious")
+async def api_thinking_subconscious():
+    """The substrate layer: rolling-summary TEXTS, embed backlog, memory queue."""
+    def _load():
+        from data_layer.db import fetch_all, fetch_one
+        out = {}
+        out["global_summary"] = fetch_one(
+            "SELECT content, created_at, payload FROM consciousness_log "
+            "WHERE kind='summary' AND payload->>'scope'='global' ORDER BY seq DESC LIMIT 1")
+        out["person_summaries"] = fetch_all(
+            "SELECT DISTINCT ON (who_to) who_to, content, created_at "
+            "FROM consciousness_log WHERE kind='summary' AND payload->>'scope'='person' "
+            "ORDER BY who_to, seq DESC")
+        out["embed"] = fetch_one(
+            "SELECT count(*) FILTER (WHERE embedding IS NOT NULL) AS embedded, "
+            "count(*) FILTER (WHERE embedding IS NULL AND kind != 'event' "
+            "AND length(content) >= 20) AS pending, count(*) AS total "
+            "FROM consciousness_log")
+        try:
+            out["memory_queue_pending"] = (fetch_one(
+                "SELECT count(*) c FROM memory_ingestion_queue WHERE status='pending'") or {}).get("c")
+        except Exception:
+            out["memory_queue_pending"] = None
+        try:
+            out["document_last"] = fetch_one(
+                "SELECT created_at, left(input_summary, 200) AS summary FROM thinking_log "
+                "WHERE domain = 'document' AND model_used != 'skip' "
+                "ORDER BY created_at DESC LIMIT 1")
+        except Exception:
+            out["document_last"] = None
+        return out
+    return await asyncio.to_thread(_load)
+
+
 # Email routes are now provided by apps/email/routes.py (loaded by app_platform)
 
 

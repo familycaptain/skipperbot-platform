@@ -411,6 +411,60 @@ function DomainCard({ domain, onToggle }) {
 
 // ── Main App ──
 
+// ── Consciousness observability (specs/CONSCIOUSNESS.md — the window into the one mind) ──
+
+const KIND_STYLE = {
+  message:  "text-accent",
+  activity: "text-purple-400",
+  event:    "text-amber-400",
+  summary:  "text-emerald-400",
+};
+
+function StreamRow({ ev }) {
+  const who = ev.who_to ? `${ev.who_from} → ${ev.who_to}` : ev.who_from;
+  const pending = ev.needs_attention && !ev.attended_at;
+  return (
+    <div className="px-3 py-1.5 border-b border-subtle text-xs flex items-start gap-2">
+      <span className="text-faint font-mono shrink-0 w-14">{fmtTimeShort(ev.created_at)}</span>
+      <span className={`shrink-0 font-medium w-16 ${KIND_STYLE[ev.kind] || "text-muted"}`}>{ev.kind}</span>
+      <span className="shrink-0 text-faint w-24 truncate">{ev.domain}</span>
+      <span className="shrink-0 text-muted w-32 truncate">{who}</span>
+      <span className="text-default min-w-0 flex-1 break-words whitespace-pre-wrap">{ev.content}</span>
+      {pending && <span className="shrink-0 text-[10px] px-1 rounded bg-amber-500/20 text-amber-400">owed</span>}
+      {ev.attended_by === "voice-session" && <span className="shrink-0 text-[10px] px-1 rounded surface-raised text-faint">voice</span>}
+    </div>
+  );
+}
+
+function SessionCard({ job }) {
+  const color = job.status === "completed" ? "text-emerald-400"
+    : job.status === "failed" ? "text-red-400" : "text-amber-400";
+  return (
+    <div className="surface-card rounded border border-subtle p-2.5 text-xs space-y-1">
+      <div className="flex items-center gap-2">
+        <Target size={12} className={color} />
+        <span className="font-medium text-default">{job.name}</span>
+        <span className={`ml-auto ${color}`}>{job.status}{job.progress_pct != null ? ` · ${job.progress_pct}%` : ""}</span>
+      </div>
+      {job.last_result && <div className="text-muted">{job.last_result}</div>}
+      <div className="text-faint text-[10px]">{relativeTime(job.created_at)}</div>
+    </div>
+  );
+}
+
+function SummaryBlock({ title, text, when }) {
+  if (!text) return null;
+  return (
+    <div className="surface-card rounded border border-subtle p-3 text-xs space-y-1.5">
+      <div className="flex items-center gap-2 text-emerald-400 font-medium">
+        <StickyNote size={12} /> {title}
+        {when && <span className="ml-auto text-faint font-normal">{relativeTime(when)}</span>}
+      </div>
+      <div className="text-default whitespace-pre-wrap leading-relaxed">{text}</div>
+    </div>
+  );
+}
+
 export default function ThinkingApp({ userId, context, refreshKey }) {
   const [tab, setTab] = useState("mind"); // mind | log | domains
   const [loading, setLoading] = useState(false);
@@ -428,6 +482,44 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
 
   // Domains tab
   const [domains, setDomains] = useState([]);
+
+  // Consciousness tabs
+  const [stream, setStream] = useState([]);
+  const [streamKind, setStreamKind] = useState("");
+  const [attention, setAttention] = useState(null);
+  const [hands, setHands] = useState(null);
+  const [subconscious, setSubconscious] = useState(null);
+
+  const loadStream = useCallback(async () => {
+    try {
+      const params = new URLSearchParams({ limit: "80" });
+      if (streamKind) params.set("kind", streamKind);
+      const res = await fetch(`${API}/api/apps/thinking/stream?${params}`);
+      const data = await res.json();
+      setStream(data.events || []);
+    } catch (e) { console.error("stream load:", e); }
+  }, [streamKind]);
+
+  const loadAttention = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/api/apps/thinking/attention`);
+      setAttention(await res.json());
+    } catch {}
+  }, []);
+
+  const loadHands = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/api/apps/thinking/hands`);
+      setHands(await res.json());
+    } catch {}
+  }, []);
+
+  const loadSubconscious = useCallback(async () => {
+    try {
+      const res = await fetch(`${API}/api/apps/thinking/subconscious`);
+      setSubconscious(await res.json());
+    } catch {}
+  }, []);
 
   // Budget
   const [budget, setBudget] = useState(null);
@@ -485,7 +577,21 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
     loadDomains();
     if (tab === "mind") loadStates();
     else if (tab === "log") loadLogs();
-  }, [tab, loadStates, loadLogs, loadDomains, loadBudget]);
+    else if (tab === "stream") loadStream();
+    else if (tab === "attention") loadAttention();
+    else if (tab === "hands") loadHands();
+    else if (tab === "subconscious") loadSubconscious();
+  }, [tab, loadStates, loadLogs, loadDomains, loadBudget, loadStream, loadAttention, loadHands, loadSubconscious]);
+
+  // Live tabs poll faster — the stream is Skipper's now
+  useEffect(() => {
+    if (tab !== "stream" && tab !== "attention") return;
+    const iv = setInterval(() => {
+      if (tab === "stream") loadStream();
+      else loadAttention();
+    }, 8000);
+    return () => clearInterval(iv);
+  }, [tab, loadStream, loadAttention]);
 
   // Refresh
   useEffect(() => {
@@ -520,6 +626,10 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
     if (tab === "mind") loadStates();
     else if (tab === "log") loadLogs();
     else if (tab === "domains") loadDomains();
+    else if (tab === "stream") loadStream();
+    else if (tab === "attention") loadAttention();
+    else if (tab === "hands") loadHands();
+    else if (tab === "subconscious") loadSubconscious();
   }
 
   return (
@@ -530,9 +640,13 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
       {/* Tab bar + filters */}
       <div className="flex items-center gap-1 px-3 py-1.5 border-b border-subtle surface-card">
         {[
+          { id: "stream", label: "Stream", icon: Eye },
+          { id: "attention", label: "Attention", icon: Zap },
           { id: "mind", label: "Mind", icon: Brain },
+          { id: "hands", label: "Hands", icon: Target },
+          { id: "subconscious", label: "Subconscious", icon: StickyNote },
           { id: "log", label: "Log", icon: Activity },
-          { id: "domains", label: "Domains", icon: Cpu },
+          { id: "domains", label: "Alarms", icon: Timer },
         ].map(t => (
           <button
             key={t.id}
@@ -546,6 +660,21 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
         ))}
 
         <span className="flex-1" />
+
+        {/* Stream filter */}
+        {tab === "stream" && (
+          <select
+            value={streamKind}
+            onChange={e => setStreamKind(e.target.value)}
+            className="text-[10px] surface-card border border-subtle rounded px-1.5 py-0.5 text-default"
+          >
+            <option value="">All kinds</option>
+            <option value="message">messages</option>
+            <option value="activity">activity</option>
+            <option value="event">events</option>
+            <option value="summary">summaries</option>
+          </select>
+        )}
 
         {/* Filters for Mind tab */}
         {tab === "mind" && (
@@ -680,6 +809,123 @@ export default function ThinkingApp({ userId, context, refreshKey }) {
               </div>
             )}
             {logs.map(entry => <LogCard key={entry.id} entry={entry} />)}
+          </div>
+        )}
+
+        {/* ── Stream tab: the consciousness log, live ── */}
+        {tab === "stream" && (
+          <div>
+            {stream.length === 0 && (
+              <div className="text-center py-12 text-faint text-sm">The stream is quiet.</div>
+            )}
+            {stream.map(ev => <StreamRow key={ev.id} ev={ev} />)}
+          </div>
+        )}
+
+        {/* ── Attention tab: the conscious now ── */}
+        {tab === "attention" && attention && (
+          <div className="p-3 space-y-4">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-medium text-amber-400 mb-2">
+                <Zap size={12} /> Owed a turn ({(attention.queue || []).length})
+              </div>
+              {(attention.queue || []).length === 0 && (
+                <div className="text-faint text-xs">Nothing pending — all attended.</div>
+              )}
+              {(attention.queue || []).map(ev => <StreamRow key={ev.id} ev={ev} />)}
+            </div>
+            <div>
+              <div className="flex items-center gap-2 text-xs font-medium text-emerald-400 mb-2">
+                <CheckCircle2 size={12} /> Recently attended
+              </div>
+              {(attention.recent || []).map(ev => (
+                <div key={ev.id} className="px-3 py-1.5 border-b border-subtle text-xs flex items-start gap-2">
+                  <span className="text-faint font-mono shrink-0 w-14">{fmtTimeShort(ev.created_at)}</span>
+                  <span className="shrink-0 text-faint w-24 truncate">{ev.domain}</span>
+                  <span className="text-default min-w-0 flex-1 truncate">{ev.content}</span>
+                  <span className="shrink-0 text-[10px] text-emerald-400">
+                    {ev.latency_s != null ? `${Math.round(ev.latency_s)}s` : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Hands tab: autonomous work sessions ── */}
+        {tab === "hands" && hands && (
+          <div className="p-3 space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-accent">
+                <Target size={12} /> Work sessions
+              </div>
+              {(hands.sessions || []).length === 0 && (
+                <div className="text-faint text-xs">No goal_work sessions yet — the PM routes them when a goal has Skipper-assigned work.</div>
+              )}
+              {(hands.sessions || []).map(j => <SessionCard key={j.id} job={j} />)}
+            </div>
+            {(hands.working_memory || []).length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-medium text-purple-400">
+                  <StickyNote size={12} /> Where I left off
+                </div>
+                {hands.working_memory.map((w, i) => (
+                  <div key={i} className="surface-card rounded border border-subtle p-2.5 text-xs">
+                    <span className="text-faint font-mono">{w.subject_id}</span>
+                    <div className="text-default mt-1">{w.content}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {(hands.milestones || []).length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs font-medium text-emerald-400">
+                  <CheckCircle2 size={12} /> Milestones raised
+                </div>
+                {hands.milestones.map(m => (
+                  <div key={m.id} className="surface-card rounded border border-subtle p-2.5 text-xs flex items-start gap-2">
+                    <span className="text-default flex-1">{m.content}</span>
+                    <span className={`shrink-0 text-[10px] ${m.delivered ? "text-emerald-400" : "text-amber-400"}`}>
+                      {m.delivered ? "voiced" : "pending"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Subconscious tab: what Skipper believes ── */}
+        {tab === "subconscious" && subconscious && (
+          <div className="p-3 space-y-3">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="surface-card rounded border border-subtle p-2">
+                <div className="text-lg font-semibold text-default">{subconscious.embed?.embedded ?? "?"}</div>
+                <div className="text-[10px] text-faint">embedded
+                  {subconscious.embed?.pending > 0 ? ` (${subconscious.embed.pending} pending)` : " · caught up"}</div>
+              </div>
+              <div className="surface-card rounded border border-subtle p-2">
+                <div className="text-lg font-semibold text-default">{subconscious.embed?.total ?? "?"}</div>
+                <div className="text-[10px] text-faint">timeline events</div>
+              </div>
+              <div className="surface-card rounded border border-subtle p-2">
+                <div className="text-lg font-semibold text-default">{subconscious.memory_queue_pending ?? "?"}</div>
+                <div className="text-[10px] text-faint">memory queue</div>
+              </div>
+            </div>
+            <SummaryBlock
+              title="Rolling household summary"
+              text={subconscious.global_summary?.content}
+              when={subconscious.global_summary?.created_at}
+            />
+            {(subconscious.person_summaries || []).map(ps => (
+              <SummaryBlock key={ps.who_to} title={`${ps.who_to}'s thread`} text={ps.content} when={ps.created_at} />
+            ))}
+            {subconscious.document_last && (
+              <div className="text-[10px] text-faint px-1">
+                document domain last productive cycle: {relativeTime(subconscious.document_last.created_at)}
+              </div>
+            )}
           </div>
         )}
 
