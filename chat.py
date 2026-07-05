@@ -223,6 +223,8 @@ async def process_chat(
 
     # Fire-and-forget: persist turn + digest in background (don't block response)
     async def _post_turn():
+        _cl_inbound_id = None
+        _cl_reply_id = None
         try:
             # Persist the tools the model actually CALLED this turn (name/args/
             # result), so the web UI can replay them on session resume and for
@@ -253,14 +255,16 @@ async def process_chat(
                 # Attention mode (Phase 2): the inbound row already exists as
                 # the REAL record; write only the outbound reply — a pure
                 # record (§11.5 state 3b: Skipper's own output is never owed).
+                _cl_inbound_id = log_event_id
                 if response_text:
-                    await asyncio.to_thread(
+                    _out = await asyncio.to_thread(
                         shadow_log_event, kind="message", who_from="skipper",
                         who_to=user_id, domain="chat", surface=channel,
                         content=response_text, reply_to=log_event_id,
                         payload={"chat_turn_id": current_turn_id,
                                  **({"write_actions": list(_writes)} if _writes else {})},
                     )
+                    _cl_reply_id = (_out or {}).get("id")
             else:
                 _inbound = await asyncio.to_thread(
                     shadow_log_event, kind="message", who_from=user_id, who_to="skipper",
@@ -268,8 +272,9 @@ async def process_chat(
                     payload={"chat_turn_id": current_turn_id},
                     pre_attended_by="legacy-pipeline",
                 )
+                _cl_inbound_id = (_inbound or {}).get("id")
                 if response_text:
-                    await asyncio.to_thread(
+                    _out = await asyncio.to_thread(
                         shadow_log_event, kind="message", who_from="skipper", who_to=user_id,
                         domain="chat", surface=channel, content=response_text,
                         reply_to=(_inbound or {}).get("id"),
@@ -279,6 +284,7 @@ async def process_chat(
                                  **({"write_actions": list(_writes)} if _writes else {})},
                         pre_attended_by="legacy-pipeline",
                     )
+                    _cl_reply_id = (_out or {}).get("id")
         except Exception:
             logger.debug("CONSCIOUSNESS: chat shadow write skipped", exc_info=True)
         try:
@@ -290,6 +296,11 @@ async def process_chat(
                     "assistant_response": response_text or "",
                     "user_id":            user_id,
                     "turn_id":            current_turn_id,
+                    # Phase 4 (specs/CONSCIOUSNESS.md §11.7): memories anchor on
+                    # the log — the inbound cl- row (the fact-bearing utterance
+                    # default), with the reply linked for full-exchange hops.
+                    "cl_inbound_id":      _cl_inbound_id,
+                    "cl_reply_id":        _cl_reply_id,
                 },
             )
         except Exception as e:

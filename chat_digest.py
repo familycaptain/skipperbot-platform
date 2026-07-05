@@ -49,6 +49,8 @@ def digest_turn(
     assistant_response: str,
     user_id: str = "",
     turn_id: str = "",
+    cl_inbound_id: str = "",
+    cl_reply_id: str = "",
 ) -> list[dict]:
     """Extract key facts from a chat turn and save them as memories.
 
@@ -144,13 +146,23 @@ def digest_turn(
         regex_related = _ENTITY_RE.findall(fact)
         related = list(set(llm_related + regex_related))
 
+        # Phase 4 (specs/CONSCIOUSNESS.md §11.7): provenance anchors on the
+        # LOG — the inbound cl- row (the fact-bearing utterance, default); the
+        # reply cl- row + the legacy c- turn ride in related_entities so the
+        # full exchange is one hop away and old-style linkage survives the
+        # double-write period.
+        _anchor = cl_inbound_id or turn_id
+        if cl_inbound_id:
+            for _extra in (cl_reply_id, turn_id):
+                if _extra and _extra not in related:
+                    related.append(_extra)
         record = save_memory(
             content=fact,
             tags=tags,
             about=about,
             saved_by=user_id or "system",
             related_entities=related,
-            source_chat_id=turn_id,
+            source_chat_id=_anchor,
         )
         saved.append(record)
         logger.debug("DIGEST: Saved fact [%s]: %s", record["id"], fact[:80])

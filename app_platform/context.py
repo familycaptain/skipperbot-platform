@@ -149,9 +149,33 @@ def build_chat_timeline(person: str, limit: Optional[int] = None,
     from app_platform.consciousness import tail
 
     person = (person or "").lower().strip()
-    rows = tail(limit or timeline_event_limit())
     out: list[dict] = [{"role": "assistant", "content": TIMELINE_BOUNDARY}]
+
+    # Phase 4 (§12.3 source 4): the latest rolling summaries render first, and
+    # the verbatim window starts where the global summary ends — the NO-GAP
+    # invariant: anything the window doesn't hold is covered by the summary.
+    after_seq = None
+    try:
+        from app_platform.summarizer import _latest_summary, _covers_to
+        g = _latest_summary(None)
+        if g:
+            out.append({"role": "user",
+                        "content": f"[summary of earlier household activity] {g.get('content') or ''}"})
+            after_seq = _covers_to(g) or None
+        if person:
+            p = _latest_summary(person)
+            if p:
+                out.append({"role": "user",
+                            "content": f"[summary of my earlier thread with {person}] {p.get('content') or ''}"})
+    except Exception:
+        logger.debug("CONTEXT: summaries unavailable", exc_info=True)
+
+    rows = tail(limit or timeline_event_limit())
     for row in rows:
+        if after_seq and row.get("seq") and row["seq"] <= after_seq:
+            continue  # covered by the summary — never render twice
+        if row.get("kind") == "summary":
+            continue  # summaries render above, not in-stream
         if exclude_event_id and row.get("id") == exclude_event_id:
             continue  # attention mode: the triggering inbound is appended by the caller
         msg = render_event(row, person)

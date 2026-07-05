@@ -1187,8 +1187,32 @@ async def _retrieve_context(user_message: str, system_prompt: str,
         get_relevant_folder_knowledge, user_message,
         query_embedding=shared_embedding,
     )
-    relevant, knowledge_chunks, folder_results = await asyncio.gather(
-        relevant_task, knowledge_task, folder_task)
+    # Phase 4 (specs/CONSCIOUSNESS.md §12.3): the log's own history joins the
+    # fan — semantic recall over past conversation, same query embedding.
+    async def _log_recall():
+        try:
+            from app_platform.context import consciousness_chat_enabled
+            if not (shared_embedding and consciousness_chat_enabled()):
+                return []
+            from app_platform.consciousness import search_log
+            return await asyncio.to_thread(search_log, shared_embedding)
+        except Exception:
+            logger.debug("LOG_RECALL: skipped", exc_info=True)
+            return []
+
+    relevant, knowledge_chunks, folder_results, log_hits = await asyncio.gather(
+        relevant_task, knowledge_task, folder_task, _log_recall())
+
+    if log_hits:
+        lines = []
+        for h in log_hits:
+            who = h["who_from"] + (f" → {h['who_to']}" if h.get("who_to") else "")
+            when = h["created_at"].strftime("%b %d") if h.get("created_at") else ""
+            lines.append(f"- [{when}] {who}: {(h['content'] or '')[:220]}")
+        system_prompt += ("\n\n## Related past conversation (from my timeline — "
+                          "the current person may not have seen these; bring "
+                          "context into any reply that uses them)\n" + "\n".join(lines))
+        logger.debug("LOG_RECALL: injected %d past-conversation hits", len(log_hits))
 
     memory_context = format_memories_for_context(relevant)
     if memory_context:

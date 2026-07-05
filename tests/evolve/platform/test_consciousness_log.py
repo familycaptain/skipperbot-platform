@@ -354,3 +354,40 @@ class Phase3bGoalsSplit(unittest.TestCase):
         self.assertIn('register_skill("pm"', _read("apps/goals/handlers.py"))
         self.assertIn('register_skill("goals"', _read("apps/goals/handlers.py"))
         self.assertIn("_consciousness_goals_enabled", _read("apps/goals/domain.py"))
+
+
+class Phase4Subconscious(unittest.TestCase):
+    """§13 Phase 4: summarizer, embeddings, log retrieval, cl- provenance."""
+
+    def test_summarizer_policy(self):
+        src = _read("app_platform/summarizer.py")
+        self.assertIn("covers_to_seq", src)
+        self.assertIn("PREVIOUS SUMMARY", src)            # cumulative-style (Q5)
+        self.assertIn("timedelta(hours=24)", src)         # backstop
+        self.assertIn("interval '2 seconds'", src)        # lagged cursor (§11.9)
+        self.assertIn("kind != 'event'", src)             # events not embedded
+        # span default BELOW the 60-event window → no-gap invariant holds
+        self.assertIn("default=50", src)
+
+    def test_rides_the_memory_heartbeat(self):
+        self.assertIn("run_subconscious_pass", _read("domain_memory.py"))
+
+    def test_timeline_no_gap_invariant(self):
+        src = _read("app_platform/context.py")
+        self.assertIn("_covers_to", src)
+        self.assertIn("summary of earlier household activity", src)
+        self.assertIn('row["seq"] <= after_seq', src)     # covered rows never render twice
+
+    def test_log_retrieval_fan(self):
+        self.assertIn("def search_log", _read("app_platform/consciousness.py"))
+        src = _read("chat_domain.py")
+        self.assertIn("_log_recall", src)
+        self.assertIn("Related past conversation", src)
+        self.assertIn("bring", src)                       # visibility-rule reminder in the block
+
+    def test_memory_provenance_anchors_on_cl_inbound(self):
+        self.assertIn("cl_inbound_id", _read("chat.py"))
+        self.assertIn("cl_inbound_id", _read("domain_memory.py"))
+        src = _read("chat_digest.py")
+        self.assertIn("_anchor = cl_inbound_id or turn_id", src)
+        self.assertIn("cl_reply_id", src)                 # reply one hop away

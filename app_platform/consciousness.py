@@ -341,3 +341,23 @@ def log_inbound_message(
         thread_id=(parent or {}).get("thread_id"),
         payload=payload, needs_attention=True,
     )
+
+
+def search_log(query_embedding: list[float], limit: int = 4,
+               min_similarity: float = 0.30) -> list[dict]:
+    """Semantic recall over the log itself (§12.3 retrieval fan, Phase 4).
+
+    Excludes summaries (they enter context via their own source) and the noise
+    floor. Returns rows with a `similarity` field, newest-equal-relevance last.
+    """
+    from data_layer.db import fetch_all_vector
+    vec = "[" + ",".join(f"{v:.8g}" for v in query_embedding) + "]"
+    rows = fetch_all_vector(
+        "SELECT id, seq, kind, who_from, who_to, domain, content, created_at, "
+        "       1 - (embedding <=> %s::vector) AS similarity "
+        "FROM consciousness_log "
+        "WHERE embedding IS NOT NULL AND kind != 'summary' "
+        "ORDER BY embedding <=> %s::vector LIMIT %s",
+        (vec, vec, limit * 3),
+    )
+    return [r for r in rows if (r.get("similarity") or 0) >= min_similarity][:limit]

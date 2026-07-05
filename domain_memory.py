@@ -54,9 +54,19 @@ async def memory_domain_handler(domain: dict, budget_status: dict) -> dict:
             upsert_focus, "memory", "queue", "queue",
             "Memory ingestion queue is empty — idle.",
         )
+        # Phase 4 (specs/CONSCIOUSNESS.md §13): the subconscious metabolizers
+        # ride the memory heartbeat — embed unembedded log rows + write rolling
+        # summaries when due. Cheap no-ops when idle or the flag is off.
+        try:
+            from app_platform.summarizer import run_subconscious_pass
+            _sub = await run_subconscious_pass()
+        except Exception:
+            logger.debug("MEMORY: subconscious pass skipped", exc_info=True)
+            _sub = {}
         return {
             "trigger":           "timer",
-            "input_summary":     "Queue empty — nothing to process.",
+            "input_summary":     ("Queue empty — nothing to process."
+                                  + (f" Subconscious: {_sub}" if any((_sub or {}).values()) else "")),
             "context_snapshot":  {"pending": 0},
             "reasoning":         "No items in the memory ingestion queue.",
             "actions_taken":     [],
@@ -166,6 +176,8 @@ def _process_chat_turn(payload: dict) -> int:
         assistant_response=payload.get("assistant_response", ""),
         user_id=payload.get("user_id", ""),
         turn_id=payload.get("turn_id", ""),
+        cl_inbound_id=payload.get("cl_inbound_id") or "",
+        cl_reply_id=payload.get("cl_reply_id") or "",
     )
     return len(memories) if memories else 0
 
