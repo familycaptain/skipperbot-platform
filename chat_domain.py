@@ -156,8 +156,15 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     # reminders/goals/etc.). When the pending DM IS the onboarding nudge, the function coordinates
     # with onboarding (which already owns the conversation) instead of issuing a competing
     # greeting/resume — see _inject_proactive_dm_context.
-    dynamic_context, _has_pending_dm = await _inject_proactive_dm_context(
-        dynamic_context, req.user_id)
+    # Phase 3c (specs/CONSCIOUSNESS.md §12.5): under consciousness_chat the
+    # TIMELINE already shows every proactive DM in true order — the pending-DM
+    # side-channel is redundant noise, so it stands down.
+    from app_platform.context import consciousness_chat_enabled as _cl_chat_on
+    if _cl_chat_on():
+        _has_pending_dm = False
+    else:
+        dynamic_context, _has_pending_dm = await _inject_proactive_dm_context(
+            dynamic_context, req.user_id)
 
     # Memory + knowledge retrieval
     t_retrieval = time.monotonic()

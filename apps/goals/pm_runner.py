@@ -781,8 +781,18 @@ async def _deliver_pm_messages(actions: list[dict]):
         pm_audit_logger.info("*** QUIET MODE — logging only, no DMs will be sent ***")
         logger.info("PM: Quiet mode active — skipping DM delivery")
 
-    from discord_bot import send_dm
-    from chatlog_store import save_notification
+    # Phase 3c (specs/CONSCIOUSNESS.md §13): standup messages go out in
+    # Skipper's ONE voice (consciousness message + transport fan-out); the
+    # chat-history write and the log row come with it — no manual glue.
+    from app_platform.consciousness import send_message as _cl_send
+
+    async def send_dm(person: str, message: str) -> str:
+        _cl_send(who_to=person, content=message, domain="pm",
+                 payload={"context": "pm_checkin"})
+        return "DM sent (consciousness)"
+
+    def save_notification(person: str, message: str, context: str = "") -> None:
+        return None  # superseded: delivery writes chat history from the notification
 
     for action in actions:
         person = action["person"]
@@ -814,13 +824,3 @@ async def _deliver_pm_messages(actions: list[dict]):
         except Exception as e:
             logger.error("PM: Failed to log to chat history for %s: %s", person, e)
 
-        # Phase-0 SHADOW WRITE (specs/CONSCIOUSNESS.md §13): the standup DM path
-        # bypasses create_notification, so it mirrors itself into the log.
-        try:
-            from app_platform.consciousness import shadow_log_event
-            shadow_log_event(kind="message", who_from="skipper", who_to=person,
-                             domain="pm", surface="discord", content=message,
-                             payload={"context": "pm_checkin"},
-                             pre_attended_by="legacy-pipeline")
-        except Exception:
-            logger.debug("CONSCIOUSNESS: pm_runner shadow write skipped", exc_info=True)

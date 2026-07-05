@@ -262,8 +262,30 @@ timeline) — skill guidance will tighten it; fast-tier chores skill occasionall
 of kids. All Phase 0-2 code gated behind `consciousness_*` settings (OFF everywhere but the test
 host); prod untouched at the `pre-consciousness` tag.
 
-**Next: Phase 3** (all voice skills converge — onboarding as a focus overlay, goals→goal_work
-jobs, pm sweep/router) — PAUSED per operator.
+**Phase 3 (all voice skills converge)** — DONE, verified on the test host:
+- **3a onboarding**: the greeting is the chat skill answering the connection event with the
+  onboarding overlay — **~3s** (was 45–60s), exactly once (single producer + log-native
+  15-min suppression, no claims), reload → silence; legacy arrival produce stands down under
+  `consciousness_onboarding`. Consciousness messages now render as chat_response frames on
+  every surface (§16's rule).
+- **3b goals split**: `goal_work` (hands — jobs dispatcher, no comms tools, session-bounded,
+  per-goal working memory under domain='goals'/subject_id) + pm as a SKILL under
+  `consciousness_pm` (sweep + ROUTER; timeline supersedes the private conversation gatherer;
+  sends via send_message; schedule_goal_work with slot dedup) + the goals MILESTONE voice.
+  **Full three-layer loop verified live**: pm alarm → sweep (followed up with a human about
+  their due task) → routed a work session → hands completed it (8 actions, real research
+  shortlist artifact, resumable working memory, milestone raised) → voice delivered it to the
+  primary, self-contained. g-* domains stand down under `consciousness_goals`.
+- **3c one voice everywhere**: bounty digest + pm_runner standup converted from raw Discord
+  sends to consciousness messages (their replies stop being context-blind); the legacy
+  pending-DM injector stands down under `consciousness_chat` (the timeline shows every DM).
+- Build fixes surfaced live: skipper_state.domain FK (per-goal memory re-keyed under 'goals'
+  per Q8), send_message subject_id, observe-dict regression.
+- **Environmental note:** the test host has no web-search provider, so research-flavored
+  goal_work tool calls fail there (architecture unaffected).
+
+**Next: Phase 4** (summarizer, memory ingestion from the log, log vector retrieval in the
+fan-out) then Phase 5 (cutover + demolition + `consciousness-v1`). PAUSED per operator.
 
 ## 9b. Design reference
 

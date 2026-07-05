@@ -85,20 +85,17 @@ def handle_daily_digest(job: dict, ctx) -> str:
 
     # --- Send to kids ---
     sent = 0
-    from discord_bot import send_dm
+    # Phase 3c (specs/CONSCIOUSNESS.md §13): the digest speaks in Skipper's ONE
+    # voice — a real consciousness message + multi-surface transport, replacing
+    # the raw Discord-only send_dm (whose replies were context-blind).
+    from app_platform.consciousness import send_message as _send_message
+
+    def send_dm(username: str, message: str) -> None:
+        _send_message(who_to=username, content=message, domain="bounties",
+                      payload={"context": "bounty_digest"})
 
     def _shadow_bounty_dm(username: str, message: str) -> None:
-        # Phase-0 SHADOW WRITE (specs/CONSCIOUSNESS.md §13): bounty DMs bypass
-        # create_notification AND chat history — without this hook their replies
-        # stay context-blind in the log too.
-        try:
-            from app_platform.consciousness import shadow_log_event
-            shadow_log_event(kind="message", who_from="skipper", who_to=username,
-                             domain="bounties", surface="discord", content=message,
-                             payload={"context": "bounty_digest"},
-                             pre_attended_by="legacy-pipeline")
-        except Exception:
-            logger.debug("CONSCIOUSNESS: bounty shadow write skipped", exc_info=True)
+        return None  # superseded: send_message IS the record now
 
     for username in kids:
         balance = _dl.get_balance(username)

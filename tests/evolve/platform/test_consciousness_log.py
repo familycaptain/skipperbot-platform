@@ -150,9 +150,12 @@ class ShadowHooksPresent(unittest.TestCase):
         self.assertIn('kind="activity"', _read("apps/goals/domain.py"))
         self.assertIn('kind="activity"', _read("apps/goals/pm_domain.py"))
 
-    def test_bypass_paths_hooked(self):
-        self.assertIn("shadow_log_event", _read("apps/goals/pm_runner.py"))
-        self.assertIn("_shadow_bounty_dm", _read("apps/bounties/handlers.py"))
+    def test_bypass_paths_speak_in_one_voice(self):
+        # Phase 3c: both former bypass paths now send REAL consciousness messages
+        self.assertIn("send_message", _read("apps/goals/pm_runner.py"))
+        self.assertIn('domain="pm"', _read("apps/goals/pm_runner.py"))
+        self.assertIn("send_message", _read("apps/bounties/handlers.py"))
+        self.assertIn('domain="bounties"', _read("apps/bounties/handlers.py"))
 
 
 if __name__ == "__main__":
