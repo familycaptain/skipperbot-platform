@@ -211,9 +211,9 @@ The proposed model is *smaller* than the pile of workarounds it replaces.
 
 ## 9. Next Step
 
-Grounding pass **done** — see §10. Remaining before implementation: decide the serial-log storage
-question (§10.6), lock the log schema + tag set, and spec the `assemble_context` contract against
-the reusable pieces named in §10.5.
+Grounding pass **done** (§10). Storage decision **made** (§10.6: new spine). Log schema **drafted**
+(§11) and the `assemble_context` contract **drafted** (§12). Remaining: operator review of §11-§12,
+then the migration/build order.
 
 ---
 
@@ -330,3 +330,178 @@ Clean cut point established before any consciousness code: `release` was merged 
 Prod (skipper-pi) was deployed to that commit and smoke-tested clean. The Evolve loop is
 **stopped** for the duration of this re-architecture; all consciousness work happens directly
 on `release`. If the rebuild goes badly, prod rolls back to the `pre-consciousness` tag.
+
+---
+
+## 11. The Consciousness Log — schema + tag set (draft)
+
+### 11.1 Principles
+
+- **One row = one event** (not a request/response pair). A chat exchange is TWO rows.
+- **Append-only.** Rows are never updated after write except the two attention bookkeeping
+  fields (§11.5) and the async `embedding` backfill. Never deleted (archival is a future
+  concern; summaries + embeddings make old rows cold-storable).
+- **Total order** via a `seq bigserial` — "serial log" made literal. `created_at` is display
+  metadata; ordering and cursors always use `seq`.
+- **Curated, not a debug trace.** The log holds what the entity would *remember*: things said,
+  things done, things noticed. Verbose cycle audits stay in `thinking_log`; transport/delivery
+  bookkeeping stays in `notifications`. Rule of thumb: *would Skipper recall this tomorrow?*
+- **One writer API.** Every producer appends through `app_platform/consciousness.py::log_event()`.
+  No app writes the table directly (same discipline as `create_notification`).
+
+### 11.2 Table
+
+`public.consciousness_log` — platform core, id prefix `cl-`:
+
+| column | type | meaning |
+|---|---|---|
+| `id` | `text PK` | `cl-<8hex>` |
+| `seq` | `bigserial UNIQUE` | total order; all cursors/windows key on this |
+| `created_at` | `timestamptz NOT NULL DEFAULT now()` | wall-clock |
+| `kind` | `text NOT NULL` | `message` \| `activity` \| `event` \| `summary` (§11.3) |
+| `who_from` | `text NOT NULL` | `rodney`, `jacob`, `skipper`, `system` |
+| `who_to` | `text` | recipient for messages; NULL for internal entries |
+| `domain` | `text NOT NULL` | producing/handling skill: `chat`, `onboarding`, `goals`, `pm`, `scrum`, `chores`, `system`, … |
+| `surface` | `text` | `web` \| `voice` \| `discord` \| `mobile` \| NULL (internal) |
+| `reply_to` | `text` | immediate parent `cl-` id (conversational linkage) |
+| `thread_id` | `text` | logical thread key (§11.4) — one indexed query returns a whole thread |
+| `subject_id` | `text` | linked entity (`g-…`, `t-…`, chore id, …) for structured-state joins |
+| `content` | `text NOT NULL` | the words said / a one-line account of the act |
+| `payload` | `jsonb` | structured detail (tool calls made, item ids, action results) |
+| `embedding` | `vector(1536)` | backfilled async by the subconscious; NULL until then |
+| `needs_attention` | `boolean NOT NULL DEFAULT false` | §11.5 — this row is queued for the conscious mind |
+| `attended_at` | `timestamptz` | when the conscious turn that processed it completed |
+
+Indexes: `(seq)` unique; `(who_to, seq DESC)`; `(who_from, seq DESC)`; `(thread_id, seq)`;
+`(domain, seq DESC)`; partial `(seq) WHERE needs_attention AND attended_at IS NULL`; ivfflat
+cosine on `embedding`.
+
+### 11.3 Kinds
+
+- **`message`** — a communication. `rodney→skipper` (inbound, any surface) or `skipper→rodney`
+  (outbound — replies AND proactive messages, identical shape; §4.5's decision to speak produces
+  one of these). Outbound `message` rows trigger transport: the writer hands the row to the
+  notifications app for fan-out (Discord/push/WS); delivery status stays in `notifications`.
+- **`activity`** — Skipper did something: a skill cycle that took a real action ("checked goal
+  'website', bumped task t-42, noticed the deadline slipped"), a notable tool action. Compact,
+  first-person-recallable. Skill cycles that decide to do nothing log nothing (or at most a
+  periodic heartbeat summary — not per-cycle noise).
+- **`event`** — something happened TO Skipper: `system` connection events (`rodney connected on
+  web`), **alarms firing** (`subtype: alarm, domain: scrum`), app events worth remembering.
+- **`summary`** — a checkpoint written by the subconscious summarizer (§12.3 source 5): a rolling
+  digest of the span since the previous summary (global, and per-person variants tagged via
+  `who_to`). Putting summaries IN the log makes windowing trivial: *context = last summary + tail*.
+
+### 11.4 Thread rules (`thread_id` + `reply_to`)
+
+- A **new initiative starts a thread**: the first message of a proactive push gets
+  `thread_id = its own id` (e.g. the scrum 10 AM question to jacob), as does the first message of
+  a fresh conversational topic.
+- A **reply joins the thread**: inbound messages get `reply_to` = the message they answer (when
+  determinable — the attention loop sets it: the most recent open outbound message to that person
+  is the default candidate) and inherit its `thread_id`.
+- **Skill activities on the same matter share the thread** (the scrum skill's follow-up to jacob's
+  answer carries the same `thread_id`), so one indexed query reconstructs: prompt → replies from
+  X and Y → cross-dependency, exactly the §1.1 scrum scenario.
+- Chat smalltalk doesn't need threads: `thread_id` NULL is fine; recency covers it.
+
+### 11.5 The log IS the attention queue
+
+The conscious mind's queue is not a separate structure: rows appended with
+`needs_attention = true` (inbound `message`s, alarm `event`s, connection `event`s) form the queue;
+the **single-threaded attention loop** (§4.3) consumes them in `seq` order, runs
+`assemble_context` + the skill, appends the results, and stamps `attended_at`. Restart-safe by
+construction — after a crash, unattended rows are exactly the pending queue. (Machinery precedent:
+the jobs dispatcher's claim pattern, `FOR UPDATE SKIP LOCKED`.) Subconscious skills never set
+`needs_attention`; they run off their own schedulers as today.
+
+### 11.6 Producers → log (migration map)
+
+| Today | Becomes |
+|---|---|
+| `process_chat` inbound | `log_event(message, user→skipper, surface, needs_attention)` — then attention runs the `chat` skill |
+| Skipper's chat reply | `log_event(message, skipper→user, reply_to=inbound id)`; **double-write** a `chat_turns` pair-row during migration so the existing web history/session endpoints keep working |
+| Proactive DM (`_send_dm` → `create_notification`) | `log_event(message, skipper→user, domain=<skill>)`; writer hands off to notifications for transport only |
+| `desktop.arrival` priority event | `log_event(event, system, domain=system, needs_attention)` — the greeting becomes the `onboarding` skill's response to this event |
+| Scheduler firing a voice domain | `log_event(event, subtype=alarm, domain=<skill>, needs_attention)` — replaces the domain running its own handler+context |
+| `thinking_log` rows | unchanged (audit); the *meaningful outcome* additionally logs one `activity` row |
+| chores/bounty/scrum job sends | all become `log_event(message, …)` through the one writer — kills the three send patterns and the reply-state fragmentation (§10.1) |
+
+---
+
+## 12. `assemble_context(event, skill, budget)` — the contract (draft)
+
+### 12.1 Signature & invariants
+
+```
+assemble_context(event: LogRow, skill: Skill, budget: TokenBudget) -> Context
+Context = (static_system: str, dynamic_system: str, exchange: list[Message])
+```
+
+- **There is exactly one implementation**, in platform core, and every trigger uses it — a chat
+  turn, a scrum alarm, an onboarding connection event. Two builders = two minds; this function is
+  the consciousness (§4.4).
+- **Stateless**: everything comes from the log + substrate + structured state. No in-memory
+  session dicts (the current `sessions` dict dies; restart-safe conversation continuity comes
+  from the log). Deterministic given (log state, event, skill).
+- **Two-system-message shape kept** from today's chat path (OpenAI prefix caching): STATIC is
+  cacheable per skill; DYNAMIC is rebuilt per event.
+- `Skill` declares: its guidance prompt, its tool categories, and its **structured-state
+  providers** (named callables). `assemble_context` never hardcodes a domain.
+
+### 12.2 STATIC system message (cacheable)
+
+Identity + skill: `SOUL.md`/`BEHAVIOR.md` core identity (as today, `config.py:323`) + the skill's
+guidance prompt (e.g. the onboarding agenda-walk script, the scrum question script — what today
+lives inside each domain's handler/prompt file). One entity, wearing one skill.
+
+### 12.3 DYNAMIC system message — five sources, fixed order, budgeted
+
+Rendered in this order, each with a token cap (defaults below of a ~12k-token dynamic budget,
+tunable via Settings; unused budget spills to the next source; trim oldest-first within a source):
+
+1. **THREAD (~25%)** — if `event.thread_id` (or `reply_to` chain): the full thread, oldest→newest.
+   The scrum reply sees the question it answers and the sibling answers. *Generalizes PM's
+   `_gather_conversation_context` (`pm_domain.py:492`) — then that code dies.*
+2. **CONVERSATION WINDOW (~30%)** — full-fidelity recent exchange with the counterpart
+   (`who_from`/`who_to` = the person), newest N entries. Replaces the in-memory session.
+3. **GLOBAL AWARENESS STRIP (~10%)** — compact one-liners of the log tail across *everyone and
+   everything else* (`[10:02 jacob→skipper: "item 2 done…"] [10:00 pm: checked website goal]`).
+   This is the "one mind that knows what B said while talking to A" — cheap, terse, always on.
+4. **RETRIEVAL (~20%)** — one embedding of the event content, fanned in parallel across
+   **log-history + memories + knowledge + folders** (extends `_retrieve_context`,
+   `chat_domain.py:1127`, adding the log's vector index — the piece that's conspicuously missing
+   today, §10.4). Top-K each, deduped.
+5. **STRUCTURED STATE + ROLLING SUMMARY (~15%)** — the skill's declared providers (goal snapshot
+   for `goals`, roster+agenda for `onboarding`, scrum items for `scrum`, desktop `app_context`
+   for web chat), then the latest `summary` row(s) (global + this person's).
+
+### 12.4 `exchange` (the message list)
+
+The triggering event as the final user-role message (a person's words, or a synthetic alarm/event
+prompt like "⏰ scrum: it's 10:00 — run the standup"), preceded by nothing: history lives in the
+DYNAMIC block, keeping the array short and the prefix cache warm. (If practice shows models track
+dialogue better with a short native turn array, the CONVERSATION WINDOW may render as real turns
+instead — implementation freedom, contract unchanged.)
+
+### 12.5 What this absorbs (and retires)
+
+| Today's assembler / injector | Fate |
+|---|---|
+| `_inject_proactive_dm_context` + `pending_action` reply plumbing | **dissolved** — the thread IS the pending state |
+| goals `_observe`/`_build_user_prompt` | becomes the `goals` skill's structured-state provider + guidance |
+| PM `_gather_conversation_context` | superseded by source 1 |
+| in-memory `sessions` dict + `load_recent_turns` bootstrap | superseded by source 2 |
+| `_inject_onboarding_context` | becomes `onboarding` skill guidance (static) + its state provider |
+| `_retrieve_context` | extended into source 4 |
+| `_inject_app_context`, `_inject_voice_context`, behavior rules, channel blocks | kept — surface/skill providers |
+
+### 12.6 Cost & latency notes
+
+- The greeting path becomes: connection `event` → attention → `assemble_context` (indexed reads +
+  one embedding) → **one** model call with the onboarding skill → outbound `message`. No goal-tree
+  walk, no 120-tool routing, no multi-turn planning loop — this is the structural fix for the
+  45–60s greeting (§10.4).
+- Voice skills default to the fast tier for speak-or-silent decisions, escalating to smart only
+  when acting; skip-decisions should cost near-zero (source 3 + 5 alone may suffice — an
+  implementation option: a cheap pre-gate before full assembly).
