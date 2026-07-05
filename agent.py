@@ -4159,7 +4159,8 @@ async def api_thinking_stream(
     limit: int = 50,
 ):
     """The consciousness log itself — Skipper's stream of consciousness,
-    newest-last, filterable by kind/domain/person, keyset-paginated."""
+    newest-FIRST (reverse chronological, like a feed), filterable by
+    kind/domain/person, keyset-paginated via before_seq."""
     def _load():
         from data_layer.db import fetch_all
         clauses, args = [], []
@@ -4178,7 +4179,7 @@ async def api_thinking_stream(
             f"surface, left(content, 500) AS content, needs_attention, "
             f"attended_at, payload->>'attended_by' AS attended_by "
             f"FROM (SELECT * FROM consciousness_log {where} "
-            f"      ORDER BY seq DESC LIMIT %s) t ORDER BY seq ASC", tuple(args))
+            f"      ORDER BY seq DESC LIMIT %s) t ORDER BY seq DESC", tuple(args))
         return rows
     return {"events": await asyncio.to_thread(_load)}
 
