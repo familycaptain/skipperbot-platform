@@ -284,8 +284,23 @@ host); prod untouched at the `pre-consciousness` tag.
 - **Environmental note:** the test host has no web-search provider, so research-flavored
   goal_work tool calls fail there (architecture unaffected).
 
-**Next: Phase 4** (summarizer, memory ingestion from the log, log vector retrieval in the
-fan-out) then Phase 5 (cutover + demolition + `consciousness-v1`). PAUSED per operator.
+**Phase 4 (the subconscious)** — DONE, verified on the test host:
+- **Metabolizers** (`app_platform/summarizer.py`, riding the memory domain's heartbeat under
+  `consciousness_subconscious`): async embedding backfill (2s lagged cursor, events + trivia
+  skipped) + Q5 rolling summaries (cumulative-style, global + active-person, covers_from/to_seq;
+  span default 50 < the 60-event window so the no-gap invariant holds; 24h backstop; the newest
+  30 events are NEVER summarized — the live verbatim window keeps full fidelity).
+- **Context**: summaries render after the boundary; the verbatim window starts at covers_to_seq —
+  source 4 live, no gap, no double-render. **Retrieval**: the log joined the fan-out (search_log,
+  4th parallel fan, summaries excluded, visibility-rule reminder on injected hits).
+- **Ingestion re-sourced**: new memories anchor source_chat_id on the INBOUND cl- row (fact-bearing
+  utterance default) with the reply cl- + legacy c- in related_entities. Existing memories untouched.
+- **Verified live**: 60+ rows embedded, 7 quality summaries (global + per-person), timeline carries
+  summaries with the invariant holding, **beyond-window recall works** ("what happened with the
+  lamp?" answered correctly from deep memory), cl- provenance confirmed on fresh memories.
+
+**Next: Phase 5** (cutover + demolition: web scrollback → log projection, end the double-write
+after a bake period, drop legacy columns/rows, tag `consciousness-v1`). PAUSED per operator.
 
 ## 9b. Design reference
 
