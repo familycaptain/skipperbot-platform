@@ -30,6 +30,8 @@ SYSTEM = "system"
 _MIN_CONTENT_CHARS = 20
 _EMBED_BATCH = 20
 _SPAN_CAP = 300              # max events consumed by one summary pass
+_KEEP_TAIL = 30              # newest events NEVER summarized — the live verbatim
+                             # window keeps full fidelity; they summarize later
 _BACKSTOP_MIN_EVENTS = 10    # 24h backstop still needs something to say
 _PERSON_MIN_EVENTS = 5
 
@@ -179,10 +181,11 @@ async def maybe_summarize() -> int:
     rows = await asyncio.to_thread(
         fetch_all,
         "SELECT seq, id, kind, who_from, who_to, domain, content, created_at "
-        "FROM consciousness_log WHERE seq > %s AND kind != 'summary' "
-        "  AND created_at < now() - interval '2 seconds' "
+        "FROM consciousness_log "
+        "WHERE seq > %s AND kind != 'summary' "
+        "  AND seq <= (SELECT COALESCE(MAX(seq),0) - %s FROM consciousness_log) "
         "ORDER BY seq ASC LIMIT %s",
-        (since, _SPAN_CAP),
+        (since, _KEEP_TAIL, _SPAN_CAP),
     )
     if not rows:
         return 0
