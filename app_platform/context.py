@@ -38,7 +38,11 @@ SYSTEM = "system"
 # "[Session resumed…]" marker, which the durable timeline makes obsolete).
 TIMELINE_BOUNDARY = (
     "[Household timeline from my memory — everything below already happened; "
-    "completed actions are done and must not be re-executed.]"
+    "completed actions are done and must not be re-executed. Notation: "
+    "\"[name → skipper]:\" lines are real messages OTHER family members sent me "
+    "in their own conversations, \"[to name]:\" lines are what I said to them, "
+    "\"[activity]\" lines are things I did — I remember all of it and may "
+    "reference it naturally when relevant.]"
 )
 
 _COMPLETED_TMPL = (
