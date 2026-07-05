@@ -95,17 +95,22 @@ thinking_domain = (scheduler, skill, which-consciousness)
 
 Most historical mess came from the tuple being welded shut.
 
-### 3.2 Two consciousnesses (layers)
-- **Conscious layer (the voice):** `chat`, `onboarding`, `goals`, `pm` are different
-  `(scheduler, skill)` pairs that **all run in the one conscious entity** — one log, one context
-  assembly. Separate alarms, separate guidance, same mind.
-- **Subconscious layer (the substrate):** `memory`, `document` are their own quieter consciousness —
-  sub-agents that **do not speak to the family**. They maintain the retrieval substrate the conscious
-  mind draws on, and run in the **background**, off the single conscious attention.
+### 3.2 Three layers of the one mind (§18 Q8)
+- **Voice (conscious):** `chat` (+ its focus overlays, e.g. onboarding) and `pm` — everything that
+  **speaks to the family**. One log, one context assembly, attention turns, lanes. Separate
+  alarms, separate guidance, same mind, ONE mouth.
+- **Hands (autonomous work):** `goal_work` sessions — Skipper independently executing goals/
+  projects/tasks assigned to it (research, drafting, building). Long-running, **parallel,
+  jobs-based, never synchronous** (§14). A human delegates deep work to focused effort too; it
+  doesn't split the mind. **Hands never speak** — outputs are artifacts + sparse `activity` rows,
+  and a `needs_attention` event when a result warrants telling the family (the VOICE delivers it).
+- **Subconscious (substrate):** `memory`, `document`, the summarizer — maintain what the mind
+  draws on. Background, never speak, artifact-triggered log presence only.
 
-Placement rule: a domain runs in the conscious layer if its product is **a message/action in the
-shared conversation**; it runs in the subconscious layer if its product is **substrate** (recallable
-memory / organized knowledge).
+Placement rule — by the **nature of the work, not the container**: product is a message/
+conversation → voice; product is tool-executable work toward an end state → hands; product is
+substrate (recallable memory / organized knowledge / summaries) → subconscious. A GOAL is just
+DATA — its items can be acted on by different layers (§14: the pm sweep routes).
 
 ### 3.3 Why the subconscious is required, not optional
 The single mind cannot hold an infinite log in an LLM context window. The subconscious exists to
@@ -184,6 +189,8 @@ logic really is, unified in one place.)
 5. **Per-user UI** = a filtered projection of the log.
 6. **Attention model** — concurrent laned turns over one shared log (serialize only per-person and
    per-alarm-domain); async subconscious.
+7. **Work sessions (hands)** — jobs-based `goal_work` workers: parallel, bounded, resumable,
+   mouthless; they raise events for the voice to deliver.
 
 ---
 
@@ -568,8 +575,9 @@ Context = (static_system: str, dynamic_system: str, exchange: list[Message])
 ### 12.2 STATIC system message (cacheable)
 
 Identity + skill: `SOUL.md`/`BEHAVIOR.md` core identity (as today, `config.py:323`) + the skill's
-guidance prompt (e.g. the onboarding agenda-walk script, the scrum question script — what today
-lives inside each domain's handler/prompt file). One entity, wearing one skill.
+guidance prompt (e.g. the scrum question script — what today lives inside each domain's
+handler/prompt file), plus any active **focus overlays** (§14 — e.g. the onboarding agenda-walk
+guidance while the agenda goal is open). One entity, wearing one skill (and its current focus).
 
 ### 12.3 Context sources — TIMELINE vs REFERENCE (per §18 Q4)
 
@@ -622,7 +630,7 @@ named final turn + skill guidance ("respond to {person}") — watch in Phase 1.
 | goals `_observe`/`_build_user_prompt` | becomes the `goals` skill's structured-state provider + guidance |
 | PM `_gather_conversation_context` | superseded by the TIMELINE (source 1) |
 | in-memory `sessions` dict + `load_recent_turns` bootstrap | superseded by the TIMELINE (source 1) |
-| `_inject_onboarding_context` | becomes `onboarding` skill guidance (static) + its state provider |
+| `_inject_onboarding_context` | becomes the **onboarding focus overlay** on the chat skill (guidance + agenda provider, active while the agenda goal is open) |
 | `_retrieve_context` | extended into source 4 |
 | `_inject_app_context`, `_inject_voice_context`, behavior rules, channel blocks | kept — surface/skill providers |
 
@@ -677,12 +685,19 @@ flag; prod promotes only at phase boundaries. Legacy paths keep working until §
   answered correctly from the log alone (the one-mind proof).
 
 ### Phase 3 — all voice skills converge
-- **onboarding**: greeting becomes the onboarding skill's response to the connection `event` —
-  one cheap assemble + one model call (kills the 45–60s latency and the duplicate-opener class
-  structurally); retire the greet-once claim, `_run_arrival_greeting`, `_inject_onboarding_context`.
-- **goals / g-\*** and **pm**: handlers become skill definitions (§14); their private context
-  builders (`_observe`/`_build_user_prompt`/`_gather_conversation_context`) die; scheduler rows
-  stay as the alarms.
+- **onboarding becomes a focus overlay on chat** (§14): the greeting is the chat skill answering
+  the connection `event` with the onboarding overlay active — one cheap assemble + one model call
+  (kills the 45–60s latency and the duplicate-opener class structurally); every reply is a normal
+  real-time chat turn wearing the overlay (the "live agent" cadence hack dies — conversation IS
+  real-time); pacing nudges stay a light alarm under speak-or-silent. Retire the greet-once claim,
+  `_run_arrival_greeting`, `_inject_onboarding_context`.
+- **the goals domain SPLITS (§18 Q8):** its oversight half merges into the **pm sweep** (one
+  alarm, triage-then-focus across ALL goals — PM's proven `_pick_next_project` shape — plus the
+  ROUTER role: human-assigned items → follow-up decisions; Skipper-assigned tool-executable items
+  → ensure a `goal_work` session is scheduled; conversational items → the voice's focus overlays).
+  Its execution half becomes **`goal_work` jobs** (hands — §14). `g-*` scheduler rows and
+  `lifecycle.sync_goal_domain` retire; pm's private context builders
+  (`_observe`/`_build_user_prompt`/`_gather_conversation_context`) die.
 - **the real scrum** (prod runs it as an untracked optional app — absent from this repo): once the
   Phase-2 machinery is proven on chores, scrum becomes just another alarm + skill guidance file
   plugging into the optional app's state; the son's actual standup flow is verified HERE, on
@@ -717,7 +732,7 @@ A **skill** is declared, not coded as a mind:
 ```
 skill = {
   name:            "scrum",
-  layer:           "conscious" | "subconscious",
+  layer:           "voice" | "hands" | "subconscious",
   guidance:        "apps/<app>/prompts/skill_scrum.md",   # the STATIC half of its prompt
   tools:           ["scrum", "goals"],                     # tool categories exposed
   providers:       ["scrum_items", "roster"],              # structured-state callables (source 5)
@@ -740,11 +755,30 @@ skill = {
   becomes creating an **alarm row** bound to a generic **`custom` skill** (guidance: "this is a
   self-scheduled thought; the alarm's description is your prompt") — self-extensibility preserved
   without putting versioned artifacts in the DB.
-- **Conscious skills** never run themselves: their alarms append `event` rows and the attention
+- **Focus overlays:** a (guidance + provider) bundle bound to a CONDITION, layered onto the chat
+  skill — e.g. onboarding while the agenda goal is open. Not a separate skill, not a separate
+  mind: "the flow of conversation directed toward a focus." Overlays compose into the static
+  block (§12.2) and providers (§12.3 source 3).
+- **Voice skills** never run themselves: their alarms append `event` rows and the attention
   loop runs them. **Subconscious skills** keep today's model (their own loop off the scheduler),
   must never emit user-facing messages, and append `activity` rows only per the
   **artifact-triggered rule** (§11.3, §18 Q6): user-nameable artifacts yes, routine throughput
   never; `needs_attention=false` always.
+- **Hands — the `goal_work` runner (§18 Q8):** a generic job handler on the existing dispatcher
+  (like `research`/`refine`; `max_concurrent≈2`). Each firing = ONE bounded, resumable **work
+  session** for one goal: context from the same `assemble_context` with a worker budget profile
+  (structured state dominant — the goal's deep tree + prior findings; retrieval; working state;
+  timeline dialed down), executed by the same `agent_loop.run` with worker-grade bounds
+  (max_turns ~10–15, max_tool_calls ~25–50) and skill-routed MCP tools **minus all communication
+  tools** — hands structurally cannot speak. Continuity across sessions: artifacts + per-goal
+  working memory ("where I left off" — the document domain's proven cursor pattern) + sparse
+  `activity` rows (Q6). Milestones worth telling the family → a `needs_attention` event; the
+  voice decides whether/when/how to say it. Scheduling: a `goal-work` alarm / the jobs schedule
+  enqueues sessions for pm-routed eligible goals, at LOW budget priority (hands never starve the
+  voice). Parallelism = dispatcher `max_concurrent`; no lanes needed (no sends). The bespoke
+  `research` pipeline is this pattern's hardcoded ancestor — collapse or keep as a specialized
+  sibling, later. Proof the shape works today: the document domain already runs `agent_loop` +
+  MCP tools from a background context.
 - **Routing rule (§18 Q2): inbound replies run the `chat` skill, always.** Domain skills are
   **alarm-driven initiators**; when a person answers, that inbound message runs Skipper's one
   conversational voice (chat), made competent by the THREAD (source 1 carries the question +
@@ -775,8 +809,10 @@ skill = {
   pool. Correctness never depends on the locks: restart-safety comes from the log itself
   (unattended rows are the queue; locks evaporate harmlessly with the process).
 - **Which skill a turn runs:** inbound `message` → the `chat` skill (universal responder — §14
-  routing rule); alarm `event` → the alarm's declared skill; connection `event` → the skill bound
-  to that event kind (e.g. onboarding while the agenda is open, else a plain welcome via chat).
+  routing rule); alarm `event` → the alarm's declared skill; connection `event` → the `chat`
+  skill (whatever focus overlays are active shape the response: onboarding greeting while the
+  agenda is open, plain welcome-back otherwise). Overlays apply to every chat turn while their
+  condition holds.
 - Each turn: claim → snapshot-read → `assemble_context` → run the skill's bounded loop → append
   results (`message`/`activity` rows) → stamp `attended_at`. Failures append an `activity` error
   note and stamp `attended_at` with error payload after N retries (never wedge the queue).
@@ -880,9 +916,16 @@ skill = {
    tracks scheduling, "a responder is owed and none is live"; voice's responder is already
    engaged). Session start seeds from the one `assemble_context`. Accepted bounded mid-call
    split + v2 injection hooks recorded in §16.
-8. **Per-goal `g-*` alarms.** Keep one scheduler row per active goal (today's model), or one
-   `goals` alarm that sweeps all active goals? Position: one sweeping alarm — fewer rows, and the
-   skill sees the whole goal landscape at once (cross-goal awareness).
+8. **Per-goal `g-*` alarms — RESOLVED (operator), and it reshaped the model.** The goals domain
+   conflated two functions; it SPLITS: **oversight → the pm sweep** (one alarm, triage-then-focus,
+   cross-goal speak-or-silent, and the ROUTER deciding which layer acts on each item);
+   **execution → `goal_work` jobs** (a new third layer, **hands**: parallel jobs-based workers —
+   assemble_context worker profile + agent_loop, no comms tools, session-bounded, working-memory
+   resumable — collapsing toward `research` over time). Goals are DATA; the layer is chosen by the
+   nature of the work. Onboarding is conversational by nature → a **focus overlay on chat**, never
+   goal_work; real-time because conversation is (greeting = chat answering the connection event).
+   `g-*` rows + `sync_goal_domain` retire. Hands raise `needs_attention` events; the voice
+   delivers. See §3.2, §13 Phase 3, §14.
 9. **Dynamic-budget default** (~12k tokens) and per-source splits (§12.3) — tune after Phase 1
    telemetry.
 10. **What happens to `self` domain** (disabled today) — a future "reflection" conscious skill or
