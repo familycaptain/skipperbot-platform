@@ -584,8 +584,9 @@ guidance while the agenda goal is open). One entity, wearing one skill (and its 
 The classifying question for every source: *is this part of the live timeline the model must
 interleave, or reference material Skipper consults?* Timeline renders as **native turns**
 (§12.4); reference renders in the **DYNAMIC system block**, explicitly framed as "background —
-not the live conversation." Budgets (of a ~12k-token dynamic budget, tunable via Settings; unused
-budget spills to the next source; trim oldest-first within a source; splits tuned per §18 Q9):
+not the live conversation." Budgets are slices of the skill's **per-call prompt envelope** (§12.7; chat targets ~10k/call —
+numbers are PLACEHOLDERS until the §12.7 measurement pass); unused budget spills to the next
+source; trim oldest-first within a source:
 
 1. **TIMELINE (~55%, native turns)** — ONE strictly `seq`-ordered, multi-speaker slice of the log:
    the contiguous recent tail, plus the active thread's older entries (when the thread reaches
@@ -643,6 +644,32 @@ named final turn + skill guidance ("respond to {person}") — watch in Phase 1.
 - Voice skills default to the fast tier for speak-or-silent decisions, escalating to smart only
   when acting; skip-decisions should cost near-zero (summary + structured state alone may suffice
   — an implementation option: a cheap pre-gate before full assembly).
+
+### 12.7 Budgets — per-call envelope vs per-turn spend (§18 Q9)
+
+Two DIFFERENT budgets; conflating them was wrong:
+
+- **Per-call prompt envelope** — what ONE model call carries; `assemble_context`'s
+  responsibility. Four sub-parts: static (identity + guidance + overlays), timeline, reference,
+  and **tools — governed by the EXISTING chat design, kept as-is**: core set + 2 sticky slots +
+  `request_tools` swap-on-release (the lean-tools mechanism already built; guides ranked within
+  loaded categories). Chat's default envelope: **~10k/call typical**, soft-trim ceiling ~16k —
+  Settings-tunable, per-skill (`budget_profile`).
+- **Per-turn cumulative spend** — the SUM across a chained agent loop (5 tool calls ≈ 5 model
+  calls, each re-carrying the conversation + accumulated tool results). **This is legitimate work,
+  not waste — it is NOT capped by the envelope.** Governed instead by: the skill's loop bounds
+  (`max_turns`/`max_tool_calls`), per-tool-result truncation (existing ~4k clip), **contractual
+  within-turn prefix stability** (static prefix + earlier rounds stay byte-stable across rounds so
+  provider prompt caching prices rounds 2..N far below sticker), and a **wrap-up circuit-breaker**
+  (default ~120k cumulative, Settings-tunable): the loop is told "finish with what you have,"
+  never hard-failed. Chained turns approaching ~100k remain legal.
+- **Telemetry from day one** (into `thinking_log`/turn debug, never the consciousness log): per-call
+  sub-budget spend + trims, AND per-turn cumulative — Phase 1 tuning is data-driven.
+- **Numbers are placeholders until measured (operator):** setting real values requires a
+  **measurement pass over the actual assets** — token-count every tool guide, every category's
+  schemas, and the static prompt files — a Phase 1 prerequisite task, not a design-time guess.
+- Guardrail: the timeline never trims below the active thread (the scrum fix cannot be crowded
+  out by a busy morning).
 
 ---
 
@@ -737,7 +764,8 @@ skill = {
   tools:           ["scrum", "goals"],                     # tool categories exposed
   providers:       ["scrum_items", "roster"],              # structured-state callables (source 5)
   tier:            "fast" | "smart" | "auto",              # auto = fast to decide, smart to act
-  loop:            {max_turns: 2, max_tool_calls: 6},      # bounded — voice turns stay short
+  budget_profile:  {envelope: 10k, splits: {...}},         # per-CALL prompt envelope (§12.7)
+  loop:            {max_turns: 2, max_tool_calls: 6},      # bounds the per-TURN chain (§12.7)
 }
 ```
 
@@ -926,7 +954,13 @@ skill = {
    goal_work; real-time because conversation is (greeting = chat answering the connection event).
    `g-*` rows + `sync_goal_domain` retire. Hands raise `needs_attention` events; the voice
    delivers. See §3.2, §13 Phase 3, §14.
-9. **Dynamic-budget default** (~12k tokens) and per-source splits (§12.3) — tune after Phase 1
-   telemetry.
+9. **Budgets — RESOLVED (operator).** Two budgets, not one: a per-CALL prompt envelope
+   (chat ~10k/call; tools governed by the existing core+2-slots+`request_tools` design, kept
+   as-is) and per-TURN cumulative spend across chained tool calls — legitimate work, NOT
+   envelope-capped; governed by loop bounds, result truncation, contractual within-turn prefix
+   stability, and a ~120k wrap-up circuit-breaker. Telemetry on both from day one. All numbers
+   are placeholders until a measurement pass token-counts every tool guide / category schema /
+   static prompt (Phase 1 prerequisite). See §12.7.
+
 10. **What happens to `self` domain** (disabled today) — a future "reflection" conscious skill or
     delete? Position: delete now, redesign later if wanted.
