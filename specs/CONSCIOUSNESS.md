@@ -604,7 +604,8 @@ Each phase is independently shippable, testable on the test host, and reversible
 flag; prod promotes only at phase boundaries. Legacy paths keep working until §13.6.
 
 ### Phase 0 — the spine, silently (no behavior change)
-- Migration: `public.consciousness_log` + indexes; register `cl-` in `entity_types`.
+- Migration: `public.consciousness_log` + indexes; register `cl-` in `entity_types`; make
+  `thinking_domains.observe/evaluate/act_tool` nullable (legacy columns, ignored — §14).
 - `app_platform/consciousness.py`: `log_event()` + read helpers (tail, thread, person-window,
   unattended-queue claim).
 - **Shadow writes**: every current producer (chat post-turn, `_send_dm`/`create_notification`,
@@ -662,7 +663,8 @@ flag; prod promotes only at phase boundaries. Legacy paths keep working until §
 - Web history endpoint reads the log projection; `chat_turns` double-write turns off after a bake
   period; notifications app reduced to pure transport.
 - Delete the retired plumbing (sessions dict, PM conversation gatherer, greet-once machinery,
-  notification→chat_turns double-write, per-domain prompt builders).
+  notification→chat_turns double-write, per-domain prompt builders); drop the legacy
+  `thinking_domains` observe/evaluate/act_tool columns (+ optional cosmetic rename to `alarms`).
 - Prod promotion + a new baseline tag (`consciousness-v1`).
 
 ---
@@ -683,10 +685,20 @@ skill = {
 }
 ```
 
-- **Registry:** `thinking_domains` survives as the **scheduler registry** (cadence, enabled,
-  budget_priority — it is already scheduler-shaped, §10.4); the legacy `observe/evaluate/act_tool`
-  columns are ignored/retired. Skill definitions live in code/manifest (apps declare skills the
-  way they declare domains today); the platform loader binds `scheduler row → skill name`.
+- **Registry (§18 Q3, RESOLVED):** the dividing principle is **DB holds what's tuned at runtime;
+  code holds what's versioned.** `thinking_domains` survives as the **scheduler (alarm) registry**
+  — `cadence`, `enabled`, `budget_priority` are runtime-tunable state (Settings UI, Skipper's own
+  rhythm adjustments, self-created rows) and stay in the DB, zero migration for existing rows.
+  Skill definitions (guidance file, tools, providers, tier, loop bounds) are **versioned artifacts**
+  and live in app manifests (the `thinking:` block evolves into `skills:`), registered by the
+  loader exactly as domains register today. The platform binds `scheduler row name → skill name`;
+  a row with no matching skill is skipped with a warning (today's handler-less behavior, kept).
+  Legacy `observe/evaluate/act_tool` columns: made nullable now, ignored, **dropped in Phase 5**
+  (any cosmetic table rename also deferred to Phase 5 — no churn mid-build).
+- **Self-created alarms keep working:** Skipper creating a "domain" (`created_by='skipper'`)
+  becomes creating an **alarm row** bound to a generic **`custom` skill** (guidance: "this is a
+  self-scheduled thought; the alarm's description is your prompt") — self-extensibility preserved
+  without putting versioned artifacts in the DB.
 - **Conscious skills** never run themselves: their alarms append `event` rows and the attention
   loop runs them. **Subconscious skills** keep today's model (their own loop off the scheduler),
   must never emit user-facing messages, and may append sparse `activity` rows (§18 Q6).
@@ -786,9 +798,11 @@ skill = {
    (§13 Phase 2). `pm` defers to Phase 3; the REAL scrum (an untracked optional app on prod) plugs
    into the proven machinery in Phase 3 and is verified on prod's own app. Companion rule: inbound
    replies always run the `chat` skill (§14) — domain skills only initiate.
-3. **Registry shape.** Position: keep `thinking_domains` as the scheduler registry + declare
-   skills in app manifests; retire the observe/evaluate/act_tool columns. Alternative: new
-   `skills` table.
+3. **Registry shape — RESOLVED (operator).** DB = runtime-tunable scheduler state
+   (`thinking_domains` reused as the alarm registry: cadence/enabled/budget_priority; zero
+   migration); code/manifest = versioned skill definitions (`skills:` block, loader-registered).
+   Legacy *_tool columns nullable now, dropped Phase 5; cosmetic renames deferred to Phase 5.
+   Skipper self-created alarms bind to a generic `custom` skill. See §14.
 4. **Exchange rendering (§12.4).** Position: history in the DYNAMIC block, single user-role
    trigger message. Alternative: render the conversation window as native turns if model behavior
    demands it.
