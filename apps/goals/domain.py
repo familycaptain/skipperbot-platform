@@ -822,7 +822,11 @@ def _build_goal_snapshot(goal: dict) -> dict:
             "priority": proj.get("priority", "medium"),
             "owners": proj.get("owners", []),
             "due_date": proj.get("due_date", ""),
-            "notes": (proj.get("notes", "") or "")[:300],
+            # Project notes carry authored onboarding-agenda step copy; a 2000-char
+            # bound (was 300) lets the full guidance reach the model while still
+            # capping pathological input. The overall snapshot dump is separately
+            # bounded ([:6000] in goal_work.py), so this stays within budget. (ev-88)
+            "notes": (proj.get("notes", "") or "")[:2000],
             "definition_of_done": (proj.get("definition_of_done", "") or "")[:300],
             "recent_history": (proj.get("history") or [])[-5:],
             "task_counts": p_counts,

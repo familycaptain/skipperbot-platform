@@ -1,0 +1,46 @@
+kind: specification
+id: goals.thinking.project-notes-delivery
+title: Goal-thinking snapshot delivers each project's authored notes to the model up to 2000 chars
+  (not 300), so onboarding-agenda copy reaches the goal-thinking prompt and goal_work state intact
+state: live
+autonomy: gated
+verified: true
+behavior: >
+  apps/goals/domain.py::_build_goal_snapshot(goal) includes each project's `notes` field in the
+  snapshot truncated to at most 2000 characters (previously 300), via
+  `(proj.get('notes','') or '')[:2000]`. So: (a) a project note of 2000 characters or fewer is carried
+  in FULL into the snapshot's project entry and thus emitted verbatim by _build_user_prompt(ctx) into
+  the goal-thinking model prompt (the `- Notes: {proj['notes']}` line) AND JSON-dumped into the
+  surviving goal_work session state (apps/goals/goal_work.py, `json.dumps(snapshot, default=str)[:6000]`
+  — that overall [:6000] dump bound is unchanged; a 2000-char note fits within it); (b) a note longer
+  than 2000 chars is bounded to its first 2000 chars (the guard against unbounded prompt growth is
+  preserved, not removed); (c) an absent/empty/None note yields '' (no error). In particular an authored
+  onboarding-agenda project description in the 300–2000 char range — e.g. the home-location step whose
+  tail clauses are 'NOT a street or mailing address', country-NEUTRAL / 'never presume a US state', and
+  'ANY level of detail is enough / don't re-ask' — now reaches the goal-thinking model and the goal_work
+  hands session in full instead of being cut at 300 chars. Only the project `notes` cap changes; the
+  sibling caps in the same builder (task notes :200, project and goal definition_of_done :300, goal
+  notes :500) are unchanged.
+implements:
+- apps/goals/domain.py::_build_goal_snapshot
+tests:
+- type: unit
+  path: apps/goals/tests/test_goal_snapshot_note_delivery.py
+  rubric: >
+    Deterministic, DB-free: monkeypatch apps.goals.data.load_entity/get_top_level_tasks/get_subtasks
+    to a crafted project, then drive the real _build_goal_snapshot. (1) A 519-char note whose tail holds
+    the five onboarding location clauses is retained in FULL and every clause is present (regression for
+    #88). (2) Boundary: a 2000-char note is kept in full; a 2500-char note is bounded to exactly 2000.
+    (3) A <=300-char note is unchanged; empty/None -> ''. (4) End-to-end: _build_user_prompt(ctx) output
+    contains all five clauses. (5) Surviving consumer: json.dumps(snapshot, default=str)[:6000] (the
+    goal_work assembly) contains all five clauses. (6) Sibling task-notes cap still 200.
+links: {}
+notes: >
+  Issue #88 (operator-authored, evolve-incidental; found while validating ev-81). Reproduced on the test
+  host (519-char note truncated to 300, five authored tail clauses dropped from the model-facing
+  goal-thinking prompt). Fix raises the project-notes cap 300->2000 (RAISE, not REMOVE, so the
+  prompt-size guard survives). Per the operator's Gate-1 scope steer: the legacy goal-thinking domain
+  stands down under consciousness_goals (deleted at consciousness Phase 5b), but the change lands in the
+  SHARED _build_goal_snapshot whose durable consumer is the goal_work hands sessions — validated there
+  (not by live-driving the flag-disabled legacy domain). Notes are already stored in full in the DB;
+  only the snapshot delivery clipped them, so no data migration.
