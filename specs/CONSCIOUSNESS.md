@@ -411,9 +411,16 @@ cosine on `embedding`.
   periodic heartbeat summary — not per-cycle noise).
 - **`event`** — something happened TO Skipper: `system` connection events (`rodney connected on
   web`), **alarms firing** (`subtype: alarm, domain: scrum`), app events worth remembering.
-- **`summary`** — a checkpoint written by the subconscious summarizer (§12.3 source 5): a rolling
-  digest of the span since the previous summary (global, and per-person variants tagged via
-  `who_to`). Putting summaries IN the log makes windowing trivial: *context = last summary + tail*.
+- **`summary`** — a checkpoint written by the subconscious summarizer (§12.3 source 4). **Cadence
+  (§18 Q5):** written when the unsummarized span exceeds **~150 events**, with a **24h clock
+  backstop** for slow trickles — event-count is primary because the point is keeping the timeline
+  tail within budget. **Two scopes:** global (every checkpoint) + per-person, written only for
+  people active in the span (no empty checkpoints for quiet family members).
+  **Cumulative-style, not chained-lossy:** each summary reads the *previous summary + the span
+  since*, carrying forward durable open loops rather than digesting only the recent events —
+  narrative continuity is the job; archival facts belong to memories/documents. Fast-tier, one
+  call per checkpoint. Putting summaries IN the log makes windowing trivial: *context = last
+  summary + tail*.
 
 ### 11.4 Thread rules (`thread_id` + `reply_to`)
 
@@ -567,8 +574,11 @@ budget spills to the next source; trim oldest-first within a source; splits tune
    `goals`, roster+agenda for `onboarding`, scrum items for `scrum`, desktop `app_context` for
    web chat). A snapshot of the world, not dialogue.
 4. **ROLLING SUMMARY (~10%, system block)** — the latest `summary` row(s) covering everything
-   OLDER than the timeline window (global + this person's). The window boundary is a budget knob;
-   the principle is fixed: contiguous tail in native turns, everything older summarized.
+   OLDER than the timeline window (global + this person's). **Boundary invariant (§18 Q5):** no
+   gap may exist between summarized past and renderable window — assembly uses *last summary +
+   everything after its `covers_to_seq`*, and when that tail exceeds budget it trims from the
+   front only INTO the already-summarized region. The ~150-event summarize trigger sits safely
+   below what the timeline budget can hold, keeping the invariant true by construction.
 
 ### 12.4 `exchange` (the message list) — the log tail AS native turns
 
@@ -662,8 +672,9 @@ flag; prod promotes only at phase boundaries. Legacy paths keep working until §
 - `pending_action` DM plumbing + `_inject_proactive_dm_context` dissolved (the thread is the state).
 
 ### Phase 4 — subconscious upgrades
-- **Summarizer** (new subconscious skill): writes `kind=summary` checkpoints (global + per-person)
-  when the unsummarized span exceeds a threshold (§18 Q5).
+- **Summarizer** (new subconscious skill): writes `kind=summary` checkpoints per the §18 Q5
+  policy — unsummarized span > ~150 events (primary) or 24h (backstop); global + active-person
+  scopes; cumulative-style (reads previous summary + span); fast tier.
 - Memory ingestion consumes `cl-` events instead of raw chat-turn payloads; embedding backfill
   worker embeds log rows (including the §11.8 historical backfill).
 - Retrieval source 4 adds the log's vector index; `chat_turns`' index retires from the fan-out
@@ -821,8 +832,10 @@ skill = {
    reference (retrieval, structured state, pre-window summary). The "global awareness strip"
    dissolves into the window. See §12.3-12.4. Interaction with Q7 (voice native history) flagged
    there.
-5. **Summary cadence.** Position: summarize when unsummarized span > ~150 events or ~24h,
-   whichever first; per-person summaries only for people active in the span.
+5. **Summary cadence — RESOLVED (operator).** Event-count primary (~150 unsummarized events),
+   24h clock backstop; global + active-person-only scopes; cumulative-style (previous summary +
+   span, carrying open loops forward — no chained-lossy drift); fast tier. Plus the boundary
+   invariant: summaries and the timeline window must meet with no gap (§12.3 source 4).
 6. **Do subconscious skills log `activity` rows?** Position: yes, sparse (e.g. one per
    consolidation run: "consolidated 40 memories about the garden project") — the conscious mind
    may reference its own subconscious work; never per-item noise.
