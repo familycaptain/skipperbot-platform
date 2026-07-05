@@ -211,9 +211,10 @@ The proposed model is *smaller* than the pile of workarounds it replaces.
 
 ## 9. Next Step
 
-Grounding pass **done** (§10). Storage decision **made** (§10.6: new spine). Log schema **drafted**
-(§11) and the `assemble_context` contract **drafted** (§12). Remaining: operator review of §11-§12,
-then the migration/build order.
+Design fully drafted: grounding (§10), log schema/keys/migration (§11), `assemble_context` (§12),
+build order (§13), skills (§14), attention loop (§15), surfaces (§16), in-flight reconciliation
+(§17). Now in **operator review**: open questions are consolidated in §18 and get settled one
+discussion at a time, amending this doc as each lands.
 
 ---
 
@@ -546,3 +547,174 @@ instead — implementation freedom, contract unchanged.)
 - Voice skills default to the fast tier for speak-or-silent decisions, escalating to smart only
   when acting; skip-decisions should cost near-zero (source 3 + 5 alone may suffice — an
   implementation option: a cheap pre-gate before full assembly).
+
+---
+
+## 13. Build Order (draft)
+
+Each phase is independently shippable, testable on the test host, and reversible via a Settings
+flag; prod promotes only at phase boundaries. Legacy paths keep working until §13.6.
+
+### Phase 0 — the spine, silently (no behavior change)
+- Migration: `public.consciousness_log` + indexes; register `cl-` in `entity_types`.
+- `app_platform/consciousness.py`: `log_event()` + read helpers (tail, thread, person-window,
+  unattended-queue claim).
+- **Shadow writes**: every current producer (chat post-turn, `_send_dm`/`create_notification`,
+  `desktop.arrival`, scheduler domain fires, chores/bounty/scrum job sends) additionally calls
+  `log_event()`. Nothing reads the log yet.
+- The §11.8 backfill script (idempotent), run once on the test host, later on prod.
+- **Ship test:** log fills correctly in the right order with the right tags while the product
+  behaves byte-identically.
+
+### Phase 1 — one mind for chat (first consumer)
+- Implement `assemble_context` v1 (sources 1–4; source 5's summary half returns empty until
+  Phase 4).
+- Convert the **chat** path: `handle_chat`'s dynamic assembly → `assemble_context`; the in-memory
+  `sessions` dict retired behind a Settings flag (`consciousness_chat`, instant flip-back).
+- **Ship test:** chat quality ≥ today; a proactive DM sent by the (still-legacy) domains is now
+  *visible* to chat via the log (first half of the scrum bug dies here).
+
+### Phase 2 — the attention loop + first alarm skill (the scrum-scenario proof)
+- Single-threaded attention consumer over `needs_attention` rows (§15).
+- Inbound chat routed through attention; `desktop.arrival` becomes a logged `event` it consumes.
+- Convert **one** alarm skill end-to-end (candidate: a minimal `standup` skill — §18 Q2): the
+  scheduler appends an alarm `event` → attention runs the skill → outbound `message`s → replies
+  thread back → skill sees both people's answers in one thread.
+- **Milestone (the whole point):** the §1.1 scrum scenario passes live: alarm fires, two family
+  members answer, Skipper understands each reply in context and can name the cross-dependency.
+
+### Phase 3 — all voice skills converge
+- **onboarding**: greeting becomes the onboarding skill's response to the connection `event` —
+  one cheap assemble + one model call (kills the 45–60s latency and the duplicate-opener class
+  structurally); retire the greet-once claim, `_run_arrival_greeting`, `_inject_onboarding_context`.
+- **goals / g-\*** and **pm**: handlers become skill definitions (§14); their private context
+  builders (`_observe`/`_build_user_prompt`/`_gather_conversation_context`) die; scheduler rows
+  stay as the alarms.
+- **chores / bounty digest**: their sends become `log_event` messages (bounty replies stop being
+  context-blind).
+- `pending_action` DM plumbing + `_inject_proactive_dm_context` dissolved (the thread is the state).
+
+### Phase 4 — subconscious upgrades
+- **Summarizer** (new subconscious skill): writes `kind=summary` checkpoints (global + per-person)
+  when the unsummarized span exceeds a threshold (§18 Q5).
+- Memory ingestion consumes `cl-` events instead of raw chat-turn payloads; embedding backfill
+  worker embeds log rows (including the §11.8 historical backfill).
+- Retrieval source 4 adds the log's vector index; `chat_turns`' index retires from the fan-out
+  once re-embedding completes.
+
+### Phase 5 — cutover + demolition
+- Web history endpoint reads the log projection; `chat_turns` double-write turns off after a bake
+  period; notifications app reduced to pure transport.
+- Delete the retired plumbing (sessions dict, PM conversation gatherer, greet-once machinery,
+  notification→chat_turns double-write, per-domain prompt builders).
+- Prod promotion + a new baseline tag (`consciousness-v1`).
+
+---
+
+## 14. Skills (draft)
+
+A **skill** is declared, not coded as a mind:
+
+```
+skill = {
+  name:            "scrum",
+  layer:           "conscious" | "subconscious",
+  guidance:        "apps/<app>/prompts/skill_scrum.md",   # the STATIC half of its prompt
+  tools:           ["scrum", "goals"],                     # tool categories exposed
+  providers:       ["scrum_items", "roster"],              # structured-state callables (source 5)
+  tier:            "fast" | "smart" | "auto",              # auto = fast to decide, smart to act
+  loop:            {max_turns: 2, max_tool_calls: 6},      # bounded — voice turns stay short
+}
+```
+
+- **Registry:** `thinking_domains` survives as the **scheduler registry** (cadence, enabled,
+  budget_priority — it is already scheduler-shaped, §10.4); the legacy `observe/evaluate/act_tool`
+  columns are ignored/retired. Skill definitions live in code/manifest (apps declare skills the
+  way they declare domains today); the platform loader binds `scheduler row → skill name`.
+- **Conscious skills** never run themselves: their alarms append `event` rows and the attention
+  loop runs them. **Subconscious skills** keep today's model (their own loop off the scheduler),
+  must never emit user-facing messages, and may append sparse `activity` rows (§18 Q6).
+- One skill per attention turn. Skills share the entity (identity prompt, log, context); they
+  differ only in guidance, tools, providers, tier.
+
+---
+
+## 15. The Attention Loop (draft)
+
+- **One asyncio consumer** (platform core). Claims the oldest unattended row — with a **priority
+  class**: inbound `message`s before alarm `event`s, `seq` order within a class (§18 Q1) — using
+  the jobs-dispatcher claim pattern.
+- Each turn: claim → `assemble_context` → run the skill's bounded loop → append results
+  (`message`/`activity` rows) → stamp `attended_at`. Failures append an `activity` error note and
+  stamp `attended_at` with error payload after N retries (never wedge the queue).
+- **Latency contract:** a chat reply must never wait behind a slow alarm turn. Enforced by (a) the
+  priority class, (b) bounded alarm loops (§14), and (c) alarm turns checking for pending inbound
+  messages between model rounds and yielding (re-queueing themselves) if one arrived.
+- **Speak-or-stay-silent (§4.5)** happens INSIDE the turn: the skill's guidance frames "given this
+  context, is a message warranted?" — a silent outcome logs at most a sparse `activity` note.
+  Cadence caps/quiet-hours live here as shared policy, not per-domain bolt-ons.
+- **Typing indicators**: attention emits presence (typing) to the target surface when a turn that
+  may speak begins — replacing today's client-side optimistic typing hack.
+
+---
+
+## 16. Surfaces & Projection (draft)
+
+- **Inbound** (any surface): transport handler authenticates, then `log_event(message, …,
+  needs_attention)` and awaits the turn's outbound row(s) (WS keeps its request/response feel; the
+  future is the same frame types as today).
+- **Outbound**: attention appends the `message` row → the consciousness writer hands it to the
+  notifications app for transport fan-out (WS `chat_response` frame to the right person — the
+  §10.4 special-case becomes the rule — plus Discord/push per channel settings). Delivery receipts
+  stay in `app_notifications`.
+- **History** (per-person view): a projection query over the log — `kind='message' AND (who_from=P
+  OR who_to=P)` (+ surface filter as today) — replacing the `chat_turns` read at cutover.
+- **Voice** (realtime API) is a special surface: its live session transcript enters the log as
+  messages at utterance grain; §18 Q8.
+
+---
+
+## 17. Reconciliation of frozen in-flight items
+
+| Item | Fate under this architecture |
+|---|---|
+| ev-79 (greeting latency) | already rejected; **structurally fixed** by Phase 3 (one-call greeting) |
+| ev-93 (duplicate opener) | superseded: attention + single opener-event makes a second opener impossible; the Option-B build, if it landed, ships harmlessly and its machinery is deleted in Phase 3 |
+| ev-80 (household depth) / ev-81 (location copy) | content lives on as **onboarding skill guidance** (the copy work is preserved; the delivery-path split that broke them is gone). Verify at Phase 3 |
+| ev-82 (completion integrity) | its honest-completion rules fold into onboarding skill guidance; its dod-gating stays valid |
+| ev-83 (contractor trades) | unrelated to consciousness; already merged + promoted; verify normally whenever |
+| #95 (proactive honesty clause) | dissolved — one producer remains |
+| #98 (email re-eval) / #99 (gdrive/skipper_gmail build) / #96 / #97 | unrelated infra/product fixes; do directly or via the loop after it resumes |
+| #100 (epic) | this spec IS its design; close the epic against `consciousness-v1` |
+
+---
+
+## 18. Discussion Queue (open questions — settle one at a time, amend this doc per decision)
+
+1. **Attention ordering & chat latency.** Position: priority classes (inbound messages > alarms),
+   bounded alarm loops, mid-turn yield. Alternative: strict global `seq` order (purer, but a slow
+   alarm delays a human).
+2. **First converted alarm skill (Phase 2 milestone).** Position: a minimal new `standup` skill
+   (the scrum app is absent on `release`; the son's complaint traces to pm/goals DMs). Alternative:
+   convert `pm` first.
+3. **Registry shape.** Position: keep `thinking_domains` as the scheduler registry + declare
+   skills in app manifests; retire the observe/evaluate/act_tool columns. Alternative: new
+   `skills` table.
+4. **Exchange rendering (§12.4).** Position: history in the DYNAMIC block, single user-role
+   trigger message. Alternative: render the conversation window as native turns if model behavior
+   demands it.
+5. **Summary cadence.** Position: summarize when unsummarized span > ~150 events or ~24h,
+   whichever first; per-person summaries only for people active in the span.
+6. **Do subconscious skills log `activity` rows?** Position: yes, sparse (e.g. one per
+   consolidation run: "consolidated 40 memories about the garden project") — the conscious mind
+   may reference its own subconscious work; never per-item noise.
+7. **Voice surface grain.** Realtime voice transcripts → log at utterance level, or session
+   summary level? Position: utterances for the log, with the session's own realtime context
+   untouched (voice keeps its latency path).
+8. **Per-goal `g-*` alarms.** Keep one scheduler row per active goal (today's model), or one
+   `goals` alarm that sweeps all active goals? Position: one sweeping alarm — fewer rows, and the
+   skill sees the whole goal landscape at once (cross-goal awareness).
+9. **Dynamic-budget default** (~12k tokens) and per-source splits (§12.3) — tune after Phase 1
+   telemetry.
+10. **What happens to `self` domain** (disabled today) — a future "reflection" conscious skill or
+    delete? Position: delete now, redesign later if wanted.
