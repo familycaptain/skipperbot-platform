@@ -408,7 +408,13 @@ cosine on `embedding`.
 - **`activity`** — Skipper did something: a skill cycle that took a real action ("checked goal
   'website', bumped task t-42, noticed the deadline slipped"), a notable tool action. Compact,
   first-person-recallable. Skill cycles that decide to do nothing log nothing (or at most a
-  periodic heartbeat summary — not per-cycle noise).
+  periodic heartbeat summary — not per-cycle noise). **Subconscious rule (§18 Q6):
+  artifact-triggered, never throughput-triggered** — routine pipeline churn (memory-queue
+  drainage) logs NOTHING (observability stays in `thinking_log`/queue stats); a user-nameable
+  artifact (documents created/reorganized: "organized 26 memories into 2 documents: Garden
+  Project, Trip Planning") logs ONE row per productive cycle; notable one-offs (the historical
+  backfill) log one row. Under §12's geometry every log row lands in the timeline window —
+  metabolic noise is directly worse context.
 - **`event`** — something happened TO Skipper: `system` connection events (`rodney connected on
   web`), **alarms firing** (`subtype: alarm, domain: scrum`), app events worth remembering.
 - **`summary`** — a checkpoint written by the subconscious summarizer (§12.3 source 4). **Cadence
@@ -722,7 +728,9 @@ skill = {
   without putting versioned artifacts in the DB.
 - **Conscious skills** never run themselves: their alarms append `event` rows and the attention
   loop runs them. **Subconscious skills** keep today's model (their own loop off the scheduler),
-  must never emit user-facing messages, and may append sparse `activity` rows (§18 Q6).
+  must never emit user-facing messages, and append `activity` rows only per the
+  **artifact-triggered rule** (§11.3, §18 Q6): user-nameable artifacts yes, routine throughput
+  never; `needs_attention=false` always.
 - **Routing rule (§18 Q2): inbound replies run the `chat` skill, always.** Domain skills are
   **alarm-driven initiators**; when a person answers, that inbound message runs Skipper's one
   conversational voice (chat), made competent by the THREAD (source 1 carries the question +
@@ -836,9 +844,12 @@ skill = {
    24h clock backstop; global + active-person-only scopes; cumulative-style (previous summary +
    span, carrying open loops forward — no chained-lossy drift); fast tier. Plus the boundary
    invariant: summaries and the timeline window must meet with no gap (§12.3 source 4).
-6. **Do subconscious skills log `activity` rows?** Position: yes, sparse (e.g. one per
-   consolidation run: "consolidated 40 memories about the garden project") — the conscious mind
-   may reference its own subconscious work; never per-item noise.
+6. **Subconscious `activity` rows — RESOLVED (operator).** Artifact-triggered, not
+   throughput-triggered: routine pipeline churn logs nothing (memory domain ≈ zero rows;
+   observability stays in `thinking_log`); user-nameable artifacts (document creation/reorg) log
+   one row per productive cycle; notable one-offs (historical backfill) log one row. Rationale:
+   under Q4's geometry every log row enters the timeline window — noise is directly worse
+   context; apply §11.1's "would Skipper recall this tomorrow?" honestly. See §11.3, §14.
 7. **Voice surface grain.** Realtime voice transcripts → log at utterance level, or session
    summary level? Position: utterances for the log, with the session's own realtime context
    untouched (voice keeps its latency path).
