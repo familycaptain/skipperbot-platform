@@ -54,7 +54,7 @@ def _truthy(v) -> bool:
 def subconscious_enabled() -> bool:
     try:
         from app_platform import settings as _settings
-        return _truthy(_settings.get("consciousness_subconscious", scope="platform", default=False))
+        return _truthy(_settings.get("consciousness_subconscious", scope="platform", default=True))
     except Exception:
         return False
 

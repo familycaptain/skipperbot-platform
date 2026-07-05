@@ -39,7 +39,7 @@ def _consciousness_onboarding_enabled() -> bool:
     produce."""
     try:
         from app_platform import settings as _settings
-        v = _settings.get("consciousness_onboarding", scope="platform", default=False)
+        v = _settings.get("consciousness_onboarding", scope="platform", default=True)
         return v is True or str(v or "").strip().lower() in ("1", "true", "yes", "on")
     except Exception:
         return False

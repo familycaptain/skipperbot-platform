@@ -391,3 +391,32 @@ class Phase4Subconscious(unittest.TestCase):
         src = _read("chat_digest.py")
         self.assertIn("_anchor = cl_inbound_id or turn_id", src)
         self.assertIn("cl_reply_id", src)                 # reply one hop away
+
+
+class Phase5aCutover(unittest.TestCase):
+    """§13 Phase 5a: projection, voice integration, defaults ON."""
+
+    def test_history_projection(self):
+        src = _read("app_platform/context.py")
+        self.assertIn("def history_projection", src)
+        self.assertIn("chat_turns WHERE id = ANY", src)   # tool-call hydration during bake
+        self.assertIn("consciousness_history_enabled", _read("agent.py"))
+
+    def test_voice_utterance_grain_pre_attended(self):
+        src = _read("app_platform/voice/chatlog.py")
+        self.assertIn('pre_attended_by="voice-session"', src)
+        self.assertIn('surface="voice"', src)
+
+    def test_voice_session_start_seeded_from_the_one_mind(self):
+        src = _read("app_platform/voice/prompting.py")
+        self.assertIn("build_voice_timeline_context", src)
+        self.assertIn("RECENT HOUSEHOLD TIMELINE", src)
+        # wired into BOTH instruction builders
+        self.assertEqual(src.count('f"{timeline_context}"'), 2)
+
+    def test_consciousness_is_the_default(self):
+        for f in ("app_platform/context.py", "app_platform/attention.py",
+                  "app_platform/summarizer.py", "apps/chores/handlers.py",
+                  "apps/goals/handlers.py", "apps/goals/pm_domain.py",
+                  "apps/goals/domain.py"):
+            self.assertNotIn('scope="platform", default=False', _read(f), f)

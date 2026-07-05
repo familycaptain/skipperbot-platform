@@ -199,6 +199,7 @@ def build_app_voice_payload(
     app_routing_rules = build_voice_app_routing_rules()
     messaging_rules = build_voice_messaging_rules()
     memory_rules    = build_voice_memory_rules(user_id, device_info)
+    timeline_context = build_voice_timeline_context(user_id)
     tool_ack_rules  = build_voice_tool_ack_rules()
     brevity_rules   = build_voice_brevity_rules()
 
@@ -220,6 +221,7 @@ def build_app_voice_payload(
         "Do not use the open_app tool for voice app switching. Use switch_voice_app instead.\n"
         f"{brevity_rules}"
         f"{time_context}"
+        f"{timeline_context}"
         f"{location_context}"
         f"{device_context}"
         f"{user_context}"
@@ -256,6 +258,7 @@ def build_base_voice_instructions(
     device_info = device_info or {}
     default_categories = default_categories or get_default_categories(device_info)
     personality = load_personality_prompt()
+    timeline_context = build_voice_timeline_context(user_id)
     time_context = build_current_time_context()
     location_context = build_voice_location_context()
     device_context = build_device_context(device_info)
@@ -318,6 +321,7 @@ def build_base_voice_instructions(
         f"{mode}"
         f"{brevity_rules}"
         f"{time_context}"
+        f"{timeline_context}"
         f"{location_context}"
         f"{device_context}"
         f"{user_context}"
@@ -966,3 +970,29 @@ def load_guides(category_names: Iterable[str]) -> str:
         if guide:
             guides.append(guide)
     return "\n\n---\n\n".join(guides)
+
+
+def build_voice_timeline_context(user_id: str) -> str:
+    """Q7 (specs/CONSCIOUSNESS.md §16): a voice call picks up the household
+    conversation, not a cold start — seed the session with the one mind's
+    recent timeline + rolling summaries (compact text form). The realtime
+    session's native history is authoritative DURING the call; this is the
+    context it starts FROM."""
+    try:
+        from app_platform.context import consciousness_chat_enabled, build_chat_timeline
+        if not (user_id and consciousness_chat_enabled()):
+            return ""
+        msgs = build_chat_timeline(user_id, limit=25)
+        if len(msgs) <= 1:
+            return ""
+        lines = []
+        for m in msgs[1:]:  # skip the chat-oriented boundary; voice gets its own framing
+            role = "me" if m["role"] == "assistant" else "them"
+            lines.append(f"  [{role}] {m['content'][:180]}")
+        return (
+            "\n\nRECENT HOUSEHOLD TIMELINE (my memory — the caller only saw "
+            "their own chats; bring context into anything I reference):\n"
+            + "\n".join(lines[-25:]) + "\n"
+        )
+    except Exception:
+        return ""

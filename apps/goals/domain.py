@@ -326,7 +326,7 @@ def _consciousness_goals_enabled() -> bool:
     already stood down via the connection skill, Phase 3a)."""
     try:
         from app_platform import settings as _settings
-        v = _settings.get("consciousness_goals", scope="platform", default=False)
+        v = _settings.get("consciousness_goals", scope="platform", default=True)
         return v is True or str(v or "").strip().lower() in ("1", "true", "yes", "on")
     except Exception:
         return False

@@ -1217,6 +1217,13 @@ async def chat_history(request: Request, limit: int = 20, tz: str = "", channel:
     channel = (channel or "").strip().lower() or None
 
     def _load():
+        # Phase 5a (specs/CONSCIOUSNESS.md §16): under `consciousness_history`
+        # the scrollback is a PROJECTION of the consciousness log (proactive
+        # messages native, message grain); chat_turns remains the fallback and
+        # still hydrates tool-call replay during the double-write bake.
+        from app_platform.context import consciousness_history_enabled, history_projection
+        if consciousness_history_enabled():
+            return history_projection(user_id, limit=limit, channel=channel)
         from data_layer.chatlogs import get_recent_turns
         return get_recent_turns(user_id, limit=limit, channel=channel)
 

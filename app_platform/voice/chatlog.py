@@ -147,6 +147,31 @@ def _persist_voice_turn_sync(
     except Exception as exc:
         logger.error("VOICE_CHATLOG: Failed to save turn %s for %s: %s", turn_id, user_id, exc)
 
+    # Q7 (specs/CONSCIOUSNESS.md §16): voice enters the LOG at utterance grain,
+    # PRE-ATTENDED — the realtime session is the engaged responder ("a live
+    # call IS attention"); these rows are record, never queue, so the chat
+    # skill can never double-reply to spoken words. This is what makes the
+    # dropped-call continuity real: a chat turn mid/after a call sees the
+    # conversation so far.
+    _cl_in = None
+    try:
+        from app_platform.consciousness import shadow_log_event
+        if user_message:
+            _cl_in = shadow_log_event(
+                kind="message", who_from=user_id, who_to="skipper",
+                domain="chat", surface="voice", content=user_message,
+                payload={"chat_turn_id": turn_id},
+                pre_attended_by="voice-session")
+        if assistant_message:
+            shadow_log_event(
+                kind="message", who_from="skipper", who_to=user_id,
+                domain="chat", surface="voice", content=assistant_message,
+                reply_to=(_cl_in or {}).get("id"),
+                payload={"chat_turn_id": turn_id},
+                pre_attended_by="voice-session")
+    except Exception:
+        logger.debug("VOICE_CHATLOG: consciousness shadow skipped", exc_info=True)
+
     try:
         from data_layer.memory_queue import enqueue
 

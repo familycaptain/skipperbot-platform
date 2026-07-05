@@ -79,7 +79,7 @@ def consciousness_chat_enabled() -> bool:
     """Settings flag for Phase 1: chat reads its history from the log."""
     try:
         from app_platform import settings as _settings
-        return _truthy(_settings.get("consciousness_chat", scope="platform", default=False))
+        return _truthy(_settings.get("consciousness_chat", scope="platform", default=True))
     except Exception:
         return False
 
@@ -182,3 +182,108 @@ def build_chat_timeline(person: str, limit: Optional[int] = None,
         if msg:
             out.append(msg)
     return out
+
+
+# ── Phase 5a: the history projection (§16) ───────────────────────────────────
+
+def consciousness_history_enabled() -> bool:
+    """Phase 5a flag: the web scrollback reads the LOG, not chat_turns."""
+    try:
+        from app_platform import settings as _settings
+        return _truthy(_settings.get("consciousness_history", scope="platform", default=True))
+    except Exception:
+        return False
+
+
+def history_projection(person: str, limit: int = 20,
+                       channel: Optional[str] = None) -> list[dict]:
+    """Per-person scrollback as TURN-shaped dicts from the consciousness log.
+
+    Emits the same shape ``data_layer.chatlogs.get_recent_turns`` returns so
+    ``chat_render.render_chat_history`` consumes it unchanged:
+      - an inbound+reply pair → {user_message, assistant_message, tool_calls,
+        timestamp}
+      - a proactive outbound (no inbound parent from this person) → a
+        notification-style turn ({user_message: "[<domain>]", assistant_message})
+    Tool calls are hydrated from chat_turns via payload.chat_turn_id during the
+    double-write bake (no new writes; the legacy row is still authoritative for
+    replay detail).
+    """
+    import json as _json
+    from data_layer.db import fetch_all
+
+    person = (person or "").lower().strip()
+    ch = (channel or "").strip().lower() or None
+
+    # Over-fetch message rows involving this person, oldest→newest.
+    if ch:
+        rows = fetch_all(
+            "SELECT * FROM (SELECT * FROM consciousness_log "
+            "WHERE kind = 'message' AND (who_from = %s OR who_to = %s) "
+            "  AND (surface = %s OR surface IS NULL) "
+            "ORDER BY seq DESC LIMIT %s) t ORDER BY seq ASC",
+            (person, person, ch, limit * 3),
+        )
+    else:
+        rows = fetch_all(
+            "SELECT * FROM (SELECT * FROM consciousness_log "
+            "WHERE kind = 'message' AND (who_from = %s OR who_to = %s) "
+            "ORDER BY seq DESC LIMIT %s) t ORDER BY seq ASC",
+            (person, person, limit * 3),
+        )
+
+    def _p(row):
+        v = row.get("payload")
+        if isinstance(v, dict):
+            return v
+        try:
+            return _json.loads(v) if v else {}
+        except Exception:
+            return {}
+
+    # Pair replies to their inbound; everything else outbound is proactive.
+    turns: list[dict] = []
+    by_id = {r["id"]: r for r in rows}
+    replied: set = set()
+    for r in rows:
+        if r["who_from"] == person:
+            reply = next((x for x in rows
+                          if x["who_from"] == SKIPPER and x.get("reply_to") == r["id"]), None)
+            if reply is not None:
+                replied.add(reply["id"])
+            turns.append({
+                "id": r["id"],
+                "user_message": r["content"] or "",
+                "assistant_message": (reply or {}).get("content") or "",
+                "timestamp": r["created_at"].isoformat() if r.get("created_at") else "",
+                "_ct_id": _p(reply).get("chat_turn_id") if reply else None,
+                "tool_calls": [],
+            })
+    for r in rows:
+        if r["who_from"] == SKIPPER and r["id"] not in replied:
+            parent = by_id.get(r.get("reply_to") or "")
+            if parent is not None and parent.get("who_from") == person:
+                continue  # already folded into its inbound turn
+            turns.append({
+                "id": r["id"],
+                "user_message": f"[{r.get('domain') or 'notification'}]",
+                "assistant_message": r["content"] or "",
+                "timestamp": r["created_at"].isoformat() if r.get("created_at") else "",
+                "_ct_id": None,
+                "tool_calls": [],
+            })
+    turns.sort(key=lambda t: t["timestamp"])
+    turns = turns[-limit:]
+
+    # Hydrate tool_calls from the legacy rows (double-write bake period).
+    ct_ids = [t["_ct_id"] for t in turns if t.get("_ct_id")]
+    if ct_ids:
+        legacy = fetch_all(
+            "SELECT id, tool_calls FROM chat_turns WHERE id = ANY(%s)", (ct_ids,))
+        tc_by_id = {l["id"]: (l.get("tool_calls") or []) for l in legacy}
+        for t in turns:
+            if t.get("_ct_id"):
+                t["tool_calls"] = tc_by_id.get(t["_ct_id"], [])
+    for t in turns:
+        t.pop("_ct_id", None)
+    return turns

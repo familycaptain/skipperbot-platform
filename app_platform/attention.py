@@ -50,7 +50,7 @@ def _truthy(v) -> bool:
 def attention_enabled() -> bool:
     try:
         from app_platform import settings as _settings
-        return _truthy(_settings.get("consciousness_attention", scope="platform", default=False))
+        return _truthy(_settings.get("consciousness_attention", scope="platform", default=True))
     except Exception:
         return False
 

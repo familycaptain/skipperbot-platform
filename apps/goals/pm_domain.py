@@ -472,7 +472,7 @@ def _consciousness_pm_enabled() -> bool:
     conversation gatherer; sends via send_message; routes goal work)."""
     try:
         from app_platform import settings as _settings
-        v = _settings.get("consciousness_pm", scope="platform", default=False)
+        v = _settings.get("consciousness_pm", scope="platform", default=True)
         return v is True or str(v or "").strip().lower() in ("1", "true", "yes", "on")
     except Exception:
         return False

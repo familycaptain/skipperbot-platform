@@ -40,7 +40,7 @@ def _consciousness_chores_enabled() -> bool:
         from app_platform import settings as _settings
         # scope="platform": consciousness flags are PLATFORM-wide (auto-scoping
         # would resolve to app:chores here and read a different key).
-        v = _settings.get("consciousness_chores", scope="platform", default=False)
+        v = _settings.get("consciousness_chores", scope="platform", default=True)
         return v is True or str(v or "").strip().lower() in ("1", "true", "yes", "on")
     except Exception:
         return False
