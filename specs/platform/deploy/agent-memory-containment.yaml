@@ -4,7 +4,7 @@ title: The docker-compose agent service has an env-overridable true-RAM memory c
   runaway-friendly restart policy, and the Pi cgroup-memory prerequisite documented
 state: live
 autonomy: gated
-verified: false
+verified: true
 behavior: >
   The docker-compose `agent` service declares a defensive memory cap + restart policy so a FUTURE
   memory runaway restarts the container rather than OOM-killing the host process (on the Pi 5 that
