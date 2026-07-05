@@ -250,6 +250,33 @@ swapon --show     # expect the dphys swap file (e.g. /var/swap) at 6G
 When done, `swapon --show` lists a `/dev/zram0` (~2 G) **and** a 6 G on-disk swap —
 the target state above.
 
+### 5. Enable the kernel cgroup memory controller (required for the container memory cap)
+
+Skipper's `docker-compose.yml` sets a defensive memory cap (`mem_limit`) on the
+`agent` container so a runaway restarts the container instead of OOM-killing the
+host — which on the Pi 5 has tripped a hardware-watchdog **hard reset**. On
+Raspberry Pi OS the kernel cgroup **memory** controller is **off by default**, and
+without it Docker's `mem_limit` is **silently ignored** (a no-op). Enable it once:
+
+Append `cgroup_enable=memory cgroup_memory=1` to the **single, space-separated**
+line in `/boot/firmware/cmdline.txt` (it must stay **one line — no newline**):
+
+```bash
+# Appends to the existing single line in-place (does NOT add a new line):
+sudo sed -i 's/$/ cgroup_enable=memory cgroup_memory=1/' /boot/firmware/cmdline.txt
+sudo reboot
+```
+
+After the reboot, verify the controller is active:
+
+```bash
+cat /proc/cgroups | grep memory     # the 'enabled' (last) column should read 1
+docker info | grep -i memory        # should NOT print "No memory limit support"
+```
+
+If `docker info` still warns "No memory limit support", the flags didn't take —
+re-check that they're on the same single line in `cmdline.txt` and reboot again.
+
 ---
 
 ## Basic hardening

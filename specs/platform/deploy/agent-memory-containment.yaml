@@ -1,0 +1,53 @@
+kind: specification
+id: platform.deploy.agent-memory-containment
+title: The docker-compose agent service has an env-overridable true-RAM memory cap, a
+  runaway-friendly restart policy, and the Pi cgroup-memory prerequisite documented
+state: live
+autonomy: gated
+verified: false
+behavior: >
+  The docker-compose `agent` service declares a defensive memory cap + restart policy so a FUTURE
+  memory runaway restarts the container rather than OOM-killing the host process (on the Pi 5 that
+  tripped a hardware-watchdog hard reset). Specifically: (1) `mem_limit: ${AGENT_MEM_LIMIT:-6g}` on
+  the agent service — an env-interpolated cap (default 6g; baseline RSS ~4.7GB) that is overridable
+  WITHOUT editing the tracked compose file (production runs a hand-set cap, so a hardcoded value would
+  clobber it on update). (1a) `memswap_limit: ${AGENT_MEM_LIMIT:-6g}` == mem_limit, making the cap a
+  TRUE RAM ceiling — without it Docker defaults the swap limit to 2x mem_limit and a runaway would
+  thrash the Pi's swap (6GB on-disk + 2GB zram) before the cgroup OOM-kills it, which can hang the host.
+  (2) `restart: unless-stopped` (replacing `restart: always`) — a runaway is auto-restarted, but a
+  deliberate `docker stop` is respected. (3) `environment: MALLOC_ARENA_MAX=2` — glibc retains fewer
+  heap arenas, less RSS under allocation churn. (4) Because Docker's mem_limit is only ENFORCED on
+  Raspberry Pi OS once the kernel cgroup memory controller is enabled, the change is self-consistent
+  (not a silent no-op): docs/00-pi-hardware-and-setup.md gains a step to enable the controller — append
+  `cgroup_enable=memory cgroup_memory=1` to the single space-separated line in
+  /boot/firmware/cmdline.txt (no newline), reboot, verify via `cat /proc/cgroups | grep memory`
+  (enabled column reads 1) or `docker info | grep -i memory` (no "No memory limit support" warning);
+  and (5) a compose comment on the agent service points to that prerequisite. This folds companion
+  issue #97. Only the `agent` service is capped (db untouched); no application code changes.
+implements:
+- 'docker-compose.yml (services.agent): mem_limit + memswap_limit ${AGENT_MEM_LIMIT:-6g}; restart:
+  unless-stopped; MALLOC_ARENA_MAX=2 in environment; a comment noting the cmdline.txt cgroup prerequisite.'
+- 'docs/00-pi-hardware-and-setup.md: cgroup-memory enablement step (cmdline.txt single-line append +
+  reboot + verification), placed after the swap section (folds #97).'
+tests:
+- type: unit
+  path: tests/evolve/deploy/test_agent_memory_containment.py
+  rubric: >
+    Deterministic file-parse (yaml.safe_load docker-compose.yml, no container run): services.agent
+    mem_limit == '${AGENT_MEM_LIMIT:-6g}' AND memswap_limit == the same (true RAM ceiling, env-overridable);
+    restart == 'unless-stopped'; environment MALLOC_ARENA_MAX == '2'; a compose comment references the
+    cgroup prerequisite; docs/00-pi-hardware-and-setup.md contains cgroup_enable=memory, cgroup_memory=1,
+    and cmdline.txt; the db service is NOT capped.
+- type: e2e
+  path: (test host, validate-time)
+  rubric: >
+    On the test host (x86 Docker, cgroup memory enabled by default): deploy the branch and
+    `docker inspect` the agent container — HostConfig.Memory == 6442450944 (6g) and
+    HostConfig.MemorySwap == 6442450944 (== memory, true RAM ceiling); container is healthy.
+links: {}
+notes: >
+  Issue #96 (operator-authored). Gate-1 constraint applied: the cap uses compose env interpolation
+  (${AGENT_MEM_LIMIT:-6g}), NOT a hardcoded 6g, so prod's hand-set 10g cap is not clobbered on update.
+  Folds companion docs issue #97 (cmdline.txt cgroup prerequisite). Defensive containment independent
+  of the underlying leak fix (gmail_client truststore churn, already fixed on main d4b271b). verified
+  set true after the Gate-2 docker-inspect oracle on the test host.
