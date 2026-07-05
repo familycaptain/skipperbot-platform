@@ -1,9 +1,8 @@
 # Skipper — Single-Consciousness Architecture
 
-> **Status: design draft, grounded.** This organizes the problem and a proposed direction,
-> now mapped onto the current code (§10). It supersedes/reconciles `THINKING.md`, and touches
-> `ONBOARDING.md` and `PROACTIVE_MESSAGING.md`. Grounded against branch `release`; note the
-> production Pi runs `main` (older), so a few legacy paths differ there.
+> **Status: DESIGN COMPLETE — operator-reviewed; all ten §18 questions RESOLVED.** Grounded
+> against branch `release` (§10); supersedes/reconciles `THINKING.md`, touches `ONBOARDING.md`
+> and `PROACTIVE_MESSAGING.md`. Build begins at §13 Phase 0 on operator go.
 
 ## Thesis
 
@@ -239,10 +238,11 @@ mechanics → §15 + §18 Q1; in-flight reconciliation → §17. The live list i
 
 ## 9. Next Step
 
-Design fully drafted: grounding (§10), log schema/keys/migration (§11), `assemble_context` (§12),
-build order (§13), skills (§14), attention loop (§15), surfaces (§16), in-flight reconciliation
-(§17). Now in **operator review**: open questions are consolidated in §18 and get settled one
-discussion at a time, amending this doc as each lands.
+Design complete and operator-reviewed — all ten §18 questions resolved (Q1 laned concurrency,
+Q2 chores-first, Q3 registry split, Q4 native-turn timeline, Q5 summary cadence, Q6
+artifact-triggered subconscious rows, Q7 voice as delegated live attention, Q8 three layers +
+goal_work + focus overlays, Q9 two-budget model, Q10 delete `self`). **Next: §13 Phase 0, on
+operator go.**
 
 ---
 
@@ -747,7 +747,7 @@ flag; prod promotes only at phase boundaries. Legacy paths keep working until §
   period; notifications app reduced to pure transport.
 - Delete the retired plumbing (sessions dict, PM conversation gatherer, greet-once machinery,
   notification→chat_turns double-write, per-domain prompt builders); drop the legacy
-  `thinking_domains` observe/evaluate/act_tool columns (+ optional cosmetic rename to `alarms`).
+  `thinking_domains` observe/evaluate/act_tool columns (+ optional cosmetic rename to `alarms`); delete the dead `self` domain row (seed + prod).
 - Prod promotion + a new baseline tag (`consciousness-v1`).
 
 ---
@@ -962,5 +962,8 @@ skill = {
    are placeholders until a measurement pass token-counts every tool guide / category schema /
    static prompt (Phase 1 prerequisite). See §12.7.
 
-10. **What happens to `self` domain** (disabled today) — a future "reflection" conscious skill or
-    delete? Position: delete now, redesign later if wanted.
+10. **`self` domain — RESOLVED (operator).** Delete the dead row (disabled, no handler ever
+    registered) — seed + prod — in Phase 5 demolition. If reflection is ever wanted, the new
+    architecture offers a better home (a voice-layer skill reading its own timeline/`activity`
+    history, complementing — not duplicating — Evolve as the self-improvement channel). Design
+    later if desired; carry no corpse now.
