@@ -984,13 +984,16 @@ def _build_user_prompt(ctx: dict) -> str:
     # Real household roster — so DMs address actual users by name (never a
     # placeholder). Always use a real username; default to the primary user.
     try:
-        from data_layer.users import get_human_users, get_primary_user
+        from data_layer.users import get_human_users, get_primary_user, display_name_for
         _humans = [u["name"] for u in get_human_users() if u.get("name") != "skipper"]
         _primary = (get_primary_user() or "").strip().lower()
         if _humans:
-            _roster = ", ".join(f"{h} (primary)" if h == _primary else h for h in _humans)
-            parts.append(f"**Household users (DM only these real usernames):** {_roster}")
-            parts.append("When you DM, use one of these exact usernames — default to the primary user. Never invent or use placeholder/example names.\n")
+            _roster = ", ".join(
+                f"{display_name_for(h)} (username `{h}`" + (", primary)" if h == _primary else ")")
+                for h in _humans
+            )
+            parts.append(f"**Household (address by name in prose; DM by username):** {_roster}")
+            parts.append("Address people by their display name in what you say/write; when you DM, use their exact username above — default to the primary user. Never invent or use placeholder/example names.\n")
     except Exception:
         pass
 
