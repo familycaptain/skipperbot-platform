@@ -99,8 +99,8 @@ def search_memories(
         # fetch_all_vector bumps ivfflat.probes so the cosine search hits
         # every list — see data_layer/db.py for why this matters.
         from data_layer.db import fetch_all_vector
-        rows = fetch_all_vector("""
-            SELECT *, 1 - (embedding <=> %s::vector) AS cosine_sim
+        rows = fetch_all_vector(f"""
+            SELECT {_ROW_COLUMNS}, 1 - (embedding <=> %s::vector) AS cosine_sim
             FROM memories
             WHERE embedding IS NOT NULL
             ORDER BY embedding <=> %s::vector
@@ -109,7 +109,8 @@ def search_memories(
     else:
         # No embedding — fall back to tag/entity filtering
         rows = fetch_all(
-            "SELECT *, 0.0 AS cosine_sim FROM memories ORDER BY created_at DESC LIMIT %s",
+            f"SELECT {_ROW_COLUMNS}, 0.0 AS cosine_sim FROM memories "
+            "ORDER BY created_at DESC LIMIT %s",
             (max_results * 5,),
         )
 
@@ -178,9 +179,19 @@ def delete_memory(memory_id: str) -> bool:
 # Bulk read (for backfill, stats, etc.)
 # ---------------------------------------------------------------------------
 
+# The columns _row_to_dict consumes. NEVER "SELECT *" on memories: * includes
+# the embedding vector (~19KB of text per row), so an unbounded fetch
+# materializes GIGABYTES client-side for data the caller throws away. This
+# exact mistake OOM-killed the production agent roughly every other hour —
+# the document domain calls load_all() at every cycle start, a multi-GB
+# seconds-long transient that never showed in docker stats.
+_ROW_COLUMNS = ("id, content, tags, about, saved_by, related_entities, "
+                "source_chat_id, created_at")
+
+
 def load_all() -> list[dict]:
-    """Load all memories (no embeddings in the returned dicts)."""
-    rows = fetch_all("SELECT * FROM memories ORDER BY created_at")
+    """Load all memories (no embeddings fetched OR returned)."""
+    rows = fetch_all(f"SELECT {_ROW_COLUMNS} FROM memories ORDER BY created_at")
     return [_row_to_dict(r) for r in rows]
 
 
@@ -198,14 +209,14 @@ def list_recent_memories(user_id: str = "", limit: int = 50) -> list[dict]:
     user = (user_id or "").strip().lower()
     if user:
         rows = fetch_all(
-            "SELECT * FROM memories "
+            f"SELECT {_ROW_COLUMNS} FROM memories "
             "WHERE about = %s OR about IS NULL OR about = '' "
             "ORDER BY created_at DESC LIMIT %s",
             (user, limit),
         )
     else:
         rows = fetch_all(
-            "SELECT * FROM memories ORDER BY created_at DESC LIMIT %s",
+            f"SELECT {_ROW_COLUMNS} FROM memories ORDER BY created_at DESC LIMIT %s",
             (limit,),
         )
     return [_row_to_dict(r) for r in rows]
