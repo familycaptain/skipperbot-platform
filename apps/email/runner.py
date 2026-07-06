@@ -144,9 +144,11 @@ def _process_account(account: dict, ctx=None) -> tuple[int, int]:
         if matched_rule:
             matched += 1
 
-    # Re-evaluate previously unmatched emails against current rules
+    # Re-evaluate previously unmatched emails against current rules — but ONLY when the rule
+    # set has changed (a rule created/edited/enabled) or a bounded drain is already in flight.
+    # A routine unchanged-rules poll does NO backlog scan and NO per-email label API calls (ev-98).
     if active_rules and not (ctx and ctx.is_cancelled()):
-        rematched = _reprocess_unmatched(credentials, account_id, active_rules, label_cache, label_map, ctx)
+        rematched = _reprocess_unmatched(credentials, account, active_rules, label_cache, label_map, ctx)
         matched += rematched
 
     # Persist refreshed OAuth token so the next sync starts with a valid token
@@ -162,21 +164,93 @@ def _process_account(account: dict, ctx=None) -> tuple[int, int]:
     return processed, matched
 
 
-def _reprocess_unmatched(credentials: dict, account_id: str,
+# ev-98: cap the per-poll re-eval drain so no single sync does a multi-minute backlog scan.
+_REEVAL_BATCH_LIMIT = 200
+
+
+def _as_dt(v):
+    """Normalize a TIMESTAMPTZ value that may arrive as a datetime (raw account row) or an
+    ISO string (_row-serialized log entry) into a datetime, so keyset comparisons and
+    persisted snapshot/cursor values stay consistent regardless of the source (ev-98)."""
+    if v is None or isinstance(v, datetime):
+        return v
+    from dateutil.parser import parse as _dtparse
+    return _dtparse(v)
+
+
+def _reprocess_unmatched(credentials: dict, account: dict,
                          rules: list[dict], label_cache: dict, label_map: dict = None,
                          ctx=None) -> int:
-    """Re-evaluate previously unmatched log entries against current rules.
+    """Re-evaluate previously-unmatched log entries against current rules — GATED + BOUNDED.
 
-    This allows newly created rules to apply to emails that were already
-    processed but had no matching rule at the time.
+    A routine poll with UNCHANGED rules does nothing here (no backlog query, no label API
+    calls) — the ev-98 fix. A re-eval "drain" runs only when an active rule was created /
+    edited / enabled since the account's last_reeval_at watermark (or a drain is already in
+    flight). Each drain is bounded to a trigger-time SNAPSHOT of the unmatched backlog (a
+    frozen (received_at, id) upper bound) and processes at most _REEVAL_BATCH_LIMIT entries
+    per poll, newest-first, advancing a persisted cursor across polls until that frozen set is
+    drained. last_reeval_at advances to the watermark CAPTURED AT DRAIN START only on full
+    drain — so a rule changed mid-drain (updated_at > that captured watermark) reliably
+    re-triggers its own exactly-once drain on a later poll, and emails arriving mid-drain sit
+    above the frozen upper bound and are not chased.
     """
-    unmatched = dl_email.get_unmatched_log_entries(account_id)
-    if not unmatched:
-        logger.info("EMAIL: No unmatched log entries to re-evaluate for account %s", account_id)
+    account_id = account["id"]
+
+    # --- (1) TRIGGER: has any active rule changed since the last full re-eval? ---
+    trig = dl_email.get_reeval_trigger(account_id)  # datetimes, DB clock (same as updated_at)
+    last_reeval_at = trig.get("last_reeval_at")
+    max_rule_change = trig.get("max_rule_change")
+
+    # In-flight drain? (an upper bound captured on a prior poll and not yet cleared.)
+    ub_at = _as_dt(account.get("reeval_upper_bound_at"))
+    ub_id = account.get("reeval_upper_bound_id")
+    in_flight = ub_at is not None and ub_id is not None
+    target_watermark = _as_dt(account.get("reeval_target_watermark"))
+    cur_at = _as_dt(account.get("reeval_cursor_at"))
+    cur_id = account.get("reeval_cursor_id")
+
+    # NULL-safe trigger: COALESCE(max_rule_change) > COALESCE(last_reeval_at, -infinity).
+    triggered = (max_rule_change is not None and
+                 (last_reeval_at is None or max_rule_change > last_reeval_at))
+
+    if not triggered and not in_flight:
+        # Common case: unchanged rules, no drain running -> do NOTHING (the ev-98 fix).
         return 0
 
-    logger.info("EMAIL: Re-evaluating %d unmatched emails against %d rules for account %s",
-                len(unmatched), len(rules), account_id)
+    # --- (2) SNAPSHOT AT DRAIN START (only when starting a brand-new drain) ---
+    if not in_flight:
+        target_watermark = max_rule_change  # DB-sourced, captured now, never re-read at end
+        newest = dl_email.get_unmatched_log_entries(account_id, limit=1)
+        if not newest:
+            # Nothing unmatched to drain — record the watermark so we don't re-trigger. Done.
+            dl_email.update_account(
+                account_id, last_reeval_at=target_watermark,
+                reeval_target_watermark=None,
+                reeval_upper_bound_at=None, reeval_upper_bound_id=None,
+                reeval_cursor_at=None, reeval_cursor_id=None,
+            )
+            logger.info("EMAIL: Re-eval triggered but no unmatched backlog for account %s — watermark advanced", account_id)
+            return 0
+        ub_at = _as_dt(newest[0]["received_at"])
+        ub_id = newest[0]["id"]
+        cur_at, cur_id = None, None
+        # Persist the frozen snapshot BEFORE processing so a crash mid-drain resumes bounded.
+        dl_email.update_account(
+            account_id, reeval_target_watermark=target_watermark,
+            reeval_upper_bound_at=ub_at, reeval_upper_bound_id=ub_id,
+            reeval_cursor_at=None, reeval_cursor_id=None,
+        )
+        logger.info("EMAIL: Re-eval drain START for account %s (upper bound %s/%s, watermark %s)",
+                    account_id, ub_at, ub_id, target_watermark)
+
+    # --- (3) BOUNDED DRAIN: at most _REEVAL_BATCH_LIMIT entries this poll, newest-first ---
+    before_cursor = (cur_at, cur_id) if (cur_at is not None and cur_id is not None) else None
+    batch = dl_email.get_unmatched_log_entries(
+        account_id, limit=_REEVAL_BATCH_LIMIT,
+        upper_bound=(ub_at, ub_id), before_cursor=before_cursor,
+    )
+    logger.info("EMAIL: Re-eval drain for account %s — %d entries this pass (<=%d) against %d rules",
+                account_id, len(batch), _REEVAL_BATCH_LIMIT, len(rules))
 
     # Check if any rule uses label-based conditions (avoid extra API calls if not needed)
     needs_labels = any(
@@ -185,9 +259,12 @@ def _reprocess_unmatched(credentials: dict, account_id: str,
     )
 
     rematched = 0
-    for entry in unmatched:
+    last_processed = None
+    cancelled = False
+    for entry in batch:
         if ctx and ctx.is_cancelled():
-            logger.info("EMAIL: Shutdown/cancel detected — stopping re-evaluation for account %s", account_id)
+            logger.info("EMAIL: Shutdown/cancel detected — pausing re-eval drain for account %s (cursor persisted)", account_id)
+            cancelled = True
             break
 
         # Build a minimal message dict from the log entry
@@ -211,6 +288,28 @@ def _reprocess_unmatched(credentials: dict, account_id: str,
             rematched += 1
             logger.info("EMAIL: Re-matched '%s' from '%s' → rule %s",
                         msg.get("subject", "")[:50], msg.get("sender", "")[:50], matched_rule)
+
+        last_processed = entry  # processed (matched or not) — the cursor must advance past it
+
+    # Advance the persisted cursor to the last (oldest, since newest-first) entry processed.
+    if last_processed is not None:
+        dl_email.update_account(
+            account_id,
+            reeval_cursor_at=_as_dt(last_processed["received_at"]),
+            reeval_cursor_id=last_processed["id"],
+        )
+
+    # --- (4) FULL-DRAIN DETECTION: a short batch (and no cancel) means the frozen set is
+    # exhausted. ONLY THEN advance last_reeval_at to the CAPTURED watermark + clear the drain. ---
+    if not cancelled and len(batch) < _REEVAL_BATCH_LIMIT:
+        dl_email.update_account(
+            account_id, last_reeval_at=target_watermark,
+            reeval_target_watermark=None,
+            reeval_upper_bound_at=None, reeval_upper_bound_id=None,
+            reeval_cursor_at=None, reeval_cursor_id=None,
+        )
+        logger.info("EMAIL: Re-eval drain COMPLETE for account %s — watermark advanced to %s",
+                    account_id, target_watermark)
 
     if rematched:
         logger.info("EMAIL: Re-matched %d previously unmatched emails for account %s",
