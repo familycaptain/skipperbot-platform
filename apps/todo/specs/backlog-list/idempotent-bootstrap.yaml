@@ -1,0 +1,53 @@
+kind: specification
+id: todo.backlog-list.idempotent-bootstrap
+title: To-Do Backlog list is auto-created + connected per user, idempotently and gated on a
+  backlog_bootstrapped flag (mirrors the #62 default-list bootstrap)
+state: live
+autonomy: gated
+verified: false
+behavior: >
+  ensure_backlog_list is an atomic get-or-create mirroring #62's default-list bootstrap, but for
+  backlog_list_id and GATED on a new todo_config.backlog_bootstrapped flag. Fast path (no lock, no
+  writes): the config points at a live Backlog list, OR the user deliberately disconnected their
+  backlog after a prior bootstrap (backlog_bootstrapped true, id empty) — respected, not
+  re-provisioned. On a miss, data.claim_backlog_list serializes bootstrappers with a per-user
+  pg_advisory_xact_lock keyed on hashtext('todo-backlog:'||user_id) over a BOUND param — DISTINCT
+  from the default-list key so the two bootstraps never serialize against each other — so N concurrent
+  callers create EXACTLY ONE "<display-name>'s Backlog" list: the winner creates it, connects
+  backlog_list_id, and flips backlog_bootstrapped true under the lock; losers reuse. Auto-create fires
+  only while the flag is false, so an existing user whose backlog was never set is backfilled once, and a
+  deliberate disconnect is honored thereafter. The bootstrap is wired ONLY at backlog-consuming sites —
+  GET /api/apps/todo/config, POST /api/apps/todo/items with list_type='backlog', and the get_backlog_list
+  chat tool — NOT at GET /items or the default-list tools. A failed Lists create rolls back (lock released,
+  pointer stays empty, retryable; the board degrades to single-column rather than 500-crashing). The
+  cross-app Lists calls are injected so apps/todo/data.py imports nothing from apps.lists (one-directional
+  dep, mirroring claim_default_list). Get-or-create keys on backlog_list_id (not list name), so a user who
+  manually created but never connected a same-named list would get a second one on backfill (acceptable).
+  After first open a fresh user has BOTH a default and a Backlog list connected, and get_backlog_list no
+  longer replies "you don't have a backlog list set up yet".
+implements:
+- apps/todo/data.py (claim_backlog_list; backlog_bootstrapped in the config allowed/serialized fields)
+- apps/todo/store.py (ensure_backlog_list — fast path + claim, injects Lists create/get)
+- apps/todo/migrations/003_backlog_bootstrapped.sql (idempotent ADD COLUMN backlog_bootstrapped DEFAULT false)
+- agent.py (ensure_backlog_list wired at /config and /items list_type='backlog'; injected into dl_todo)
+- apps/todo/tools.py (get_backlog_list bootstraps the backlog before reading)
+tests:
+- type: unit
+  path: tests/evolve/todo/test_backlog_bootstrap.py
+  rubric: >
+    Runs against the real app_todo schema (advisory lock + todo_config) with the Lists create/get
+    injected as counting fakes and a throwaway user (cleaned up): (a) claim_backlog_list called twice ->
+    the list is created EXACTLY ONCE and both configs share the backlog_list_id, backlog_bootstrapped
+    true; (b) after a deliberate disconnect (backlog_list_id cleared, flag kept true) a further call does
+    NOT re-create; (c) the advisory-lock key contains 'todo-backlog:' and not 'todo-default:'.
+- type: e2e
+  path: (test host, screenshots)
+  rubric: >
+    Fresh install: provision a NEW user, hit a backlog surface -> GET /config returns a non-empty
+    backlog_list_id + backlog_list_name; the To-Do board renders the two-column To-Do + Backlog layout.
+links: {}
+notes: >
+  Issue #84 (operator-authored). Gate-1 forks: Option A — add todo_config.backlog_bootstrapped so a
+  deliberate disconnect is respected (auto-create only while false; existing users backfill once);
+  name "<Name>'s Backlog" for parity with "<Name>'s To-Do"; existing users backfill idempotently on
+  next access (mirroring #62). Migration renumbered 003 to avoid colliding with #62's 002_dedupe.

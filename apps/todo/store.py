@@ -128,3 +128,28 @@ def ensure_default_list(user_id: str, display_name: str = "") -> dict:
     from apps.lists.store import create_list
     name = f"{display_name or user_id.title()}'s To-Do"
     return _dl_todo.claim_default_list(user_id, create_list, get_list, name)
+
+
+def ensure_backlog_list(user_id: str, display_name: str = "") -> dict:
+    """Ensure the user has a Backlog list (the optional second To-Do list).
+
+    Mirrors :func:`ensure_default_list` / the #62 default-list bootstrap, but for
+    ``backlog_list_id``. Fast path (no lock, no writes): the config already
+    points at a live backlog list, OR the user DELIBERATELY disconnected their
+    backlog after a prior bootstrap (``backlog_bootstrapped`` true, id empty) —
+    which is respected, not re-provisioned. Otherwise bootstrap atomically via
+    ``claim_backlog_list`` (per-user advisory lock, exactly-once).
+    """
+    from apps.lists.data import get_list
+
+    cfg = _dl_todo.get_config(user_id)
+    if cfg:
+        if cfg["backlog_list_id"] and get_list(cfg["backlog_list_id"]):
+            return cfg
+        # Respect a deliberate disconnect without taking the advisory lock.
+        if cfg.get("backlog_bootstrapped") and not cfg["backlog_list_id"]:
+            return cfg
+
+    from apps.lists.store import create_list
+    name = f"{display_name or user_id.title()}'s Backlog"
+    return _dl_todo.claim_backlog_list(user_id, create_list, get_list, name)
