@@ -14,7 +14,9 @@ The JSON is parsed and credentials are built via
 
 import json
 import base64
+import hashlib
 import logging
+import threading
 from datetime import datetime, timezone
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -29,6 +31,31 @@ SCOPES = [
     "https://www.googleapis.com/auth/gmail.modify",
     "https://www.googleapis.com/auth/gmail.send",
 ]
+
+# Build the Gmail service ONCE per identity and reuse it, so its httplib2/SSL
+# transport (and thus the discovery doc + OS trust store) load once per identity
+# rather than on every on-demand send — the per-call heap churn behind the OOM.
+# Mirrors apps/email/gmail_client.py's cache. Service account: google-auth
+# refreshes the token IN PLACE on the cached creds, so no token mirror-back /
+# invalidate path is needed. Only a SUCCESSFULLY built service is cached.
+_service_cache: dict[str, object] = {}
+_service_cache_lock = threading.Lock()
+
+
+def _service_cache_key(raw: str, impersonate_email: str, scopes: list[str], api: str) -> str:
+    """Stable digest of the identity. The SA JSON is a SECRET — hashed into the
+    key, never logged or stored in the clear. Any config change rotates the key."""
+    h = hashlib.sha256()
+    for part in (raw, impersonate_email, "\x00".join(sorted(scopes)), api):
+        h.update(part.encode("utf-8"))
+        h.update(b"\x00")
+    return h.hexdigest()
+
+
+def _reset_service_cache() -> None:
+    """Clear the built-service cache (used by tests)."""
+    with _service_cache_lock:
+        _service_cache.clear()
 
 
 def _build_service():
@@ -59,9 +86,19 @@ def _build_service():
             f"SKIPPER_GMAIL: gdrive_service_account_json is not valid JSON: {e}"
         )
 
+    key = _service_cache_key(str(raw), impersonate_email, SCOPES, "gmail")
+    with _service_cache_lock:
+        cached = _service_cache.get(key)
+    if cached is not None:
+        return cached
+
     creds = Credentials.from_service_account_info(info, scopes=SCOPES)
     creds = creds.with_subject(impersonate_email)
-    return build("gmail", "v1", credentials=creds, cache_discovery=False)
+    service = build("gmail", "v1", credentials=creds, cache_discovery=False)
+    # Store only after a successful build so an exception never poisons the cache.
+    with _service_cache_lock:
+        _service_cache[key] = service
+    return service
 
 
 def get_skipper_email() -> str:

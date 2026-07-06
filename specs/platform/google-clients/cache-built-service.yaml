@@ -1,0 +1,58 @@
+kind: specification
+id: platform.google-clients.cache-built-service
+title: gdrive.py and skipper_gmail.py cache the built googleapiclient service per identity (once,
+  reused) — no per-call rebuild / trust-store storm
+state: live
+autonomy: gated
+verified: false
+behavior: >
+  The two remaining sites that rebuilt a googleapiclient service on EVERY call — apps/backups/gdrive.py
+  ::_build_service (build('drive','v3') per upload) and skipper_gmail.py::_build_service
+  (build('gmail','v1') per on-demand send) — instead build the service ONCE per identity and REUSE it,
+  mirroring apps/email/gmail_client.py's per-account cache. Reusing the service reuses its httplib2/SSL
+  transport, so the discovery doc + OS trust store load once per identity, not per call (the per-call
+  heap churn that staircased RSS to OOM). Rules: (1) Each site has a module-level cache dict + a
+  threading.Lock; _build_service does get-or-build under the lock (hit -> return cached; miss -> build,
+  store, return). (2) Both use a SERVICE ACCOUNT (Credentials.from_service_account_info(...)
+  .with_subject(email)); google-auth refreshes the token IN PLACE on the cached creds, so a cached
+  service keeps working across expiry and NO token mirror-back / invalidate path is needed (unlike the
+  OAuth reference). (3) CACHE KEY = sha256 digest of (SA-json, impersonate_email, sorted(scopes),
+  api_name); the SA JSON is a SECRET — hashed into the key, NEVER logged or stored in the clear; any
+  config change (re-pasted SA JSON, changed impersonate/scopes) rotates the key so a stale service is
+  never served. (4) Existing guards are preserved and fire BEFORE any cache work: gdrive's
+  enabled/misconfigured -> None; skipper_gmail's RuntimeError on missing config; lazy imports stay. (5)
+  Only a SUCCESSFULLY built service is cached — a build/creds exception PROPAGATES and is NOT stored, so
+  the cache is never poisoned and the next call retries. A _reset_service_cache() helper clears the cache
+  (tests). (6) The DEAD legacy pair is DELETED — root gmail_client.py and email_runner.py (a closed dead
+  island: email_runner imports root gmail_client, and nothing imports email_runner; both docstringed
+  'no longer imported, safe to delete') — after re-confirming zero tree-wide references by any means.
+  apps/email/gmail_client.py (the reference) is unchanged; no credential/auth model change. Distinct from
+  #98 (email re-eval frequency).
+implements:
+- 'apps/backups/gdrive.py: module-level _service_cache + _service_cache_lock + _service_cache_key
+  (sha256) + _reset_service_cache; _build_service get-or-build keyed on (SA-json, impersonate, scopes,
+  drive); guards + lazy imports kept; cache only the successful build.'
+- 'skipper_gmail.py: same pattern keyed on (SA-json, skipper_email, scopes, gmail); RuntimeError guards kept.'
+- 'DELETE root gmail_client.py and email_runner.py (confirmed dead island; zero references re-checked at build).'
+tests:
+- type: unit
+  path: tests/evolve/platform/test_google_client_cache.py
+  rubric: >
+    Deterministic, DB-free (monkeypatch app_platform.settings.get, the config seam, Credentials
+    .from_service_account_info, and googleapiclient build to a call-counter): (a) gdrive _build_service
+    called twice with the same config -> build() runs ONCE and the same service object is returned; (b) a
+    changed SA JSON -> build() runs again (key rotated); (c) a build failure is NOT cached (two failing
+    calls -> two build attempts, cache empty); (d) skipper_gmail _build_service twice -> build() once.
+- type: e2e
+  path: (test host, validate-time)
+  rubric: >
+    On the test host, import the modules and assert the caches + reset helpers exist and the deleted
+    files are gone; confirm the package imports cleanly (no reference to the removed root gmail_client/
+    email_runner). Full Drive/Gmail round-trips need real Google creds (not available); the unit oracle
+    covers reuse.
+links: {}
+notes: >
+  Issue #99 (operator-authored). Gate-1 fork: per-file module-level caches mirroring the proven
+  apps/email/gmail_client.py reference (no shared app_platform helper now); cache only a successful build;
+  hashed cache key (SA JSON is a secret); delete the dead root gmail_client.py/email_runner.py pair after
+  a no-references check; per-test cache reset. Distinct from #98.

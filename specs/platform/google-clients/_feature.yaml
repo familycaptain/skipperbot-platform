@@ -1,0 +1,8 @@
+kind: feature
+id: platform.google-clients
+title: Google API clients — service construction + caching
+state: live
+links: {}
+notes: Cross-cutting construction of googleapiclient services (Drive, Gmail) via service-account
+  delegation. The per-identity built-service cache that keeps the SSL transport / discovery doc /
+  trust store from reloading per call lives here.
