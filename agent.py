@@ -3143,6 +3143,7 @@ dl_todo = _SimpleNamespace(
     upsert_config       = _dl_todo_data.upsert_config,
     get_all_configs     = _dl_todo_data.get_all_configs,
     ensure_default_list = _dl_todo_store.ensure_default_list,
+    ensure_backlog_list = _dl_todo_store.ensure_backlog_list,
     get_todo_items      = _dl_todo_store.get_todo_items,
     get_backlog_items   = _dl_todo_store.get_backlog_items,
 )
@@ -3155,7 +3156,10 @@ async def api_get_todo_config(request: Request, user_id: str = ""):
     if not user_id:
         raise HTTPException(status_code=400, detail="user_id required")
     def _fetch():
-        return dl_todo.ensure_default_list(user_id)
+        # Bootstrap BOTH the default and Backlog lists on first open (#62 + ev-84).
+        # ensure_backlog_list re-reads the config, so its return carries both pointers.
+        dl_todo.ensure_default_list(user_id)
+        return dl_todo.ensure_backlog_list(user_id)
     cfg = await asyncio.to_thread(_fetch)
     # Also fetch the list name
     def _list_names():
@@ -3246,12 +3250,14 @@ async def api_add_todo_item(req: AddTodoItemBacklogRequest, request: Request):
     if not req.user_id or not req.text.strip():
         raise HTTPException(status_code=400, detail="user_id and text required")
     def _do():
-        cfg = dl_todo.ensure_default_list(req.user_id)
         if req.list_type == "backlog":
+            # Backlog surface: bootstrap the Backlog list on demand (ev-84).
+            cfg = dl_todo.ensure_backlog_list(req.user_id)
             list_id = cfg.get("backlog_list_id")
             if not list_id:
-                return None
+                return None  # deliberately-disconnected backlog: nothing to add to
         else:
+            cfg = dl_todo.ensure_default_list(req.user_id)
             list_id = cfg["default_list_id"]
         # Use apps.lists.store.add_item for Trello write-through
         result = _add_list_item(list_id, req.text.strip(), req.user_id, position=0)

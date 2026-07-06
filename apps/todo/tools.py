@@ -30,7 +30,12 @@ from app_platform.memory import digest_record
 from apps.lists.data import archive_item, get_list
 from apps.lists.store import add_item as _add_item
 from apps.todo.data import get_config
-from apps.todo.store import ensure_default_list, get_todo_items, get_backlog_items
+from apps.todo.store import (
+    ensure_default_list,
+    ensure_backlog_list,
+    get_todo_items,
+    get_backlog_items,
+)
 
 
 def get_todo_list(user_id: str) -> str:
@@ -101,6 +106,9 @@ def get_backlog_list(user_id: str) -> str:
         if not user_id or not user_id.strip():
             return "Error: user_id is required."
         uid = user_id.strip().lower()
+        # Bootstrap the Backlog list on demand (ev-84) — mirrors get_todo_list's
+        # ensure_default_list. A deliberately-disconnected backlog stays absent.
+        ensure_backlog_list(uid)
         result = get_backlog_items(uid)
         if not result:
             return ("You don't have a backlog list set up yet — it's an optional second to-do "

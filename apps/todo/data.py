@@ -57,7 +57,7 @@ def get_config(user_id: str) -> dict | None:
 def upsert_config(user_id: str, **kwargs) -> dict:
     """Create or update to-do config.  Only supplied kwargs are updated."""
     allowed = {
-        "default_list_id", "backlog_list_id", "nudge_enabled",
+        "default_list_id", "backlog_list_id", "backlog_bootstrapped", "nudge_enabled",
         "nudge_day", "nudge_time", "show_on_calendar",
     }
     nullable = {"default_list_id", "backlog_list_id"}
@@ -187,6 +187,79 @@ def claim_default_list(user_id, create_list_fn, resolve_list_fn, name):
         )
 
 
+def claim_backlog_list(user_id, create_list_fn, resolve_list_fn, name):
+    """Atomically get-or-create the user's Backlog list (concurrency-safe).
+
+    Mirror of :func:`claim_default_list` keyed on ``backlog_list_id``, but GATED
+    on ``backlog_bootstrapped``: auto-create fires only while the flag is false,
+    so a user who DELIBERATELY disconnects their backlog (Settings ->
+    "— Select a list —", ``backlog_list_id`` cleared) is NOT silently
+    re-provisioned on next access. The winner creates the list, connects the
+    pointer, AND flips ``backlog_bootstrapped`` true — all under the lock.
+
+    The advisory-lock key (``'todo-backlog:'||user_id``) is DISTINCT from the
+    default-list key, so backlog + default bootstraps never serialize against
+    each other. Cross-app calls are injected (no ``apps.lists`` import here).
+    """
+    import psycopg2
+    import psycopg2.extras
+
+    try:
+        with scoped_conn(SCHEMA) as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SET LOCAL lock_timeout = '3s'")
+                # Per-user lock over a BOUND param; distinct key from default-list.
+                cur.execute(
+                    "SELECT pg_advisory_xact_lock(hashtext('todo-backlog:' || %s))",
+                    (user_id,),
+                )
+                cur.execute(
+                    "INSERT INTO todo_config (user_id) VALUES (%s) "
+                    "ON CONFLICT (user_id) DO NOTHING",
+                    (user_id,),
+                )
+                cur.execute(
+                    "SELECT backlog_list_id, backlog_bootstrapped "
+                    "FROM todo_config WHERE user_id = %s",
+                    (user_id,),
+                )
+                row = cur.fetchone() or {}
+                existing = row.get("backlog_list_id")
+                bootstrapped = bool(row.get("backlog_bootstrapped"))
+
+            if existing and resolve_list_fn(existing):
+                conn.commit()  # release lock; pointer already live
+                return get_config(user_id)
+
+            if bootstrapped:
+                # Already bootstrapped once and now empty/dead -> a DELIBERATE
+                # disconnect (or a deleted list). Respect it: do NOT re-provision.
+                conn.commit()
+                return get_config(user_id)
+
+            # Winner only: create, connect, and flip the bootstrap flag together.
+            lst = create_list_fn(name=name, created_by=user_id)
+            with conn.cursor() as cur:
+                cur.execute(
+                    "UPDATE todo_config SET backlog_list_id = %s, "
+                    "backlog_bootstrapped = true, updated_at = now() "
+                    "WHERE user_id = %s",
+                    (lst["id"], user_id),
+                )
+            conn.commit()  # publishes the pointer + flag AND releases the lock
+        return get_config(user_id)
+
+    except psycopg2.errors.LockNotAvailable:
+        cfg = get_config(user_id)
+        if cfg and cfg["backlog_list_id"] and resolve_list_fn(cfg["backlog_list_id"]):
+            return cfg
+        if cfg and cfg.get("backlog_bootstrapped"):
+            return cfg  # contended disconnect — reuse the (empty) state, don't crash
+        raise RuntimeError(
+            f"todo backlog-list bootstrap for {user_id!r} is contended; retry"
+        )
+
+
 def get_all_configs() -> list[dict]:
     """Get all to-do configs (for nudge delivery)."""
     rows = fetch_all_in_schema(SCHEMA, "SELECT * FROM todo_config ORDER BY user_id")
@@ -210,6 +283,7 @@ def _config_row(row) -> dict:
         "user_id": row["user_id"],
         "default_list_id": row.get("default_list_id") or "",
         "backlog_list_id": row.get("backlog_list_id") or "",
+        "backlog_bootstrapped": row.get("backlog_bootstrapped", False),
         "nudge_enabled": row.get("nudge_enabled", True),
         "nudge_day": row.get("nudge_day") or "saturday",
         "nudge_time": str(row["nudge_time"])[:5] if row.get("nudge_time") else "07:00",
