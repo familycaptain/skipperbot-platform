@@ -277,6 +277,17 @@ docker info | grep -i memory        # should NOT print "No memory limit support"
 If `docker info` still warns "No memory limit support", the flags didn't take —
 re-check that they're on the same single line in `cmdline.txt` and reboot again.
 
+The cap defaults to **6g**. To use a different value, set it in the gitignored
+`.env` — no compose-file edit needed:
+
+```bash
+echo "AGENT_MEM_LIMIT=10g" >> .env   # then: ./skipper.sh update
+```
+
+Docker Compose interpolates `AGENT_MEM_LIMIT` into both `mem_limit` and
+`memswap_limit` (they're kept equal so the cap is a true RAM ceiling, not
+RAM + an equal swap allowance).
+
 ---
 
 ## Basic hardening
