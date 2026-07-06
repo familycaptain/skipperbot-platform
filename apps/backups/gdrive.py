@@ -21,9 +21,11 @@ work even when this optional integration isn't available.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import re
+import threading
 
 from app_platform import config as platform_config
 
@@ -31,6 +33,34 @@ logger = logging.getLogger(__name__)
 
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 DRIVE_FOLDER_NAME = "Backups"
+
+# Build the Drive service ONCE per identity and reuse it, so its httplib2/SSL
+# transport (and thus the discovery doc + OS trust store) load once per identity
+# rather than on every upload — the per-call heap churn that staircased RSS to
+# OOM at the Gmail poller. Mirrors apps/email/gmail_client.py's cache. The SA uses
+# a service account, whose token google-auth refreshes IN PLACE on the cached
+# creds, so no token mirror-back / invalidate path is needed (unlike the OAuth
+# reference). Only a SUCCESSFULLY built service is cached (an exception propagates
+# and never poisons the cache).
+_service_cache: dict[str, object] = {}
+_service_cache_lock = threading.Lock()
+
+
+def _service_cache_key(raw: str, impersonate_email: str, scopes: list[str], api: str) -> str:
+    """Stable digest of the identity. The SA JSON is a SECRET — hashed into the
+    key, never logged or stored in the clear. Any config change (re-pasted SA
+    JSON, changed impersonate email/scopes) rotates the key -> a fresh build."""
+    h = hashlib.sha256()
+    for part in (raw, impersonate_email, "\x00".join(sorted(scopes)), api):
+        h.update(part.encode("utf-8"))
+        h.update(b"\x00")
+    return h.hexdigest()
+
+
+def _reset_service_cache() -> None:
+    """Clear the built-service cache (used by tests)."""
+    with _service_cache_lock:
+        _service_cache.clear()
 
 
 def _config(key: str, default=None):
@@ -73,9 +103,19 @@ def _build_service():
         logger.error("GDRIVE: gdrive_service_account_json is not valid JSON (%s) — skipping", e)
         return None
 
+    key = _service_cache_key(raw, impersonate_email, SCOPES, "drive")
+    with _service_cache_lock:
+        cached = _service_cache.get(key)
+    if cached is not None:
+        return cached
+
     creds = Credentials.from_service_account_info(info, scopes=SCOPES)
     creds = creds.with_subject(impersonate_email)
-    return build("drive", "v3", credentials=creds, cache_discovery=False)
+    service = build("drive", "v3", credentials=creds, cache_discovery=False)
+    # Store only after a successful build so an exception never poisons the cache.
+    with _service_cache_lock:
+        _service_cache[key] = service
+    return service
 
 
 def _find_folder(service, folder_name: str) -> str | None:
