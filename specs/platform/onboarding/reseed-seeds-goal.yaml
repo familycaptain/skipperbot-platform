@@ -1,0 +1,55 @@
+kind: specification
+id: platform.onboarding.reseed-seeds-goal
+title: reseed_onboarding.py seeds the onboarding GOAL (via ensure_onboarding), and --reset is
+  non-destructive when no primary user exists
+state: live
+autonomy: gated
+verified: true
+behavior: >
+  scripts/reseed_onboarding.py re-seeds the onboarding GOAL (its stated purpose) into an EXISTING
+  database, not merely the 'skipper' bot user. Rules: (1) After the existing init_db._seed_onboarding()
+  (bot user only, by design), main() calls the canonical apps.goals.onboarding.ensure_onboarding() WHEN
+  a primary user exists (data_layer.users.get_primary_user() truthy), so the onboarding goal + ordered
+  agenda are seeded and onboarding_agenda_in_progress() returns a goal afterward. ensure_onboarding() is
+  idempotent (default mode no-ops when already seeded); a fresh reseed therefore requires --reset (which
+  clears the flag). (2) --reset is NON-DESTRUCTIVE ON FAILURE: it must NEVER leave the DB worse than it
+  found it. The old-goal delete + onboarding_seeded-flag clear + greet-once release run ONLY when the
+  goal will then be reseeded — i.e. a primary user exists. If --reset is run with NO primary user, main()
+  prints a clear message ("No primary user yet; run the first-run wizard first — nothing reset, onboarding
+  goal not seeded.") and leaves the existing goal/flag INTACT (does not delete-then-skip), exit 0. (3) On
+  --reset WITH a primary user, in addition to deleting the prior goal + clearing onboarding_seeded, main()
+  ALSO releases the greet-once claim (apps.goals.onboarding.release_onboarding_greeting()) so a re-test
+  reproduces the first-run arrival greeting rather than staying suppressed by a stale claim. (4) When no
+  primary user exists in NON-reset mode, ensure_onboarding() is skipped with the same clear message and
+  exit 0; the bot-user seed still runs. (5) The module docstring is corrected to state it seeds the
+  onboarding GOAL via ensure_onboarding() (the canonical first-run seeder) in addition to init_db's
+  bot-user seed. No production runtime code changes — only the QA/operator reseed tool.
+implements:
+- 'scripts/reseed_onboarding.py::main — guard the --reset delete/clear/release on a primary user
+  existing; after init_db._seed_onboarding call ensure_onboarding() when a primary exists; on --reset
+  also release_onboarding_greeting(); correct the docstring.'
+tests:
+- type: unit
+  path: tests/evolve/platform/test_reseed_onboarding.py
+  rubric: >
+    Deterministic, DB-free (sys.modules-inject stubs for data_layer.users.get_primary_user,
+    init_db._seed_onboarding, apps.goals.onboarding.ensure_onboarding + release_onboarding_greeting,
+    apps.goals.store.delete_item, app_platform.config): (a) primary + no --reset -> bot-user seed AND
+    ensure_onboarding run, nothing deleted/released; (b) primary + --reset -> delete_item + config.delete
+    + release_onboarding_greeting run BEFORE ensure_onboarding; (c) NO primary + --reset ->
+    non-destructive (no delete/clear/release, ensure_onboarding NOT called), exit 0; (d) NO primary + no
+    --reset -> bot-user seed runs but ensure_onboarding is skipped, exit 0.
+- type: e2e
+  path: (test host, validate-time)
+  rubric: >
+    Live acceptance in the agent container (CLI surface; capture stdout + DB state). GIVEN a primary user
+    exists: run `python scripts/reseed_onboarding.py --reset` -> exits 0, output shows the goal reseeded,
+    and apps.goals.onboarding.onboarding_agenda_in_progress() returns a goal afterward.
+links: {}
+notes: >
+  Issue #87 (operator-authored). Gate-1: Option A approved — with no primary user, print the clear skip
+  message and exit 0; --reset stays non-destructive-on-failure (delete/clear/release only when it will
+  then reseed). Test placed under tests/evolve/platform/ (where sibling onboarding tests live; the
+  spec-author's tests/evolve/onboarding/ path does not exist in the tree). Consciousness note
+  (non-blocking, operator): on consciousness_onboarding installs the greeting is log-native, so the
+  greet-once release in --reset is legacy-compat — kept.
