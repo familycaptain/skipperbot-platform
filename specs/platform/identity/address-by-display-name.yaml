@@ -4,7 +4,7 @@ title: Skipper addresses/refers to people by display_name in prose; the account 
   tool-target identifier only
 state: live
 autonomy: gated
-verified: false
+verified: true
 behavior: >
   In user-facing PROSE Skipper generates — the chat reply/system-context address, proactive DMs, the
   connection greeting, agenda/PM roster references, chores messages, and spoken output — a person is
