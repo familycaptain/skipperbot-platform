@@ -123,7 +123,11 @@ async def _chores_skill_runner(event: dict) -> dict:
         lines = [f"  - {a['chore_name']} ({a['zone_name']}) id=`[{a['chore_id']}]`"
                  + (" NOTE: " + a["note"] if a.get("note") else "")
                  for a in chores]
-        kids_block.append(f"{kid['name']} (username: {kid['user_id']}):\n" + "\n".join(lines))
+        # Address the kid by their linked account's display name in prose; the
+        # username stays the send_message target. Fall back to the kid's own name. (ev-90)
+        from data_layer.users import display_name_for
+        _kid_addr = display_name_for(kid["user_id"]) if kid.get("user_id") else kid["name"]
+        kids_block.append(f"{_kid_addr} (username: {kid['user_id']}):\n" + "\n".join(lines))
         allowed.add(kid["user_id"].lower())
 
     if not kids_block:

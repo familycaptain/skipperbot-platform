@@ -1,0 +1,52 @@
+kind: specification
+id: platform.identity.address-by-display-name
+title: Skipper addresses/refers to people by display_name in prose; the account username stays the
+  tool-target identifier only
+state: live
+autonomy: gated
+verified: true
+behavior: >
+  In user-facing PROSE Skipper generates — the chat reply/system-context address, proactive DMs, the
+  connection greeting, agenda/PM roster references, chores messages, and spoken output — a person is
+  ADDRESSED and REFERRED TO by their display_name (primary user AND household members). The account
+  identifier (users.name / username) is used ONLY as a tool target (send_message/send_dm recipient,
+  recipient-keyed tools) and is NEVER the spoken/written address. Mechanism: (A) data_layer.users.
+  display_name_for(name) returns users.display_name, falling back to the title-cased username
+  (name.capitalize()) only when display_name is missing/blank/whitespace, so the address is never blank.
+  (B) INPUT HYGIENE: display_name is freeform user-controlled text now injected into the authoritative
+  system/dynamic-context layer, so the helper collapses whitespace/newlines and caps length (<=64) — it
+  cannot inject prompt structure or spill across lines. Wired at the surfaces that survive the
+  consciousness re-architecture (operator grounding correction): (1) config.get_dynamic_system_context
+  "You are currently talking to:" now gives the display name for address + the username for tools;
+  (2) apps/goals/pm_domain.py _build_user_prompt household roster gives BOTH the display name (prose) and
+  the username (DM target); (3) apps/goals/handlers.py connection greeting is formatted with the display
+  name; (4) apps/chores/handlers.py per-kid message block addresses the linked account's display name
+  (fallback the kid's own name), username kept as the send_message target. The consciousness timeline's
+  speaker tags ('[tyler -> skipper]:') are memory notation, NOT prose — they STAY usernames.
+implements:
+- data_layer/users.py (display_name_for helper + input hygiene)
+- config.py (get_dynamic_system_context "talking to" line)
+- apps/goals/pm_domain.py (_build_user_prompt roster)
+- apps/goals/handlers.py (connection greeting format)
+- apps/chores/handlers.py (per-kid message block)
+tests:
+- type: unit
+  path: tests/evolve/platform/test_address_by_display_name.py
+  rubric: >
+    Deterministic, DB-free (monkeypatch users.get_user): display_name_for('qa83v') -> 'Rodney'; blank/
+    whitespace/missing display_name -> title-cased username; a missing user -> title-cased username;
+    input hygiene collapses newlines and caps length <=64; a blank name is safe ('').
+- type: e2e
+  path: (test host, validate-time)
+  rubric: >
+    Behavioral oracle for the prose: with a primary user name='qa83v'/display_name='Rodney', the chat
+    dynamic system context addresses 'Rodney' (not 'qa83v') while still naming the username for tools; the
+    pm roster shows 'Rodney (username `qa83v`, primary)'. Voice-surface validation may defer to Gate-3 UAT.
+links: {}
+notes: >
+  Issue #90 (operator-authored). Gate-1 grounding CORRECTION applied: the prose surfaces are the
+  consciousness-default surfaces (chat system context, pm SKILL pm_domain.py, connection/chores handlers),
+  NOT the legacy goals/domain.py roster (stands down under consciousness_pm). Rule: display_name in prose;
+  username for tool targeting. Timeline speaker tags stay usernames. Fallback title-cased username, never
+  blank. Voice-surface validate may defer to Gate-3 UAT. Resumed from a mid-build checkpoint (helper was
+  committed first; surfaces wired on resume).

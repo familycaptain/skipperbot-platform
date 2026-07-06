@@ -106,7 +106,9 @@ async def _connection_skill_runner(event: dict) -> dict:
     from chatlog_store import generate_turn_id
     from app_platform.context import build_chat_timeline
     timeline = await _aio.to_thread(build_chat_timeline, user, None, event.get("id"))
-    trigger = _GREETING_TRIGGER.format(user=user)
+    # Greet by display name (prose); user_id stays the account identifier. (ev-90)
+    from data_layer.users import display_name_for
+    trigger = _GREETING_TRIGGER.format(user=display_name_for(user))
     req = ChatRequest(
         user_id=user,
         user_message=trigger,

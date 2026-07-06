@@ -86,6 +86,30 @@ def get_user(name: str) -> dict | None:
     return fetch_one("SELECT * FROM users WHERE name = %s", (name.lower().strip(),))
 
 
+def display_name_for(name: str) -> str:
+    """Human display name used to ADDRESS/refer to a user in PROSE (greetings,
+    DMs, sentences, spoken output). The account ``name`` (username) stays the
+    tool-target identifier and is NEVER the spoken/written address.
+
+    Falls back to the title-cased username only when ``display_name`` is
+    missing/blank (it is NOT NULL and defaulted to ``name.capitalize()`` at
+    install; this is a guard so the address is never blank).
+
+    INPUT HYGIENE: ``display_name`` is freeform, user-controlled text now injected
+    into the authoritative system/dynamic-context layer, so collapse any
+    whitespace/newlines and cap the length — a display name can't inject prompt
+    structure or spill across lines.
+    """
+    dn = ""
+    if name:
+        u = get_user(name)
+        dn = ((u or {}).get("display_name") or "").strip()
+    if not dn:
+        dn = (name or "").strip().capitalize()
+    dn = " ".join(dn.split())[:64]
+    return dn or (name or "").strip().capitalize()
+
+
 def get_user_by_discord_id(discord_id: str) -> dict | None:
     """Get a user by their Discord numeric ID."""
     return fetch_one("SELECT * FROM users WHERE discord_id = %s", (str(discord_id),))

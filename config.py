@@ -364,7 +364,14 @@ def get_dynamic_system_context(user_id: str = "") -> str:
         f"Current date and time: {user_now.strftime('%A, %B %d, %Y at %I:%M %p')} ({tz.key})",
     ]
     if user_id:
-        parts.append(f"You are currently talking to: {user_id}")
+        # Address people by their DISPLAY NAME in prose; the account username stays
+        # the identifier for recipient-keyed tools (send_message/send_dm). (ev-90)
+        from data_layer.users import display_name_for
+        parts.append(
+            f"You are currently talking to: {display_name_for(user_id)} "
+            f"(their account username is `{user_id}` — use that exact username for "
+            f"tools like send_message, but address them by their name in what you say)."
+        )
 
     # Home location (Settings → System → Location). Surfacing it here lets the
     # assistant answer "where am I?" and pass it to the weather tools instead of
