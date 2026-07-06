@@ -4,7 +4,7 @@ title: reseed_onboarding.py seeds the onboarding GOAL (via ensure_onboarding), a
   non-destructive when no primary user exists
 state: live
 autonomy: gated
-verified: false
+verified: true
 behavior: >
   scripts/reseed_onboarding.py re-seeds the onboarding GOAL (its stated purpose) into an EXISTING
   database, not merely the 'skipper' bot user. Rules: (1) After the existing init_db._seed_onboarding()
