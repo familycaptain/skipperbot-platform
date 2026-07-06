@@ -130,6 +130,24 @@ def get_kid(kid_id: str) -> dict | None:
     return _kid_row(row) if row else None
 
 
+def eligible_member_accounts() -> list[dict]:
+    """Household accounts eligible to link as a NEW kid: every non-bot human
+    account (data_layer.users.get_human_users already excludes bots) MINUS any
+    account already linked to an ACTIVE kid. Returned as {username, display_name}
+    (label = display name, fallback username), sorted by display name. There is
+    no 'kid' role today (#80 adds richer roles), so all non-bot humans qualify.
+    """
+    from data_layer.users import get_human_users, display_name_for
+    linked = {k.get("user_id") for k in list_kids(active_only=True) if k.get("user_id")}
+    members = [
+        {"username": u["name"], "display_name": display_name_for(u["name"])}
+        for u in get_human_users()
+        if u.get("name") and u["name"] not in linked
+    ]
+    members.sort(key=lambda m: m["display_name"].lower())
+    return members
+
+
 def get_kid_by_user(user_id: str) -> dict | None:
     row = fetch_one_in_schema(
         SCHEMA, "SELECT * FROM kids WHERE user_id = %s AND active = TRUE", (user_id,)

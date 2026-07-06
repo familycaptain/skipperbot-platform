@@ -1,12 +1,46 @@
 kind: specification
 id: chores.kids.add-kid
-title: Add a kid
+title: Chores add-kid is a dropdown of eligible household member accounts (link by user_id), not a
+  freeform name
 state: live
 autonomy: gated
-behavior: Adding a kid puts them into the rotation (parent only).
+verified: false
+behavior: >
+  A parent adds a kid by SELECTING a household member account from a dropdown, not by typing a free name.
+  The Chores → Manage → Kids add row presents a <select> of eligible household user accounts (label = the
+  account's display name) under a 'Link to member account' label with a 'Select a member…' placeholder; it
+  no longer presents a freeform kid-name text field or a freeform username field. 'Add kid' stays DISABLED
+  until an account is chosen. ELIGIBLE accounts = data.eligible_member_accounts(): the platform's non-bot
+  HUMAN accounts (reuse data_layer.users.get_human_users(), which already excludes any 'bot'-role account)
+  MINUS any account already linked to an ACTIVE kid, returned as {username, display_name} sorted by display
+  name. Because platform roles are a comma-separated set and there is no 'kid' role today (#80 adds richer
+  roles), parents/admins/primary humans all qualify — the only exclusion is the bot. Selecting an account
+  and confirming POSTs /kids with user_id set and NO name; the server derives the kid's display name from
+  the account (display_name_for: the account display name, falling back to the username when blank). The
+  eligible read is GET /api/apps/chores/members/eligible. LEGACY freeform kid rows are untouched; only the
+  ADD flow changes, and the freeform path (name without user_id) stays available via chat/API for power
+  users (CreateKidRequest.name is now optional; a create with neither a name nor a linked account is a 400).
+  A no-login child is served by a lightweight member account created in Settings (out of scope here).
 implements:
-- apps/chores/tools.py
-- apps/chores/ui/ChoresApp.jsx
-tests: []
+- apps/chores/data.py (eligible_member_accounts helper)
+- apps/chores/routes.py (GET /members/eligible; CreateKidRequest.name optional; derive name from the linked account)
+- apps/chores/ui/ChoresApp.jsx (add-kid row: member <select>, Add-kid disabled until selected)
+tests:
+- type: unit
+  path: tests/evolve/chores/test_add_kid_dropdown.py
+  rubric: >
+    Deterministic, DB-free (monkeypatch users.get_human_users/display_name_for + chores list_kids):
+    eligible_member_accounts excludes accounts linked to active kids, labels by display name sorted, is
+    empty when all are linked, and legacy kids without a user_id exclude nobody.
+- type: e2e
+  path: (test host)
+  rubric: >
+    GET /api/apps/chores/members/eligible returns the unlinked non-bot humans; POST /kids with a user_id and
+    no name creates a kid whose name is the account's display name and whose user_id is set; that account
+    then drops out of the eligible list. The add-row <select> render is the Gate-3 visual check.
 links: {}
-notes: ''
+notes: >
+  Issue #85 (operator-authored). Gate-1 forks: (1) dropdown offers ANY non-bot human not already linked to
+  an active kid — no kid-role filter (role doesn't exist until #80); (2) legacy freeform kid rows untouched,
+  only the ADD flow changes; (3) UI requires account linkage (a no-login child gets a lightweight member
+  account via Settings), freeform stays available via chat/API. The dropdown <select> visual defers to Gate-3 UAT.
