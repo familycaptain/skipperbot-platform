@@ -380,15 +380,20 @@ function ManageTab({ userId, refreshKey }) {
 
 function ManageKids({ userId, refreshKey }) {
   const [kids, setKids] = useState([]);
-  const [draft, setDraft] = useState({ name: "", color: "#888888", user_id: "", sort_order: 0 });
+  const [eligible, setEligible] = useState([]); // household accounts not yet linked to an active kid
+  const [draft, setDraft] = useState({ color: "#888888", user_id: "", sort_order: 0 });
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(null); // kid being edited
 
   const load = useCallback(async () => {
     setError("");
     try {
-      const v = await apiFetch(`/kids?include_inactive=true`);
+      const [v, m] = await Promise.all([
+        apiFetch(`/kids?include_inactive=true`),
+        apiFetch(`/members/eligible`),
+      ]);
       setKids(v.kids);
+      setEligible(m.members);
     } catch (e) {
       setError(String(e.message || e));
     }
@@ -397,13 +402,14 @@ function ManageKids({ userId, refreshKey }) {
   useEffect(() => { load(); }, [load, refreshKey]);
 
   const add = async () => {
-    if (!draft.name.trim()) return;
+    if (!draft.user_id) return; // a linked member account is required
     try {
+      // name is omitted — the server derives it from the linked account's display name.
       await apiFetch(`/kids`, {
         method: "POST",
         body: JSON.stringify({ ...draft, acted_by: userId }),
       });
-      setDraft({ name: "", color: "#888888", user_id: "", sort_order: 0 });
+      setDraft({ color: "#888888", user_id: "", sort_order: 0 });
       load();
     } catch (e) {
       setError(String(e.message || e));
@@ -438,13 +444,18 @@ function ManageKids({ userId, refreshKey }) {
       {error && <div className="text-red-400 text-sm">{error}</div>}
 
       <div className="surface-panel border border-subtle rounded p-2 flex flex-wrap gap-2 items-end text-sm">
-        <input value={draft.name} onChange={e => setDraft({ ...draft, name: e.target.value })} placeholder="Name" className="surface-card px-2 py-1 rounded w-32"/>
+        <label className="flex flex-col gap-1 text-secondary text-xs">Link to member account
+          <select value={draft.user_id} onChange={e => setDraft({ ...draft, user_id: e.target.value })} className="surface-card px-2 py-1 rounded w-48 text-sm text-primary">
+            <option value="">Select a member…</option>
+            {eligible.map(m => <option key={m.username} value={m.username}>{m.display_name}</option>)}
+          </select>
+        </label>
         <input type="color" value={draft.color} onChange={e => setDraft({ ...draft, color: e.target.value })} className="h-8 w-8 rounded"/>
-        <input value={draft.user_id} onChange={e => setDraft({ ...draft, user_id: e.target.value })} placeholder="username (optional)" className="surface-card px-2 py-1 rounded w-40"/>
         <input type="number" value={draft.sort_order} onChange={e => setDraft({ ...draft, sort_order: parseInt(e.target.value || "0") })} className="surface-card px-2 py-1 rounded w-16" placeholder="order"/>
-        <button onClick={add} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-on-accent rounded flex items-center gap-1">
+        <button onClick={add} disabled={!draft.user_id} className="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-on-accent rounded flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed">
           <Plus size={14}/> Add kid
         </button>
+        {eligible.length === 0 && <span className="text-secondary text-xs">No unlinked member accounts — add one in Settings first.</span>}
       </div>
 
       <table className="w-full text-sm">

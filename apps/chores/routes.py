@@ -23,7 +23,9 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 class CreateKidRequest(BaseModel):
-    name: str
+    # Optional: when linking a household account (the dropdown add flow) the kid's
+    # display name is derived from the account. Freeform callers still pass a name.
+    name: Optional[str] = None
     color: str = "#888888"
     sort_order: int = 0
     user_id: Optional[str] = None
@@ -161,13 +163,30 @@ async def api_get_kid(kid_id: str):
     return kid
 
 
+@router.get("/members/eligible")
+async def api_eligible_members(request: Request):
+    """Household accounts eligible to link as a NEW kid (the add-kid dropdown):
+    every non-bot human account (get_human_users already excludes bots) MINUS any
+    account already linked to an ACTIVE kid. Label = display name (fallback
+    username). There is no 'kid' role today (#80 adds richer roles), so parents/
+    admins/primary humans all qualify — the only exclusion is the bot."""
+    members = await asyncio.to_thread(_dl.eligible_member_accounts)
+    return {"members": members, "count": len(members)}
+
+
 @router.post("/kids")
 async def api_create_kid(req: CreateKidRequest, request: Request):
     req.acted_by = _actor(request, req.acted_by)
     await asyncio.to_thread(_require_parent, req.acted_by, "Only parents can create kids")
+    # Dropdown add flow: derive the kid's display name from the linked account.
+    name = (req.name or "").strip()
+    if req.user_id and not name:
+        name = await asyncio.to_thread(_users.display_name_for, req.user_id)
+    if not name:
+        raise HTTPException(status_code=400, detail="A kid name (or a linked account) is required")
     kid = await asyncio.to_thread(
         _dl.create_kid,
-        name=req.name, color=req.color, sort_order=req.sort_order,
+        name=name, color=req.color, sort_order=req.sort_order,
         user_id=req.user_id, notify_morning=req.notify_morning,
         notify_evening=req.notify_evening, by=req.acted_by,
     )
