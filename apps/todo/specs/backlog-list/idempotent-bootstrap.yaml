@@ -4,7 +4,7 @@ title: To-Do Backlog list is auto-created + connected per user, idempotently and
   backlog_bootstrapped flag (mirrors the #62 default-list bootstrap)
 state: live
 autonomy: gated
-verified: false
+verified: true
 behavior: >
   ensure_backlog_list is an atomic get-or-create mirroring #62's default-list bootstrap, but for
   backlog_list_id and GATED on a new todo_config.backlog_bootstrapped flag. Fast path (no lock, no
