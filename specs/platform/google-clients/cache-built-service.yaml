@@ -4,7 +4,7 @@ title: gdrive.py and skipper_gmail.py cache the built googleapiclient service pe
   reused) — no per-call rebuild / trust-store storm
 state: live
 autonomy: gated
-verified: false
+verified: true
 behavior: >
   The two remaining sites that rebuilt a googleapiclient service on EVERY call — apps/backups/gdrive.py
   ::_build_service (build('drive','v3') per upload) and skipper_gmail.py::_build_service
