@@ -1,0 +1,7 @@
+kind: feature
+id: email.sync
+title: Scheduled email sync
+state: live
+links: {}
+notes: 'The 15-min background poll (apps/email/runner.py) that fetches new messages per active
+  account, evaluates rules, and re-applies rule changes to the already-processed backlog.'
