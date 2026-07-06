@@ -378,8 +378,11 @@ function BackupSection({ sourceKey, meta, state, onRefresh, onRunNow, onToggle, 
           </button>
           <button
             onClick={onRunNow}
-            disabled={!available || running}
-            className="flex items-center gap-1 px-2 py-1 text-xs bg-[var(--ds-accent)] hover:bg-[var(--ds-accent)] disabled:opacity-40 text-on-accent rounded transition-colors"
+            disabled={!available || running || config?.destination_configured === false}
+            title={config?.destination_configured === false
+              ? "Configure a backup destination in Settings → Backups first"
+              : "Run a backup now"}
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-[var(--ds-accent)] hover:bg-[var(--ds-accent)] disabled:opacity-40 disabled:cursor-not-allowed text-on-accent rounded transition-colors"
           >
             {running ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
             Run Now
@@ -441,9 +444,11 @@ function BackupSection({ sourceKey, meta, state, onRefresh, onRunNow, onToggle, 
             <Loader2 size={18} className="animate-spin mr-2" /> Loading...
           </div>
         ) : backups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-faint text-sm">
+          <div className="flex flex-col items-center justify-center h-32 text-faint text-sm text-center px-4">
             <Icon size={32} className="mb-2 opacity-40" />
-            No backups yet. Click "Run Now" to create the first backup.
+            {config?.destination_configured === false
+              ? "No backup destination configured yet. Set one up in Settings → Backups, then run your first backup."
+              : "No backups yet. Click \"Run Now\" to create the first backup."}
           </div>
         ) : (
           backups.map((backup) => (
@@ -533,7 +538,7 @@ function BackupCard({ backup: b, onDelete }) {
           )}
 
           {b.status === "skipped" && (
-            <div className="mt-0.5 text-[11px] text-faint italic">Backups were disabled</div>
+            <div className="mt-0.5 text-[11px] text-faint italic">{b.error || "Skipped"}</div>
           )}
         </div>
       </button>

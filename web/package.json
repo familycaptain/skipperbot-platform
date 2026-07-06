@@ -16,7 +16,8 @@
     "check:onboarding-theme": "node scripts/check-onboarding-theme.mjs",
     "check:fresh-greeting-presence": "node scripts/check-fresh-greeting-presence.mjs",
     "check:contractor-trades": "node scripts/check-contractor-trades.mjs",
-    "prebuild": "node scripts/check-no-native-submit.mjs && node scripts/check-empty-state-hero.mjs && node scripts/check-onboarding-confirm.mjs && node scripts/check-onboarding-theme.mjs && node scripts/check-fresh-greeting-presence.mjs && node scripts/check-contractor-trades.mjs && node packaged-app-deps.mjs --emit-sources",
+    "check:backups-honest-status": "node scripts/check-backups-honest-status.mjs",
+    "prebuild": "node scripts/check-no-native-submit.mjs && node scripts/check-empty-state-hero.mjs && node scripts/check-onboarding-confirm.mjs && node scripts/check-onboarding-theme.mjs && node scripts/check-fresh-greeting-presence.mjs && node scripts/check-contractor-trades.mjs && node scripts/check-backups-honest-status.mjs && node packaged-app-deps.mjs --emit-sources",
     "build": "vite build",
     "preview": "vite preview"
   },

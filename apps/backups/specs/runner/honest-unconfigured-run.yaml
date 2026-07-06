@@ -1,0 +1,52 @@
+kind: specification
+id: backups.runner.honest-unconfigured-run
+title: A Backups run's recorded status is an honest function of its destination results — a run that
+  stored nothing off-machine never reads as Success; Run Now is gated on a configured destination
+state: live
+autonomy: gated
+verified: false
+behavior: >
+  (1) BACKEND STATUS FUNCTION — apps/backups/runner._backup_status(fs_result, gdrive_result) maps the
+  per-destination results to the run's recorded status, and run_backup records it accordingly:
+  (i) if >=1 destination returned 'ok' -> complete_backup (status 'completed' = Success);
+  (ii) ELSE if any destination returned 'error' (>=1 error, 0 ok) -> fail_backup with an aggregated
+  reason NAMING the failing destination(s) (a configured destination that failed is NOT a Success);
+  (iii) ELSE (every destination 'skipped'/none enabled) -> skip_backup(reason='No backup destination
+  configured — nothing was copied off-machine. Configure a destination in Settings → Backups.'). The
+  master-switch short-circuit (scheduled + enabled=false -> skipped 'Backups disabled in app:backups
+  config') and the top-level exception -> fail_backup path are UNCHANGED. Every caller — the UI button,
+  a scripted POST, the nightly cron, a cross-app call — is truthful. (2) CONFIG SINGLE SOURCE OF TRUTH —
+  GET /api/apps/backups/config adds a computed `destination_configured` boolean: true iff at least one
+  destination is ENABLED AND fully configured (filesystem_enabled + filesystem_path, or gdrive_enabled +
+  credentials set + impersonate email). (3) UI GATE — apps/backups/ui/BackupsApp.jsx reads
+  config.destination_configured: the Run Now button is DISABLED (greyed, cursor-not-allowed, accessible
+  title pointing at Settings → Backups) when false; the empty state reads 'configure a destination first'
+  when unconfigured; and a skipped run renders its REAL reason (b.error) instead of the hardcoded
+  'Backups were disabled'. (4) A web prebuild guardrail check-backups-honest-status.mjs (wired into
+  web/package.json prebuild) fails the build on a regression (Run Now not gated on destination_configured,
+  or the hardcoded skip copy reappearing).
+implements:
+- apps/backups/runner.py (_backup_status helper; run_backup records completed/failed/skipped by it)
+- agent.py (GET /api/apps/backups/config computes destination_configured)
+- apps/backups/ui/BackupsApp.jsx (Run Now disabled gate + title; empty-state copy; real skip reason)
+- web/scripts/check-backups-honest-status.mjs + web/package.json (prebuild guardrail)
+tests:
+- type: unit
+  path: tests/evolve/platform/test_backups_honest_status.py
+  rubric: >
+    Import-only, no DB: _backup_status returns 'completed' iff >=1 'ok'; 'failed' (naming the destination)
+    when >=1 'error' and 0 'ok'; 'skipped' with the no-destination reason when all skipped; and NEVER
+    'completed' unless a destination stored something.
+- type: e2e
+  path: (test host)
+  rubric: >
+    GET /api/apps/backups/config returns destination_configured=false on a clean install; a Run Now with no
+    destination records status 'skipped' with the no-destination reason (NOT 'completed'); the web bundle
+    builds (the new prebuild guardrail passes). The greyed Run Now button is the Gate-3 visual check.
+links: {}
+notes: >
+  Issue #86 (operator-authored). Gate-1 Option A: disable/grey Run Now when no destination is configured
+  AND make the recorded status honest for every caller (>=1 ok -> Success; else any error -> Failed naming
+  the destination; else Skipped with the no-destination reason, never Success). Lead build notes carried:
+  new web check-*.mjs wired into prebuild; aggregated Failed reason names the failing destination;
+  contradictory empty-state copy fixed in lockstep. Greyed-button visual defers to Gate-3 UAT.

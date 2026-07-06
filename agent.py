@@ -3548,6 +3548,14 @@ async def api_backup_config():
     """
     def _fetch():
         cfg = dl_backups.get_config()
+        # A destination is EFFECTIVE only if it's enabled AND has its required
+        # config; the runner would otherwise 'skip' it (nothing copied off-machine).
+        _fs_ok = bool(cfg.get("filesystem_enabled", False)) and bool(cfg.get("filesystem_path"))
+        _gd_ok = (
+            bool(cfg.get("gdrive_enabled", False))
+            and _backups_settings.is_configured("gdrive_service_account_json", scope="app:backups")
+            and bool(cfg.get("gdrive_impersonate_email"))
+        )
         return {
             # Master switches
             "enabled": bool(cfg.get("enabled", True)),
@@ -3563,6 +3571,10 @@ async def api_backup_config():
             "gdrive_credentials_set": _backups_settings.is_configured(
                 "gdrive_service_account_json", scope="app:backups"),
             "gdrive_impersonate_email": cfg.get("gdrive_impersonate_email") or "",
+            # Single source of truth for the UI 'Run Now' gate (ev-86): true iff at
+            # least one destination is enabled AND fully configured, so Run Now can
+            # only run when something would actually be stored off-machine.
+            "destination_configured": _fs_ok or _gd_ok,
         }
     from app_platform import settings as _backups_settings
     return await asyncio.to_thread(_fetch)

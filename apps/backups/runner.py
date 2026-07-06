@@ -481,6 +481,32 @@ def _prune_filesystem(retention: int) -> int:
 # Top-level job handlers
 # ---------------------------------------------------------------------------
 
+def _backup_status(fs_result: dict, gdrive_result: dict) -> tuple[str, str]:
+    """Decide a run's recorded status from the per-destination results (ev-86).
+
+    Returns ``(status, reason)`` where status is one of
+    ``'completed'`` / ``'failed'`` / ``'skipped'``:
+      (i)   >=1 destination 'ok'          -> 'completed' (Success)
+      (ii)  else >=1 destination 'error'  -> 'failed' (a configured destination
+            that failed is NOT a Success; reason names the failing destination(s))
+      (iii) else (all 'skipped'/none on)  -> 'skipped' with the no-destination reason
+    So no run that stored nothing off-machine ever reads as Success — for EVERY
+    caller (UI button, cron, scripted POST, cross-app).
+    """
+    dests = [("filesystem", fs_result), ("Google Drive", gdrive_result)]
+    if any(r.get("status") == "ok" for _, r in dests):
+        return ("completed", "")
+    errors = [(name, r) for name, r in dests if r.get("status") == "error"]
+    if errors:
+        reason = "; ".join(f"{name}: {r.get('reason', '')[:200]}" for name, r in errors)
+        return ("failed", f"Backup produced artifacts but no destination stored them — {reason}")
+    return (
+        "skipped",
+        "No backup destination configured — nothing was copied off-machine. "
+        "Configure a destination in Settings → Backups.",
+    )
+
+
 def run_backup(job: dict, ctx) -> str:
     """Main backup handler — called by the job dispatcher.
 
@@ -567,18 +593,25 @@ def run_backup(job: dict, ctx) -> str:
             for f in gdrive_result.get("files", []):
                 files_created.append(f"gdrive:{f['name']}")
 
-        # 9. Complete record
+        # 9. Record status as an explicit function of the DESTINATION results, so a
+        # run that persisted nothing off-machine NEVER reads as Success (ev-86).
         duration = time.time() - start
-        network_path = fs_result.get("path", "") if fs_result["status"] == "ok" else ""
-        complete_backup(
-            backup_id,
-            pg_dump_size=dump_size,
-            zip_size=zip_size,
-            network_path=network_path,
-            files_created=files_created,
-            table_counts=table_counts,
-            duration_secs=round(duration, 1),
-        )
+        status, reason = _backup_status(fs_result, gdrive_result)
+        if status == "completed":
+            network_path = fs_result.get("path", "") if fs_result["status"] == "ok" else ""
+            complete_backup(
+                backup_id,
+                pg_dump_size=dump_size,
+                zip_size=zip_size,
+                network_path=network_path,
+                files_created=files_created,
+                table_counts=table_counts,
+                duration_secs=round(duration, 1),
+            )
+        elif status == "failed":
+            fail_backup(backup_id, error=reason)
+        else:
+            skip_backup(backup_id, reason=reason)
         ctx.update_progress(100, "Backup complete")
 
         summary = (
