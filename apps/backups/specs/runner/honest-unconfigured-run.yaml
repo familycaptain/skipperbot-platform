@@ -4,7 +4,7 @@ title: A Backups run's recorded status is an honest function of its destination 
   stored nothing off-machine never reads as Success; Run Now is gated on a configured destination
 state: live
 autonomy: gated
-verified: false
+verified: true
 behavior: >
   (1) BACKEND STATUS FUNCTION — apps/backups/runner._backup_status(fs_result, gdrive_result) maps the
   per-destination results to the run's recorded status, and run_backup records it accordingly:
