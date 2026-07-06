@@ -4,7 +4,7 @@ title: Chores add-kid is a dropdown of eligible household member accounts (link 
   freeform name
 state: live
 autonomy: gated
-verified: false
+verified: true
 behavior: >
   A parent adds a kid by SELECTING a household member account from a dropdown, not by typing a free name.
   The Chores → Manage → Kids add row presents a <select> of eligible household user accounts (label = the
