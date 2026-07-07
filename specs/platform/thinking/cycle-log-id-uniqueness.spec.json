@@ -1,0 +1,25 @@
+{
+  "spec_id": "platform.thinking.cycle-log-id-uniqueness",
+  "kind": "specification",
+  "title": "Thinking-cycle log ids are collision-safe (128-bit) and log_cycle retries once on a PK collision — a completed cycle is never mislabeled FAILED",
+  "behavior": [
+    "GIVEN the thinking-cycle audit log WHEN data_layer/thinking_log.py::_new_id() generates a row id THEN it returns 'tl-' followed by the full uuid4 hex (32 lowercase hex chars, 128 bits of entropy), so primary-key collisions are negligible at any realistic install volume — removing the 32-bit birthday-paradox failures that appeared at ~tens of thousands of rows.",
+    "GIVEN a successful thinking cycle WHEN its log_cycle() INSERT raises a Postgres unique-violation on the thinking_log primary key (the drawn id already exists) THEN log_cycle catches ONLY that unique-violation (psycopg2.errors.UniqueViolation — the driver in use; not a broad Exception), regenerates a fresh id via _new_id(), and retries the INSERT exactly once through a fresh data_layer.db.execute() call (a clean pooled connection — the first attempt's transaction was already rolled back); the cycle is then recorded successfully and its _digest_cycle bookkeeping proceeds.",
+    "GIVEN log_cycle's INSERT raises any error that is NOT a primary-key unique-violation (a genuine DB failure) WHEN it is caught THEN it is re-raised unchanged (never swallowed, never retried), so real failures still surface and thinking_scheduler._run_cycle records a genuine failed cycle.",
+    "GIVEN a unique-violation persists even on the single retry (astronomically unlikely at 128-bit) WHEN the retry also collides THEN log_cycle raises (bounded — exactly one retry, never an unbounded loop).",
+    "GIVEN existing 32-bit 'tl-' ids already stored in thinking_log (and reused as memories.source_chat_id provenance) WHEN the change ships THEN they remain valid and queryable with no migration — both columns are unbounded TEXT and tl- ids are opaque with no external joins or length-parsing consumers; only newly-generated ids are 128-bit."
+  ],
+  "implements": [
+    "data_layer/thinking_log.py::_new_id (widen to full uuid4.hex — 128-bit)",
+    "data_layer/thinking_log.py::log_cycle (retry once on psycopg2.errors.UniqueViolation with a fresh id via a new execute(); re-raise all other errors)"
+  ],
+  "tests": [
+    {
+      "type": "unit",
+      "path": "tests/evolve/platform/test_thinking_log_id.py",
+      "rubric": "(a) _new_id() matches ^tl-[0-9a-f]{32}$ (128-bit). (b) uniqueness over N=100000 with zero duplicates. (c) forced-collision (mirrors the gate-1 reproduction): first INSERT raises UniqueViolation, retry with a fresh id succeeds — log_cycle retries exactly once and returns the retry id. (d) bounded retry: a persistent collision raises after exactly one retry (no infinite loop). (e) observability preserved: a non-unique-violation DB error is re-raised and NOT retried."
+    }
+  ],
+  "notes": "ev-104 (operator-authored correctness bug, approved Option B). Root cause: _new_id = tl-{uuid4.hex[:8]} (32-bit); log_cycle's INSERT collides at prod volume (~2,880 memory rows/day) and thinking_scheduler._run_cycle's success-path log_cycle sits inside the try whose except logs 'Cycle failed' and skips _digest_cycle, so a COMPLETED cycle is mislabeled FAILED (reproduced live: exact UniqueViolation on thinking_log_pkey). No migration (TEXT PK, no external joins). Latent follow-up (out of scope, surfaced to operator): the success-path log inside the failure-try means any log-write error — not only id collisions — can mislabel a cycle; a targeted _run_cycle restructure would fully close it.",
+  "verified": false
+}
