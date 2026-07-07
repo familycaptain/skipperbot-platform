@@ -80,7 +80,9 @@ def set(  # noqa: A001 — match the natural settings API
     surface that rather than silently storing a secret in plaintext.
     """
     stored = _secrets.encrypt(str(value)) if secret else value
-    _config.set(key, stored, scope=scope, by=by)
+    # Pass secret through so config.set skips the config.changed emit for
+    # credential keys (never signal a secret changed).
+    _config.set(key, stored, scope=scope, by=by, secret=secret)
 
 
 def is_configured(key: str, *, scope: str | None = None) -> bool:

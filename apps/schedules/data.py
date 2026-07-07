@@ -599,6 +599,102 @@ def create_schedule(
     return get_schedule(sch_id)
 
 
+def upsert_schedule(
+    schedule_id: str,
+    *,
+    title: str,
+    created_by: str = "system",
+    category: str = "general",
+    assigned_to: str = "",
+    description: str = "",
+    recurrence_type: str = "daily",
+    recurrence_rule: dict | None = None,
+    time_of_day: str | None = None,
+    linked_entity_id: str | None = None,
+    linked_entity_type: str | None = None,
+    next_due=None,
+    active: bool = True,
+    reminder_mins: int = 0,
+    notify_channel: str = "none",
+    job_config: dict | None = None,
+) -> dict | None:
+    """Idempotent, race-safe create-or-update of a schedule with a CALLER-SUPPLIED
+    stable id.
+
+    Unlike ``create_schedule`` (random id + list-then-create), this upserts on
+    the primary key: two concurrent callers using the same ``schedule_id``
+    converge on exactly ONE row (one INSERT wins, the other takes the
+    ``ON CONFLICT DO UPDATE`` branch) rather than racing duplicates in.
+
+    ``next_due`` semantics: when provided (not None) it is written; when None the
+    existing row's ``next_due`` is preserved on update (``COALESCE``) and left
+    NULL on insert. This lets a reconcile reset ``next_due`` only on
+    (re)activation / time-change and otherwise leave the countdown untouched.
+
+    Intended for system-owned singleton schedules (e.g. an app's nightly job).
+    """
+    rule = recurrence_rule or {}
+    rtype = recurrence_type if recurrence_type in VALID_RECURRENCE_TYPES else "daily"
+    cat = category if category in VALID_CATEGORIES else "general"
+
+    with scoped_conn(SCHEMA) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO schedules (
+                    id, title, description, category, assigned_to, created_by,
+                    recurrence_type, recurrence_rule, time_of_day,
+                    next_due, completed_count,
+                    linked_entity_id, linked_entity_type,
+                    reminder_mins, notify_channel,
+                    active, created_at, updated_at, job_config
+                ) VALUES (
+                    %s, %s, %s, %s, %s, %s,
+                    %s, %s, %s,
+                    %s, 0,
+                    %s, %s,
+                    %s, %s,
+                    %s, now(), now(), %s
+                )
+                ON CONFLICT (id) DO UPDATE SET
+                    title = EXCLUDED.title,
+                    description = EXCLUDED.description,
+                    category = EXCLUDED.category,
+                    recurrence_type = EXCLUDED.recurrence_type,
+                    recurrence_rule = EXCLUDED.recurrence_rule,
+                    time_of_day = EXCLUDED.time_of_day,
+                    next_due = COALESCE(EXCLUDED.next_due, schedules.next_due),
+                    linked_entity_id = EXCLUDED.linked_entity_id,
+                    linked_entity_type = EXCLUDED.linked_entity_type,
+                    reminder_mins = EXCLUDED.reminder_mins,
+                    notify_channel = EXCLUDED.notify_channel,
+                    active = EXCLUDED.active,
+                    updated_at = now()
+                """,
+                (
+                    schedule_id, title.strip(), description.strip(),
+                    cat,
+                    (assigned_to.strip().lower() if assigned_to else created_by.strip().lower()),
+                    created_by.strip().lower(),
+                    rtype, Json(rule),
+                    time_of_day if time_of_day else None,
+                    next_due,
+                    linked_entity_id, linked_entity_type,
+                    reminder_mins, notify_channel,
+                    bool(active), Json(job_config or {}),
+                ),
+            )
+        conn.commit()
+
+    if linked_entity_id:
+        try:
+            ensure_edge(schedule_id, linked_entity_id, "linked_to", "linked_to")
+        except Exception:
+            logger.debug("upsert_schedule: ensure_edge failed for %s", schedule_id, exc_info=True)
+
+    return get_schedule(schedule_id)
+
+
 def get_schedule(schedule_id: str) -> dict | None:
     row = fetch_one_in_schema(SCHEMA, "SELECT * FROM schedules WHERE id = %s", (schedule_id,))
     return _row_to_dict(row)
