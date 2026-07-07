@@ -224,7 +224,7 @@ async def api_email_labels(account_id: str = ""):
     if not creds:
         return {"error": "No credentials for this account"}
     try:
-        labels = await asyncio.to_thread(gmail_client.list_labels, creds)
+        labels = await asyncio.to_thread(gmail_client.list_labels, creds, account_id)
         return {"labels": labels}
     except Exception as e:
         logger.error("EMAIL labels error: %s", e, exc_info=True)
@@ -243,7 +243,7 @@ async def api_email_message(account_id: str = "", gmail_msg_id: str = ""):
     if not creds:
         return {"error": "No credentials for this account"}
     try:
-        body = await asyncio.to_thread(gmail_client.get_message_body, creds, gmail_msg_id)
+        body = await asyncio.to_thread(gmail_client.get_message_body, creds, gmail_msg_id, account_id)
         return {"body": body}
     except Exception as e:
         logger.error("EMAIL message error: %s", e, exc_info=True)

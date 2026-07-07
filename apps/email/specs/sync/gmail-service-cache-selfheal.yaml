@@ -1,0 +1,80 @@
+kind: specification
+id: email.sync.gmail-service-cache-selfheal
+title: Gmail service cache keys on a stable per-account id (no per-hour stranding) + 401/invalid_grant self-heal with a persistent re-auth nudge
+state: live
+autonomy: gated
+behavior: >
+  The Gmail service cache (apps/email/gmail_client.py) keys each account's built service on a
+  STABLE per-account identity, and self-heals a revoked credential once before nudging the owner
+  to reconnect. STABLE KEY: _service_cache_key(credentials, cache_key=None) prefers an explicit
+  trailing cache_key (the account id, threaded from apps/email/runner.py::_process_account and the
+  UI routes), else refresh_token, else token. For an account WITHOUT a refresh_token the access
+  token rotates ~hourly; keying on the rotating token stranded a fresh service every hour
+  (unbounded cache growth), so a stable cache_key reuses ONE _service_cache entry per account. The
+  account id is passed as a keyword param and is NEVER written into the DB-persisted credentials
+  jsonb. When no cache_key is supplied (e.g. get_user_email during the OAuth connect flow, before
+  the account row exists) the refresh_token/token fallback keeps working unchanged. EVICT-ON-REBUILD:
+  invalidate_service(credentials, cache_key) drops the entry under the SAME key _build_service
+  cached it under, so a rebuild re-creates it in place with a fresh service object (no lingering
+  reference to the stale revoked Credentials). SELF-HEAL: _execute_with_reauth(credentials, cache_key,
+  build_request, on_reauth_fail=None) runs build_request(service) — build_request is a CALLABLE
+  taking the (possibly rebuilt) service and returning the executed request. On an auth failure —
+  googleapiclient HttpError with resp.status == 401, OR google.auth RefreshError whose message
+  contains 'invalid_grant' (often HTTP 400, not 401) — it invalidates the cached service, REBUILDS
+  it, and re-runs build_request on the FRESHLY REBUILT service exactly once (retrying a pre-built
+  request would reuse the stale, revoked service and is forbidden). If the single retry succeeds the
+  call returns normally. If the retry ALSO raises 401/invalid_grant the credential is genuinely
+  revoked (the proactive refresh in _build_service already swallows RefreshError, so a rebuild
+  cannot fix a truly-revoked token): it invokes on_reauth_fail (the runner-owned reconnect nudge, if
+  supplied) and raises WITHOUT looping (bounded: exactly one retry). Any error that is NOT
+  401/invalid_grant is re-raised unchanged, preserving each function's existing handling. The
+  auth-failure log path logs only a static message + the error CLASS name — never the exception
+  body, Credentials, or any token material. RE-AUTH NUDGE (runner-owned): _notify_reauth_needed(account)
+  sends a persistent, IDEMPOTENT reconnect notification via the app_platform.notifications shim
+  (create_notification, source_type='system', source_id=account id, recipient=account['user_id'],
+  channel='both'), at most once per account per day (checked against the durable notification record
+  via get_notifications(source_id) so a worker restart does not re-nudge) and RE-ARMED on the next
+  successful sync (a working credential clears the in-memory guard). The copy names the impact and
+  the exact fix ('Skipper lost access to your Gmail and can't read new email — open Settings → Email
+  and reconnect your Google account') and contains no token material. OUT OF SCOPE: the per-call
+  service rebuild sites (issue #99), the onboarding OAuth flows (get_oauth_url/exchange_code), an
+  in-app Email 'Gmail disconnected' banner (separate follow-up), and the OOM burst investigation.
+implements:
+- apps/email/gmail_client.py
+- apps/email/runner.py
+- apps/email/routes.py
+tests:
+- type: unit
+  path: tests/evolve/email/test_gmail_service_cache_selfheal.py
+  rubric: >
+    Stub googleapiclient build + Credentials + the notifications shim; NO real tokens. (a) STABLE
+    KEY: explicit cache_key + no refresh_token, builds under rotating access tokens -> ONE
+    _service_cache entry. (b) key precedence cache_key -> refresh_token -> token. (c) EVICT-ON-REBUILD:
+    invalidate then rebuild -> one entry, rebuilt service is a NEW object. (d) SELF-HEAL: build_request
+    401s on the first service then succeeds on the rebuilt one -> invalidate+rebuild+retry once,
+    returns success, retry ran on the REBUILT service, invalidate called once with the right
+    cache_key, no nudge. (e) BOUNDED + NOTIFY-ONCE: build_request 401s on both -> on_reauth_fail
+    called once and the helper raises (build_request called exactly twice, no loop). (f) non-auth
+    error re-raised unchanged, no invalidate/nudge. (g) NO TOKEN in the auth-fail logs. (h)
+    invalid_grant RefreshError takes the reauth path, a generic RefreshError / non-401 HttpError do
+    not. Runner nudge: idempotent (one create per account per day via the recent-record check) +
+    re-armed on success, channel='both', names reconnect, no token, no-op on missing recipient.
+- type: e2e
+  path: test host (validate-time)
+  rubric: >
+    On the test host with mock credentials (fake tokens, redacted): the stable-key path keeps
+    _service_cache at 1 entry/account across simulated token rotations; a simulated 401 drives
+    invalidate+rebuild+retry-once, then on persistent failure exactly one re-auth notification
+    (idempotent on a second poll). Capture fenced text; assert no token material in output.
+links: {}
+notes: >
+  ev-102 (operator-authored reliability + slow-leak bug; distinct from ev-99). Root cause:
+  _service_cache_key fell back to the rotating access token (strands ~1 service/hour for
+  no-refresh-token accounts) and invalidate_service had ZERO callers (no self-heal; a revoked
+  credential failed every poll until restart). Fix: stable explicit cache_key (account id) +
+  evict-on-rebuild + a shared 401/invalid_grant self-heal helper with an idempotent persistent
+  re-auth nudge. Operator-approved forks: A (account id as an explicit optional cache_key param, no
+  jsonb pollution); per-day re-nudge + re-arm on successful sync; channel='both' with the reconnect
+  copy now (in-app banner deferred as a follow-up). Security pins honored: retry against a FRESH
+  service, catch only 401/invalid_grant (re-raise all else), never log/persist token material.
+verified: true

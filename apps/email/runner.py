@@ -13,6 +13,62 @@ from config import logger
 from apps.email import data as dl_email
 from apps.email import gmail_client
 
+# Accounts we've already nudged to reconnect during the CURRENT outage. Cleared
+# on a successful sync (re-arm), so a recovered-then-revoked account nudges again;
+# the durable per-day cadence + dedup live in _notify_reauth_needed's DB check.
+_reauth_notified: set[str] = set()
+
+# Don't re-nudge an account to reconnect more than once per this window.
+_REAUTH_NUDGE_INTERVAL_SECONDS = 86400  # 1 day
+
+
+def _notify_reauth_needed(account: dict) -> None:
+    """Persistent, IDEMPOTENT re-auth notification for a revoked Gmail account.
+
+    Called by gmail_client's self-heal helper only AFTER an invalidate+rebuild+
+    retry still hit 401/invalid_grant (a genuinely revoked credential). Sends at
+    most one nudge per account per day (checked against the durable notification
+    record so a worker restart doesn't re-nudge), on channel='both' so the owner
+    is actually alerted, with copy naming the exact fix. Never includes any token
+    material. Re-armed by a successful sync (see _process_account)."""
+    account_id = account.get("id", "")
+    recipient = (account.get("user_id") or "").strip()
+    if not account_id or not recipient:
+        return
+    try:
+        from app_platform.notifications import create_notification, get_notifications
+        # Durable dedup + per-day cadence: skip if we nudged this account recently.
+        recent = get_notifications(recipient=recipient, source_type="system",
+                                   source_id=account_id, limit=1)
+        if recent:
+            created = recent[0].get("created_at", "")
+            try:
+                ts = datetime.fromisoformat(created)
+                if ts.tzinfo is None:
+                    ts = ts.replace(tzinfo=timezone.utc)
+                if (datetime.now(timezone.utc) - ts).total_seconds() < _REAUTH_NUDGE_INTERVAL_SECONDS:
+                    _reauth_notified.add(account_id)
+                    return
+            except Exception:
+                # Unparseable timestamp — fall back to the in-memory guard.
+                if account_id in _reauth_notified:
+                    return
+        elif account_id in _reauth_notified:
+            return
+        create_notification(
+            recipient=recipient,
+            message=("Skipper lost access to your Gmail and can't read new email — "
+                     "open Settings → Email and reconnect your Google account."),
+            source_type="system",
+            source_id=account_id,
+            channel="both",
+        )
+        _reauth_notified.add(account_id)
+        logger.warning("EMAIL: Gmail account %s needs reconnect — re-auth nudge sent to %s",
+                       account_id, recipient)
+    except Exception:
+        logger.error("EMAIL: failed to send re-auth nudge for account %s", account_id, exc_info=True)
+
 
 def run_email_sync(job: dict, ctx) -> str:
     """Main email sync handler — called by the job dispatcher.
@@ -86,6 +142,10 @@ def _process_account(account: dict, ctx=None) -> tuple[int, int]:
     """Process all new messages for an account. Returns (processed_count, matched_count)."""
     credentials = account["credentials"]
     account_id = account["id"]
+    # Stable per-account cache key (account id) so the hourly access-token rotation
+    # no longer strands a fresh Gmail service each cycle; the reauth callback fires
+    # a persistent reconnect nudge if a revoked credential can't self-heal.
+    reauth_cb = lambda: _notify_reauth_needed(account)
 
     # Parse last_synced_at
     after = None
@@ -105,10 +165,11 @@ def _process_account(account: dict, ctx=None) -> tuple[int, int]:
     label_cache = {}
 
     # Build label name→ID map for has_label condition matching
-    label_map = _build_label_map(credentials)
+    label_map = _build_label_map(credentials, account_id, reauth_cb)
 
     # Fetch new messages
-    messages = gmail_client.fetch_new_messages(credentials, after_timestamp=after, max_results=100)
+    messages = gmail_client.fetch_new_messages(credentials, after_timestamp=after, max_results=100,
+                                               cache_key=account_id, on_reauth_fail=reauth_cb)
 
     processed = 0
     matched = 0
@@ -125,7 +186,7 @@ def _process_account(account: dict, ctx=None) -> tuple[int, int]:
 
         # Evaluate rules
         matched_rule, actions_taken = _evaluate_and_execute(
-            credentials, account_id, msg, active_rules, label_cache, label_map,
+            credentials, account_id, msg, active_rules, label_cache, label_map, reauth_cb,
         )
 
         # Log the result
@@ -148,7 +209,7 @@ def _process_account(account: dict, ctx=None) -> tuple[int, int]:
     # set has changed (a rule created/edited/enabled) or a bounded drain is already in flight.
     # A routine unchanged-rules poll does NO backlog scan and NO per-email label API calls (ev-98).
     if active_rules and not (ctx and ctx.is_cancelled()):
-        rematched = _reprocess_unmatched(credentials, account, active_rules, label_cache, label_map, ctx)
+        rematched = _reprocess_unmatched(credentials, account, active_rules, label_cache, label_map, ctx, reauth_cb)
         matched += rematched
 
     # Persist refreshed OAuth token so the next sync starts with a valid token
@@ -158,6 +219,10 @@ def _process_account(account: dict, ctx=None) -> tuple[int, int]:
 
     # Update last_synced_at
     dl_email.update_account(account_id, last_synced_at=datetime.now(timezone.utc))
+
+    # Successful sync — re-arm the reconnect nudge so a future revocation notifies
+    # again (the account's credential is currently working).
+    _reauth_notified.discard(account_id)
 
     logger.info("EMAIL: Account %s — %d processed, %d matched rules",
                 account.get("email_address", account_id), processed, matched)
@@ -180,7 +245,7 @@ def _as_dt(v):
 
 def _reprocess_unmatched(credentials: dict, account: dict,
                          rules: list[dict], label_cache: dict, label_map: dict = None,
-                         ctx=None) -> int:
+                         ctx=None, on_reauth_fail=None) -> int:
     """Re-evaluate previously-unmatched log entries against current rules — GATED + BOUNDED.
 
     A routine poll with UNCHANGED rules does nothing here (no backlog query, no label API
@@ -277,10 +342,11 @@ def _reprocess_unmatched(credentials: dict, account: dict,
 
         # Fetch current labels from Gmail if any rule needs them
         if needs_labels:
-            msg["labels"] = gmail_client.get_message_labels(credentials, entry["gmail_msg_id"])
+            msg["labels"] = gmail_client.get_message_labels(credentials, entry["gmail_msg_id"],
+                                                            cache_key=account_id, on_reauth_fail=on_reauth_fail)
 
         matched_rule, actions_taken = _evaluate_and_execute(
-            credentials, account_id, msg, rules, label_cache, label_map,
+            credentials, account_id, msg, rules, label_cache, label_map, on_reauth_fail,
         )
 
         if matched_rule:
@@ -317,10 +383,10 @@ def _reprocess_unmatched(credentials: dict, account: dict,
     return rematched
 
 
-def _build_label_map(credentials: dict) -> dict:
+def _build_label_map(credentials: dict, cache_key: str = None, on_reauth_fail=None) -> dict:
     """Build a label name→ID map for the account (used for has_label matching)."""
     try:
-        labels = gmail_client.list_labels(credentials)
+        labels = gmail_client.list_labels(credentials, cache_key=cache_key, on_reauth_fail=on_reauth_fail)
         lmap = {}
         for l in labels:
             lmap[l["name"].lower()] = l["id"]
@@ -334,17 +400,17 @@ def _build_label_map(credentials: dict) -> dict:
 
 def _evaluate_and_execute(credentials: dict, account_id: str, msg: dict,
                           rules: list[dict], label_cache: dict,
-                          label_map: dict = None) -> tuple[str | None, list[dict]]:
+                          label_map: dict = None, on_reauth_fail=None) -> tuple[str | None, list[dict]]:
     """Evaluate rules against a message and execute actions.
 
     Returns (matched_rule_id, actions_taken_list).
     """
     for rule in rules:
         conditions = rule.get("conditions", {})
-        if _matches(msg, conditions, credentials, label_map):
+        if _matches(msg, conditions, credentials, label_map, account_id, on_reauth_fail):
             # Execute actions
             actions = rule.get("actions", {})
-            taken = _execute_actions(credentials, msg["id"], actions, label_cache)
+            taken = _execute_actions(credentials, msg["id"], actions, label_cache, account_id, on_reauth_fail)
 
             # Increment match count
             dl_email.increment_match_count(rule["id"])
@@ -355,7 +421,8 @@ def _evaluate_and_execute(credentials: dict, account_id: str, msg: dict,
     return None, []
 
 
-def _matches(msg: dict, conditions: dict, credentials: dict, label_map: dict = None) -> bool:
+def _matches(msg: dict, conditions: dict, credentials: dict, label_map: dict = None,
+             cache_key: str = None, on_reauth_fail=None) -> bool:
     """Check if a message matches all non-null conditions.
 
     label_map: optional {label_name_lower: label_id} for resolving has_label.
@@ -375,7 +442,8 @@ def _matches(msg: dict, conditions: dict, credentials: dict, label_map: dict = N
     # body_contains — requires fetching the message body
     bc = conditions.get("body_contains")
     if bc and bc.strip():
-        body = gmail_client.get_message_body(credentials, msg["id"])
+        body = gmail_client.get_message_body(credentials, msg["id"],
+                                             cache_key=cache_key, on_reauth_fail=on_reauth_fail)
         if bc.lower() not in body.lower():
             return False
 
@@ -401,7 +469,7 @@ def _matches(msg: dict, conditions: dict, credentials: dict, label_map: dict = N
 
 
 def _execute_actions(credentials: dict, msg_id: str, actions: dict,
-                     label_cache: dict) -> list[dict]:
+                     label_cache: dict, cache_key: str = None, on_reauth_fail=None) -> list[dict]:
     """Execute actions on a message. Returns list of action dicts taken."""
     taken = []
 
@@ -411,9 +479,11 @@ def _execute_actions(credentials: dict, msg_id: str, actions: dict,
         label_ids = []
         for name in add_labels:
             if name not in label_cache:
-                label_cache[name] = gmail_client.ensure_label(credentials, name)
+                label_cache[name] = gmail_client.ensure_label(credentials, name,
+                                                              cache_key=cache_key, on_reauth_fail=on_reauth_fail)
             label_ids.append(label_cache[name])
-        gmail_client.modify_message(credentials, msg_id, add_labels=label_ids)
+        gmail_client.modify_message(credentials, msg_id, add_labels=label_ids,
+                                    cache_key=cache_key, on_reauth_fail=on_reauth_fail)
         taken.append({"action": "add_labels", "labels": add_labels})
 
     # remove_labels
@@ -430,19 +500,21 @@ def _execute_actions(credentials: dict, msg_id: str, actions: dict,
                 label_ids.append(name.upper())
             else:
                 if name not in label_cache:
-                    label_cache[name] = gmail_client.ensure_label(credentials, name)
+                    label_cache[name] = gmail_client.ensure_label(credentials, name,
+                                                                  cache_key=cache_key, on_reauth_fail=on_reauth_fail)
                 label_ids.append(label_cache[name])
-        gmail_client.modify_message(credentials, msg_id, remove_labels=label_ids)
+        gmail_client.modify_message(credentials, msg_id, remove_labels=label_ids,
+                                    cache_key=cache_key, on_reauth_fail=on_reauth_fail)
         taken.append({"action": "remove_labels", "labels": remove_labels})
 
     # mark_read
     if actions.get("mark_read"):
-        gmail_client.mark_as_read(credentials, msg_id)
+        gmail_client.mark_as_read(credentials, msg_id, cache_key=cache_key, on_reauth_fail=on_reauth_fail)
         taken.append({"action": "mark_read"})
 
     # archive (shorthand for remove INBOX)
     if actions.get("archive"):
-        gmail_client.archive_message(credentials, msg_id)
+        gmail_client.archive_message(credentials, msg_id, cache_key=cache_key, on_reauth_fail=on_reauth_fail)
         taken.append({"action": "archive"})
 
     return taken
