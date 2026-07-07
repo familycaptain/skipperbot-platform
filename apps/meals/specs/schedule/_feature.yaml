@@ -1,0 +1,6 @@
+kind: feature
+id: meals.schedule
+title: Meal scheduling (proactive nightly dinner check)
+state: live
+links: {}
+notes: ''
