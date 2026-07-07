@@ -1,0 +1,14 @@
+-- Drop the dead `schedule_expr` column from app_jobs.jobs.
+--
+-- A job is ONE-SHOT: it runs once when claimed. Recurrence lives in
+-- public.schedules (schedule_job_trigger submits a fresh one-shot job each time
+-- a schedule is due). `schedule_expr` (jsonb) was accepted by create_job/
+-- submit_job and stored, but NO scheduler ever read it to fire anything — a
+-- silent footgun that made callers think they'd created a recurring job when
+-- they hadn't (it bit multiple apps, e.g. the meals dinner-check). Removing the
+-- column so a self-scheduling job simply cannot be expressed; all recurring
+-- work must go through public.schedules.
+--
+-- (The older `schedule TEXT` cron column was already dropped in legacy
+-- migration 063; this removes its jsonb sibling.)
+ALTER TABLE jobs DROP COLUMN IF EXISTS schedule_expr;

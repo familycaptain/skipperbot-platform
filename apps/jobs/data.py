@@ -75,7 +75,6 @@ def create_job(
     job_type: str,
     created_by: str = "",
     description: str = "",
-    schedule_expr: dict | None = None,
     scheduled_for: str = "",
     notify_user: str = "",
     config: dict | None = None,
@@ -83,6 +82,13 @@ def create_job(
     max_retries: int = 0,
 ) -> dict:
     """Create a new job in the queue.
+
+    A job is ONE-SHOT: it runs once when claimed. There is NO recurrence on a
+    job — recurring work is a ``public.schedules`` row (via
+    ``app_platform.schedules.create_schedule``) that submits a fresh one-shot
+    job each time it's due. (The old ``schedule``/``schedule_expr`` cron fields
+    that let callers *think* they scheduled a job were dead — stored, never
+    fired — and are removed; see migration 003.)
 
     Returns the created job row (standardized shape).
     """
@@ -93,17 +99,16 @@ def create_job(
                 """
                 INSERT INTO jobs (
                     id, name, job_type, command, description,
-                    schedule_expr, scheduled_for, notify_user, status,
+                    scheduled_for, notify_user, status,
                     created_by, created_at, progress, progress_pct,
                     cancelled, config, output, max_retries, parent_job_id
                 ) VALUES (
-                    %s, %s, %s, '', %s, %s, %s, %s, 'queued',
+                    %s, %s, %s, '', %s, %s, %s, 'queued',
                     %s, now(), 'Queued', 0, FALSE, %s, '{}', %s, %s
                 ) RETURNING *
                 """,
                 (
                     job_id, name, job_type, description,
-                    Json(schedule_expr or {}),
                     scheduled_for, notify_user, created_by,
                     Json(config or {}), max_retries, parent_job_id,
                 ),
@@ -546,7 +551,6 @@ def _row(row: dict) -> dict:
         "job_type": row.get("job_type") or "shell",
         "command": row.get("command") or "",
         "description": row.get("description") or "",
-        "schedule_expr": row.get("schedule_expr") or {},
         "scheduled_for": row.get("scheduled_for") or "",
         "notify_user": row.get("notify_user") or "",
         "status": row.get("status") or "queued",

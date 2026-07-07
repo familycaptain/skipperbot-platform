@@ -209,12 +209,17 @@ def submit_job(
     created_by: str = "",
     notify_user: str = "",
     description: str = "",
-    schedule_expr: dict | None = None,
     scheduled_for: str = "",
     max_retries: int = 0,
     parent_job_id: str = "",
 ) -> dict:
-    """Submit a new job to the queue.
+    """Submit a new job to the queue — it runs ONCE when claimed.
+
+    There is no recurrence here: to run something on a cadence, create a
+    ``public.schedules`` row (``app_platform.schedules.create_schedule``, linked
+    to this ``job_type``) — the schedule trigger submits a fresh one-shot job
+    each time it's due. (A job cannot self-schedule; the old ``schedule_expr``
+    was a dead no-op and is gone.)
 
     Returns the created job dict.
     """
@@ -230,7 +235,6 @@ def submit_job(
         job_type=job_type,
         created_by=created_by,
         description=description,
-        schedule_expr=schedule_expr,
         scheduled_for=scheduled_for,
         notify_user=notify_user or created_by,
         config=config,

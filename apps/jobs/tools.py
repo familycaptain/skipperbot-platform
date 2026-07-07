@@ -55,22 +55,25 @@ def create_job(
     notify_user: str = "",
     description: str = "",
 ) -> str:
-    """Create a new scheduled or on-demand job.
+    """Create a job. A job runs ONCE (on demand / when claimed) — it does NOT
+    recur on its own.
+
+    To run something on a cadence, do NOT expect this to schedule it: create a
+    **Schedules** entry (the Schedules app / create_schedule) linked to this
+    job's type — the schedule submits a fresh one-shot job each time it's due.
 
     Args:
         name: Human-readable job name (e.g. "Backup database").
         command: Shell command or script path to execute.
         created_by: Who is creating this job (person name).
-        schedule: **Deprecated.** All recurring jobs are now driven by
-                  the Schedules app (legacy migration 063 dropped the
-                  schedule column). This parameter is accepted but
-                  ignored to preserve backward compatibility — use a
-                  Schedules entry linked to this job instead.
+        schedule: **Ignored — a job cannot self-schedule.** Passing it does NOT
+                  make the job recurring (this was a silent footgun; the backing
+                  column is gone). Create a Schedules entry to recur.
         notify_user: Who to notify on completion. Defaults to created_by.
         description: Optional description.
 
     Returns:
-        Confirmation with job ID.
+        Confirmation with job ID (and a warning if a schedule was passed).
     """
     try:
         if not name or not name.strip():
@@ -80,12 +83,6 @@ def create_job(
         if not created_by or not created_by.strip():
             return "Error: created_by is required."
 
-        if schedule and schedule.strip():
-            _logger.warning(
-                "create_job: 'schedule' parameter is deprecated — link this "
-                "job to a Schedules entry instead."
-            )
-
         result = _create_job(
             name=name.strip(),
             command=command.strip(),
@@ -94,10 +91,15 @@ def create_job(
             description=description.strip() if description else "",
         )
 
-        out = f"Job created (ID: {result['id']}).\n"
+        out = ""
+        if schedule and schedule.strip():
+            out += ("⚠ 'schedule' was IGNORED — a job runs once and cannot "
+                    "self-schedule. To make this recurring, create a Schedules "
+                    "entry linked to this job.\n")
+        out += f"Job created (ID: {result['id']}) — runs ONCE.\n"
         out += f"  Name: {result['name']}\n"
         out += f"  Command: {result['command']}\n"
-        out += "  Schedule: manual (use the Schedules app for recurrence)\n"
+        out += "  Recurrence: none (use the Schedules app to run it on a cadence)\n"
         out += f"  Notify: {result.get('notify_user')}\n"
         return out
     except Exception as e:
