@@ -89,8 +89,17 @@ def set(  # noqa: A001 — intentional name to match the natural API
     *,
     scope: str | None = None,
     by: str = "",
+    secret: bool = False,
 ) -> None:
-    """Write a config value. Auto-scopes to the calling app unless ``scope`` is given."""
+    """Write a config value. Auto-scopes to the calling app unless ``scope`` is given.
+
+    On a successful write, emit a **value-free** ``config.changed`` event
+    (``{scope, key}`` only — never the value) so interested apps can react
+    (e.g. re-reconcile a schedule when its time setting changes). Secret-flagged
+    keys are skipped (``secret=True``, passed through by ``settings.set``): we
+    never signal that a credential changed. The emit is fault-isolated and can
+    NEVER fail the write.
+    """
     scope = scope or _infer_scope()
     execute(
         """
@@ -103,6 +112,16 @@ def set(  # noqa: A001 — intentional name to match the natural API
         """,
         (scope, key, json.dumps(value), by),
     )
+
+    if not secret:
+        try:
+            from app_platform import events as _events
+            _events.emit("config.changed", {"scope": scope, "key": key},
+                         emitted_by="config")
+        except Exception:
+            # A subscriber raise, a missing app_events table at early boot, an
+            # import hiccup — none of it may un-write the value just stored.
+            logger.debug("config.changed emit failed for %s/%s", scope, key, exc_info=True)
 
 
 def delete(key: str, *, scope: str | None = None) -> bool:

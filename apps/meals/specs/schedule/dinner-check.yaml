@@ -1,0 +1,51 @@
+kind: specification
+id: meals.schedule.dinner-check
+title: Nightly dinner-check fires on the modern schedule seam at an operator-configurable time
+state: live
+autonomy: gated
+behavior: >
+  The Meals app runs a nightly dinner check at an operator-configured LOCAL time. meals_dinner_check is
+  registered in the manifest job_types (-> handlers.handle_dinner_check) and fires from EXACTLY ONE
+  app_schedules row (stable id sch-meals-dinner-check, linked_entity_type='job', recurrence_type='daily')
+  via apps/schedules/job_trigger.py -> submit_job, ONCE per day at the chosen time_of_day. The handler
+  sends the proactive notification (create_notification, source_type='meals_dinner_check', recipient = the
+  canonical household user) ONLY when tonight's dinner is not already logged. The time is a Meals config
+  setting `dinner_inquiry_time` (enum/choices: an explicit Off + curated local times, default 21:00),
+  surfaced in the Settings app + Meals cog. A change to the setting reschedules IMMEDIATELY: app_platform
+  config.set() emits a value-free, fault-isolated `config.changed {scope,key}` event (secret keys skipped);
+  Meals subscribes and reconcile_dinner_schedule() re-reads the setting, whitelists it (Off/unrecognized ->
+  inactive, fail-closed), and create-or-updates the single row (time_of_day + active), setting next_due
+  from now on (re)activation so re-enabling after Off fires at the configured time, never immediately. The
+  deprecated cron-on-app_jobs.jobs seed (migration 003) is removed. A reply to the notification is routed
+  (domain_for_source_type: meals -> 'meals' domain) so the responding turn has the meals log tool and logs
+  a meal_log dinner row for today AND adds/updates the meal library.
+implements:
+- apps/meals/manifest.yaml
+- apps/meals/schedule.py
+- apps/meals/hooks.py
+- apps/meals/handlers.py
+- app_platform/config.py
+- app_platform/consciousness.py
+- apps/schedules/data.py
+tests:
+- type: unit
+  path: tests/evolve/meals/test_dinner_schedule.py
+  rubric: >
+    15 unittest-style offline tests (stub settings/schedules/events): exactly-one single-row upsert
+    (idempotent + concurrent, ON CONFLICT id); reconcile enum times/Off/re-enable with FUTURE next_due;
+    EXACTLY ONE fire per day (recurrence daily, not an interval); fail-closed on out-of-enum; config.changed
+    emits {scope,key} only + skips secret keys + subscriber-raise isolation; manifest job_types + enum
+    choices parse; handle_dinner_check logged->no-notify / not-logged->one notify; domain_for_source_type
+    meals mapping. All pass.
+- type: e2e
+  path: test host (validate-time)
+  rubric: >
+    Proven live on the test host (feature/ev-108). Post-bootstrap: exactly one active sch-meals-dinner-check
+    row (daily, 21:00), zero legacy app_jobs rows. PATCH dinner_inquiry_time (Settings API, admin) -> the
+    schedule reschedules IMMEDIATELY (time_of_day updated); Off -> active=false; re-enable -> active + future
+    next_due (no immediate fire). Submitting meals_dinner_check runs the handler -> notification delivered to
+    the canonical user (screenshot); replying 'we had spaghetti and meatballs...' logs a meal_log dinner row
+    for today (description recorded) AND creates/links the library meal. Evidence on issue #108.
+links: {}
+notes: 'ev-108. Verified live at Gate-2 on the test host; enum-with-Off setting, config.changed event sync, race-safe single-row seed, source_type reply routing.'
+verified: true

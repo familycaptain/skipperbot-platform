@@ -260,6 +260,8 @@ def domain_for_source_type(source_type: str) -> str:
         return "onboarding"
     if st.startswith("chores"):
         return "chores"
+    if st.startswith("meals"):
+        return "meals"
     if st.startswith("bounty"):
         return "bounties"
     if st in ("reminder", "nag"):

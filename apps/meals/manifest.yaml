@@ -20,6 +20,46 @@ entity_types:
     name: Meal Tag
     table: meal_tags
 
+platform_deps:
+  - notifications   # dinner-check queues a notification
+  - events          # subscribes to config.changed to re-reconcile the schedule
+  - schedules       # owns the meals_dinner_check daily schedule row
+
+# Scheduled background job(s). The nightly dinner check runs once per day at
+# the operator-chosen time (see the dinner_inquiry_time setting below); the
+# meals_dinner_check schedule row (owned by the schedules app) triggers it.
+job_types:
+  - type: meals_dinner_check
+    handler: handlers.handle_dinner_check
+    max_concurrent: 1
+
+# Per-app settings — rendered into the cog wheel via the platform's
+# auto-generated settings form. `choices` (not `options`) is what the manifest
+# loader + settings UI consume; {value,label} lets the stored 24h value carry a
+# friendly 12h label. `Off` disables the nightly check entirely.
+config:
+  - key: dinner_inquiry_time
+    type: enum
+    default: "21:00"
+    label: "Nightly dinner check time"
+    description: >
+      When to run the nightly dinner check (platform-local time). Fires exactly
+      once per day at the chosen time and asks what you had for dinner if it
+      isn't logged yet. Set to Off to disable it.
+    choices:
+      - { value: "Off",   label: "Off (disabled)" }
+      - { value: "17:00", label: "5:00 PM" }
+      - { value: "17:30", label: "5:30 PM" }
+      - { value: "18:00", label: "6:00 PM" }
+      - { value: "18:30", label: "6:30 PM" }
+      - { value: "19:00", label: "7:00 PM" }
+      - { value: "19:30", label: "7:30 PM" }
+      - { value: "20:00", label: "8:00 PM" }
+      - { value: "20:30", label: "8:30 PM" }
+      - { value: "21:00", label: "9:00 PM" }
+      - { value: "21:30", label: "9:30 PM" }
+      - { value: "22:00", label: "10:00 PM" }
+
 tool_category:
   description: >
     Browse, filter, and manage the family meal library. Find meal ideas by
