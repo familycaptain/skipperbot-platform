@@ -11,7 +11,17 @@ behavior: With 0 connected email accounts, the Email app opens on the Accounts t
   error never misroutes a user who has accounts.
 implements:
 - apps/email/ui/EmailApp.jsx
-tests: []
+tests:
+- type: e2e
+  path: test host (validate-time)
+  rubric: >
+    Proven live on the test host at Gate-2 (before/after evidence on issue #60); validate-time
+    only, as the repo has no JS component test runner for this React routing. With 0 connected
+    accounts the Email app opens on the Accounts tab (not the empty Activity tab); with >=1 it
+    opens on Activity. The initial routing fires exactly once, never overrides a manual tab
+    selection, and never re-hijacks the tab when accounts later drop to 0; it routes only on a
+    confirmed-successful accounts fetch (a transient error never misroutes). The web bundle
+    compiles via the vite build gate.
 links: {}
 notes: 'Verified live at Gate-2 validate on the test host (0 accounts -> Accounts; web bundle
   compiles; manual nav intact; before/after evidence on issue #60). Repo has no JS component
