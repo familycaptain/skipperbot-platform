@@ -14,7 +14,9 @@ from email.utils import parsedate_to_datetime
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request as GoogleAuthRequest
+from google.auth.exceptions import RefreshError
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 from config import logger
 
@@ -99,17 +101,83 @@ _service_cache: dict[str, tuple] = {}
 _service_cache_lock = threading.Lock()
 
 
-def _service_cache_key(credentials: dict) -> str:
-    return credentials.get("refresh_token") or credentials.get("token") or ""
+def _service_cache_key(credentials: dict, cache_key: str = None) -> str:
+    """The cache key for an account's service.
+
+    Prefer an explicit STABLE per-account identity (`cache_key`, e.g. the account
+    id threaded from the runner): for accounts WITHOUT a refresh_token the access
+    token rotates ~hourly, so keying on it stranded a fresh service every hour
+    (unbounded cache growth). When no cache_key is supplied (e.g. get_user_email
+    during the OAuth connect flow, before the account row exists) fall back to the
+    refresh_token, then the token — today's behaviour, kept working.
+    """
+    return cache_key or credentials.get("refresh_token") or credentials.get("token") or ""
 
 
-def invalidate_service(credentials: dict) -> None:
-    """Drop the cached service for these credentials (call on a 401/invalid_grant)."""
+def invalidate_service(credentials: dict, cache_key: str = None) -> None:
+    """Drop the cached service for this account (call on a 401/invalid_grant).
+
+    Uses the SAME key `_build_service` cached under, so a subsequent rebuild
+    re-creates the entry in place (evict-on-rebuild — no stranding).
+    """
     with _service_cache_lock:
-        _service_cache.pop(_service_cache_key(credentials), None)
+        _service_cache.pop(_service_cache_key(credentials, cache_key), None)
 
 
-def _build_service(credentials: dict):
+def _is_auth_error(exc: Exception) -> bool:
+    """True only for the two revoked/expired-credential signals we self-heal:
+    a googleapiclient HttpError with HTTP 401, or a google-auth RefreshError whose
+    message contains 'invalid_grant' (which is often HTTP 400, not 401). Every
+    other error returns False so callers re-raise it unchanged."""
+    if isinstance(exc, RefreshError):
+        return "invalid_grant" in str(exc).lower()
+    if isinstance(exc, HttpError):
+        resp = getattr(exc, "resp", None)
+        return resp is not None and getattr(resp, "status", None) == 401
+    return False
+
+
+def _execute_with_reauth(credentials: dict, cache_key, build_request, on_reauth_fail=None):
+    """Run `build_request(service)` with a single self-healing re-auth retry.
+
+    `build_request` is a CALLABLE taking the (possibly rebuilt) service and
+    returning the executed result — e.g. ``lambda svc: svc.users()...execute()``.
+    On a 401 / invalid_grant we invalidate the cached service, REBUILD it fresh,
+    and re-run `build_request` on the FRESHLY REBUILT service exactly once
+    (retrying a pre-built request would reuse the stale, revoked service). If the
+    single retry ALSO fails with 401/invalid_grant the credential is genuinely
+    revoked (a rebuild can't fix that — the proactive refresh already swallows
+    RefreshError), so we invoke `on_reauth_fail` (the caller's idempotent re-auth
+    notification, if any) and raise WITHOUT looping. Any non-auth error is
+    re-raised unchanged. Never logs the exception body, Credentials, or tokens.
+    """
+    service = _build_service(credentials, cache_key)
+    try:
+        return build_request(service)
+    except Exception as first:
+        if not _is_auth_error(first):
+            raise
+        logger.warning("GMAIL: auth failure (%s) — invalidating + rebuilding service once",
+                       type(first).__name__)
+        invalidate_service(credentials, cache_key)
+        service = _build_service(credentials, cache_key)
+        try:
+            return build_request(service)
+        except Exception as second:
+            if not _is_auth_error(second):
+                raise
+            logger.error("GMAIL: re-auth retry still failing (%s) for cache_key present=%s "
+                         "— credential revoked, prompting reconnect",
+                         type(second).__name__, bool(cache_key))
+            if on_reauth_fail is not None:
+                try:
+                    on_reauth_fail()
+                except Exception:
+                    logger.debug("GMAIL: on_reauth_fail callback raised", exc_info=True)
+            raise
+
+
+def _build_service(credentials: dict, cache_key: str = None):
     """Return a per-account cached Gmail API service (built once, reused).
 
     Reusing the service reuses its HTTP/SSL transport, so the Gmail discovery
@@ -117,7 +185,7 @@ def _build_service(credentials: dict):
     every call. google-auth refreshes the access token on the cached creds; we
     mirror the fresh token back into *credentials* so callers/DB stay current.
     """
-    key = _service_cache_key(credentials)
+    key = _service_cache_key(credentials, cache_key)
     with _service_cache_lock:
         cached = _service_cache.get(key)
     if cached is not None:
@@ -163,20 +231,21 @@ def _build_service(credentials: dict):
     return service
 
 
-def get_user_email(credentials: dict) -> str:
+def get_user_email(credentials: dict, cache_key: str = None, on_reauth_fail=None) -> str:
     """Fetch the authenticated user's email address."""
-    service = _build_service(credentials)
-    profile = service.users().getProfile(userId="me").execute()
-    return profile.get("emailAddress", "")
+    return _execute_with_reauth(
+        credentials, cache_key,
+        lambda svc: svc.users().getProfile(userId="me").execute(),
+        on_reauth_fail,
+    ).get("emailAddress", "")
 
 
-def fetch_new_messages(credentials: dict, after_timestamp: datetime = None, max_results: int = 100) -> list[dict]:
+def fetch_new_messages(credentials: dict, after_timestamp: datetime = None, max_results: int = 100,
+                       cache_key: str = None, on_reauth_fail=None) -> list[dict]:
     """Fetch new inbox messages since a timestamp.
 
     Returns list of dicts with: id, threadId, subject, sender, date, labels, snippet
     """
-    service = _build_service(credentials)
-
     # Build query
     query_parts = ["in:inbox"]
     if after_timestamp:
@@ -185,8 +254,10 @@ def fetch_new_messages(credentials: dict, after_timestamp: datetime = None, max_
         query_parts.append(f"after:{epoch}")
     query = " ".join(query_parts)
 
-    results = []
-    try:
+    def _op(service):
+        # The whole list+get walk runs on the SAME service instance the reauth
+        # helper hands us, so a rebuilt service is used consistently on a retry.
+        results = []
         response = service.users().messages().list(
             userId="me", q=query, maxResults=max_results,
         ).execute()
@@ -204,12 +275,13 @@ def fetch_new_messages(credentials: dict, after_timestamp: datetime = None, max_
                 results.append(_parse_message(msg))
             except Exception as e:
                 logger.warning("GMAIL: Failed to fetch message %s: %s", msg_ref["id"], e)
+        return results
 
+    try:
+        return _execute_with_reauth(credentials, cache_key, _op, on_reauth_fail)
     except Exception as e:
         logger.error("GMAIL: Failed to list messages: %s", e)
         raise
-
-    return results
 
 
 def _parse_message(msg: dict) -> dict:
@@ -236,11 +308,14 @@ def _parse_message(msg: dict) -> dict:
     }
 
 
-def get_message_body(credentials: dict, msg_id: str) -> str:
+def get_message_body(credentials: dict, msg_id: str, cache_key: str = None, on_reauth_fail=None) -> str:
     """Fetch the plain-text body of a message (for body_contains matching)."""
-    service = _build_service(credentials)
     try:
-        msg = service.users().messages().get(userId="me", id=msg_id, format="full").execute()
+        msg = _execute_with_reauth(
+            credentials, cache_key,
+            lambda svc: svc.users().messages().get(userId="me", id=msg_id, format="full").execute(),
+            on_reauth_fail,
+        )
         return _extract_text(msg.get("payload", {}))
     except Exception as e:
         logger.warning("GMAIL: Failed to get body for %s: %s", msg_id, e)
@@ -262,91 +337,104 @@ def _extract_text(payload: dict) -> str:
 
 
 def modify_message(credentials: dict, msg_id: str,
-                   add_labels: list[str] = None, remove_labels: list[str] = None):
+                   add_labels: list[str] = None, remove_labels: list[str] = None,
+                   cache_key: str = None, on_reauth_fail=None):
     """Add/remove labels on a message."""
-    service = _build_service(credentials)
     body = {}
     if add_labels:
         body["addLabelIds"] = add_labels
     if remove_labels:
         body["removeLabelIds"] = remove_labels
     if body:
-        service.users().messages().modify(userId="me", id=msg_id, body=body).execute()
+        _execute_with_reauth(
+            credentials, cache_key,
+            lambda svc: svc.users().messages().modify(userId="me", id=msg_id, body=body).execute(),
+            on_reauth_fail,
+        )
 
 
-def ensure_label(credentials: dict, label_name: str) -> str:
+def ensure_label(credentials: dict, label_name: str, cache_key: str = None, on_reauth_fail=None) -> str:
     """Ensure a Gmail label exists. Returns the label ID."""
-    service = _build_service(credentials)
-    # Check existing labels
-    result = service.users().labels().list(userId="me").execute()
-    for label in result.get("labels", []):
-        if label["name"].lower() == label_name.lower():
-            return label["id"]
-    # Create it
-    new_label = service.users().labels().create(
-        userId="me",
-        body={"name": label_name, "labelListVisibility": "labelShow", "messageListVisibility": "show"},
-    ).execute()
-    return new_label["id"]
+    def _op(service):
+        # Check existing labels
+        result = service.users().labels().list(userId="me").execute()
+        for label in result.get("labels", []):
+            if label["name"].lower() == label_name.lower():
+                return label["id"]
+        # Create it
+        new_label = service.users().labels().create(
+            userId="me",
+            body={"name": label_name, "labelListVisibility": "labelShow", "messageListVisibility": "show"},
+        ).execute()
+        return new_label["id"]
+
+    return _execute_with_reauth(credentials, cache_key, _op, on_reauth_fail)
 
 
-def list_labels(credentials: dict) -> list[dict]:
+def list_labels(credentials: dict, cache_key: str = None, on_reauth_fail=None) -> list[dict]:
     """Fetch all Gmail labels for an account.
 
     Returns list of dicts with: id, name, type, messagesTotal, messagesUnread,
     threadsTotal, threadsUnread, color
     """
-    service = _build_service(credentials)
-    result = service.users().labels().list(userId="me").execute()
-    labels = []
-    for label in result.get("labels", []):
-        # Fetch full label details for counts
-        try:
-            detail = service.users().labels().get(userId="me", id=label["id"]).execute()
-            labels.append({
-                "id": detail["id"],
-                "name": detail["name"],
-                "type": detail.get("type", "user"),
-                "messages_total": detail.get("messagesTotal", 0),
-                "messages_unread": detail.get("messagesUnread", 0),
-                "threads_total": detail.get("threadsTotal", 0),
-                "threads_unread": detail.get("threadsUnread", 0),
-                "color": detail.get("color"),
-            })
-        except Exception:
-            labels.append({
-                "id": label["id"],
-                "name": label["name"],
-                "type": label.get("type", "user"),
-                "messages_total": 0,
-                "messages_unread": 0,
-                "threads_total": 0,
-                "threads_unread": 0,
-                "color": None,
-            })
-    return labels
+    def _op(service):
+        result = service.users().labels().list(userId="me").execute()
+        labels = []
+        for label in result.get("labels", []):
+            # Fetch full label details for counts
+            try:
+                detail = service.users().labels().get(userId="me", id=label["id"]).execute()
+                labels.append({
+                    "id": detail["id"],
+                    "name": detail["name"],
+                    "type": detail.get("type", "user"),
+                    "messages_total": detail.get("messagesTotal", 0),
+                    "messages_unread": detail.get("messagesUnread", 0),
+                    "threads_total": detail.get("threadsTotal", 0),
+                    "threads_unread": detail.get("threadsUnread", 0),
+                    "color": detail.get("color"),
+                })
+            except Exception:
+                labels.append({
+                    "id": label["id"],
+                    "name": label["name"],
+                    "type": label.get("type", "user"),
+                    "messages_total": 0,
+                    "messages_unread": 0,
+                    "threads_total": 0,
+                    "threads_unread": 0,
+                    "color": None,
+                })
+        return labels
+
+    return _execute_with_reauth(credentials, cache_key, _op, on_reauth_fail)
 
 
-def get_message_labels(credentials: dict, msg_id: str) -> list[str]:
+def get_message_labels(credentials: dict, msg_id: str, cache_key: str = None, on_reauth_fail=None) -> list[str]:
     """Fetch the current label IDs for a message (lightweight metadata call)."""
-    service = _build_service(credentials)
     try:
-        msg = service.users().messages().get(userId="me", id=msg_id, format="metadata",
-                                              metadataHeaders=[]).execute()
+        msg = _execute_with_reauth(
+            credentials, cache_key,
+            lambda svc: svc.users().messages().get(
+                userId="me", id=msg_id, format="metadata", metadataHeaders=[]).execute(),
+            on_reauth_fail,
+        )
         return msg.get("labelIds", [])
     except Exception as e:
         logger.warning("GMAIL: Failed to get labels for %s: %s", msg_id, e)
         return []
 
 
-def mark_as_read(credentials: dict, msg_id: str):
+def mark_as_read(credentials: dict, msg_id: str, cache_key: str = None, on_reauth_fail=None):
     """Mark a message as read by removing the UNREAD label."""
-    modify_message(credentials, msg_id, remove_labels=["UNREAD"])
+    modify_message(credentials, msg_id, remove_labels=["UNREAD"],
+                   cache_key=cache_key, on_reauth_fail=on_reauth_fail)
 
 
-def archive_message(credentials: dict, msg_id: str):
+def archive_message(credentials: dict, msg_id: str, cache_key: str = None, on_reauth_fail=None):
     """Archive a message by removing the INBOX label."""
-    modify_message(credentials, msg_id, remove_labels=["INBOX"])
+    modify_message(credentials, msg_id, remove_labels=["INBOX"],
+                   cache_key=cache_key, on_reauth_fail=on_reauth_fail)
 
 
 def revoke_token(credentials: dict):
