@@ -21,6 +21,39 @@ from config import logger, PROMPTS_DIR
 from app_platform.time import get_timezone
 import agent_loop
 
+# ---------------------------------------------------------------------------
+# DOC_THINK tool surface (ev-89): a LEAN category baseline + on-demand slots via
+# the shared tool_slots helper, replacing the old hardcoded tool-NAME allowlist.
+# ---------------------------------------------------------------------------
+# The always-on lean baseline. app:documents + app:folders (REAL registry keys —
+# bare names resolve to ZERO tools) cover DOC's doc AND folder tools; core carries
+# memory/recall. (create_doc_in_folder lives in app:folders.)
+DOC_BASELINE_CATEGORIES = ["core", "app:documents", "app:folders"]
+# DENY-BY-DEFAULT allowlist request_tools may load beyond the baseline: a small,
+# reviewed set of document/knowledge-domain read+reference categories DOC
+# legitimately needs. Everything else — user management, backups, settings/
+# credential admin, messaging/email/filesystem/web, and every other app:<id> —
+# is OUTSIDE the list and therefore provably unreachable (a malicious document
+# cannot steer the cycle to self-load a destructive/sensitive toolset).
+DOC_ALLOWED_REQUEST_CATEGORIES = ["knowledge", "research", "links", "artifacts"]
+# Destructive / outbound tools DOC_THINK must NEVER wield, even though they ride
+# along in the baseline categories (delete_doc/delete_folder in app:documents/
+# app:folders; forget/broadcast_announcement/send_notification in core). DOC's
+# prior name-allowlist granted NONE of these — an unsupervised cycle over
+# untrusted document content should ORGANIZE documents, not delete memories/docs
+# or message users (a spam/phishing vector). Subtracted from the final surface so
+# the lean-category move can't silently GRANT them. The operator's non-negotiable
+# "destructive must be provably unreachable" covers baseline tools too, not only
+# request_tools categories. (Coverage oracle holds: the old 13 tools had none.)
+DOC_EXCLUDED_TOOLS = {
+    "delete_doc", "delete_folder",           # destructive (app:documents/app:folders)
+    "forget",                                 # destructive: deletes a memory (core)
+    "broadcast_announcement", "send_notification",  # outbound messaging (core)
+}
+# Swap slots sized to DOC's real common-cycle concurrency — a normal cycle touches
+# at most a couple of extra reference categories; 3 gives headroom without thrash.
+DOC_SLOT_CAPACITY = 3
+
 # How many useful memories to feed per cycle (after noise filtering).
 # Configurable via Settings → Documents (domain_memories_per_cycle).
 def _memories_per_cycle() -> int:
@@ -255,27 +288,46 @@ async def document_domain_handler(domain: dict, budget_status: dict) -> dict:
         }
 
     user_prompt = _build_user_prompt(ctx)
-    tools = _build_tools()
+
+    # Lean tool baseline + on-demand request_tools slots (ev-89), replacing the
+    # old hardcoded name allowlist. Slots are fresh per cycle.
+    slots = _build_doc_slots()
+    slots.assert_baseline_nonempty()   # LIVE guard: no silent core-only degrade
+    tools = slots.build_round_tools()
+    # The slot-instruction block + the dynamically-built category catalog + the
+    # loaded categories' guides ride into the prompt (tools + guidance together).
+    _slot_block = slots.slot_instructions()
+    _guides = slots.guides()
+    dynamic_system = _slot_block + (("\n\n" + _guides) if _guides else "")
 
     messages = [
         {"role": "system", "content": static_system},
+        {"role": "system", "content": dynamic_system},
         {"role": "user", "content": user_prompt},
     ]
 
     relevant_doc_count = len(ctx.get("relevant_docs", []))
     logger.info(
         "DOC_THINK: Calling %s tier with %d unprocessed memories, %d relevant docs (of %d total), %d folders, %d tools",
-        tier, unprocessed_count, relevant_doc_count, existing_doc_count, existing_folder_count, len(tools),
+        tier, unprocessed_count, relevant_doc_count, existing_doc_count, existing_folder_count, len(tools or []),
     )
 
     # ---------- TOOL DISPATCH + HOOKS ----------
     actions_taken = []
     memory_updates = []
     processed_memory_ids: list[str] = []  # populated by mark_memories_processed
+    needs_tool_rebuild = False  # set when a request_tools call changes the slots
 
     async def _doc_dispatch(tool_name: str, tool_args: dict) -> str:
         """Route document domain tool calls."""
         from data_layer.skipper_state import upsert_working_memory as _upsert_wm
+
+        if tool_name == "request_tools":
+            # Deny-by-default slot load; ALWAYS rebuild afterwards so a rejected/
+            # empty/duplicate request can't leave the model spinning with no change.
+            nonlocal needs_tool_rebuild
+            needs_tool_rebuild = True
+            return slots.request_tools_response(tool_args.get("category", ""))
 
         if tool_name == "update_working_memory":
             sid = tool_args.get("subject_id", "")
@@ -359,6 +411,23 @@ async def document_domain_handler(domain: dict, budget_status: dict) -> dict:
             })
         return None
 
+    async def _doc_after_round(msgs: list[dict], current_tools: list | None) -> tuple:
+        """Rebuild the round's tools when a request_tools call changed the slots,
+        and inject the newly-loaded categories' guides (tools + guide travel
+        together). Returns (new_tools_or_None, extra_messages)."""
+        nonlocal needs_tool_rebuild
+        if not needs_tool_rebuild:
+            return None, []
+        needs_tool_rebuild = False
+        new_tools = slots.build_round_tools()
+        extra = []
+        guide = slots.guides()  # guides for all currently-loaded categories
+        if guide:
+            extra.append({"role": "system", "content": guide})
+        logger.info("DOC_THINK: rebuilt tools after request_tools — %d tools, loaded=%s",
+                    len(new_tools or []), sorted(slots.loaded_categories()))
+        return new_tools, extra
+
     # ---------- RUN AGENT LOOP ----------
     try:
         loop_result = await agent_loop.run(
@@ -370,6 +439,7 @@ async def document_domain_handler(domain: dict, budget_status: dict) -> dict:
             tool_dispatch=_doc_dispatch,
             hooks=agent_loop.LoopHooks(
                 after_tool_call=_doc_after_tool,
+                after_round=_doc_after_round,
             ),
         )
         reasoning = loop_result.response_text or ""
@@ -744,35 +814,26 @@ def _build_user_prompt(ctx: dict) -> str:
 # BUILD TOOLS
 # ---------------------------------------------------------------------------
 
-def _build_tools() -> list[dict]:
-    """Build the OpenAI tool schemas for the document thinking loop.
-
-    Includes folder tools, document tools, and the working memory tool.
-    """
-    import mcp_client
-
-    # Specific tool names this domain needs
-    needed_tools = {
-        # Folder tools
-        "create_folder", "list_folders", "get_folder", "search_folders",
-        "add_to_folder", "move_to_folder", "create_doc_in_folder",
-        # Document tools
-        "create_doc", "get_doc", "update_doc", "append_to_doc",
-        "search_docs", "list_docs",
-    }
-
-    mcp_tools = []
-    if mcp_client.mcp_tools:
-        all_mcp = mcp_client.get_openai_tools()
-        mcp_tools = [t for t in all_mcp if t["function"]["name"] in needed_tools]
-
-    # Combine MCP tools + custom domain tools
-    tools = mcp_tools + [
-        UPDATE_WORKING_MEMORY_TOOL,
-        SAVE_TOPIC_MEMORY_TOOL,
-        MARK_MEMORIES_PROCESSED_TOOL,
-    ]
-    return tools
+def _build_doc_slots():
+    """Build DOC_THINK's per-cycle ToolSlots: a lean category baseline + on-demand
+    request_tools slots (deny-by-default), replacing the old hardcoded tool-NAME
+    allowlist. Fresh each cycle (slots never persist). See the DOC_* constants."""
+    from tool_slots import ToolSlots
+    from local_tools import REQUEST_TOOLS_TOOL
+    return ToolSlots(
+        baseline_categories=DOC_BASELINE_CATEGORIES,
+        # pinned (never evicted): DOC's custom memory tools + the slot mechanism.
+        pinned_tools=[
+            UPDATE_WORKING_MEMORY_TOOL,
+            SAVE_TOPIC_MEMORY_TOOL,
+            MARK_MEMORIES_PROCESSED_TOOL,
+            REQUEST_TOOLS_TOOL,
+        ],
+        allowed_categories=DOC_ALLOWED_REQUEST_CATEGORIES,
+        capacity=DOC_SLOT_CAPACITY,
+        excluded_tool_names=DOC_EXCLUDED_TOOLS,
+        domain_label="DOC_THINK",
+    )
 
 
 # ---------------------------------------------------------------------------
