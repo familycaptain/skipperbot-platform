@@ -1,0 +1,40 @@
+{
+  "spec_id": "platform.thinking.doc-observe-bounded-memories",
+  "kind": "specification",
+  "title": "DOC_THINK observes memories via a bounded (created_at,id) keyset query, not a whole-table load every cycle",
+  "behavior": [
+    "GIVEN the documents domain's hourly observe cycle WHEN it gathers unprocessed memories THEN it calls data_layer.memories.load_after_cursor(cursor_id, limit) which returns AT MOST `limit` rows (never the whole table), ascending (created_at, id); limit = _memories_per_cycle() * 3 (a 2x scan margin over the per-cycle useful cap so noise-filtering still yields ~per_cycle useful). The SELECT lists ONLY the non-embedding _ROW_COLUMNS (never the embedding vector) — the OOM guard. cursor_id and limit are psycopg2 bind params (no string interpolation).",
+    "GIVEN a last_processed cursor id that EXISTS WHEN load_after_cursor runs THEN it returns only rows strictly after the cursor by the composite keyset (created_at, id) > the cursor row's (created_at, id) (resolved by an id-lookup of the cursor's created_at) ORDER BY created_at, id ASC LIMIT limit — same-instant memories (equal created_at) are ordered by id, none skipped or duplicated.",
+    "GIVEN NO cursor yet (first run) WHEN load_after_cursor runs THEN it returns the OLDEST `limit` rows ascending; the backlog is drained across successive hourly cycles (accelerated by catchup mode), never loaded whole in one cycle.",
+    "GIVEN a cursor id NOT found (memory deleted) WHEN load_after_cursor runs THEN it falls back to the most-recent `limit` rows (reversed to ascending), mirroring the prior all_memories[-per_cycle:] — EXPLICITLY this jumps the cursor forward to the recent window and does not revisit the older backlog between the deleted cursor and that window (parity with today).",
+    "GIVEN the query WHEN it executes THEN it is backed by a new index memories(created_at, id) (migration 002_memories_created_at_id_index.sql: CREATE INDEX IF NOT EXISTS, no BEGIN/COMMIT — the migrator wraps each file in one transaction and runs on start) so it is a bounded index scan, not a full-table sort.",
+    "GIVEN catchup-mode detection WHEN _observe returns its context THEN total_memory_count and total_unprocessed_before_filter are computed from bounded COUNT queries — total via count_memories() (SELECT COUNT(*) FROM memories, a plain total), remaining via count_after_cursor(cursor) (SELECT COUNT(*) WHERE (created_at,id) > cursor, index-backed) — NOT from len(batch). First run reports the full table count as remaining (so catchup fires on a big fresh install); a deleted cursor reports the loaded recent-window size. This preserves the existing behavior: total_unprocessed_before_filter > 500 -> CATCHUP_INTERVAL_SECONDS (10-min cycles), the 'Catchup: N total remaining' focus, the '(N of M total)' prompt header, and the metrics snapshot stay honest at scale.",
+    "GIVEN _observe's existing noise-filter and cursor-advance logic WHEN it runs over the bounded batch THEN behavior is unchanged (noise pre-filtered, up to _memories_per_cycle() useful collected, cursor advanced to raw_last_id = the last EXAMINED row incl. trailing noise). FORWARD PROGRESS: because the cursor advances past examined noise each cycle, a bounded window that is entirely noise still advances by up to `limit` rows next cycle — no permanent stall.",
+    "OUT OF SCOPE: the all_doc_summaries block (bounded already), load_all() itself (retained; note it becomes unused by _observe), and noise-filter logic. DEPLOY NOTE: at switchover the new (created_at,id) order may skip or re-offer a few rows sharing the existing cursor's exact created_at, once (bounded)."
+  ],
+  "implements": [
+    "data_layer/memories.py::load_after_cursor (bounded (created_at,id) keyset, _ROW_COLUMNS only, first-run + cursor-not-found fallbacks, bind params)",
+    "data_layer/memories.py::count_after_cursor (index-backed COUNT after the keyset cursor; None when the cursor was deleted so the caller falls back to the window size)",
+    "migrations/002_memories_created_at_id_index.sql (CREATE INDEX IF NOT EXISTS idx_memories_created_at_id ON memories (created_at, id))",
+    "apps/documents/domain.py::_observe (use load_after_cursor(last_processed_id, per_cycle*3); recompute total_memory_count via count_memories(), total_unprocessed_before_filter via count_after_cursor; keep noise-filter + cursor-advance)"
+  ],
+  "tests": [
+    {
+      "type": "unit",
+      "path": "tests/evolve/platform/test_doc_observe_bounded_memories.py",
+      "rubric": "load_after_cursor: (a) no cursor -> oldest `limit` ascending, never > limit. (b) cursor present -> only rows strictly after (created_at,id), ascending, <= limit. (c) TIE-SAFETY: the keyset compares the (created_at,id) tuple, not created_at alone. (d) cursor NOT found -> most-recent `limit` reversed to ascending (fallback), not empty. (e) BOUNDED: the LIMIT param IS the limit. (f) NO-EMBEDDING: every query lists _ROW_COLUMNS, never 'embedding' (also extended in test_memories_no_embedding_fetch.py). (g) BIND PARAMS: cursor_id/limit passed as params, query string has no interpolation. Plus count_after_cursor: empty->total, found->COUNT keyset, deleted->None."
+    },
+    {
+      "type": "unit",
+      "path": "tests/evolve/platform/test_doc_observe_catchup_counters.py",
+      "rubric": "_observe context: (1) cursor far from end + large table -> total_memory_count == count_memories() and total_unprocessed_before_filter == count_after_cursor (NOT len(batch); > 500 keeps catchup honest). (2) first run -> total_unprocessed_before_filter == full table count (catchup fires on a big fresh install). (3) deleted cursor -> total_unprocessed_before_filter == the recent window size loaded. (4) FORWARD PROGRESS: an all-noise bounded window still advances raw_last_id to the last examined row."
+    },
+    {
+      "type": "e2e",
+      "path": "test host (validate-time)",
+      "rubric": "On the test host seed memories beyond `limit`; assert load_after_cursor returns <= limit (not the whole table), EXPLAIN shows an index scan on idx_memories_created_at_id (no Seq Scan + full Sort), and one _observe cycle no longer materializes the whole table while total_unprocessed_before_filter still reflects the true remaining (catchup honest). Capture fenced text."
+    }
+  ],
+  "notes": "ev-103 (operator-authored perf/OOM follow-up). Root cause: memories.load_all() (no LIMIT) was called by _observe every hourly cycle -> whole-table materialization (~119,637 rows / ~120MB in prod) plus a Python linear scan for the cursor; no memories(created_at) index, so the ORDER BY full-sorts. Fix: bounded (created_at,id) keyset query + supporting index + switch the single caller. Correctness preserved (noise-filter + cursor-advance unchanged); first-run and cursor-not-found fallbacks retained. Distinct from the earlier no-embedding fix. Operator forks (approved): A composite (created_at,id) keyset + index; 2x per_cycle scan margin; oldest-first + catchup (newest-first backfill deferred as a separate UX item). Operator pins honored: catchup counters recomputed from COUNT queries (not len-derived); first-run WILL exercise the catchup path (fresh install). Large existing backlog drains over ~days (one-time, non-blocking; faster under catchup 10-min cycles).",
+  "verified": true
+}

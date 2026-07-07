@@ -61,3 +61,24 @@ class NoEmbeddingFetch(unittest.TestCase):
         self.assertNotIn("*", captured["sql"])
         self.assertIn("content", captured["sql"])
         self.assertNotIn("embedding", captured["sql"])
+
+    def test_load_after_cursor_query_uses_explicit_columns(self):
+        # ev-103: the bounded per-cycle fetch that REPLACED load_all() in the
+        # documents domain must also never SELECT the embedding vector.
+        import unittest.mock as mock
+        from data_layer import memories as M
+        seen = []
+
+        def fake_fetch_all(sql, params=()):
+            seen.append(sql)
+            return []
+
+        with mock.patch.object(M, "fetch_all", fake_fetch_all), \
+             mock.patch.object(M, "fetch_one", lambda sql, params=(): None):
+            M.load_after_cursor("", 50)            # first-run window
+            M.load_after_cursor("deleted-id", 50)  # cursor-not-found window
+        self.assertTrue(seen)
+        for sql in seen:
+            self.assertNotIn("*", sql)
+            self.assertIn("content", sql)
+            self.assertNotIn("embedding", sql)

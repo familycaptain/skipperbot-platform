@@ -190,9 +190,92 @@ _ROW_COLUMNS = ("id, content, tags, about, saved_by, related_entities, "
 
 
 def load_all() -> list[dict]:
-    """Load all memories (no embeddings fetched OR returned)."""
+    """Load all memories (no embeddings fetched OR returned).
+
+    NOTE: unbounded — materializes the whole table. The documents domain no
+    longer uses this (it calls load_after_cursor); retained for any other
+    consumer. Prefer load_after_cursor for per-cycle work.
+    """
     rows = fetch_all(f"SELECT {_ROW_COLUMNS} FROM memories ORDER BY created_at")
     return [_row_to_dict(r) for r in rows]
+
+
+def load_after_cursor(cursor_id: str, limit: int) -> list[dict]:
+    """Return up to `limit` memories after `cursor_id`, ascending (created_at, id).
+
+    Bounded, index-backed (idx_memories_created_at_id) replacement for load_all()
+    in the documents domain's hourly observe cycle: it fetches only the next
+    window of memories instead of materializing the whole table each cycle.
+
+      * cursor_id empty (first run)      -> the OLDEST `limit` rows, ascending;
+                                            the backlog drains across cycles.
+      * cursor_id present and FOUND      -> rows strictly after the cursor by the
+                                            composite (created_at, id) keyset,
+                                            ascending — same-instant rows ordered
+                                            by id, so none is skipped or repeated.
+      * cursor_id present but NOT found  -> the MOST-RECENT `limit` rows, ascending
+        (the cursor memory was deleted)    (mirrors the old all_memories[-N:]
+                                            fallback: jump to the recent window and
+                                            do NOT revisit the older backlog).
+
+    Never selects the embedding vector (_ROW_COLUMNS only) — the OOM guard.
+    `cursor_id` and `limit` are always psycopg2 bind params, never interpolated.
+    """
+    if not cursor_id:
+        # First run — oldest window; successive cycles walk forward.
+        rows = fetch_all(
+            f"SELECT {_ROW_COLUMNS} FROM memories ORDER BY created_at, id LIMIT %s",
+            (limit,),
+        )
+        return [_row_to_dict(r) for r in rows]
+
+    cursor_row = fetch_one(
+        "SELECT created_at, id FROM memories WHERE id = %s", (cursor_id,)
+    )
+    if cursor_row is None:
+        # Cursor memory deleted — fall back to the most-recent window, ascending.
+        rows = fetch_all(
+            f"SELECT {_ROW_COLUMNS} FROM memories "
+            "ORDER BY created_at DESC, id DESC LIMIT %s",
+            (limit,),
+        )
+        return [_row_to_dict(r) for r in reversed(rows)]
+
+    # Keyset: rows strictly after the cursor's (created_at, id), ascending, bounded.
+    rows = fetch_all(
+        f"SELECT {_ROW_COLUMNS} FROM memories "
+        "WHERE (created_at, id) > (%s, %s) "
+        "ORDER BY created_at, id LIMIT %s",
+        (cursor_row["created_at"], cursor_row["id"], limit),
+    )
+    return [_row_to_dict(r) for r in rows]
+
+
+def count_after_cursor(cursor_id: str) -> Optional[int]:
+    """Count memories strictly after `cursor_id` by the (created_at, id) keyset.
+
+    Index-backed companion to load_after_cursor for catchup-mode detection —
+    lets the documents domain compute TRUE remaining-unprocessed without a
+    whole-table load (never len(batch), which the bounded fetch would cap).
+
+      * cursor_id empty          -> total table count (first run: all unprocessed).
+      * cursor_id present, FOUND  -> COUNT of rows strictly after the cursor.
+      * cursor_id present, NOT found -> None, so the caller falls back to its
+                                        recent-window size (parity: the deleted
+                                        cursor abandons the older backlog).
+    """
+    if not cursor_id:
+        return count_memories()
+    cursor_row = fetch_one(
+        "SELECT created_at, id FROM memories WHERE id = %s", (cursor_id,)
+    )
+    if cursor_row is None:
+        return None
+    row = fetch_one(
+        "SELECT COUNT(*) AS cnt FROM memories WHERE (created_at, id) > (%s, %s)",
+        (cursor_row["created_at"], cursor_row["id"]),
+    )
+    return row["cnt"] if row else 0
 
 
 def list_recent_memories(user_id: str = "", limit: int = 50) -> list[dict]:
