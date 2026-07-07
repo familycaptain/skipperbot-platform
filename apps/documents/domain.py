@@ -488,7 +488,9 @@ async def document_domain_handler(domain: dict, budget_status: dict) -> dict:
 
 def _observe() -> dict:
     """Gather memories, existing folders, existing docs, and working memory."""
-    from data_layer.memories import load_all as load_all_memories
+    from data_layer.memories import (
+        load_after_cursor, count_after_cursor, count_memories,
+    )
     from data_layer.skipper_state import list_states
     import app_platform.folders as dl_folders
     import apps.documents.data as dl_docs
@@ -508,23 +510,25 @@ def _observe() -> dict:
             except (json.JSONDecodeError, TypeError):
                 pass
 
-    # Load all memories and find unprocessed ones
-    all_memories = load_all_memories()
-    found_idx = -1
-    if last_processed_id:
-        # Find the index of the last processed memory and take everything after it
-        for i, m in enumerate(all_memories):
-            if m["id"] == last_processed_id:
-                found_idx = i
-                break
-        if found_idx >= 0:
-            unprocessed = all_memories[found_idx + 1:]
-        else:
-            # Cursor not found — take recent memories
-            unprocessed = all_memories[-_memories_per_cycle():]
+    # Fetch only the bounded window of memories AFTER the cursor — never the
+    # whole table (ev-103: load_all() OOM-killed the agent at prod volume).
+    # limit = per_cycle * 3 gives a 2x scan margin over the per-cycle useful cap
+    # so noise-filtering still yields ~per_cycle useful rows. load_after_cursor
+    # handles first-run (oldest window) and deleted-cursor (recent window) itself.
+    unprocessed = load_after_cursor(last_processed_id, _memories_per_cycle() * 3)
+
+    # Catchup counters from bounded COUNT queries (NEVER len(batch), which the
+    # bounded fetch caps): total = whole table; remaining = rows after the cursor
+    # (first run -> everything, so catchup fires on a big fresh install; deleted
+    # cursor -> the recent window we loaded, matching the pre-ev-103 fallback).
+    total_memory_count = count_memories()
+    if not last_processed_id:
+        total_unprocessed_before_filter = total_memory_count
     else:
-        # First run — start from the beginning to process everything
-        unprocessed = all_memories
+        _remaining = count_after_cursor(last_processed_id)
+        total_unprocessed_before_filter = (
+            _remaining if _remaining is not None else len(unprocessed)
+        )
 
     # Walk through unprocessed memories, picking useful ones until we hit the
     # per-cycle cap.  Track the index of the last memory examined so the cursor
@@ -613,13 +617,13 @@ def _observe() -> dict:
             "updated_at": d.get("updated_at", ""),
         })
 
-    # Track total unprocessed (before filter+cap) for catchup mode detection
-    total_unprocessed_before_filter = len(all_memories) - (found_idx + 1 if last_processed_id and found_idx >= 0 else max(len(all_memories) - _memories_per_cycle(), 0))
+    # (catchup counters — total_memory_count / total_unprocessed_before_filter —
+    # were computed above from bounded COUNT queries, before the noise filter.)
 
     return {
         "unprocessed_memories": unprocessed,
         "unprocessed_memory_count": len(unprocessed),
-        "total_memory_count": len(all_memories),
+        "total_memory_count": total_memory_count,
         "total_unprocessed_before_filter": total_unprocessed_before_filter,
         "raw_last_id": raw_last_id,
         "noise_filtered": noise_count,

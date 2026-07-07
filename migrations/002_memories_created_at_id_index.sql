@@ -1,0 +1,14 @@
+-- ev-103: bound the documents domain's per-cycle memories fetch.
+--
+-- The documents domain used to load the WHOLE memories table every hourly
+-- observe cycle and Python-scan for its cursor. The fix replaces that with a
+-- bounded (created_at, id) keyset query (data_layer.memories.load_after_cursor).
+-- This index makes that keyset an index scan instead of a full-table sort — the
+-- column order (created_at, id) matches the query's ORDER BY / WHERE row-value
+-- comparison exactly. Composite (not created_at alone) so same-instant memories
+-- are ordered by id: the keyset never skips or duplicates a tied row.
+--
+-- CREATE INDEX IF NOT EXISTS is crash-safe and idempotent (the migrator wraps
+-- each file in one transaction and re-runs harmlessly). It takes a brief ACCESS
+-- EXCLUSIVE lock at startup, acceptable at migration time.
+CREATE INDEX IF NOT EXISTS idx_memories_created_at_id ON memories (created_at, id);
