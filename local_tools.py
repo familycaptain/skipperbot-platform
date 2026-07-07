@@ -313,8 +313,40 @@ GET_PROACTIVE_REPLY_GUIDE_TOOL = {
     },
 }
 
-LOCAL_TOOLS = [SEND_NOTIFICATION_TOOL, LIST_USERS_TOOL, LIST_ALL_TOOLS_TOOL, REQUEST_TOOLS_TOOL, OPEN_APP_TOOL, READ_FEATURE_SPEC_TOOL, BROADCAST_ANNOUNCEMENT_TOOL, RESTART_AGENT_TOOL, GET_PROACTIVE_REPLY_GUIDE_TOOL]
-LOCAL_TOOL_NAMES = {"send_message_to_user", "send_notification", "send_discord_dm", "list_connected_users", "list_all_tools", "request_tools", "open_app", "read_feature_spec", "broadcast_announcement", "restart_agent", "get_proactive_reply_guide"}
+RECORD_ENTITY_NOTE_TOOL = {
+    "type": "function",
+    "function": {
+        "name": "record_entity_note",
+        "description": (
+            "Record a family member's input as a NOTE on a specific project, task, "
+            "or goal — so it lives on the item itself (visible on every future "
+            "project review) AND becomes searchable memory, not just a loose fact. "
+            "Use when someone replies to a message you sent about an item (shown in "
+            "the timeline with a `[re: p-XXX]` tag) and their reply carries "
+            "something worth keeping on it: a status, a blocker, a decision, a date, "
+            "a next step. Write the note in your own words, third-person, capturing "
+            "what they told you. Do NOT use for chit-chat with no item-relevant "
+            "substance."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "entity_id": {
+                    "type": "string",
+                    "description": "The p-/t-/g- id from the `[re: ...]` tag on the message they're replying to.",
+                },
+                "note": {
+                    "type": "string",
+                    "description": "The note to record on the item (their point, in your words).",
+                },
+            },
+            "required": ["entity_id", "note"],
+        },
+    },
+}
+
+LOCAL_TOOLS = [SEND_NOTIFICATION_TOOL, LIST_USERS_TOOL, LIST_ALL_TOOLS_TOOL, REQUEST_TOOLS_TOOL, OPEN_APP_TOOL, READ_FEATURE_SPEC_TOOL, BROADCAST_ANNOUNCEMENT_TOOL, RESTART_AGENT_TOOL, GET_PROACTIVE_REPLY_GUIDE_TOOL, RECORD_ENTITY_NOTE_TOOL]
+LOCAL_TOOL_NAMES = {"send_message_to_user", "send_notification", "send_discord_dm", "list_connected_users", "list_all_tools", "request_tools", "open_app", "read_feature_spec", "broadcast_announcement", "restart_agent", "get_proactive_reply_guide", "record_entity_note"}
 
 
 async def _queue_notification(
@@ -517,6 +549,23 @@ async def handle_local_tool(tool_name: str, tool_args: dict, from_user: str) -> 
             "No additional guidance available — continue the thread naturally "
             "without restarting, one step at a time."
         )
+
+    elif tool_name == "record_entity_note":
+        # Record a family member's reply as a history note ON the project/task/goal it
+        # concerns — durable (in every future PM snapshot) AND digested to an
+        # entity-tagged memory (reliable recall). update_item's _add_history →
+        # save_entity fires digest_record automatically. See issue #107.
+        entity_id = (tool_args.get("entity_id") or "").strip()
+        note = (tool_args.get("note") or "").strip()
+        if not entity_id or not note:
+            return "record_entity_note needs both entity_id and note."
+        if entity_id[:1] not in ("p", "t", "g") or "-" not in entity_id:
+            return f"'{entity_id}' is not a project/task/goal id (expected p-/t-/g-)."
+        from apps.goals.tools import update_item
+        result = await asyncio.to_thread(
+            update_item, entity_id, updated_by=(from_user or "").lower().strip() or "user",
+            history_note=note)
+        return result
 
     return f"Unknown local tool: {tool_name}"
 

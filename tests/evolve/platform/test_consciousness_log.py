@@ -488,3 +488,53 @@ class TimeAwareness(unittest.TestCase):
             msg = C.render_event(row, "katie")
         self.assertEqual(msg["role"], "user")
         self.assertTrue(msg["content"].startswith("[Sun Jul 5, 12:18 PM] [tyler → skipper]:"))
+
+
+class EntityNoteCapture(unittest.TestCase):
+    """#107: a reply to an entity-tagged PM message records a history_note on the
+    item (durable in every future PM snapshot + digested to an entity-tagged
+    memory), instead of leaving it as a loose fact that may not recall later."""
+
+    def test_render_surfaces_subject_marker(self):
+        from datetime import datetime, timezone
+        from unittest import mock
+        import sys, types
+        from zoneinfo import ZoneInfo
+        m = types.ModuleType("app_platform.time")
+        m.get_timezone = lambda user_id=None: ZoneInfo("America/Chicago")
+        from app_platform import context as C
+        self.assertEqual(C.subject_marker({"subject_id": "p-abc"}), " [re: p-abc]")
+        self.assertEqual(C.subject_marker({}), "")
+        row = {"kind": "message", "who_from": "skipper", "who_to": "rodney",
+               "content": "How's the septic project?", "subject_id": "p-septic",
+               "created_at": datetime(2026, 7, 7, 17, 0, tzinfo=timezone.utc)}
+        with mock.patch.dict(sys.modules, {"app_platform.time": m}):
+            out = C.render_event(row, "rodney")
+        self.assertIn("[re: p-septic]", out["content"])
+
+    def test_recent_entity_refs_filters_to_ptg(self):
+        # source-level: the query only surfaces p-/t-/g- subject_ids (not bnt-, etc.)
+        src = _read("app_platform/context.py")
+        self.assertIn("def recent_entity_refs", src)
+        self.assertIn("subject_id LIKE 'p-%%'", src)
+        self.assertIn("subject_id LIKE 't-%%'", src)
+        self.assertIn("subject_id LIKE 'g-%%'", src)
+
+    def test_pm_outbound_can_tag_subject(self):
+        src = _read("apps/goals/pm_domain.py")
+        self.assertIn('"subject"', src)                 # the tool exposes a subject param
+        self.assertIn("subject_id=subj", src)           # dispatch threads it to send_message
+
+    def test_record_entity_note_tool_registered(self):
+        src = _read("local_tools.py")
+        self.assertIn("record_entity_note", src)
+        self.assertIn('"record_entity_note"', src)      # in LOCAL_TOOL_NAMES
+        self.assertIn("history_note=note", src)         # handler writes via update_item
+        self.assertIn("not a project/task/goal id", src)  # id guard
+
+    def test_chat_exposes_note_tool_conditionally(self):
+        src = _read("chat_domain.py")
+        self.assertIn("recent_entity_refs", src)
+        self.assertIn('routed_tool_names.add("record_entity_note")', src)
+        # only under consciousness + only when a tagged ref exists (scoped, not always-on)
+        self.assertIn("consciousness_chat_enabled", src)

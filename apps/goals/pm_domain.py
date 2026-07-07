@@ -1266,9 +1266,14 @@ _SEND_MESSAGE_TOOL_PM = {
     "type": "function",
     "function": {
         "name": "send_message",
-        "description": "Send one chat message to one family member (as Skipper's own voice).",
+        "description": "Send one chat message to one family member (as Skipper's own voice). "
+                       "When the message is ABOUT a specific project/task/goal (e.g. asking for "
+                       "a status or a blocker), pass its id as `subject` — that tags the message "
+                       "to the item so when they reply, their answer can be recorded on it.",
         "parameters": {"type": "object", "properties": {
-            "to_user": {"type": "string"}, "message": {"type": "string"}},
+            "to_user": {"type": "string"}, "message": {"type": "string"},
+            "subject": {"type": "string",
+                        "description": "The p-/t-/g- id this message is about, if any (optional)."}},
             "required": ["to_user", "message"]},
     },
 }
@@ -1315,9 +1320,11 @@ async def pm_skill_runner(event: dict) -> dict:
                 return f"REFUSED: {to_user!r} is not a known household member"
             if to_user in messaged:
                 return f"ALREADY messaged {to_user} this review"
+            subj = (args.get("subject") or "").strip() or None
             row = await asyncio.to_thread(
                 lambda: send_message(who_to=to_user, content=args.get("message") or "",
-                                     domain="pm", payload={"pm_review": event.get("id")}))
+                                     domain="pm", subject_id=subj,
+                                     payload={"pm_review": event.get("id")}))
             messaged.add(to_user)
             actions_taken.append({"type": "dm_sent", "dm_to": to_user})
             return f"sent ({row['id']})"

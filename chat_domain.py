@@ -224,6 +224,31 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     if _has_pending_dm:
         routed_tool_names.add("get_proactive_reply_guide")
 
+    # #107: if Skipper recently messaged this person ABOUT a project/task/goal (a
+    # PM/goal check-in tagged with subject_id, shown as `[re: p-XXX]` in the
+    # timeline), deterministically expose record_entity_note + name the candidates,
+    # so a reply carrying a status/blocker/decision is recorded ON the item (durable
+    # in every future review + digested to an entity-tagged memory), not just left
+    # as a loose fact. Scoped: only fires when such a tagged message actually exists.
+    try:
+        from app_platform.context import consciousness_chat_enabled, recent_entity_refs
+        if consciousness_chat_enabled():
+            _ent_refs = await asyncio.to_thread(recent_entity_refs, req.user_id)
+            if _ent_refs:
+                routed_tool_names.add("record_entity_note")
+                _lines = "; ".join(f'{r["id"]} ("{r["snippet"]}")' for r in _ent_refs[:4])
+                dynamic_context += (
+                    "\n\n## Recording a reply on its item (#107)\n"
+                    f"You recently messaged {req.user_id} about: {_lines}. "
+                    "If their latest message answers one of these with something worth keeping on "
+                    "that item (a status, blocker, decision, date, or next step), call "
+                    "record_entity_note(entity_id, note) with the matching `[re: ...]` id — it "
+                    "saves the note on the item itself (so it shows on every future review) and "
+                    "into memory. If they're just chatting, don't."
+                )
+    except Exception:
+        logger.debug("CHAT: entity-note hook skipped", exc_info=True)
+
     # Dynamic slot state + how to load more (cheap; the category catalog itself is in BEHAVIOR.md).
     _loaded_now = sorted(_loaded_categories())
     dynamic_context += (

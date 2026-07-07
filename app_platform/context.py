@@ -134,6 +134,48 @@ def event_stamp(row: dict) -> str:
         return ""
 
 
+def subject_marker(row: dict) -> str:
+    """A message about a specific entity carries its id in ``subject_id`` (e.g. a
+    PM message that asks about project p-XXX). Surface it in the timeline as a
+    ``[re: p-XXX]`` tag so a reader (the responding skill) can see WHICH item an
+    earlier message was about and, per prompt guidance, record the reply on that
+    item. Memory notation only — never echoed in prose (see TIMELINE_BOUNDARY)."""
+    sid = (row.get("subject_id") or "").strip()
+    return f" [re: {sid}]" if sid else ""
+
+
+def recent_entity_refs(person: str, limit: int = 6) -> list[dict]:
+    """Recent Skipper→person messages tagged to an entity (``subject_id``).
+
+    Lets the chat skill detect that the user may be replying ABOUT one of these
+    items — so it can offer ``record_entity_note`` and name the candidates,
+    turning a reply's status/blocker/decision into a note ON the item (#107).
+    Deterministic (a cheap indexed query), deduped to the most-recent per item.
+    """
+    from data_layer.db import fetch_all
+    person = (person or "").lower().strip()
+    if not person:
+        return []
+    try:
+        rows = fetch_all(
+            "SELECT subject_id, left(content, 80) AS snippet FROM consciousness_log "
+            "WHERE kind='message' AND who_from=%s AND who_to=%s "
+            "  AND (subject_id LIKE 'p-%%' OR subject_id LIKE 't-%%' OR subject_id LIKE 'g-%%') "
+            "ORDER BY seq DESC LIMIT %s",
+            (SKIPPER, person, limit))
+    except Exception:
+        return []
+    seen: set = set()
+    out: list[dict] = []
+    for r in rows:
+        sid = (r.get("subject_id") or "").strip()
+        if not sid or sid in seen:
+            continue
+        seen.add(sid)
+        out.append({"id": sid, "snippet": (r.get("snippet") or "").strip()})
+    return out
+
+
 def render_event(row: dict, focal_person: str) -> Optional[dict]:
     """Render ONE log row as a native-turn message dict, or None to skip."""
     kind = row.get("kind")
@@ -143,6 +185,7 @@ def render_event(row: dict, focal_person: str) -> Optional[dict]:
     if not content:
         return None
     stamp = event_stamp(row)
+    subj = subject_marker(row)
 
     if kind == "message":
         if who_from == SKIPPER:
@@ -152,11 +195,11 @@ def render_event(row: dict, focal_person: str) -> Optional[dict]:
                 text += _COMPLETED_TMPL.format(names=", ".join(sorted(names)))
             if who_to and who_to != focal_person:
                 text = f"[to {who_to}]: {text}"
-            return {"role": "assistant", "content": f"{stamp}{text}"}
+            return {"role": "assistant", "content": f"{stamp}{text}{subj}"}
         # a person spoke
         if who_from == focal_person:
-            return {"role": "user", "content": f"{stamp}{content}"}
-        return {"role": "user", "content": f"{stamp}[{who_from} → skipper]: {content}"}
+            return {"role": "user", "content": f"{stamp}{content}{subj}"}
+        return {"role": "user", "content": f"{stamp}[{who_from} → skipper]: {content}{subj}"}
 
     if kind == "activity":
         return {"role": "assistant", "content": f"{stamp}[activity] {content}"}
