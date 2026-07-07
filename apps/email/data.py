@@ -91,7 +91,11 @@ def list_accounts(user_id: str) -> list[dict]:
 
 
 def update_account(account_id: str, **kwargs) -> dict | None:
-    allowed = {"display_name", "active", "credentials", "scopes", "last_synced_at", "history_id"}
+    # last_reeval_at + the drain snapshot/cursor fields are RUNNER-ONLY (ev-98) — the
+    # re-eval poller writes them; they are NOT exposed via the HTTP EmailAccountUpdateRequest.
+    allowed = {"display_name", "active", "credentials", "scopes", "last_synced_at", "history_id",
+               "last_reeval_at", "reeval_target_watermark", "reeval_upper_bound_at", "reeval_upper_bound_id",
+               "reeval_cursor_at", "reeval_cursor_id"}
     updates = {k: v for k, v in kwargs.items() if k in allowed}
     if not updates:
         return get_account(account_id)
@@ -130,10 +134,13 @@ def delete_account(account_id: str) -> bool:
 def create_rule(account_id: str, name: str, conditions: dict, actions: dict,
                 priority: int = 100, stop_processing: bool = True) -> dict:
     rule_id = _new_id("er")
+    # updated_at MUST be set at creation (not left NULL): the re-eval trigger keys on
+    # COALESCE(rule.updated_at, rule.created_at) > account.last_reeval_at, and a freshly
+    # CREATED rule must re-apply to the already-unmatched backlog exactly once (ev-98).
     row = execute_returning_in_schema(
         SCHEMA,
-        """INSERT INTO email_rules (id, account_id, name, conditions, actions, priority, stop_processing)
-           VALUES (%s, %s, %s, %s, %s, %s, %s) RETURNING *""",
+        """INSERT INTO email_rules (id, account_id, name, conditions, actions, priority, stop_processing, updated_at)
+           VALUES (%s, %s, %s, %s, %s, %s, %s, now()) RETURNING *""",
         (rule_id, account_id, name, Json(conditions), Json(actions), priority, stop_processing),
     )
     ensure_edge(rule_id, account_id, "child_of", "parent_of")
@@ -270,15 +277,64 @@ def was_processed(gmail_msg_id: str) -> bool:
     return row is not None
 
 
-def get_unmatched_log_entries(account_id: str) -> list[dict]:
-    """Get log entries that had no rule match — candidates for re-evaluation."""
-    return [_row(r) for r in fetch_all_in_schema(
+def get_unmatched_log_entries(account_id: str, limit: int | None = None,
+                              upper_bound: tuple | None = None,
+                              before_cursor: tuple | None = None) -> list[dict]:
+    """Get log entries that had no rule match — candidates for re-evaluation.
+
+    NEWEST-first, ordered by the compound key (received_at DESC, id DESC) — the emails a
+    user just noticed unhandled get re-matched first. For the ev-98 bounded snapshot drain,
+    ``upper_bound`` and ``before_cursor`` are KEYSET pairs ``(received_at, id)`` that key on
+    the SAME (received_at, id) as the ORDER BY, so the frozen bound and the drain cursor are
+    consistent with the scan order (no boundary skip/dup at equal received_at):
+      * ``upper_bound`` freezes the backlog to entries at/below the (received_at, id) captured
+        at drain START — so emails arriving mid-drain are not chased;
+      * ``before_cursor`` continues strictly after the last processed (received_at, id) across
+        polls;
+      * ``limit`` caps the batch per poll (e.g. 200) so no single poll does a long scan.
+    With all three None this is the original unbounded, newest-first behavior.
+    """
+    clauses = ["account_id = %s", "rule_id IS NULL"]
+    params: list = [account_id]
+    if upper_bound is not None:
+        clauses.append("(received_at, id) <= (%s, %s)")
+        params.extend([upper_bound[0], upper_bound[1]])
+    if before_cursor is not None:
+        clauses.append("(received_at, id) < (%s, %s)")
+        params.extend([before_cursor[0], before_cursor[1]])
+    sql = ("SELECT * FROM email_log WHERE " + " AND ".join(clauses)
+           + " ORDER BY received_at DESC, id DESC")
+    if limit is not None:
+        sql += " LIMIT %s"
+        params.append(int(limit))
+    return [_row(r) for r in fetch_all_in_schema(SCHEMA, sql, tuple(params))]
+
+
+def get_reeval_trigger(account_id: str) -> dict:
+    """Read the ev-98 re-eval trigger inputs for an account (read-only, no side effects):
+      * ``last_reeval_at``   — the account's persisted watermark (None if never re-eval'd),
+      * ``max_rule_change``  — max(COALESCE(updated_at, created_at)) over the account's
+                               ACTIVE rules (the candidate target_watermark), or None if the
+                               account has no active rules.
+    The RUNNER triggers a whole-backlog re-eval when
+    ``COALESCE(max_rule_change) > COALESCE(last_reeval_at, '-infinity')`` — i.e. some active
+    rule was created/edited/enabled since the last re-eval. Returned as datetimes (NOT the
+    ISO-serialized _row form) so the runner compares them directly, same DB clock as updated_at.
+    """
+    row = fetch_one_in_schema(
         SCHEMA,
-        """SELECT * FROM email_log
-           WHERE account_id = %s AND rule_id IS NULL
-           ORDER BY received_at DESC""",
+        """SELECT a.last_reeval_at AS last_reeval_at,
+                  (SELECT max(COALESCE(r.updated_at, r.created_at))
+                     FROM email_rules r
+                    WHERE r.account_id = a.id AND r.active = TRUE) AS max_rule_change
+             FROM email_accounts a
+            WHERE a.id = %s""",
         (account_id,),
-    )]
+    )
+    if not row:
+        return {"last_reeval_at": None, "max_rule_change": None}
+    return {"last_reeval_at": row.get("last_reeval_at"),
+            "max_rule_change": row.get("max_rule_change")}
 
 
 def update_log_entry_match(log_id: str, rule_id: str, actions_taken: list):

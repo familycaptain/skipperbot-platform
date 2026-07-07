@@ -1,0 +1,56 @@
+kind: specification
+id: email.sync.reeval-on-rules-change
+title: Re-eval the unmatched backlog only when rules change (not every poll), bounded per pass
+state: live
+autonomy: gated
+behavior: >
+  A routine scheduled email sync (apps/email/runner.py::_process_account) processes only
+  genuinely-new messages and does NOT re-scan the whole unmatched backlog or make per-email
+  Gmail label API calls when the account's rules are unchanged. The whole-backlog re-evaluation
+  runs ONLY when an ACTIVE rule was created, edited, or enabled since the account's last re-eval
+  — evaluated NULL-safely as COALESCE(rule.updated_at, rule.created_at) > COALESCE(account.last_reeval_at,
+  '-infinity') over the account's active rules; otherwise it is skipped entirely (no backlog
+  query, no label API calls). When a drain starts it captures a trigger-time SNAPSHOT: a target
+  watermark = max(COALESCE(updated_at, created_at)) over active rules (DB clock), and a frozen
+  backlog upper bound = the (received_at, id) of the newest currently-unmatched entry. The drain
+  processes at most 200 entries per poll, newest-first, over ONLY the entries at/below that upper
+  bound, advancing a persisted (received_at, id) cursor across polls; last_reeval_at advances to
+  the CAPTURED watermark only when that bounded set is fully drained (a short batch). Consequences:
+  emails arriving mid-drain sit above the frozen upper bound and are not chased (so 'fully drained'
+  is decidable and the drain cannot loop forever); a rule changed mid-drain has updated_at > the
+  captured watermark, so the next poll re-triggers its own exactly-once drain. create_rule,
+  update_rule (edit/enable), and reorder_rules all advance rules.updated_at; deletes remove the
+  row (no bump) and do not trigger; disable/reorder may harmlessly over-eval (zero new matches).
+  This eliminates the O(all-history x rules) re-eval and the ~1-per-email label API calls on every
+  routine poll while preserving 'new rules apply to old emails'. Scope: the unmatched backlog only;
+  does not touch the per-call googleapiclient service rebuild (issue #99).
+implements:
+- apps/email/runner.py
+- apps/email/data.py
+- apps/email/migrations/002_reeval_watermark.sql
+tests:
+- type: unit
+  path: tests/evolve/email/test_reeval_on_rules_change.py
+  rubric: >
+    DB-free (stubs the data layer), drives runner._reprocess_unmatched: unchanged rules do no
+    backlog query + no label API calls; a rule change triggers exactly one drain then the watermark
+    quiets the next poll; edit/enable re-triggers; delete does not trigger and disable/reorder
+    over-eval harmlessly (zero new matches); a backlog larger than the cap drains in bounded
+    batches over the FROZEN trigger-time set, newest-first, cursor advancing, ignoring mid-drain
+    arrivals and terminating; label API calls happen only inside a triggered needs_labels drain;
+    a mid-drain rule change gets its own exactly-once drain (no skip, no unbounded loop).
+- type: unit
+  path: tests/evolve/email/test_reeval_foundation.py
+  rubric: >
+    Against the real app_email schema: create_rule sets updated_at (was NULL); get_reeval_trigger
+    returns last_reeval_at + max active-rule COALESCE(updated_at, created_at); get_unmatched_log_entries
+    honors the newest-first (received_at, id) keyset LIMIT / upper_bound / before_cursor bounds
+    consistently with its ORDER BY.
+links: {}
+notes: >
+  ev-98 (operator perf bug). Verified at Gate-2 validate on the test host: 10/10 bound unit tests
+  green in-container, plus a seeded-DB integration harness driving the REAL runner._reprocess_unmatched
+  against the real schema — an unchanged-rules poll made ZERO backlog queries and ZERO label API
+  calls; a rule create drained the whole backlog exactly once then quieted; edit re-triggered once
+  (over-eval safe). Distinct from #99 (service-cache pattern). No user-visible UI surface.
+verified: true
