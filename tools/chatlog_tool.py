@@ -12,7 +12,7 @@ APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if APP_ROOT not in sys.path:
     sys.path.insert(0, APP_ROOT)
 
-from chatlog_store import search_chatlogs, list_chatlog_users, format_chatlog_results
+from chatlog_store import list_chatlog_users
 
 
 def search_chat_history(user_id: str, query: str, start_date: str = "", end_date: str = "", max_results: int = 10) -> str:
@@ -37,12 +37,17 @@ def search_chat_history(user_id: str, query: str, start_date: str = "", end_date
         if not query.strip():
             return "Error: query is required."
 
-        results = search_chatlogs(
-            user_id=user_id.strip(),
-            query=query.strip(),
+        # Phase 5b: search the consciousness LOG (the single record — historical
+        # chat_turns were backfilled into it and the subconscious keeps it
+        # embedded). The frozen chat_turns vectors are retired.
+        from chatlog_store import _get_embedding
+        from app_platform.consciousness import search_log
+        emb = _get_embedding(query.strip())
+        results = search_log(
+            emb, limit=max_results, min_similarity=0.25,
+            person=user_id.strip().lower(),
             start_date=start_date.strip() if start_date else None,
             end_date=end_date.strip() if end_date else None,
-            max_results=max_results
         )
 
         if not results:
@@ -51,7 +56,14 @@ def search_chat_history(user_id: str, query: str, start_date: str = "", end_date
                 date_info = f" between {start_date or 'the beginning'} and {end_date or 'now'}"
             return f"No matching conversations found for {user_id}{date_info} about: {query}"
 
-        return format_chatlog_results(results)
+        lines = [f"Found {len(results)} matching moment(s) in the timeline:"]
+        for r in results:
+            when = r["created_at"].strftime("%Y-%m-%d %H:%M") if r.get("created_at") else "?"
+            who = r.get("who_from") or "?"
+            to = f" → {r['who_to']}" if r.get("who_to") else ""
+            sim = f"{(r.get('similarity') or 0):.2f}"
+            lines.append(f"- [{when}] ({sim}) {who}{to}: {(r.get('content') or '')[:300]}")
+        return "\n".join(lines)
     except Exception as e:
         return f"Error searching chat history: {str(e)}"
 

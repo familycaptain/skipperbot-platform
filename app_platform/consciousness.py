@@ -346,20 +346,33 @@ def log_inbound_message(
 
 
 def search_log(query_embedding: list[float], limit: int = 4,
-               min_similarity: float = 0.30) -> list[dict]:
+               min_similarity: float = 0.30, person: str | None = None,
+               start_date: str | None = None, end_date: str | None = None) -> list[dict]:
     """Semantic recall over the log itself (§12.3 retrieval fan, Phase 4).
 
     Excludes summaries (they enter context via their own source) and the noise
     floor. Returns rows with a `similarity` field, newest-equal-relevance last.
+    Optional filters (Phase 5b — the explicit search_chat_history tool rides
+    this now): person (who_from OR who_to), inclusive date bounds (YYYY-MM-DD).
     """
     from data_layer.db import fetch_all_vector
     vec = "[" + ",".join(f"{v:.8g}" for v in query_embedding) + "]"
+    where = "embedding IS NOT NULL AND kind != 'summary'"
+    args: list = []
+    if person:
+        where += " AND (who_from = %s OR who_to = %s)"
+        args += [person, person]
+    if start_date:
+        where += " AND created_at >= %s::date"
+        args.append(start_date)
+    if end_date:
+        where += " AND created_at < (%s::date + interval '1 day')"
+        args.append(end_date)
     rows = fetch_all_vector(
         "SELECT id, seq, kind, who_from, who_to, domain, content, created_at, "
         "       1 - (embedding <=> %s::vector) AS similarity "
-        "FROM consciousness_log "
-        "WHERE embedding IS NOT NULL AND kind != 'summary' "
+        f"FROM consciousness_log WHERE {where} "
         "ORDER BY embedding <=> %s::vector LIMIT %s",
-        (vec, vec, limit * 3),
+        (vec, *args, vec, limit * 3),
     )
     return [r for r in rows if (r.get("similarity") or 0) >= min_similarity][:limit]
