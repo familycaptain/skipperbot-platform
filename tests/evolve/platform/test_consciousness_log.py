@@ -357,11 +357,16 @@ class Phase3bGoalsSplit(unittest.TestCase):
         self.assertIn("count_running", src)          # work-slot dedup
         self.assertIn("ALREADY messaged", src)       # one message per person per review
 
-    def test_milestone_voice_and_g_star_stand_down(self):
+    def test_milestone_voice_and_g_star_deleted(self):
         self.assertIn("_goals_milestone_runner", _read("apps/goals/handlers.py"))
         self.assertIn('register_skill("pm"', _read("apps/goals/handlers.py"))
         self.assertIn('register_skill("goals"', _read("apps/goals/handlers.py"))
-        self.assertIn("_consciousness_goals_enabled", _read("apps/goals/domain.py"))
+        # Phase 5b: the legacy per-goal domain module is DELETED (g-* rows,
+        # pattern registration, and the flag went with it); the worker-context
+        # builders live on in work_context.py.
+        import os as _os
+        self.assertFalse(_os.path.exists(_os.path.join(ROOT, "apps/goals/domain.py")))
+        self.assertIn("_build_goal_snapshot", _read("apps/goals/work_context.py"))
 
 
 class Phase4Subconscious(unittest.TestCase):
@@ -428,8 +433,7 @@ class Phase5aCutover(unittest.TestCase):
     def test_consciousness_is_the_default(self):
         for f in ("app_platform/context.py", "app_platform/attention.py",
                   "app_platform/summarizer.py", "apps/chores/handlers.py",
-                  "apps/goals/handlers.py", "apps/goals/pm_domain.py",
-                  "apps/goals/domain.py"):
+                  "apps/goals/handlers.py", "apps/goals/pm_domain.py"):
             self.assertNotIn('scope="platform", default=False', _read(f), f)
 
 
