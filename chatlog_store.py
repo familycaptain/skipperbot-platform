@@ -95,21 +95,30 @@ def save_turn(
 
 
 def save_notification(user_id: str, bot_message: str, context: str = ""):
-    """Save a bot-initiated notification (e.g. fired reminder) to chat history.
+    """Record a bot-initiated direct send in the consciousness log so the
+    timeline sees it and follow-ups like "remind me again in an hour" have
+    context.
 
-    This lets the agent see recent notifications in the conversation window,
-    so follow-up messages like "remind me again in an hour" have context.
+    Phase 5b: this used to write a chat_turns row, which the consciousness
+    timeline never read — direct-send callers (print/research/refine runners)
+    were invisible to the one mind. Now it writes the log, the single record.
 
     Args:
         user_id: The recipient.
         bot_message: What the bot sent (e.g. "⏰ Reminder: ...").
-        context: Optional context tag (e.g. "reminder_notification").
+        context: Optional context tag (e.g. "reminder_notification") — recorded
+                 as the row's source_type and used for domain routing.
     """
-    _dl_chat.save_turn(
-        user_id=user_id.lower().strip(),
-        user_message=f"[{context or 'notification'}]",
-        assistant_message=bot_message,
-        embedding=None,  # Not useful for search
+    from app_platform.consciousness import shadow_log_event, domain_for_source_type
+    src = (context or "notification").strip()
+    shadow_log_event(
+        kind="message", who_from="skipper", who_to=user_id.lower().strip(),
+        domain=domain_for_source_type(src),
+        content=bot_message,
+        payload={"source_type": src},
+        # Already delivered by the caller (Discord/Pushover/WebSocket): this is
+        # a record, never a queue entry.
+        pre_attended_by="direct-send",
     )
 
 

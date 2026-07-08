@@ -288,9 +288,9 @@ def history_projection(person: str, limit: int = 20,
         timestamp}
       - a proactive outbound (no inbound parent from this person) → a
         notification-style turn ({user_message: "[<domain>]", assistant_message})
-    Tool calls are hydrated from chat_turns via payload.chat_turn_id during the
-    double-write bake (no new writes; the legacy row is still authoritative for
-    replay detail).
+    Tool calls come from the reply row's payload (post-bake, Phase 5b); rows
+    written before the bake hydrate from the frozen chat_turns table via
+    payload.chat_turn_id.
     """
     import json as _json
     from data_layer.db import fetch_all
@@ -339,8 +339,11 @@ def history_projection(person: str, limit: int = 20,
                 "user_message": r["content"] or "",
                 "assistant_message": (reply or {}).get("content") or "",
                 "timestamp": r["created_at"].isoformat() if r.get("created_at") else "",
-                "_ct_id": _p(reply).get("chat_turn_id") if reply else None,
-                "tool_calls": [],
+                # Post-bake rows (Phase 5b) carry tool_calls on the payload; only
+                # older rows still hydrate from chat_turns below.
+                "_ct_id": (_p(reply).get("chat_turn_id")
+                           if reply and not _p(reply).get("tool_calls") else None),
+                "tool_calls": (_p(reply).get("tool_calls") or []) if reply else [],
             })
     for r in rows:
         if r["who_from"] == SKIPPER and r["id"] not in replied:
@@ -358,7 +361,8 @@ def history_projection(person: str, limit: int = 20,
     turns.sort(key=lambda t: t["timestamp"])
     turns = turns[-limit:]
 
-    # Hydrate tool_calls from the legacy rows (double-write bake period).
+    # Fallback: pre-bake rows (no payload.tool_calls) hydrate from the frozen
+    # legacy chat_turns table — kept forever, zero-loss (Phase 5b).
     ct_ids = [t["_ct_id"] for t in turns if t.get("_ct_id")]
     if ct_ids:
         legacy = fetch_all(

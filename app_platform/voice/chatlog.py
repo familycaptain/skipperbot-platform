@@ -15,7 +15,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Deque
 
-from chatlog_store import generate_turn_id, save_turn
+from chatlog_store import generate_turn_id
 from config import logger
 from app_platform.voice.session import get_session
 
@@ -136,16 +136,9 @@ def _persist_voice_turn_sync(
     assistant_message: str,
     turn_id: str,
 ) -> None:
-    try:
-        save_turn(
-            user_id=user_id,
-            user_message=user_message,
-            assistant_message=assistant_message,
-            turn_id=turn_id,
-            channel="voice",  # tag the surface so voice turns are excluded from the web reload (issue #23)
-        )
-    except Exception as exc:
-        logger.error("VOICE_CHATLOG: Failed to save turn %s for %s: %s", turn_id, user_id, exc)
+    # Phase 5b: the chat_turns double-write is retired — the consciousness log
+    # rows below are the record (surface='voice' keeps voice turns out of the
+    # web reload, issue #23). turn_id stays as an in-session correlation id.
 
     # Q7 (specs/CONSCIOUSNESS.md §16): voice enters the LOG at utterance grain,
     # PRE-ATTENDED — the realtime session is the engaged responder ("a live

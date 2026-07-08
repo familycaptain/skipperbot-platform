@@ -11,7 +11,7 @@ import os
 import random
 
 from config import logger
-from chatlog_store import save_turn, load_recent_turns, generate_turn_id
+from chatlog_store import load_recent_turns, generate_turn_id
 from chat_domain import ChatRequest, ChatResult
 
 from typing import Optional, Callable, Awaitable
@@ -225,44 +225,32 @@ async def process_chat(
     async def _post_turn():
         _cl_inbound_id = None
         _cl_reply_id = None
-        try:
-            # Persist the tools the model actually CALLED this turn (name/args/
-            # result), so the web UI can replay them on session resume and for
-            # diagnostics. Results truncated to keep rows reasonable.
-            _tool_calls = [
-                {"name": tc.name, "args": tc.args,
-                 "result": (tc.result or "")[:4000], "id": tc.tool_call_id}
-                for tc in (getattr(result, "tool_calls_made", None) or [])
-            ]
-            await asyncio.to_thread(
-                save_turn, user_id=user_id, user_message=user_message,
-                assistant_message=response_text or "", turn_id=current_turn_id,
-                system_prompt=getattr(result, "system_prompt", "") or None,
-                selected_tools=getattr(result, "selected_tools", None) or None,
-                matched_guides=getattr(result, "matched_guides", None) or None,
-                tool_calls=_tool_calls or None,
-                channel=channel,  # 'web' | 'discord' | … — tags the turn's surface (issue #23)
-            )
-        except Exception as e:
-            logger.error("CHATLOG: Failed to save turn for '%s': %s", user_id, str(e))
-        # Phase-0 SHADOW WRITE (specs/CONSCIOUSNESS.md §13): mirror this turn into
-        # the consciousness log as TWO message events (one row = one event). The
-        # legacy pipeline remains the engaged responder — rows are pre-attended
-        # (§11.5 state 3); shadow_log_event can never raise into this task.
+        # Phase 5b: the consciousness log IS the record — the chat_turns
+        # double-write is retired (the table stays, read-only, zero-loss).
+        # Tool calls the model actually made ride the reply row's payload so
+        # the scrollback projection replays them with no chat_turns hydration.
+        # Results truncated to keep rows reasonable.
+        _tool_calls = [
+            {"name": tc.name, "args": tc.args,
+             "result": (tc.result or "")[:4000], "id": tc.tool_call_id}
+            for tc in (getattr(result, "tool_calls_made", None) or [])
+        ]
+        _reply_payload = {"chat_turn_id": current_turn_id,
+                          **({"tool_calls": _tool_calls} if _tool_calls else {}),
+                          **({"write_actions": list(_writes)} if _writes else {})}
         try:
             from app_platform.consciousness import shadow_log_event
             if log_event_id:
-                # Attention mode (Phase 2): the inbound row already exists as
-                # the REAL record; write only the outbound reply — a pure
-                # record (§11.5 state 3b: Skipper's own output is never owed).
+                # Attention mode: the inbound row already exists as the REAL
+                # record; write only the outbound reply — a pure record
+                # (§11.5 state 3b: Skipper's own output is never owed).
                 _cl_inbound_id = log_event_id
                 if response_text:
                     _out = await asyncio.to_thread(
                         shadow_log_event, kind="message", who_from="skipper",
                         who_to=user_id, domain="chat", surface=channel,
                         content=response_text, reply_to=log_event_id,
-                        payload={"chat_turn_id": current_turn_id,
-                                 **({"write_actions": list(_writes)} if _writes else {})},
+                        payload=_reply_payload,
                     )
                     _cl_reply_id = (_out or {}).get("id")
             else:
@@ -280,13 +268,12 @@ async def process_chat(
                         reply_to=(_inbound or {}).get("id"),
                         # write_actions -> the timeline re-renders the anti-re-execution
                         # marker the legacy session stored inline (§12.4).
-                        payload={"chat_turn_id": current_turn_id,
-                                 **({"write_actions": list(_writes)} if _writes else {})},
+                        payload=_reply_payload,
                         pre_attended_by="legacy-pipeline",
                     )
                     _cl_reply_id = (_out or {}).get("id")
         except Exception:
-            logger.debug("CONSCIOUSNESS: chat shadow write skipped", exc_info=True)
+            logger.error("CONSCIOUSNESS: chat log write FAILED for '%s'", user_id, exc_info=True)
         try:
             from data_layer.memory_queue import enqueue
             enqueue(
