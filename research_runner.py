@@ -787,12 +787,9 @@ async def _deliver_research_notification(job: dict, result: dict):
     except Exception as e:
         logger.error("RESEARCH [%s]: WebSocket notification failed: %s", job_id, e)
 
-    # Log full content to chat history so the agent has context
-    try:
-        from chatlog_store import save_notification
-        save_notification(notify_user, discord_msg, context="research_notification")
-    except Exception as e:
-        logger.error("RESEARCH [%s]: Failed to log to chat history: %s", job_id, e)
+    # Phase 5b: no separate history write — create_notification already logged
+    # this completion to the consciousness log (the single record); this custom
+    # delivery is pure transport.
 
 
 # ---------------------------------------------------------------------------
@@ -1396,12 +1393,9 @@ async def _deliver_refine_notification(job: dict, result: dict):
     except Exception as e:
         logger.error("REFINE [%s]: WebSocket notification failed: %s", job_id, e)
 
-    # Log to chat history
-    try:
-        from chatlog_store import save_notification
-        save_notification(notify_user, discord_msg, context="refine_notification")
-    except Exception as e:
-        logger.error("REFINE [%s]: Failed to log to chat history: %s", job_id, e)
+    # Phase 5b: no separate history write — create_notification already logged
+    # this completion to the consciousness log (the single record); this custom
+    # delivery is pure transport.
 
 
 # ---------------------------------------------------------------------------

@@ -194,13 +194,9 @@ async def _deliver_one(notif: dict):
     except Exception as e:
         logger.error("NOTIF_DELIVERY: WebSocket failed for %s: %s", recipient, e)
 
-    # --- Chat history log ---
-    try:
-        from chatlog_store import save_notification as save_chat_notification
-        context = f"{notif.get('source_type', 'system')}_notification"
-        save_chat_notification(recipient, message, context=context)
-    except Exception as e:
-        logger.error("NOTIF_DELIVERY: Chat log failed for %s: %s", recipient, e)
+    # Phase 5b: delivery is PURE TRANSPORT — no history write here. The
+    # consciousness-log row was already written at creation (store.py, the one
+    # sanctioned entry point); writing again here would double-log the message.
 
     # Mark as delivered (best-effort: once any channel succeeded, we're done).
     try:

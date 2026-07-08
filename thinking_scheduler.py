@@ -75,7 +75,6 @@ _active_dispatches: dict[str, dict] = {}
 
 # Priority-0 event queue for non-chat urgent events (future use)
 # Items are (event_type: str, payload: dict, future: asyncio.Future)
-_priority_queue: asyncio.Queue | None = None  # created lazily in event loop
 
 
 # ---------------------------------------------------------------------------
@@ -111,10 +110,6 @@ async def start_thinking_scheduler():
 
     logger.info("THINKING: Supervisor started (checking domain config every %ds)",
                 SUPERVISOR_INTERVAL_SECONDS)
-
-    # Start the priority-0 event consumer (handles non-chat urgent events). LLM-free —
-    # it only routes events to their handlers — so it runs even on a keyless boot.
-    asyncio.create_task(_priority_event_consumer(), name="think-priority-consumer")
 
     while True:
         if _shutting_down:
@@ -153,21 +148,6 @@ async def dispatch_chat(request) -> 'ChatResult':
         if _active_chat_count <= 0:
             _active_chat_count = 0
             _chat_active.clear()
-
-
-async def submit_priority_event(event_type: str, payload: dict) -> dict:
-    """Submit a priority-0 event for immediate processing.
-
-    Returns the result dict from the event handler. This is the general
-    entry point for non-chat priority-0 events (urgent alerts, etc.).
-    Events are processed by _priority_event_consumer().
-    """
-    global _priority_queue
-    if _priority_queue is None:
-        _priority_queue = asyncio.Queue()
-    future = asyncio.get_event_loop().create_future()
-    await _priority_queue.put((event_type, payload, future))
-    return await future
 
 
 def get_dispatch_status() -> dict:
@@ -552,53 +532,6 @@ _PRIORITY_MAP = {
     "standard": 2,
     "low": 3,
 }
-
-
-async def _priority_event_consumer():
-    """Process priority-0 events from the queue.
-
-    Handles non-chat urgent events (future use: urgent alerts, etc.).
-    Each event gets a dispatch_id for tracking and its result is
-    delivered via the Future attached to the queue item.
-    """
-    global _priority_queue
-    if _priority_queue is None:
-        _priority_queue = asyncio.Queue()
-    logger.info("THINKING: Priority event consumer started")
-
-    while True:
-        try:
-            event_type, payload, future = await _priority_queue.get()
-            dispatch_id = f"event-{event_type}-{int(time.monotonic() * 1000)}"
-            _active_dispatches[dispatch_id] = {
-                "domain": event_type,
-                "priority": 0,
-                "start": time.monotonic(),
-            }
-            try:
-                # Route to domain handler by event type
-                from domain_modules import get_domain_handler
-                handler = get_domain_handler(event_type)
-                if handler:
-                    result = await handler(payload)
-                    future.set_result(result)
-                else:
-                    future.set_exception(
-                        ValueError(f"No handler for priority event type: {event_type}")
-                    )
-            except Exception as e:
-                logger.error("THINKING: Priority event '%s' failed: %s",
-                             event_type, e, exc_info=True)
-                if not future.done():
-                    future.set_exception(e)
-            finally:
-                _active_dispatches.pop(dispatch_id, None)
-        except asyncio.CancelledError:
-            logger.info("THINKING: Priority event consumer stopped")
-            return
-        except Exception as e:
-            logger.error("THINKING: Priority event consumer error: %s", e, exc_info=True)
-            await asyncio.sleep(1)
 
 
 def _seconds_until_hour(now: datetime, target_hour: int) -> int:

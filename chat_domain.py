@@ -151,20 +151,8 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     if _is_onboarding:
         extra_categories.add("app:goals")
 
-    # Reply-to-proactive-DM continuity: if a background Skipper process DM'd this user and it's
-    # still unresolved, flag it so a reply gets the sender's intent (generic pattern, used by
-    # reminders/goals/etc.). When the pending DM IS the onboarding nudge, the function coordinates
-    # with onboarding (which already owns the conversation) instead of issuing a competing
-    # greeting/resume — see _inject_proactive_dm_context.
-    # Phase 3c (specs/CONSCIOUSNESS.md §12.5): under consciousness_chat the
-    # TIMELINE already shows every proactive DM in true order — the pending-DM
-    # side-channel is redundant noise, so it stands down.
-    from app_platform.context import consciousness_chat_enabled as _cl_chat_on
-    if _cl_chat_on():
-        _has_pending_dm = False
-    else:
-        dynamic_context, _has_pending_dm = await _inject_proactive_dm_context(
-            dynamic_context, req.user_id)
+    # Phase 5b: the pending-DM side-channel is gone — the TIMELINE shows every
+    # proactive DM in true order, so a reply is never read cold.
 
     # Memory + knowledge retrieval
     t_retrieval = time.monotonic()
@@ -219,10 +207,6 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
         evicted = slots.pop(0) if len(slots) >= SLOT_CAPACITY else None
         slots.append(category)
         return category, evicted
-
-    # Deterministically expose the reply-guide tool when a proactive DM is pending.
-    if _has_pending_dm:
-        routed_tool_names.add("get_proactive_reply_guide")
 
     # #107: if Skipper recently messaged this person ABOUT a project/task/goal (a
     # PM/goal check-in tagged with subject_id, shown as `[re: p-XXX]` in the
@@ -1089,92 +1073,6 @@ async def _inject_onboarding_context(system_prompt: str) -> tuple[str, bool]:
 
     return system_prompt, False
 
-
-async def _inject_proactive_dm_context(system_prompt: str, user_id: str) -> tuple[str, bool]:
-    """Flag when the user may be replying to a proactive DM Skipper sent.
-
-    Thinking domains (PM/goals) send proactive DMs and record a pending_action.
-    When that user later chats, the normal agent loop has none of the sender's
-    context — so a reply like "not yet" or "stop" lands cold. This injects a
-    COMPACT block naming the pending message + its kind, and tells the model to
-    pull full guidance via get_proactive_reply_guide() if the turn is a reply.
-    Returns (system_prompt, has_pending); has_pending force-includes the tool.
-    See specs/PROACTIVE_MESSAGING.md.
-    """
-    try:
-        import apps.goals.data as _dl_goals
-        pending = await asyncio.to_thread(_dl_goals.pending_dms_for_user, user_id)
-    except Exception as e:
-        logger.debug("PROACTIVE_REPLY: Could not load pending DMs: %s", e)
-        return system_prompt, False
-
-    if not pending:
-        return system_prompt, False
-
-    # Drop STALE DMs whose goal/domain has since been closed or cancelled. A proactive nudge tied to
-    # a terminal goal — e.g. the onboarding tour after the user told Skipper to stop — must not
-    # resurface as if it were still live. Without this, a cancelled onboarding kept re-nudging the
-    # Arcade tour (and tripping the onboarding-coordination block below). Non-goal DMs are kept.
-    try:
-        _goals_by_id = {g.get("id"): g for g in await asyncio.to_thread(_dl_goals.list_entities, "g-")}
-        pending = [
-            p for p in pending
-            if (_goals_by_id.get(p.get("domain") or "") or {}).get("status")
-            not in ("done", "cancelled", "archived")
-        ]
-    except Exception as e:
-        logger.debug("PROACTIVE_REPLY: terminal-goal filter skipped: %s", e)
-    if not pending:
-        return system_prompt, False
-
-    top = pending[0]
-    kind = top.get("kind", "goal")
-    sent_at = (top.get("sent_at", "") or "")[:16].replace("T", " ")
-    dm_text = (top.get("dm_text", "") or "").strip()
-
-    # COORDINATE WITH ONBOARDING. If the most-recent pending DM is the first-run onboarding goal's
-    # OWN nudge, onboarding (`_inject_onboarding_context`) already owns this conversation. Issuing
-    # the generic "you're continuing the thread / call get_proactive_reply_guide" framing here too
-    # made the user's first reply get a SECOND greeting + a false "picking up where we left off"
-    # resume (GitHub #33/#34). Keep the pending-DM INFO (so a reply isn't read cold) but defer the
-    # framing to onboarding and do NOT force the generic resume guide. The generic pattern is
-    # unchanged for every other background DM (reminders/goals/etc.).
-    try:
-        from app_platform import config as _pc
-        _onb_goal = (_pc.get("onboarding_seeded", scope="app:goals") or {}).get("goal_id")
-    except Exception:
-        _onb_goal = None
-    if _onb_goal and (top.get("domain") or "") == _onb_goal:
-        system_prompt += (
-            "\n\n## You have a pending onboarding nudge out\n"
-            "You reached out to start onboarding and haven't heard back yet; your most recent "
-            f"onboarding message was:\n  “{dm_text}”\n"
-            "Handle the user's message INSIDE your onboarding flow above — ONE response, in your "
-            "onboarding voice, and NEVER also add a \"picking up where we left off\" resume:\n"
-            "- If it actually ANSWERS the current topic (a name, their stated intent, a location…) "
-            "→ capture it and advance per the agenda.\n"
-            "- If it's just a greeting or acknowledgment (\"hey\", \"hi\", \"ok\", \"thanks\") → greet "
-            "back warmly ONCE and ask the CURRENT onboarding topic. Do NOT mark any topic done and "
-            "do NOT skip ahead — a greeting answers nothing."
-        )
-        return system_prompt, False
-
-    extra = ""
-    if len(pending) > 1:
-        extra = f" (and {len(pending) - 1} other pending message(s))"
-
-    system_prompt += (
-        "\n\n## ⚠ Possible reply to a proactive message\n"
-        "You (Skipper) recently reached out to this user on your own initiative; "
-        "they have not clearly resolved it, so their next message MAY be a reply"
-        f"{extra}. Most recent — kind \"{kind}\", sent {sent_at}:\n"
-        f"  “{dm_text}”\n"
-        "If the user's message reads as a response to that outreach, you are "
-        "CONTINUING that thread: do not restart or re-introduce yourself. Call "
-        f"get_proactive_reply_guide(kind=\"{kind}\") for the full guidance before replying. "
-        "If the message is clearly unrelated, ignore this and answer normally."
-    )
-    return system_prompt, True
 
 # NOTE: Scrum-item injection used to live here. It was a tight coupling
 # between this platform-layer chat_domain and the optional scrum app —

@@ -282,37 +282,6 @@ RESTART_AGENT_TOOL = {
     }
 }
 
-GET_PROACTIVE_REPLY_GUIDE_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "get_proactive_reply_guide",
-        "description": (
-            "Call this when the user appears to be replying to a proactive "
-            "message YOU (Skipper) sent on your own initiative — e.g. an "
-            "onboarding nudge or a project-management check-in. The conversation "
-            "context flags when such a message is pending and which kind it was. "
-            "Returns the full guidance for continuing that thread with the right "
-            "intent and cadence (don't restart, one step at a time, respect "
-            "disengagement). Read it before composing your reply."
-        ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "kind": {
-                    "type": "string",
-                    "enum": ["goal", "pm"],
-                    "description": (
-                        "The kind of proactive message being replied to, as named "
-                        "in the pending-message context: 'goal' (a goal Skipper "
-                        "owns / onboarding) or 'pm' (a project-management nudge)."
-                    ),
-                }
-            },
-            "required": ["kind"],
-        },
-    },
-}
-
 RECORD_ENTITY_NOTE_TOOL = {
     "type": "function",
     "function": {
@@ -345,8 +314,8 @@ RECORD_ENTITY_NOTE_TOOL = {
     },
 }
 
-LOCAL_TOOLS = [SEND_NOTIFICATION_TOOL, LIST_USERS_TOOL, LIST_ALL_TOOLS_TOOL, REQUEST_TOOLS_TOOL, OPEN_APP_TOOL, READ_FEATURE_SPEC_TOOL, BROADCAST_ANNOUNCEMENT_TOOL, RESTART_AGENT_TOOL, GET_PROACTIVE_REPLY_GUIDE_TOOL, RECORD_ENTITY_NOTE_TOOL]
-LOCAL_TOOL_NAMES = {"send_message_to_user", "send_notification", "send_discord_dm", "list_connected_users", "list_all_tools", "request_tools", "open_app", "read_feature_spec", "broadcast_announcement", "restart_agent", "get_proactive_reply_guide", "record_entity_note"}
+LOCAL_TOOLS = [SEND_NOTIFICATION_TOOL, LIST_USERS_TOOL, LIST_ALL_TOOLS_TOOL, REQUEST_TOOLS_TOOL, OPEN_APP_TOOL, READ_FEATURE_SPEC_TOOL, BROADCAST_ANNOUNCEMENT_TOOL, RESTART_AGENT_TOOL, RECORD_ENTITY_NOTE_TOOL]
+LOCAL_TOOL_NAMES = {"send_message_to_user", "send_notification", "send_discord_dm", "list_connected_users", "list_all_tools", "request_tools", "open_app", "read_feature_spec", "broadcast_announcement", "restart_agent", "record_entity_note"}
 
 
 async def _queue_notification(
@@ -538,17 +507,6 @@ async def handle_local_tool(tool_name: str, tool_args: dict, from_user: str) -> 
         _asyncio.create_task(_drain_and_exit(max_wait=30))
 
         return "Restarting — draining in-flight work (up to 30s) then restarting. The page will reconnect automatically."
-
-    elif tool_name == "get_proactive_reply_guide":
-        # Full continuity guidance for a reply to a proactive DM. Shared source
-        # of truth with the thinking domains — see apps/goals/prompts/
-        # proactive_reply_guide.md and specs/PROACTIVE_MESSAGING.md.
-        from apps.goals.data import load_proactive_reply_guide
-        guide = await asyncio.to_thread(load_proactive_reply_guide, tool_args.get("kind", ""))
-        return guide or (
-            "No additional guidance available — continue the thread naturally "
-            "without restarting, one step at a time."
-        )
 
     elif tool_name == "record_entity_note":
         # Record a family member's reply as a history note ON the project/task/goal it

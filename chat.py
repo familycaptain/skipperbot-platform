@@ -11,36 +11,15 @@ import os
 import random
 
 from config import logger
-from chatlog_store import load_recent_turns, generate_turn_id
+from chatlog_store import generate_turn_id
 from chat_domain import ChatRequest, ChatResult
 
 from typing import Optional, Callable, Awaitable
-
-sessions: dict[str, list[dict]] = {}
 
 # Tool-router SLOTS per user: the categories the model has request_tools'd, kept across turns
 # so a focused task's tools stay loaded (sticky) without re-routing the whole conversation.
 # Passed by reference into ChatRequest.loaded_categories so in-turn loads/evictions persist.
 session_slots: dict[str, list[str]] = {}
-
-# Sliding window: max conversation turns kept in session (1 turn = user + assistant)
-# 50 turns = 100 messages ≈ safe for most context windows. Resolved from the
-# System settings panel (scope=platform) → MAX_SESSION_TURNS env → default 50;
-# guarded so a DB hiccup at import falls back to env. Restart to change.
-def _max_session_turns() -> int:
-    val = None
-    try:
-        from app_platform import settings as _settings
-        val = _settings.get("max_session_turns", scope="platform", default=None)
-    except Exception:
-        val = os.getenv("MAX_SESSION_TURNS")
-    try:
-        return int(val) if val not in (None, "") else 50
-    except (TypeError, ValueError):
-        return 50
-
-
-MAX_SESSION_TURNS = _max_session_turns()
 
 # ---------------------------------------------------------------------------
 # Varied thinking / keepalive message pools (zero-token, keyword + random)
@@ -113,38 +92,17 @@ async def process_chat(
     persistence, digest. Delegates the actual LLM work to
     chat_domain.handle_chat() via the thinking scheduler.
     """
-    # /clear — wipe session history so the next message relies on memory/knowledge only
+    # /clear — Phase 5b: history is the consciousness log (continuous, durable);
+    # there is no per-session history to wipe. Reset the loaded tool slots and
+    # process any trailing message.
     if user_message.strip().lower().startswith("/clear"):
-        sessions[user_id] = []
         session_slots[user_id] = []
-        logger.info("SESSION: Cleared session for '%s'", user_id)
-        if send_progress:
-            try:
-                await send_progress("\U0001f9f9 Responding without chat history.")
-            except Exception:
-                pass
-        # If there's a message after /clear, process it as the actual question
+        logger.info("SESSION: Reset tool slots for '%s'", user_id)
         remainder = user_message.strip()[len("/clear"):].strip()
         if not remainder:
-            return "Session cleared. I'll rely on my memory and knowledge from here."
+            return ("My memory is continuous now — there's no session history to clear. "
+                    "(Loaded tool slots were reset.)")
         user_message = remainder
-
-    if user_id not in sessions:
-        # Bootstrap from durable chat logs so context survives restarts
-        recent = await asyncio.to_thread(load_recent_turns, user_id, max_turns=MAX_SESSION_TURNS)
-        if recent:
-            # Insert a boundary so the LLM knows prior turns are history,
-            # not pending actions to re-execute.
-            recent.append({
-                "role": "assistant",
-                "content": "[Session resumed — all actions above were already completed in a prior session.]"
-            })
-            logger.debug("SESSION: Bootstrapped %d messages from chat logs for '%s'", len(recent), user_id)
-        else:
-            logger.debug("SESSION: New session for user '%s'", user_id)
-        sessions[user_id] = recent
-
-    sessions[user_id].append({"role": "user", "content": user_message})
 
     # Pre-generate a chat turn ID so the agent can reference it in remember() calls
     current_turn_id = generate_turn_id()
@@ -163,19 +121,17 @@ async def process_chat(
     # --- Dispatch to chat domain via thinking scheduler (priority-0) ---
     from thinking_scheduler import dispatch_chat
 
-    # Phase 1 (specs/CONSCIOUSNESS.md §13): when `consciousness_chat` is on, the
-    # conversation history is the LOG TIMELINE — one seq-ordered multi-speaker
-    # stream from the consciousness log — instead of the in-memory session.
-    # The sessions dict is still maintained above for instant flip-back.
-    _session_for_request = sessions[user_id]
+    # Phase 5b: conversation history IS the log timeline — one seq-ordered
+    # multi-speaker stream from the consciousness log. (The in-memory sessions
+    # dict is gone; the log is durable, so nothing to bootstrap.)
+    _session_for_request = [{"role": "user", "content": user_message}]
     try:
-        from app_platform.context import consciousness_chat_enabled, build_chat_timeline
-        if consciousness_chat_enabled():
-            _history = await asyncio.to_thread(build_chat_timeline, user_id, None, log_event_id)
-            _session_for_request = _history + [{"role": "user", "content": user_message}]
-            logger.debug("SESSION [%s]: log-timeline history (%d msgs)", user_id, len(_history))
+        from app_platform.context import build_chat_timeline
+        _history = await asyncio.to_thread(build_chat_timeline, user_id, None, log_event_id)
+        _session_for_request = _history + [{"role": "user", "content": user_message}]
+        logger.debug("SESSION [%s]: log-timeline history (%d msgs)", user_id, len(_history))
     except Exception:
-        logger.warning("SESSION [%s]: log-timeline unavailable — legacy session", user_id, exc_info=True)
+        logger.warning("SESSION [%s]: log-timeline unavailable — bare turn", user_id, exc_info=True)
 
     request = ChatRequest(
         user_id=user_id,
@@ -196,30 +152,18 @@ async def process_chat(
     if _thinking_task and not _thinking_task.done():
         _thinking_task.cancel()
 
-    # --- Session management ---
-    # Record completed WRITE actions in the stored history so the model has a CONCRETE signal
-    # they already ran. Without this, on a later low-signal turn ("hey there") it sometimes
-    # re-executes the previous turn's write tool (e.g. re-adding a to-do). Pairs with the
-    # "Don't Repeat Completed Actions" rule in BEHAVIOR.md.
-    _stored = response_text or ""
+    # Completed WRITE actions ride the reply row's payload (write_actions); the
+    # timeline re-renders them as the anti-re-execution marker (§12.4) so the
+    # model has a CONCRETE signal they already ran. Pairs with the "Don't
+    # Repeat Completed Actions" rule in BEHAVIOR.md.
     _writes: set[str] = set()
     try:
         _WRITE_PREFIXES = ("add_", "create_", "send_", "update_", "set_", "log_", "delete_",
                            "remove_", "save_", "mark_", "schedule_", "connect_", "revise_")
         _writes = sorted({tc.name for tc in (result.tool_calls_made or [])
                           if any(tc.name.startswith(p) for p in _WRITE_PREFIXES)})
-        if _writes:
-            _stored += ("\n\n[✓ Completed this turn — already done; do NOT repeat these on a "
-                        "later turn: " + ", ".join(_writes) + "]")
     except Exception:
         pass
-    sessions[user_id].append({"role": "assistant", "content": _stored})
-
-    # Sliding window: trim to last MAX_SESSION_TURNS turns (each turn = 2 messages)
-    max_messages = MAX_SESSION_TURNS * 2
-    if len(sessions[user_id]) > max_messages:
-        sessions[user_id] = sessions[user_id][-max_messages:]
-        logger.debug("SESSION [%s]: Trimmed to last %d turns", user_id, MAX_SESSION_TURNS)
 
     # Fire-and-forget: persist turn + digest in background (don't block response)
     async def _post_turn():
@@ -294,7 +238,5 @@ async def process_chat(
             logger.error("DIGEST: Failed to enqueue turn '%s': %s", current_turn_id, str(e))
 
     asyncio.create_task(_post_turn())
-
-    logger.debug("SESSION [%s]: %d messages in history", user_id, len(sessions[user_id]))
 
     return response_text

@@ -673,15 +673,13 @@ async def onboarding_save_models(request: SaveModelsRequest, http_request: Reque
         # provisioned once above; its dimension is fixed, not a live restart.)
         return {"ok": True, "restart_required": False}
 
-    # ev-79: on a genuinely fresh install the primary's desktop WS connected while
-    # keyless, so the desktop.arrival greeting early-skipped (models not configured)
-    # WITHOUT taking the greet-once claim. Capture readiness BEFORE the save so we can
-    # detect the first-time keyless -> configured transition, then RE-FIRE desktop.arrival
-    # for the primary once configured — the #73 always-on consumer produces the greeting
-    # within a few seconds instead of waiting for the <=120s supervisor. The arrival
-    # handler (apps/goals/handlers.py) is UNCHANGED: it re-checks the primary/agenda/
-    # models-configured gates and the ATOMIC greet-once claim, so exactly-once holds and a
-    # later (already-configured) model change never re-greets.
+    # ev-79/#73: on a genuinely fresh install the primary's desktop WS connected
+    # while keyless, so the connection-event greeting early-skipped (models not
+    # configured). Capture readiness BEFORE the save; on the first keyless ->
+    # configured transition, log a fresh OWED connection event so the attention
+    # system greets within seconds (the connection skill re-checks the primary/
+    # agenda/models gates + the log-native greet-once window, so exactly-once
+    # holds and a later model change never re-greets).
     from providers.tier_resolver import models_configured
     was_configured = await asyncio.to_thread(models_configured)
     result = await asyncio.to_thread(_do)
@@ -693,13 +691,18 @@ async def onboarding_save_models(request: SaveModelsRequest, http_request: Reque
                 from data_layer.users import get_primary_user
                 primary = (await asyncio.to_thread(get_primary_user) or "").strip().lower()
                 if primary:
-                    import thinking_scheduler
-                    asyncio.create_task(
-                        thinking_scheduler.submit_priority_event(
-                            "desktop.arrival", {"user_id": primary})
-                    )
+                    from app_platform.consciousness import shadow_log_event
+                    from app_platform.attention import kick as _att_kick
+                    def _log_arrival_owed():
+                        shadow_log_event(kind="event", who_from="system", who_to=primary,
+                                         domain="system", surface="web",
+                                         content=f"{primary} connected on web",
+                                         payload={"event": "desktop.arrival"},
+                                         needs_attention=True)
+                        _att_kick()
+                    asyncio.create_task(asyncio.to_thread(_log_arrival_owed))
         except Exception:
-            logger.debug("save-models: could not re-fire desktop.arrival", exc_info=True)
+            logger.debug("save-models: could not log arrival event", exc_info=True)
     return result
 
 
@@ -1076,40 +1079,22 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
     # Send build ID so client can detect agent restarts
     await websocket.send_json({"type": "build_id", "build_id": BUILD_ID})
 
-    # Emit a THIN `desktop.arrival` event (transport carries NO onboarding/goals
-    # logic — the goals-layer handler owns all gating + greet-once). Fire-and-
-    # forget so the WS handshake never blocks; best-effort (any error is ignored).
+    # The connection event enters the consciousness log OWED — the attention
+    # system consumes it (the connection skill greets when onboarding is live).
+    # Fire-and-forget so the WS handshake never blocks; best-effort.
     try:
-        import thinking_scheduler
-        asyncio.create_task(
-            thinking_scheduler.submit_priority_event("desktop.arrival", {"user_id": user_id})
-        )
-        # Phase-0 SHADOW WRITE (specs/CONSCIOUSNESS.md §13): the connection
-        # event enters the consciousness log (pre-attended — the legacy
-        # arrival handler is still the engaged responder).
         from app_platform.consciousness import shadow_log_event
-        from app_platform.attention import attention_enabled as _att_on, kick as _att_kick
-        if _att_on():
-            # Phase 2: a REAL owed connection event — attention consumes it
-            # (ack-only until onboarding converts in Phase 3).
-            def _log_arrival_owed():
-                shadow_log_event(kind="event", who_from="system", who_to=user_id,
-                                 domain="system", surface="web",
-                                 content=f"{user_id} connected on web",
-                                 payload={"event": "desktop.arrival"},
-                                 needs_attention=True)
-                _att_kick()
-            asyncio.create_task(asyncio.to_thread(_log_arrival_owed))
-        else:
-            asyncio.create_task(asyncio.to_thread(
-                shadow_log_event, kind="event", who_from="system", who_to=user_id,
-                domain="system", surface="web",
-                content=f"{user_id} connected on web",
-                payload={"event": "desktop.arrival"},
-                pre_attended_by="legacy-pipeline",
-            ))
+        from app_platform.attention import kick as _att_kick
+        def _log_arrival_owed():
+            shadow_log_event(kind="event", who_from="system", who_to=user_id,
+                             domain="system", surface="web",
+                             content=f"{user_id} connected on web",
+                             payload={"event": "desktop.arrival"},
+                             needs_attention=True)
+            _att_kick()
+        asyncio.create_task(asyncio.to_thread(_log_arrival_owed))
     except Exception:
-        logger.debug("websocket_chat: could not emit desktop.arrival event", exc_info=True)
+        logger.debug("websocket_chat: could not log the connection event", exc_info=True)
 
     try:
         while True:
