@@ -53,7 +53,7 @@ async def handle_goal_work(job: dict, ctx) -> str:
     """Job handler: one work session for job.config.goal_id."""
     import asyncio
     import agent_loop
-    from apps.goals import domain as G
+    from apps.goals import work_context as G
     from data_layer.skipper_state import list_states
     from app_platform.consciousness import shadow_log_event, log_event
 

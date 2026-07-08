@@ -298,10 +298,10 @@ def _pick_next_project(observations: list[dict]) -> str | None:
                 if (_onb.onboarding_project_kind(proj.get("name", "")) == "tour"
                         and _onb.onboarding_agenda_in_progress() == proj.get("goal_id")):
                     if _tour_hold is None:
-                        from apps.goals.domain import _onboarding_tour_on_hold
+                        from apps.goals.onboarding import tour_nudge_on_hold
                         from data_layer.users import get_primary_user
                         _recip = (get_primary_user() or "").strip().lower()
-                        _tour_hold = _onboarding_tour_on_hold(_recip) if _recip else False
+                        _tour_hold = tour_nudge_on_hold(_recip) if _recip else False
                     if _tour_hold:
                         continue
             except Exception:
@@ -815,6 +815,35 @@ async def pm_skill_runner(event: dict) -> dict:
             if to_user in messaged:
                 return f"ALREADY messaged {to_user} this review"
             subj = (args.get("subject") or "").strip() or None
+            # #101 (re-homes #74/#75): tour nudges are CODE-GATED at dispatch,
+            # mirroring how the legacy path gated send_dm — never prompt-only.
+            # A send is a tour nudge if its subject is a tour project of the
+            # in-progress onboarding goal, or its text names one.
+            try:
+                from apps.goals import onboarding as _onb
+                _gid = _onb.onboarding_agenda_in_progress()
+                if _gid:
+                    _projs = _onb._onboarding_goal_projects(_gid)
+                    _tours = {p.get("id"): (p.get("name") or "") for p in _projs
+                              if _onb.onboarding_project_kind(p.get("name", "")) == "tour"}
+                    _txt = (args.get("message") or "").lower()
+                    _is_tour = (subj in _tours) or any(
+                        n and n.lower() in _txt for n in _tours.values())
+                    if _is_tour:
+                        # ORDERING (#74): no tour nudge while an ordered
+                        # agenda step is still open.
+                        if not _onb.agenda_projects_complete(_projs):
+                            return ("REFUSED: the onboarding setup agenda still has an "
+                                    "open step — finish/skip the agenda before any app "
+                                    "tour nudge (#74)")
+                        # PACING (#75): ≤1 tour nudge per ~24h across ALL apps;
+                        # advance only on a genuine reply.
+                        if _onb.tour_nudge_on_hold(to_user):
+                            return ("REFUSED: a tour nudge to this person is already "
+                                    "out (<24h, unanswered) — do not send another tour "
+                                    "nudge until they reply (#75)")
+            except Exception:
+                logger.warning("PM_SKILL: tour dispatch guard failed open", exc_info=True)
             row = await asyncio.to_thread(
                 lambda: send_message(who_to=to_user, content=args.get("message") or "",
                                      domain="pm", subject_id=subj,

@@ -11,7 +11,7 @@ What this app currently registers:
   into ``domain_modules`` so the platform's thinking scheduler routes
   the ``pm`` domain to it.
 - A pattern handler for every ``g-*`` thinking domain (per-goal
-  long-horizon reasoning). ``apps/goals/domain.py`` exposes
+  long-horizon reasoning). The legacy ``apps/goals/domain.py`` exposed
   ``goal_domain_handler``; we register it as a prefix handler so any
   thinking domain whose name starts with ``g-`` routes there.
 

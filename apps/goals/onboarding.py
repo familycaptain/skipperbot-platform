@@ -441,6 +441,57 @@ def _onboarding_goal_projects(goal_id: str) -> list[dict]:
         return []
 
 
+def tour_nudge_on_hold(recipient: str, hold_hours: int = 24) -> bool:
+    """GLOBAL tour-nudge cadence hold (ev-75 / #101) — LOG-NATIVE (Phase 5b).
+
+    True when the most recent "Try the {app}" tour nudge Skipper sent
+    ``recipient`` for the IN-PROGRESS onboarding goal is still fresh
+    (< ``hold_hours`` old) AND ``recipient`` has said nothing since — a
+    no-reply must hold ALL tour nudges (not just that app's), so an unanswered
+    nudge can't march the app catalog to a different tour each sweep. Any
+    message from the person after the nudge lifts the hold (the pm sees the
+    reply in the timeline and decides).
+
+    Replaces the legacy pending_actions-based ``_onboarding_tour_on_hold``
+    (apps/goals/domain.py, deleted): nudges are consciousness-log rows now —
+    matched by subject_id ∈ the goal's tour projects, or by the tour-name
+    content for an untagged send. Conservative on error — never blocks
+    indefinitely (returns False).
+    """
+    recip = (recipient or "").strip().lower()
+    if not recip:
+        return False
+    try:
+        goal_id = onboarding_agenda_in_progress()
+        if not goal_id:
+            return False
+        projects = _onboarding_goal_projects(goal_id)
+        tours = {p.get("id"): (p.get("name") or "") for p in projects
+                 if onboarding_project_kind(p.get("name", "")) == "tour" and p.get("id")}
+        if not tours:
+            return False
+        from data_layer.db import fetch_one
+        nudge = fetch_one(
+            "SELECT seq FROM consciousness_log WHERE kind='message' "
+            "AND who_from='skipper' AND who_to=%s "
+            "AND (subject_id = ANY(%s) OR content LIKE '%%Try the %%') "
+            "AND created_at > now() - make_interval(hours => %s) "
+            "ORDER BY seq DESC LIMIT 1",
+            (recip, list(tours.keys()), hold_hours),
+        )
+        if not nudge:
+            return False
+        reply = fetch_one(
+            "SELECT id FROM consciousness_log WHERE kind='message' "
+            "AND who_from=%s AND seq > %s LIMIT 1",
+            (recip, nudge["seq"]),
+        )
+        return reply is None
+    except Exception:
+        logger.warning("onboarding: tour_nudge_on_hold failed open", exc_info=True)
+        return False
+
+
 def tour_gated(goal, project, *, projects: list[dict] | None = None) -> bool:
     """SINGLE SOURCE OF TRUTH for onboarding agenda-before-tours ordering.
 
