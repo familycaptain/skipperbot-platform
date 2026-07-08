@@ -147,8 +147,9 @@ class ShadowHooksPresent(unittest.TestCase):
         self.assertIn('"desktop.arrival"', src)
 
     def test_domain_outcome_rows(self):
-        self.assertIn('kind="activity"', _read("apps/goals/domain.py"))
-        self.assertIn('kind="activity"', _read("apps/goals/pm_domain.py"))
+        # Q6: artifact-triggered activity rows come from the HANDS (goal_work);
+        # routine pm sweeps log nothing (their sends are already log rows).
+        self.assertIn('kind="activity"', _read("apps/goals/goal_work.py"))
 
     def test_bypass_paths_speak_in_one_voice(self):
         # Phase 3c: both former bypass paths now send REAL consciousness messages
@@ -239,10 +240,12 @@ class TimelineRendering(unittest.TestCase):
         self.assertIn("another one", b)   # the good/bad example is present
 
     def test_chat_seam_present(self):
+        # Phase 5b: the timeline IS the history — no flag, no sessions dict.
         src = _read("chat.py")
-        self.assertIn("consciousness_chat_enabled", src)
         self.assertIn("build_chat_timeline", src)
         self.assertIn("write_actions", src)
+        self.assertNotIn("sessions[", src)
+        self.assertNotIn("consciousness_chat_enabled", src)
 
 
 class Phase2Wiring(unittest.TestCase):
@@ -251,7 +254,7 @@ class Phase2Wiring(unittest.TestCase):
     def test_attention_module_contract(self):
         src = _read("app_platform/attention.py")
         for needle in ("GLOBAL_CAP = 3", "submit_message", "_lane_lock",
-                       "claim_unattended", "attention_enabled"):
+                       "claim_unattended"):
             self.assertIn(needle, src)
         self.assertIn("FOR UPDATE SKIP LOCKED", _read("app_platform/consciousness.py"))
         # messages-first admission
@@ -270,11 +273,12 @@ class Phase2Wiring(unittest.TestCase):
         self.assertIn("_SkipShadow", src)
         self.assertIn('source_type == "consciousness"', src)
 
-    def test_ws_routes_through_attention_when_flagged(self):
+    def test_ws_routes_through_attention_unconditionally(self):
+        # Phase 5b: attention is THE intake — no flag, no legacy fallback call.
         src = _read("agent.py")
-        self.assertIn("attention_enabled", src)
         self.assertIn("submit_message", src)
         self.assertIn("start_attention", src)
+        self.assertNotIn("attention_enabled", src)
 
     def test_chat_attention_mode_no_double_log(self):
         src = _read("chat.py")
@@ -309,9 +313,11 @@ class Phase3aOnboarding(unittest.TestCase):
         self.assertIn("build_chat_timeline", src)
         self.assertIn("send_message", src)
 
-    def test_legacy_arrival_stands_down_under_flag(self):
+    def test_legacy_arrival_deleted(self):
+        # Phase 5b: the connection skill is the ONLY greeting producer.
         src = _read("apps/goals/handlers.py")
-        self.assertIn("consciousness onboarding owns the greeting", src)
+        self.assertNotIn("onboarding_arrival_handler", src)
+        self.assertIn("_connection_skill_runner", src)
 
     def test_consciousness_messages_render_as_chat_response(self):
         src = _read("apps/notifications/delivery.py")
@@ -336,11 +342,13 @@ class Phase3bGoalsSplit(unittest.TestCase):
     def test_goal_work_registered_as_job(self):
         self.assertIn("goal_work", _read("apps/goals/manifest.yaml"))
 
-    def test_pm_alarm_hands_off_under_flag(self):
+    def test_pm_alarm_hands_off_unconditionally(self):
+        # Phase 5b: the handler IS the alarm clock; the private conversation
+        # gatherer and the legacy in-handler produce loop are deleted.
         src = _read("apps/goals/pm_domain.py")
-        self.assertIn("_consciousness_pm_enabled", src)
         self.assertIn('"alarm": "pm"', src)
-        self.assertIn("include_conversations", src)  # timeline supersedes the gatherer
+        self.assertNotIn("_consciousness_pm_enabled", src)
+        self.assertNotIn("_gather_conversation_context", src)
 
     def test_pm_skill_routes_and_speaks_in_one_voice(self):
         src = _read("apps/goals/pm_domain.py")
@@ -399,8 +407,11 @@ class Phase5aCutover(unittest.TestCase):
     def test_history_projection(self):
         src = _read("app_platform/context.py")
         self.assertIn("def history_projection", src)
-        self.assertIn("chat_turns WHERE id = ANY", src)   # tool-call hydration during bake
-        self.assertIn("consciousness_history_enabled", _read("agent.py"))
+        self.assertIn("chat_turns WHERE id = ANY", src)   # pre-bake hydration fallback
+        self.assertIn('_p(reply).get("tool_calls")', src)  # post-bake payload replay
+        agent = _read("agent.py")
+        self.assertIn("history_projection", agent)
+        self.assertNotIn("consciousness_history_enabled", agent)
 
     def test_voice_utterance_grain_pre_attended(self):
         src = _read("app_platform/voice/chatlog.py")
@@ -536,5 +547,5 @@ class EntityNoteCapture(unittest.TestCase):
         src = _read("chat_domain.py")
         self.assertIn("recent_entity_refs", src)
         self.assertIn('routed_tool_names.add("record_entity_note")', src)
-        # only under consciousness + only when a tagged ref exists (scoped, not always-on)
-        self.assertIn("consciousness_chat_enabled", src)
+        # scoped by the existence of a tagged ref (the flag itself is gone)
+        self.assertNotIn("consciousness_chat_enabled", src)

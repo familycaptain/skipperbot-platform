@@ -101,7 +101,7 @@ class _FakeGmail:
     def __init__(self):
         self.n_label_calls = 0
 
-    def get_message_labels(self, credentials, gmail_msg_id):
+    def get_message_labels(self, credentials, gmail_msg_id, cache_key=None, on_reauth_fail=None):
         self.n_label_calls += 1
         return []
 
@@ -128,7 +128,8 @@ class ReevalDrain(unittest.TestCase):
         runner._evaluate_and_execute = self._orig_eval
         runner._REEVAL_BATCH_LIMIT = self._orig_limit
 
-    def _fake_eval(self, credentials, account_id, msg, rules, label_cache, label_map):
+    def _fake_eval(self, credentials, account_id, msg, rules, label_cache, label_map,
+                   on_reauth_fail=None):
         if msg["id"] in self.match_ids:
             return ("ruleX", ["labeled"])
         return (None, [])

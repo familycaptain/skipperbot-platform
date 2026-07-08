@@ -217,146 +217,46 @@ class ClaimAndGateTests(unittest.TestCase):
 
 
 # ==========================================================================
-# Arrival handler orchestration (apps.goals.handlers) — real logic
+# The CONNECTION skill (Phase 3a, unconditional since Phase 5b) — source
+# contract: gates + log-native greet-once + one-voice send. The legacy arrival
+# handler / greet-once-claim orchestration it replaced is DELETED (5b-2); the
+# claim survives only as the web client's optimistic-typing compat flag.
 # ==========================================================================
-class ArrivalHandlerTests(unittest.IsolatedAsyncioTestCase):
+class ConnectionSkillContract(unittest.TestCase):
     def setUp(self):
-        _reset_state()
-
-    async def test_primary_in_progress_schedules_exactly_one_produce(self):
-        r = await handlers.onboarding_arrival_handler({"user_id": "rodney"})
-        await _drain_background_tasks()
-        self.assertTrue(r.get("scheduled"))
-        self.assertEqual(len(_PRODUCE_CALLS), 1)
-        # The produce ran as an ARRIVAL cycle for the onboarding goal.
-        self.assertTrue(_PRODUCE_CALLS[0]["domain"].get("arrival"))
-        self.assertEqual(_PRODUCE_CALLS[0]["domain"].get("name"), "g-onb")
-        # Delivered inline via the canonical primitive (no direct WS message push).
-        self.assertEqual(len(_DELIVER_CALLS), 1)
-
-    async def test_two_arrivals_produce_once(self):
-        # Race: two arrivals, claim held after the first -> exactly one produce.
-        r1 = await handlers.onboarding_arrival_handler({"user_id": "rodney"})
-        r2 = await handlers.onboarding_arrival_handler({"user_id": "rodney"})
-        await _drain_background_tasks()
-        self.assertTrue(r1.get("scheduled"))
-        self.assertIn("skipped", r2)            # lost the greet-once claim
-        self.assertEqual(len(_PRODUCE_CALLS), 1)
-
-    async def test_non_primary_user_no_produce(self):
-        r = await handlers.onboarding_arrival_handler({"user_id": "guest"})
-        await _drain_background_tasks()
-        self.assertIn("skipped", r)
-        self.assertEqual(len(_PRODUCE_CALLS), 0)
-        # A non-primary arrival must NOT consume the greet-once claim.
-        self.assertNotIn(("app:goals", "onboarding_greeted"), _DB_TABLE)
-
-    async def test_agenda_complete_no_produce(self):
-        _DATA_ENTITIES["g-onb"] = {"status": "done"}
-        r = await handlers.onboarding_arrival_handler({"user_id": "rodney"})
-        await _drain_background_tasks()
-        self.assertIn("skipped", r)
-        self.assertEqual(len(_PRODUCE_CALLS), 0)
-
-    async def test_release_on_produce_failure_allows_retry(self):
-        _PRODUCE_RESULT["raise"] = True
-        r = await handlers.onboarding_arrival_handler({"user_id": "rodney"})
-        await _drain_background_tasks()
-        self.assertTrue(r.get("scheduled"))
-        self.assertEqual(len(_PRODUCE_CALLS), 1)
-        # Produce failed -> claim RELEASED -> a later arrival can retry.
-        self.assertNotIn(("app:goals", "onboarding_greeted"), _DB_TABLE)
-        _PRODUCE_RESULT["raise"] = False
-        r2 = await handlers.onboarding_arrival_handler({"user_id": "rodney"})
-        await _drain_background_tasks()
-        self.assertTrue(r2.get("scheduled"))
-        self.assertEqual(len(_PRODUCE_CALLS), 2)
-
-    async def test_no_dm_sent_releases_claim(self):
-        # Cycle ran but produced no greeting -> release so we retry (no strand).
-        _PRODUCE_RESULT["dm_sent"] = False
-        await handlers.onboarding_arrival_handler({"user_id": "rodney"})
-        await _drain_background_tasks()
-        self.assertNotIn(("app:goals", "onboarding_greeted"), _DB_TABLE)
-
-    async def test_successful_greet_holds_claim(self):
-        await handlers.onboarding_arrival_handler({"user_id": "rodney"})
-        await _drain_background_tasks()
-        # Greeted successfully -> claim stays held (no re-greet on reconnect).
-        self.assertIn(("app:goals", "onboarding_greeted"), _DB_TABLE)
-
-
-# ==========================================================================
-# Transport emits-only (agent.py) — gating lives in the goals handler
-# ==========================================================================
-class TransportEmitsOnlyTests(unittest.TestCase):
-    def setUp(self):
+        self.src = _read("apps/goals/handlers.py")
         self.agent_src = _read("agent.py")
-        self.handlers_src = _read("apps/goals/handlers.py")
 
-    def _websocket_chat_body(self) -> str:
-        tree = ast.parse(self.agent_src)
-        for node in ast.walk(tree):
-            if isinstance(node, ast.AsyncFunctionDef) and node.name == "websocket_chat":
-                seg = ast.get_source_segment(self.agent_src, node)
-                self.assertIsNotNone(seg)
-                return seg
-        self.fail("websocket_chat not found in agent.py")
+    def test_connection_skill_is_the_only_greeting_producer(self):
+        self.assertIn("_connection_skill_runner", self.src)
+        self.assertNotIn("onboarding_arrival_handler", self.src)
+        self.assertNotIn("_run_arrival_greeting", self.src)
 
-    def test_transport_emits_thin_arrival_event(self):
-        body = self._websocket_chat_body()
-        self.assertIn("desktop.arrival", body)
-        self.assertIn("submit_priority_event", body)
+    def test_gates_mirror_legacy_minus_claim(self):
+        body = self.src.split("async def _connection_skill_runner", 1)[1]
+        body = body.split("\nasync def ", 1)[0]
+        self.assertIn("get_primary_user", body)                 # primary gate
+        self.assertIn("onboarding_agenda_in_progress", body)    # agenda gate
+        self.assertIn("models_configured", body)                # keyless gate
+        self.assertNotIn("claim_onboarding_greeting()", body.split("Client-UX compat")[0])
 
-    def test_transport_has_no_onboarding_gating(self):
-        # The transport must carry NO onboarding gating — it lives in the goals
-        # handler. None of the gate primitives may appear in websocket_chat.
-        body = self._websocket_chat_body()
-        for forbidden in ("onboarding_greeted", "claim_onboarding_greeting",
-                          "onboarding_agenda_in_progress", "goal_domain_handler"):
-            self.assertNotIn(forbidden, body,
-                             f"transport must not reference {forbidden!r}")
+    def test_log_native_greet_once(self):
+        self.assertIn("_RECENT_GREETING_MINUTES", self.src)
+        self.assertIn("domain='onboarding'", self.src)
+        self.assertIn("make_interval", self.src)
 
-    def test_gating_lives_in_goals_handler(self):
-        # The goals-layer handler owns the gate + atomic claim.
-        for needed in ("get_primary_user", "onboarding_agenda_in_progress",
-                       "claim_onboarding_greeting", "release_onboarding_greeting"):
-            self.assertIn(needed, self.handlers_src)
+    def test_greets_in_one_voice_via_send_message(self):
+        body = self.src.split("async def _connection_skill_runner", 1)[1]
+        self.assertIn("send_message", body)
+        self.assertIn('domain="onboarding"', body)
+        self.assertIn("build_chat_timeline", body)              # chat skill + timeline
 
-
-# ==========================================================================
-# Delivery frame + no-double-render (delivery.py, domain.py)
-# ==========================================================================
-class DeliveryAndProduceTests(unittest.TestCase):
-    def setUp(self):
-        self.delivery_src = _read("apps/notifications/delivery.py")
-        self.domain_src = _read("apps/goals/domain.py")
-
-    def test_greeting_delivers_as_chat_response_frame(self):
-        # The onboarding_greeting source is pushed as a typing-clearing
-        # chat_response frame (not a notification frame) for the LIVE render.
-        self.assertIn('source_type == "onboarding_greeting"', self.delivery_src)
-        self.assertIn('"type": "chat_response"', self.delivery_src)
-
-    def test_delivery_marks_delivered_so_poll_cannot_refan(self):
-        # _deliver_one always marks the row delivered -> the ~30s poll won't
-        # re-fan it (no double-render). The greeting branch is inside _deliver_one.
-        self.assertIn("mark_delivered", self.delivery_src)
-
-    def test_produce_uses_canonical_delivered_false_notification(self):
-        # The greeting is emitted via create_notification(delivered=False) so it
-        # flows through the single canonical deliver-now-inline path.
-        self.assertIn("create_notification", self.domain_src)
-        self.assertIn("delivered=False", self.domain_src)
-
-    def test_arrival_produce_personalizes_and_tags_source(self):
-        # First-contact framing is personalized with the primary user's name and
-        # the arrival DM is tagged with the greeting source_type.
-        self.assertIn("get_primary_user", self.domain_src)
-        self.assertIn("{who}", self.domain_src)
-        self.assertIn("ONBOARDING_GREETING_SOURCE", self.domain_src)
-        # Staged: the arrival burst is allowed two short bubbles.
-        self.assertIn("is_arrival", self.domain_src)
+    def test_transport_logs_one_owed_event_no_priority_bus(self):
+        # agent.py websocket connect: ONE owed log event; the legacy
+        # submit_priority_event bus is gone entirely.
+        self.assertIn('payload={"event": "desktop.arrival"}', self.agent_src)
+        self.assertIn("needs_attention=True", self.agent_src)
+        self.assertNotIn("submit_priority_event", self.agent_src)
 
 
 # ==========================================================================

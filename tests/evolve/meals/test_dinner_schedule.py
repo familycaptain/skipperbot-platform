@@ -92,15 +92,44 @@ def _install_sched_fake(fake, settings_value):
     }
     saved = [(n, sys.modules.get(n)) for n in overrides]
     sys.modules.update(overrides)
-    return saved
+    # ALSO patch the parent-package attributes: once the real submodule has
+    # been imported (e.g. by an earlier test module), `from app_platform
+    # import settings` resolves the package ATTRIBUTE, not sys.modules —
+    # without this the fake is silently bypassed and tests read real state.
+    attr_saved = []
+    for pkg_name, attr, mod in (("app_platform", "settings", settings_mod),
+                                ("app_platform", "db", db_mod),
+                                ("apps", "schedules", sched_pkg),
+                                ("apps.schedules", "data", data_mod)):
+        pkg = sys.modules.get(pkg_name)
+        if pkg is not None and pkg_name not in overrides:
+            attr_saved.append((pkg, attr, getattr(pkg, attr, None)))
+            setattr(pkg, attr, mod)
+    return saved, attr_saved
 
 
-def _restore(saved):
+def _restore(state):
+    # Accept both shapes: (sys_modules_saved, attr_saved) from
+    # _install_sched_fake, or a plain [(name, prev), ...] list from callers
+    # that patch sys.modules directly.
+    if (isinstance(state, tuple) and len(state) == 2
+            and isinstance(state[0], list) and isinstance(state[1], list)):
+        saved, attr_saved = state
+    else:
+        saved, attr_saved = state, []
     for name, prev in saved:
         if prev is None:
             sys.modules.pop(name, None)
         else:
             sys.modules[name] = prev
+    for pkg, attr, prev in attr_saved:
+        if prev is None:
+            try:
+                delattr(pkg, attr)
+            except AttributeError:
+                pass
+        else:
+            setattr(pkg, attr, prev)
 
 
 def _fresh_schedule_module():

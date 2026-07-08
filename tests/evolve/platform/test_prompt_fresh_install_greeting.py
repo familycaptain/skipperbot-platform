@@ -1,14 +1,14 @@
 """Bound test for platform.onboarding.prompt-fresh-install-greeting (ev-79) — server side.
 
 On a genuinely fresh install the primary's desktop WS connects while keyless, so the
-desktop.arrival greeting early-skips WITHOUT taking the greet-once claim. When the user then
-configures models via POST /api/onboarding/save-models, the handler must RE-FIRE the
-desktop.arrival priority event for the primary (first-time keyless -> configured only), so the
-#73 always-on consumer produces the greeting within seconds instead of waiting for the <=120s
-supervisor. A later save (already configured) must NOT re-fire.
+connection-event greeting early-skips (models not configured). When the user then configures
+models via POST /api/onboarding/save-models, the handler must log a fresh OWED connection
+event for the primary (first-time keyless -> configured only) so the attention system greets
+within seconds. A later save (already configured) must NOT re-log.
 
-Exercises the real onboarding_save_models handler with the DB/model seams stubbed, asserting the
-observable behaviour: submit_priority_event('desktop.arrival', {'user_id': <primary>}).
+Exercises the real onboarding_save_models handler with the DB/model seams stubbed, asserting
+the observable behaviour (Phase 5b): shadow_log_event(kind='event', who_to=<primary>,
+payload={'event': 'desktop.arrival'}, needs_attention=True) + attention.kick().
 
 Runs on the test host (imports agent + providers).
 """
@@ -16,7 +16,8 @@ import asyncio
 import unittest
 
 import agent
-import thinking_scheduler
+from app_platform import consciousness as _cl
+from app_platform import attention as _att
 from providers import tier_resolver, model_config, registry
 import data_layer.users as users
 
@@ -40,8 +41,9 @@ class FreshInstallGreetingRefire(unittest.IsolatedAsyncioTestCase):
         calls = []
         seq = list(configured_sequence)
 
-        async def _fake_submit(event_type, payload):
-            calls.append((event_type, payload))
+        def _fake_log(**kw):
+            calls.append(kw)
+            return {"id": "cl-test"}
 
         def _fake_configured():
             return seq.pop(0) if seq else (configured_sequence[-1])
@@ -49,7 +51,8 @@ class FreshInstallGreetingRefire(unittest.IsolatedAsyncioTestCase):
         # admin gate: no non-bot users => fresh install => pre-auth save allowed
         orig = {
             "get_all_users": agent.get_all_users,
-            "submit": thinking_scheduler.submit_priority_event,
+            "log": _cl.shadow_log_event,
+            "kick": _att.kick,
             "configured": tier_resolver.models_configured,
             "save_tier": model_config.save_tier,
             "embedding_dim": model_config.embedding_dim,
@@ -59,7 +62,8 @@ class FreshInstallGreetingRefire(unittest.IsolatedAsyncioTestCase):
             "get_primary_user": users.get_primary_user,
         }
         agent.get_all_users = lambda: []
-        thinking_scheduler.submit_priority_event = _fake_submit
+        _cl.shadow_log_event = _fake_log
+        _att.kick = lambda: None
         tier_resolver.models_configured = _fake_configured
         model_config.save_tier = lambda *a, **k: None
         model_config.embedding_dim = lambda: 0
@@ -71,13 +75,13 @@ class FreshInstallGreetingRefire(unittest.IsolatedAsyncioTestCase):
         try:
             req = agent.SaveModelsRequest(tiers=_VALID_TIERS)
             result = await agent.onboarding_save_models(req, _Req())
-            # Let the fire-and-forget create_task run.
-            await asyncio.sleep(0)
-            await asyncio.sleep(0)
+            # Let the fire-and-forget to_thread task run.
+            await asyncio.sleep(0.1)
             return result, calls
         finally:
             agent.get_all_users = orig["get_all_users"]
-            thinking_scheduler.submit_priority_event = orig["submit"]
+            _cl.shadow_log_event = orig["log"]
+            _att.kick = orig["kick"]
             tier_resolver.models_configured = orig["configured"]
             model_config.save_tier = orig["save_tier"]
             model_config.embedding_dim = orig["embedding_dim"]
@@ -90,14 +94,18 @@ class FreshInstallGreetingRefire(unittest.IsolatedAsyncioTestCase):
         # before-save: not configured (keyless); after-save: configured  -> re-fire
         result, calls = await self._run_save(configured_sequence=[False, True])
         self.assertTrue(result.get("ok"), result)
-        self.assertIn(("desktop.arrival", {"user_id": "rodney"}), calls,
-                      f"first-time save must re-fire desktop.arrival for the primary; got {calls}")
+        owed = [c for c in calls
+                if c.get("kind") == "event" and c.get("who_to") == "rodney"
+                and (c.get("payload") or {}).get("event") == "desktop.arrival"
+                and c.get("needs_attention") is True]
+        self.assertEqual(len(owed), 1,
+                         f"first-time save must log ONE owed arrival event for the primary; got {calls}")
 
     async def test_already_configured_save_does_not_refire(self):
         # before-save: already configured -> a later model change must NOT re-greet
         result, calls = await self._run_save(configured_sequence=[True, True])
         self.assertTrue(result.get("ok"), result)
-        self.assertEqual(calls, [], f"already-configured save must NOT re-fire arrival; got {calls}")
+        self.assertEqual(calls, [], f"already-configured save must NOT re-log arrival; got {calls}")
 
 
 if __name__ == "__main__":

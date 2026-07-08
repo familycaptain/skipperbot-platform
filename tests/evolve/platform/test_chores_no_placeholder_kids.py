@@ -109,7 +109,7 @@ class TestChoresSources(unittest.TestCase):
         self.assertIn("tasks, chores", y, "chores must be listed in the OPT-IN set")
         self.assertNotIn("chores, prioritize", y,
                          "chores must be removed from the EXCLUDED list")
-        self.assertIn("19 apps / 20 heroes", y, "app/hero count must be bumped")
+        self.assertIn("20 apps / 26 heroes", y, "app/hero count must be bumped")
 
     def test_seed_002_gutted(self):
         sql = _read("apps/chores/migrations/002_seed_from_sheet.sql")
