@@ -86,15 +86,6 @@ def _truthy(v) -> bool:
     return str(v or "").strip().lower() in ("1", "true", "yes", "on")
 
 
-def consciousness_chat_enabled() -> bool:
-    """Settings flag for Phase 1: chat reads its history from the log."""
-    try:
-        from app_platform import settings as _settings
-        return _truthy(_settings.get("consciousness_chat", scope="platform", default=True))
-    except Exception:
-        return False
-
-
 def timeline_event_limit() -> int:
     try:
         from app_platform import settings as _settings
@@ -268,15 +259,6 @@ def build_chat_timeline(person: str, limit: Optional[int] = None,
 
 
 # ── Phase 5a: the history projection (§16) ───────────────────────────────────
-
-def consciousness_history_enabled() -> bool:
-    """Phase 5a flag: the web scrollback reads the LOG, not chat_turns."""
-    try:
-        from app_platform import settings as _settings
-        return _truthy(_settings.get("consciousness_history", scope="platform", default=True))
-    except Exception:
-        return False
-
 
 def history_projection(person: str, limit: int = 20,
                        channel: Optional[str] = None) -> list[dict]:

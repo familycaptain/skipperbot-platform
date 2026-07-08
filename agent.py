@@ -146,7 +146,7 @@ async def lifespan(app: FastAPI):
     # onboarding — no restart. start_thinking_scheduler() is idempotent.
     thinking_task = asyncio.create_task(start_thinking_scheduler())
     # The consciousness attention system (specs/CONSCIOUSNESS.md §15) — idles
-    # cheaply unless `consciousness_attention` producers write owed rows.
+    # cheaply unless producers write owed rows.
     from app_platform.attention import start_attention
     asyncio.create_task(start_attention())
     yield
@@ -1126,27 +1126,16 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
                 await websocket.send_json(event)
 
             try:
-                # Phase 2 (specs/CONSCIOUSNESS.md §15/§16): with
-                # `consciousness_attention` on, the inbound message becomes an
-                # owed log row and the ATTENTION system runs the turn; the WS
-                # just awaits the outbound. Legacy path otherwise.
-                from app_platform.attention import attention_enabled, submit_message
-                if attention_enabled():
-                    response_text = await submit_message(
-                        user_id, message,
-                        channel="web",
-                        app_context=_user_app_context.get(user_id),
-                        send_progress=_ws_progress,
-                        send_event=_ws_event,
-                    )
-                else:
-                    response_text = await process_chat(
-                        user_id, message,
-                        send_progress=_ws_progress,
-                        channel="web",
-                        app_context=_user_app_context.get(user_id),
-                        send_event=_ws_event,
-                    )
+                # The inbound message becomes an owed log row and the ATTENTION
+                # system runs the turn (§15/§16); the WS just awaits the outbound.
+                from app_platform.attention import submit_message
+                response_text = await submit_message(
+                    user_id, message,
+                    channel="web",
+                    app_context=_user_app_context.get(user_id),
+                    send_progress=_ws_progress,
+                    send_event=_ws_event,
+                )
                 from datetime import datetime as _now_dt, timezone as _now_tz
                 await websocket.send_json({
                     "type": "chat_response",
@@ -1202,15 +1191,11 @@ async def chat_history(request: Request, limit: int = 20, tz: str = "", channel:
     channel = (channel or "").strip().lower() or None
 
     def _load():
-        # Phase 5a (specs/CONSCIOUSNESS.md §16): under `consciousness_history`
-        # the scrollback is a PROJECTION of the consciousness log (proactive
-        # messages native, message grain); chat_turns remains the fallback and
-        # still hydrates tool-call replay during the double-write bake.
-        from app_platform.context import consciousness_history_enabled, history_projection
-        if consciousness_history_enabled():
-            return history_projection(user_id, limit=limit, channel=channel)
-        from data_layer.chatlogs import get_recent_turns
-        return get_recent_turns(user_id, limit=limit, channel=channel)
+        # The scrollback is a PROJECTION of the consciousness log (§16) —
+        # proactive messages native, message grain; pre-bake rows hydrate
+        # tool-call replay from the frozen chat_turns table.
+        from app_platform.context import history_projection
+        return history_projection(user_id, limit=limit, channel=channel)
 
     turns = await asyncio.to_thread(_load)
 

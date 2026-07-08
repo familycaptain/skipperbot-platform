@@ -979,8 +979,8 @@ def build_voice_timeline_context(user_id: str) -> str:
     session's native history is authoritative DURING the call; this is the
     context it starts FROM."""
     try:
-        from app_platform.context import consciousness_chat_enabled, build_chat_timeline
-        if not (user_id and consciousness_chat_enabled()):
+        from app_platform.context import build_chat_timeline
+        if not user_id:
             return ""
         msgs = build_chat_timeline(user_id, limit=25)
         if len(msgs) <= 1:

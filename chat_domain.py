@@ -215,8 +215,8 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
     # in every future review + digested to an entity-tagged memory), not just left
     # as a loose fact. Scoped: only fires when such a tagged message actually exists.
     try:
-        from app_platform.context import consciousness_chat_enabled, recent_entity_refs
-        if consciousness_chat_enabled():
+        from app_platform.context import recent_entity_refs
+        if True:
             _ent_refs = await asyncio.to_thread(recent_entity_refs, req.user_id)
             if _ent_refs:
                 routed_tool_names.add("record_entity_note")
@@ -1114,8 +1114,7 @@ async def _retrieve_context(user_message: str, system_prompt: str,
     # fan — semantic recall over past conversation, same query embedding.
     async def _log_recall():
         try:
-            from app_platform.context import consciousness_chat_enabled
-            if not (shared_embedding and consciousness_chat_enabled()):
+            if not shared_embedding:
                 return []
             from app_platform.consciousness import search_log
             return await asyncio.to_thread(search_log, shared_embedding)

@@ -19,7 +19,7 @@ Transport bridge: ``submit_message()`` lets a live transport (the WS handler)
 append the inbound row and await the turn's response text — request/response
 feel preserved while the log stays the system of record.
 
-Enabled by the ``consciousness_attention`` setting; the loop idles cheaply
+Always on (Phase 5b); the loop idles cheaply
 when off (nothing writes owed rows).
 """
 
@@ -45,14 +45,6 @@ def _truthy(v) -> bool:
     if isinstance(v, bool):
         return v
     return str(v or "").strip().lower() in ("1", "true", "yes", "on")
-
-
-def attention_enabled() -> bool:
-    try:
-        from app_platform import settings as _settings
-        return _truthy(_settings.get("consciousness_attention", scope="platform", default=True))
-    except Exception:
-        return False
 
 
 def _lane_lock(lane: str) -> asyncio.Lock:

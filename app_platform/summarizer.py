@@ -2,7 +2,7 @@
 
 Two background jobs over the consciousness log, both invoked from the memory
 domain's cycle (the 24/7 subconscious heartbeat), both gated by the
-``consciousness_subconscious`` setting:
+subconscious metabolizers (always on since Phase 5b):
 
 1. ``embed_log_batch()`` — the async embedding backfill (§11.9: nothing
    expensive rides inside the append; embeddings arrive here, later). Skips
@@ -51,14 +51,6 @@ def _truthy(v) -> bool:
     if isinstance(v, bool):
         return v
     return str(v or "").strip().lower() in ("1", "true", "yes", "on")
-
-
-def subconscious_enabled() -> bool:
-    try:
-        from app_platform import settings as _settings
-        return _truthy(_settings.get("consciousness_subconscious", scope="platform", default=True))
-    except Exception:
-        return False
 
 
 def _summary_span() -> int:
@@ -231,8 +223,6 @@ async def maybe_summarize() -> int:
 async def run_subconscious_pass() -> dict:
     """One metabolizer pass: embed a batch + summarize if due. Cheap when idle."""
     import asyncio
-    if not subconscious_enabled():
-        return {"embedded": 0, "summaries": 0}
     embedded = await asyncio.to_thread(embed_log_batch)
     summaries = await maybe_summarize()
     return {"embedded": embedded, "summaries": summaries}
