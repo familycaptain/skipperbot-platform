@@ -23,7 +23,6 @@ from pathlib import Path
 
 from app_platform import config as platform_config
 from apps.goals import store
-from apps.goals.lifecycle import sync_goal_domain
 from data_layer.users import get_primary_user
 
 logger = logging.getLogger(__name__)
@@ -328,11 +327,8 @@ def ensure_onboarding(apps_info: list[dict] | None = None) -> str:
         if proj:
             n_apps += 1
 
-    # Activate the PM thinking domain for the onboarding goal (owned by skipper).
-    try:
-        sync_goal_domain(goal_id)
-    except Exception:
-        logger.warning("onboarding: could not sync goal domain for %s", goal_id, exc_info=True)
+    # Phase 5b: no per-goal thinking domain — the pm sweep + the onboarding
+    # focus overlay own this goal's cadence.
 
     platform_config.set(_SEEDED_KEY, {"done": True, "goal_id": goal_id}, scope="app:goals")
     return f"created onboarding goal {goal_id} ({n_apps} app project(s))"

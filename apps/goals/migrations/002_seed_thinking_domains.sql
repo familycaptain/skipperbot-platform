@@ -14,12 +14,12 @@
 -- the FK is satisfiable; enabling the PM domain is a separate user action.
 
 INSERT INTO public.thinking_domains
-    (name, description, observe_tool, evaluate_tool, act_tool, knowledge_refs, cadence, budget_priority, enabled, created_by)
+    (name, description, knowledge_refs, cadence, budget_priority, enabled, created_by)
 VALUES
     ('pm',
      'Project Manager — review at-risk items, nudge owners, surface what to work on.',
-     '', '', '', '[]'::jsonb, '{"trigger": "schedule", "cron": "0 9 * * *"}'::jsonb, 'high', false, ''),
+     '[]'::jsonb, '{"trigger": "schedule", "cron": "0 9 * * *"}'::jsonb, 'high', false, ''),
     ('goals',
      'Goal-level reasoning — long-horizon planning, gap detection.',
-     '', '', '', '[]'::jsonb, '{"trigger": "schedule", "cron": "0 6 * * 0"}'::jsonb, 'low', false, '')
+     '[]'::jsonb, '{"trigger": "schedule", "cron": "0 6 * * 0"}'::jsonb, 'low', false, '')
 ON CONFLICT (name) DO NOTHING;

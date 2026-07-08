@@ -1614,15 +1614,8 @@ async def patch_entity(entity_id: str, req: InlineUpdateRequest, http_request: R
     logger.info("PATCH_ENTITY result: %s", result)
     if result.startswith("Error"):
         return {"error": result}
-    # Auto-manage thinking domain when ownership or status changes on any entity
-    if req.owners or req.assigned_to or req.status:
-        try:
-            from apps.goals.lifecycle import sync_entity_domain
-            lifecycle = await asyncio.to_thread(sync_entity_domain, entity_id)
-            if lifecycle:
-                logger.info("PATCH_ENTITY: goal domain lifecycle → %s", lifecycle)
-        except Exception as e:
-            logger.error("PATCH_ENTITY: goal domain lifecycle error: %s", e)
+    # Phase 5b: no per-goal thinking domains — goals are DATA; the pm sweep
+    # routes work (specs/CONSCIOUSNESS.md §18 Q8).
     return {"ok": True, "message": result}
 
 
@@ -1654,14 +1647,7 @@ async def create_goal_api(req: CreateGoalRequest, http_request: Request):
     result = await asyncio.to_thread(_do)
     if isinstance(result, str):
         return {"error": result}
-    # Auto-create thinking domain for every new active goal
-    try:
-        from apps.goals.lifecycle import sync_goal_domain
-        lifecycle = await asyncio.to_thread(sync_goal_domain, result["id"])
-        if lifecycle:
-            logger.info("CREATE_GOAL: goal domain lifecycle → %s", lifecycle)
-    except Exception as e:
-        logger.error("CREATE_GOAL: goal domain lifecycle error: %s", e)
+    # Phase 5b: no per-goal thinking domains — the pm sweep routes work.
     return {"ok": True, "id": result["id"], "name": result["name"]}
 
 

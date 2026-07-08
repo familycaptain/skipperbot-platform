@@ -1011,16 +1011,16 @@ def close_out_goal(
     Returns:
         Confirmation string.
     """
-    from apps.goals import lifecycle as _lifecycle
+    from apps.goals.data import INACTIVE_STATUSES as _inactive
 
     if not goal_id or not goal_id.startswith("g-"):
         return f"Error: '{goal_id}' is not a goal ID (goals start with g-)."
 
     new_status = (status or "").strip().lower()
-    if new_status not in _lifecycle._INACTIVE_STATUSES:
+    if new_status not in _inactive:
         return (
             f"Error: close_out_goal status must be one of "
-            f"{', '.join(sorted(_lifecycle._INACTIVE_STATUSES))}; got '{status}'."
+            f"{', '.join(sorted(_inactive))}; got '{status}'."
         )
 
     goal = _find_item(goal_id)
@@ -1029,7 +1029,7 @@ def close_out_goal(
 
     # Idempotent: already inactive → no re-cascade, no writes.
     current = (goal.get("status") or "").lower()
-    if current in _lifecycle._INACTIVE_STATUSES:
+    if current in _inactive:
         return f"Goal '{goal_id}' is already {current} — nothing to close out."
 
     goal_name = goal.get("name", goal_id)
@@ -1046,7 +1046,7 @@ def close_out_goal(
     for proj in _get_projects_for_goal(goal_id):
         pid = proj["id"]
         try:
-            if (proj.get("status") or "").lower() not in _lifecycle._INACTIVE_STATUSES:
+            if (proj.get("status") or "").lower() not in _inactive:
                 update_item(pid, updated_by=by, status=new_status,
                             history_note=f"Parent goal {goal_id} closed out.")
                 cascaded += 1
@@ -1058,7 +1058,7 @@ def close_out_goal(
         for task in _get_tasks_for_project(pid):
             tid = task["id"]
             try:
-                if (task.get("status") or "").lower() not in _lifecycle._INACTIVE_STATUSES:
+                if (task.get("status") or "").lower() not in _inactive:
                     update_item(tid, updated_by=by, status=new_status,
                                 history_note=f"Parent goal {goal_id} closed out.")
                     cascaded += 1
@@ -1080,11 +1080,7 @@ def close_out_goal(
         logger.warning("close_out_goal: failed to expire PM pending_actions for %s: %s",
                        goal_id, e)
 
-    # 4. Disable the per-goal thinking domain immediately.
-    try:
-        _lifecycle.sync_goal_domain(goal_id)
-    except Exception as e:
-        logger.warning("close_out_goal: sync_goal_domain failed for %s: %s", goal_id, e)
+    # Phase 5b: no per-goal thinking domain to disable.
 
     logger.info(
         "GOAL_CLOSE: %s (%s) closed as %s — %d descendant(s), %d pending action(s) expired",

@@ -255,7 +255,6 @@ def _pick_next_project(observations: list[dict]) -> str | None:
     - Findings: +3 if working_memory exists with issues
     """
     from apps.goals.data import list_entities, load_entity
-    from apps.goals.lifecycle import _INACTIVE_STATUSES
     from data_layer.skipper_state import list_states
 
     # Load all active projects. Skip any goal/project in an INACTIVE status

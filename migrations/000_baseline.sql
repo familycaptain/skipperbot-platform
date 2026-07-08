@@ -393,9 +393,6 @@ CREATE TABLE IF NOT EXISTS public.skipper_state (
 CREATE TABLE IF NOT EXISTS public.thinking_domains (
     name text NOT NULL,
     description text,
-    observe_tool text NOT NULL,
-    evaluate_tool text NOT NULL,
-    act_tool text NOT NULL,
     knowledge_refs jsonb DEFAULT '{}'::jsonb,
     cadence jsonb DEFAULT '{}'::jsonb,
     budget_priority text DEFAULT 'standard'::text NOT NULL,
@@ -1183,19 +1180,16 @@ ON CONFLICT (prefix) DO NOTHING;
 -- All shipped as 'enabled=false' by default. The onboarding wizard and the
 -- Settings app give the user explicit opt-in for autonomous reasoning that
 -- spends real OpenAI tokens.
-INSERT INTO public.thinking_domains (name, description, observe_tool, evaluate_tool, act_tool, knowledge_refs, cadence, budget_priority, enabled, created_by) VALUES
+INSERT INTO public.thinking_domains (name, description, knowledge_refs, cadence, budget_priority, enabled, created_by) VALUES
     ('chat',
      'Interactive Chat — priority-0 event-driven domain for user conversations.',
-     '', '', '', '[]'::jsonb, '{"trigger": "event"}'::jsonb, 'critical', true, ''),
+     '[]'::jsonb, '{"trigger": "event"}'::jsonb, 'critical', true, ''),
     ('memory',
      'Memory Ingestion — digest queued chat turns and app records into searchable memories.',
-     '', '', '', '[]'::jsonb, '{"trigger": "queue"}'::jsonb, 'high', true, ''),
+     '[]'::jsonb, '{"trigger": "queue"}'::jsonb, 'high', true, ''),
     ('document',
      'Knowledge Organization — reflect on memories and organize into readable documents.',
-     '', '', '', '[]'::jsonb, '{"trigger": "schedule", "cron": "0 3 * * *"}'::jsonb, 'low', true, ''),
-    ('self',
-     'Self-awareness — cross-domain observations, self-directed thinking.',
-     '', '', '', '[]'::jsonb, '{"trigger": "schedule", "cron": "0 */6 * * *"}'::jsonb, 'low', false, '')
+     '[]'::jsonb, '{"trigger": "schedule", "cron": "0 3 * * *"}'::jsonb, 'low', true, '')
 ON CONFLICT (name) DO NOTHING;
 
 -- =============================================================================

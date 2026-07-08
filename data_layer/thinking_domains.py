@@ -33,10 +33,10 @@ def list_domains(enabled_only: bool = True) -> list[dict]:
 
 def update_domain(name: str, **kwargs) -> dict | None:
     """Update domain fields. Supported: description, knowledge_refs, cadence,
-    budget_priority, enabled, observe_tool, evaluate_tool, act_tool."""
+    budget_priority, enabled."""
     allowed = {
         "description", "knowledge_refs", "cadence", "budget_priority",
-        "enabled", "observe_tool", "evaluate_tool", "act_tool",
+        "enabled",
     }
     updates = {k: v for k, v in kwargs.items() if k in allowed}
     if not updates:
@@ -64,9 +64,6 @@ def update_domain(name: str, **kwargs) -> dict | None:
 def create_domain(
     name: str,
     description: str,
-    observe_tool: str,
-    evaluate_tool: str,
-    act_tool: str,
     knowledge_refs: dict | None = None,
     cadence: dict | None = None,
     budget_priority: str = "standard",
@@ -77,11 +74,11 @@ def create_domain(
     now = datetime.now(get_timezone())
     execute("""
         INSERT INTO thinking_domains
-            (name, description, observe_tool, evaluate_tool, act_tool,
+            (name, description,
              knowledge_refs, cadence, budget_priority, created_by, created_at)
-        VALUES (%s, %s, %s, %s, %s, %s::jsonb, %s::jsonb, %s, %s, %s)
+        VALUES (%s, %s, %s::jsonb, %s::jsonb, %s, %s, %s)
     """, (
-        name, description, observe_tool, evaluate_tool, act_tool,
+        name, description,
         json.dumps(knowledge_refs or {}), json.dumps(cadence or {}),
         budget_priority, created_by, now,
     ))

@@ -195,7 +195,7 @@ def _register_thinking_domain_handlers() -> None:
     the in-memory registry in ``domain_modules``.
     """
     try:
-        from domain_modules import register_domain, register_pattern
+        from domain_modules import register_domain
     except ImportError as exc:
         logger.warning("goals.handlers: domain_modules unavailable (%s) — skipping registration", exc)
         return
@@ -207,12 +207,8 @@ def _register_thinking_domain_handlers() -> None:
     except ImportError as exc:
         logger.warning("goals.handlers: could not register pm handler: %s", exc)
 
-    try:
-        from apps.goals.domain import goal_domain_handler
-        register_pattern("g-", goal_domain_handler)
-        logger.info("goals.handlers: registered pattern 'g-*' for goal thinking handler")
-    except ImportError as exc:
-        logger.warning("goals.handlers: could not register goal handler: %s", exc)
+    # Phase 5b: no g-* pattern handler — per-goal thinking domains are gone
+    # (goals are data; the pm sweep routes, goal_work executes).
 
 # Side-effect on import: register everything the goals app provides.
 _register_thinking_domain_handlers()

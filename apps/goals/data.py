@@ -33,6 +33,9 @@ from data_layer.links import ensure_edge  # platform infra — links live in pub
 
 logger = logging.getLogger(__name__)
 
+# Goal/project statuses treated as inactive (was apps.goals.lifecycle).
+INACTIVE_STATUSES = {"done", "deferred", "archived", "cancelled"}
+
 SCHEMA = "app_goals"
 
 
