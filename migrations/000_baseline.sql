@@ -1113,18 +1113,8 @@ EXCEPTION
 END $$;
 
 
---
--- Name: thinking_log thinking_log_domain_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
---
-
-DO $$ BEGIN
-ALTER TABLE ONLY public.thinking_log
-    ADD CONSTRAINT thinking_log_domain_fkey FOREIGN KEY (domain) REFERENCES public.thinking_domains(name);
-EXCEPTION
-    WHEN duplicate_object THEN NULL;
-    WHEN invalid_table_definition THEN NULL;
-    WHEN duplicate_table THEN NULL;
-END $$;
+-- (Phase 5b: the former thinking_log -> thinking_domains FK is gone — cycle
+-- history must outlive registry rows; see migrations/002_alarms_cleanup.sql.)
 
 
 --
