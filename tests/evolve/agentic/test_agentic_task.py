@@ -77,6 +77,17 @@ class AgenticTask(unittest.TestCase):
         self.assertIn("assigned_to=created_by", _read("apps/agentic/tools.py").replace(" ", "")
                       ) if False else self.assertIn("assigned_to=created_by.strip()", _read("apps/agentic/tools.py"))
 
+    def test_create_from_schedules_ui(self):
+        # backend: agentic app exposes a create route + a categories route
+        r = _read("apps/agentic/routes.py")
+        self.assertIn('@router.post("/tasks")', r)
+        self.assertIn('@router.get("/categories")', r)
+        # frontend: the Schedules app has a New Task button + the create form
+        ui = _read("apps/schedules/ui/SchedulesApp.jsx")
+        self.assertIn("New Autonomous Task", ui)
+        self.assertIn("New Task", ui)
+        self.assertIn('/api/apps/agentic/tasks', ui)
+
     def test_voice_skill_registered(self):
         h = _read("apps/agentic/handlers.py")
         self.assertIn('register_skill("agentic"', h)

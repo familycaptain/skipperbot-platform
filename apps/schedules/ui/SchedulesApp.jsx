@@ -143,6 +143,7 @@ export default function SchedulesApp({ appId, userId, context = {}, onTitle, onO
           setFilter={setFilter}
           onScheduleClick={loadDetail}
           onNewClick={() => setView("new")}
+          onNewAgenticClick={() => setView("new_agentic")}
           onRefresh={loadSchedules}
           loading={loading}
           userId={userId}
@@ -158,6 +159,17 @@ export default function SchedulesApp({ appId, userId, context = {}, onTitle, onO
           users={users}
           apiMutate={apiMutate}
           onCreated={(sch) => loadDetail(sch.id)}
+          onCancel={goList}
+          setError={setError}
+        />
+      )}
+
+      {view === "new_agentic" && (
+        <NewAgenticTaskForm
+          userId={userId}
+          apiMutate={apiMutate}
+          apiFetch={apiFetch}
+          onCreated={(sid) => { if (sid) { loadDetail(sid); } else { goList(); loadSchedules(); } }}
           onCancel={goList}
           setError={setError}
         />
@@ -215,7 +227,7 @@ function formatDue(dateStr) {
   return d.toLocaleDateString();
 }
 
-function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, onRefresh, loading, userId, apiMutate, setError, onComplete }) {
+function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, onNewAgenticClick, onRefresh, loading, userId, apiMutate, setError, onComplete }) {
   async function quickComplete(scheduleId) {
     try {
       await apiMutate(`/api/apps/schedules/${scheduleId}/complete`, "POST", {
@@ -244,6 +256,13 @@ function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, o
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--ds-accent)] hover:bg-[var(--ds-accent)] text-on-accent text-sm font-medium transition-colors"
         >
           <Plus size={14} /> New Schedule
+        </button>
+        <button
+          onClick={onNewAgenticClick}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--ds-accent)]/50 text-[var(--ds-accent)] hover:bg-[var(--ds-accent)]/10 text-sm font-medium transition-colors"
+          title="Set up an autonomous task Skipper runs on a schedule"
+        >
+          <Bot size={14} /> New Task
         </button>
         <div className="flex-1" />
         <div className="flex items-center gap-1 flex-wrap">
@@ -551,6 +570,124 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
         </div>
       </form>
     </div>
+  );
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*  New Autonomous Task Form (#109)                                           */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+function NewAgenticTaskForm({ userId, apiMutate, apiFetch, onCreated, onCancel, setError }) {
+  const [name, setName] = useState("");
+  const [prompt, setPrompt] = useState("");
+  const [recurrenceType, setRecurrenceType] = useState("daily");
+  const [timeOfDay, setTimeOfDay] = useState("07:00");
+  const [needsAttention, setNeedsAttention] = useState(true);
+  const [cats, setCats] = useState([]);
+  const [available, setAvailable] = useState([]);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    apiFetch("/api/apps/agentic/categories")
+      .then((d) => setAvailable(d.categories || []))
+      .catch(() => setAvailable([]));
+  }, []);
+
+  function toggleCat(n) {
+    setCats((cs) => (cs.includes(n) ? cs.filter((x) => x !== n) : [...cs, n]));
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!name.trim() || !prompt.trim()) return;
+    setSaving(true);
+    try {
+      const data = await apiMutate("/api/apps/agentic/tasks", "POST", {
+        name: name.trim(),
+        prompt: prompt.trim(),
+        created_by: userId,
+        tool_categories: cats.join(","),
+        recurrence_type: recurrenceType,
+        time_of_day: timeOfDay || "",
+        needs_attention: needsAttention,
+      });
+      if (data.error) { setError(data.error); return; }
+      onCreated(data.schedule_id);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col h-full">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-subtle">
+        <button type="button" onClick={onCancel} className="p-1 rounded hover:bg-[var(--ds-raised)] text-muted"><ArrowLeft size={16} /></button>
+        <h2 className="text-sm font-semibold text-default flex items-center gap-1.5">
+          <Bot size={15} className="text-[var(--ds-accent)]" /> New Autonomous Task
+        </h2>
+        <div className="flex-1" />
+        <button type="submit" disabled={saving || !name.trim() || !prompt.trim()}
+          className="flex items-center gap-1 px-3 py-1 rounded-lg bg-[var(--ds-accent)] hover:opacity-90 disabled:opacity-50 text-on-accent text-xs font-medium">
+          {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />} Create
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div>
+          <label className="text-xs text-muted">Name</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Morning calendar summary"
+            className="w-full mt-1 px-3 py-2 rounded-lg surface-raised border border-subtle text-sm text-default focus:outline-none focus:border-[var(--ds-accent)]" />
+        </div>
+
+        <div>
+          <label className="text-xs text-muted">What should Skipper do each time? (the task's prompt — editable later)</label>
+          <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} rows={5}
+            placeholder="Describe the task Skipper should carry out each run — be specific about what to produce (a document, updates, findings)."
+            className="w-full mt-1 px-3 py-2 rounded-lg surface-raised border border-subtle text-sm text-default focus:outline-none focus:border-[var(--ds-accent)] resize-y" />
+        </div>
+
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <label className="text-xs text-muted">How often</label>
+            <select value={recurrenceType} onChange={(e) => setRecurrenceType(e.target.value)}
+              className="w-full mt-1 px-3 py-2 rounded-lg surface-raised border border-subtle text-sm text-default focus:outline-none">
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+          </div>
+          <div className="flex-1">
+            <label className="text-xs text-muted">Time</label>
+            <input type="time" value={timeOfDay} onChange={(e) => setTimeOfDay(e.target.value)}
+              className="w-full mt-1 px-3 py-2 rounded-lg surface-raised border border-subtle text-sm text-default focus:outline-none" />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs text-muted">Tools it starts with (it can request more while running)</label>
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
+            {available.map((c) => (
+              <button type="button" key={c.name} onClick={() => toggleCat(c.name)} title={c.description}
+                className={`px-2 py-1 rounded-full text-[11px] border transition-colors ${
+                  cats.includes(c.name)
+                    ? "bg-[var(--ds-accent)] text-on-accent border-[var(--ds-accent)]"
+                    : "surface-raised text-muted border-subtle hover:border-[var(--ds-accent)]/50"
+                }`}>
+                {c.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={needsAttention} onChange={(e) => setNeedsAttention(e.target.checked)} className="accent-[var(--ds-accent)]" />
+          <span className="text-sm text-default">Tell the family the result each run</span>
+        </label>
+      </div>
+    </form>
   );
 }
 
