@@ -61,7 +61,19 @@ export default defineConfig({
       includeAssets: ["skipper-192.svg", "skipper-512.svg"],
       workbox: {
         cleanupOutdatedCaches: true,
-        navigateFallbackDenylist: [/^\/api\//, /^\/capture/, /^\/meal-menu/, /^\/info/, /^\/info-shots\//],
+        // Skipper has NO offline mode — every feature needs the LLM + Postgres,
+        // so the service worker exists ONLY to make the UI load fast. Precache
+        // just the hashed, immutable build assets (js/css): a cached chunk can
+        // never be the wrong version because its filename hash changes whenever
+        // its content does. Do NOT precache index.html, and disable the SPA
+        // navigation fallback (navigateFallback: null) — so EVERY navigation goes
+        // to the network, where the server serves index.html with
+        // Cache-Control: no-cache. That entry point always names the current
+        // build's chunks, so a cold open OR a refresh can never boot stale code.
+        // (Offline, a navigation just fails — correct, since nothing works
+        // without the network anyway.)
+        globPatterns: ["**/*.{js,css}"],
+        navigateFallback: null,
       },
       manifest: {
         name: "SkipperBot",
