@@ -58,8 +58,8 @@ class AgenticTask(unittest.TestCase):
 
     def test_view_and_edit_tools_exist(self):
         src = _read("apps/agentic/tools.py")
-        self.assertIn("def show_agentic_task", src)
-        self.assertIn("def update_agentic_task", src)
+        self.assertIn("def show_routine", src)
+        self.assertIn("def update_routine", src)
         self.assertIn("get_document_content", src)
         self.assertIn("update_doc(", src)
 
@@ -71,12 +71,12 @@ class AgenticTask(unittest.TestCase):
 
     def test_create_from_schedules_ui(self):
         r = _read("apps/agentic/routes.py")
-        self.assertIn('@router.post("/tasks")', r)
+        self.assertIn('@router.post("/routines")', r)
         self.assertIn('@router.get("/categories")', r)
         ui = _read("apps/schedules/ui/SchedulesApp.jsx")
-        self.assertIn("New Autonomous Task", ui)
-        self.assertIn("New Task", ui)
-        self.assertIn('/api/apps/agentic/tasks', ui)
+        self.assertIn("New Routine", ui)
+        self.assertIn("New Routine", ui)
+        self.assertIn('/api/apps/agentic/routines', ui)
 
     def test_recurrence_picker_shared_by_both_forms(self):
         # the "Repeats + day-of-week/month/etc." picker is one shared component,

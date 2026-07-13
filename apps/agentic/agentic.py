@@ -1,6 +1,6 @@
-"""Agentic jobs — Skipper running a saved prompt on a schedule (#109).
+"""Routines — Skipper running a saved prompt on a schedule (#109).
 
-An "agentic task" is a ``public.schedules`` row: WHEN (recurrence + time) plus
+A "routine" is a ``public.schedules`` row: WHEN (recurrence + time) plus
 ``linked_entity_type='job'`` / ``linked_entity_id='agentic'`` plus a
 ``job_config`` jsonb carrying the spec:
 
@@ -11,7 +11,7 @@ that job_config as its config. ``handle_agentic`` then loads the PROMPT from its
 d-* document, loads the chosen tool CATEGORIES (+ request_tools for more on
 demand — the same category model chat and goal_work use), and runs the agent
 loop with the SAME tools a chat turn gets. There are NO artificial limits: the
-prompt drives everything — if it says to notify someone, the task uses the
+prompt drives everything — if it says to notify someone, the routine uses the
 ordinary notification tools, exactly like chat. Delivery is the prompt's job.
 """
 import json
@@ -27,7 +27,7 @@ _ALWAYS = {"core"}
 def _build_tools(loaded_categories):
     """The SAME tool set a chat turn gets, scoped to the loaded categories:
     routed MCP tools + the local tools (send_notification, send_message_to_user,
-    request_tools, open_app, …). An agentic task has no artificial limits — if
+    request_tools, open_app, …). A routine has no artificial limits — if
     its prompt says to notify someone, it uses the ordinary notification tool,
     exactly like chat. Returns (tools, allowed_names, loaded_category_set)."""
     import mcp_client
@@ -63,10 +63,10 @@ def _awareness(loaded):
 
 
 _SYSTEM = (
-    "You are Skipper autonomously running a SCHEDULED TASK you were set up to do "
-    "for this household. Carry out the task exactly as described below, using your "
-    "tools — including notifying people if the task says to (use the ordinary "
-    "notification tools, just like in chat). Be thorough but BOUNDED: do the task, "
+    "You are Skipper autonomously running a ROUTINE you were set up to do "
+    "for this household. Carry out the routine exactly as described below, using your "
+    "tools — including notifying people if the routine says to (use the ordinary "
+    "notification tools, just like in chat). Be thorough but BOUNDED: do the routine, "
     "then stop. End with a short summary of what you did."
 )
 
@@ -135,19 +135,19 @@ async def handle_agentic(job: dict, ctx) -> str:
             extra = [{"role": "system", "content": _awareness(new_cats)}]
         return new_tools, extra
 
-    ctx.update_progress(30, "Running the task...")
+    ctx.update_progress(30, "Running the routine...")
     result = await agent_loop.run(
         messages=[
             {"role": "system", "content": _SYSTEM},
             {"role": "system", "content": _awareness(cats)},
-            {"role": "user", "content": prompt.strip() + "\n\nRun this task now."},
+            {"role": "user", "content": prompt.strip() + "\n\nRun this routine now."},
         ],
         tools=tools, tier=tier, max_turns=15, max_tool_calls=40,
         tool_dispatch=_dispatch,
         hooks=agent_loop.LoopHooks(after_round=_after_round),
     )
 
-    ctx.update_progress(100, "Task complete")
-    out = f"agentic task ({prompt_doc_id}): {len(actions)} action(s)"
+    ctx.update_progress(100, "Routine complete")
+    out = f"routine ({prompt_doc_id}): {len(actions)} action(s)"
     logger.info("AGENTIC: %s", out)
     return out

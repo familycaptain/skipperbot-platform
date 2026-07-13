@@ -260,9 +260,9 @@ function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, o
         <button
           onClick={onNewAgenticClick}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--ds-accent)]/50 text-[var(--ds-accent)] hover:bg-[var(--ds-accent)]/10 text-sm font-medium transition-colors"
-          title="Set up an autonomous task Skipper runs on a schedule"
+          title="Set up a routine Skipper runs on a schedule"
         >
-          <Bot size={14} /> New Task
+          <Bot size={14} /> New Routine
         </button>
         <div className="flex-1" />
         <div className="flex items-center gap-1 flex-wrap">
@@ -373,7 +373,7 @@ function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, o
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
 // Shared recurrence picker — "Repeats" + the type-specific rule builder. Used by
-// both the New Schedule and New Autonomous Task forms so they're identical.
+// both the New Schedule and New Routine forms so they're identical.
 // Reports (recurrence_type, recurrence_rule) up via onChange whenever it changes.
 function RecurrenceFields({ onChange }) {
   const [recurrenceType, setRecurrenceType] = useState("weekly");
@@ -589,7 +589,7 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
 
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/*  New Autonomous Task Form (#109)                                           */
+/*  New Routine Form (#109)                                           */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 function NewAgenticTaskForm({ userId, apiMutate, apiFetch, onCreated, onCancel, setError }) {
   const [name, setName] = useState("");
@@ -615,7 +615,7 @@ function NewAgenticTaskForm({ userId, apiMutate, apiFetch, onCreated, onCancel, 
     if (!name.trim() || !prompt.trim()) return;
     setSaving(true);
     try {
-      const data = await apiMutate("/api/apps/agentic/tasks", "POST", {
+      const data = await apiMutate("/api/apps/agentic/routines", "POST", {
         name: name.trim(),
         prompt: prompt.trim(),
         created_by: userId,
@@ -638,7 +638,7 @@ function NewAgenticTaskForm({ userId, apiMutate, apiFetch, onCreated, onCancel, 
       <div className="flex items-center gap-2 px-4 py-3 border-b border-subtle">
         <button type="button" onClick={onCancel} className="p-1 rounded hover:bg-[var(--ds-raised)] text-muted"><ArrowLeft size={16} /></button>
         <h2 className="text-sm font-semibold text-default flex items-center gap-1.5">
-          <Bot size={15} className="text-[var(--ds-accent)]" /> New Autonomous Task
+          <Bot size={15} className="text-[var(--ds-accent)]" /> New Routine
         </h2>
         <div className="flex-1" />
         <button type="submit" disabled={saving || !name.trim() || !prompt.trim()}
@@ -822,7 +822,7 @@ function DetailView({ schedule, userId, users, apiMutate, onBack, onRefresh, set
           return (
             <div className="rounded-lg border border-[var(--ds-accent)]/40 bg-[var(--ds-accent)]/5 p-3 space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium text-default">
-                <Bot size={15} className="text-[var(--ds-accent)]" /> Autonomous task
+                <Bot size={15} className="text-[var(--ds-accent)]" /> Routine
               </div>
               <div className="text-xs text-faint">
                 Skipper runs this saved prompt on its schedule and does whatever

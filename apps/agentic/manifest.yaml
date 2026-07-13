@@ -1,32 +1,32 @@
 id: agentic
-name: Agentic Tasks
+name: Routines
 version: "1.0.0"
 description: >
-  Autonomous scheduled tasks (#109). Skipper running a saved PROMPT on a
-  SCHEDULE with a chosen set of tool CATEGORIES. The prompt lives in a document
-  (d-*); the schedule row IS the task (its job_config carries the spec); when
-  due, an `agentic` job runs the prompt through the agent loop. If the task is
-  marked needs-attention, its result reaches the family through Skipper's voice.
+  Routines (#109) — Skipper running a saved PROMPT on a SCHEDULE with a chosen
+  set of tool CATEGORIES. The prompt lives in a document (d-*); the schedule row
+  IS the routine (its job_config carries the spec); when due, an `agentic` job
+  runs the prompt through the agent loop with the same tools a chat turn has. The
+  prompt drives everything the routine does — including notifying people, if it
+  says to. ("agentic" survives as the internal app-id / job-type code name.)
 
 platform_deps:
   - documents   # the prompt lives in a d-* document (editable in chat or the doc app)
-  - schedules   # each agentic task is a public.schedules row; job_config carries the spec
+  - schedules   # each routine is a public.schedules row; job_config carries the spec
   - jobs        # the `agentic` job_type runs on the dispatcher
-  - events
 
-# The generic agentic job handler. A schedule with linked_entity_type='job',
-# linked_entity_id='agentic' fires it with the task's job_config as config.
+# The generic routine job handler. A schedule with linked_entity_type='job',
+# linked_entity_id='agentic' fires it with the routine's job_config as config.
 job_types:
   - type: agentic
     handler: agentic.handle_agentic
     max_concurrent: 2
     cancel_on_shutdown: true
 
-# Tool category for the keyword router — surfaces create_agentic_task etc. when
-# a family member asks Skipper to do something on its own, on a schedule.
+# Tool category for the keyword router — surfaces create_routine etc. when a
+# family member asks Skipper to do something on its own, on a schedule.
 tool_category:
   description: >
-    Set up, list, or remove AUTONOMOUS SCHEDULED tasks — Skipper doing a task on
+    Set up, list, or remove ROUTINES — Skipper doing something on
     its own on a recurring schedule (a saved prompt + tools that run every
     morning, nightly, weekly, etc.). Use when the user asks Skipper to do
     something automatically / on a schedule / by itself going forward.

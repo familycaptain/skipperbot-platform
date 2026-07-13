@@ -1,7 +1,7 @@
 """Agentic app — HTTP routes (mounted at /api/apps/agentic/).
 
-Lets the Schedules app UI create autonomous tasks (the same thing
-create_agentic_task does from chat) and list the tool categories a task can
+Lets the Schedules app UI create routines (the same thing
+create_routine does from chat) and list the tool categories a routine can
 start with, for the create form.
 """
 import re
@@ -13,7 +13,7 @@ from pydantic import BaseModel
 router = APIRouter()
 
 
-class CreateAgenticTaskRequest(BaseModel):
+class CreateRoutineRequest(BaseModel):
     name: str
     prompt: str
     created_by: str = "skipper"
@@ -24,12 +24,12 @@ class CreateAgenticTaskRequest(BaseModel):
     tier: str = "smart"
 
 
-@router.post("/tasks")
-async def api_create_agentic_task(req: CreateAgenticTaskRequest):
-    from apps.agentic.tools import create_agentic_task
+@router.post("/routines")
+async def api_create_routine(req: CreateRoutineRequest):
+    from apps.agentic.tools import create_routine
 
     def _create():
-        return create_agentic_task(
+        return create_routine(
             name=req.name, prompt=req.prompt, created_by=req.created_by,
             tool_categories=req.tool_categories, recurrence_type=req.recurrence_type,
             recurrence_rule=req.recurrence_rule, time_of_day=req.time_of_day, tier=req.tier,
@@ -44,7 +44,7 @@ async def api_create_agentic_task(req: CreateAgenticTaskRequest):
 
 @router.get("/categories")
 async def api_agentic_categories():
-    """Tool categories a task can be given to START with (core is always on;
+    """Tool categories a routine can be given to START with (core is always on;
     the task requests more at run time). For the create form's tool picker."""
     from tool_router import TOOL_CATEGORIES
     cats = [
