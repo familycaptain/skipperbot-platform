@@ -142,6 +142,7 @@ apps/*
 !apps/settings/
 !apps/timers/
 !apps/evolve/
+!apps/agentic/
 # --- bundled optional apps (hideable from the desktop in Settings) ---
 # NOTE: anime, homeopathy, scriptures, newsletter, scrum are EXTERNAL apps —
 # each lives in its own skipperbot-app-<name> repo, cloned per-install into
