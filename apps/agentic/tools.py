@@ -21,6 +21,7 @@ def create_agentic_task(
     created_by: str,
     tool_categories: str = "",
     recurrence_type: str = "daily",
+    recurrence_rule: dict | None = None,
     time_of_day: str = "",
     tier: str = "smart",
 ) -> str:
@@ -42,7 +43,11 @@ def create_agentic_task(
             start (e.g. "app:goals,web,documents"). Skipper can request more at
             run time; `core` is always available. Leave empty for a
             prompt-only/thinking task.
-        recurrence_type: daily | weekly | monthly | yearly (default daily).
+        recurrence_type: daily | weekly | monthly | yearly | interval (default daily).
+        recurrence_rule: the schedule detail matching recurrence_type — e.g.
+            weekly {"days": ["mon","thu"]}, monthly {"day": 15},
+            yearly {"month": 6, "day": 1}, daily/interval {"every": 1}. Without
+            it, weekly/monthly/etc. have no anchor day and won't fire predictably.
         time_of_day: Local HH:MM for when it runs (e.g. "07:00"). Optional.
         tier: "smart" (default) or "fast" model tier for the task.
 
@@ -86,6 +91,7 @@ def create_agentic_task(
             assigned_to=created_by.strip(),
             category="agentic",
             recurrence_type=rtype,
+            recurrence_rule=(recurrence_rule or None),
             time_of_day=(time_of_day.strip() or None),
             linked_entity_type="job",
             linked_entity_id="agentic",
@@ -165,6 +171,7 @@ def update_agentic_task(
     prompt: str = "",
     tool_categories: str = "",
     recurrence_type: str = "",
+    recurrence_rule: dict | None = None,
     time_of_day: str = "",
     tier: str = "",
 ) -> str:
@@ -175,7 +182,8 @@ def update_agentic_task(
         schedule_id: The task to change (from list_agentic_tasks).
         prompt: New full prompt text (rewrites the task's prompt document).
         tool_categories: New comma-separated initial tool categories.
-        recurrence_type: New cadence (daily | weekly | monthly | yearly).
+        recurrence_type: New cadence (daily | weekly | monthly | yearly | interval).
+        recurrence_rule: schedule detail for the new cadence (see create_agentic_task).
         time_of_day: New local HH:MM run time.
         tier: "smart" or "fast".
     """
@@ -206,6 +214,10 @@ def update_agentic_task(
         if recurrence_type.strip():
             sched_kw["recurrence_type"] = recurrence_type.strip().lower()
             changed.append("cadence")
+        if recurrence_rule:
+            sched_kw["recurrence_rule"] = recurrence_rule
+            if "cadence" not in changed:
+                changed.append("cadence")
         if time_of_day.strip():
             sched_kw["time_of_day"] = time_of_day.strip()
             changed.append("time")

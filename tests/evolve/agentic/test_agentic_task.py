@@ -78,6 +78,17 @@ class AgenticTask(unittest.TestCase):
         self.assertIn("New Task", ui)
         self.assertIn('/api/apps/agentic/tasks', ui)
 
+    def test_recurrence_picker_shared_by_both_forms(self):
+        # the "Repeats + day-of-week/month/etc." picker is one shared component,
+        # so the Task form has the same full recurrence UI as the Schedule form.
+        ui = _read("apps/schedules/ui/SchedulesApp.jsx")
+        self.assertIn("function RecurrenceFields", ui)
+        self.assertEqual(ui.count("<RecurrenceFields"), 2)   # both forms use it
+        self.assertIn('recurrence_rule: recur.rule', ui)     # the Task form sends the rule
+        # backend threads the rule through
+        self.assertIn("recurrence_rule", _read("apps/agentic/tools.py"))
+        self.assertIn("recurrence_rule", _read("apps/agentic/routes.py"))
+
     def test_schedules_ui_surfaces_agentic_tasks(self):
         ui = _read("apps/schedules/ui/SchedulesApp.jsx")
         self.assertIn('linked_entity_id === "agentic"', ui)

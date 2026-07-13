@@ -372,10 +372,10 @@ function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, o
 /*  New Schedule Form                                                        */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setError }) {
-  const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("general");
-  const [assignedTo, setAssignedTo] = useState(userId);
+// Shared recurrence picker — "Repeats" + the type-specific rule builder. Used by
+// both the New Schedule and New Autonomous Task forms so they're identical.
+// Reports (recurrence_type, recurrence_rule) up via onChange whenever it changes.
+function RecurrenceFields({ onChange }) {
   const [recurrenceType, setRecurrenceType] = useState("weekly");
   const [weekDays, setWeekDays] = useState(["sat"]);
   const [monthDay, setMonthDay] = useState(1);
@@ -383,20 +383,103 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
   const [dailyEvery, setDailyEvery] = useState(1);
   const [yearlyMonth, setYearlyMonth] = useState(new Date().getMonth() + 1);
   const [yearlyDay, setYearlyDay] = useState(1);
+
+  useEffect(() => {
+    let rule;
+    switch (recurrenceType) {
+      case "daily": rule = { every: dailyEvery }; break;
+      case "weekly": rule = { days: weekDays }; break;
+      case "monthly": rule = { day: monthDay }; break;
+      case "yearly": rule = { month: yearlyMonth, day: yearlyDay }; break;
+      case "interval": rule = { days: intervalDays }; break;
+      default: rule = {};
+    }
+    onChange(recurrenceType, rule);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recurrenceType, weekDays, monthDay, intervalDays, dailyEvery, yearlyMonth, yearlyDay]);
+
+  return (
+    <div>
+      <label className="block text-xs text-muted mb-1">Repeats</label>
+      <select value={recurrenceType} onChange={(e) => setRecurrenceType(e.target.value)}
+        className="w-full surface-card border border-subtle rounded px-3 py-2 text-sm text-default mb-2">
+        {RECURRENCE_TYPES.map(rt => <option key={rt.value} value={rt.value}>{rt.label}</option>)}
+      </select>
+
+      {recurrenceType === "daily" && (
+        <div className="flex items-center gap-2 text-sm text-default">
+          <span>Every</span>
+          <input type="number" min={1} max={365} value={dailyEvery} onChange={(e) => setDailyEvery(Number(e.target.value))}
+            className="w-16 surface-card border border-subtle rounded px-2 py-1 text-sm text-default" />
+          <span>day{dailyEvery > 1 ? "s" : ""}</span>
+        </div>
+      )}
+
+      {recurrenceType === "weekly" && (
+        <div className="flex gap-1 flex-wrap">
+          {WEEKDAYS.map(wd => (
+            <button
+              key={wd.key}
+              type="button"
+              onClick={() => setWeekDays(prev =>
+                prev.includes(wd.key) ? prev.filter(d => d !== wd.key) : [...prev, wd.key]
+              )}
+              className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                weekDays.includes(wd.key)
+                  ? "bg-[var(--ds-accent)] text-on-accent"
+                  : "surface-card text-muted hover:text-[var(--ds-text)] border border-subtle"
+              }`}
+            >
+              {wd.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {recurrenceType === "monthly" && (
+        <div className="flex items-center gap-2 text-sm text-default">
+          <span>Day</span>
+          <input type="number" min={1} max={31} value={monthDay} onChange={(e) => setMonthDay(Number(e.target.value))}
+            className="w-16 surface-card border border-subtle rounded px-2 py-1 text-sm text-default" />
+          <span>of every month</span>
+        </div>
+      )}
+
+      {recurrenceType === "yearly" && (
+        <div className="flex items-center gap-2 text-sm text-default">
+          <span>Every</span>
+          <select value={yearlyMonth} onChange={(e) => setYearlyMonth(Number(e.target.value))}
+            className="surface-card border border-subtle rounded px-2 py-1 text-sm text-default">
+            {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m, i) => (
+              <option key={i+1} value={i+1}>{m}</option>
+            ))}
+          </select>
+          <input type="number" min={1} max={31} value={yearlyDay} onChange={(e) => setYearlyDay(Number(e.target.value))}
+            className="w-16 surface-card border border-subtle rounded px-2 py-1 text-sm text-default" />
+        </div>
+      )}
+
+      {recurrenceType === "interval" && (
+        <div className="flex items-center gap-2 text-sm text-default">
+          <span>Every</span>
+          <input type="number" min={1} max={999} value={intervalDays} onChange={(e) => setIntervalDays(Number(e.target.value))}
+            className="w-20 surface-card border border-subtle rounded px-2 py-1 text-sm text-default" />
+          <span>days from last completion</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setError }) {
+  const [title, setTitle] = useState("");
+  const [category, setCategory] = useState("general");
+  const [assignedTo, setAssignedTo] = useState(userId);
+  const [recur, setRecur] = useState({ type: "weekly", rule: { days: ["sat"] } });
   const [timeOfDay, setTimeOfDay] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
-
-  function buildRule() {
-    switch (recurrenceType) {
-      case "daily": return { every: dailyEvery };
-      case "weekly": return { days: weekDays };
-      case "monthly": return { day: monthDay };
-      case "yearly": return { month: yearlyMonth, day: yearlyDay };
-      case "interval": return { days: intervalDays };
-      default: return {};
-    }
-  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -409,8 +492,8 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
         category,
         assigned_to: assignedTo,
         description: description.trim(),
-        recurrence_type: recurrenceType,
-        recurrence_rule: buildRule(),
+        recurrence_type: recur.type,
+        recurrence_rule: recur.rule,
         time_of_day: timeOfDay || null,
       });
       if (data.error) { setError(data.error); return; }
@@ -460,76 +543,7 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
         </div>
 
         {/* Recurrence */}
-        <div>
-          <label className="block text-xs text-muted mb-1">Repeats</label>
-          <select value={recurrenceType} onChange={(e) => setRecurrenceType(e.target.value)}
-            className="w-full surface-card border border-subtle rounded px-3 py-2 text-sm text-default mb-2">
-            {RECURRENCE_TYPES.map(rt => <option key={rt.value} value={rt.value}>{rt.label}</option>)}
-          </select>
-
-          {/* Type-specific rule builder */}
-          {recurrenceType === "daily" && (
-            <div className="flex items-center gap-2 text-sm text-default">
-              <span>Every</span>
-              <input type="number" min={1} max={365} value={dailyEvery} onChange={(e) => setDailyEvery(Number(e.target.value))}
-                className="w-16 surface-card border border-subtle rounded px-2 py-1 text-sm text-default" />
-              <span>day{dailyEvery > 1 ? "s" : ""}</span>
-            </div>
-          )}
-
-          {recurrenceType === "weekly" && (
-            <div className="flex gap-1 flex-wrap">
-              {WEEKDAYS.map(wd => (
-                <button
-                  key={wd.key}
-                  type="button"
-                  onClick={() => setWeekDays(prev =>
-                    prev.includes(wd.key) ? prev.filter(d => d !== wd.key) : [...prev, wd.key]
-                  )}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                    weekDays.includes(wd.key)
-                      ? "bg-[var(--ds-accent)] text-on-accent"
-                      : "surface-card text-muted hover:text-[var(--ds-text)] border border-subtle"
-                  }`}
-                >
-                  {wd.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {recurrenceType === "monthly" && (
-            <div className="flex items-center gap-2 text-sm text-default">
-              <span>Day</span>
-              <input type="number" min={1} max={31} value={monthDay} onChange={(e) => setMonthDay(Number(e.target.value))}
-                className="w-16 surface-card border border-subtle rounded px-2 py-1 text-sm text-default" />
-              <span>of every month</span>
-            </div>
-          )}
-
-          {recurrenceType === "yearly" && (
-            <div className="flex items-center gap-2 text-sm text-default">
-              <span>Every</span>
-              <select value={yearlyMonth} onChange={(e) => setYearlyMonth(Number(e.target.value))}
-                className="surface-card border border-subtle rounded px-2 py-1 text-sm text-default">
-                {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m, i) => (
-                  <option key={i+1} value={i+1}>{m}</option>
-                ))}
-              </select>
-              <input type="number" min={1} max={31} value={yearlyDay} onChange={(e) => setYearlyDay(Number(e.target.value))}
-                className="w-16 surface-card border border-subtle rounded px-2 py-1 text-sm text-default" />
-            </div>
-          )}
-
-          {recurrenceType === "interval" && (
-            <div className="flex items-center gap-2 text-sm text-default">
-              <span>Every</span>
-              <input type="number" min={1} max={999} value={intervalDays} onChange={(e) => setIntervalDays(Number(e.target.value))}
-                className="w-20 surface-card border border-subtle rounded px-2 py-1 text-sm text-default" />
-              <span>days from last completion</span>
-            </div>
-          )}
-        </div>
+        <RecurrenceFields onChange={(type, rule) => setRecur({ type, rule })} />
 
         {/* Time of day */}
         <div>
@@ -580,7 +594,7 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
 function NewAgenticTaskForm({ userId, apiMutate, apiFetch, onCreated, onCancel, setError }) {
   const [name, setName] = useState("");
   const [prompt, setPrompt] = useState("");
-  const [recurrenceType, setRecurrenceType] = useState("daily");
+  const [recur, setRecur] = useState({ type: "daily", rule: { every: 1 } });
   const [timeOfDay, setTimeOfDay] = useState("07:00");
   const [cats, setCats] = useState([]);
   const [available, setAvailable] = useState([]);
@@ -606,7 +620,8 @@ function NewAgenticTaskForm({ userId, apiMutate, apiFetch, onCreated, onCancel, 
         prompt: prompt.trim(),
         created_by: userId,
         tool_categories: cats.join(","),
-        recurrence_type: recurrenceType,
+        recurrence_type: recur.type,
+        recurrence_rule: recur.rule,
         time_of_day: timeOfDay || "",
       });
       if (data.error) { setError(data.error); return; }
@@ -646,21 +661,14 @@ function NewAgenticTaskForm({ userId, apiMutate, apiFetch, onCreated, onCancel, 
             className="w-full mt-1 px-3 py-2 rounded-lg surface-raised border border-subtle text-sm text-default focus:outline-none focus:border-[var(--ds-accent)] resize-y" />
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-4">
           <div className="flex-1">
-            <label className="text-xs text-muted">How often</label>
-            <select value={recurrenceType} onChange={(e) => setRecurrenceType(e.target.value)}
-              className="w-full mt-1 px-3 py-2 rounded-lg surface-raised border border-subtle text-sm text-default focus:outline-none">
-              <option value="daily">Daily</option>
-              <option value="weekly">Weekly</option>
-              <option value="monthly">Monthly</option>
-              <option value="yearly">Yearly</option>
-            </select>
+            <RecurrenceFields onChange={(type, rule) => setRecur({ type, rule })} />
           </div>
-          <div className="flex-1">
-            <label className="text-xs text-muted">Time</label>
+          <div>
+            <label className="block text-xs text-muted mb-1">Time</label>
             <input type="time" value={timeOfDay} onChange={(e) => setTimeOfDay(e.target.value)}
-              className="w-full mt-1 px-3 py-2 rounded-lg surface-raised border border-subtle text-sm text-default focus:outline-none" />
+              className="mt-0.5 px-3 py-2 rounded-lg surface-raised border border-subtle text-sm text-default focus:outline-none" />
           </div>
         </div>
 
