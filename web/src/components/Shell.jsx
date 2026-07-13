@@ -34,7 +34,23 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
   const [focusSlots, setFocusSlots] = useState([]);
   const [showRestartConfirm, setShowRestartConfirm] = useState(false);
   const [restarting, setRestarting] = useState(false);
+  const [updating, setUpdating] = useState(false);
   const isAdmin = hasRole(userRole, "admin");
+
+  // The single reload path to the new version: clear the service-worker caches
+  // so the fresh index.html + code chunks are fetched from the network, then
+  // hard-reload. (Nothing reloads the page automatically — see main.jsx.)
+  const doUpdateReload = useCallback(() => {
+    setUpdating(true);
+    const reload = () => window.location.reload();
+    if ("caches" in window) {
+      caches.keys()
+        .then((names) => Promise.all(names.map((n) => caches.delete(n))))
+        .finally(reload);
+    } else {
+      reload();
+    }
+  }, []);
 
   async function handleRestart() {
     setRestarting(true);
@@ -52,7 +68,6 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
         const r = await fetch(`${API}/api/admin/status`, { signal: AbortSignal.timeout(2000) });
         if (r.ok) {
           clearInterval(poll);
-          sessionStorage.setItem("sw-update-reload", String(Date.now()));
           window.location.reload();
         }
       } catch {}
@@ -96,6 +111,40 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
 
   return (
     <div className="flex flex-col h-full surface-page">
+      {/* New-version takeover: the instant the WebSocket build_id changes after a
+          deploy, this blocking modal covers the whole page so no one starts using
+          a stale app and gets refreshed out from under them. The ONLY way past it
+          is Refresh Now — a clean, user-driven reload to the new version. */}
+      {updateAvailable && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="update-modal-title"
+        >
+          <div className="surface-card border border-subtle rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+            <div className="w-12 h-12 mx-auto rounded-full bg-indigo-600/15 flex items-center justify-center mb-4">
+              <RefreshCw size={22} className="text-indigo-500" />
+            </div>
+            <h2 id="update-modal-title" className="text-lg font-semibold mb-2">
+              A new version is ready
+            </h2>
+            <p className="text-sm text-faint mb-5">
+              Skipper was just updated. Refresh to load the new version — it only
+              takes a second, and it keeps the site from reloading while you're
+              using an app.
+            </p>
+            <button
+              onClick={doUpdateReload}
+              disabled={updating}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-70 text-on-accent text-sm font-medium transition-colors"
+            >
+              <RefreshCw size={15} className={updating ? "animate-spin" : ""} />
+              {updating ? "Refreshing…" : "Refresh Now"}
+            </button>
+          </div>
+        </div>
+      )}
       {/* ── Top Bar ── */}
       <header className="flex items-center justify-between px-4 h-12 surface-panel border-b border-subtle shrink-0">
         {/* Left: Brand */}
@@ -157,28 +206,6 @@ export default function Shell({ displayName, userRole, connected, updateAvailabl
           >
             {theme === "light" ? <Moon size={14} /> : <Sun size={14} />}
           </button>
-          {updateAvailable && (
-            <button
-              onClick={() => {
-                // Mark that this is an intentional update-reload so main.jsx's
-                // controllerchange listener won't trigger a second reload.
-                sessionStorage.setItem("sw-update-reload", String(Date.now()));
-                // Clear service worker caches then hard-reload to guarantee new code
-                if ('caches' in window) {
-                  caches.keys().then(names => Promise.all(names.map(n => caches.delete(n)))).finally(() => {
-                    window.location.reload();
-                  });
-                } else {
-                  window.location.reload();
-                }
-              }}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-600/80 hover:bg-indigo-500 text-on-accent text-xs font-medium animate-pulse hover:animate-none transition-all"
-              title="New version available — click to refresh"
-            >
-              <RefreshCw size={12} />
-              Update Available
-            </button>
-          )}
           {onToggleChat && (
             <button
               onClick={onToggleChat}

@@ -13,20 +13,13 @@ installAuthFetch();
 // pre-paint script in index.html). Dark is the default. Issue #26.
 applyTheme(getStoredTheme());
 
-// Auto-reload when a new service worker takes over (prevents stale chunk errors).
-// Skip if we just did an intentional update-reload (Shell "Update Available" button)
-// to avoid a double-reload that bounces the user back to the home screen.
-// The flag is set before reload and checked here with NO time limit — precaching
-// can take an unpredictable amount of time before controllerchange fires.
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (sessionStorage.getItem("sw-update-reload")) {
-      sessionStorage.removeItem("sw-update-reload");
-      return; // intentional reload already handled it
-    }
-    window.location.reload();
-  });
-}
+// NOTE: there is deliberately NO controllerchange auto-reload here anymore.
+// It was the cause of the "app refreshes on me 10-15s after I open it" bug: a
+// freshly-deployed service worker would claim the open tab on the browser's own
+// schedule and this handler blindly reloaded, dumping the user back to the home
+// screen mid-use. Updates are now user-driven — the app detects a new version
+// INSTANTLY via the WebSocket build_id and shows a blocking "Refresh Now" modal
+// (see Shell.jsx); nothing reloads the page unless the user clicks it.
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>

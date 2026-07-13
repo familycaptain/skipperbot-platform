@@ -50,11 +50,16 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: "autoUpdate",
+      // "prompt" (NOT autoUpdate) + no skipWaiting/clientsClaim: a newly
+      // deployed service worker INSTALLS but WAITS — it never seizes an open
+      // tab on the browser's schedule. That autonomous takeover (+ a
+      // controllerchange auto-reload) was what refreshed users mid-app and
+      // bounced them to the home screen. The new SW activates only when the
+      // user clicks "Refresh Now" (Shell.jsx) and the page reloads. Precaching/
+      // offline support is unchanged.
+      registerType: "prompt",
       includeAssets: ["skipper-192.svg", "skipper-512.svg"],
       workbox: {
-        skipWaiting: true,
-        clientsClaim: true,
         cleanupOutdatedCaches: true,
         navigateFallbackDenylist: [/^\/api\//, /^\/capture/, /^\/meal-menu/, /^\/info/, /^\/info-shots\//],
       },
