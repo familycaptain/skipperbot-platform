@@ -84,6 +84,9 @@ def create_agentic_task(
         sch = create_schedule(
             title=name.strip(),
             created_by=created_by.strip(),
+            # Assign to the creator so the task is visible + manageable in their
+            # Schedules app (the list filters by the logged-in user).
+            assigned_to=created_by.strip(),
             category="agentic",
             recurrence_type=rtype,
             time_of_day=(time_of_day.strip() or None),

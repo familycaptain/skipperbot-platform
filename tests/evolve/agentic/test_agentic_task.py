@@ -68,6 +68,15 @@ class AgenticTask(unittest.TestCase):
         self.assertIn('"job_config"', allowed)
         self.assertIn('("recurrence_rule", "job_config")', src)  # jsonb-wrapped
 
+    def test_schedules_ui_surfaces_agentic_tasks(self):
+        ui = _read("apps/schedules/ui/SchedulesApp.jsx")
+        self.assertIn('linked_entity_id === "agentic"', ui)      # detects agentic tasks
+        self.assertIn("View / edit prompt", ui)                  # jump to the prompt
+        self.assertIn('onOpenApp?.("document"', ui)              # opens the doc editor
+        # the task is assigned to its creator so it's visible in the app
+        self.assertIn("assigned_to=created_by", _read("apps/agentic/tools.py").replace(" ", "")
+                      ) if False else self.assertIn("assigned_to=created_by.strip()", _read("apps/agentic/tools.py"))
+
     def test_voice_skill_registered(self):
         h = _read("apps/agentic/handlers.py")
         self.assertIn('register_skill("agentic"', h)

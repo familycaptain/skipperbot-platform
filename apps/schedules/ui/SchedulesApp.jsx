@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Plus, RefreshCw, ChevronRight, ArrowLeft, Save, CheckCircle2, X,
   Loader2, CalendarClock, Pause, Play, Trash2, Clock, AlertTriangle,
+  Bot, FileText,
 } from "lucide-react";
 import PristineEmpty from "../../../web/src/components/PristineEmpty";
 import { getAppManifest } from "../../../web/src/apps/registry";
@@ -171,6 +172,7 @@ export default function SchedulesApp({ appId, userId, context = {}, onTitle, onO
           onBack={goList}
           onRefresh={() => loadDetail(detail.id)}
           setError={setError}
+          onOpenApp={onOpenApp}
         />
       )}
     </div>
@@ -316,6 +318,11 @@ function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, o
                       <span className={`px-1.5 py-0 rounded text-[10px] ${CATEGORY_COLORS[sch.category] || "surface-raised"} text-default`}>
                         {CATEGORY_LABELS[sch.category] || sch.category}
                       </span>
+                      {sch.linked_entity_type === "job" && sch.linked_entity_id === "agentic" && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0 rounded text-[10px] bg-[var(--ds-accent)]/15 text-[var(--ds-accent)]">
+                          <Bot size={9} /> auto
+                        </span>
+                      )}
                       {sch.assigned_to && <span>{sch.assigned_to}</span>}
                       <span>&middot;</span>
                       <span className={overdueFl ? "text-red-400 font-medium" : dueSoonFl ? "text-amber-400" : ""}>
@@ -552,7 +559,7 @@ function NewScheduleForm({ userId, users, apiMutate, onCreated, onCancel, setErr
 /*  Detail View                                                              */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
-function DetailView({ schedule, userId, users, apiMutate, onBack, onRefresh, setError }) {
+function DetailView({ schedule, userId, users, apiMutate, onBack, onRefresh, setError, onOpenApp }) {
   const [title, setTitle] = useState(schedule.title);
   const [description, setDescription] = useState(schedule.description || "");
   const [category, setCategory] = useState(schedule.category);
@@ -668,6 +675,36 @@ function DetailView({ schedule, userId, users, apiMutate, onBack, onRefresh, set
             <span>{schedule.recurrence_summary || ""}</span>
           </div>
         </div>
+
+        {/* Autonomous (agentic) task — surface its prompt + a jump to the editor */}
+        {schedule.linked_entity_type === "job" && schedule.linked_entity_id === "agentic" && (() => {
+          const jc = schedule.job_config || {};
+          const cats = jc.tool_categories || [];
+          return (
+            <div className="rounded-lg border border-[var(--ds-accent)]/40 bg-[var(--ds-accent)]/5 p-3 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-default">
+                <Bot size={15} className="text-[var(--ds-accent)]" /> Autonomous task
+              </div>
+              <div className="text-xs text-faint">
+                Skipper runs a saved prompt on this schedule.{" "}
+                {jc.needs_attention
+                  ? "The result is shared with the family each run."
+                  : "It runs silently in the background."}
+              </div>
+              <div className="text-xs text-muted">
+                Starting tools: {cats.length ? cats.join(", ") : "core only (requests more as needed)"}
+              </div>
+              {jc.prompt_doc_id && (
+                <button
+                  onClick={() => onOpenApp?.("document", { docId: jc.prompt_doc_id, title: schedule.title })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--ds-accent)] hover:opacity-90 text-on-accent text-xs font-medium transition-opacity"
+                >
+                  <FileText size={13} /> View / edit prompt
+                </button>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Due status */}
         <div className={`rounded-lg border p-3 ${
