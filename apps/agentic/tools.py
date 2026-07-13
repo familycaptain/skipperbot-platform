@@ -133,6 +133,105 @@ def list_agentic_tasks() -> str:
         return f"Error in list_agentic_tasks: {e}"
 
 
+def show_agentic_task(schedule_id: str) -> str:
+    """Show an autonomous task's full settings AND its current prompt text.
+
+    Use to inspect what a scheduled task actually does before changing it.
+    Args:
+        schedule_id: The task's schedule id (from list_agentic_tasks).
+    """
+    try:
+        from apps.schedules.data import get_schedule
+        sch = get_schedule(schedule_id)
+        if not sch or sch.get("linked_entity_id") != "agentic":
+            return f"No agentic task with id {schedule_id}."
+        jc = sch.get("job_config") or {}
+        doc_id = jc.get("prompt_doc_id", "")
+        from apps.documents.data import get_document_content
+        prompt = get_document_content(doc_id) if doc_id else ""
+        cats = jc.get("tool_categories") or []
+        return (
+            f"Task: {sch.get('title','(untitled)')} ({schedule_id})\n"
+            f"  Runs: {sch.get('recurrence_type','?')}"
+            + (f" @ {sch.get('time_of_day')}" if sch.get("time_of_day") else "")
+            + f" · {'active' if sch.get('active') else 'OFF'}\n"
+            f"  Tools: {', '.join(cats) if cats else 'core only'}\n"
+            f"  Notifies family: {'yes' if jc.get('needs_attention') else 'no'}\n"
+            f"  Prompt document: {doc_id}\n"
+            f"  ----- current prompt -----\n{prompt or '(empty)'}"
+        )
+    except Exception as e:
+        return f"Error in show_agentic_task: {e}"
+
+
+def update_agentic_task(
+    schedule_id: str,
+    prompt: str = "",
+    tool_categories: str = "",
+    recurrence_type: str = "",
+    time_of_day: str = "",
+    needs_attention: str = "",
+    tier: str = "",
+) -> str:
+    """Change an existing autonomous task — its prompt and/or its schedule/tools.
+
+    Only the fields you pass are changed; leave the rest empty to keep them.
+    Args:
+        schedule_id: The task to change (from list_agentic_tasks).
+        prompt: New full prompt text (rewrites the task's prompt document).
+        tool_categories: New comma-separated initial tool categories.
+        recurrence_type: New cadence (daily | weekly | monthly | yearly).
+        time_of_day: New local HH:MM run time.
+        needs_attention: "yes" or "no" to change whether the family hears results.
+        tier: "smart" or "fast".
+    """
+    try:
+        from apps.schedules.data import get_schedule, update_schedule
+        sch = get_schedule(schedule_id)
+        if not sch or sch.get("linked_entity_id") != "agentic":
+            return f"No agentic task with id {schedule_id}."
+        jc = dict(sch.get("job_config") or {})
+        changed = []
+
+        if prompt.strip():
+            doc_id = jc.get("prompt_doc_id", "")
+            if not doc_id:
+                return "Task has no prompt document to update."
+            from apps.documents.tools import update_doc
+            update_doc(doc_id=doc_id, content=prompt.strip(), updated_by="skipper")
+            changed.append("prompt")
+
+        if tool_categories.strip():
+            jc["tool_categories"] = [c.strip() for c in tool_categories.split(",") if c.strip()]
+            changed.append("tools")
+        if needs_attention.strip():
+            jc["needs_attention"] = needs_attention.strip().lower() in ("yes", "true", "on", "1")
+            changed.append("notify")
+        if tier.strip():
+            jc["tier"] = tier.strip()
+            changed.append("tier")
+
+        sched_kw = {}
+        if recurrence_type.strip():
+            sched_kw["recurrence_type"] = recurrence_type.strip().lower()
+            changed.append("cadence")
+        if time_of_day.strip():
+            sched_kw["time_of_day"] = time_of_day.strip()
+            changed.append("time")
+        # persist job_config if any spec field changed
+        if any(k in changed for k in ("tools", "notify", "tier")):
+            sched_kw["job_config"] = jc
+
+        if sched_kw:
+            update_schedule(schedule_id, **sched_kw)
+
+        if not changed:
+            return "Nothing to change — pass a prompt or a setting to update."
+        return f"Updated {sch.get('title', schedule_id)}: {', '.join(changed)}."
+    except Exception as e:
+        return f"Error in update_agentic_task: {e}"
+
+
 def set_agentic_task_active(schedule_id: str, active: bool) -> str:
     """Turn an autonomous task on or off (off = it stops running but is kept)."""
     try:

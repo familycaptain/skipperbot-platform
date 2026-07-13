@@ -53,6 +53,21 @@ class AgenticTask(unittest.TestCase):
         self.assertIn('domain="agentic"', src)
         self.assertIn("needs_attention=True", src)
 
+    def test_view_and_edit_tools_exist(self):
+        src = _read("apps/agentic/tools.py")
+        self.assertIn("def show_agentic_task", src)      # inspect a task's live prompt
+        self.assertIn("def update_agentic_task", src)    # edit prompt + settings
+        self.assertIn("get_document_content", src)       # show reads the live prompt
+        self.assertIn("update_doc(", src)                # edit rewrites the prompt doc
+
+    def test_update_schedule_persists_job_config(self):
+        # the agentic spec lives in schedules.job_config; update_schedule must
+        # allow + Json-wrap it, or setting changes silently drop.
+        src = _read("apps/schedules/data.py")
+        allowed = src.split("allowed = {", 1)[1].split("}", 1)[0]
+        self.assertIn('"job_config"', allowed)
+        self.assertIn('("recurrence_rule", "job_config")', src)  # jsonb-wrapped
+
     def test_voice_skill_registered(self):
         h = _read("apps/agentic/handlers.py")
         self.assertIn('register_skill("agentic"', h)

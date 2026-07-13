@@ -747,6 +747,7 @@ def update_schedule(schedule_id: str, **kwargs) -> dict | None:
         "usage_metric", "usage_interval",
         "linked_entity_id", "linked_entity_type",
         "reminder_mins", "notify_channel", "active", "next_due",
+        "job_config",
     }
     updates = {k: v for k, v in kwargs.items() if k in allowed and v is not None}
     if not updates:
@@ -773,7 +774,7 @@ def update_schedule(schedule_id: str, **kwargs) -> dict | None:
     set_parts = []
     params = []
     for key, val in updates.items():
-        if key == "recurrence_rule":
+        if key in ("recurrence_rule", "job_config"):  # jsonb columns
             set_parts.append(f"{key} = %s")
             params.append(Json(val))
         else:
