@@ -1,7 +1,8 @@
-"""#109 — autonomous scheduled tasks. Contract checks for the agentic app:
-a task = a schedule (job_config spec) + a d-* prompt doc + the agentic job type;
-the handler is mouthless + category-based; needs_attention results reach the
-voice. (End-to-end run verified live on the test box.)
+"""#109 — autonomous scheduled tasks. A task = a schedule (job_config spec) + a
+d-* prompt doc + the `agentic` job type. The handler runs the prompt with the
+SAME tools a chat turn has (no artificial limits) — if the prompt says to notify
+someone, it uses the ordinary notification tools. Manageable from chat and the
+Schedules app. (End-to-end run verified live on the test box.)
 
 Run: python -m unittest tests.evolve.agentic.test_agentic_task
 """
@@ -24,74 +25,65 @@ class AgenticTask(unittest.TestCase):
 
     def test_create_tool_builds_doc_schedule_and_config(self):
         src = _read("apps/agentic/tools.py")
-        # prompt saved as a document
-        self.assertIn("create_doc(", src)
-        # schedule linked to the agentic job type
+        self.assertIn("create_doc(", src)                        # prompt saved as a document
         self.assertIn('linked_entity_type="job"', src)
         self.assertIn('linked_entity_id="agentic"', src)
-        # job_config carries the full spec
-        for key in ('"prompt_doc_id"', '"tool_categories"', '"needs_attention"', '"tier"'):
-            self.assertIn(key, src)
+        for key in ('"prompt_doc_id"', '"tool_categories"', '"tier"'):
+            self.assertIn(key, src)                              # job_config spec
 
     def test_handler_loads_prompt_and_is_category_based(self):
         src = _read("apps/agentic/agentic.py")
-        self.assertIn("get_document_content", src)          # prompt from the d-* doc
-        self.assertIn("request_tools", src)                 # request more on demand
-        self.assertIn("after_round=_after_round", src)      # tools rebuilt on request
-        self.assertIn("_awareness", src)                    # loaded-category awareness
+        self.assertIn("get_document_content", src)               # prompt from the d-* doc
+        self.assertIn("request_tools", src)                      # request more on demand
+        self.assertIn("after_round=_after_round", src)           # tools rebuilt on request
+        self.assertIn("_awareness", src)                         # loaded-category awareness
 
-    def test_handler_is_mouthless(self):
+    def test_handler_has_no_artificial_limits(self):
+        # The prompt drives everything, incl. notifying people via the ORDINARY
+        # tools — no mouthless refusal, no needs_attention machinery.
         src = _read("apps/agentic/agentic.py")
-        self.assertIn("_MESSAGING_TOOLS", src)
-        self.assertIn("REFUSED", src)
-        for t in ("send_message", "send_dm", "send_notification"):
-            self.assertIn(t, src)  # named in the refusal set
+        self.assertNotIn("REFUSED", src)
+        self.assertNotIn("_MESSAGING_TOOLS", src)
+        self.assertNotIn("needs_attention", src)
+        # it wires the real local tools (send_notification, send_message_to_user…)
+        self.assertIn("LOCAL_TOOLS", src)
+        self.assertIn("handle_local_tool", src)
 
-    def test_needs_attention_raises_event_for_voice(self):
-        src = _read("apps/agentic/agentic.py")
-        self.assertIn("needs_attention", src)
-        self.assertIn('domain="agentic"', src)
-        self.assertIn("needs_attention=True", src)
+    def test_no_needs_attention_anywhere(self):
+        for f in ("apps/agentic/tools.py", "apps/agentic/routes.py",
+                  "apps/schedules/ui/SchedulesApp.jsx"):
+            self.assertNotIn("needs_attention", _read(f), f)
+        # the voice-delivery skill is gone (delivery is the prompt's job now)
+        self.assertFalse(os.path.exists(os.path.join(ROOT, "apps/agentic/handlers.py")))
 
     def test_view_and_edit_tools_exist(self):
         src = _read("apps/agentic/tools.py")
-        self.assertIn("def show_agentic_task", src)      # inspect a task's live prompt
-        self.assertIn("def update_agentic_task", src)    # edit prompt + settings
-        self.assertIn("get_document_content", src)       # show reads the live prompt
-        self.assertIn("update_doc(", src)                # edit rewrites the prompt doc
+        self.assertIn("def show_agentic_task", src)
+        self.assertIn("def update_agentic_task", src)
+        self.assertIn("get_document_content", src)
+        self.assertIn("update_doc(", src)
 
     def test_update_schedule_persists_job_config(self):
-        # the agentic spec lives in schedules.job_config; update_schedule must
-        # allow + Json-wrap it, or setting changes silently drop.
         src = _read("apps/schedules/data.py")
         allowed = src.split("allowed = {", 1)[1].split("}", 1)[0]
         self.assertIn('"job_config"', allowed)
-        self.assertIn('("recurrence_rule", "job_config")', src)  # jsonb-wrapped
-
-    def test_schedules_ui_surfaces_agentic_tasks(self):
-        ui = _read("apps/schedules/ui/SchedulesApp.jsx")
-        self.assertIn('linked_entity_id === "agentic"', ui)      # detects agentic tasks
-        self.assertIn("View / edit prompt", ui)                  # jump to the prompt
-        self.assertIn('onOpenApp?.("document"', ui)              # opens the doc editor
-        # the task is assigned to its creator so it's visible in the app
-        self.assertIn("assigned_to=created_by", _read("apps/agentic/tools.py").replace(" ", "")
-                      ) if False else self.assertIn("assigned_to=created_by.strip()", _read("apps/agentic/tools.py"))
+        self.assertIn('("recurrence_rule", "job_config")', src)
 
     def test_create_from_schedules_ui(self):
-        # backend: agentic app exposes a create route + a categories route
         r = _read("apps/agentic/routes.py")
         self.assertIn('@router.post("/tasks")', r)
         self.assertIn('@router.get("/categories")', r)
-        # frontend: the Schedules app has a New Task button + the create form
         ui = _read("apps/schedules/ui/SchedulesApp.jsx")
         self.assertIn("New Autonomous Task", ui)
         self.assertIn("New Task", ui)
         self.assertIn('/api/apps/agentic/tasks', ui)
 
-    def test_voice_skill_registered(self):
-        h = _read("apps/agentic/handlers.py")
-        self.assertIn('register_skill("agentic"', h)
-        self.assertIn("send_message", h)   # delivers in Skipper's voice
+    def test_schedules_ui_surfaces_agentic_tasks(self):
+        ui = _read("apps/schedules/ui/SchedulesApp.jsx")
+        self.assertIn('linked_entity_id === "agentic"', ui)
+        self.assertIn("View / edit prompt", ui)
+        self.assertIn('onOpenApp?.("document"', ui)
+        self.assertIn("assigned_to=created_by.strip()", _read("apps/agentic/tools.py"))
 
 
 if __name__ == "__main__":

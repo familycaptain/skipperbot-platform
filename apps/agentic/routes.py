@@ -20,7 +20,6 @@ class CreateAgenticTaskRequest(BaseModel):
     tool_categories: str = ""        # comma-separated category names
     recurrence_type: str = "daily"
     time_of_day: str = ""
-    needs_attention: bool = False
     tier: str = "smart"
 
 
@@ -32,7 +31,7 @@ async def api_create_agentic_task(req: CreateAgenticTaskRequest):
         return create_agentic_task(
             name=req.name, prompt=req.prompt, created_by=req.created_by,
             tool_categories=req.tool_categories, recurrence_type=req.recurrence_type,
-            time_of_day=req.time_of_day, needs_attention=req.needs_attention, tier=req.tier,
+            time_of_day=req.time_of_day, tier=req.tier,
         )
 
     result = await asyncio.to_thread(_create)

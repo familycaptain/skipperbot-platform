@@ -4,20 +4,15 @@ An "agentic task" is a ``public.schedules`` row: WHEN (recurrence + time) plus
 ``linked_entity_type='job'`` / ``linked_entity_id='agentic'`` plus a
 ``job_config`` jsonb carrying the spec:
 
-    {prompt_doc_id, tool_categories, needs_attention, tier}
+    {prompt_doc_id, tool_categories, tier}
 
 When the schedule is due, the schedule trigger submits an ``agentic`` job with
-that job_config as its config. ``handle_agentic`` then:
-  1. loads the PROMPT from its d-* document,
-  2. loads the chosen tool CATEGORIES (+ request_tools for more on demand — the
-     same category model chat and goal_work use; the task always knows which
-     whole categories it does and doesn't have),
-  3. runs the agent loop, and
-  4. if the task is ``needs_attention``, raises a needs_attention EVENT (domain
-     'agentic') so the VOICE (the agentic skill in handlers.py) delivers the
-     result to the family.
-
-Mouthless like the hands: no messaging tools — one voice, many hands.
+that job_config as its config. ``handle_agentic`` then loads the PROMPT from its
+d-* document, loads the chosen tool CATEGORIES (+ request_tools for more on
+demand — the same category model chat and goal_work use), and runs the agent
+loop with the SAME tools a chat turn gets. There are NO artificial limits: the
+prompt drives everything — if it says to notify someone, the task uses the
+ordinary notification tools, exactly like chat. Delivery is the prompt's job.
 """
 import json
 import logging
@@ -28,32 +23,30 @@ logger = logging.getLogger("apps.agentic")
 # are added on top, and it can request_tools for anything else at runtime.
 _ALWAYS = {"core"}
 
-_MESSAGING_TOOLS = {
-    "send_dm", "send_message", "send_message_to_user", "send_notification",
-    "send_discord_dm", "broadcast_announcement",
-}
-
 
 def _build_tools(loaded_categories):
-    """Category-based tool set: the task's loaded categories + core, plus
-    request_tools. Returns (tools, routed_names, loaded_category_set)."""
+    """The SAME tool set a chat turn gets, scoped to the loaded categories:
+    routed MCP tools + the local tools (send_notification, send_message_to_user,
+    request_tools, open_app, …). An agentic task has no artificial limits — if
+    its prompt says to notify someone, it uses the ordinary notification tool,
+    exactly like chat. Returns (tools, allowed_names, loaded_category_set)."""
     import mcp_client
-    from tool_router import get_category_tool_names
-    from local_tools import REQUEST_TOOLS_TOOL
+    from tool_router import get_category_tool_names, META_TOOL_NAMES
+    from local_tools import LOCAL_TOOLS
 
     cats = set(loaded_categories) | _ALWAYS
     routed = set()
     for c in cats:
         routed |= get_category_tool_names(c)
+    allowed = routed | META_TOOL_NAMES
 
-    tools = []
+    mcp_tools = []
     if mcp_client.mcp_tools:
         allt = mcp_client.get_openai_tools()
-        tools = [t for t in allt if t["function"]["name"] in routed
-                 and t["function"]["name"] not in _MESSAGING_TOOLS]
-    tools.append(REQUEST_TOOLS_TOOL)
-    routed = (routed - _MESSAGING_TOOLS) | {"request_tools"}
-    return tools, routed, cats
+        mcp_tools = [t for t in allt if t["function"]["name"] in routed]
+    local = [t for t in LOCAL_TOOLS if t["function"]["name"] in allowed]
+    tools = mcp_tools + local
+    return tools, {t["function"]["name"] for t in tools}, cats
 
 
 def _awareness(loaded):
@@ -71,11 +64,10 @@ def _awareness(loaded):
 
 _SYSTEM = (
     "You are Skipper autonomously running a SCHEDULED TASK you were set up to do "
-    "for this household. Carry out the task described below using your tools. You "
-    "CANNOT message anyone directly — produce the actual work (create/update "
-    "documents, records, findings). Be thorough but BOUNDED: do the task, then "
-    "stop. Your final message should be a short summary of what you did or found "
-    "— if this task is set to notify the family, that summary is what they hear."
+    "for this household. Carry out the task exactly as described below, using your "
+    "tools — including notifying people if the task says to (use the ordinary "
+    "notification tools, just like in chat). Be thorough but BOUNDED: do the task, "
+    "then stop. End with a short summary of what you did."
 )
 
 
@@ -93,7 +85,6 @@ async def handle_agentic(job: dict, ctx) -> str:
 
     prompt_doc_id = (config.get("prompt_doc_id") or "").strip()
     initial_cats = set(config.get("tool_categories") or [])
-    needs_attention = bool(config.get("needs_attention"))
     tier = config.get("tier") or "smart"
 
     if not prompt_doc_id:
@@ -115,10 +106,6 @@ async def handle_agentic(job: dict, ctx) -> str:
     actions: list[str] = []
 
     async def _dispatch(name: str, args: dict) -> str:
-        if name in _MESSAGING_TOOLS:
-            return ("REFUSED: scheduled tasks cannot message anyone directly. Do the "
-                    "work; if the family should hear the result, it is delivered "
-                    "through Skipper's voice after you finish.")
         if name == "request_tools":
             c = (args.get("category") or "").strip()
             if not c:
@@ -130,10 +117,14 @@ async def handle_agentic(job: dict, ctx) -> str:
                     f"request_tools(category) to load its category first.")
         if "created_by" not in args and name.startswith("create_"):
             args["created_by"] = "skipper"
-        import tool_dispatch
-        result = await tool_dispatch.call_tool(name, args)
         actions.append(name)
-        return result
+        # Local tools (send_notification, send_message_to_user, open_app, …) run
+        # locally, exactly as in chat; everything else goes through MCP dispatch.
+        from local_tools import LOCAL_TOOL_NAMES, handle_local_tool
+        if name in LOCAL_TOOL_NAMES:
+            return await handle_local_tool(name, args, "skipper")
+        import tool_dispatch
+        return await tool_dispatch.call_tool(name, args)
 
     async def _after_round(messages, current_tools):
         new_tools, new_routed, new_cats = _rebuild()
@@ -156,26 +147,7 @@ async def handle_agentic(job: dict, ctx) -> str:
         hooks=agent_loop.LoopHooks(after_round=_after_round),
     )
 
-    summary = (result.response_text or "").strip()
-
-    delivered = False
-    if needs_attention and summary:
-        # Raise a needs_attention EVENT — the voice (agentic skill) delivers it.
-        try:
-            from app_platform.consciousness import log_event
-            from app_platform.attention import kick
-            await asyncio.to_thread(lambda: log_event(
-                kind="event", who_from="skipper", domain="agentic",
-                content=summary[:2000],
-                payload={"agentic_job": job.get("id"), "prompt_doc_id": prompt_doc_id},
-                needs_attention=True))
-            kick()
-            delivered = True
-        except Exception:
-            logger.warning("AGENTIC: could not raise needs_attention event", exc_info=True)
-
     ctx.update_progress(100, "Task complete")
-    out = (f"agentic task ({prompt_doc_id}): {len(actions)} action(s)"
-           + (" · result raised to the voice" if delivered else ""))
+    out = f"agentic task ({prompt_doc_id}): {len(actions)} action(s)"
     logger.info("AGENTIC: %s", out)
     return out

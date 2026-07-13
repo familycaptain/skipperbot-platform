@@ -582,7 +582,6 @@ function NewAgenticTaskForm({ userId, apiMutate, apiFetch, onCreated, onCancel, 
   const [prompt, setPrompt] = useState("");
   const [recurrenceType, setRecurrenceType] = useState("daily");
   const [timeOfDay, setTimeOfDay] = useState("07:00");
-  const [needsAttention, setNeedsAttention] = useState(true);
   const [cats, setCats] = useState([]);
   const [available, setAvailable] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -609,7 +608,6 @@ function NewAgenticTaskForm({ userId, apiMutate, apiFetch, onCreated, onCancel, 
         tool_categories: cats.join(","),
         recurrence_type: recurrenceType,
         time_of_day: timeOfDay || "",
-        needs_attention: needsAttention,
       });
       if (data.error) { setError(data.error); return; }
       onCreated(data.schedule_id);
@@ -682,10 +680,6 @@ function NewAgenticTaskForm({ userId, apiMutate, apiFetch, onCreated, onCancel, 
           </div>
         </div>
 
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input type="checkbox" checked={needsAttention} onChange={(e) => setNeedsAttention(e.target.checked)} className="accent-[var(--ds-accent)]" />
-          <span className="text-sm text-default">Tell the family the result each run</span>
-        </label>
       </div>
     </form>
   );
@@ -823,10 +817,8 @@ function DetailView({ schedule, userId, users, apiMutate, onBack, onRefresh, set
                 <Bot size={15} className="text-[var(--ds-accent)]" /> Autonomous task
               </div>
               <div className="text-xs text-faint">
-                Skipper runs a saved prompt on this schedule.{" "}
-                {jc.needs_attention
-                  ? "The result is shared with the family each run."
-                  : "It runs silently in the background."}
+                Skipper runs this saved prompt on its schedule and does whatever
+                the prompt says — including notifying people, if the prompt asks.
               </div>
               <div className="text-xs text-muted">
                 Starting tools: {cats.length ? cats.join(", ") : "core only (requests more as needed)"}

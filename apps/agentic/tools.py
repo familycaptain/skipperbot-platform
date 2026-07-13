@@ -2,7 +2,7 @@
 
 `create_agentic_task` sets up the whole thing in one call: it writes the PROMPT
 to a d-* document, then creates a public.schedules row whose job_config carries
-the spec (prompt_doc_id, tool_categories, needs_attention, tier) and whose
+the spec (prompt_doc_id, tool_categories, tier) and whose
 linked_entity points at the `agentic` job type. When due, the schedule fires the
 agentic job (see agentic.py). Edit a task's prompt by editing its document (in
 chat or the Documents app); manage the schedule with the list/toggle/run tools.
@@ -22,7 +22,6 @@ def create_agentic_task(
     tool_categories: str = "",
     recurrence_type: str = "daily",
     time_of_day: str = "",
-    needs_attention: bool = False,
     tier: str = "smart",
 ) -> str:
     """Set up an AUTONOMOUS SCHEDULED TASK — Skipper running a prompt on its own
@@ -45,8 +44,6 @@ def create_agentic_task(
             prompt-only/thinking task.
         recurrence_type: daily | weekly | monthly | yearly (default daily).
         time_of_day: Local HH:MM for when it runs (e.g. "07:00"). Optional.
-        needs_attention: True if the family should hear the RESULT each run
-            (delivered in Skipper's voice). False for silent background work.
         tier: "smart" (default) or "fast" model tier for the task.
 
     Returns:
@@ -95,7 +92,6 @@ def create_agentic_task(
             job_config={
                 "prompt_doc_id": doc_id,
                 "tool_categories": cats,
-                "needs_attention": bool(needs_attention),
                 "tier": (tier or "smart"),
             },
         )
@@ -105,7 +101,6 @@ def create_agentic_task(
             f"Autonomous task created: '{name.strip()}' ({sid}).\n"
             f"  Runs: {when}\n"
             f"  Tools: {', '.join(cats) if cats else 'core only (request more at run time)'}\n"
-            f"  Notifies family: {'yes' if needs_attention else 'no (silent)'}\n"
             f"  Prompt document: {doc_id} (edit it to change what the task does)."
         )
     except Exception as e:
@@ -128,7 +123,6 @@ def list_agentic_tasks() -> str:
                 f"  - {s.get('title','(untitled)')} ({s.get('id')}) — {state}, "
                 f"{s.get('recurrence_type','?')}"
                 + (f" @ {s.get('time_of_day')}" if s.get("time_of_day") else "")
-                + (", notifies" if jc.get("needs_attention") else "")
                 + f" · prompt {jc.get('prompt_doc_id','?')}"
             )
         return "\n".join(lines)
@@ -159,7 +153,6 @@ def show_agentic_task(schedule_id: str) -> str:
             + (f" @ {sch.get('time_of_day')}" if sch.get("time_of_day") else "")
             + f" · {'active' if sch.get('active') else 'OFF'}\n"
             f"  Tools: {', '.join(cats) if cats else 'core only'}\n"
-            f"  Notifies family: {'yes' if jc.get('needs_attention') else 'no'}\n"
             f"  Prompt document: {doc_id}\n"
             f"  ----- current prompt -----\n{prompt or '(empty)'}"
         )
@@ -173,7 +166,6 @@ def update_agentic_task(
     tool_categories: str = "",
     recurrence_type: str = "",
     time_of_day: str = "",
-    needs_attention: str = "",
     tier: str = "",
 ) -> str:
     """Change an existing autonomous task — its prompt and/or its schedule/tools.
@@ -185,7 +177,6 @@ def update_agentic_task(
         tool_categories: New comma-separated initial tool categories.
         recurrence_type: New cadence (daily | weekly | monthly | yearly).
         time_of_day: New local HH:MM run time.
-        needs_attention: "yes" or "no" to change whether the family hears results.
         tier: "smart" or "fast".
     """
     try:
@@ -207,9 +198,6 @@ def update_agentic_task(
         if tool_categories.strip():
             jc["tool_categories"] = [c.strip() for c in tool_categories.split(",") if c.strip()]
             changed.append("tools")
-        if needs_attention.strip():
-            jc["needs_attention"] = needs_attention.strip().lower() in ("yes", "true", "on", "1")
-            changed.append("notify")
         if tier.strip():
             jc["tier"] = tier.strip()
             changed.append("tier")
@@ -222,7 +210,7 @@ def update_agentic_task(
             sched_kw["time_of_day"] = time_of_day.strip()
             changed.append("time")
         # persist job_config if any spec field changed
-        if any(k in changed for k in ("tools", "notify", "tier")):
+        if any(k in changed for k in ("tools", "tier")):
             sched_kw["job_config"] = jc
 
         if sched_kw:
