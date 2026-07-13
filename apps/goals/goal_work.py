@@ -24,6 +24,10 @@ _WORKER_GUIDANCE = (
     "You are Skipper doing a FOCUSED WORK SESSION on one household goal that "
     "was assigned to you. Make CONCRETE progress with your tools: research, "
     "draft or update documents, complete or update tasks, record findings. "
+    "You start with your goal/task tools + core. If a step needs a capability "
+    "you don't have loaded — searching the web, the knowledge base, drafting a "
+    "document, files — call request_tools(category) (e.g. 'web', 'knowledge', "
+    "'filesystem') and the tools appear immediately; then use them. "
     "You CANNOT send messages to anyone in this mode — if you reach a result "
     "the family would genuinely want to hear about, call report_milestone "
     "(once, brief). Work the most valuable open item first; do not re-do work "
@@ -92,11 +96,22 @@ async def handle_goal_work(job: dict, ctx) -> str:
         state_lines.append("RELEVANT SHARED MEMORIES:")
         state_lines += [f"  - {m.get('content','')[:200]}" for m in memories[:8]]
 
-    # Tools: routed MCP set (goals/docs/knowledge/research/web baselines) MINUS
-    # any messaging tool, plus working-memory + milestone. Hands have no mouth.
-    tools, routed = G._build_tools("\n".join(state_lines))
-    tools = [t for t in tools if t.get("function", {}).get("name") != "send_dm"]
-    tools.append(_REPORT_MILESTONE_TOOL)
+    # Tools: category-based, like chat. Default = the goals category + core;
+    # the session request_tools's any other category ON DEMAND (see
+    # work_context._build_tools). report_milestone is always present; hands are
+    # mouthless (no messaging tool in the set). `loaded_cats` accumulates the
+    # categories the worker request_tools'd; the after_round hook rebuilds the
+    # toolset and re-injects the loaded-category awareness so the model always
+    # knows what it does and doesn't have.
+    loaded_cats: set[str] = set()
+
+    def _rebuild_tools():
+        t, r, cats = G._build_tools(loaded_categories=loaded_cats)
+        t.append(_REPORT_MILESTONE_TOOL)
+        return t, set(r) | {"report_milestone"}, cats
+
+    tools, _routed0, _cats0 = _rebuild_tools()
+    _routed = {"names": _routed0, "cats": _cats0}  # live state, refreshed by after_round
 
     actions: list[dict] = []
     milestones: list[str] = []
@@ -104,6 +119,13 @@ async def handle_goal_work(job: dict, ctx) -> str:
     async def _dispatch(name: str, args: dict) -> str:
         if name == "send_dm":
             return "REFUSED: work sessions cannot message anyone (report_milestone instead)."
+        if name == "request_tools":
+            cat = (args.get("category") or "").strip()
+            if not cat:
+                return "no category given"
+            loaded_cats.add(cat)
+            # the after_round hook rebuilds the toolset with this category loaded
+            return f"Loaded '{cat}' tools — available now; use them directly, no confirmation needed."
         if name == "report_milestone":
             msg = (args.get("message") or "").strip()
             if not msg:
@@ -130,8 +152,9 @@ async def handle_goal_work(job: dict, ctx) -> str:
                 args.get("summary") or args.get("content") or "")
             actions.append({"type": "memory_updated"})
             return "working memory updated"
-        if routed and name not in routed:
-            return f"Error: tool '{name}' not in the routed set."
+        if _routed["names"] and name not in _routed["names"]:
+            return (f"Error: tool '{name}' isn't loaded. Call "
+                    f"request_tools(category) to load its category first.")
         if "created_by" not in args and name.startswith("create_"):
             args["created_by"] = "skipper"
         import tool_dispatch
@@ -139,16 +162,31 @@ async def handle_goal_work(job: dict, ctx) -> str:
         actions.append({"type": "tool_executed", "tool": name})
         return result
 
+    async def _after_round(messages, current_tools):
+        # request_tools during the round may have added categories; rebuild the
+        # toolset so the newly-loaded tools are live for the next LLM call, and
+        # refresh the dispatch gate set to match. When the loaded categories
+        # changed, re-inject the updated awareness so the model tracks what it has.
+        new_tools, new_routed, new_cats = _rebuild_tools()
+        _routed["names"] = new_routed
+        extra = []
+        if new_cats != _routed["cats"]:
+            _routed["cats"] = new_cats
+            extra = [{"role": "system", "content": G._category_awareness(new_cats)}]
+        return new_tools, extra
+
     tier = "smart" if snapshot.get("total_task_count", 0) > 10 else "fast"
     ctx.update_progress(30, f"Working ({tier} tier)...")
     loop_result = await agent_loop.run(
         messages=[
             {"role": "system", "content": _WORKER_GUIDANCE},
+            {"role": "system", "content": G._category_awareness(_routed["cats"])},
             {"role": "user", "content": "\n".join(state_lines) +
              "\n\nBegin this work session now."},
         ],
         tools=tools, tier=tier, max_turns=12, max_tool_calls=40,
         tool_dispatch=_dispatch,
+        hooks=agent_loop.LoopHooks(after_round=_after_round),
     )
 
     # Q6 artifact rule: one activity row per PRODUCTIVE session, else nothing.

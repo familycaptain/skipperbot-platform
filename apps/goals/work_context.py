@@ -12,29 +12,12 @@ from app_platform.time import get_timezone
 
 ONBOARDING_GOAL_NAME = "Get started with Skipper"
 
-BASELINE_CATEGORIES = {"core", "goals", "docs", "knowledge", "research", "web"}
 
 
 # ---------------------------------------------------------------------------
 # Custom tool schemas (same pattern as PM domain)
 # ---------------------------------------------------------------------------
 
-SEND_DM_TOOL = {
-    "type": "function",
-    "function": {
-        "name": "send_dm",
-        "description": "Send a direct message to a family member. Automatically creates a pending_action to track the conversation. Max 3 DMs per cycle.",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "to_user": {"type": "string", "description": "The recipient's REAL username — an actual household user from your context (usually the primary user). Do NOT invent or use placeholder/example names."},
-                "message": {"type": "string", "description": "The message text to send"},
-                "subject_id": {"type": "string", "description": "Entity ID this DM is about (e.g. 't-xxx', 'p-xxx')"},
-            },
-            "required": ["to_user", "message", "subject_id"],
-        },
-    },
-}
 
 EXPIRE_STATE_TOOL = {
     "type": "function",
@@ -247,32 +230,56 @@ def _recall_memories(goal_id: str, goal_snapshot: dict) -> list[dict]:
 # BUILD PROMPT
 # =========================================================================
 
-def _build_tools(context_text: str) -> tuple[list[dict], set[str]]:
-    """Build tool schemas for the goal thinking loop."""
+# A goal_work session is always about a goal, so the goals category is its
+# home; core carries memory/lookups. Everything else (web, knowledge,
+# filesystem, documents, research, …) is request_tools'd ON DEMAND — the same
+# category-granular model chat uses (we don't cherry-pick individual tools, so
+# the worker always knows exactly which whole categories it does and doesn't
+# have loaded).
+WORKER_DEFAULT_CATEGORIES = {"app:goals", "core"}
+
+
+def _build_tools(loaded_categories: set[str] | None = None
+                 ) -> tuple[list[dict], set[str], set[str]]:
+    """Category-based worker toolset (mirrors chat's request_tools model).
+
+    Loads the goals category + core by default, plus whatever the session has
+    already request_tools'd (``loaded_categories``). Returns
+    (tools, routed_names, loaded_category_set). Hands are mouthless — no
+    messaging tool is ever in the set.
+    """
     import mcp_client
-    from tool_router import get_tools_for_message, get_category_tool_names
+    from tool_router import get_category_tool_names
+    from local_tools import REQUEST_TOOLS_TOOL
 
-    routed_names = get_tools_for_message(context_text)
-
-    # Always include baseline categories so Skipper has full capability
-    for cat in BASELINE_CATEGORIES:
+    cats = WORKER_DEFAULT_CATEGORIES | (loaded_categories or set())
+    routed_names: set[str] = set()
+    for cat in cats:
         routed_names |= get_category_tool_names(cat)
 
-    # Filter MCP tools to routed set
     mcp_tools = []
     if mcp_client.mcp_tools:
         all_mcp = mcp_client.get_openai_tools()
         mcp_tools = [t for t in all_mcp if t["function"]["name"] in routed_names]
 
-    STATE_TOOLS = [SEND_DM_TOOL, EXPIRE_STATE_TOOL, RESOLVE_STATE_TOOL, UPDATE_WORKING_MEMORY_TOOL]
-    tools = mcp_tools + STATE_TOOLS
-    routed_names |= {"send_dm", "expire_state", "resolve_state", "update_working_memory"}
+    STATE_TOOLS = [EXPIRE_STATE_TOOL, RESOLVE_STATE_TOOL, UPDATE_WORKING_MEMORY_TOOL]
+    tools = mcp_tools + STATE_TOOLS + [REQUEST_TOOLS_TOOL]
+    routed_names |= {"expire_state", "resolve_state", "update_working_memory", "request_tools"}
+    return tools, routed_names, cats
 
-    # Enforce 128-tool cap
-    MAX_TOOLS = 120
-    if len(tools) > MAX_TOOLS:
-        logger.warning("GOAL_THINK: %d tools exceed limit — truncating", len(tools))
-        keep_mcp = MAX_TOOLS - len(STATE_TOOLS)
-        tools = STATE_TOOLS + mcp_tools[:keep_mcp]
 
-    return tools, routed_names
+def _category_awareness(loaded: set[str]) -> str:
+    """Tell the worker which whole tool CATEGORIES it has loaded and which it can
+    request — so it never assumes a capability it hasn't loaded (mirrors how the
+    chat loop surfaces request_tools)."""
+    from tool_router import TOOL_CATEGORIES
+    not_loaded = sorted(c for c in TOOL_CATEGORIES if c not in loaded)
+    return (
+        "## Your tool categories\n"
+        f"LOADED right now (use these tools freely): {', '.join(sorted(loaded))}.\n"
+        "You ONLY have the tools in the LOADED categories above. To do something "
+        "that needs another category — search the web, read/write documents, the "
+        "knowledge base, files — call request_tools(\"<category>\") FIRST; its "
+        "tools become available immediately, then use them.\n"
+        + (f"AVAILABLE to request: {', '.join(not_loaded)}." if not_loaded else "")
+    )
