@@ -96,6 +96,23 @@ class AgenticTask(unittest.TestCase):
         self.assertIn('onOpenApp?.("document"', ui)
         self.assertIn("assigned_to=created_by.strip()", _read("apps/agentic/tools.py"))
 
+    def test_everyday_recurrence_normalized_to_daily(self):
+        # "every morning" (weekly with all 7 days) collapses to a clean daily
+        # cadence so the Schedules UI shows Daily, not Weekly-all-days.
+        src = _read("apps/agentic/tools.py")
+        self.assertIn("_normalize_recurrence", src)
+        self.assertIn('"daily", {"every": 1}', src)
+        # applied on both the create and update paths
+        self.assertEqual(src.count("_normalize_recurrence("), 3)  # 1 def + 2 call sites
+
+    def test_behavior_md_steers_recurring_asks_to_routines(self):
+        # Skipper is told to consider a Routine for ongoing/recurring requests,
+        # and how it differs from a bare reminder.
+        b = _read("prompts/BEHAVIOR.md")
+        self.assertIn("Routine", b)
+        self.assertIn("create_routine", b)
+        self.assertIn("reminder", b)
+
 
 if __name__ == "__main__":
     unittest.main()

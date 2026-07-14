@@ -14,6 +14,19 @@ logger = logging.getLogger("apps.agentic.tools")
 
 _VALID_RECURRENCE = {"daily", "weekly", "monthly", "yearly", "interval", "cron", "rrule"}
 
+_ALL_DAYS = {"mon", "tue", "wed", "thu", "fri", "sat", "sun"}
+
+
+def _normalize_recurrence(rtype: str, rule: dict | None):
+    """A weekly cadence that covers every day IS daily. LLMs often express
+    "every morning" as weekly with all 7 days checked; collapse that to a clean
+    `daily` so the Schedules UI shows "Daily" instead of "Weekly" (all days)."""
+    if rtype == "weekly" and rule:
+        days = {str(d).strip().lower()[:3] for d in (rule.get("days") or [])}
+        if _ALL_DAYS.issubset(days):
+            return "daily", {"every": 1}
+    return rtype, rule
+
 
 def create_routine(
     name: str,
@@ -63,6 +76,7 @@ def create_routine(
         rtype = recurrence_type.strip().lower()
         if rtype not in _VALID_RECURRENCE:
             rtype = "daily"
+        rtype, recurrence_rule = _normalize_recurrence(rtype, recurrence_rule)
 
         # 1. Save the prompt as a document (editable later, in chat or the doc app).
         from apps.documents.tools import create_doc
@@ -210,13 +224,18 @@ def update_routine(
             changed.append("tier")
 
         sched_kw = {}
-        if recurrence_type.strip():
-            sched_kw["recurrence_type"] = recurrence_type.strip().lower()
+        if recurrence_type.strip() or recurrence_rule:
+            new_type = recurrence_type.strip().lower() or sch.get("recurrence_type", "daily")
+            new_type, new_rule = _normalize_recurrence(new_type, recurrence_rule)
+            if recurrence_type.strip():
+                sched_kw["recurrence_type"] = new_type
+            elif new_type != sch.get("recurrence_type"):
+                # normalization changed the cadence even though the caller only
+                # passed a rule (e.g. weekly-all-days -> daily)
+                sched_kw["recurrence_type"] = new_type
+            if new_rule:
+                sched_kw["recurrence_rule"] = new_rule
             changed.append("cadence")
-        if recurrence_rule:
-            sched_kw["recurrence_rule"] = recurrence_rule
-            if "cadence" not in changed:
-                changed.append("cadence")
         if time_of_day.strip():
             sched_kw["time_of_day"] = time_of_day.strip()
             changed.append("time")
