@@ -522,6 +522,194 @@ def update_meal(
     return f"Updated **{meal['name']}** ({meal_id}): {changed}."
 
 
+def delete_meal(meal_id: str, by: str = "user") -> str:
+    """Delete a meal from the library (e.g. a duplicate or a mistake).
+
+    DESTRUCTIVE — confirm with the user first: show the meal with get_meal and get an
+    explicit yes before calling this. Its component LINKS and photos go with it; any
+    dinner-log history is kept but unlinked. To fold a duplicate into the real meal
+    WITHOUT losing its history, use merge_meals() instead.
+
+    Args:
+        meal_id: The ml-* meal ID to delete.
+        by: Who is deleting it (default "user").
+
+    Returns:
+        Confirmation, or a not-found message.
+
+    Ack: Deleting meal...
+    """
+    meal = _dl.get_meal(meal_id)
+    if not meal:
+        return f"Meal {meal_id} not found."
+    if not _dl.delete_meal(meal_id, by=by):
+        return f"Could not delete meal {meal_id}."
+    logger.info("MEALS: Deleted meal '%s' (%s)", meal["name"], meal_id)
+    return f"Deleted meal **{meal['name']}** ({meal_id})."
+
+
+def merge_meals(keep_id: str, duplicate_id: str, by: str = "user") -> str:
+    """Merge a DUPLICATE meal into the one to keep, then delete the duplicate.
+
+    Use this to clean up when the same meal got added twice. The duplicate's components,
+    dinner-log history, photos, and tags are moved onto the keeper so nothing is lost,
+    then the duplicate is removed.
+
+    DESTRUCTIVE — confirm with the user first: show BOTH meals with get_meal and confirm
+    which id to keep vs. remove before calling this.
+
+    Args:
+        keep_id: The ml-* meal to KEEP (the canonical one).
+        duplicate_id: The ml-* duplicate meal to fold in and remove.
+        by: Who is doing the merge (default "user").
+
+    Returns:
+        Confirmation naming the surviving meal.
+
+    Ack: Merging duplicate meals...
+    """
+    if keep_id == duplicate_id:
+        return "keep_id and duplicate_id are the same meal — nothing to merge."
+    keep = _dl.get_meal(keep_id)
+    dup = _dl.get_meal(duplicate_id)
+    if not keep:
+        return f"Keep meal {keep_id} not found."
+    if not dup:
+        return f"Duplicate meal {duplicate_id} not found."
+    result = _dl.merge_meals(keep_id, duplicate_id, by=by)
+    if not result:
+        return "Merge failed — nothing changed."
+    logger.info("MEALS: Merged '%s' (%s) into '%s' (%s)",
+                dup["name"], duplicate_id, result["name"], keep_id)
+    return (f"Merged **{dup['name']}** ({duplicate_id}) into **{result['name']}** "
+            f"({keep_id}) and deleted the duplicate.")
+
+
+def update_component(component_id: str, name: str = "", comp_type: str = "",
+                     description: str = "", tags: str = "", by: str = "user") -> str:
+    """Update a reusable component — its name, type, description, or tags.
+
+    Only fields you provide change. Useful for fixing a typo'd component name or
+    re-typing a component (e.g. "other" -> "protein").
+
+    Args:
+        component_id: The mc-* component ID.
+        name: New name (blank = keep).
+        comp_type: protein | starch | vegetable | sauce | grain | bread | dairy | fruit | other
+        description: New description.
+        tags: JSON array of tags to SET (replaces existing).
+        by: Who is making the change (default "user").
+
+    Returns:
+        Confirmation of what changed.
+
+    Ack: Updating component...
+    """
+    valid_types = {"protein", "starch", "vegetable", "sauce", "grain", "bread", "dairy", "fruit", "other"}
+    fields = {}
+    if name.strip():
+        fields["name"] = name.strip()
+    if comp_type:
+        if comp_type not in valid_types:
+            return f"Error: comp_type must be one of {', '.join(sorted(valid_types))}."
+        fields["type"] = comp_type
+    if description.strip():
+        fields["description"] = description.strip()
+    if tags.strip():
+        try:
+            fields["tags"] = json.loads(tags)
+        except (json.JSONDecodeError, TypeError):
+            return "Error: tags must be a valid JSON array."
+    if not fields:
+        return "Nothing to update — provide at least one field to change."
+    comp = _dl.update_component(component_id, by=by, **fields)
+    if not comp:
+        return f"Component {component_id} not found."
+    return f"Updated component **{comp['name']}** ({component_id}): {', '.join(fields.keys())}."
+
+
+def delete_component(component_id: str, by: str = "user") -> str:
+    """Delete a reusable component from the library.
+
+    DESTRUCTIVE — confirm with the user first: show the component before removing it. A
+    component still used by one or more meals CANNOT be deleted; this reports which meals
+    use it so you can remove it from them (remove_component_from_meal) first.
+
+    Args:
+        component_id: The mc-* component ID.
+        by: Who is deleting it (default "user").
+
+    Returns:
+        Confirmation, a not-found message, or the meals still using it.
+
+    Ack: Deleting component...
+    """
+    comp = _dl.get_component(component_id)
+    if not comp:
+        return f"Component {component_id} not found."
+    used_by = _dl.get_meals_for_component(component_id)
+    if used_by:
+        names = ", ".join(f"{m['name']} ({m['id']})" for m in used_by[:10])
+        more = "" if len(used_by) <= 10 else f" (+{len(used_by) - 10} more)"
+        return (f"Component **{comp['name']}** is still used by {len(used_by)} meal(s): "
+                f"{names}{more}. Remove it from them first (remove_component_from_meal), "
+                f"then delete.")
+    if not _dl.delete_component(component_id, by=by):
+        return f"Could not delete component {component_id}."
+    logger.info("MEALS: Deleted component '%s' (%s)", comp["name"], component_id)
+    return f"Deleted component **{comp['name']}** ({component_id})."
+
+
+def add_component_to_meal(meal_id: str, component_id: str, role: str = "side") -> str:
+    """Add an existing component to a meal (e.g. give a meal a side or a sauce).
+
+    Args:
+        meal_id: The ml-* meal.
+        component_id: The mc-* component to link.
+        role: main | side | sauce | garnish | other (default side).
+
+    Returns:
+        Confirmation, or a note if it was already on the meal.
+
+    Ack: Adding component to meal...
+    """
+    valid_roles = {"main", "side", "sauce", "garnish", "other"}
+    if role not in valid_roles:
+        return f"Error: role must be one of {', '.join(sorted(valid_roles))}."
+    meal = _dl.get_meal(meal_id)
+    if not meal:
+        return f"Meal {meal_id} not found."
+    comp = _dl.get_component(component_id)
+    if not comp:
+        return f"Component {component_id} not found."
+    if not _dl.link_component_to_meal(meal_id, component_id, role=role):
+        return f"**{comp['name']}** is already on **{meal['name']}**."
+    return f"Added **{comp['name']}** to **{meal['name']}** as {role}."
+
+
+def remove_component_from_meal(meal_id: str, component_id: str) -> str:
+    """Remove a component from a meal (unlinks it; the component itself is kept in the
+    library). Confirm which component and meal before calling.
+
+    Args:
+        meal_id: The ml-* meal.
+        component_id: The mc-* component to unlink.
+
+    Returns:
+        Confirmation, or a note if it wasn't on the meal.
+
+    Ack: Removing component from meal...
+    """
+    meal = _dl.get_meal(meal_id)
+    if not meal:
+        return f"Meal {meal_id} not found."
+    comp = _dl.get_component(component_id)
+    cname = comp["name"] if comp else component_id
+    if not _dl.unlink_component_from_meal(meal_id, component_id):
+        return f"{cname} isn't on **{meal['name']}** — nothing to remove."
+    return f"Removed **{cname}** from **{meal['name']}**."
+
+
 def rate_meal(meal_id: str, rating: int, by: str = "user") -> str:
     """Set a star rating on a meal (1-5 stars).
 

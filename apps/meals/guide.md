@@ -166,6 +166,25 @@ When the user asks "what should we eat?" or "what's something easy tonight?":
 2. Get details with `get_meal()` to show components and info
 3. Suggest 2-3 options based on filters
 
+## Cleaning up the library — CONFIRM before deleting
+
+The library has full CRUD, including destructive cleanup. Before ANY delete or merge,
+**show the exact record(s) and get the user's explicit confirmation** — never delete or
+merge on your own initiative or from a vague request.
+
+- **Duplicate meal?** Prefer `merge_meals(keep_id, duplicate_id)` over deleting — it moves
+  the duplicate's components, dinner-log history, photos, and tags onto the keeper so no
+  history is lost, then removes the duplicate. Show BOTH meals (`get_meal`) and confirm
+  which id to keep vs. remove.
+- **Delete a meal** (`delete_meal`) only for a genuine mistake with nothing worth keeping.
+  Show it (`get_meal`) and confirm first. Its component links + photos go with it; dinner-log
+  history is kept but unlinked.
+- **Delete a component** (`delete_component`) — a component still used by any meal can't be
+  deleted; the tool reports which meals use it. Remove it from those meals first
+  (`remove_component_from_meal`), then confirm and delete.
+- **Fix vs. remove:** to correct a component use `update_component`; to change a meal's
+  makeup use `add_component_to_meal` / `remove_component_from_meal` — don't delete and recreate.
+
 ## Tool reference
 
 ### log_meal(components, meal_type, effort, tags, date, logged_by, notes)
@@ -225,6 +244,24 @@ Add a new reusable component. Prefer the automatic creation in `log_meal()`. Use
 ### list_meal_tags()
 List all tags with usage counts (includes cuisine tags).
 
+### update_component(component_id, name, comp_type, description, tags, by)
+Fix or re-type an existing component (e.g. a typo, or "other" → "protein"). Only fields you pass change.
+
+### add_component_to_meal(meal_id, component_id, role)
+Link an existing component onto a meal. role: main | side | sauce | garnish | other.
+
+### remove_component_from_meal(meal_id, component_id)
+Unlink a component from a meal. The component itself stays in the library.
+
+### delete_meal(meal_id, by) — DESTRUCTIVE
+Delete a meal (a duplicate or mistake). Component links + photos go with it; dinner-log history is kept but unlinked. **Confirm with the user first** (show it via get_meal). To keep a duplicate's history, prefer merge_meals.
+
+### merge_meals(keep_id, duplicate_id, by) — DESTRUCTIVE
+Fold a duplicate meal into the keeper (moves its components, dinner-log history, photos, tags), then delete the duplicate. **Confirm with the user first**, showing BOTH meals.
+
+### delete_component(component_id, by) — DESTRUCTIVE
+Delete a reusable component. Refuses if any meal still uses it (reports which). **Confirm with the user first.**
+
 ## Effort levels
 - **low** — ≤30 min, minimal prep (sandwiches, simple pasta, heating soup)
 - **medium** — 30-60 min, moderate cooking (tacos, stir-fry, homemade pizza)
@@ -276,3 +313,11 @@ List all tags with usage counts (includes cuisine tags).
 - "Rate last night's dinner 4 stars" → `rate_meal(meal_id, 4)`
 - "Mark that as low effort" → `update_meal(meal_id, effort="low")`
 - "Add the tag weeknight to that meal" → `update_meal(meal_id, tags='["weeknight","american"]')`
+
+### Cleanup (confirm the record first, then delete/merge)
+- "We have Chicken Tacos twice" → show both with `get_meal`, confirm which to keep → `merge_meals(keep_id, duplicate_id)`
+- "Delete that meal, it was a mistake" → show it with `get_meal`, confirm → `delete_meal(meal_id)`
+- "Add mashed potatoes as a side to that" → `add_component_to_meal(meal_id, component_id, role="side")`
+- "Take the rice off that meal" → `remove_component_from_meal(meal_id, component_id)`
+- "That component name is misspelled" → `update_component(component_id, name="…")`
+- "Delete the Salsa Verde component" → `delete_component(component_id)` (it will refuse + list meals if still used)

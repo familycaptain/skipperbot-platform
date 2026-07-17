@@ -398,6 +398,45 @@ def delete_meal(meal_id: str, by: str = "") -> bool:
     return n > 0
 
 
+def merge_meals(keep_id: str, duplicate_id: str, by: str = "") -> dict:
+    """Merge duplicate_id INTO keep_id, then delete the duplicate.
+
+    Moves the duplicate's component links, dinner-log history, and photos onto the
+    keeper (skipping any the keeper already has) and unions their tags, so nothing is
+    lost — then removes the duplicate (its leftover links/photos cascade). Returns the
+    surviving keeper meal, or {} if either id is unknown or they're the same meal.
+    """
+    keep = get_meal(keep_id)
+    dup = get_meal(duplicate_id)
+    if not keep or not dup or keep_id == duplicate_id:
+        return {}
+    with scoped_conn(SCHEMA) as conn:
+        with conn.cursor() as cur:
+            # component links the keeper lacks -> keeper; the rest cascade with the dup
+            cur.execute(
+                """UPDATE meal_component_links l SET meal_id=%s
+                   WHERE l.meal_id=%s AND NOT EXISTS (
+                       SELECT 1 FROM meal_component_links k
+                       WHERE k.meal_id=%s AND k.component_id=l.component_id)""",
+                (keep_id, duplicate_id, keep_id))
+            # dinner-log history -> keeper (else ON DELETE SET NULL would orphan it)
+            cur.execute("UPDATE meal_log SET meal_id=%s WHERE meal_id=%s",
+                        (keep_id, duplicate_id))
+            # photos the keeper lacks -> keeper; the rest cascade with the dup
+            cur.execute(
+                """UPDATE meal_photos p SET meal_id=%s
+                   WHERE p.meal_id=%s AND NOT EXISTS (
+                       SELECT 1 FROM meal_photos k
+                       WHERE k.meal_id=%s AND k.image_id=p.image_id)""",
+                (keep_id, duplicate_id, keep_id))
+        conn.commit()
+    merged_tags = sorted(set((keep.get("tags") or []) + (dup.get("tags") or [])))
+    if merged_tags != sorted(keep.get("tags") or []):
+        update_meal(keep_id, by=by, tags=merged_tags)
+    delete_meal(duplicate_id, by=by)
+    return get_meal(keep_id)
+
+
 # ---------------------------------------------------------------------------
 # Meal–Component links
 # ---------------------------------------------------------------------------
@@ -614,6 +653,27 @@ def link_component_to_meal(meal_id: str, component_id: str, role: str = "side") 
                 FROM meal_component_links WHERE meal_id=%s))""",
         (meal_id, component_id, role, meal_id))
     return True
+
+
+def unlink_component_from_meal(meal_id: str, component_id: str) -> bool:
+    """Remove one component link from a meal (the component itself is kept). Returns
+    True if a link was removed."""
+    n = execute_in_schema(SCHEMA,
+        "DELETE FROM meal_component_links WHERE meal_id=%s AND component_id=%s",
+        (meal_id, component_id))
+    return n > 0
+
+
+def get_meals_for_component(component_id: str) -> list[dict]:
+    """Meals that link this component in ANY role — checked before deleting a component
+    (component_id is ON DELETE RESTRICT, so a still-linked component can't be deleted)."""
+    rows = fetch_all_in_schema(SCHEMA,
+        """SELECT DISTINCT m.* FROM meals m
+           JOIN meal_component_links l ON l.meal_id = m.id
+           WHERE l.component_id = %s
+           ORDER BY m.name""",
+        (component_id,))
+    return [_meal_row(r) for r in rows]
 
 
 # ---------------------------------------------------------------------------
