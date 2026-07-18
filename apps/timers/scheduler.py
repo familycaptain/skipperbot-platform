@@ -90,15 +90,30 @@ async def _run_timer(timer_id: str, user_id: str, duration_seconds: int, name: s
             dur_text = f"{duration_seconds} second{'s' if duration_seconds != 1 else ''}"
         message = f"⏱️ Timer done: {label} ({dur_text})"
 
-        # A voice-set timer announces itself by voice (spoken on the device that set
-        # it, falling back to push if it can't speak); otherwise the usual channels.
-        channel = "voice" if voice_origin else "all"
+        # A voice-set timer is DEVICE-scoped: ALWAYS speak it in the room where it was
+        # set, whether or not we know who set it (resemblyzer may not have resolved a
+        # speaker by the time a quick "set a timer / ok / goodbye" ends). This runs
+        # independent of the user-notification pipe, which drops unknown recipients.
+        if voice_origin:
+            try:
+                from app_platform.voice.announce import announce_to_device
+                await announce_to_device(
+                    voice_origin.get("device_id", ""), message,
+                    source={"type": "timer", "id": timer_id})
+            except Exception as e:
+                logger.error("TIMER [%s]: voice announce failed: %s", timer_id, e)
+
+        # Also deliver to the user's OTHER surfaces (web UI + push). For a voice-set
+        # timer this ENRICHES the room announcement when resemblyzer identified a known
+        # family member — and no-ops for an unidentified/placeholder user, so the room
+        # announcement above is never blocked on knowing who set it. `all` excludes
+        # voice, so a voice timer isn't spoken twice.
         create_notification(
             recipient=user_id,
             message=message,
             source_type="timer",
             source_id=timer_id,
-            channel=channel,
+            channel="all",
             delivered=False,
         )
     except Exception as e:

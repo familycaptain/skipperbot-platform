@@ -45,10 +45,17 @@ class Wiring(unittest.TestCase):
         self.assertIn('session.get("device_info")', src)
         self.assertIn("finally:", src)     # reset even on error
 
-    def test_timer_scheduler_routes_voice_origin_to_voice_channel(self):
+    def test_voice_timer_is_device_scoped_always_speaks_plus_user_surfaces(self):
         src = _read("apps/timers/scheduler.py")
         self.assertIn("get_voice_origin", src)
-        self.assertIn('"voice" if voice_origin else "all"', src)
+        # DEVICE-scoped: speak in the room regardless of whether a user was identified
+        self.assertIn("if voice_origin:", src)
+        self.assertIn("announce_to_device(", src)
+        # the user-notification is enrichment for the identified user's OTHER surfaces
+        # (web UI + push), NOT voice again — so never a double announcement, and it
+        # no-ops (doesn't block the room announcement) for an unidentified user
+        self.assertIn('channel="all"', src)
+        self.assertNotIn('"voice" if voice_origin', src)
 
     def test_relay_autoend_teardown_is_clean(self):
         src = _read("app_platform/voice/relay.py")
