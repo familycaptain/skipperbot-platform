@@ -370,6 +370,13 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         # --- session auto-end bookkeeping ---
         _activity = {"t": time.monotonic()}          # last SUBSTANTIVE user activity
         turn_state = {"substantive": False}          # was the current turn real speech?
+        # Console ORDERING: the brain answers before the transcript is ready (fail-open,
+        # and the wake-word pre-roll makes it earlier still), so hold the assistant
+        # "Skipper:" line until THIS turn's "You:" line has been sent. The log then reads
+        # in order regardless of pre-roll timing. Starts set so a session-opening
+        # assistant line (greeting) isn't held forever.
+        _user_line_sent = asyncio.Event()
+        _user_line_sent.set()
 
         def _bump_activity() -> None:
             _activity["t"] = time.monotonic()
@@ -407,9 +414,35 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             except asyncio.CancelledError:
                 pass
 
+        async def _send_user_line(text: str) -> None:
+            """Send the You: line to the satellite (display) and release any assistant line
+            held for this turn. Called for EVERY turn — even a dropped/empty one — so the
+            log never silently omits that the user spoke."""
+            try:
+                await satellite_ws.send_text(json.dumps({"type": "transcript", "role": "user", "text": text}))
+            except Exception:
+                pass
+            debug_log.record(f"You: {text}", session=session_id[:12], kind="you")
+            _user_line_sent.set()
+
+        async def _send_assistant_line(text: str) -> None:
+            """Send the Skipper: line, but AFTER this turn's You: line so the log is in
+            order. Bounded wait so it can't hang if a turn produced no user line."""
+            try:
+                await asyncio.wait_for(_user_line_sent.wait(), timeout=2.0)
+            except asyncio.TimeoutError:
+                pass
+            try:
+                await satellite_ws.send_text(json.dumps({"type": "transcript", "role": "assistant", "text": text}))
+            except Exception:
+                pass
+            debug_log.record(f"Skipper: {text[:300]}", session=session_id[:12], kind="skipper")
+
         async def _finalize_user_transcript(item_id: str) -> None:
-            """For an ACCEPTED turn: wait for its transcript, then either DROP it (empty /
-            silence-hallucination), END the session (farewell), or persist + display it."""
+            """For an ACCEPTED turn: wait for its transcript, then either DROP its RESPONSE
+            (empty / silence-hallucination), END the session (farewell), or persist it —
+            but ALWAYS surface the turn in the log so the user's speech is never silently
+            omitted."""
             if not item_id:
                 return
             fut = _transcript_fut(item_id)
@@ -422,8 +455,11 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             text = (text or "").strip()
 
             # Silence hallucinations ("you"/"thank you"/"") must not be spoken to or
-            # counted as activity: cancel the blind reply this turn already triggered,
-            # drop the item from history, and leave the idle clock running.
+            # counted as activity: cancel the blind reply this turn already triggered and
+            # drop the item from history. But STILL show the turn in the log — an empty
+            # transcript means we heard something we couldn't transcribe (often speech that
+            # landed in the wake-word pre-roll), and silently omitting it is exactly the
+            # "it's not printing what I said" problem.
             if _DROP_NOISE_TURNS and (not text or _is_noise(text)):
                 turn_state["substantive"] = False
                 if not resp_idle.is_set():
@@ -435,13 +471,13 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                     await _send_oai(oai, {"type": "conversation.item.delete", "item_id": item_id})
                 except Exception:
                     pass
-                debug_log.record(f"(dropped noise turn: {text!r})", session=session_id[:12], kind="you")
+                await _send_user_line(text if text else "(heard — not transcribed)")
                 return
 
             # A clear farewell ends deterministically — don't depend on the model
             # choosing to call end_voice_session (it doesn't, reliably).
             if _FAREWELL_END and _is_farewell(text):
-                debug_log.record(f"You: {text}  → farewell, ending", session=session_id[:12], kind="you")
+                await _send_user_line(text)
                 await _end_session_now(f"farewell: {text!r}")
                 return
 
@@ -449,11 +485,7 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             _bump_activity()
             if record_voice_transcript:
                 await record_voice_transcript(session_id, "user", text, user_id=session.get("user_id", ""))
-            try:
-                await satellite_ws.send_text(json.dumps({"type": "transcript", "role": "user", "text": text}))
-            except Exception:
-                pass
-            debug_log.record(f"You: {text}", session=session_id[:12], kind="you")
+            await _send_user_line(text)
 
         async def _create_response() -> None:
             """Ask the model to reply. Cancel any in-flight response first and wait for
@@ -491,6 +523,8 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             """Accept this turn: it's the locked speaker. Reply now; persist transcript."""
             last_utterance["pcm"] = pcm
             item_id = last_item.get("id")
+            # New turn: hold its assistant line until this turn's You: line is sent.
+            _user_line_sent.clear()
             # Restate who's speaking right before every reply. Identity lives only in
             # the live conversation (the durable prompt was minted before we knew the
             # speaker) and a one-shot note gets buried as the chat grows — so we
@@ -730,8 +764,9 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                         text = event.get("transcript", "")
                         if record_voice_transcript:
                             await record_voice_transcript(session_id, "assistant", text, user_id=session.get("user_id", ""))
-                        await satellite_ws.send_text(json.dumps({"type": "transcript", "role": "assistant", "text": text}))
-                        debug_log.record(f"Skipper: {text[:300]}", session=session_id[:12], kind="skipper")
+                        # Send to the satellite AFTER this turn's You: line (spawned so the
+                        # brief wait never stalls the OpenAI event pump / audio).
+                        _spawn(_send_assistant_line(text))
 
                     elif et == "response.function_call_arguments.done":
                         call_id = event.get("call_id", "")

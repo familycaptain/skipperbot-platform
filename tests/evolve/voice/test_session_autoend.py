@@ -75,6 +75,18 @@ class Wiring(unittest.TestCase):
         self.assertIn('turn_state["substantive"] = True', self.src)
         self.assertIn("turn_state[\"substantive\"]", self.src)
 
+    def test_dropped_turns_are_still_surfaced_in_the_log(self):
+        # a dropped/empty turn must still send a You: line (never silently omitted) —
+        # empty transcripts get a clear marker
+        self.assertIn("_send_user_line(", self.src)
+        self.assertIn("(heard — not transcribed)", self.src)
+
+    def test_assistant_line_held_until_user_line_for_ordering(self):
+        # Skipper: is sent only after the turn's You: line, so the log reads in order
+        self.assertIn("_user_line_sent", self.src)
+        self.assertIn("_send_assistant_line", self.src)
+        self.assertIn("_user_line_sent.clear()", self.src)   # cleared at turn start
+
 
 if __name__ == "__main__":
     unittest.main()
