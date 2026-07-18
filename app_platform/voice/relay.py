@@ -174,6 +174,15 @@ async def _openai_connect(url: str, headers: dict):
         return await websockets.connect(url, extra_headers=headers, max_size=None)
 
 
+from app_platform.voice.autoend import (
+    IDLE_TIMEOUT_S as _IDLE_TIMEOUT_S,
+    FAREWELL_END as _FAREWELL_END,
+    DROP_NOISE_TURNS as _DROP_NOISE_TURNS,
+    is_farewell as _is_farewell,
+    is_noise as _is_noise,
+)
+
+
 async def _send_oai(oai, event: dict) -> None:
     await oai.send(json.dumps(event))
 
@@ -352,8 +361,49 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             if name and lock["name"] is None:
                 await _set_locked_identity(name, score, relock=False)
 
+        # --- session auto-end bookkeeping ---
+        _activity = {"t": time.monotonic()}          # last SUBSTANTIVE user activity
+        turn_state = {"substantive": False}          # was the current turn real speech?
+
+        def _bump_activity() -> None:
+            _activity["t"] = time.monotonic()
+
+        async def _end_session_now(reason: str) -> None:
+            """Tear the session down cleanly from anywhere: stop the pumps and close the
+            OpenAI socket. The relay's finally sends `session_ended`, so the satellite
+            returns to wake-word mode."""
+            logger.info("VOICE-RELAY: auto-ending session %s — %s", session_id[:12], reason)
+            try:
+                debug_log.record(f"→ auto-end: {reason}", session=session_id[:12], kind="session")
+            except Exception:
+                pass
+            stop.set()
+            try:
+                await oai.close()
+            except Exception:
+                pass
+
+        async def _idle_watchdog() -> None:
+            """End the session after VOICE_IDLE_TIMEOUT_S with no substantive turn — the
+            safety net for 'the user walked away'. Hallucinated/backchannel turns do NOT
+            bump activity, so they can't hold the session open."""
+            if _IDLE_TIMEOUT_S <= 0:
+                return
+            try:
+                while not stop.is_set():
+                    await asyncio.sleep(2.0)
+                    if stop.is_set():
+                        break
+                    idle_for = time.monotonic() - _activity["t"]
+                    if idle_for >= _IDLE_TIMEOUT_S and resp_idle.is_set():
+                        await _end_session_now(f"inactivity {idle_for:.0f}s")
+                        break
+            except asyncio.CancelledError:
+                pass
+
         async def _finalize_user_transcript(item_id: str) -> None:
-            """For an ACCEPTED turn: wait for its transcript, then persist + display it."""
+            """For an ACCEPTED turn: wait for its transcript, then either DROP it (empty /
+            silence-hallucination), END the session (farewell), or persist + display it."""
             if not item_id:
                 return
             fut = _transcript_fut(item_id)
@@ -364,8 +414,33 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             finally:
                 transcript_futs.pop(item_id, None)
             text = (text or "").strip()
-            if not text:
+
+            # Silence hallucinations ("you"/"thank you"/"") must not be spoken to or
+            # counted as activity: cancel the blind reply this turn already triggered,
+            # drop the item from history, and leave the idle clock running.
+            if _DROP_NOISE_TURNS and (not text or _is_noise(text)):
+                turn_state["substantive"] = False
+                if not resp_idle.is_set():
+                    try:
+                        await _send_oai(oai, {"type": "response.cancel"})
+                    except Exception:
+                        pass
+                try:
+                    await _send_oai(oai, {"type": "conversation.item.delete", "item_id": item_id})
+                except Exception:
+                    pass
+                debug_log.record(f"(dropped noise turn: {text!r})", session=session_id[:12], kind="you")
                 return
+
+            # A clear farewell ends deterministically — don't depend on the model
+            # choosing to call end_voice_session (it doesn't, reliably).
+            if _FAREWELL_END and _is_farewell(text):
+                debug_log.record(f"You: {text}  → farewell, ending", session=session_id[:12], kind="you")
+                await _end_session_now(f"farewell: {text!r}")
+                return
+
+            turn_state["substantive"] = True
+            _bump_activity()
             if record_voice_transcript:
                 await record_voice_transcript(session_id, "user", text, user_id=session.get("user_id", ""))
             try:
@@ -594,6 +669,10 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                         debug_log.record("← response.created (generating reply)", session=session_id[:12], kind="resp")
                     elif et in ("response.done", "response.cancelled"):
                         resp_idle.set()
+                        # A real exchange just finished — restart the idle clock (a phantom
+                        # turn's reply leaves substantive False, so it never resets it).
+                        if et == "response.done" and turn_state["substantive"]:
+                            _bump_activity()
                         debug_log.record(f"← {et}", session=session_id[:12], kind="resp")
 
                     elif et == "input_audio_buffer.speech_started":
@@ -738,7 +817,11 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
             finally:
                 stop.set()
 
-        await asyncio.gather(pump_satellite_to_openai(), pump_openai_to_satellite())
+        _watchdog = asyncio.create_task(_idle_watchdog())
+        try:
+            await asyncio.gather(pump_satellite_to_openai(), pump_openai_to_satellite())
+        finally:
+            _watchdog.cancel()
     finally:
         try:
             await oai.close()
