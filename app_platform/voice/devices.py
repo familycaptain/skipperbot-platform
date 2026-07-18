@@ -43,10 +43,12 @@ class VoiceDeviceManager:
         return ids[0] if len(ids) == 1 else None
 
     def resolve(self, device_id: str = "") -> str | None:
-        """The device to actually speak on: the named one if it's online, else the
-        default. None means 'nowhere to speak' (caller should fall back to push)."""
-        if device_id and device_id in self.active:
-            return device_id
+        """The device to actually speak on. A NAMED device resolves only to itself —
+        if it's offline we return None (fall back to push) rather than blurting a
+        room-specific announcement into a different room. An UNnamed request uses the
+        single online device. None means 'nowhere to speak; caller falls back to push'."""
+        if device_id:
+            return device_id if device_id in self.active else None
         return self.default_device()
 
     async def send_json(self, device_id: str, message: dict) -> bool:
