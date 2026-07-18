@@ -252,13 +252,26 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
     url = f"{OPENAI_REALTIME_URL}?model={REALTIME_MODEL}"
     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
 
+    _tmodel = os.getenv("VOICE_REALTIME_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe")
     oai = await _openai_connect(url, headers)
-    logger.info("VOICE-RELAY: session %s connected to OpenAI Realtime (user=%s, tools=%d)",
-                session_id, user_id, len(tools))
+    logger.info("VOICE-RELAY: session %s connected to OpenAI Realtime "
+                "(user=%s, tools=%d, realtime=%s, transcription=%s)",
+                session_id, user_id, len(tools), REALTIME_MODEL, _tmodel)
     stop = asyncio.Event()
 
     try:
         await _send_oai(oai, _session_update(instructions, tools, voice))
+
+        # Tell the satellite which host-side models/settings are in effect, so the
+        # config prints in the voice-1 console (handy when A/B-testing transcription).
+        try:
+            await satellite_ws.send_text(json.dumps({
+                "type": "host_info",
+                "text": (f"realtime={REALTIME_MODEL}, transcription={_tmodel}, "
+                         f"vad_silence={os.getenv('VOICE_VAD_SILENCE_MS', '800')}ms"),
+            }))
+        except Exception:
+            pass
 
         # --- per-turn audio capture for speaker identification ---
         from app_platform.voice import speaker_id, debug_log
