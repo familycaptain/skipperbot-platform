@@ -1055,6 +1055,39 @@ async def refresh_tools():
     return {"status": "refreshed", "tool_count": len(mcp_client.mcp_tools)}
 
 
+@app.websocket("/ws/voice/device/{device_id}")
+async def voice_device_link(websocket: WebSocket, device_id: str):
+    """Persistent control link from a voice satellite (proactive voice).
+
+    Unlike the session WebSockets (keyed by session_id, only alive during a
+    conversation), the satellite holds THIS open from boot so the host can push
+    announcements while the device is idle. Auth: the satellite's service token
+    (or an admin). Registered in app_platform.voice.devices so delivery can reach it.
+    """
+    principal = principal_from_ws(websocket)
+    if not principal:
+        await websocket.close(code=4401, reason="Authentication required")
+        return
+    if not (principal.get("is_service") or has_role(principal, "admin")):
+        await websocket.close(code=4403, reason="Forbidden")
+        return
+    await websocket.accept()
+    from app_platform.voice.devices import manager as voice_devices
+    user_id = websocket.query_params.get("user_id", "") or (principal.get("name") or "")
+    room = websocket.query_params.get("room", "")
+    await voice_devices.connect(device_id, websocket, user_id=user_id, room=room)
+    try:
+        while True:
+            # Device -> host control (keepalive now; presence / delivery-ack later).
+            data = await websocket.receive_json()
+            if data.get("type") == "ping":
+                await websocket.send_json({"type": "pong"})
+    except WebSocketDisconnect:
+        pass
+    finally:
+        voice_devices.disconnect(device_id)
+
+
 # Active app context per user — updated by WebSocket app_context messages
 _user_app_context: dict[str, dict] = {}
 

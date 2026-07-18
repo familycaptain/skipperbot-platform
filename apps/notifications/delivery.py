@@ -26,13 +26,14 @@ def _parse_channels(raw: str) -> set[str]:
     out: set[str] = set()
     for tok in str(raw or "").replace(";", ",").split(","):
         t = _CHANNEL_ALIASES.get(tok.strip().lower(), tok.strip().lower())
-        if t in ("discord", "pushover", "mobile"):
+        if t in ("discord", "pushover", "mobile", "voice"):
             out.add(t)
         elif t == "both":
             out |= {"discord", "pushover"}
         elif t == "all":
             out |= {"discord", "pushover", "mobile"}
-        # "none" / unknown → contributes nothing
+        # "none" / unknown → contributes nothing. "voice" is opt-in (origin-routed),
+        # so it is NOT part of "all".
     return out
 
 
@@ -106,6 +107,23 @@ async def _deliver_one(notif: dict):
         return
 
     delivery_results = []
+
+    # --- Voice announcement (proactive spoken delivery) ---
+    # Runs FIRST so that if voice is the only channel and it can't speak (device
+    # offline / TTS down), we fall back to the push channels below and nothing is lost.
+    if "voice" in targets:
+        spoke = False
+        try:
+            from app_platform.voice.announce import announce_to_device
+            spoke = await announce_to_device(
+                notif.get("device_id") or "", message,
+                source={"type": notif.get("source_type", ""), "id": notif.get("source_id", "")})
+            delivery_results.append(f"Voice: {'spoke' if spoke else 'no device/failed'}")
+        except Exception as e:
+            delivery_results.append(f"Voice failed: {e}")
+            logger.error("NOTIF_DELIVERY: Voice announce failed for %s: %s", recipient, e)
+        if not spoke and targets == {"voice"}:
+            targets = {"voice"} | _default_channels()   # fall back to push
 
     # --- Discord DM ---
     if "discord" in targets:
