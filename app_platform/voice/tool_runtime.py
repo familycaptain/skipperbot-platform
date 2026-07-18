@@ -34,6 +34,7 @@ async def handle_voice_tool_call(
     logger.info("VOICE-TOOL call=%s session=%s args=%s", tool_name, session_id, _args_json)
     _t0 = time.monotonic()
 
+    _origin_token = None
     try:
         from app_platform.voice.prompting import is_exit_app_name
         from app_platform.voice.session import (
@@ -41,6 +42,7 @@ async def handle_voice_tool_call(
             build_switch_app_payload,
             get_session,
         )
+        from app_platform.voice.origin import set_voice_origin, reset_voice_origin
         from local_tools import LOCAL_TOOL_NAMES, handle_local_tool
         import tool_dispatch
 
@@ -49,6 +51,11 @@ async def handle_voice_tool_call(
             return [tool_result(call_id, f"Error: unknown voice session {session_id}")]
 
         user_id = session["user_id"]
+        # Mark this call as voice-originated so producers (e.g. the timer scheduler)
+        # can route their side effects back to voice. Tools run in-process, so the
+        # contextvar is visible to the tool and to any task it spawns.
+        _di = session.get("device_info") or {}
+        _origin_token = set_voice_origin(_di.get("device_id", ""), _di.get("room", ""))
 
         if tool_name == "end_voice_session":
             logger.info("VOICE: end_voice_session requested for %s", session_id)
@@ -98,6 +105,10 @@ async def handle_voice_tool_call(
     except Exception as exc:
         logger.error("VOICE: Tool execution failed: %s: %s", tool_name, exc, exc_info=True)
         return [tool_result(call_id, f"Error executing {tool_name}: {exc}")]
+    finally:
+        if _origin_token is not None:
+            from app_platform.voice.origin import reset_voice_origin
+            reset_voice_origin(_origin_token)
 
 
 def tool_result(call_id: str, output: str) -> dict:

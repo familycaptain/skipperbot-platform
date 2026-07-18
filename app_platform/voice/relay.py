@@ -626,6 +626,10 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                     msg = await satellite_ws.receive()
                     if msg.get("type") == "websocket.disconnect":
                         break
+                    # An auto-end (farewell/idle) may have closed the OpenAI socket while
+                    # we were blocked on receive() — stop before forwarding to a dead socket.
+                    if stop.is_set():
+                        break
                     chunk = msg.get("bytes")
                     if chunk:
                         await _send_oai(oai, {
@@ -645,6 +649,8 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                             continue
                         if ctrl.get("type") == "end":
                             break
+            except ConnectionClosed:
+                pass          # OpenAI closed by an auto-end — a normal shutdown, not an error
             finally:
                 stop.set()
 
@@ -814,6 +820,8 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
 
                     elif et == "error":
                         logger.error("VOICE-RELAY: OpenAI error [session %s]: %s", session_id[:12], event.get("error"))
+            except ConnectionClosed:
+                pass          # socket closed by an auto-end — a normal shutdown, not an error
             finally:
                 stop.set()
 

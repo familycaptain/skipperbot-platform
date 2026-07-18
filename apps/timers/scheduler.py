@@ -40,9 +40,18 @@ async def start_timer(user_id: str, duration_seconds: int, name: str = "") -> di
     clean_name = (name or "").strip()
     clean_user = user_id.lower().strip()
 
+    # If this timer was set BY VOICE, remember that so its expiry announces itself by
+    # voice (not just the push channels). Off the voice path this is None.
+    voice_origin = None
+    try:
+        from app_platform.voice.origin import get_voice_origin
+        voice_origin = get_voice_origin()
+    except Exception:
+        voice_origin = None
+
     # Create the task first so we can register it
     task = asyncio.create_task(
-        _run_timer(timer_id, clean_user, duration_seconds, clean_name),
+        _run_timer(timer_id, clean_user, duration_seconds, clean_name, voice_origin),
         name=f"timer:{timer_id}",
     )
     record = timer_store.register(
@@ -60,7 +69,8 @@ async def start_timer(user_id: str, duration_seconds: int, name: str = "") -> di
     return record
 
 
-async def _run_timer(timer_id: str, user_id: str, duration_seconds: int, name: str):
+async def _run_timer(timer_id: str, user_id: str, duration_seconds: int, name: str,
+                     voice_origin: dict | None = None):
     """Body of a single timer task: sleep, then fire."""
     try:
         await asyncio.sleep(duration_seconds)
@@ -80,12 +90,15 @@ async def _run_timer(timer_id: str, user_id: str, duration_seconds: int, name: s
             dur_text = f"{duration_seconds} second{'s' if duration_seconds != 1 else ''}"
         message = f"⏱️ Timer done: {label} ({dur_text})"
 
+        # A voice-set timer announces itself by voice (spoken on the device that set
+        # it, falling back to push if it can't speak); otherwise the usual channels.
+        channel = "voice" if voice_origin else "all"
         create_notification(
             recipient=user_id,
             message=message,
             source_type="timer",
             source_id=timer_id,
-            channel="all",
+            channel=channel,
             delivered=False,
         )
     except Exception as e:
