@@ -97,13 +97,19 @@ def _session_update(instructions: str, tools: list[dict], voice: str) -> dict:
                 "input": {
                     "format": {"type": "audio/pcm", "rate": REALTIME_AUDIO_RATE},
                     "transcription": {
-                        "model": os.getenv("VOICE_REALTIME_TRANSCRIPTION_MODEL", "whisper-1"),
+                        # gpt-4o-mini-transcribe is markedly more accurate than the
+                        # dated whisper-1 (which mis-heard "30-second timer" as "32nd
+                        # time" and hallucinated short words). Override if needed.
+                        "model": os.getenv("VOICE_REALTIME_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe"),
                     },
                     "turn_detection": {
                         "type": "server_vad",
                         "threshold": float(os.getenv("VOICE_VAD_THRESHOLD", "0.5")),
                         "prefix_padding_ms": int(os.getenv("VOICE_VAD_PREFIX_PADDING_MS", "300")),
-                        "silence_duration_ms": int(os.getenv("VOICE_VAD_SILENCE_MS", "500")),
+                        # 500ms ended a turn on a mid-sentence pause, fragmenting one
+                        # request ("start a … 30-second timer") into several turns the
+                        # model each reacted to. 800ms lets a normal pause ride.
+                        "silence_duration_ms": int(os.getenv("VOICE_VAD_SILENCE_MS", "800")),
                         # The relay drives responses itself (see _on_user_turn) so it
                         # can resolve speaker-ID and inject the speaker before the model
                         # answers. interrupt_response stays on so hardware-AEC barge-in
