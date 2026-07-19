@@ -97,10 +97,13 @@ def _session_update(instructions: str, tools: list[dict], voice: str) -> dict:
                 "input": {
                     "format": {"type": "audio/pcm", "rate": REALTIME_AUDIO_RATE},
                     "transcription": {
-                        # gpt-4o-mini-transcribe is markedly more accurate than the
-                        # dated whisper-1 (which mis-heard "30-second timer" as "32nd
-                        # time" and hallucinated short words). Override if needed.
-                        "model": os.getenv("VOICE_REALTIME_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe"),
+                        # whisper-1 by default because it's FAST. gpt-4o-mini-transcribe is
+                        # more accurate but showed ~15s transcription latency in the realtime
+                        # API here; with the in-app AEC now feeding clean audio, whisper-1's
+                        # accuracy is fine (its old "32nd time" misfires were mostly echo/noise).
+                        # Set VOICE_REALTIME_TRANSCRIPTION_MODEL=gpt-4o-mini-transcribe (or
+                        # gpt-4o-transcribe) to prefer accuracy over speed.
+                        "model": os.getenv("VOICE_REALTIME_TRANSCRIPTION_MODEL", "whisper-1"),
                     },
                     "turn_detection": {
                         "type": "server_vad",
@@ -252,7 +255,7 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
     url = f"{OPENAI_REALTIME_URL}?model={REALTIME_MODEL}"
     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
 
-    _tmodel = os.getenv("VOICE_REALTIME_TRANSCRIPTION_MODEL", "gpt-4o-mini-transcribe")
+    _tmodel = os.getenv("VOICE_REALTIME_TRANSCRIPTION_MODEL", "whisper-1")
     oai = await _openai_connect(url, headers)
     logger.info("VOICE-RELAY: session %s connected to OpenAI Realtime "
                 "(user=%s, tools=%d, realtime=%s, transcription=%s)",
