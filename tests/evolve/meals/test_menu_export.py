@@ -14,6 +14,7 @@ that closes the ported file's live reflected-XSS hole.
 
 Run: python -m unittest tests.evolve.meals.test_menu_export
 """
+import hashlib
 import os
 import re
 import tempfile
@@ -21,8 +22,12 @@ import unittest
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
-# The port source the page must remain faithful to.
-ORIGINAL = "/home/skipper/.evolve/runs/110/original-meal-menu.html"
+# The port source the page must remain faithful to, vendored as a fixture so the
+# byte-compare runs on EVERY host. Kept beside the test on purpose: pointing at a
+# path outside the repo makes the strongest assertion here skip itself silently
+# anywhere but the machine that happened to have the file.
+ORIGINAL = os.path.join(os.path.dirname(__file__), "fixtures", "meal-menu-original.html")
+ORIGINAL_MD5 = "5ed863cc9490be83c7ffb8bcf54e886f"
 
 # Style rules the port is allowed to ADD on top of the original's stylesheet.
 # Anything else differing is a restyle, and a restyle is a failure.
@@ -171,10 +176,11 @@ class MealMenuPortFidelity(unittest.TestCase):
 
     def setUp(self):
         self.page = _read("web/meal-menu.html")
-        if not os.path.exists(ORIGINAL):
-            self.skipTest("port source not present on this host")
-        with open(ORIGINAL, encoding="utf-8") as f:
-            self.original = f.read()
+        with open(ORIGINAL, "rb") as f:
+            raw = f.read()
+        self.assertEqual(hashlib.md5(raw).hexdigest(), ORIGINAL_MD5,
+                         "the vendored port reference has been altered")
+        self.original = raw.decode("utf-8")
 
     def test_stylesheet_matches_the_original_except_for_declared_additions(self):
         ported = _rules(_style_block(self.page))
