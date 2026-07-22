@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meal Menu</title>
+<style>
+  :root {
+    --ink: #1a0f00;
+    --cream: #fdf8f0;
+    --gold: #b8860b;
+    --gold-light: #d4a017;
+    --rule: #c9a85c;
+    --muted: #6b5842;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #1a1a2e; color: #e2e8f0;
+    min-height: 100vh;
+  }
+
+  /* ── Control bar (screen only) ── */
+  .controls {
+    background: #0f172a; border-bottom: 1px solid #334155;
+    padding: 14px 20px; display: flex; flex-wrap: wrap;
+    align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .controls h1 { font-size: 15px; font-weight: 600; color: #f1f5f9; font-family: sans-serif; margin-right: 4px; }
+  .ctrl-input {
+    background: #1e293b; border: 1px solid #475569; border-radius: 6px;
+    padding: 7px 12px; font-size: 13px; color: #f1f5f9; outline: none;
+    font-family: sans-serif; min-width: 140px;
+  }
+  .ctrl-input:focus { border-color: #6366f1; }
+  .ctrl-btn {
+    padding: 7px 16px; border-radius: 6px; border: none; font-size: 13px;
+    font-weight: 600; cursor: pointer; font-family: sans-serif; transition: background 0.15s;
+  }
+  .ctrl-btn-primary { background: #4f46e5; color: white; }
+  .ctrl-btn-primary:hover { background: #4338ca; }
+  .ctrl-btn-print { background: #059669; color: white; }
+  .ctrl-btn-print:hover { background: #047857; }
+  .ctrl-btn-print:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+  .ctrl-label { font-size: 12px; color: #64748b; font-family: sans-serif; }
+  .spinner-sm {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+    border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 5px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Menu preview wrapper (screen) ── */
+  .menu-preview {
+    max-width: 860px; margin: 28px auto; padding: 0 20px 60px;
+  }
+
+  /* ── Menu page (shared screen + print) ── */
+  .menu-page {
+    background: var(--cream);
+    color: var(--ink);
+    border-radius: 4px;
+    padding: 56px 60px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  }
+
+  /* ── Header ── */
+  .menu-header {
+    text-align: center;
+    border-bottom: 3px double var(--rule);
+    padding-bottom: 28px;
+    margin-bottom: 36px;
+  }
+  .menu-restaurant { font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); font-family: sans-serif; margin-bottom: 10px; }
+  .menu-title {
+    font-size: 42px; font-weight: normal; color: var(--ink);
+    letter-spacing: 0.02em; line-height: 1.1;
+  }
+  .menu-subtitle {
+    font-size: 13px; color: var(--muted); margin-top: 10px;
+    font-style: italic; letter-spacing: 0.05em;
+  }
+  .menu-rule {
+    width: 80px; height: 1px; background: var(--rule);
+    margin: 14px auto 0;
+  }
+
+  /* ── Section heading ── */
+  .menu-section-label {
+    text-align: center; font-size: 11px; letter-spacing: 0.25em;
+    text-transform: uppercase; color: var(--gold); font-family: sans-serif;
+    font-weight: 600; margin: 36px 0 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .menu-section-label::before,
+  .menu-section-label::after {
+    content: ""; flex: 1; height: 1px; background: var(--rule);
+  }
+
+  /* ── Meal item ── */
+  .meal-item {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid #e8dcc8;
+  }
+  .meal-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .meal-item-photo {
+    width: 200px; height: 160px; object-fit: cover;
+    border-radius: 4px; border: 1px solid #d4c4a0;
+  }
+  .meal-item-nophoto {
+    width: 200px; height: 160px; background: #f0e8d8;
+    border-radius: 4px; border: 1px solid #d4c4a0;
+    display: flex; align-items: center; justify-content: center;
+    color: #b8a88a; font-size: 28px;
+  }
+  .meal-item-body { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+  .meal-item-name {
+    font-size: 22px; font-weight: normal; color: var(--ink); line-height: 1.2;
+  }
+  .meal-item-tags {
+    font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--gold); font-family: sans-serif; font-weight: 600;
+  }
+  .meal-item-desc { font-size: 14px; color: #3a2e20; line-height: 1.65; font-style: italic; }
+  .meal-item-stars { display: flex; gap: 2px; margin-top: 2px; }
+  .star-filled { color: var(--gold-light); font-size: 13px; }
+  .star-empty { color: #d4c4a0; font-size: 13px; }
+  .meal-item-effort {
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    font-family: sans-serif; color: var(--muted);
+  }
+
+  /* ── Footer ── */
+  .menu-footer {
+    text-align: center; margin-top: 40px; padding-top: 24px;
+    border-top: 3px double var(--rule);
+    font-size: 11px; color: var(--muted); font-style: italic;
+  }
+
+  /* ── Empty state (screen) ── */
+  .menu-empty {
+    text-align: center; padding: 60px 0; color: #64748b;
+    font-family: sans-serif; font-size: 14px;
+  }
+
+  /* ── Added by the port: filter chips + print helper (screen only) ── */
+  .menu-hint {
+    max-width: 860px; margin: 18px auto -10px; padding: 0 20px;
+    font-family: sans-serif; font-size: 12px; color: #64748b;
+  }
+  .filter-chips {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    margin-top: 8px;
+  }
+  .filter-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #1e293b; border: 1px solid #475569; border-radius: 999px;
+    padding: 3px 10px; font-size: 12px; color: #cbd5e1; font-family: sans-serif;
+  }
+  .filter-chip button {
+    background: none; border: none; color: #94a3b8; cursor: pointer;
+    font-size: 13px; line-height: 1; padding: 0;
+  }
+  .filter-chip button:hover { color: #f1f5f9; }
+  .link-btn {
+    background: none; border: none; color: #6366f1; cursor: pointer;
+    font-family: sans-serif; font-size: 13px; text-decoration: underline; padding: 0;
+  }
+
+  /* ── Print ── */
+  @media print {
+    body { background: white !important; }
+    .controls { display: none !important; }
+    .menu-hint { display: none !important; }
+    .menu-preview { margin: 0 !important; padding: 0 !important; max-width: none; }
+    .menu-page {
+      box-shadow: none !important; border-radius: 0 !important;
+      padding: 40px 48px !important;
+    }
+    .meal-item { page-break-inside: avoid; }
+    .menu-page { page-break-after: always; }
+    .menu-page:last-child { page-break-after: auto; }
+  }
+
+  @page { margin: 0.6in; size: letter portrait; }
+</style>
+</head>
+<body>
+
+<div class="controls" id="controls">
+  <h1>🍽 Menu Export</h1>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <label class="ctrl-label" for="tagInput">Tag filter:</label>
+    <input id="tagInput" class="ctrl-input" placeholder="e.g. dinner" value="" style="width:130px" list="tagOptions" />
+    <datalist id="tagOptions"></datalist>
+    <label class="ctrl-label" for="titleInput">Title:</label>
+    <input id="titleInput" class="ctrl-input" placeholder="Dinner Menu" value="" style="width:150px" />
+    <button class="ctrl-btn ctrl-btn-primary" id="generateBtn" type="button">Generate</button>
+  </div>
+  <button class="ctrl-btn ctrl-btn-print" id="printBtn" type="button" disabled>🖨 Print / Save PDF</button>
+</div>
+
+<div class="menu-hint" id="menuHint">
+  In the print dialog choose “Save as PDF”, and turn off the browser’s own headers and footers so they don’t collide with the printed date.
+  <div class="filter-chips" id="filterChips"></div>
+</div>
+
+<div class="menu-preview" id="menuPreview">
+  <div class="menu-empty" id="emptyState">
+    <span class="spinner-sm"></span> Loading meals…
+  </div>
+</div>
+
+<script>
+// ── State held outside the two visible inputs (q + effort arrive by URL only) ──
+var activeQ = "";
+var activeEffort = "";
+
+function normalizeTag(value) {
+  // Mirrors the server's tag normalisation (trim, lowercase, strip a leading '#').
+  var t = String(value == null ? "" : value).trim().toLowerCase();
+  if (t.charAt(0) === "#") t = t.slice(1);
+  return t;
+}
+
+function titleCase(value) {
+  var s = String(value == null ? "" : value);
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function el(tag, className, text) {
+  var node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined && text !== null) node.textContent = String(text);
+  return node;
+}
+
+function clear(node) {
+  while (node.firstChild) node.removeChild(node.firstChild);
+}
+
+// Amendment B — the photo URL is resolved ONCE, deterministically. This is the
+// SINGLE data-derived URL on the page; every other target is a hardcoded path.
+function photoSrc(photo) {
+  if (!photo) return null;
+  var path = photo.storage_path || "";
+  if (/^uploads\//.test(path) && path.indexOf("://") === -1) return "/" + path;
+  if (photo.id) return "/api/apps/images/" + encodeURIComponent(photo.id) + "/file";
+  return null;
+}
+
+// ── Non-menu states all render through the original's .menu-empty container ──
+function showState(text, isError, actionLabel, actionFn) {
+  var preview = document.getElementById("menuPreview");
+  clear(preview);
+  var box = el("div", "menu-empty");
+  if (isError) box.style.color = "#ef4444";
+  box.appendChild(document.createTextNode(text));
+  if (actionLabel) {
+    box.appendChild(document.createTextNode(" "));
+    var btn = el("button", "link-btn", actionLabel);
+    btn.type = "button";
+    btn.addEventListener("click", actionFn);
+    box.appendChild(btn);
+  }
+  preview.appendChild(box);
+  setPrintEnabled(false);
+}
+
+function setPrintEnabled(on) {
+  document.getElementById("printBtn").disabled = !on;
+}
+
+function showLoading() {
+  var preview = document.getElementById("menuPreview");
+  clear(preview);
+  var box = el("div", "menu-empty");
+  box.appendChild(el("span", "spinner-sm"));
+  box.appendChild(document.createTextNode(" Loading meals…"));
+  preview.appendChild(box);
+  setPrintEnabled(false);
+}
+
+// ── Subtitle (composed, self-describing) vs section label (short noun phrase) ──
+// The section label is an 11px uppercase 0.25em-tracked rule-flanked ornament —
+// a composed sentence would crush its flanking hairlines, so it never carries q.
+function shortPhrase(tag, effort) {
+  var noun = tag ? titleCase(tag) + " Selections" : "Curated Selections";
+  if (effort) noun = titleCase(effort) + "-Effort " + (tag ? titleCase(tag) + " Selections" : "Selections");
+  return noun;
+}
+
+function composedSubtitle(tag, effort, q) {
+  var base = shortPhrase(tag, effort);
+  return q ? base + " — “" + q + "”" : base;
+}
+
+function renderFilterChips() {
+  var host = document.getElementById("filterChips");
+  clear(host);
+  var tag = normalizeTag(document.getElementById("tagInput").value);
+  var chips = [];
+  if (tag) chips.push({ label: "tag: " + tag, clear: function () { document.getElementById("tagInput").value = ""; } });
+  if (activeEffort) chips.push({ label: "effort: " + activeEffort, clear: function () { activeEffort = ""; } });
+  if (activeQ) chips.push({ label: "search: " + activeQ, clear: function () { activeQ = ""; } });
+  if (!chips.length) return;
+  for (var i = 0; i < chips.length; i++) {
+    (function (chip) {
+      var node = el("span", "filter-chip");
+      node.appendChild(document.createTextNode(chip.label));
+      var x = el("button", null, "×");
+      x.type = "button";
+      x.setAttribute("aria-label", "Remove filter " + chip.label);
+      x.addEventListener("click", function () { chip.clear(); generateMenu(); });
+      node.appendChild(x);
+      host.appendChild(node);
+    })(chips[i]);
+  }
+  var all = el("button", "link-btn", "Show all meals");
+  all.type = "button";
+  all.addEventListener("click", clearAllFilters);
+  host.appendChild(all);
+}
+
+function clearAllFilters() {
+  document.getElementById("tagInput").value = "";
+  document.getElementById("titleInput").value = "";
+  activeQ = "";
+  activeEffort = "";
+  generateMenu();
+}
+
+function renderMealItem(m) {
+  var item = el("div", "meal-item");
+
+  var src = photoSrc(m.primary_photo);
+  if (src) {
+    var img = document.createElement("img");
+    img.className = "meal-item-photo";
+    img.src = src;
+    img.alt = m.name || "";
+    item.appendChild(img);
+  } else {
+    item.appendChild(el("div", "meal-item-nophoto", "🍽"));
+  }
+
+  var body = el("div", "meal-item-body");
+  body.appendChild(el("div", "meal-item-name", m.name || ""));
+
+  var tags = (m.tags || []).filter(function (t) { return t; }).join("  ·  ");
+  if (tags) body.appendChild(el("div", "meal-item-tags", tags));
+  if (m.description) body.appendChild(el("div", "meal-item-desc", m.description));
+
+  // Ratings: floor to an integer and require 1–5. Anything else (0, null,
+  // out of range) renders as unrated — the row is omitted entirely.
+  var rating = Math.floor(Number(m.rating));
+  if (rating >= 1 && rating <= 5) {
+    var stars = el("div", "meal-item-stars");
+    stars.setAttribute("role", "img");
+    stars.setAttribute("aria-label", "Rated " + rating + " out of 5");
+    for (var n = 1; n <= 5; n++) {
+      var star = el("span", n <= rating ? "star-filled" : "star-empty", "★");
+      star.setAttribute("aria-hidden", "true");
+      stars.appendChild(star);
+    }
+    body.appendChild(stars);
+  }
+
+  if (m.effort) body.appendChild(el("div", "meal-item-effort", titleCase(m.effort) + " effort"));
+
+  item.appendChild(body);
+  return item;
+}
+
+function renderPages(meals, title, tag, effort, q) {
+  var preview = document.getElementById("menuPreview");
+  clear(preview);
+
+  var today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  var subtitle = composedSubtitle(tag, effort, q);
+  var sectionNoun = shortPhrase(tag, effort);
+
+  // Sort: meals with a photo first, then alphabetically by name.
+  meals.sort(function (a, b) {
+    var ap = a.primary_photo ? 0 : 1;
+    var bp = b.primary_photo ? 0 : 1;
+    if (ap !== bp) return ap - bp;
+    return String(a.name || "").localeCompare(String(b.name || ""));
+  });
+
+  // Group into pages of 6.
+  var ITEMS_PER_PAGE = 6;
+  var pages = [];
+  for (var i = 0; i < meals.length; i += ITEMS_PER_PAGE) {
+    pages.push(meals.slice(i, i + ITEMS_PER_PAGE));
+  }
+  if (!pages.length) pages.push([]);
+
+  for (var pi = 0; pi < pages.length; pi++) {
+    var pageMeals = pages[pi];
+    var page = el("div", "menu-page");
+
+    var header = el("div", "menu-header");
+    header.appendChild(el("div", "menu-restaurant", "Family Kitchen"));
+    header.appendChild(el("div", "menu-title", title));
+    header.appendChild(el("div", "menu-subtitle", subtitle));
+    header.appendChild(el("div", "menu-rule"));
+    page.appendChild(header);
+
+    if (pageMeals.length) {
+      page.appendChild(el("div", "menu-section-label",
+        pageMeals.length + " " + (pi === 0 ? sectionNoun : "Continued")));
+      for (var j = 0; j < pageMeals.length; j++) page.appendChild(renderMealItem(pageMeals[j]));
+    } else {
+      page.appendChild(el("div", "menu-empty", "No meals yet."));
+    }
+
+    page.appendChild(el("div", "menu-footer", "Printed " + today));
+    preview.appendChild(page);
+
+    if (pi < pages.length - 1) {
+      var spacer = el("div");
+      spacer.style.height = "32px";
+      preview.appendChild(spacer);
+    }
+  }
+
+  // Print is enabled iff at least one .menu-page rendered — so an empty
+  // UNFILTERED menu (header + footer, nothing to list) is still printable.
+  setPrintEnabled(true);
+}
+
+function syncUrl(tag, title) {
+  var params = new URLSearchParams();
+  if (tag) params.set("tag", tag);
+  if (title) params.set("title", title);
+  if (activeQ) params.set("q", activeQ);
+  if (activeEffort) params.set("effort", activeEffort);
+  var qs = params.toString();
+  history.replaceState(null, "", qs ? "?" + qs : window.location.pathname);
+}
+
+async function generateMenu() {
+  var tag = normalizeTag(document.getElementById("tagInput").value);
+  var titleRaw = document.getElementById("titleInput").value.trim();
+  var title = titleRaw || (tag ? titleCase(tag) + " Menu" : "Family Menu");
+
+  renderFilterChips();
+  syncUrl(tag, titleRaw);
+  showLoading();
+
+  try {
+    var qs = new URLSearchParams();
+    if (tag) qs.set("tag", tag);
+    if (activeQ) qs.set("q", activeQ);
+    if (activeEffort) qs.set("effort", activeEffort);
+    var suffix = qs.toString();
+    var res = await fetch("/api/apps/meals" + (suffix ? "?" + suffix : ""), { credentials: "same-origin" });
+
+    if (res.status === 401 || res.status === 403) {
+      showState("Your session has expired. Sign in to Skipper, then reopen Meals and click Export menu again.", false, null, null);
+      var preview = document.getElementById("menuPreview");
+      var link = document.createElement("a");
+      link.href = "/";
+      link.textContent = "Open Skipper";
+      link.style.color = "#6366f1";
+      var wrap = el("div", "menu-empty");
+      wrap.appendChild(link);
+      preview.appendChild(wrap);
+      return;
+    }
+    if (!res.ok) {
+      showState("Could not load your meals — try again.", true, null, null);
+      return;
+    }
+
+    var data = await res.json();
+    var meals = (data && data.meals) || [];
+
+    if (!meals.length && (tag || activeQ || activeEffort)) {
+      showState(tag ? "No meals tagged “" + tag + "”." : "No meals match those filters.",
+                false, "Show all meals", clearAllFilters);
+      return;
+    }
+
+    renderPages(meals, title, tag, activeEffort, activeQ);
+  } catch (e) {
+    // Never echo the exception text back into the page.
+    showState("Could not load your meals — try again.", true, null, null);
+  }
+}
+
+async function loadTagOptions() {
+  // Independent and NON-FATAL: a tag-cloud failure degrades to an empty
+  // datalist and must never blank a menu that loaded fine.
+  try {
+    var res = await fetch("/api/apps/meals/tag-cloud", { credentials: "same-origin" });
+    if (!res.ok) return;
+    var data = await res.json();
+    var tags = (data && (data.tags || data.tag_cloud)) || [];
+    var list = document.getElementById("tagOptions");
+    clear(list);
+    for (var i = 0; i < tags.length; i++) {
+      var t = tags[i];
+      var name = (t && (t.tag || t.name)) || t;
+      if (!name) continue;
+      var opt = document.createElement("option");
+      opt.value = String(name);
+      list.appendChild(opt);
+    }
+  } catch (e) { /* non-fatal */ }
+}
+
+(function init() {
+  var params = new URLSearchParams(window.location.search);
+  var tagParam = params.get("tag");
+  var titleParam = params.get("title");
+  activeQ = params.get("q") || "";
+  activeEffort = params.get("effort") || "";
+
+  if (tagParam) {
+    var tag = normalizeTag(tagParam);
+    document.getElementById("tagInput").value = tag;
+    document.getElementById("titleInput").value = titleCase(tag) + " Menu";
+  }
+  if (titleParam) document.getElementById("titleInput").value = titleParam;
+
+  document.getElementById("generateBtn").addEventListener("click", function () { generateMenu(); });
+  document.getElementById("printBtn").addEventListener("click", function () { window.print(); });
+  ["tagInput", "titleInput"].forEach(function (id) {
+    document.getElementById(id).addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") generateMenu();
+    });
+  });
+
+  loadTagOptions();
+  // Generate on first load: the user arrived by clicking "Export menu PDF" and
+  // must never be handed a blank form.
+  generateMenu();
+})();
+</script>
+</body>
+</html>
