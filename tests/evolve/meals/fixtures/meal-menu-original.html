@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meal Menu</title>
+<style>
+  :root {
+    --ink: #1a0f00;
+    --cream: #fdf8f0;
+    --gold: #b8860b;
+    --gold-light: #d4a017;
+    --rule: #c9a85c;
+    --muted: #6b5842;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: #1a1a2e; color: #e2e8f0;
+    min-height: 100vh;
+  }
+
+  /* ── Control bar (screen only) ── */
+  .controls {
+    background: #0f172a; border-bottom: 1px solid #334155;
+    padding: 14px 20px; display: flex; flex-wrap: wrap;
+    align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 20;
+  }
+  .controls h1 { font-size: 15px; font-weight: 600; color: #f1f5f9; font-family: sans-serif; margin-right: 4px; }
+  .ctrl-input {
+    background: #1e293b; border: 1px solid #475569; border-radius: 6px;
+    padding: 7px 12px; font-size: 13px; color: #f1f5f9; outline: none;
+    font-family: sans-serif; min-width: 140px;
+  }
+  .ctrl-input:focus { border-color: #6366f1; }
+  .ctrl-btn {
+    padding: 7px 16px; border-radius: 6px; border: none; font-size: 13px;
+    font-weight: 600; cursor: pointer; font-family: sans-serif; transition: background 0.15s;
+  }
+  .ctrl-btn-primary { background: #4f46e5; color: white; }
+  .ctrl-btn-primary:hover { background: #4338ca; }
+  .ctrl-btn-print { background: #059669; color: white; }
+  .ctrl-btn-print:hover { background: #047857; }
+  .ctrl-btn-print:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+  .ctrl-label { font-size: 12px; color: #64748b; font-family: sans-serif; }
+  .spinner-sm {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.3); border-top-color: white;
+    border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 5px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Menu preview wrapper (screen) ── */
+  .menu-preview {
+    max-width: 860px; margin: 28px auto; padding: 0 20px 60px;
+  }
+
+  /* ── Menu page (shared screen + print) ── */
+  .menu-page {
+    background: var(--cream);
+    color: var(--ink);
+    border-radius: 4px;
+    padding: 56px 60px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+  }
+
+  /* ── Header ── */
+  .menu-header {
+    text-align: center;
+    border-bottom: 3px double var(--rule);
+    padding-bottom: 28px;
+    margin-bottom: 36px;
+  }
+  .menu-restaurant { font-size: 11px; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); font-family: sans-serif; margin-bottom: 10px; }
+  .menu-title {
+    font-size: 42px; font-weight: normal; color: var(--ink);
+    letter-spacing: 0.02em; line-height: 1.1;
+  }
+  .menu-subtitle {
+    font-size: 13px; color: var(--muted); margin-top: 10px;
+    font-style: italic; letter-spacing: 0.05em;
+  }
+  .menu-rule {
+    width: 80px; height: 1px; background: var(--rule);
+    margin: 14px auto 0;
+  }
+
+  /* ── Section heading ── */
+  .menu-section-label {
+    text-align: center; font-size: 11px; letter-spacing: 0.25em;
+    text-transform: uppercase; color: var(--gold); font-family: sans-serif;
+    font-weight: 600; margin: 36px 0 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .menu-section-label::before,
+  .menu-section-label::after {
+    content: ""; flex: 1; height: 1px; background: var(--rule);
+  }
+
+  /* ── Meal item ── */
+  .meal-item {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid #e8dcc8;
+  }
+  .meal-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+  .meal-item-photo {
+    width: 200px; height: 160px; object-fit: cover;
+    border-radius: 4px; border: 1px solid #d4c4a0;
+  }
+  .meal-item-nophoto {
+    width: 200px; height: 160px; background: #f0e8d8;
+    border-radius: 4px; border: 1px solid #d4c4a0;
+    display: flex; align-items: center; justify-content: center;
+    color: #b8a88a; font-size: 28px;
+  }
+  .meal-item-body { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+  .meal-item-name {
+    font-size: 22px; font-weight: normal; color: var(--ink); line-height: 1.2;
+  }
+  .meal-item-tags {
+    font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--gold); font-family: sans-serif; font-weight: 600;
+  }
+  .meal-item-desc { font-size: 14px; color: #3a2e20; line-height: 1.65; font-style: italic; }
+  .meal-item-stars { display: flex; gap: 2px; margin-top: 2px; }
+  .star-filled { color: var(--gold-light); font-size: 13px; }
+  .star-empty { color: #d4c4a0; font-size: 13px; }
+  .meal-item-effort {
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    font-family: sans-serif; color: var(--muted);
+  }
+
+  /* ── Footer ── */
+  .menu-footer {
+    text-align: center; margin-top: 40px; padding-top: 24px;
+    border-top: 3px double var(--rule);
+    font-size: 11px; color: var(--muted); font-style: italic;
+  }
+
+  /* ── Empty state (screen) ── */
+  .menu-empty {
+    text-align: center; padding: 60px 0; color: #64748b;
+    font-family: sans-serif; font-size: 14px;
+  }
+
+  /* ── Print ── */
+  @media print {
+    body { background: white !important; }
+    .controls { display: none !important; }
+    .menu-preview { margin: 0 !important; padding: 0 !important; max-width: none; }
+    .menu-page {
+      box-shadow: none !important; border-radius: 0 !important;
+      padding: 40px 48px !important;
+    }
+    .meal-item { page-break-inside: avoid; }
+    .menu-page { page-break-after: always; }
+    .menu-page:last-child { page-break-after: auto; }
+  }
+
+  @page { margin: 0.6in; size: letter portrait; }
+</style>
+</head>
+<body>
+
+<div class="controls" id="controls">
+  <h1>🍽 Menu Export</h1>
+  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <span class="ctrl-label">Tag filter:</span>
+    <input id="tagInput" class="ctrl-input" placeholder="e.g. dinner" value="" style="width:130px" />
+    <span class="ctrl-label">Title:</span>
+    <input id="titleInput" class="ctrl-input" placeholder="Dinner Menu" value="" style="width:150px" />
+    <button class="ctrl-btn ctrl-btn-primary" onclick="generateMenu()">Generate</button>
+  </div>
+  <button class="ctrl-btn ctrl-btn-print" id="printBtn" onclick="window.print()" disabled>🖨 Print / Save PDF</button>
+</div>
+
+<div class="menu-preview" id="menuPreview">
+  <div class="menu-empty" id="emptyState">
+    Enter a tag (e.g. <em>dinner</em>) and click Generate to preview your menu.
+  </div>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+if (params.get('tag')) {
+  document.getElementById('tagInput').value = params.get('tag');
+  document.getElementById('titleInput').value = params.get('tag').charAt(0).toUpperCase() + params.get('tag').slice(1) + ' Menu';
+  window.addEventListener('DOMContentLoaded', () => generateMenu());
+}
+
+async function generateMenu() {
+  const tag = document.getElementById('tagInput').value.trim();
+  const titleRaw = document.getElementById('titleInput').value.trim();
+  const title = titleRaw || (tag ? (tag.charAt(0).toUpperCase() + tag.slice(1) + ' Menu') : 'Family Menu');
+
+  const preview = document.getElementById('menuPreview');
+  preview.innerHTML = '<div class="menu-empty"><span class="spinner-sm"></span> Loading meals...</div>';
+  document.getElementById('printBtn').disabled = true;
+
+  try {
+    const qs = new URLSearchParams({ include_photos: 'true' });
+    if (tag) qs.set('tag', tag);
+    const res = await fetch('/api/apps/meals?' + qs.toString());
+    if (!res.ok) throw new Error('Failed to load meals');
+    const data = await res.json();
+    const meals = data.meals || [];
+
+    if (!meals.length) {
+      preview.innerHTML = `<div class="menu-empty">No meals found${tag ? ' tagged <em>' + esc(tag) + '</em>' : ''}.</div>`;
+      return;
+    }
+
+    // Sort: meals with photos first, then alphabetically
+    meals.sort((a, b) => {
+      const ap = (a.photos || []).length > 0 ? 0 : 1;
+      const bp = (b.photos || []).length > 0 ? 0 : 1;
+      if (ap !== bp) return ap - bp;
+      return a.name.localeCompare(b.name);
+    });
+
+    // Group into pages of 6
+    const ITEMS_PER_PAGE = 6;
+    const pages = [];
+    for (let i = 0; i < meals.length; i += ITEMS_PER_PAGE) {
+      pages.push(meals.slice(i, i + ITEMS_PER_PAGE));
+    }
+
+    const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const subtitle = tag ? tag.charAt(0).toUpperCase() + tag.slice(1) + ' Selections' : 'Curated Selections';
+
+    let html = '';
+    pages.forEach((pageMeals, pi) => {
+      html += `<div class="menu-page">
+        <div class="menu-header">
+          <div class="menu-restaurant">Family Kitchen</div>
+          <div class="menu-title">${escHtml(title)}</div>
+          <div class="menu-subtitle">${escHtml(subtitle)}</div>
+          <div class="menu-rule"></div>
+        </div>
+        <div class="menu-section-label">${pageMeals.length} ${pi === 0 ? subtitle : 'Continued'}</div>
+        ${pageMeals.map(m => renderMealItem(m)).join('')}
+        <div class="menu-footer">Printed ${escHtml(today)}</div>
+      </div>`;
+      if (pi < pages.length - 1) html += '<div style="height:32px"></div>';
+    });
+
+    preview.innerHTML = html;
+    document.getElementById('printBtn').disabled = false;
+  } catch(e) {
+    preview.innerHTML = `<div class="menu-empty" style="color:#ef4444">Error: ${escHtml(e.message)}</div>`;
+  }
+}
+
+function renderMealItem(m) {
+  const photos = m.photos || [];
+  const photo = photos[0];
+  const photoHtml = photo
+    ? `<img class="meal-item-photo" src="${escHtml(photo.storage_path ? '/' + photo.storage_path : '/api/apps/images/' + photo.id + '/file')}" alt="${escHtml(m.name)}" />`
+    : `<div class="meal-item-nophoto">🍽</div>`;
+
+  const stars = m.rating
+    ? `<div class="meal-item-stars">${[1,2,3,4,5].map(n =>
+        `<span class="${n <= m.rating ? 'star-filled' : 'star-empty'}">★</span>`
+      ).join('')}</div>`
+    : '';
+
+  const tags = (m.tags || []).filter(t => t).join('  ·  ');
+  const effort = m.effort ? m.effort.charAt(0).toUpperCase() + m.effort.slice(1) + ' effort' : '';
+
+  return `<div class="meal-item">
+    ${photoHtml}
+    <div class="meal-item-body">
+      <div class="meal-item-name">${escHtml(m.name)}</div>
+      ${tags ? `<div class="meal-item-tags">${escHtml(tags)}</div>` : ''}
+      ${m.description ? `<div class="meal-item-desc">${escHtml(m.description)}</div>` : ''}
+      ${stars}
+      ${effort ? `<div class="meal-item-effort">${escHtml(effort)}</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function esc(s) { return String(s || '').replace(/'/g,"\\'"); }
+</script>
+</body>
+</html>

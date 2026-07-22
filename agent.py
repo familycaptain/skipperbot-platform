@@ -18,7 +18,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
 from config import logger, discord_enabled
@@ -4488,15 +4488,33 @@ async def api_admin_deploy(request: Request):
     return {"status": "deploying", "message": "Draining in-flight work, then pulling latest + recycling."}
 
 
+def _missing_page_404(request: Request, message: str):
+    """A real 404 for a missing standalone page.
+
+    Returning a bare ``{...}, 404`` tuple is Flask-style: FastAPI serializes it
+    as a 200 whose body is the two-element array ``[{...},404]``, so the response
+    lies about its status. Browsers show the raw JSON and uptime checks count it
+    as success. Content-negotiate so a human never sees a JSON blob.
+    """
+    if "text/html" in (request.headers.get("accept") or ""):
+        return HTMLResponse(
+            "<!DOCTYPE html><meta charset='utf-8'><title>Not found</title>"
+            "<p style=\"font-family:sans-serif\">This page isn't available — "
+            "<a href='/'>open Skipper</a>.</p>",
+            status_code=404,
+        )
+    return JSONResponse({"error": message}, status_code=404)
+
+
 # ── Mobile capture page (served before SPA catch-all) ──
 _CAPTURE_HTML = Path(__file__).resolve().parent / "web" / "capture.html"
 
 @app.get("/capture")
-async def serve_capture_page():
+async def serve_capture_page(request: Request):
     """Mobile-optimized standalone issue capture page."""
     if _CAPTURE_HTML.is_file():
         return FileResponse(_CAPTURE_HTML, media_type="text/html")
-    return {"error": "Capture page not found"}, 404
+    return _missing_page_404(request, "Capture page not found")
 
 
 # ── Meal menu export page ──
@@ -4504,11 +4522,11 @@ _MEAL_MENU_HTML = Path(__file__).resolve().parent / "web" / "meal-menu.html"
 
 @app.get("/meal-menu")
 @app.get("/meal-menu.html")
-async def serve_meal_menu_page():
+async def serve_meal_menu_page(request: Request):
     """Standalone restaurant-style meal menu export / print page."""
     if _MEAL_MENU_HTML.is_file():
         return FileResponse(_MEAL_MENU_HTML, media_type="text/html")
-    return {"error": "Meal menu page not found"}, 404
+    return _missing_page_404(request, "Meal menu page not found")
 
 
 # ── Serve built frontend (SPA) ──
