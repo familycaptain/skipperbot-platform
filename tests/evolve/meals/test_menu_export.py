@@ -295,7 +295,13 @@ class MealMenuInjectionHardening(unittest.TestCase):
 
     def setUp(self):
         self.page = _read("web/meal-menu.html")
-        self.body = self.page.split("</head>", 1)[1]
+        body = self.page.split("</head>", 1)[1]
+        # Inline handlers are a MARKUP concern, so strip the script block before
+        # looking for them. Scanning the JS too makes any identifier beginning
+        # with "on" (`var only = ...`) a false positive — the assertion fires on
+        # correct code and the tempting "fix" is to rename the variable, which
+        # keeps a broken oracle alive.
+        self.markup = re.sub(r"<script>.*?</script>", "", body, flags=re.S)
 
     def test_no_html_injection_sinks(self):
         for sink in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "srcdoc"):
@@ -307,7 +313,9 @@ class MealMenuInjectionHardening(unittest.TestCase):
         self.assertNotRegex(self.page, r"\bset(?:Timeout|Interval)\s*\(\s*['\"]")
 
     def test_no_inline_event_handler_markup(self):
-        self.assertNotRegex(self.body, r"\son[a-z]+\s*=", "wire events with addEventListener")
+        # A real handler attribute is `on<name>="..."` inside a tag.
+        self.assertNotRegex(self.markup, r"""\son[a-z]+\s*=\s*["']""",
+                            "wire events with addEventListener, not on*= markup")
 
     def test_the_broken_escapers_are_deleted_not_left_dead(self):
         self.assertNotRegex(self.page, r"\bescHtml\s*\(")
