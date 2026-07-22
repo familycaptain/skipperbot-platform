@@ -485,7 +485,11 @@ async function generateMenu() {
     var meals = (data && data.meals) || [];
 
     if (!meals.length && (tag || activeQ || activeEffort)) {
-      showState(tag ? "No meals tagged “" + tag + "”." : "No meals match those filters.",
+      // Name the tag only when it is the ONLY filter — otherwise "No meals
+      // tagged family" is misleading when family alone has plenty and it was
+      // the search or effort that emptied the menu.
+      var only = (tag ? 1 : 0) + (activeQ ? 1 : 0) + (activeEffort ? 1 : 0) === 1;
+      showState(tag && only ? "No meals tagged “" + tag + "”." : "No meals match those filters.",
                 false, "Show all meals", clearAllFilters);
       return;
     }
