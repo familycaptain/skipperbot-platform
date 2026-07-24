@@ -548,7 +548,7 @@ function BrowseTab({ onEditMeal, refreshKey }) {
             if (q) params.set("q", q);
             if (effort) params.set("effort", effort);
             const qs = params.toString();
-            window.open(`/meal-menu.html${qs ? "?" + qs : ""}`, "_blank");
+            window.open(`/api/apps/meals/menu${qs ? "?" + qs : ""}`, "_blank");
           }}
           className="flex items-center gap-1 px-2.5 py-1.5 surface-card hover:bg-[var(--ds-raised)] text-muted hover:text-[var(--ds-text)] text-sm rounded border border-subtle transition-colors"
           title="Export menu PDF"
