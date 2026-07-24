@@ -18,7 +18,7 @@ from pathlib import Path
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from pydantic import BaseModel
 
 from config import logger, discord_enabled
@@ -210,8 +210,38 @@ async def auth_gate(request: Request, call_next):
     except Exception:
         request.state.principal = None
     if request.state.principal is None and not _is_public_path(request):
-        return JSONResponse({"detail": "Authentication required"}, status_code=401)
+        return _unauthenticated_response(request)
     return await call_next(request)
+
+
+# A page opened by top-level browser navigation (Accept: text/html) that hits the
+# auth gate should get a friendly sign-in page, NOT a raw JSON blob — otherwise a
+# logged-out viewer of any protected app page sees {"detail":...}. Generic: this
+# names no app and no path. XHR/fetch (Accept: application/json, or anything that is
+# not explicitly text/html) still gets the JSON 401, so the SPA's own error handling
+# is unchanged.
+_SIGN_IN_HTML = (
+    "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
+    "<meta name='viewport' content='width=device-width, initial-scale=1'>"
+    "<title>Sign in — Skipper</title>"
+    "<style>body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;"
+    "color:#e2e8f0;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0}"
+    ".card{text-align:center;max-width:22rem;padding:2rem}"
+    "h1{font-size:1.25rem;margin:0 0 .5rem}p{color:#94a3b8;margin:0 0 1.5rem;line-height:1.5}"
+    "a{display:inline-block;background:#2563eb;color:#fff;text-decoration:none;"
+    "padding:.6rem 1.4rem;border-radius:.5rem;font-weight:600}</style></head>"
+    "<body><div class='card'><h1>Please sign in</h1>"
+    "<p>Your session has expired or you're not signed in. Sign in to Skipper, then reopen this page.</p>"
+    "<a href='/'>Open Skipper</a></div></body></html>"
+)
+
+
+def _unauthenticated_response(request: Request):
+    """401 for a missing principal — content-negotiated (HTML page for a browser
+    navigation, JSON for an API/XHR caller)."""
+    if "text/html" in (request.headers.get("accept") or ""):
+        return HTMLResponse(_SIGN_IN_HTML, status_code=401)
+    return JSONResponse({"detail": "Authentication required"}, status_code=401)
 
 
 # CORS is added AFTER the auth gate so it remains the OUTERMOST middleware —
@@ -4518,15 +4548,19 @@ async def serve_capture_page(request: Request):
 
 
 # ── Meal menu export page ──
-_MEAL_MENU_HTML = Path(__file__).resolve().parent / "web" / "meal-menu.html"
-
+# The page now lives in and is served by the meals app (GET /api/apps/meals/menu);
+# the platform no longer owns a meals-specific page asset. Keep a permanent redirect
+# from the legacy URLs so open tabs and bookmarks still work. The Location is RELATIVE
+# (never built from request.base_url, so a spoofed Host cannot be reflected) and the
+# query string (?tag/&q/&effort) is preserved so a shared filtered link keeps its filters.
 @app.get("/meal-menu")
 @app.get("/meal-menu.html")
-async def serve_meal_menu_page(request: Request):
-    """Standalone restaurant-style meal menu export / print page."""
-    if _MEAL_MENU_HTML.is_file():
-        return FileResponse(_MEAL_MENU_HTML, media_type="text/html")
-    return _missing_page_404(request, "Meal menu page not found")
+async def meal_menu_legacy_redirect(request: Request):
+    """Legacy redirect: /meal-menu[.html] -> /api/apps/meals/menu (query string kept)."""
+    target = "/api/apps/meals/menu"
+    if request.url.query:
+        target += "?" + request.url.query
+    return RedirectResponse(target, status_code=308)
 
 
 # ── Serve built frontend (SPA) ──

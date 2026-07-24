@@ -9,14 +9,38 @@ import json
 import random
 import uuid
 
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from app_platform.auth import current_principal
 from apps.meals import data as _dl
 
 router = APIRouter()
+
+# The standalone menu-export page is a meals-app asset (moved out of the platform's
+# hardcoded routes). Served from a FIXED path — no route segment is user-controlled,
+# so there is no path traversal. Registered BEFORE the /{meal_id} wildcard below, or
+# GET /api/apps/meals/menu would resolve to api_get_meal(meal_id="menu") and 404.
+_MENU_PAGE = Path(__file__).resolve().parent / "pages" / "menu.html"
+
+
+@router.get("/menu")
+async def serve_menu_page(request: Request):
+    """The restaurant-style menu export / print page (GET /api/apps/meals/menu)."""
+    if _MENU_PAGE.is_file():
+        return FileResponse(_MENU_PAGE, media_type="text/html")
+    # A real 404 (not a Flask-style tuple that FastAPI would serialize as a 200).
+    if "text/html" in (request.headers.get("accept") or ""):
+        return HTMLResponse(
+            "<!DOCTYPE html><meta charset='utf-8'><title>Not found</title>"
+            "<p style=\"font-family:sans-serif\">This page isn't available — "
+            "<a href='/'>open Skipper</a>.</p>",
+            status_code=404,
+        )
+    return JSONResponse({"error": "Meal menu page not found"}, status_code=404)
 
 
 def _actor(request: Request) -> str:

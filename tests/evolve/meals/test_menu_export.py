@@ -1,36 +1,37 @@
-"""Meals menu export — the restored page and honest 404s on both standalone routes.
+"""Meals menu export — the page is now owned + served by the meals app.
 
-Clicking "Export menu PDF" in Meals opened a page showing the raw text
-`[{"error":"Meal menu page not found"},404]`. Two defects: web/meal-menu.html was
-lost in the fresh-start squash, and the route's fallback returned a Flask-style
-`{...}, 404` tuple, which FastAPI serializes as a 200 whose body is a two-element
-array — a response that lies about its status.
+Originally (ev-110) the page was restored at web/meal-menu.html, served by a
+hardcoded route in agent.py. ev-111 (Option B) MOVES it into the meals app:
+apps/meals/pages/menu.html, served by the meals router at GET /api/apps/meals/menu,
+retiring the platform block (a legacy 308 redirect is kept). The page's markup + CSS
+are UNCHANGED from ev-110 and are still byte-compared here, so a restyle cannot pass
+under cover of a move.
 
-The page is a LITERAL PORT of the pre-public original; its markup and CSS are
-normative. PART 1 binds the reported defect with real HTTP; PART 2 scopes the
-source check to the two handlers; PART 3 byte-compares the ported stylesheet so a
-restyle cannot pass; PARTS 4-6 cover parity, wiring, and the injection hardening
-that closes the ported file's live reflected-XSS hole.
+PART 1  real HTTP against the NEW route (full router, so the /{meal_id} wildcard
+        shadow is caught), the legacy redirect, and the 1d content-negotiated 401.
+PART 2  source: the platform block is retired; capture is untouched.
+PART 3  byte-compare the stylesheet against the ev-110 fixture (must EXECUTE).
+PART 4  structural parity.  PART 5  wiring + the repointed button.  PART 6  injection.
 
 Run: python -m unittest tests.evolve.meals.test_menu_export
 """
 import hashlib
 import os
 import re
-import tempfile
 import unittest
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
 
-# The port source the page must remain faithful to, vendored as a fixture so the
-# byte-compare runs on EVERY host. Kept beside the test on purpose: pointing at a
-# path outside the repo makes the strongest assertion here skip itself silently
-# anywhere but the machine that happened to have the file.
+# The page's new home (moved out of the platform web/ root into the meals app).
+PAGE_REL = "apps/meals/pages/menu.html"
+
+# The ev-110 port reference, vendored beside the test so the byte-compare runs on
+# EVERY host. A missing fixture must FAIL (never skip silently), or the strongest
+# assertion here quietly disappears.
 ORIGINAL = os.path.join(os.path.dirname(__file__), "fixtures", "meal-menu-original.html")
 ORIGINAL_MD5 = "5ed863cc9490be83c7ffb8bcf54e886f"
 
-# Style rules the port is allowed to ADD on top of the original's stylesheet.
-# Anything else differing is a restyle, and a restyle is a failure.
+# Style rules the page is allowed to ADD on top of the original's stylesheet.
 ALLOWED_STYLE_ADDITIONS = {
     ".menu-hint",
     ".filter-chips",
@@ -52,7 +53,6 @@ def _style_block(html):
 
 
 def _rules(css):
-    """{selector: normalized-declarations} for every top-level rule."""
     css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
     out = {}
     for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
@@ -63,17 +63,8 @@ def _rules(css):
     return out
 
 
-def _func_body(src, name):
-    """Source of one `async def <name>(...)` up to the next top-level def/decorator."""
-    m = re.search(r"^async def %s\(" % re.escape(name), src, re.M)
-    assert m, "handler %s not found" % name
-    rest = src[m.start():]
-    nxt = re.search(r"\n(?=@app\.|def |async def |# ──)", rest[1:])
-    return rest[: nxt.start() + 1] if nxt else rest
-
-
-class MealMenuRoutes404(unittest.TestCase):
-    """PART 1 — real HTTP. This is what actually binds the reported defect."""
+class MealMenuRoute(unittest.TestCase):
+    """PART 1 — real HTTP against the meals app's own route. Binds the move."""
 
     @classmethod
     def setUpClass(cls):
@@ -82,100 +73,118 @@ class MealMenuRoutes404(unittest.TestCase):
         except Exception as exc:  # pragma: no cover
             raise unittest.SkipTest("fastapi TestClient unavailable: %s" % exc)
 
-    def _client(self):
+    def _client_full_router(self):
+        # Mount the ACTUAL meals router (not a bare handler) so a /menu route
+        # registered AFTER the /{meal_id} wildcard would be caught (it would
+        # resolve to the meal-detail handler and 404 'Meal not found').
         from fastapi import FastAPI
-        from fastapi.responses import FileResponse
         from fastapi.testclient import TestClient
-        import agent
+        from apps.meals import routes as meals_routes
 
-        # Mount only the two handlers under test — importing agent's full app
-        # would pull in the auth gate and the SPA catch-all.
         app = FastAPI()
-        app.get("/capture")(agent.serve_capture_page)
-        app.get("/meal-menu")(agent.serve_meal_menu_page)
-        app.get("/meal-menu.html")(agent.serve_meal_menu_page)
-        assert FileResponse  # imported for parity with the handlers
+        app.include_router(meals_routes.router, prefix="/api/apps/meals")
         return TestClient(app, raise_server_exceptions=False)
 
-    def test_meal_menu_page_is_served_when_the_asset_exists(self):
-        client = self._client()
-        res = client.get("/meal-menu.html")
-        self.assertEqual(res.status_code, 200)
+    def test_menu_page_is_served_by_the_meals_router(self):
+        res = self._client_full_router().get("/api/apps/meals/menu")
+        self.assertEqual(res.status_code, 200, "the /menu route must not be shadowed by /{meal_id}")
         self.assertIn("text/html", res.headers.get("content-type", ""))
+        self.assertIn("Menu Export", res.text)
 
-    def test_meal_menu_missing_asset_is_a_real_404_not_a_200_array(self):
-        import agent
-        original = agent._MEAL_MENU_HTML
-        agent._MEAL_MENU_HTML = agent.Path("/nonexistent/meal-menu.html")
+    def test_menu_missing_asset_is_a_real_404_not_a_200_array(self):
+        from apps.meals import routes as meals_routes
+        original = meals_routes._MENU_PAGE
+        meals_routes._MENU_PAGE = meals_routes.Path("/nonexistent/menu.html")
         try:
-            res = self._client().get("/meal-menu.html", headers={"accept": "application/json"})
+            res = self._client_full_router().get(
+                "/api/apps/meals/menu", headers={"accept": "application/json"})
         finally:
-            agent._MEAL_MENU_HTML = original
+            meals_routes._MENU_PAGE = original
         self.assertEqual(res.status_code, 404, "missing page must be a real 404, not a 200")
         self.assertNotIsInstance(res.json(), list, "must not serialize as the [{...},404] array")
-        self.assertEqual(res.json().get("error"), "Meal menu page not found")
 
-    def test_capture_missing_asset_is_a_real_404_not_a_200_array(self):
-        # web/capture.html is ALSO absent from this repo (same squash), so this
-        # is the live behaviour of /capture, not a hypothetical.
-        res = self._client().get("/capture", headers={"accept": "application/json"})
-        self.assertEqual(res.status_code, 404)
-        self.assertNotIsInstance(res.json(), list)
-        self.assertEqual(res.json().get("error"), "Capture page not found")
-
-    def test_capture_is_served_when_the_asset_exists(self):
+    def test_legacy_url_308_redirects_and_preserves_the_query_string(self):
+        # The platform keeps a redirect from the old public URL so bookmarks / open
+        # tabs survive — and a shared FILTERED link must keep its filters.
         import agent
-        original = agent._CAPTURE_HTML
-        with tempfile.NamedTemporaryFile("w", suffix=".html", delete=False) as fh:
-            fh.write("<!DOCTYPE html><title>capture</title>")
-            tmp = fh.name
-        agent._CAPTURE_HTML = agent.Path(tmp)
-        try:
-            res = self._client().get("/capture")
-            self.assertEqual(res.status_code, 200)
-            self.assertIn("text/html", res.headers.get("content-type", ""))
-        finally:
-            agent._CAPTURE_HTML = original
-            os.unlink(tmp)
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
 
-    def test_a_browser_gets_html_not_a_raw_json_blob(self):
-        res = self._client().get("/capture", headers={"accept": "text/html"})
-        self.assertEqual(res.status_code, 404)
-        self.assertIn("text/html", res.headers.get("content-type", ""))
-        self.assertNotIn('{"error"', res.text)
+        app = FastAPI()
+        app.get("/meal-menu")(agent.meal_menu_legacy_redirect)
+        app.get("/meal-menu.html")(agent.meal_menu_legacy_redirect)
+        client = TestClient(app, raise_server_exceptions=False)
+
+        res = client.get("/meal-menu.html?tag=family&q=x&effort=low", follow_redirects=False)
+        self.assertIn(res.status_code, (307, 308))
+        loc = res.headers["location"]
+        self.assertTrue(loc.startswith("/api/apps/meals/menu"), "relative Location to the new route")
+        self.assertNotIn("://", loc, "Location must be relative (no Host-header reflection)")
+        for kv in ("tag=family", "q=x", "effort=low"):
+            self.assertIn(kv, loc, "the redirect must preserve the query string")
+
+    def test_the_auth_gate_401_is_content_negotiated_1d(self):
+        # 1d: a browser navigation (Accept: text/html) that hits the gate gets a
+        # friendly HTML sign-in page; an XHR/API caller (Accept: application/json)
+        # still gets the JSON 401, so the SPA's error handling is unchanged.
+        import agent
+
+        class _Req:
+            def __init__(self, accept):
+                self.headers = {"accept": accept}
+
+        html = agent._unauthenticated_response(_Req("text/html"))
+        self.assertEqual(html.status_code, 401)
+        self.assertIn("text/html", html.media_type or "")
+
+        js = agent._unauthenticated_response(_Req("application/json"))
+        self.assertEqual(js.status_code, 401)
+        self.assertNotIn("text/html", js.media_type or "")
 
 
-class MealMenuHandlerSource(unittest.TestCase):
-    """PART 2 — source assertions SCOPED to the two handlers.
-
-    agent.py keeps other bare-tuple returns by design (a repo-wide sweep is its
-    own issue), so a file-wide assertion would be red on arrival.
-    """
+class MealMenuPlatformRetired(unittest.TestCase):
+    """PART 2 — the platform no longer owns the meal-menu page; capture untouched."""
 
     def setUp(self):
         self.agent = _read("agent.py")
 
-    def test_both_handlers_return_a_real_404_and_no_bare_tuple(self):
-        for name in ("serve_meal_menu_page", "serve_capture_page"):
-            body = _func_body(self.agent, name)
-            self.assertNotRegex(body, r"\}, 404", "%s still returns a bare tuple" % name)
-            self.assertRegex(body, r"_missing_page_404\(", "%s must use the 404 helper" % name)
+    def test_agent_no_longer_defines_the_meal_menu_handler_or_constant(self):
+        self.assertNotRegex(self.agent, r"\basync def serve_meal_menu_page\b",
+                            "the platform meal-menu handler must be retired")
+        self.assertNotRegex(self.agent, r"\b_MEAL_MENU_HTML\b",
+                            "the platform meal-menu Path constant must be retired")
 
-    def test_the_helper_sets_a_real_404_status(self):
-        helper = re.search(r"def _missing_page_404\(.*?\n\n\n", self.agent, re.S).group(0)
-        self.assertIn("status_code=404", helper)
-        self.assertIn("JSONResponse", helper)
-        self.assertIn("HTMLResponse", helper)
+    def test_agent_keeps_a_legacy_redirect_to_the_new_route(self):
+        self.assertRegex(self.agent, r"async def meal_menu_legacy_redirect")
+        self.assertRegex(self.agent, r"RedirectResponse")
+        self.assertIn("/api/apps/meals/menu", self.agent)
 
-    def test_htmlresponse_is_imported(self):
-        self.assertRegex(self.agent, r"from fastapi\.responses import [^\n]*HTMLResponse")
+    def test_capture_is_left_untouched(self):
+        # Decision #2 = leave capture in the platform (its asset doesn't exist and
+        # it belongs to the issues app).
+        self.assertRegex(self.agent, r"\basync def serve_capture_page\b")
+        self.assertRegex(self.agent, r"\b_CAPTURE_HTML\b")
+
+    def test_the_meals_router_serves_the_page_from_a_fixed_path(self):
+        routes = _read("apps/meals/routes.py")
+        self.assertRegex(routes, r'@router\.get\("/menu"\)')
+        # Registered ABOVE the /{meal_id} wildcard (which routes.py comments say
+        # must be last).
+        self.assertLess(routes.index('@router.get("/menu")'),
+                        routes.index('@router.get("/{meal_id}")'),
+                        "/menu must be registered before the /{meal_id} wildcard")
+        self.assertIn("FileResponse", routes)
+        self.assertNotRegex(routes, r'@router\.get\("/menu/\{',
+                            "the page route must not take a user-controlled segment")
 
 
 class MealMenuPortFidelity(unittest.TestCase):
-    """PART 3 — the port is the contract: byte-compare the stylesheet."""
+    """PART 3 — the page is unchanged from ev-110: byte-compare the stylesheet."""
 
     def setUp(self):
-        self.page = _read("web/meal-menu.html")
+        self.page = _read(PAGE_REL)
+        self.assertTrue(os.path.exists(ORIGINAL),
+                        "the byte-compare fixture is missing — this check must never skip")
         with open(ORIGINAL, "rb") as f:
             raw = f.read()
         self.assertEqual(hashlib.md5(raw).hexdigest(), ORIGINAL_MD5,
@@ -187,15 +196,14 @@ class MealMenuPortFidelity(unittest.TestCase):
         origin = _rules(_style_block(self.original))
 
         missing = sorted(set(origin) - set(ported))
-        self.assertEqual(missing, [], "ported stylesheet dropped rules: %s" % missing)
+        self.assertEqual(missing, [], "stylesheet dropped rules: %s" % missing)
 
         added = sorted(set(ported) - set(origin) - ALLOWED_STYLE_ADDITIONS)
         self.assertEqual(added, [], "undeclared style additions (a restyle): %s" % added)
 
         changed = [s for s in origin if s not in ALLOWED_STYLE_ADDITIONS and ported[s] != origin[s]]
-        # @media print legitimately gains the .menu-hint hide rule.
         changed = [s for s in changed if s != "@media print"]
-        self.assertEqual(changed, [], "ported rules were modified: %s" % changed)
+        self.assertEqual(changed, [], "rules were modified: %s" % changed)
 
     def test_print_block_hides_the_new_chrome_too(self):
         printed = _style_block(self.page).split("@media print", 1)[1]
@@ -207,7 +215,7 @@ class MealMenuParity(unittest.TestCase):
     """PART 4 — structural parity with the original."""
 
     def setUp(self):
-        self.page = _read("web/meal-menu.html")
+        self.page = _read(PAGE_REL)
         self.css = " ".join(_style_block(self.page).split())
 
     def test_pagination(self):
@@ -251,13 +259,12 @@ class MealMenuParity(unittest.TestCase):
 
 
 class MealMenuWiring(unittest.TestCase):
-    """PART 5 — how the page talks to the API."""
+    """PART 5 — how the page talks to the API, and the repointed button."""
 
     def setUp(self):
-        self.page = _read("web/meal-menu.html")
+        self.page = _read(PAGE_REL)
 
     def test_meals_list_path_has_no_trailing_slash(self):
-        # Only a path-TERMINATED slash is wrong; /tag-cloud is a legitimate sibling.
         self.assertNotRegex(self.page, r"/api/apps/meals/[?\"']")
         self.assertIn('"/api/apps/meals"', self.page)
 
@@ -277,35 +284,26 @@ class MealMenuWiring(unittest.TestCase):
     def test_print_is_triggered(self):
         self.assertIn("window.print()", self.page)
 
-    def test_the_export_button_forwards_the_active_filters(self):
+    def test_the_export_button_points_at_the_new_route_with_filters(self):
         jsx = _read("apps/meals/ui/MealsApp.jsx")
-        launcher = jsx.split("/meal-menu.html")[0][-600:]
+        self.assertIn("/api/apps/meals/menu", jsx, "the button must open the new route")
+        self.assertNotIn("/meal-menu.html", jsx, "the old URL must be gone from the button")
+        launcher = jsx.split("/api/apps/meals/menu")[0][-600:]
         for key in ('params.set("tag"', 'params.set("q"', 'params.set("effort"'):
-            self.assertIn(key, launcher)
+            self.assertIn(key, launcher, "the button must still forward the active filters")
 
 
 class MealMenuInjectionHardening(unittest.TestCase):
-    """PART 6 — negative security assertions.
-
-    The ported original carried a live zero-click reflected XSS: ?tag auto-ran the
-    fetch and reached an innerHTML template through esc(), a single-quote-only
-    JS-string escaper, plus a second entirely unescaped interpolation of the
-    tag-derived subtitle. Wholesale createElement/textContent closes both.
-    """
+    """PART 6 — negative security assertions (ev-110's XSS hardening, preserved)."""
 
     def setUp(self):
-        self.page = _read("web/meal-menu.html")
+        self.page = _read(PAGE_REL)
         body = self.page.split("</head>", 1)[1]
-        # Inline handlers are a MARKUP concern, so strip the script block before
-        # looking for them. Scanning the JS too makes any identifier beginning
-        # with "on" (`var only = ...`) a false positive — the assertion fires on
-        # correct code and the tempting "fix" is to rename the variable, which
-        # keeps a broken oracle alive.
         self.markup = re.sub(r"<script>.*?</script>", "", body, flags=re.S)
 
     def test_no_html_injection_sinks(self):
         for sink in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "srcdoc"):
-            self.assertNotIn(sink, self.page, "%s must not survive the conversion" % sink)
+            self.assertNotIn(sink, self.page, "%s must not survive" % sink)
 
     def test_no_dynamic_code_evaluation(self):
         self.assertNotRegex(self.page, r"\beval\s*\(")
@@ -313,7 +311,6 @@ class MealMenuInjectionHardening(unittest.TestCase):
         self.assertNotRegex(self.page, r"\bset(?:Timeout|Interval)\s*\(\s*['\"]")
 
     def test_no_inline_event_handler_markup(self):
-        # A real handler attribute is `on<name>="..."` inside a tag.
         self.assertNotRegex(self.markup, r"""\son[a-z]+\s*=\s*["']""",
                             "wire events with addEventListener, not on*= markup")
 
@@ -322,7 +319,6 @@ class MealMenuInjectionHardening(unittest.TestCase):
         self.assertNotRegex(self.page, r"\besc\s*\(")
 
     def test_navigation_targets_are_hardcoded(self):
-        # The photo <img>.src is the SINGLE permitted data-derived URL.
         self.assertNotRegex(self.page, r"location\.(href|assign|replace)\s*=")
         for m in re.findall(r"\.href\s*=\s*([^;\n]+)", self.page):
             self.assertRegex(m.strip(), r'^"/"?"?$|^"/"$', "href must be a hardcoded path: %s" % m)
