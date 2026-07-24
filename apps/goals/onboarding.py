@@ -441,6 +441,75 @@ def _onboarding_goal_projects(goal_id: str) -> list[dict]:
         return []
 
 
+def _last_unanswered_nudge(
+    recipient: str,
+    hold_hours: int,
+    *,
+    include_subject_ids: list | None = None,
+    include_content_like: str | None = None,
+    exclude_subject_ids: list | None = None,
+    exclude_content_like: str | None = None,
+) -> bool:
+    """Shared LOG-NATIVE nudge-cadence query for BOTH onboarding holds (#101/#113).
+
+    True when the most recent skipper->``recipient`` nudge that matches the
+    include/exclude filters is still fresh (< ``hold_hours`` old) AND
+    ``recipient`` has said nothing since. Fails OPEN (returns False) on any
+    error — a person is never blocked from being helped.
+
+    The two holds share this ONE query so a future fix lands in one place:
+    - INCLUSION (tour hold, ev-75/#101): a row counts if its ``subject_id`` is
+      one of ``include_subject_ids`` OR its content matches ``include_content_like``.
+    - EXCLUSION (step hold, #113): a row counts if its ``subject_id`` is NOT one
+      of ``exclude_subject_ids`` (NULL allowed — an untagged send still counts)
+      AND its content does NOT match ``exclude_content_like`` — i.e. the most
+      recent NON-tour onboarding nudge.
+    """
+    recip = (recipient or "").strip().lower()
+    if not recip:
+        return False
+    try:
+        from data_layer.db import fetch_one
+        clauses: list[str] = []
+        params: list = [recip]
+        if include_subject_ids is not None or include_content_like is not None:
+            inc: list[str] = []
+            if include_subject_ids is not None:
+                inc.append("subject_id = ANY(%s)")
+                params.append(list(include_subject_ids))
+            if include_content_like is not None:
+                inc.append("content LIKE %s")
+                params.append(include_content_like)
+            clauses.append("(" + " OR ".join(inc) + ")")
+        if exclude_subject_ids is not None:
+            clauses.append("(subject_id IS NULL OR NOT (subject_id = ANY(%s)))")
+            params.append(list(exclude_subject_ids))
+        if exclude_content_like is not None:
+            clauses.append("content NOT LIKE %s")
+            params.append(exclude_content_like)
+        where_extra = ("AND " + " AND ".join(clauses) + " ") if clauses else ""
+        params.append(hold_hours)
+        nudge = fetch_one(
+            "SELECT seq FROM consciousness_log WHERE kind='message' "
+            "AND who_from='skipper' AND who_to=%s "
+            f"{where_extra}"
+            "AND created_at > now() - make_interval(hours => %s) "
+            "ORDER BY seq DESC LIMIT 1",
+            tuple(params),
+        )
+        if not nudge:
+            return False
+        reply = fetch_one(
+            "SELECT id FROM consciousness_log WHERE kind='message' "
+            "AND who_from=%s AND seq > %s LIMIT 1",
+            (recip, nudge["seq"]),
+        )
+        return reply is None
+    except Exception:
+        logger.warning("onboarding: nudge-cadence query failed open", exc_info=True)
+        return False
+
+
 def tour_nudge_on_hold(recipient: str, hold_hours: int = 24) -> bool:
     """GLOBAL tour-nudge cadence hold (ev-75 / #101) — LOG-NATIVE (Phase 5b).
 
@@ -458,38 +527,60 @@ def tour_nudge_on_hold(recipient: str, hold_hours: int = 24) -> bool:
     content for an untagged send. Conservative on error — never blocks
     indefinitely (returns False).
     """
-    recip = (recipient or "").strip().lower()
-    if not recip:
-        return False
     try:
         goal_id = onboarding_agenda_in_progress()
         if not goal_id:
             return False
         projects = _onboarding_goal_projects(goal_id)
-        tours = {p.get("id"): (p.get("name") or "") for p in projects
-                 if onboarding_project_kind(p.get("name", "")) == "tour" and p.get("id")}
-        if not tours:
-            return False
-        from data_layer.db import fetch_one
-        nudge = fetch_one(
-            "SELECT seq FROM consciousness_log WHERE kind='message' "
-            "AND who_from='skipper' AND who_to=%s "
-            "AND (subject_id = ANY(%s) OR content LIKE '%%Try the %%') "
-            "AND created_at > now() - make_interval(hours => %s) "
-            "ORDER BY seq DESC LIMIT 1",
-            (recip, list(tours.keys()), hold_hours),
-        )
-        if not nudge:
-            return False
-        reply = fetch_one(
-            "SELECT id FROM consciousness_log WHERE kind='message' "
-            "AND who_from=%s AND seq > %s LIMIT 1",
-            (recip, nudge["seq"]),
-        )
-        return reply is None
+        tour_ids = [p.get("id") for p in projects
+                    if onboarding_project_kind(p.get("name", "")) == "tour" and p.get("id")]
     except Exception:
         logger.warning("onboarding: tour_nudge_on_hold failed open", exc_info=True)
         return False
+    if not tour_ids:
+        return False
+    return _last_unanswered_nudge(
+        recipient, hold_hours,
+        include_subject_ids=tour_ids,
+        include_content_like="%Try the %",
+    )
+
+
+def onboarding_step_nudge_on_hold(recipient: str, hold_hours: int = 24) -> bool:
+    """NON-TOUR onboarding-nudge cadence hold (#113) — the twin of the tour hold.
+
+    True when the most recent onboarding nudge Skipper sent ``recipient`` that
+    is NOT a tour nudge is still fresh (< ``hold_hours`` old) AND ``recipient``
+    has said nothing since. Extends to the ordered setup agenda the once-a-day/
+    held-until-reply cadence #101 gave the app tours — always intended for BOTH,
+    only ever built for tours. So a step question (e.g. the household roster)
+    is nudged at most once per day per person and held until they reply.
+
+    Keyed by TOUR-EXCLUSION, NOT a step ``subject_id``: ``send_message.subject``
+    is optional/LLM-chosen, so an UNTAGGED step nudge (the exact reported bug)
+    must still be held — a subject-keyed hold would silently no-op on it. And
+    ``onboarding_project_kind`` returns only ``'tour'`` | ``'agenda'`` — there is
+    no ``'step'`` value — so "not a tour" IS the agenda/step nudge. Fails OPEN.
+
+    Only meaningful while an onboarding agenda is in progress (callers gate on
+    ``onboarding_agenda_in_progress`` first, as the tour hold does), so an
+    ordinary post-onboarding DM is never held.
+    """
+    try:
+        goal_id = onboarding_agenda_in_progress()
+        if not goal_id:
+            return False
+        projects = _onboarding_goal_projects(goal_id)
+        tour_ids = [p.get("id") for p in projects
+                    if onboarding_project_kind(p.get("name", "")) == "tour" and p.get("id")]
+    except Exception:
+        logger.warning("onboarding: onboarding_step_nudge_on_hold failed open", exc_info=True)
+        return False
+    return _last_unanswered_nudge(
+        recipient, hold_hours,
+        exclude_subject_ids=tour_ids or None,
+        exclude_content_like="%Try the %",
+    )
 
 
 def tour_gated(goal, project, *, projects: list[dict] | None = None) -> bool:

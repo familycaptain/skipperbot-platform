@@ -842,6 +842,16 @@ async def pm_skill_runner(event: dict) -> dict:
                             return ("REFUSED: a tour nudge to this person is already "
                                     "out (<24h, unanswered) — do not send another tour "
                                     "nudge until they reply (#75)")
+                    else:
+                        # PACING (#113): the ordered agenda/step nudges get the
+                        # SAME once-a-day/held-until-reply cadence as tours —
+                        # always intended for both, only ever built for tours.
+                        # Keyed by tour-EXCLUSION (this send is not a tour), so
+                        # an untagged step nudge is still held.
+                        if _onb.onboarding_step_nudge_on_hold(to_user):
+                            return ("REFUSED: a nudge for this onboarding step is "
+                                    "already out (<24h, unanswered) — wait for their "
+                                    "reply before nudging again (#113)")
             except Exception:
                 logger.warning("PM_SKILL: tour dispatch guard failed open", exc_info=True)
             row = await asyncio.to_thread(
