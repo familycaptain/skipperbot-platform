@@ -695,8 +695,8 @@ function MembersPanel({ userId }) {
       const j = await res.json().catch(() => ({}));
       if (res.ok) {
         setSurfaceMsg(next === "discord"
-          ? "Skipper will reach you on Discord."
-          : "Skipper will use the web console, and Discord only while you're active there.");
+          ? "Skipper will message you on Discord as well."
+          : "Skipper will reach you here, and only use Discord while you're chatting there.");
       } else {
         setSurface(prev);
         setSurfaceMsg(j.detail || `Could not save (${res.status}).`);
@@ -935,20 +935,21 @@ function MembersPanel({ userId }) {
 
       {/* Where Skipper should reach me — everyone (self-service) */}
       <div className="rounded-lg border border-subtle p-4 space-y-3">
-        <h3 className="text-sm font-medium text-default inline-flex items-center gap-2"><MessageCircle size={14} /> Where Skipper reaches me</h3>
+        <h3 className="text-sm font-medium text-default inline-flex items-center gap-2"><MessageCircle size={14} /> Where will you chat with Skipper?</h3>
         <p className="text-xs text-muted">
-          This chat always keeps the full conversation from every surface — nothing is
-          ever missed here. This only sets where else Skipper should reach you.
+          Not a question about what Skipper <em>can</em> use — it's about where you
+          expect to be. This console always keeps the whole conversation from every
+          surface, so nothing is ever missed here either way.
         </p>
         {surface === null ? (
           <div className="text-xs text-muted">Loading…</div>
         ) : (
           <div className="space-y-2">
             {[
-              { value: "web", label: "Here (the web console)",
-                hint: "Discord is used only while you're actively replying there." },
-              { value: "discord", label: "Discord",
-                hint: "Skipper always messages you on Discord as well." },
+              { value: "web", label: "Mostly here, in this console",
+                hint: "Skipper messages you on Discord only while you're actively chatting there — so it answers you where you wrote from, without pinging Discord about everything else." },
+              { value: "discord", label: "Mostly on Discord",
+                hint: "Skipper messages you on Discord as well, so you don't need to keep this open to hear from it." },
             ].map((opt) => (
               <label key={opt.value} className="flex items-start gap-2 cursor-pointer">
                 <input type="radio" name="primary_surface" value={opt.value}
