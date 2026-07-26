@@ -784,11 +784,13 @@ async def _deliver_pm_messages(actions: list[dict]):
     # Phase 3c (specs/CONSCIOUSNESS.md §13): standup messages go out in
     # Skipper's ONE voice (consciousness message + transport fan-out); the
     # chat-history write and the log row come with it — no manual glue.
-    from app_platform.consciousness import send_message as _cl_send
+    # Through the one speak path — the standup is proactive and scheduled, so the
+    # recipient is usually not at a screen and the policy decides where it lands.
+    from app_platform.speak import speak as _speak
 
     async def send_dm(person: str, message: str) -> str:
-        _cl_send(who_to=person, content=message, domain="pm",
-                 payload={"context": "pm_checkin"})
+        await _speak(who_to=person, content=message, domain="pm",
+                     payload={"context": "pm_checkin"})
         return "DM sent (consciousness)"
 
     def save_notification(person: str, message: str, context: str = "") -> None:

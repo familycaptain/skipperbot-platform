@@ -182,25 +182,17 @@ async def _greeting_turn(user: str, event: dict) -> dict:
     if not text:
         return {"summary": "greeting turn produced no text"}
 
-    from app_platform.consciousness import send_message
-    row = await _aio.to_thread(
-        # Domain records WHY this was said. A setup greeting belongs to onboarding; an
-        # ordinary welcome-back is just chat, and mislabelling it would make the log read
-        # as if onboarding were still running long after it finished.
-        lambda: send_message(who_to=user, content=text,
-                             domain=("onboarding" if onboarding_live else "chat"),
-                             surface="web", payload={"connection_event": event.get("id")}))
-
-    # HAND IT TO THEM NOW. send_message only QUEUES transport; the notification loop
-    # runs on the reminders tick (CHECK_INTERVAL = 30s), so without this the person
-    # watches a dead screen for up to half a minute after Skipper has finished
-    # composing — and the typing indicator has to clear at turn end, long before the
-    # words arrive. They are connected (that is why we are greeting them), so deliver
-    # directly and let the queue keep owning the surfaces nobody is watching.
-    # Idempotent: the frame carries the log-row id, and the client renders one
-    # utterance once no matter how many times it is pushed.
-    from app_platform.speak import deliver_now
-    await deliver_now(user, text, srv_id=row["id"])
+    # THROUGH THE ONE SPEAK PATH. It picks the surfaces (this person just connected to
+    # the web, so: straight onto their screen, and NOT also a Discord DM and a phone
+    # push — which is what the old channel="all" did for every greeting) and hands it
+    # over immediately rather than leaving it for the 30s delivery tick.
+    # Domain records WHY this was said. A setup greeting belongs to onboarding; an
+    # ordinary welcome-back is just chat, and mislabelling it would make the log read
+    # as if onboarding were still running long after it finished.
+    from app_platform.speak import speak
+    row = await speak(who_to=user, content=text,
+                      domain=("onboarding" if onboarding_live else "chat"),
+                      surface="web", payload={"connection_event": event.get("id")})
 
     # Client-UX compat: the web client's optimistic-typing endpoint keys on the
     # legacy greeted flag; set it so reloads don't re-show the typing beat.
@@ -243,10 +235,13 @@ async def _goals_milestone_runner(event: dict) -> dict:
             return "unknown tool"
         if sent:
             return "already delivered"
-        row = await _aio.to_thread(
-            lambda: send_message(who_to=primary, content=args.get("message") or "",
-                                 domain="goals", subject_id=payload.get("goal_id"),
-                                 payload={"milestone_event": event.get("id")}))
+        # Through the one speak path: a milestone is proactive, so the person is often
+        # not watching — the policy reaches them where they might come back, and puts it
+        # straight on screen if they are here rather than after the 30s delivery tick.
+        from app_platform.speak import speak
+        row = await speak(who_to=primary, content=args.get("message") or "",
+                          domain="goals", subject_id=payload.get("goal_id"),
+                          payload={"milestone_event": event.get("id")})
         sent.append(row["id"])
         return f"sent ({row['id']})"
 

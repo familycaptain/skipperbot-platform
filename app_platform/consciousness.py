@@ -285,6 +285,7 @@ def send_message(
     surface: Optional[str] = None,
     subject_id: Optional[str] = None,
     payload: Optional[dict] = None,
+    channel: str = "all",
 ) -> dict:
     """Skipper speaks: append the REAL outbound message row, then hand transport
     to the notifications app (§16). One mouth: the row IS the record; delivery
@@ -307,7 +308,13 @@ def send_message(
             message=content,
             source_type="consciousness",
             source_id=row["id"],
-            channel="all",
+            # WHICH external surfaces this goes to. Defaults to "all" so every existing
+            # caller behaves exactly as before; app_platform.speak passes a narrower set
+            # when the surface policy says so (e.g. do not mirror into Discord while the
+            # person is mid-conversation on the web — Discord would show only Skipper's
+            # half of it). The log row is written regardless: it is the record, and the
+            # web timeline projects from it, so a narrower channel never loses anything.
+            channel=channel,
             delivered=False,
         )
     except Exception as exc:  # transport failure must not un-say the said

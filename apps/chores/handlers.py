@@ -128,10 +128,13 @@ async def _chores_skill_runner(event: dict) -> dict:
             return f"REFUSED: {to_user!r} is not in this round's recipient list"
         if to_user in sent:
             return f"ALREADY SENT to {to_user} this round — do not message anyone twice"
-        row = send_message(
-            who_to=to_user, content=args.get("message") or "",
-            domain="chores", payload={"alarm": alarm},
-        )
+        # Through the one speak path. Chore rounds fire on a schedule (morning/evening),
+        # so the recipient is usually not at a screen — the policy reaches them where
+        # they will actually see it. Also awaits properly instead of making a blocking
+        # DB call inside this async dispatcher.
+        from app_platform.speak import speak
+        row = await speak(who_to=to_user, content=args.get("message") or "",
+                          domain="chores", payload={"alarm": alarm})
         sent.append(to_user)
         return f"sent ({row['id']})"
 

@@ -20,10 +20,113 @@ for the one surface where somebody is actually watching.
 The duplicate this could cause is already handled: the live frame carries the
 consciousness-log id as `srv_id`, and the client renders one utterance once regardless
 of how many times it is pushed.
+
+THE ONE PATH
+`speak()` is where everything Skipper says to a person should go. Producers decide
+WHAT is worth saying; they do not decide where it lands or whether the person is
+reachable. That judgement is made once, here, against the surface policy in
+`voice_policy` — otherwise every new background feature reinvents it slightly
+differently, which is how one utterance ends up arriving twice on one surface and not
+at all on another.
 """
 import logging
 
 logger = logging.getLogger(__name__)
+
+
+def _on_web(user_id: str) -> bool:
+    """Is this person watching the web desktop right now?"""
+    try:
+        from connections import manager
+        return user_id in {str(u).strip().lower() for u in manager.list_connected_users()}
+    except Exception:
+        # Unknown presence is treated as absent: reaching out to someone who turned out
+        # to be present is recoverable, silence for someone who was never there is not.
+        logger.debug("SPEAK: presence unknown for %s", user_id, exc_info=True)
+        return False
+
+
+def _conversation_lock(user_id: str):
+    """The surface this person last SPOKE on, if recent enough to still be a
+    conversation. Derived from the log, which already records every inbound message and
+    the surface it arrived on — no extra state to keep in sync."""
+    from app_platform.voice_policy import lock_from_last_inbound
+    try:
+        from data_layer.db import fetch_one
+        row = fetch_one(
+            "SELECT surface, EXTRACT(EPOCH FROM (now() - created_at)) AS age "
+            "FROM consciousness_log WHERE kind='message' AND who_from=%s "
+            "ORDER BY created_at DESC LIMIT 1",
+            (user_id,),
+        )
+        if not row:
+            return None
+        return lock_from_last_inbound(row.get("surface"), row.get("age"))
+    except Exception:
+        # No lock means "reach out normally" — the safe direction. Failing the other way
+        # would silently confine an utterance to a surface nobody is reading.
+        logger.debug("SPEAK: lock lookup failed for %s", user_id, exc_info=True)
+        return None
+
+
+def _plan_and_record(user: str, content: str, domain: str, urgent: bool,
+                     log_kwargs: dict):
+    """Decide the surfaces and write the record. Synchronous, so both entry points
+    share ONE copy of the policy application — a second copy is how the sync and async
+    paths would quietly drift apart."""
+    from app_platform.consciousness import send_message
+    from app_platform.voice_policy import plan_surfaces
+
+    plan = plan_surfaces(on_web=_on_web(user), lock=_conversation_lock(user),
+                         urgent=urgent)
+
+    # External transport only for the surfaces the plan chose. The web is deliberately
+    # absent: the log write IS its durability, and `web_live` is the direct hand-off.
+    channels = []
+    if plan.discord:
+        channels.append("discord")
+    if plan.push:
+        channels += ["pushover", "mobile"]
+
+    # "none", never "" — an EMPTY channel string is not "no surfaces", it means
+    # "unset", and the delivery layer answers that with the Settings default
+    # (discord+pushover). Sending "" here would quietly do the exact thing the policy
+    # just decided against: mirroring a web conversation into Discord.
+    row = send_message(who_to=user, content=content, domain=domain,
+                       channel=(",".join(channels) if channels else "none"),
+                       **log_kwargs)
+    logger.info("SPEAK: %s -> %s (%s)", user, plan.surfaces or ("log-only",), plan.reason)
+    return row, plan
+
+
+async def speak(*, who_to: str, content: str, domain: str, urgent: bool = False,
+                **log_kwargs) -> dict:
+    """Say something to a person, on whichever surfaces actually make sense.
+
+    Returns the consciousness-log row — the record of having said it, written whether
+    or not any surface turned out to be reachable.
+    """
+    import asyncio as _aio
+    user = (who_to or "").strip().lower()
+    row, plan = await _aio.to_thread(
+        _plan_and_record, user, content, domain, urgent, log_kwargs)
+    if plan.web_live:
+        await deliver_now(user, content, srv_id=row["id"])
+    return row
+
+
+def speak_sync(*, who_to: str, content: str, domain: str, urgent: bool = False,
+               **log_kwargs) -> dict:
+    """The same thing from synchronous code (job handlers, schedulers).
+
+    Identical policy and record. The only difference is the live web hand-off: from a
+    worker thread there is no event loop to push on, so a watching person gets it from
+    the delivery tick instead of instantly. That is the honest trade for not blocking —
+    and it is never a LOSS, because the log already holds the message.
+    """
+    user = (who_to or "").strip().lower()
+    row, _plan = _plan_and_record(user, content, domain, urgent, log_kwargs)
+    return row
 
 
 async def deliver_now(user_id: str, text: str, srv_id: str = "") -> bool:

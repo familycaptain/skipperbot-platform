@@ -88,11 +88,14 @@ def handle_daily_digest(job: dict, ctx) -> str:
     # Phase 3c (specs/CONSCIOUSNESS.md §13): the digest speaks in Skipper's ONE
     # voice — a real consciousness message + multi-surface transport, replacing
     # the raw Discord-only send_dm (whose replies were context-blind).
-    from app_platform.consciousness import send_message as _send_message
+    # Through the one speak path (sync entry — this is a job handler, not async). The
+    # digest goes out on a schedule, so recipients are usually not at a screen; the
+    # policy reaches them where they will actually see it instead of assuming.
+    from app_platform.speak import speak_sync as _speak_sync
 
     def send_dm(username: str, message: str) -> None:
-        _send_message(who_to=username, content=message, domain="bounties",
-                      payload={"context": "bounty_digest"})
+        _speak_sync(who_to=username, content=message, domain="bounties",
+                    payload={"context": "bounty_digest"})
 
     def _shadow_bounty_dm(username: str, message: str) -> None:
         return None  # superseded: send_message IS the record now

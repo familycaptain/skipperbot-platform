@@ -854,10 +854,14 @@ async def pm_skill_runner(event: dict) -> dict:
                                     "reply before nudging again (#113)")
             except Exception:
                 logger.warning("PM_SKILL: tour dispatch guard failed open", exc_info=True)
-            row = await asyncio.to_thread(
-                lambda: send_message(who_to=to_user, content=args.get("message") or "",
-                                     domain="pm", subject_id=subj,
-                                     payload={"pm_review": event.get("id")}))
+            # Through the one speak path. The PM sweep is the biggest source of
+            # proactive messages, and it runs on a timer — so the recipient is usually
+            # NOT watching. The policy decides where that actually lands (and will not
+            # mirror into Discord if they happen to be mid-conversation on the web).
+            from app_platform.speak import speak
+            row = await speak(who_to=to_user, content=args.get("message") or "",
+                              domain="pm", subject_id=subj,
+                              payload={"pm_review": event.get("id")})
             messaged.add(to_user)
             actions_taken.append({"type": "dm_sent", "dm_to": to_user})
             return f"sent ({row['id']})"

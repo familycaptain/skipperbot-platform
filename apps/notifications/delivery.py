@@ -125,6 +125,40 @@ async def _deliver_one(notif: dict):
         if not spoke and targets == {"voice"}:
             targets = {"voice"} | _default_channels()   # fall back to push
 
+    # SURFACE POLICY, APPLIED WHERE NOTHING CAN BYPASS IT.
+    # Every producer's notification funnels through here, so "where does this actually
+    # land" is judged once, rather than being re-decided — and slowly diverging — in
+    # each of the ~13 places that raise notifications directly.
+    #
+    # Placed HERE, after the voice fallback above, because that fallback can re-expand
+    # `targets` to the defaults (re-adding discord) when voice was the only channel and
+    # could not speak. Narrowing earlier would be silently undone by it.
+    #
+    # It narrows ONLY Discord, on purpose:
+    #   * Discord is the one surface where mirroring does damage. Mid-conversation on
+    #     the web, sending Skipper's half to Discord leaves a monologue there — the
+    #     conversation with one side missing.
+    #   * pushover/mobile are a tap on the shoulder, not a conversation surface. They
+    #     cannot show half a dialogue, and a producer that asked for one usually knows
+    #     something we do not (a finishing timer SHOULD reach a phone regardless of who
+    #     is watching what). Dropping those would make this a regression, not a fix.
+    #   * "voice" is opt-in and origin-routed — not ours to second-guess.
+    if "discord" in targets:
+        try:
+            from app_platform.speak import _conversation_lock, _on_web
+            from app_platform.voice_policy import plan_surfaces
+            _u = (recipient or "").strip().lower()
+            _plan = await asyncio.to_thread(
+                lambda: plan_surfaces(on_web=_on_web(_u), lock=_conversation_lock(_u)))
+            if not _plan.discord:
+                targets.discard("discord")
+                logger.info("NOTIF_DELIVERY: %s — holding discord (%s)",
+                            notif_id, _plan.reason)
+        except Exception:
+            # Policy is a refinement, not a gate: if it cannot be evaluated, deliver
+            # exactly as before rather than dropping someone's message.
+            logger.debug("NOTIF_DELIVERY: surface policy unavailable", exc_info=True)
+
     # --- Discord DM ---
     if "discord" in targets:
         try:
