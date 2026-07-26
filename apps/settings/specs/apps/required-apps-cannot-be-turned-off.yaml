@@ -1,0 +1,15 @@
+kind: specification
+id: settings.apps.required-apps-cannot-be-turned-off
+title: The apps the install cannot start without have no switch
+state: live
+autonomy: gated
+behavior: >-
+  Apps the install cannot boot without are shown as required, with no switch, and turning one off
+  is refused by name even when the attempt is made another way. A household can never disable its
+  way into an install that will not start.
+implements:
+- agent.py::api_set_disabled_apps
+- app_platform/loader.py::REQUIRED_APPS
+tests: []
+links: {}
+notes: ''

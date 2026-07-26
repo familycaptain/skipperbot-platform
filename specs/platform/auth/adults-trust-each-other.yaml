@@ -1,0 +1,23 @@
+kind: specification
+id: platform.auth.adults-trust-each-other
+title: Adults in a household see each other's records; a child's account does not
+state: live
+autonomy: gated
+behavior: >
+  The adults in a household are treated as trusting one another: any adult can read and change
+  another adult's records, including the sensitive ones — health, medications, appointments, mail —
+  without being granted access record by record. Skipper is a shared household assistant, and a
+  household whose adults need to be walled off from each other has a problem Skipper is not the right
+  tool for. An account marked as a child is not part of that circle: it reaches its own things and
+  what has been shared with it, and never an adult's health records, mail, or another child's
+  business. Nothing about this is per-record consent — the boundary is who the account belongs to.
+implements:
+- data_layer/users.py::has_any_role
+- data_layer/users.py::parse_roles
+- app_platform/auth.py::resolve_target
+tests: []
+links: {}
+notes: >
+  The operator's decision, stated plainly: adults are assumed to trust the other adults in their
+  household. It deliberately does not extend to child accounts, which the `kid` role already exists
+  to distinguish.

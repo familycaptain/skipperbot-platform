@@ -2,10 +2,13 @@ kind: capability
 id: settings
 title: Settings
 app: settings
-scope: 'Central settings panel: discovers every installed app''s config: schema at runtime, renders
-  schema-driven inputs, and round-trips values through app_platform.config (scope app:<id>). Also
-  exposes platform-scope settings, app panels, and the user''s account. NOT per-app business logic
-  — Settings is the configuration surface over the platform config service.'
+scope: >-
+  Where a Skipper install is configured: the household's own details (its timezone and where it lives),
+  the people who use it and what each of them may do, the credentials for outside services, the model
+  providers Skipper thinks with, every installed app's own options, and which apps each person sees
+  on their desktop. Several of these can be set NOWHERE else, which is why Skipper hands out a Settings
+  path rather than claiming it applied them itself. NOT the owner of any of the values — each is read
+  by whoever needs it — and NOT a chat surface: nothing here is changed by asking.
 state: live
 autonomy: gated
 links: {}

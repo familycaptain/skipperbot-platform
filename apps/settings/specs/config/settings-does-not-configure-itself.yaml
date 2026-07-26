@@ -1,0 +1,13 @@
+kind: specification
+id: settings.config.settings-does-not-configure-itself
+title: Settings does not configure itself
+state: live
+autonomy: gated
+behavior: >-
+  Settings never appears among the apps it configures. It has no options of its own, so a page for
+  it would be an empty one that sends a person looking for something that is not there.
+implements:
+- apps/settings/routes.py::_loaded_apps_sorted
+tests: []
+links: {}
+notes: ''

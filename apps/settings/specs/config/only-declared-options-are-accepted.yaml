@@ -1,0 +1,15 @@
+kind: specification
+id: settings.config.only-declared-options-are-accepted
+title: An option an app never declared is refused
+state: live
+autonomy: gated
+behavior: >-
+  Saving an option an app does not declare is refused, and the refusal lists the options that app
+  does accept. The app's own declaration is the contract, so a stale page or a hand-made request cannot
+  leave behind a stored value that nothing will ever read.
+implements:
+- apps/settings/routes.py::api_patch_app_settings
+- apps/settings/routes.py::api_patch_panel
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: settings.members.markings-you-cannot-toggle-survive-an-edit
+title: The owner marking is not editable, and not lost
+state: live
+autonomy: gated
+behavior: >-
+  Some markings are not the household's to hand out here — which person owns the install, and whether
+  an account belongs to a child or to a bot — and they appear as read-only badges rather than toggles.
+  Editing the roles that are editable never drops them, so a round trip through the toggles cannot
+  silently demote the owner.
+implements:
+- agent.py::_normalize_roles
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: ''

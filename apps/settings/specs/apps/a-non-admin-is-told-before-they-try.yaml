@@ -1,0 +1,15 @@
+kind: specification
+id: settings.apps.a-non-admin-is-told-before-they-try
+title: A non-admin is told before they try, not after
+state: live
+autonomy: gated
+behavior: >-
+  Someone who is not an admin sees on the apps screen that only admins turn apps on and off, and the
+  switches are inert — the refusal is stated before the attempt rather than arriving as a failure
+  afterwards. Their own launcher choices are untouched and remain theirs.
+implements:
+- apps/settings/ui/SettingsApp.jsx
+- agent.py::api_set_disabled_apps
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: settings.integrations.no-channels-means-direct-messages-only
+title: With no channels named, Discord is direct messages only
+state: live
+autonomy: gated
+behavior: >-
+  Naming no Discord channels means Skipper answers direct messages and nothing else — the safe default
+  for a server it has just been added to. Naming channels makes it reply in those channels without
+  having to be mentioned. Which member a Discord account belongs to is a separate matter, set per
+  person.
+implements:
+- discord_config.py::_allowed_channels
+- apps/settings/routes.py::PLATFORM_PANELS
+tests: []
+links: {}
+notes: ''

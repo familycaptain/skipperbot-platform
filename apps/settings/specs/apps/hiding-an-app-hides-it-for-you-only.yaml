@@ -1,0 +1,15 @@
+kind: specification
+id: settings.apps.hiding-an-app-hides-it-for-you-only
+title: Hiding an app hides it for you only
+state: live
+autonomy: gated
+behavior: >-
+  A person can take any app off their own launcher. It disappears from their desktop at once, everyone
+  else's is untouched, and the app itself keeps running — whatever it does in the background carries
+  on, and Skipper can still open it for them when it is relevant.
+implements:
+- agent.py::api_set_hidden_apps
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: ''

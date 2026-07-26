@@ -1,0 +1,13 @@
+kind: specification
+id: settings.config.an-app-that-is-not-running
+title: Asking about an app that is not running
+state: live
+autonomy: gated
+behavior: >-
+  Asking for the options of an app that is not installed, or that has been turned off for the household,
+  answers that it is not running — rather than presenting a form whose saves would go nowhere.
+implements:
+- apps/settings/routes.py::api_get_app_settings
+tests: []
+links: {}
+notes: ''

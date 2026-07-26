@@ -1,0 +1,13 @@
+kind: specification
+id: settings.members.a-name-already-taken-is-refused
+title: A login name already taken is refused
+state: live
+autonomy: gated
+behavior: >-
+  Adding a member under a name that already exists is refused and says so, rather than quietly merging
+  with or overwriting the account that holds it.
+implements:
+- agent.py::api_create_user
+tests: []
+links: {}
+notes: ''

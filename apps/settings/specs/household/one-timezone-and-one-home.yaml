@@ -1,0 +1,16 @@
+kind: specification
+id: settings.household.one-timezone-and-one-home
+title: One timezone and one home, shared by everyone
+state: live
+autonomy: gated
+behavior: >-
+  The timezone and the home location belong to the install, not to a person: whoever changes them
+  changes them for the whole household, and every surface — the console, Discord, voice — reads the
+  same pair. There is no per-person override, which is deliberate: a household shares a clock and
+  a sky.
+implements:
+- apps/settings/routes.py::PLATFORM_PANELS
+- app_platform/location.py::resolve_location
+tests: []
+links: {}
+notes: ''

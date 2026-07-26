@@ -1,0 +1,15 @@
+kind: specification
+id: settings.account.one-discord-account-one-member
+title: One Discord account belongs to one member
+state: live
+autonomy: gated
+behavior: >-
+  A Discord account can be linked to exactly one member. Claiming one that is already linked to somebody
+  else is refused and names who holds it, rather than moving the link and leaving Skipper addressing
+  the wrong person on Discord.
+implements:
+- apps/settings/routes.py::api_patch_account
+- data_layer/users.py::get_user_by_discord_id
+tests: []
+links: {}
+notes: ''

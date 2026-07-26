@@ -1,0 +1,17 @@
+kind: specification
+id: settings.apps.a-new-app-appears-for-everyone
+title: A newly installed app appears on its own
+state: live
+autonomy: gated
+behavior: >-
+  What a person chooses is which apps to leave out, not which to include — so an app installed later
+  shows up on everybody's launcher without anyone being asked to opt in, and nobody's earlier choices
+  are disturbed.
+implements:
+- agent.py::api_get_hidden_apps
+- web/src/apps/registry.js::getTileApps
+tests: []
+links: {}
+notes: >-
+  An allow-list would silently hide every future app from every existing member, which is the failure
+  this shape exists to avoid.

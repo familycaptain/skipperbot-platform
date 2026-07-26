@@ -1,0 +1,16 @@
+kind: specification
+id: settings.model-config.finishing-setup-is-what-starts-the-conversation
+title: On a fresh install, saving the models is what starts the conversation
+state: live
+autonomy: gated
+behavior: >-
+  Before models are configured Skipper cannot speak, so on a fresh install the first successful save
+  is what lets it: the owner is greeted within seconds at the screen they are already sitting at,
+  without reloading. A later model change on an install that was already working greets nobody.
+implements:
+- agent.py::onboarding_save_models
+tests: []
+links: {}
+notes: >-
+  The greeting normally fires on arrival, but a keyless install has nothing to produce it with — the
+  save is the only later moment at which it becomes possible.

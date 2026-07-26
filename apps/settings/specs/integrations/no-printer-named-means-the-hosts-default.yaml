@@ -1,0 +1,15 @@
+kind: specification
+id: settings.integrations.no-printer-named-means-the-hosts-default
+title: With no printer named, printing goes to the host's default
+state: live
+autonomy: gated
+behavior: >-
+  A printer can be named here either as a network address or as a local queue name; leaving it blank
+  means Skipper prints wherever the machine it runs on prints. A household whose computer already
+  prints has nothing to configure.
+implements:
+- print_runner.py::_default_printer
+- apps/settings/routes.py::PLATFORM_PANELS
+tests: []
+links: {}
+notes: ''

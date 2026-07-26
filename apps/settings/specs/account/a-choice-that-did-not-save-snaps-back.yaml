@@ -1,0 +1,13 @@
+kind: specification
+id: settings.account.a-choice-that-did-not-save-snaps-back
+title: A choice that did not save does not look saved
+state: live
+autonomy: gated
+behavior: >-
+  The choice moves as soon as it is clicked, and if the save is refused it moves back to what is actually
+  stored and says why. Nobody is left believing Skipper will reach them somewhere it will not.
+implements:
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: ''

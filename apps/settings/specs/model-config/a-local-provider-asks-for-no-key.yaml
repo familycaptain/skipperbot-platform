@@ -1,0 +1,14 @@
+kind: specification
+id: settings.model-config.a-local-provider-asks-for-no-key
+title: A provider that runs locally asks for no key
+state: live
+autonomy: gated
+behavior: >-
+  Choosing a provider that runs on the household's own hardware shows no key box, says as much, and
+  passes its check without one. A key is only ever asked for by a provider that actually needs one.
+implements:
+- web/src/components/ModelConfig.jsx
+- providers/model_config.py::validate_tier
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: settings.model-config.three-jobs-three-choices
+title: Three jobs, each with its own provider and model
+state: live
+autonomy: gated
+behavior: >-
+  The model choice is made three times, not once: the model that does the hard reasoning, a cheaper
+  one for light work, and the one that turns text into vectors for search and memory. Each is chosen
+  independently from any installed provider and carries its own key, so a household can run the cheap
+  tier on its own hardware and the reasoning tier on a paid service.
+implements:
+- providers/tier_resolver.py::TIERS
+- web/src/components/ModelConfig.jsx
+tests: []
+links: {}
+notes: ''

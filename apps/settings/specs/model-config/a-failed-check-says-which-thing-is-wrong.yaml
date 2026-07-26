@@ -1,0 +1,16 @@
+kind: specification
+id: settings.model-config.a-failed-check-says-which-thing-is-wrong
+title: A failed check names which thing is wrong
+state: live
+autonomy: gated
+behavior: >-
+  When a check fails the person is told which kind of problem it was — no key given, the key was rejected,
+  the account has no credit, that model is not available on this account, or the provider could not
+  be reached — rather than a raw error. The key itself is never echoed back, to the page or to the
+  logs.
+implements:
+- providers/model_config.py::validate_tier
+- web/src/components/ModelConfig.jsx
+tests: []
+links: {}
+notes: ''

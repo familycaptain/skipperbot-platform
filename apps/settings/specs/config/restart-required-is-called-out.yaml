@@ -1,0 +1,16 @@
+kind: specification
+id: settings.config.restart-required-is-called-out
+title: Options that need a restart say so, before and after
+state: live
+autonomy: gated
+behavior: >-
+  An option that is only read when the server starts is marked as such beside its label, and after
+  saving it the person is told plainly which of the things they just changed will not apply until
+  they restart. Everything else applies at once and is not mentioned, so a restart prompt always means
+  a restart is genuinely needed.
+implements:
+- apps/settings/routes.py::_panel_field_json
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: ''

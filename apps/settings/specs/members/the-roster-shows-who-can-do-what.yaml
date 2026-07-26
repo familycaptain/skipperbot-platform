@@ -1,0 +1,16 @@
+kind: specification
+id: settings.members.the-roster-shows-who-can-do-what
+title: The roster shows who can do what
+state: live
+autonomy: gated
+behavior: >-
+  An admin sees every member of the household in one list: their display name, the name they log in
+  with, which roles they hold, whether they have a password yet, and whether a Discord account is
+  linked. Their own row is marked as theirs, so a change about to be made to their own account is
+  obvious before it is made.
+implements:
+- agent.py::list_users
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: ''

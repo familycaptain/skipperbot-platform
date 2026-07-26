@@ -1,0 +1,15 @@
+kind: specification
+id: settings.account.the-choice-never-changes-what-the-console-holds
+title: The choice never changes what the console holds
+state: live
+autonomy: gated
+behavior: >-
+  Choosing Discord does not move a person's conversation off the web console: the console keeps the
+  whole record from every surface either way. The choice only decides which additional surfaces are
+  worth sending to, which is exactly why it is safe to get wrong.
+implements:
+- agent.py::api_set_primary_surface
+- app_platform/voice_policy.py::plan_discord
+tests: []
+links: {}
+notes: ''

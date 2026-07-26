@@ -1,0 +1,15 @@
+kind: specification
+id: settings.members.only-an-admin-manages-members
+title: Only an admin manages members
+state: live
+autonomy: gated
+behavior: >-
+  Someone who is not an admin sees no roster at all — only the cards for their own account — and is
+  told to ask an admin. Every roster action is decided from who is actually signed in and never from
+  what the request claims, so a hand-made request naming an admin as the actor is still refused.
+implements:
+- agent.py::_is_admin_req
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: ''

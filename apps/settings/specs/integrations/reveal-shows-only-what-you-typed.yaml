@@ -1,0 +1,14 @@
+kind: specification
+id: settings.integrations.reveal-shows-only-what-you-typed
+title: Unmasking shows only what you just typed
+state: live
+autonomy: gated
+behavior: >-
+  A credential box is masked as it is filled in and can be unmasked to check for a paste error. Because
+  the stored value is never sent to the browser, unmasking a box nobody has typed into shows nothing
+  — the reveal can never be used to read out a key that is already saved.
+implements:
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: ''

@@ -59,16 +59,45 @@ characters and are shown in the UI card and in chat.
 **Chores `api_uncomplete` deletes first and checks permission second** — then re-creates the row it
 just deleted (with a new id) if the actor turns out not to have been allowed.
 
-### What this needs from the operator
+### RESOLVED — the operator has decided the trust model
 
-The intended model is a product decision, not something the audit can settle:
+**Adults in a household trust each other.** Any adult may read and change another adult's records,
+including medical and email. The reasoning: Skipper is a shared household assistant, and a household
+whose adults need walling off from each other has a problem Skipper is not the right tool for.
+Recorded as `specs/platform/auth/adults-trust-each-other.yaml`.
 
-- Should an adult see another adult's medical records? Their email?
-- Should a child's account see any of it?
-- Is "household member" a single trust level, or are parent/child distinct (chores already assumes
-  they are, via `_can_act_on_kid`)?
+This **reclassifies most of §1 as intended behaviour, not defects.** Adult-to-adult access in medical,
+email, home, auto, documents and the rest is the product working as designed. The audit was wrong to
+frame it as an IDOR.
 
-Once that is decided, the fix belongs at a shared enforcement point rather than in 30 apps.
+### What actually remains: the `kid` role is unenforced almost everywhere
+
+The decision was explicitly about *adults*, and the platform already distinguishes children. This is
+the residual gap, and it is narrow and concrete:
+
+- `public.users.role` is a comma-separated set constrained to
+  `admin|member|kid|bot|parent|primary` (`migrations/000_baseline.sql:447-453`). **`kid` is a login
+  role, not merely a chores record.**
+- `data_layer/users.py` provides `parse_roles`, `has_role` and `has_any_role`, so enforcement is
+  already available to every app.
+- **Only three apps ever check a role: `chores` (5 files), `bounties` (1), `goals` (1).** The other 32
+  never do.
+
+So a child's account can read — and in most apps delete — every adult's medical conditions,
+medications, appointments and lab results, and fetch an adult's email bodies. `chores` alone models
+the boundary properly (`_require_parent`, `_can_act_on_kid`: "Parents can act on any kid; a kid can
+only act on themselves").
+
+The fix belongs at a shared enforcement point rather than in 32 apps: the sensitive-data apps need to
+consult `has_any_role` the way chores already does. No further product decision is needed for the
+medical and email cases — a child's account reaching an adult's health records or mail is not
+something the trust decision covers.
+
+### Still open, and separate from access control
+
+`apps/medical/help.md` states the data never leaves the household while `digest_record` sends every
+record to the configured chat model, which defaults to a hosted provider. That is a truthfulness
+problem in a privacy claim, and it is unaffected by who may read what inside the install (§9).
 
 ---
 

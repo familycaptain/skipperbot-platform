@@ -1,0 +1,15 @@
+kind: specification
+id: settings.config.a-refused-save-keeps-your-edits
+title: A refused save does not lose what you typed
+state: live
+autonomy: gated
+behavior: >-
+  When a save is refused — not an admin, an option the app does not accept, no encryption key to store
+  a credential with, a place name that could not be found — the reason appears on the page and every
+  field keeps what was entered. Nothing is silently dropped and nothing has to be typed a second time.
+implements:
+- apps/settings/ui/SettingsApp.jsx
+- apps/settings/routes.py::api_patch_panel
+tests: []
+links: {}
+notes: ''

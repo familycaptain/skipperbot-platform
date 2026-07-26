@@ -1,0 +1,15 @@
+kind: specification
+id: settings.config.never-saved-shows-the-default
+title: An option nobody has touched shows its default
+state: live
+autonomy: gated
+behavior: >-
+  An option that has never been saved reads back as the value the app documents as its default, not
+  as blank — so a fresh install shows what it will actually do rather than looking unconfigured. Saving
+  stores a value; clearing it back to nothing is not the same as never having set it.
+implements:
+- apps/settings/routes.py::_current_values
+- apps/settings/routes.py::_panel_payload
+tests: []
+links: {}
+notes: ''

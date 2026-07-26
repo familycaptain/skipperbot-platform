@@ -1,0 +1,16 @@
+kind: specification
+id: settings.model-config.the-text-encoding-choice-is-locked
+title: The text-encoding model cannot be changed afterwards
+state: live
+autonomy: gated
+behavior: >-
+  Once the install has encoded anything, the text-encoding model is fixed and the page says so: everything
+  already stored was encoded by that model and a different one would not be comparable with it. The
+  refusal is made when the change is saved and not only in the page, so it holds however the request
+  arrives — and the other two choices remain freely changeable.
+implements:
+- agent.py::onboarding_save_models
+- providers/model_config.py::embedding_dim
+tests: []
+links: {}
+notes: ''

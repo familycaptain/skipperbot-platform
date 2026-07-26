@@ -1,0 +1,16 @@
+kind: specification
+id: settings.household.the-home-is-a-place-not-an-address
+title: The home location is a place, not an address
+state: live
+autonomy: gated
+behavior: >-
+  The home location is entered as free text — a town and country, or a postal code and country — and
+  a street or mailing address is never asked for. It is looked up once when saved and the result kept,
+  so weather, daylight and time-of-day have coordinates without the place being looked up again each
+  time.
+implements:
+- apps/settings/routes.py::api_patch_panel
+- app_platform/location.py::save_default_location
+tests: []
+links: {}
+notes: ''

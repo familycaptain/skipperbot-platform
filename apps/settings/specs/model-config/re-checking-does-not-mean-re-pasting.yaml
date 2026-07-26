@@ -1,0 +1,16 @@
+kind: specification
+id: settings.model-config.re-checking-does-not-mean-re-pasting
+title: Re-checking a tier does not mean re-pasting the key
+state: live
+autonomy: gated
+behavior: >-
+  Checking a tier that already has a stored key works with the key box left empty — the stored key
+  is used. Changing which model a provider serves therefore takes a couple of clicks and no trip to
+  the provider's dashboard.
+implements:
+- providers/model_config.py::validate_tier
+tests:
+- type: unit
+  path: tests/test_model_key_storage.py
+links: {}
+notes: ''

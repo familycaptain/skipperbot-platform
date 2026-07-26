@@ -1,0 +1,17 @@
+kind: specification
+id: settings.members.being-named-in-chat-is-not-an-account
+title: Being named in conversation is not being given a login
+state: live
+autonomy: gated
+behavior: >-
+  Naming a family member while talking to Skipper personalises what it says and does nothing more:
+  only an account created here lets that person log in, hold roles, or be reached on their own surfaces
+  — and a young child tracked for chores may need no account at all. Skipper cannot create one, so
+  it gives the path here instead of reporting that it has added anybody.
+implements:
+- apps/goals/onboarding.py::ONBOARDING_AGENDA
+tests: []
+links: {}
+notes: >-
+  Onboarding cannot complete this step itself, so it is worded to hand over a path and never to claim
+  the account was made.

@@ -1,0 +1,15 @@
+kind: specification
+id: settings.model-config.no-model-chosen-means-saying-so
+title: Before a model is chosen, Skipper says so rather than failing
+state: live
+autonomy: gated
+behavior: >-
+  On an install where no models have been selected, everything that would need one — chat, background
+  thinking, searching memories — reports that no model provider is configured and points at this page,
+  instead of erroring or starting up and quietly doing nothing. Nothing crashes for want of a key.
+implements:
+- providers/tier_resolver.py::TierNotConfigured
+- app_platform/capabilities.py::is_enabled
+tests: []
+links: {}
+notes: ''

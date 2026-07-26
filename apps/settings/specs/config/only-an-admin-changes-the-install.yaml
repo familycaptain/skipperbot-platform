@@ -1,0 +1,17 @@
+kind: specification
+id: settings.config.only-an-admin-changes-the-install
+title: Only an admin changes how the install behaves
+state: live
+autonomy: gated
+behavior: >-
+  Changing an app's options, an install-wide panel, or an integration credential requires an admin.
+  Anyone else is refused, nothing is written, and the refusal says what is required rather than failing
+  obscurely — what they typed stays on screen so nothing has to be re-entered once an admin is at
+  the keyboard.
+implements:
+- apps/settings/routes.py::api_patch_app_settings
+- apps/settings/routes.py::api_patch_panel
+- app_platform/auth.py::enforce_admin
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: settings.account.only-a-surface-a-person-can-be-told-apart-on
+title: Only a surface a person can be told apart on may be chosen
+state: live
+autonomy: gated
+behavior: >-
+  The console and Discord are the only choices. Anything else — the shared speaker in particular,
+  where a spoken turn cannot be attributed to one individual — is refused rather than stored, so a
+  person's messages are never routed somewhere they cannot be told from anyone else's.
+implements:
+- data_layer/users.py::set_primary_surface
+- data_layer/users.py::VALID_PRIMARY_SURFACES
+tests: []
+links: {}
+notes: ''

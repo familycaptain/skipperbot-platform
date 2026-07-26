@@ -1,0 +1,17 @@
+kind: specification
+id: settings.model-config.provider-keys-are-never-shown
+title: A provider key is never shown again
+state: live
+autonomy: gated
+behavior: >-
+  A saved provider key is never returned to the page — all it reports is that one is stored. Saving
+  with the box empty keeps it, so changing the model on a provider that is already working never needs
+  the key again.
+implements:
+- providers/model_config.py::read_tier
+- providers/model_config.py::save_tier
+tests:
+- type: unit
+  path: tests/test_model_key_storage.py
+links: {}
+notes: ''

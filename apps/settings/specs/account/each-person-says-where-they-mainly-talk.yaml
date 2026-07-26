@@ -1,0 +1,16 @@
+kind: specification
+id: settings.account.each-person-says-where-they-mainly-talk
+title: Each person says where they mainly talk
+state: live
+autonomy: gated
+behavior: >-
+  Where Skipper should reach a person is that person's own choice: they say whether they mainly talk
+  here in the console or mainly on Discord, and it applies to them alone — one member can live in
+  Discord while another never opens it. A parent or an admin may set it on somebody else's behalf;
+  nobody else can.
+implements:
+- agent.py::api_set_primary_surface
+- data_layer/users.py::set_primary_surface
+tests: []
+links: {}
+notes: ''

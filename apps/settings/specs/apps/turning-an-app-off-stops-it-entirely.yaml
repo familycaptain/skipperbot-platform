@@ -1,0 +1,15 @@
+kind: specification
+id: settings.apps.turning-an-app-off-stops-it-entirely
+title: Turning an app off stops it entirely
+state: live
+autonomy: gated
+behavior: >-
+  An admin can turn an app off for the whole install, which is a stronger thing than hiding it: the
+  app is not loaded at all — no chat tools, no pages, no background work — for anybody. It takes a
+  restart, and the screen says so before the choice is made.
+implements:
+- agent.py::api_set_disabled_apps
+- app_platform/loader.py::load_all_apps
+tests: []
+links: {}
+notes: ''

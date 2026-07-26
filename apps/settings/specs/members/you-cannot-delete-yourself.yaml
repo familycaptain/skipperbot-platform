@@ -1,0 +1,15 @@
+kind: specification
+id: settings.members.you-cannot-delete-yourself
+title: You cannot delete your own account
+state: live
+autonomy: gated
+behavior: >-
+  An admin cannot remove their own account, so whoever is doing the removing is still there afterwards
+  to put a mistake right. Removing somebody else asks for confirmation first and says plainly that
+  the account is deleted rather than suspended.
+implements:
+- agent.py::api_delete_user
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: ''

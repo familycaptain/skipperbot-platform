@@ -1,0 +1,16 @@
+kind: specification
+id: settings.members.adding-a-member
+title: Adding a member means a login and a temporary password
+state: live
+autonomy: gated
+behavior: >-
+  An admin adds a member by giving the name they will log in with, a display name, the roles they
+  hold, and a temporary password of at least eight characters — shown in plain text so it can be read
+  out to them. Login names are lowercase letters, digits and underscores, starting with a letter;
+  anything else is refused with the rule rather than silently altered.
+implements:
+- agent.py::api_create_user
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: ''

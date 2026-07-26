@@ -1,0 +1,16 @@
+kind: specification
+id: settings.config.only-what-you-changed-is-saved
+title: Saving touches only the fields you edited
+state: live
+autonomy: gated
+behavior: >-
+  A save writes only the fields that actually differ from what is stored and leaves every other option
+  exactly as it was, so two people editing different options of the same app do not overwrite each
+  other. Afterwards the page shows the values the server holds rather than the ones typed, so anything
+  the server adjusted or would not take is visible at once.
+implements:
+- apps/settings/ui/SettingsApp.jsx
+- apps/settings/routes.py::api_patch_app_settings
+tests: []
+links: {}
+notes: ''

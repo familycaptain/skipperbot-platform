@@ -1,0 +1,18 @@
+kind: specification
+id: settings.household.timezones-are-offered-with-their-offsets
+title: Timezones are offered with their current offsets
+state: live
+autonomy: gated
+behavior: >-
+  The timezone is chosen from the full list of zones, each labelled with its current offset from UTC
+  so a person can recognise their own, and what is stored is the zone rather than the offset — so
+  a daylight-saving change is followed on its own and nobody has to come back and re-pick. The first-run
+  wizard offers the identical list.
+implements:
+- app_platform/time.py::timezone_choices
+- apps/settings/routes.py::_resolve_choices
+tests:
+- type: unit
+  path: tests/test_timezone_choices.py
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: settings.household.an-empty-location-box-changes-nothing
+title: Emptying the location box does not clear the location
+state: live
+autonomy: gated
+behavior: >-
+  Saving with the location box left empty keeps the stored location, so editing another option on
+  the same page cannot wipe out where the household lives by accident. Changing the location means
+  typing a new place.
+implements:
+- apps/settings/routes.py::api_patch_panel
+tests: []
+links: {}
+notes: >-
+  The box is free text saved together with the rest of the page, so 'deliberately emptied' cannot
+  be told apart from 'not touched' — and losing the household's location silently is much worse than
+  being unable to blank it.

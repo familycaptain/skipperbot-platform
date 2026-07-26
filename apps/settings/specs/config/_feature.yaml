@@ -1,6 +1,6 @@
 kind: feature
 id: settings.config
-title: App & platform settings
+title: App & install-wide options
 state: live
 links: {}
 notes: ''

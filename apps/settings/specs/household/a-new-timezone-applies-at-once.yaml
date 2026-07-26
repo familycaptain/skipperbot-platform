@@ -1,0 +1,15 @@
+kind: specification
+id: settings.household.a-new-timezone-applies-at-once
+title: A new timezone applies without a restart
+state: live
+autonomy: gated
+behavior: >-
+  Choosing a different timezone changes the times shown across the install immediately, with no restart
+  and no second place to update. It is the same value the first-run wizard asked for, so a household
+  that answered correctly at install never has to revisit it.
+implements:
+- apps/settings/routes.py::api_patch_panel
+- app_platform/time.py::invalidate_platform_timezone_cache
+tests: []
+links: {}
+notes: ''

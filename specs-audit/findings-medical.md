@@ -1,3 +1,8 @@
+> **Update:** the permission findings below are partly superseded. The operator has decided
+> adults in a household trust each other, so adult-to-adult access is intended, not a defect.
+> The residual gap is that the `kid` login role is unenforced outside chores/bounties/goals —
+> a child's account reaches every adult's health records. See `CROSS-CUTTING.md` §1.
+
 # Findings — medical
 
 Survey only; nothing here was fixed. Ordered roughly by seriousness. "Uncertain" is marked where I

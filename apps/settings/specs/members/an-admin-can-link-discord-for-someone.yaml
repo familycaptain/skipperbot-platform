@@ -1,0 +1,14 @@
+kind: specification
+id: settings.members.an-admin-can-link-discord-for-someone
+title: An admin can link Discord for someone who will not
+state: live
+autonomy: gated
+behavior: >-
+  An admin can set or clear another member's Discord account from the roster — for a child, or anyone
+  who will not do it themselves. The rules are the same as when a person links their own: a numeric
+  Discord user id, and one Discord account belongs to exactly one member.
+implements:
+- agent.py::api_update_user_discord_id
+tests: []
+links: {}
+notes: ''

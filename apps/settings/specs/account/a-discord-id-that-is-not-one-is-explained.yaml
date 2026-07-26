@@ -1,0 +1,14 @@
+kind: specification
+id: settings.account.a-discord-id-that-is-not-one-is-explained
+title: Something that is not a Discord id is explained, not just rejected
+state: live
+autonomy: gated
+behavior: >-
+  Pasting a Discord username, a tag, or anything that is not the numeric user id is refused with what
+  is actually wanted and how to copy it — turn on developer mode, right-click the name, copy the user
+  id. Nothing is stored and the box keeps what was pasted.
+implements:
+- apps/settings/routes.py::api_patch_account
+tests: []
+links: {}
+notes: ''

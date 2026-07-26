@@ -1,0 +1,15 @@
+kind: specification
+id: settings.members.roles-are-a-set-not-a-ladder
+title: Roles are a set, not a ladder
+state: live
+autonomy: gated
+behavior: >-
+  A member holds any combination of the household roles — member, parent, admin — each toggled on
+  its own, because they are not a ranking: a parent is not automatically an admin and an admin is
+  not automatically a parent. A toggle applies to that person immediately.
+implements:
+- agent.py::api_update_user_role
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: ''

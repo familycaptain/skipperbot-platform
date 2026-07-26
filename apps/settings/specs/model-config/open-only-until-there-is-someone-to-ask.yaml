@@ -1,0 +1,15 @@
+kind: specification
+id: settings.model-config.open-only-until-there-is-someone-to-ask
+title: Model setup is open only while there is nobody to ask
+state: live
+autonomy: gated
+behavior: >-
+  On a brand-new install with no accounts yet, the models can be chosen and checked without signing
+  in — there is nobody to sign in as. From the moment the first account exists it is admin-only, both
+  choosing and checking.
+implements:
+- agent.py::onboarding_save_models
+- agent.py::onboarding_validate_tier
+tests: []
+links: {}
+notes: ''

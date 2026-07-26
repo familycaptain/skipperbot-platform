@@ -1,0 +1,16 @@
+kind: specification
+id: settings.account.linking-your-own-discord
+title: Linking your own Discord account
+state: live
+autonomy: gated
+behavior: >-
+  Each person links their own Discord account by pasting their numeric Discord user id, with the page
+  saying where in Discord to find it. Linking is what lets Skipper recognise them there and message
+  them directly; saving with the box empty unlinks it, and Skipper stops treating that Discord account
+  as theirs.
+implements:
+- apps/settings/routes.py::api_patch_account
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: ''

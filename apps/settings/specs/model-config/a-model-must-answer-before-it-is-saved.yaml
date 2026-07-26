@@ -1,0 +1,15 @@
+kind: specification
+id: settings.model-config.a-model-must-answer-before-it-is-saved
+title: A model must actually answer before it can be saved
+state: live
+autonomy: gated
+behavior: >-
+  Each of the three choices has to be checked against its provider — a real call that comes back —
+  before the selection can be saved. A household cannot end up with a saved configuration that has
+  never once worked, and the check is the same one the first-run wizard performs.
+implements:
+- providers/model_config.py::validate_tier
+- web/src/components/ModelConfig.jsx
+tests: []
+links: {}
+notes: ''

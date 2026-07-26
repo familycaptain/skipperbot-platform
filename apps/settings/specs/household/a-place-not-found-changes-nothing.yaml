@@ -1,0 +1,16 @@
+kind: specification
+id: settings.household.a-place-not-found-changes-nothing
+title: A place that cannot be found changes nothing
+state: live
+autonomy: gated
+behavior: >-
+  A place name that matches nothing is refused with a suggestion to try a place name, or a postal
+  code and country; if the lookup service cannot be reached, the person is told it is temporarily
+  unavailable and to try again. Either way the location already stored is still in force — a failed
+  edit never leaves the install with no location at all.
+implements:
+- apps/settings/routes.py::api_patch_panel
+- app_platform/location.py::save_default_location
+tests: []
+links: {}
+notes: ''

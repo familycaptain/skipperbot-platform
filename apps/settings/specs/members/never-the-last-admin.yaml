@@ -1,0 +1,16 @@
+kind: specification
+id: settings.members.never-the-last-admin
+title: The household can never end up with no admin
+state: live
+autonomy: gated
+behavior: >-
+  The last remaining admin can be neither demoted nor deleted: the control is unavailable and says
+  why, and the attempt is refused even when made another way. An install nobody can administer could
+  not be recovered from the interface at all.
+implements:
+- agent.py::api_update_user_role
+- agent.py::api_delete_user
+- agent.py::_admin_count
+tests: []
+links: {}
+notes: ''

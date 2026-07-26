@@ -1,0 +1,15 @@
+kind: specification
+id: settings.household.the-location-reads-back-as-what-matched
+title: The location reads back as the place that matched
+state: live
+autonomy: gated
+behavior: >-
+  After saving, the location shows the canonical name of the place that was actually matched rather
+  than the text that was typed, so it is obvious at a glance whether the right town in the right region
+  was found. Displaying it never triggers another lookup.
+implements:
+- apps/settings/routes.py::_default_location_label
+- app_platform/location.py::display_label
+tests: []
+links: {}
+notes: ''

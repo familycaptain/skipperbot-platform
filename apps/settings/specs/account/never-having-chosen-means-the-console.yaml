@@ -1,0 +1,13 @@
+kind: specification
+id: settings.account.never-having-chosen-means-the-console
+title: Someone who never chose is reachable in the console
+state: live
+autonomy: gated
+behavior: >-
+  A person who has never made the choice is treated as mainly using the console — the surface that
+  always works — rather than one that depends on a service this install may never have set up.
+implements:
+- data_layer/users.py::get_primary_surface
+tests: []
+links: {}
+notes: ''

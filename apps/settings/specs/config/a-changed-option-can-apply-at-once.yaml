@@ -1,0 +1,15 @@
+kind: specification
+id: settings.config.a-changed-option-can-apply-at-once
+title: A changed option can apply without a restart
+state: live
+autonomy: gated
+behavior: >-
+  Saving an ordinary option tells the rest of the install which option changed — the setting's name,
+  never its value — so an app whose behaviour depends on it can re-read it immediately instead of
+  waiting for a restart. If nothing is listening, the value is simply stored; a failure to notify
+  never un-does the save.
+implements:
+- app_platform/config.py::set
+tests: []
+links: {}
+notes: ''

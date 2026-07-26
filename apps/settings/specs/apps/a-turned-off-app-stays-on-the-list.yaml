@@ -1,0 +1,15 @@
+kind: specification
+id: settings.apps.a-turned-off-app-stays-on-the-list
+title: A turned-off app stays on the list so it can come back
+state: live
+autonomy: gated
+behavior: >-
+  An app that has been turned off still appears in the admin list, marked off, because otherwise there
+  would be nowhere to turn it back on. The per-person hide list leaves it out entirely — hiding something
+  that is already stopped means nothing.
+implements:
+- web/src/apps/registry.js::getManageableApps
+- web/src/apps/registry.js::getTileApps
+tests: []
+links: {}
+notes: ''

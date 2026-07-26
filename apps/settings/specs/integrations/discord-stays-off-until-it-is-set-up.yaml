@@ -1,0 +1,15 @@
+kind: specification
+id: settings.integrations.discord-stays-off-until-it-is-set-up
+title: Discord stays off until it is deliberately set up
+state: live
+autonomy: gated
+behavior: >-
+  The Discord bridge is off on a fresh install and stays off until a bot token is stored here or the
+  switch is turned on explicitly, so a household that does not use Discord never watches it start,
+  fail, and log about a missing token. Turning it on takes a restart.
+implements:
+- config.py::discord_enabled
+- apps/settings/routes.py::PLATFORM_PANELS
+tests: []
+links: {}
+notes: ''

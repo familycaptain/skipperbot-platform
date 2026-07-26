@@ -1,0 +1,14 @@
+kind: specification
+id: settings.config.nothing-changed-nothing-to-save
+title: Save is offered only when something changed
+state: live
+autonomy: gated
+behavior: >-
+  Save stays unavailable until a value on the page differs from what is stored, and while it does
+  differ a Revert beside it restores every field without a request. A save that succeeds says so and
+  the page settles back to having nothing to save.
+implements:
+- apps/settings/ui/SettingsApp.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: settings.config.an-app-brings-its-own-options
+title: An app arrives with its own options
+state: live
+autonomy: gated
+behavior: >-
+  Installing an app that has options makes them appear here as its own page, with the labels, explanations,
+  defaults and choices the app itself declares — nothing has to be added to Settings for a new app
+  to be configurable. An app that declares no options is not offered a page at all rather than showing
+  an empty form, and is still listed as installed elsewhere.
+implements:
+- apps/settings/routes.py::api_list_app_settings
+- apps/settings/routes.py::_serialise_config_key
+- app_platform/manifest.py::ConfigKeyDef
+tests: []
+links: {}
+notes: ''

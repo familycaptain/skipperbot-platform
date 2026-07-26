@@ -1,0 +1,15 @@
+kind: specification
+id: settings.integrations.nothing-to-encrypt-with-refuses-the-save
+title: With nothing to encrypt with, the save is refused
+state: live
+autonomy: gated
+behavior: >-
+  An install with no encryption key configured refuses to save a credential and says why, rather than
+  storing it in the clear and appearing to have worked. There is no path by which entering a key here
+  results in it sitting unencrypted.
+implements:
+- app_platform/secrets.py::SecretKeyMissing
+- apps/settings/routes.py::api_patch_panel
+tests: []
+links: {}
+notes: ''
