@@ -1,108 +1,74 @@
-"""Voice policy — WHERE an utterance should go. Pure decision, no I/O.
+"""Voice policy — whether an utterance ALSO goes to Discord. Pure decision, no I/O.
 
-Skipper has one voice but several surfaces (the web desktop, Discord, push). Deciding
-which ones to speak on is a policy question, and it is kept here — separate from the
-speaking itself — so it can be reasoned about and tested directly instead of being
-rediscovered inside twenty different producers.
+Kept separate from the speaking itself so it can be reasoned about and tested directly,
+rather than rediscovered slightly differently inside every producer.
 
-THE ASYMMETRY THAT MAKES THIS TRACTABLE
-The web desktop is not a delivery target in the way Discord is. The consciousness log
-IS the record, and the web timeline is a projection of it, so an utterance shows up
-there on the next load whether or not anything was ever pushed. Pushing to web means
-only "they are watching right now, put it on screen immediately".
+THE WEB IS NOT IN QUESTION
+The console always receives. The consciousness log IS the record and the timeline is a
+projection of it, so an utterance is there on the next load whether or not anything was
+pushed — pushing to web only means "they are watching right now, put it on screen".
+Discord is the opposite: a message not sent there never exists there.
 
-Discord is the opposite: a message not sent to Discord never exists there.
+So this module never decides whether someone gets a message. It decides whether a
+SECOND copy is worth sending. Nothing here can lose anything.
 
-So the question is never "how do we make sure this is durable" (the log already did
-that). It is "who is actually going to see this, and where".
+WHY PREFERENCE AND NOT PRESENCE
+Skipper cannot tell whether someone is "on Discord" — nothing tracks Discord presence,
+and a DM waits until it is read regardless, so presence would not change the answer
+even if we had it. Two things we CAN know settle it instead:
 
-THE RULE, IN HUMAN TERMS
-If you want to reach someone: you speak where they are. Once they answer you, you keep
-talking on the surface they answered on — you do not repeat yourself into a second
-channel mid-conversation. If they have gone quiet for a while, you go back to reaching
-out wherever they might be.
+  * what the person told us — their primary surface. Somebody who lives in Discord
+    should hear from Skipper there, not only when they happen to speak first.
+  * what they are actually doing — a message sent FROM Discord makes Discord a live
+    place to answer for a while, refreshed by each one. That is how a web-primary
+    person gets answered where they wrote from, without being DM'd about everything
+    that happens while they are away.
 
-That "keep talking where they answered" is the LOCK, and it is what prevents the
-half-conversation problem: mirroring Skipper's side into Discord while the person is
-typing on the web would show, in Discord, only one side of a dialogue.
-
-When nobody is connected at all — the common case — an utterance still needs somewhere
-to land, and we do not know which surface they will come back to. The log covers the
-web return; Discord covers the Discord return.
+Voice is absent by design: the speaker is a SHARED device, so a voice turn is not
+attributable to an individual and cannot be anyone's surface.
 """
-from dataclasses import dataclass
-
-# How long after someone speaks we keep addressing that same surface. Long enough to
-# cover a real back-and-forth with thinking pauses, short enough that an abandoned
-# conversation reverts to reaching out broadly.
-LOCK_TTL_SECONDS = 30 * 60
+# How long Discord stays a delivery target after someone sends a message FROM it,
+# refreshed by each one. Its own constant, deliberately not shared with the greeting
+# quiet-window even though both are currently 15 minutes: they answer different
+# questions ("is Discord live for this person?" vs "have we only just spoken?"), and
+# tuning one must not silently move the other.
+DISCORD_ACTIVE_SECONDS = 15 * 60
 
 WEB = "web"
 DISCORD = "discord"
 
 
-@dataclass(frozen=True)
-class SurfacePlan:
-    """Where one utterance goes. The log write is unconditional and not represented
-    here — it always happens, which is exactly why `web_live` can be False without the
-    person ever losing the message."""
-    web_live: bool      # push it onto the screen now (they are watching)
-    discord: bool       # actually send it to Discord (otherwise it is not there at all)
-    push: bool          # pushover/FCM — a tap on the shoulder, not a delivery surface
-    reason: str         # why, for logs and tests
 
-    @property
-    def surfaces(self) -> tuple:
-        out = []
-        if self.web_live:
-            out.append(WEB)
-        if self.discord:
-            out.append(DISCORD)
-        return tuple(out)
+def plan_discord(*, primary_surface: str, discord_active: bool,
+                 discord_linked: bool = True) -> bool:
+    """Should this utterance ALSO go to Discord?
 
+    The web console is not part of this question — it always receives, and always
+    holds the complete record from every surface. This decides only whether an
+    ADDITIONAL copy is worth sending, so no answer here can lose a message.
 
-def plan_surfaces(*, on_web: bool, lock: "str | None", urgent: bool = False) -> SurfacePlan:
-    """Decide where to speak.
+    primary_surface  — where this person says they mainly talk to Skipper.
+    discord_active   — did they send something FROM Discord within the activity
+                       window (DISCORD_ACTIVE_SECONDS, refreshed by each message)?
+    discord_linked   — is Discord even wired up for them?
 
-    on_web  — is this person connected to the web desktop right now?
-    lock    — the surface of their most recent inbound message if it is still within
-              LOCK_TTL_SECONDS, else None. The caller applies the TTL; by the time it
-              reaches here, a lock is by definition current.
-    urgent  — worth interrupting someone who is not connected anywhere.
+    Two rules, and the asymmetry is the point:
+      * primary=discord — Discord IS their conversation, so it always receives. Waiting
+        for a window would mean someone who lives in Discord hears nothing until they
+        happen to speak first.
+      * primary=web — Discord is a doorway, not a feed. It receives only while they are
+        actually using it, so answering someone who wrote from Discord works, without
+        DM-ing them about everything that happens while they are away.
+
+    Deliberately NOT based on Discord presence: nothing tracks it, and a DM waits until
+    it is read regardless. "Are they using Discord right now" is answerable from their
+    own messages; "are they online" is not, and would not change the answer anyway.
     """
-    if lock == WEB:
-        # Mid-conversation on the web. Do NOT also send to Discord: they are reading
-        # here, and Discord would receive a monologue — only Skipper's half.
-        return SurfacePlan(web_live=on_web, discord=False, push=False,
-                           reason="locked to web by a recent reply")
-    if lock == DISCORD:
-        # Mid-conversation on Discord. The web timeline still records it (the log), so
-        # nothing is lost by not pushing a live frame.
-        return SurfacePlan(web_live=False, discord=True, push=False,
-                           reason="locked to discord by a recent reply")
-    if on_web:
-        # No conversation in flight, but they are here. Putting it on their screen is
-        # enough; a Discord copy would be a second notification for something they are
-        # already looking at.
-        return SurfacePlan(web_live=True, discord=False, push=False,
-                           reason="present on web, no active conversation")
-    # Nobody home — the common case for background thoughts. The log covers a web
-    # return; Discord is the only way it exists if they come back there instead.
-    return SurfacePlan(web_live=False, discord=True, push=bool(urgent),
-                       reason="not connected — reach out where they may return")
+    if not discord_linked:
+        return False
+    if (primary_surface or "").strip().lower() == DISCORD:
+        return True
+    return bool(discord_active)
 
 
-def lock_from_last_inbound(surface: "str | None", age_seconds: "float | None") -> "str | None":
-    """The conversation lock, or None if it has aged out / there is nothing to lock to.
 
-    Normalises whatever surface string the log recorded; anything that is not a surface
-    we can speak on cannot hold a lock (e.g. a voice session is its own channel).
-    """
-    if not surface or age_seconds is None or age_seconds > LOCK_TTL_SECONDS:
-        return None
-    s = str(surface).strip().lower()
-    if s in (WEB, "desktop", "ui"):
-        return WEB
-    if s == DISCORD:
-        return DISCORD
-    return None

@@ -517,6 +517,13 @@ function MembersPanel({ userId }) {
   const [discordDraft, setDiscordDraft] = useState("");
   const [discordMsg, setDiscordMsg] = useState("");
   const [discordBusy, setDiscordBusy] = useState(false);
+  // Where I mainly talk to Skipper. Skipper cannot detect this — nothing tracks
+  // Discord presence, and a DM waits until it is read — so each person says it once.
+  // This never changes what the web console shows: it always holds the full record
+  // from every surface. It only decides which ADDITIONAL surfaces are worth sending to.
+  const [surface, setSurface] = useState(null);
+  const [surfaceMsg, setSurfaceMsg] = useState("");
+  const [surfaceBusy, setSurfaceBusy] = useState(false);
   // Admin inline editor for linking a member's Discord ID (see openDiscordEditor).
   const [editingDiscord, setEditingDiscord] = useState(null);
   const [discordEditDraft, setDiscordEditDraft] = useState("");
@@ -543,6 +550,17 @@ function MembersPanel({ userId }) {
         setDiscord(j.discord_id || "");
         setDiscordDraft(j.discord_id || "");
       } catch { setDiscord(""); }
+    })();
+  }, []);
+
+  // Load my primary surface.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/users/me/primary-surface");
+        const j = res.ok ? await res.json() : {};
+        setSurface(j.primary_surface || "web");
+      } catch { setSurface("web"); }
     })();
   }, []);
 
@@ -661,6 +679,30 @@ function MembersPanel({ userId }) {
       }
     } catch { setDiscordMsg("Network error."); }
     finally { setDiscordBusy(false); }
+  }
+
+  async function saveSurface(next) {
+    setSurfaceMsg("");
+    setSurfaceBusy(true);
+    const prev = surface;
+    setSurface(next);                      // optimistic; reverted below on failure
+    try {
+      const res = await fetch("/api/users/me/primary-surface", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ primary_surface: next }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setSurfaceMsg(next === "discord"
+          ? "Skipper will reach you on Discord."
+          : "Skipper will use the web console, and Discord only while you're active there.");
+      } else {
+        setSurface(prev);
+        setSurfaceMsg(j.detail || `Could not save (${res.status}).`);
+      }
+    } catch { setSurface(prev); setSurfaceMsg("Network error."); }
+    finally { setSurfaceBusy(false); }
   }
 
   const toggleFormRole = (role) =>
@@ -890,6 +932,38 @@ function MembersPanel({ userId }) {
           <Save size={14} /> Update password
         </button>
       </form>
+
+      {/* Where Skipper should reach me — everyone (self-service) */}
+      <div className="rounded-lg border border-subtle p-4 space-y-3">
+        <h3 className="text-sm font-medium text-default inline-flex items-center gap-2"><MessageCircle size={14} /> Where Skipper reaches me</h3>
+        <p className="text-xs text-muted">
+          This chat always keeps the full conversation from every surface — nothing is
+          ever missed here. This only sets where else Skipper should reach you.
+        </p>
+        {surface === null ? (
+          <div className="text-xs text-muted">Loading…</div>
+        ) : (
+          <div className="space-y-2">
+            {[
+              { value: "web", label: "Here (the web console)",
+                hint: "Discord is used only while you're actively replying there." },
+              { value: "discord", label: "Discord",
+                hint: "Skipper always messages you on Discord as well." },
+            ].map((opt) => (
+              <label key={opt.value} className="flex items-start gap-2 cursor-pointer">
+                <input type="radio" name="primary_surface" value={opt.value}
+                  checked={surface === opt.value} disabled={surfaceBusy}
+                  onChange={() => saveSurface(opt.value)} className="mt-1" />
+                <span>
+                  <span className="text-sm text-default">{opt.label}</span>
+                  <span className="block text-xs text-muted">{opt.hint}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
+        {surfaceMsg && <div className="text-xs text-muted">{surfaceMsg}</div>}
+      </div>
 
       {/* My Discord link — everyone (self-service) */}
       <form onSubmit={saveDiscord} className="rounded-lg border border-subtle p-4 space-y-3">

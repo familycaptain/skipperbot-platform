@@ -290,9 +290,21 @@ def history_projection(person: str, limit: int = 20,
             (person, person, ch, limit * 3),
         )
     else:
+        # EVERY SURFACE EXCEPT VOICE. The web console is the complete record — what a
+        # person said from Discord or mobile belongs here as their own message, so they
+        # can move between surfaces and pick the conversation up.
+        #
+        # Voice is the one exception, and not for tidiness: the speaker is a SHARED
+        # household device. A voice turn is not attributable to an individual — early in
+        # a session Skipper does not yet know who is talking, and speaker recognition may
+        # never resolve it at all. Folding those rows into one person's timeline would
+        # put somebody else's conversation in their console, or attribute words to the
+        # wrong member. Until a voice turn can be tied to a person, it is not theirs to
+        # show.
         rows = fetch_all(
             "SELECT * FROM (SELECT * FROM consciousness_log "
             "WHERE kind = 'message' AND (who_from = %s OR who_to = %s) "
+            "  AND surface IS DISTINCT FROM 'voice' "
             "ORDER BY seq DESC LIMIT %s) t ORDER BY seq ASC",
             (person, person, limit * 3),
         )
@@ -360,7 +372,35 @@ def history_projection(person: str, limit: int = 20,
                 "srv_id": (str(_p(r).get("notification_id") or "") if _is_card else r["id"]),
             })
     turns.sort(key=lambda t: t["timestamp"])
-    turns = turns[-limit:]
+
+    # DE-DUPE BEFORE DISPLAY. Now that this view is unfiltered it shows every surface,
+    # which also means it shows any accidental double-write that the old channel filter
+    # happened to conceal (a producer that both create_notification'd and shadow-logged,
+    # a voice utterance recorded twice). Those are bugs to fix at the source, but the
+    # console is what people trust to be accurate, so it must not render one utterance
+    # twice while such a bug exists.
+    #
+    # Matched on speaker + text + a short time window rather than on id, because the
+    # duplicates worth catching are exactly the ones that came from different writers
+    # and therefore have DIFFERENT ids. A genuine repeat (someone saying "yes" twice a
+    # minute apart) survives — the window is deliberately tight.
+    _DUP_WINDOW_SECONDS = 10
+    deduped: list[dict] = []
+    for t in turns:
+        prev = next((d for d in reversed(deduped)
+                     if d.get("user_message") == t.get("user_message")
+                     and d.get("assistant_message") == t.get("assistant_message")), None)
+        if prev is not None:
+            try:
+                from datetime import datetime as _dt
+                gap = abs((_dt.fromisoformat(t["timestamp"])
+                           - _dt.fromisoformat(prev["timestamp"])).total_seconds())
+            except Exception:
+                gap = None
+            if gap is not None and gap <= _DUP_WINDOW_SECONDS:
+                continue
+        deduped.append(t)
+    turns = deduped[-limit:]
 
     # Fallback: pre-bake rows (no payload.tool_calls) hydrate from the frozen
     # legacy chat_turns table — kept forever, zero-loss (Phase 5b).

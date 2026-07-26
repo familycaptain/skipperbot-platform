@@ -145,15 +145,18 @@ async def _deliver_one(notif: dict):
     #   * "voice" is opt-in and origin-routed — not ours to second-guess.
     if "discord" in targets:
         try:
-            from app_platform.speak import _conversation_lock, _on_web
-            from app_platform.voice_policy import plan_surfaces
+            from app_platform.speak import (_discord_active, _discord_reachable,
+                                             _primary_surface)
+            from app_platform.voice_policy import plan_discord
             _u = (recipient or "").strip().lower()
-            _plan = await asyncio.to_thread(
-                lambda: plan_surfaces(on_web=_on_web(_u), lock=_conversation_lock(_u)))
-            if not _plan.discord:
+            _send = await asyncio.to_thread(
+                lambda: plan_discord(primary_surface=_primary_surface(_u),
+                                     discord_active=_discord_active(_u),
+                                     discord_linked=_discord_reachable(_u)))
+            if not _send:
                 targets.discard("discord")
-                logger.info("NOTIF_DELIVERY: %s — holding discord (%s)",
-                            notif_id, _plan.reason)
+                logger.info("NOTIF_DELIVERY: %s — not sending to discord (web-primary "
+                            "and no recent discord activity)", notif_id)
         except Exception:
             # Policy is a refinement, not a gate: if it cannot be evaluated, deliver
             # exactly as before rather than dropping someone's message.

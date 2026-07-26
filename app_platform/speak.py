@@ -30,8 +30,17 @@ differently, which is how one utterance ends up arriving twice on one surface an
 at all on another.
 """
 import logging
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class _Plan:
+    """What actually happened, for the caller and the log line. The web is not
+    represented as optional because it is not — it always receives."""
+    web_live: bool
+    discord: bool
 
 
 def _on_web(user_id: str) -> bool:
@@ -46,27 +55,68 @@ def _on_web(user_id: str) -> bool:
         return False
 
 
-def _conversation_lock(user_id: str):
-    """The surface this person last SPOKE on, if recent enough to still be a
-    conversation. Derived from the log, which already records every inbound message and
-    the surface it arrived on — no extra state to keep in sync."""
-    from app_platform.voice_policy import lock_from_last_inbound
+def _discord_reachable(user_id: str) -> bool:
+    """Can we reach this person on Discord at all — linked account, Discord enabled?
+
+    Not "are they online there": a DM waits until it is read, and nothing in the system
+    tracks Discord presence. Reachability is the question that actually decides whether
+    sending is right.
+    """
+    try:
+        from config import DISCORD_ENABLED
+        if not DISCORD_ENABLED:
+            return False
+    except Exception:
+        pass
+    try:
+        from data_layer.db import fetch_one
+        row = fetch_one("SELECT discord_id FROM users WHERE name = %s", (user_id,))
+        return bool(row and row.get("discord_id"))
+    except Exception:
+        # Assume reachable on error: a Discord DM that turns out to be undeliverable is
+        # recoverable noise, whereas wrongly deciding someone is unreachable silently
+        # drops their only off-screen route.
+        logger.debug("SPEAK: discord reachability unknown for %s", user_id, exc_info=True)
+        return True
+
+
+def _primary_surface(user_id: str) -> str:
+    """Where this person says they mainly talk to Skipper ('web' by default)."""
+    try:
+        from data_layer.users import get_primary_surface
+        return get_primary_surface(user_id)
+    except Exception:
+        # Default to web: it is the surface that always works, so an unknown preference
+        # can never strand someone on a third-party service we cannot verify.
+        logger.debug("SPEAK: primary surface unknown for %s", user_id, exc_info=True)
+        return "web"
+
+
+def _discord_active(user_id: str) -> bool:
+    """Has this person sent something FROM Discord recently enough that Discord is
+    still a live place to answer them?
+
+    Read off their own messages, refreshed by each one — which is the honest version of
+    the question. Discord PRESENCE is untrackable, but "are they using Discord right
+    now" is written plainly in the log.
+    """
+    from app_platform.voice_policy import DISCORD_ACTIVE_SECONDS
     try:
         from data_layer.db import fetch_one
         row = fetch_one(
-            "SELECT surface, EXTRACT(EPOCH FROM (now() - created_at)) AS age "
+            "SELECT EXTRACT(EPOCH FROM (now() - created_at)) AS age "
             "FROM consciousness_log WHERE kind='message' AND who_from=%s "
-            "ORDER BY created_at DESC LIMIT 1",
+            "  AND surface='discord' ORDER BY created_at DESC LIMIT 1",
             (user_id,),
         )
-        if not row:
-            return None
-        return lock_from_last_inbound(row.get("surface"), row.get("age"))
+        return bool(row and row.get("age") is not None
+                    and float(row["age"]) <= DISCORD_ACTIVE_SECONDS)
     except Exception:
-        # No lock means "reach out normally" — the safe direction. Failing the other way
-        # would silently confine an utterance to a surface nobody is reading.
-        logger.debug("SPEAK: lock lookup failed for %s", user_id, exc_info=True)
-        return None
+        # Treat as inactive: this only ever ADDS a surface, and the console still has
+        # the message either way, so the quiet failure is the harmless one.
+        logger.debug("SPEAK: discord activity unknown for %s", user_id, exc_info=True)
+        return False
+
 
 
 def _plan_and_record(user: str, content: str, domain: str, urgent: bool,
@@ -75,17 +125,32 @@ def _plan_and_record(user: str, content: str, domain: str, urgent: bool,
     share ONE copy of the policy application — a second copy is how the sync and async
     paths would quietly drift apart."""
     from app_platform.consciousness import send_message
-    from app_platform.voice_policy import plan_surfaces
+    from app_platform.voice_policy import plan_discord
 
-    plan = plan_surfaces(on_web=_on_web(user), lock=_conversation_lock(user),
-                         urgent=urgent)
+    on_web = _on_web(user)
 
-    # External transport only for the surfaces the plan chose. The web is deliberately
-    # absent: the log write IS its durability, and `web_live` is the direct hand-off.
+    # THE WEB ALWAYS RECEIVES. Not a decision — the log write below is unconditional,
+    # and the console projects from it, so the message is there whether or not anyone
+    # is watching. `on_web` only decides whether to also PUSH it onto a live screen.
+    #
+    # Discord is the only real choice, and it is additive: switching it on never takes
+    # the web away. It is settled by what the person told us plus whether they are
+    # actually using Discord right now — never by trying to detect presence we cannot
+    # see.
+    to_discord = plan_discord(
+        primary_surface=_primary_surface(user),
+        discord_active=_discord_active(user),
+        discord_linked=_discord_reachable(user),
+    )
+
+    # External transport only. The web is deliberately absent from this list: the log
+    # write IS its durability, and the live push is handled separately.
     channels = []
-    if plan.discord:
+    if to_discord:
         channels.append("discord")
-    if plan.push:
+    # A shoulder-tap only when nobody is at a screen — buzzing someone's phone about
+    # something already in front of them is noise, not urgency.
+    if urgent and not on_web:
         channels += ["pushover", "mobile"]
 
     # "none", never "" — an EMPTY channel string is not "no surfaces", it means
@@ -95,8 +160,9 @@ def _plan_and_record(user: str, content: str, domain: str, urgent: bool,
     row = send_message(who_to=user, content=content, domain=domain,
                        channel=(",".join(channels) if channels else "none"),
                        **log_kwargs)
-    logger.info("SPEAK: %s -> %s (%s)", user, plan.surfaces or ("log-only",), plan.reason)
-    return row, plan
+    logger.info("SPEAK: %s -> web(log%s)%s", user,
+                "+live" if on_web else "", " + discord" if to_discord else "")
+    return row, _Plan(web_live=on_web, discord=to_discord)
 
 
 async def speak(*, who_to: str, content: str, domain: str, urgent: bool = False,

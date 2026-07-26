@@ -278,3 +278,41 @@ def delete_user(name: str) -> bool:
     """
     rows = execute("DELETE FROM users WHERE name = %s", (name.lower().strip(),))
     return rows > 0
+
+
+# --- primary surface ---------------------------------------------------------
+# Where this person mainly talks to Skipper. Skipper cannot detect this: nothing
+# tracks Discord presence, and a DM waits until it is read regardless — so the
+# question is settled by asking each person once, not by observation.
+#
+# This never affects the web console, which always receives and always shows the
+# complete record. It only decides which ADDITIONAL surfaces are worth sending to,
+# so no value here can cause a message to be lost.
+
+VALID_PRIMARY_SURFACES = ("web", "discord")
+
+
+def get_primary_surface(name: str) -> str:
+    """This person's primary surface; 'web' when unknown or unset.
+
+    Defaults toward web because that surface always works — falling back to a
+    third-party service we cannot verify would be the riskier default.
+    """
+    row = fetch_one("SELECT primary_surface FROM users WHERE name = %s",
+                    (name.lower().strip(),))
+    value = (row or {}).get("primary_surface") or ""
+    return value if value in VALID_PRIMARY_SURFACES else "web"
+
+
+def set_primary_surface(name: str, surface: str) -> bool:
+    """Set this person's primary surface. Rejects anything not conversational —
+    voice in particular, since the speaker is a shared device and a voice turn is
+    not attributable to an individual."""
+    surface = (surface or "").strip().lower()
+    if surface not in VALID_PRIMARY_SURFACES:
+        raise ValueError(
+            f"primary_surface must be one of {VALID_PRIMARY_SURFACES}, got {surface!r}")
+    return execute(
+        "UPDATE users SET primary_surface = %s, updated_at = now() WHERE name = %s",
+        (surface, name.lower().strip()),
+    ) > 0

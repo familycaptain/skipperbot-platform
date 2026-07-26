@@ -235,9 +235,15 @@ class ConnectionSkillContract(unittest.TestCase):
     def test_gates_mirror_legacy_minus_claim(self):
         body = self.src.split("async def _connection_skill_runner", 1)[1]
         body = body.split("\nasync def ", 1)[0]
-        self.assertIn("get_primary_user", body)                 # primary gate
-        self.assertIn("onboarding_agenda_in_progress", body)    # agenda gate
-        self.assertIn("models_configured", body)                # keyless gate
+        self.assertIn("get_primary_user", body)                 # still resolved...
+        # ...but NO LONGER A GATE: greeting someone is not primary-only, and it is not
+        # conditional on setup being in progress. Both used to return early here, which
+        # silently removed the greeting for every non-primary member and for everyone
+        # who had finished onboarding. Onboarding now only chooses WHICH greeting, and
+        # that decision lives in _greeting_turn.
+        self.assertNotIn("is not the primary", body)
+        self.assertNotIn("onboarding agenda not in progress", body)
+        self.assertIn("models_configured", body)                # keyless gate remains
         self.assertNotIn("claim_onboarding_greeting()", body.split("Client-UX compat")[0])
 
     def test_log_native_greet_once(self):
@@ -295,10 +301,24 @@ class ClientSocketSourceTests(unittest.TestCase):
     def setUp(self):
         self.src = _read("web/src/hooks/useSkipperSocket.js")
 
-    def test_welcome_back_and_nonprimary_greetings_kept(self):
-        # NARROWED removal: welcome-back + fresh non-primary greetings REMAIN.
-        self.assertIn("Welcome back!", self.src)
-        self.assertIn("Hello! I'm Skipper", self.src)
+    def test_the_browser_no_longer_fabricates_a_greeting(self):
+        """Inverted deliberately. The client used to hardcode a greeting — the same
+        words regardless of what had happened between you, never reaching the
+        consciousness. Skipper composes every greeting from the log now, for every
+        household member, so a canned line here would be a competing voice rather
+        than a fallback."""
+        # Assert against CODE, not prose: the comment explaining the removal quotes the
+        # very strings being removed, and an unanchored search matches that explanation.
+        # (Twice bitten — a negative source assertion must strip comments first.)
+        code = "\n".join(
+            line.split("//", 1)[0] for line in self.src.splitlines()
+            if not line.strip().startswith("*") and not line.strip().startswith("/*"))
+        self.assertNotIn("Welcome back!", code)
+        self.assertNotIn("I'm Skipper, your AI assistant", code)
+        # the simulated typing beat that existed only to sell the fake is gone too
+        self.assertNotIn("GREETING_TYPING_MS", code)
+        # ...but the bounded fail-open backstop must remain (no infinite spinner)
+        self.assertIn("OPTIMISTIC_GREETING_TIMEOUT_MS", self.src)
 
     def test_removal_gated_on_onboarding_status_not_hist_length(self):
         # The fresh-onboarding suppression is gated on the server signal

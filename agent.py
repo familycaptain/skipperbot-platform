@@ -2863,6 +2863,38 @@ async def api_reorder_focus(request: ReorderFocusRequest, http_request: Request)
     return {"ok": ok}
 
 
+@app.get("/api/users/me/primary-surface")
+async def api_get_primary_surface(request: Request):
+    """This caller's primary surface — where they mainly talk to Skipper."""
+    from data_layer.users import get_primary_surface, VALID_PRIMARY_SURFACES
+    user_id = scope_user(request, "")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+    surface = await asyncio.to_thread(get_primary_surface, user_id)
+    return {"user_id": user_id, "primary_surface": surface,
+            "choices": list(VALID_PRIMARY_SURFACES)}
+
+
+@app.post("/api/users/me/primary-surface")
+async def api_set_primary_surface(request: Request):
+    """Set this caller's primary surface. Per-user and self-service: one member may
+    live in Discord while another never opens it, so it is theirs to choose.
+
+    Never affects the web console, which always receives and always shows the complete
+    record — this only decides which ADDITIONAL surfaces are worth sending to."""
+    from data_layer.users import set_primary_surface
+    body = await request.json()
+    user_id = scope_user(request, body.get("user_id", ""))
+    if not user_id:
+        raise HTTPException(status_code=400, detail="user_id required")
+    try:
+        ok = await asyncio.to_thread(set_primary_surface, user_id,
+                                     body.get("primary_surface", ""))
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return {"ok": ok, "primary_surface": (body.get("primary_surface") or "").lower()}
+
+
 @app.post("/api/apps/prioritize/nag-toggle")
 async def api_toggle_focus_nag(request: Request):
     """Toggle focus nag for a user."""

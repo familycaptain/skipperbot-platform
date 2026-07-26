@@ -120,7 +120,13 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
       try {
         // channel=web scopes the reload to web-originated turns so voice/Discord
         // conversations don't bleed into the web chat scrollback (issue #23).
-        const res = await fetch(`/api/chat/history?limit=20&channel=web&tz=${encodeURIComponent(browserTz())}`);
+        // NO channel filter. The web console is the source of truth: it shows EVERY
+        // exchange with this person from EVERY surface — Discord, voice, mobile — and
+        // both sides of each. Scoping it to channel=web used to hide your own replies
+        // sent from anywhere else, so the desktop showed Skipper's half of a Discord
+        // conversation with your answers missing. Third-party surfaces can come and go;
+        // this one always works and always has the whole record.
+        const res = await fetch(`/api/chat/history?limit=20&tz=${encodeURIComponent(browserTz())}`);
         if (res.ok) {
           const data = await res.json();
           // Server returns ts on each message + date_separator rows (issue #8).
