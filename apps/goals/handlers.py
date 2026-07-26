@@ -38,17 +38,47 @@ logger = logging.getLogger("apps.goals.handlers")
 # FIRST-EVER contact vs a return visit. The model cannot infer this — an empty timeline
 # looks the same as a trimmed one — so it must be TOLD, or it guesses. It guessed
 # "welcome back" at a brand-new user's very first moment with Skipper.
+# SPEAK ONLY — never navigate. This turn fires the instant someone arrives on their
+# desktop, so any tool that moves the UI yanks them somewhere they did not ask to go:
+# arriving and being thrown into an app mid-greeting is disorienting, and the person has
+# not said anything yet for us to act on. Onboarding is tracked as a goal, which is
+# exactly why the model reaches for the Goals app unless told not to.
+_NO_NAVIGATION = (
+    " Do NOT open, switch to, or navigate to any app, and take no action on their "
+    "behalf — only speak. They have just arrived and have not asked for anything yet."
+)
 _GREETING_TRIGGER_FIRST = (
     "[system event] {user} just connected to the web desktop for the FIRST time ever — "
     "you have never spoken before. Respond as Skipper: welcome {user} (never 'welcome "
     "back', never imply any shared history) and open the current onboarding step — "
-    "ONE gentle opener, then stop and wait for their reply.]"
+    "ONE gentle opener, then stop and wait for their reply." + _NO_NAVIGATION + "]"
 )
-_GREETING_TRIGGER_RETURN = (
-    "[system event] {user} just connected to the web desktop and you have spoken "
-    "before. Respond as Skipper: greet {user} warmly and pick up the current onboarding "
-    "step — ONE gentle opener, then stop and wait for their reply.]"
+_GREETING_TRIGGER_ONBOARDING = (
+    "[system event] {user} is back on the web desktop after being away, and you are "
+    "part-way through setting things up together. Respond as Skipper: greet {user} in a "
+    "way that fits where you actually left off — read the conversation above rather than "
+    "reaching for a stock line — then pick up the current onboarding step. ONE gentle "
+    "opener, then stop and wait for their reply." + _NO_NAVIGATION + "]"
 )
+# The ordinary case, and for a long time the missing one: someone who has finished
+# setting up simply coming back. A greeting here is worth only as much as the attention
+# behind it, so the model is pointed at the log and told to earn it — if the last thing
+# that happened together is worth picking up, pick it up; if not, a short hello is the
+# honest answer. Explicitly NOT a stock line: the browser used to hardcode "Welcome
+# back!", which is the same words no matter what happened between you.
+_GREETING_TRIGGER_BACK = (
+    "[system event] {user} is back on the web desktop after being away. Respond as "
+    "Skipper: greet them in a way that reflects where things actually stood — look at "
+    "the conversation above and pick up anything genuinely worth picking up (something "
+    "they asked you to follow up on, something you owe them, something left unfinished). "
+    "If nothing is outstanding, a brief warm hello is right — do NOT invent business, do "
+    "NOT recap for the sake of it, and do NOT use a stock greeting. ONE short opener, "
+    "then stop and wait for their reply." + _NO_NAVIGATION + "]"
+)
+# Below this, an arrival is a reload/reconnect and Skipper stays quiet. Above it, they
+# have been away and a greeting is warranted. It is measured against the last thing
+# SKIPPER SAID to them by any route — so finishing a conversation and refreshing the tab
+# is silence, while coming back after a gap is a greeting.
 _RECENT_GREETING_MINUTES = 15
 
 
@@ -65,10 +95,13 @@ async def _connection_skill_runner(event: dict) -> dict:
     primary = ((await _aio.to_thread(get_primary_user)) or "").strip().lower()
     if user != primary:
         return {"summary": f"{user} is not the primary — no onboarding greeting"}
+    # Onboarding is a FLAVOUR of the greeting, not a precondition for it. This used to
+    # return here when no agenda was running, which silently removed the greeting for
+    # everyone who had finished setting up — i.e. for normal use, forever. The browser
+    # papered over it with a hardcoded "Welcome back!", so it looked like Skipper was
+    # speaking when nothing had reached the consciousness at all.
     from apps.goals.onboarding import onboarding_agenda_in_progress
     goal_id = await _aio.to_thread(onboarding_agenda_in_progress)
-    if not goal_id:
-        return {"summary": "onboarding agenda not in progress"}
     try:
         from providers.tier_resolver import models_configured
         if not models_configured():
@@ -76,13 +109,16 @@ async def _connection_skill_runner(event: dict) -> dict:
     except Exception:
         pass
 
-    # Log-native greet-once: if I spoke to them in the onboarding domain within
-    # the last N minutes, this is a reload/reconnect — stay quiet.
+    # Log-native reload guard: if I said ANYTHING to them in the last N minutes, they
+    # have not been away — this is a refresh or a reconnect, so stay quiet. Deliberately
+    # not scoped to domain='onboarding' any more: the question is "have we just been
+    # talking?", and finishing a normal conversation then refreshing the tab should be
+    # silence exactly like finishing an onboarding step and refreshing.
     from data_layer.db import fetch_one
     recent = await _aio.to_thread(
         fetch_one,
         "SELECT id FROM consciousness_log WHERE kind='message' AND who_from='skipper' "
-        "AND who_to=%s AND domain='onboarding' "
+        "AND who_to=%s "
         "AND created_at > now() - make_interval(mins => %s) LIMIT 1",
         (user, _RECENT_GREETING_MINUTES),
     )
@@ -122,7 +158,16 @@ async def _greeting_turn(user: str, event: dict) -> dict:
         "AND who_to=%s LIMIT 1",
         (user,),
     )
-    template = _GREETING_TRIGGER_RETURN if spoken_before else _GREETING_TRIGGER_FIRST
+    # Three genuinely different situations, so three different asks. Onboarding is one
+    # flavour of return, not the only reason to greet someone.
+    from apps.goals.onboarding import onboarding_agenda_in_progress
+    onboarding_live = bool(await _aio.to_thread(onboarding_agenda_in_progress))
+    if not spoken_before:
+        template = _GREETING_TRIGGER_FIRST
+    elif onboarding_live:
+        template = _GREETING_TRIGGER_ONBOARDING
+    else:
+        template = _GREETING_TRIGGER_BACK
     trigger = template.format(user=display_name_for(user))
     req = ChatRequest(
         user_id=user,
@@ -139,8 +184,23 @@ async def _greeting_turn(user: str, event: dict) -> dict:
 
     from app_platform.consciousness import send_message
     row = await _aio.to_thread(
-        lambda: send_message(who_to=user, content=text, domain="onboarding",
+        # Domain records WHY this was said. A setup greeting belongs to onboarding; an
+        # ordinary welcome-back is just chat, and mislabelling it would make the log read
+        # as if onboarding were still running long after it finished.
+        lambda: send_message(who_to=user, content=text,
+                             domain=("onboarding" if onboarding_live else "chat"),
                              surface="web", payload={"connection_event": event.get("id")}))
+
+    # HAND IT TO THEM NOW. send_message only QUEUES transport; the notification loop
+    # runs on the reminders tick (CHECK_INTERVAL = 30s), so without this the person
+    # watches a dead screen for up to half a minute after Skipper has finished
+    # composing — and the typing indicator has to clear at turn end, long before the
+    # words arrive. They are connected (that is why we are greeting them), so deliver
+    # directly and let the queue keep owning the surfaces nobody is watching.
+    # Idempotent: the frame carries the log-row id, and the client renders one
+    # utterance once no matter how many times it is pushed.
+    from app_platform.speak import deliver_now
+    await deliver_now(user, text, srv_id=row["id"])
 
     # Client-UX compat: the web client's optimistic-typing endpoint keys on the
     # legacy greeted flag; set it so reloads don't re-show the typing beat.

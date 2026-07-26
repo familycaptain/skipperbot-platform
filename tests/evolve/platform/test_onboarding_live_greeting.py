@@ -248,8 +248,37 @@ class ConnectionSkillContract(unittest.TestCase):
     def test_greets_in_one_voice_via_send_message(self):
         body = self.src.split("async def _connection_skill_runner", 1)[1]
         self.assertIn("send_message", body)
-        self.assertIn('domain="onboarding"', body)
         self.assertIn("build_chat_timeline", body)              # chat skill + timeline
+        # The domain records WHY the greeting was said, and that is no longer always
+        # onboarding: greeting someone back is normal behaviour that outlives setup, so
+        # a post-onboarding welcome is logged as chat. (It used to be hardcoded to
+        # onboarding, which is the same assumption that made the greeting disappear
+        # entirely once setup finished.)
+        self.assertIn('"onboarding" if onboarding_live else "chat"', body)
+
+    def test_greeting_is_not_gated_on_onboarding_being_in_progress(self):
+        """The regression this guards: an early return when no agenda was running meant
+        nobody who had finished setting up was ever greeted again, and the browser's
+        hardcoded 'Welcome back!' hid it."""
+        body = self.src.split("async def _connection_skill_runner", 1)[1]
+        head = body.split("async def _greeting_turn", 1)[0]
+        self.assertNotIn('return {"summary": "onboarding agenda not in progress"}', head)
+
+    def test_three_distinct_greetings_for_three_distinct_situations(self):
+        # first contact / back mid-setup / back after setup — a stock line for all
+        # three is what we are moving away from.
+        for name in ("_GREETING_TRIGGER_FIRST", "_GREETING_TRIGGER_ONBOARDING",
+                     "_GREETING_TRIGGER_BACK"):
+            self.assertIn(name, self.src)
+
+    def test_the_reload_guard_is_not_scoped_to_onboarding(self):
+        # "have we just been talking?" — any recent message counts, not only setup ones.
+        body = self.src.split("async def _connection_skill_runner", 1)[1]
+        head = body.split("async def _greeting_turn", 1)[0]
+        self.assertIn("_RECENT_GREETING_MINUTES", head)
+        # Match the SQL predicate, not the prose: an unanchored "domain='onboarding'"
+        # also hits the comment explaining why the predicate was removed.
+        self.assertNotIn("AND domain='onboarding'", head)
 
     def test_transport_logs_one_owed_event_no_priority_bus(self):
         # agent.py websocket connect: ONE owed log event; the legacy
