@@ -1,0 +1,19 @@
+kind: specification
+id: platform.context.replies-stand-on-their-own
+title: A reply carries the context its reader did not see
+state: live
+autonomy: gated
+behavior: 'Skipper sees every member''s conversation; each person only ever saw their own. So when
+  a reply draws on something this person has not seen — another member''s message, something Skipper
+  did, an event — the reply brings that context with it and stands on its own: "Tyler just broke
+  the living-room lamp", not "we can get another one". This is about being understood, not secrecy
+  — nothing in the household record is hidden from anyone.'
+implements:
+- app_platform/context.py::TIMELINE_BOUNDARY
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'TimelineRendering.test_visibility_rule_is_coherence_not_privacy: the rule the turn is
+    given is about self-contained replies, not about withholding.'
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: notifications.channels.spoken-announcement-falls-back
+title: An announcement that cannot be spoken falls back to a push
+state: live
+autonomy: gated
+behavior: >
+  When a message asks to be spoken aloud, the announcement is tried before any other surface. If it
+  cannot be spoken — no speaker is online, or speech fails — and speaking was the only surface asked
+  for, the message goes out over the default push surfaces instead, so it is not lost to a device
+  being unplugged. When it is spoken successfully no fallback happens, and a message that asked for
+  both a spoken announcement and a push gets both.
+implements:
+- apps/notifications/delivery.py::_deliver_one
+tests: []
+links: {}
+notes: ''

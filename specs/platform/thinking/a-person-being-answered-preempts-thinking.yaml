@@ -1,0 +1,13 @@
+kind: specification
+id: platform.thinking.a-person-being-answered-preempts-thinking
+title: Someone being answered comes first
+state: live
+autonomy: gated
+behavior: While a conversation turn is being processed, background areas defer their next cycle and
+  re-check shortly afterwards, so a person waiting on an answer is never behind Skipper's own musing.
+implements:
+- thinking_scheduler.py::dispatch_chat
+- thinking_scheduler.py::_domain_loop
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: notifications.delivery.phone-push-hides-internal-ids
+title: Pushes to a phone hide internal ids
+state: live
+autonomy: gated
+behavior: >
+  A message delivered to a phone — Pushover or mobile push — has Skipper's internal entity ids (the
+  r-, g-, t- style references it uses to keep track of things) stripped out first, along with the
+  empty brackets and stray dashes they leave behind, so a lock-screen alert reads as a sentence. The
+  full text with its ids intact is what stays in history, where Skipper still needs them.
+implements:
+- apps/notifications/delivery.py::_deliver_one
+- discord_bot.py::strip_entity_ids
+tests: []
+links: {}
+notes: ''

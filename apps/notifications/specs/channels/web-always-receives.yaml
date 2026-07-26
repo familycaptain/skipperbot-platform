@@ -1,0 +1,18 @@
+kind: specification
+id: notifications.channels.web-always-receives
+title: The web console always receives
+state: live
+autonomy: gated
+behavior: >
+  Every message is delivered to the web console, whatever surfaces its sender asked for — including a
+  message that explicitly asked for no external surface at all. If the person is at a screen it
+  appears there immediately; if not, it is waiting in their history the next time they open it. Every
+  other surface is an optional extra chosen per message, so no choice about Discord, phones or
+  speakers can leave someone with no record of having been told.
+implements:
+- apps/notifications/delivery.py::_deliver_one
+tests: []
+links: {}
+notes: >
+  The console being unconditional is what makes every other surface a free choice: a policy that
+  narrows the extras can never lose a message.

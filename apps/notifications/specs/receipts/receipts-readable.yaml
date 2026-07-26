@@ -1,0 +1,16 @@
+kind: specification
+id: notifications.receipts.receipts-readable
+title: Receipts come back with the message
+state: live
+autonomy: gated
+behavior: >
+  Reading a notification back returns both the surfaces it was addressed to and the receipts for the
+  surfaces it actually reached, so "did that reach my phone?" is answerable from the message itself
+  rather than from a server log an operator has to go digging through. A message recorded before
+  receipts existed reads as having none, not as an error.
+implements:
+- apps/notifications/data.py::_row
+- apps/notifications/routes.py::list_notifications
+tests: []
+links: {}
+notes: ''

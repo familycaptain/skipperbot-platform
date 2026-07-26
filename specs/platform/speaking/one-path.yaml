@@ -1,0 +1,24 @@
+kind: specification
+id: platform.speaking.one-path
+title: Where an utterance lands is decided by the person's circumstances, never by the feature
+  that produced it
+state: live
+autonomy: gated
+behavior: >
+  Whenever any part of Skipper decides to say something to a person — a chat reply, a
+  reminder, a background milestone, an arrival greeting — the surfaces it lands on are
+  settled by that person's circumstances alone. Two different features speaking to the same
+  person in the same circumstances reach exactly the same surfaces, and a feature added
+  later inherits those rules without restating them. A feature chooses only WHAT is worth
+  saying; it cannot decide that its own messages deserve a wider or narrower reach, and it
+  cannot be the reason one utterance arrives twice on one surface and not at all on another.
+implements:
+- app_platform/speak.py
+- app_platform/voice_policy.py
+- apps/goals/handlers.py
+- apps/goals/pm_domain.py
+- apps/chores/handlers.py
+- apps/bounties/handlers.py
+tests: []
+links: {}
+notes: ''

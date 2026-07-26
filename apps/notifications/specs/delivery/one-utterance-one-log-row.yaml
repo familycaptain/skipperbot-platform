@@ -1,0 +1,20 @@
+kind: specification
+id: notifications.delivery.one-utterance-one-log-row
+title: One utterance, one history entry
+state: live
+autonomy: gated
+behavior: >
+  Recording a proactive message writes exactly one entry in Skipper's history — the record of what
+  was said — and it is written before any surface is contacted. Delivery itself writes no history.
+  So a message that went to Discord, a phone and a live web screen still appears in the web console
+  ONCE, and a message Skipper is already on record as having said (an utterance whose history entry
+  came first) is not recorded a second time: the notification is only its transport.
+implements:
+- apps/notifications/store.py::create_notification
+- apps/notifications/delivery.py::_deliver_one
+tests: []
+links: {}
+notes: >
+  Operator's rule: the history log says WHAT was said, once, before fan-out; a notification says HOW
+  it reached someone. Every duplicate-in-the-console bug traces back to something writing history a
+  second time during delivery.

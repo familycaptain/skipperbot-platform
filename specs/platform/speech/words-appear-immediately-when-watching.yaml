@@ -1,0 +1,15 @@
+kind: specification
+id: platform.speech.words-appear-immediately-when-watching
+title: Words appear immediately for someone who is watching
+state: live
+autonomy: gated
+behavior: When the person is at the console, what Skipper says is put on their screen as it is said
+  rather than waiting for the next delivery sweep. If that push fails, or they are not there, the
+  words are still in the record and are on screen the moment they come back — a delivery problem
+  never un-says something.
+implements:
+- app_platform/speak.py::deliver_now
+- app_platform/speak.py::speak
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: platform.consciousness.conversation-threading
+title: A reply continues the conversation it answers
+state: live
+autonomy: gated
+behavior: When a person replies within a day of the last thing Skipper said to them, their message
+  is recorded as part of that same conversation, so an answer to a question Skipper asked earlier
+  stays attached to the question rather than arriving as an unexplained fragment. A message Skipper
+  starts on its own initiative opens a conversation of its own.
+implements:
+- app_platform/consciousness.py::log_inbound_message
+- app_platform/consciousness.py::send_message
+tests: []
+links: {}
+notes: ''

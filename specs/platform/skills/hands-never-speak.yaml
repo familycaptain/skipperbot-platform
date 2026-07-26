@@ -1,0 +1,15 @@
+kind: specification
+id: platform.skills.hands-never-speak
+title: Work sessions cannot talk to anyone
+state: live
+autonomy: gated
+behavior: 'A background work session — Skipper independently making progress on something assigned
+  to it — has no way to message a person: no communication tool is available to it, and an attempt
+  to use one is refused rather than quietly succeeding. Its output is the work itself and the artifacts
+  it produces.'
+implements:
+- apps/goals/goal_work.py
+tests: []
+links: {}
+notes: 'Separating the work from the mouth is what keeps one voice: many things can be worked on
+  at once without several of them speaking to the same person independently.'

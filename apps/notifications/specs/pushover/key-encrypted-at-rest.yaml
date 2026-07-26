@@ -1,0 +1,16 @@
+kind: specification
+id: notifications.pushover.key-encrypted-at-rest
+title: Pushover keys are stored encrypted
+state: live
+autonomy: gated
+behavior: >
+  A person's Pushover user key is stored encrypted, so it is not readable by anyone with a look at the
+  database. If it cannot be decrypted, Pushover is simply not used for that person — their messages
+  still reach them everywhere else, rather than delivery failing.
+implements:
+- apps/notifications/data.py::get_pushover_creds
+- apps/notifications/data.py::save_pushover_subscription
+- apps/notifications/migrations/002_pushover.sql
+tests: []
+links: {}
+notes: ''

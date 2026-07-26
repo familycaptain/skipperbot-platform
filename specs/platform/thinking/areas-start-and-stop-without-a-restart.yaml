@@ -1,0 +1,15 @@
+kind: specification
+id: platform.thinking.areas-start-and-stop-without-a-restart
+title: Turning an area of thought on or off takes effect without a restart
+state: live
+autonomy: gated
+behavior: 'Enabling, disabling or re-prioritising an area of thought takes effect within a couple
+  of minutes and with no restart: a newly enabled area begins running, a disabled one stops after
+  its current cycle, and a changed priority is picked up on that area''s next pass.'
+implements:
+- thinking_scheduler.py::_supervise_domains
+- thinking_scheduler.py::_domain_loop
+- data_layer/thinking_domains.py
+tests: []
+links: {}
+notes: ''

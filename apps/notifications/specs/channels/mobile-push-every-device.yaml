@@ -1,0 +1,16 @@
+kind: specification
+id: notifications.channels.mobile-push-every-device
+title: A mobile push reaches every registered device
+state: live
+autonomy: gated
+behavior: >
+  A message addressed to mobile push goes to every phone or tablet that person has registered, titled
+  by what raised it ("Skipper Reminder", "Skipper Timer") so it is recognisable on a lock screen, and
+  it counts as having reached them if at least one device accepted it. Someone with no registered
+  device, or a household with mobile push not set up, gets nothing pushed and no error — the message
+  still reaches their other surfaces.
+implements:
+- apps/notifications/delivery.py::_deliver_one
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: notifications.pushover.key-never-shown-again
+title: A saved key is never shown again
+state: live
+autonomy: gated
+behavior: >
+  Once a Pushover user key is saved it is never readable back: all anyone can see is whether it is set
+  up, whether it is switched on, and which device it targets. Saving with the key box left blank keeps
+  the stored key, so changing the device or turning the opt-in on and off never means fetching the key
+  from pushover.net again.
+implements:
+- apps/notifications/data.py::get_pushover_status
+- apps/notifications/data.py::save_pushover_subscription
+- apps/notifications/routes.py::pushover_status
+tests: []
+links: {}
+notes: ''

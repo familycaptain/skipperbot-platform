@@ -1,0 +1,19 @@
+kind: specification
+id: platform.attention.alarm-runs-the-area-skill
+title: A background alarm runs the skill for its area
+state: live
+autonomy: gated
+behavior: When a timer raises an event for an area of the household — chores, projects, goals — the
+  skill registered for that area runs the turn. If nothing is registered for that area the event
+  is marked handled and nothing is said, rather than being retried forever or surfacing as an error
+  to a person.
+implements:
+- app_platform/attention.py::_dispatch
+- app_platform/skills.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'Phase2Wiring.test_chores_skill_registered_and_flagged: the chores alarm is answered by
+    a registered skill rather than by the job that raised it.'
+links: {}
+notes: ''

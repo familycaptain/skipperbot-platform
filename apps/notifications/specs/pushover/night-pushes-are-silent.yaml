@@ -1,0 +1,14 @@
+kind: specification
+id: notifications.pushover.night-pushes-are-silent
+title: Overnight pushes arrive silently
+state: live
+autonomy: gated
+behavior: >
+  A Pushover notification sent between 10pm and 6am household time arrives silently — it is there in
+  the morning without waking anybody. Outside those hours it arrives at high priority so it is noticed
+  while it still matters.
+implements:
+- tools/pushover_tool.py::send_pushover_notification
+tests: []
+links: {}
+notes: ''

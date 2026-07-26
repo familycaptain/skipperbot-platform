@@ -1,0 +1,15 @@
+kind: specification
+id: platform.consciousness.reads-in-order
+title: The record reads back in the order things happened
+state: live
+autonomy: gated
+behavior: Every entry takes its place in one household-wide sequence as it is appended, and every
+  read of the record — the recent tail, one person's messages, one conversation — returns entries
+  in that order regardless of which surface or which background job produced them. Order is the guarantee;
+  the sequence may skip numbers.
+implements:
+- app_platform/consciousness.py::tail
+- app_platform/consciousness.py::log_event
+tests: []
+links: {}
+notes: ''

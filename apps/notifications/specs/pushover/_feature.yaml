@@ -1,0 +1,6 @@
+kind: feature
+id: notifications.pushover
+title: Pushover opt-in
+state: live
+links: {}
+notes: ''

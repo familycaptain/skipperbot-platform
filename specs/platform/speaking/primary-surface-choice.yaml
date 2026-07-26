@@ -1,0 +1,21 @@
+kind: specification
+id: platform.speaking.primary-surface-choice
+title: Each person says for themselves where they mainly talk to Skipper
+state: live
+autonomy: gated
+behavior: >
+  Each household member can say, in their own settings, whether they mainly talk to Skipper
+  on the web console or on Discord. The choice is per-person, not per-household, so one
+  member living in Discord never changes where another member hears from Skipper. Those are
+  the only two options offered, and a person who has never chosen is treated as web.
+  Changing the choice takes effect on the very next thing Skipper says to that person, with
+  no restart and no re-login.
+implements:
+- data_layer/users.py::get_primary_surface
+- data_layer/users.py::set_primary_surface
+- agent.py::api_set_primary_surface
+- apps/settings/ui/SettingsApp.jsx
+- migrations/003_user_surface_preference.sql
+tests: []
+links: {}
+notes: ''

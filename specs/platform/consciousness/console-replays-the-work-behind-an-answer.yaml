@@ -1,0 +1,14 @@
+kind: specification
+id: platform.consciousness.console-replays-the-work-behind-an-answer
+title: A reloaded answer still shows the work behind it
+state: live
+autonomy: gated
+behavior: When a person reloads the console, an answer that involved Skipper actually doing something
+  shows the same account of what it did as it did live. Exchanges recorded before that account was
+  kept alongside them recover it from the older store rather than reloading blank.
+implements:
+- app_platform/context.py::history_projection
+- chat.py
+tests: []
+links: {}
+notes: ''

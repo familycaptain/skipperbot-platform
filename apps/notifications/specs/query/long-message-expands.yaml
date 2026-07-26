@@ -1,0 +1,15 @@
+kind: specification
+id: notifications.query.long-message-expands
+title: A long notification opens in place
+state: live
+autonomy: gated
+behavior: >
+  Each notification is listed as its first line, marked as continuing when there is more to it, and
+  opens in place to show the whole text when clicked — so a long job report does not push everything
+  else off the screen, and a scan of the list stays a scan. One that fits on a line is not clickable,
+  and one with no text at all reads as empty rather than as a blank row.
+implements:
+- apps/notifications/ui/NotificationsApp.jsx
+tests: []
+links: {}
+notes: ''

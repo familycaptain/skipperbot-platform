@@ -1,0 +1,22 @@
+kind: specification
+id: platform.context.time-awareness
+title: Skipper reasons about elapsed time, not just order
+state: live
+autonomy: gated
+behavior: 'Every line of the stream carries when it was said, and the turn is told the current time,
+  so eight minutes ago and three days ago are distinguishable: Skipper does not ask how something
+  went before the time it was planned for has arrived, and does not re-ask a question minutes after
+  asking it — silence means busy, not unheard. Where an older note conflicts with something said
+  more recently, the recent one wins. The stamps are Skipper''s own notation and never appear in
+  what it says.'
+implements:
+- app_platform/context.py::event_stamp
+- app_platform/context.py::TIMELINE_BOUNDARY
+- app_platform/context.py::build_chat_timeline
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'TimeAwareness: every stream line is stamped, the turn is given a current-time anchor,
+    and the framing teaches future-plan and unanswered-question restraint.'
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: notifications.pushover.remove-opt-in
+title: Removing the opt-in deletes the key
+state: live
+autonomy: gated
+behavior: >
+  Removing a Pushover opt-in deletes that person's stored key and device outright — not just switches
+  it off — and Pushover stops being one of their surfaces; the app goes back to offering setup from
+  scratch. Their notification history is untouched, and so is everyone else's opt-in.
+implements:
+- apps/notifications/data.py::delete_pushover_subscription
+- apps/notifications/routes.py::pushover_delete
+tests: []
+links: {}
+notes: ''

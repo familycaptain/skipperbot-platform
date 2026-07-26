@@ -1,0 +1,34 @@
+kind: specification
+id: platform.speaking.discord-is-an-additional-target
+title: Discord gets an additional copy only when Discord is where the person actually is
+state: live
+autonomy: gated
+behavior: >
+  When Skipper speaks to someone who has said Discord is where they mainly talk, Discord
+  receives a copy as well as the console, without waiting for that person to speak first.
+  For everyone else Discord receives a copy only while they are actively using it: for about
+  fifteen minutes after each message they send FROM Discord, refreshed by every such
+  message. Outside that window Discord stays quiet, so a conversation held on the web never
+  leaves a one-sided monologue in their DMs. Someone with no linked Discord account, and
+  every install with Discord switched off, never receives a Discord copy. Discord is never a
+  substitute for the console — sending there only ever ADDS a surface, so no answer to this
+  question can cause a person to miss a message.
+implements:
+- app_platform/voice_policy.py::plan_discord
+- app_platform/speak.py
+- apps/notifications/delivery.py::_deliver_one
+- migrations/003_user_surface_preference.sql
+tests:
+- type: unit
+  path: tests/evolve/platform/test_voice_policy.py
+  rubric: >
+    Pure, no DB or sockets. A Discord-primary person receives with no recent activity; a
+    web-primary person receives only inside the activity window; an unlinked account never
+    receives on either preference; an absent or unrecognised preference behaves as web (never
+    silently promoted to always-on Discord); the preference match is case-insensitive; the
+    activity window is its own value and not shared with the greeting quiet-window.
+links: {}
+notes: >
+  Preference plus observed activity, deliberately NOT Discord presence: nothing tracks
+  whether someone is "on Discord", and a DM waits until it is read, so presence would not
+  change the answer even if it were available.

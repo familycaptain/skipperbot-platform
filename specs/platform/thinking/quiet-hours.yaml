@@ -1,0 +1,13 @@
+kind: specification
+id: platform.thinking.quiet-hours
+title: Background thought respects the household's waking hours
+state: live
+autonomy: gated
+behavior: An area of thought does not run outside the household's waking hours — it sleeps until
+  the next active period rather than reaching out or spending anything overnight. An area whose work
+  genuinely needs different hours can declare its own.
+implements:
+- thinking_scheduler.py::_domain_loop
+tests: []
+links: {}
+notes: ''

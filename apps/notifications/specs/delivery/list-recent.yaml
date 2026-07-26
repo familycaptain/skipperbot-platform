@@ -3,9 +3,15 @@ id: notifications.delivery.list-recent
 title: List recent notifications
 state: live
 autonomy: gated
-behavior: Listing returns recent notifications delivered by the system.
+behavior: >
+  Asked what it has told someone ("what did you tell me today?", "show my alerts"), Skipper answers
+  from recorded notification history, newest first — each entry giving when it went out, to whom,
+  what was said, what raised it, and which surfaces it was addressed to. With nothing recorded it
+  says so plainly instead of returning an empty answer. The Notifications app shows the same history
+  for the person using it.
 implements:
-- apps/notifications/tools.py
+- apps/notifications/tools.py::get_recent_notifications
+- apps/notifications/store.py::format_notifications
 - apps/notifications/ui/NotificationsApp.jsx
 tests: []
 links: {}

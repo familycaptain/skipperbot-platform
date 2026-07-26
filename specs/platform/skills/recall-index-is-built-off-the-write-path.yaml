@@ -1,0 +1,14 @@
+kind: specification
+id: platform.skills.recall-index-is-built-off-the-write-path
+title: Making the record searchable never slows down recording
+state: live
+autonomy: gated
+behavior: Entries become searchable by meaning shortly after they are written, never while they are
+  being written; trivial and low-value entries are skipped entirely. If the indexing provider is
+  unavailable the batch stops and is retried on the next pass, and the record itself is untouched
+  either way.
+implements:
+- app_platform/summarizer.py::embed_log_batch
+tests: []
+links: {}
+notes: ''

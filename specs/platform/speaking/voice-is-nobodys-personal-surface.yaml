@@ -1,0 +1,22 @@
+kind: specification
+id: platform.speaking.voice-is-nobodys-personal-surface
+title: The shared speaker is nobody's personal surface
+state: live
+autonomy: gated
+behavior: >
+  A turn held through the household speaker is never treated as belonging to one person: it
+  does not appear in any individual's console scrollback, and voice cannot be chosen as
+  where a person mainly talks to Skipper. This holds even when Skipper thinks it recognises
+  who spoke, because anyone in the house can walk up to a shared device — attributing those
+  words to a member would put somebody else's conversation in their console, or put the
+  wrong name on what was said. Voice turns are still remembered and searchable by Skipper;
+  they are simply not anyone's to display.
+implements:
+- app_platform/context.py::history_projection
+- app_platform/voice_policy.py
+- migrations/003_user_surface_preference.sql
+tests: []
+links: {}
+notes: >
+  The exclusion is about attribution, not tidiness: speaker recognition may never resolve,
+  and a shared device means it can be wrong even when it does.

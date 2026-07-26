@@ -1,0 +1,20 @@
+kind: specification
+id: platform.webui.utterance-identity-stable
+title: An utterance looks the same live as it does after a reload
+state: live
+autonomy: gated
+behavior: >
+  Something Skipper says of its own accord is drawn as Skipper speaking — the same chat
+  bubble whether it arrived while the person was watching or is redrawn on a later reload.
+  Something raised by a background source, such as a reminder or a timer firing, is drawn as
+  a notification card, again identically live and on reload. One utterance never changes
+  identity between the two, so reloading the page can never turn Skipper's own words into a
+  system notice, or the reverse.
+implements:
+- app_platform/context.py::history_projection
+- apps/notifications/delivery.py
+- chat_render.py
+- web/src/components/ChatMessage.jsx
+tests: []
+links: {}
+notes: ''

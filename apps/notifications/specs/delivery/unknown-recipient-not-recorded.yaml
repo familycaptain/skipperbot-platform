@@ -1,0 +1,15 @@
+kind: specification
+id: notifications.delivery.unknown-recipient-not-recorded
+title: A message addressed to nobody is not recorded
+state: live
+autonomy: gated
+behavior: >
+  Recording a message for a blank recipient, or for a name that belongs to no known person, stores
+  nothing, attempts no delivery, and tells the caller that nothing was recorded — rather than
+  accumulating history nobody will ever read. Recipient names are matched without regard to case or
+  surrounding spaces, so "Alice" and " alice " are the same person.
+implements:
+- apps/notifications/store.py::create_notification
+tests: []
+links: {}
+notes: ''

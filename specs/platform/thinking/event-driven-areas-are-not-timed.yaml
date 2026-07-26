@@ -1,0 +1,13 @@
+kind: specification
+id: platform.thinking.event-driven-areas-are-not-timed
+title: Work that arrives as events is never also put on a timer
+state: live
+autonomy: gated
+behavior: An area whose work arrives as events runs when an event dispatches to it and is never given
+  a timer loop as well, so nothing that expects a request is called as though it were a tick.
+implements:
+- thinking_scheduler.py::_supervise_domains
+- domain_modules.py
+tests: []
+links: {}
+notes: ''

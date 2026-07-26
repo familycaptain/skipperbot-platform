@@ -1223,7 +1223,7 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
 async def chat(request: ChatRequest):
     """HTTP chat endpoint - fallback for non-WebSocket clients."""
     try:
-        response_text = await process_chat(request.user_id, request.message)
+        response_text = await process_chat(request.user_id, request.message, channel="web")
         return ChatResponse(response=response_text, user_id=request.user_id)
     except Exception as e:
         return ChatResponse(response=f"Error: {str(e)}", user_id=request.user_id)

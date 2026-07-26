@@ -80,7 +80,14 @@ async def process_chat(
     user_id: str,
     user_message: str,
     send_progress: Optional[Callable[[str], Awaitable[None]]] = None,
-    channel: str = "discord",
+    # Written to the log as this message's surface, and the speaking policy reads that
+    # column to decide whether Discord is a live place to answer someone. It defaulted
+    # to "discord", so the HTTP chat fallback — which passed nothing — logged web
+    # traffic as Discord and made Skipper start DM-ing that person for the next 15
+    # minutes. Every caller now states its surface explicitly, so this default should
+    # never be reached; it is "web" because the console always receives, making a
+    # mislabel here harmless rather than a phantom Discord conversation.
+    channel: str = "web",
     app_context: dict | None = None,
     send_event: Optional[Callable[[dict], Awaitable[None]]] = None,
     log_event_id: str | None = None,

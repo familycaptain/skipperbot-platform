@@ -1,0 +1,18 @@
+kind: specification
+id: platform.presence.indicator-always-clears
+title: The composing indicator always clears, and never breaks the turn behind it
+state: live
+autonomy: gated
+behavior: >
+  A composing indicator never spins forever. It clears when the turn ends, whichever way it
+  ended — words delivered, an error, or a decision to stay silent — and it clears at once if
+  the console's connection drops while it is showing. Presence is cosmetic: failing to show
+  or to clear the indicator never delays, interrupts, or aborts the turn that was trying to
+  speak, and a person who is not connected at all can be told about presence harmlessly.
+implements:
+- app_platform/presence.py
+- apps/goals/handlers.py
+- web/src/hooks/useSkipperSocket.js
+tests: []
+links: {}
+notes: ''

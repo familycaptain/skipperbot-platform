@@ -1,0 +1,15 @@
+kind: specification
+id: platform.consciousness.pending-work-survives-restart
+title: Unanswered messages survive a restart
+state: live
+autonomy: gated
+behavior: If Skipper stops and starts again, the work still owed is exactly the messages and events
+  that had not been answered when it stopped; they are picked up and answered on the way back up,
+  and nothing already answered is answered a second time. A turn interrupted mid-flight is not resumed
+  — the message is still in the record, and the person can ask again.
+implements:
+- app_platform/consciousness.py::claim_unattended
+- app_platform/attention.py
+tests: []
+links: {}
+notes: ''

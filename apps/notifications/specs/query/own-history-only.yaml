@@ -1,0 +1,15 @@
+kind: specification
+id: notifications.query.own-history-only
+title: You read your own history, newest first
+state: live
+autonomy: gated
+behavior: >
+  Asking for notification history returns the asker's own messages, most recent first, whether or not
+  they named themselves. Asking for somebody else's is allowed only for a parent or an admin; anyone
+  else is refused outright rather than being quietly handed their own history and left thinking they
+  are looking at someone else's.
+implements:
+- apps/notifications/routes.py::list_notifications
+tests: []
+links: {}
+notes: ''

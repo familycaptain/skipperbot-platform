@@ -1,0 +1,15 @@
+kind: specification
+id: platform.skills.apps-register-their-own-skills
+title: An app supplies the skill for its own area
+state: live
+autonomy: gated
+behavior: An app declares, when it loads, the skill that answers for its area of the household; adding
+  one needs no change to the platform, and registering the same name again replaces it. An area with
+  no skill registered simply has no background voice — that is never an error.
+implements:
+- app_platform/skills.py
+- apps/chores/handlers.py
+- apps/goals/handlers.py
+tests: []
+links: {}
+notes: ''

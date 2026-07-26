@@ -118,8 +118,6 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
     (async () => {
       let hist = [];
       try {
-        // channel=web scopes the reload to web-originated turns so voice/Discord
-        // conversations don't bleed into the web chat scrollback (issue #23).
         // NO channel filter. The web console is the source of truth: it shows EVERY
         // exchange with this person from EVERY surface — Discord, voice, mobile — and
         // both sides of each. Scoping it to channel=web used to hide your own replies

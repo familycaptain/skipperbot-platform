@@ -1,0 +1,21 @@
+kind: specification
+id: platform.webui.console-complete-record
+title: The console scrollback is the whole conversation with a person, from every surface
+state: live
+autonomy: gated
+behavior: >
+  Opening the web console shows a person their recent conversation with Skipper as one
+  continuous scrollback in time order: both sides of it, and everything said on any surface
+  they use — what they wrote from Discord or a phone sits beside what they typed on the web,
+  with Skipper's replies in place. Messages Skipper started on its own (a reminder firing, a
+  background nudge) appear in the same scrollback rather than only on the surface they were
+  pushed to. Only turns held on the shared household speaker are absent, because those are
+  not attributable to a person. A member who has never spoken to Skipper sees an empty
+  scrollback, not an error.
+implements:
+- app_platform/context.py::history_projection
+- agent.py::chat_history
+- web/src/hooks/useSkipperSocket.js
+tests: []
+links: {}
+notes: ''

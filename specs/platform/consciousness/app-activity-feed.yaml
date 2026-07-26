@@ -1,0 +1,15 @@
+kind: specification
+id: platform.consciousness.app-activity-feed
+title: App changes appear in the author's activity feed
+state: live
+autonomy: gated
+behavior: When someone adds, updates, completes or removes a record in any app, an entry naming the
+  action and the item appears in that person's own personal activity feed. Changes with no human
+  author, and posts to the feed itself, produce no entry. A failure to post never fails the change
+  that caused it.
+implements:
+- app_platform/activity.py
+- app_platform/memory.py
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: notifications.receipts.web-receipt-always-present
+title: The web surface always leaves a receipt
+state: live
+autonomy: gated
+behavior: >
+  Every delivered message carries a receipt for the web console, because the console is always tried.
+  It reads as reached when the person was watching and it went straight onto their screen, and as
+  not-reached — noted as waiting in their history — when they were not. That distinction is what makes
+  an all-failed set of receipts meaningful: it means nobody was contacted anywhere, rather than being
+  indistinguishable from someone who simply was not at a screen.
+implements:
+- apps/notifications/delivery.py::_deliver_one
+tests: []
+links: {}
+notes: ''

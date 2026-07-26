@@ -1,0 +1,15 @@
+kind: specification
+id: platform.thinking.areas-keep-their-own-rhythm
+title: Each area of thought keeps its own rhythm
+state: live
+autonomy: gated
+behavior: Background thought is organised as areas that each run on their own timer, independently
+  of one another, and each decides when it wants to be woken next from what it found — a quiet pass
+  waits longer, a productive one comes back sooner. Intervals are held between half a minute and
+  an hour, so no area can spin or go dark.
+implements:
+- thinking_scheduler.py::_domain_loop
+- domain_modules.py
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: notifications.pushover.hourly-volume-cap
+title: Pushes are capped so nothing can spam a phone
+state: live
+autonomy: gated
+behavior: >
+  No more than thirty Pushover notifications leave the house in any hour. Past that, further pushes are
+  refused with a note saying when they can resume, so a runaway loop — or content that talked Skipper
+  into sending — cannot turn somebody's phone into an alarm. A refused push is recorded as not having
+  reached them and is not retried; the message is still in their history and on their other surfaces.
+implements:
+- tools/pushover_tool.py::send_pushover_notification
+- tools/outbound_guard.py::rate_limit
+tests: []
+links: {}
+notes: >
+  A blast-radius bound, not a preference: the sending path is reachable from model-visible content, so
+  the cap holds regardless of what the model is told to do.

@@ -1,0 +1,19 @@
+kind: specification
+id: notifications.delivery.abandon-stale-undelivered
+title: Stale messages are abandoned, not retried
+state: live
+autonomy: gated
+behavior: >
+  A message still undelivered when it becomes older than the configured maximum delivery age (five
+  minutes by default) is abandoned: it is never sent, and never attempted again. So a server that was
+  offline for hours does not blast a backlog of hours-old reminders at everyone the moment it comes
+  back. An abandoned message stays readable in history and carries no delivery receipts, which is how
+  it can be told apart from one that was actually attempted.
+implements:
+- apps/notifications/data.py::get_all_undelivered
+- apps/notifications/delivery.py::_max_delivery_age_minutes
+tests: []
+links: {}
+notes: >
+  Operator's choice of abandon over retry: a reminder that arrives long after the moment it was about
+  is worse than no reminder, and the message is still in history either way.

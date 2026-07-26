@@ -1,0 +1,21 @@
+kind: specification
+id: platform.speaking.web-console-always-receives
+title: Anything Skipper says to a person is in their web console, whether or not they were
+  there
+state: live
+autonomy: gated
+behavior: >
+  When Skipper says something to a person, it is recorded for that person's web console
+  before any surface is attempted, so it is waiting for them the next time they open the
+  console — whether or not they were connected at the time, and whether or not any other
+  surface could be reached. If they are connected it also appears on their screen. Nothing
+  can make the console copy conditional: a person with no other surface configured, a
+  Discord DM that fails, and a delivery that errors partway all still leave the utterance
+  in the console. The console is therefore the surface Skipper can always be answered on.
+implements:
+- app_platform/speak.py
+- app_platform/consciousness.py::send_message
+- app_platform/context.py::history_projection
+tests: []
+links: {}
+notes: ''

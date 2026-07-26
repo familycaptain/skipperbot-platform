@@ -1,0 +1,15 @@
+kind: specification
+id: platform.skills.work-raises-milestones-for-the-voice-to-judge
+title: The voice decides whether work is worth mentioning
+state: live
+autonomy: gated
+behavior: When a work session reaches something the family would genuinely want to hear it raises
+  it once and stops. A separate short turn then decides whether to say anything, and if so says it
+  in Skipper's own voice as one brief message that names what it is about and stands on its own.
+  Routine progress is dropped without a word.
+implements:
+- apps/goals/goal_work.py
+- apps/goals/handlers.py
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: notifications.query.nothing-to-show
+title: Nothing to show says so
+state: live
+autonomy: gated
+behavior: >
+  With no notifications recorded, the Notifications app says there are none yet rather than showing an
+  empty panel, and Skipper answers a history question with a plain "none found" rather than nothing at
+  all. Filtering down to no matches says that no notification matched — which is a different message
+  from having no history in the first place. A history that fails to load says so instead of looking
+  empty.
+implements:
+- apps/notifications/ui/NotificationsApp.jsx
+- apps/notifications/store.py::format_notifications
+tests: []
+links: {}
+notes: ''

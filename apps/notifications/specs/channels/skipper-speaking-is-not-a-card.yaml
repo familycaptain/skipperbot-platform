@@ -1,0 +1,16 @@
+kind: specification
+id: notifications.channels.skipper-speaking-is-not-a-card
+title: Skipper speaking arrives as speech, not as an alert card
+state: live
+autonomy: gated
+behavior: >
+  A message that is Skipper talking to someone — its own remarks, a first greeting — lands on their
+  web screen as part of the conversation, in the same form it will have when the page is reloaded. A
+  message raised by something in the background (a reminder firing, a job finishing) lands as an alert
+  card instead. Whichever it is, the same utterance looks the same live as it does on reload, so
+  refreshing the page never turns Skipper's words into a system alert.
+implements:
+- apps/notifications/delivery.py::_deliver_one
+tests: []
+links: {}
+notes: ''

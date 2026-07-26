@@ -1,0 +1,15 @@
+kind: specification
+id: notifications.query.narrow-the-list
+title: Narrow the list as you type
+state: live
+autonomy: gated
+behavior: >
+  Typing in the Notifications app's filter immediately narrows the visible list to notifications whose
+  message, source or addressed surface contains what was typed, matched without regard to case;
+  clearing it brings the whole list back. Refreshing re-reads the person's recent history without
+  losing what was typed.
+implements:
+- apps/notifications/ui/NotificationsApp.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,20 @@
+kind: specification
+id: platform.webui.no-duplicate-utterance
+title: One utterance appears once in the console, however many times it was delivered
+state: live
+autonomy: gated
+behavior: >
+  A single thing Skipper said appears exactly once in the console. This holds when it is
+  pushed onto the screen at the same moment the console is loading its earlier history, when
+  the same delivery is attempted more than once, and when a message was written to the
+  record by more than one producer. Two genuinely separate utterances that happen to read
+  the same — someone answering "yes" twice a few minutes apart — both still appear; only a
+  near-simultaneous repeat of the same words by the same speaker is treated as one.
+implements:
+- web/src/hooks/useSkipperSocket.js
+- app_platform/context.py::history_projection
+- app_platform/speak.py::deliver_now
+- apps/notifications/delivery.py
+tests: []
+links: {}
+notes: ''

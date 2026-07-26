@@ -1,0 +1,20 @@
+kind: specification
+id: platform.skills.rolling-summary
+title: The record is compressed into a rolling summary
+state: live
+autonomy: gated
+behavior: As the record outgrows what a turn can hold, Skipper writes an updated summary of the household
+  — carrying forward what is still open, folding in what has happened, dropping what is resolved,
+  keeping the dates and times that matter — plus one summary per person who has been active in the
+  span. Each summary is written from the previous summary plus what has happened since, the newest
+  entries are left out while they are still quoted verbatim, and a summary is written at least daily
+  once there is enough to say.
+implements:
+- app_platform/summarizer.py::maybe_summarize
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'Phase4Subconscious.test_summarizer_policy: cumulative summaries, global and per-active-person
+    scopes, a span trigger below the verbatim window and a daily backstop.'
+links: {}
+notes: ''

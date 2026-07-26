@@ -1,0 +1,23 @@
+kind: specification
+id: platform.attention.a-reply-always-runs-the-conversation
+title: A reply is always answered by the one conversational Skipper
+state: live
+autonomy: gated
+behavior: Whatever prompted a person to write — a chore round, a project sweep, a reminder, or nothing
+  at all — their message is answered by Skipper's ordinary conversational self, with the earlier
+  exchange in front of it. There is no per-feature reply handler to route to, so a reply to a background
+  nudge can never land on something that has no idea the nudge was sent.
+implements:
+- app_platform/attention.py::_dispatch
+- app_platform/attention.py::_run_chat_turn
+- chat.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'Phase2Wiring.test_ws_routes_through_attention_unconditionally and test_chat_attention_mode_no_double_log:
+    every inbound message runs the chat turn through attention, and the turn does not re-record the
+    message it was given.'
+links: {}
+notes: 'The failure this exists to prevent: a scheduled job asks a question, the person answers,
+  and a different code path — which never saw the question — handles the reply and either stalls
+  or invents an action.'

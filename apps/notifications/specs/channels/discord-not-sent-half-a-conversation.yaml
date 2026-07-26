@@ -1,0 +1,20 @@
+kind: specification
+id: notifications.channels.discord-not-sent-half-a-conversation
+title: Discord is not sent half a conversation
+state: live
+autonomy: gated
+behavior: >
+  Someone talking to Skipper on the web does not also get a Discord DM of Skipper's side of it: the
+  Discord copy is withheld unless Discord is where that person said they mainly talk, or they have
+  used Discord recently. Someone whose surface IS Discord always gets it there. Only Discord is
+  withheld this way — a finishing timer should still buzz a pocket whichever screen its owner is at —
+  and if the question cannot be answered at all, the message goes out exactly as its sender asked
+  rather than being dropped.
+implements:
+- apps/notifications/delivery.py::_deliver_one
+- app_platform/voice_policy.py::plan_discord
+tests: []
+links: {}
+notes: >
+  Judged once, here, because every producer's message passes through delivery — the alternative was
+  the same decision re-made and slowly diverging in the dozen-odd places that raise notifications.

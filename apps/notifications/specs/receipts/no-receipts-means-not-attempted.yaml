@@ -1,0 +1,16 @@
+kind: specification
+id: notifications.receipts.no-receipts-means-not-attempted
+title: No receipts at all means delivery never ran
+state: live
+autonomy: gated
+behavior: >
+  A message with no receipts whatsoever has not been through delivery — either it was only just
+  recorded, or it was abandoned for being too old. That is a different answer from a message whose
+  receipts are all failures, which was tried everywhere and reached nobody. Anyone asking whether a
+  person was actually told something can tell the two apart.
+implements:
+- apps/notifications/data.py::_row
+- apps/notifications/migrations/003_delivery_receipts.sql
+tests: []
+links: {}
+notes: ''

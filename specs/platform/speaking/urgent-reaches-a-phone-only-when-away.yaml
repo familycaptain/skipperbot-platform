@@ -1,0 +1,15 @@
+kind: specification
+id: platform.speaking.urgent-reaches-a-phone-only-when-away
+title: An urgent message buzzes a phone only when the person is not already at a screen
+state: live
+autonomy: gated
+behavior: >
+  When Skipper marks something urgent for a person who is not watching the console, it is
+  also pushed to their phone. When that person IS watching, the phone stays quiet — the
+  words are already in front of them, so a push would be noise rather than urgency. Anything
+  not marked urgent never causes a phone push on its own.
+implements:
+- app_platform/speak.py
+tests: []
+links: {}
+notes: ''

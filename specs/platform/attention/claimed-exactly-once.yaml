@@ -1,0 +1,18 @@
+kind: specification
+id: platform.attention.claimed-exactly-once
+title: Owed work is claimed exactly once
+state: live
+autonomy: gated
+behavior: Each message or event owed a turn is taken up by exactly one turn, even with several running
+  at once and even across a restart, so nothing is answered twice. If the process dies mid-turn that
+  item is not retried; the message is still in the record and the person can ask again.
+implements:
+- app_platform/attention.py
+- app_platform/consciousness.py::claim_unattended
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'Phase2Wiring.test_attention_module_contract: the attention loop consumes owed rows through
+    the atomic claim rather than a read-then-mark.'
+links: {}
+notes: ''

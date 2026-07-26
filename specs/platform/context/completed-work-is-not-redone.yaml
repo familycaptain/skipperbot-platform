@@ -1,0 +1,18 @@
+kind: specification
+id: platform.context.completed-work-is-not-redone
+title: Work already done is not done again
+state: live
+autonomy: gated
+behavior: Actions Skipper actually carried out in an earlier turn are marked as completed where that
+  turn appears in the stream, so a later turn treats them as done rather than performing them a second
+  time.
+implements:
+- app_platform/context.py::render_event
+- chat.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'TimelineRendering.test_write_actions_render_completed_marker: a turn''s completed write
+    actions are re-rendered as already-done when that turn is read back.'
+links: {}
+notes: ''

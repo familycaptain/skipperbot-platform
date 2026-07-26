@@ -1,0 +1,20 @@
+kind: specification
+id: platform.presence.composing-indicator
+title: The composing indicator means a turn that may speak has actually begun
+state: live
+autonomy: gated
+behavior: >
+  When Skipper begins a turn that may say something to a particular person, that person's
+  console shows a composing indicator from the moment the turn starts — before the thinking
+  time, not after it — and clears it when the words arrive. The indicator is raised by
+  Skipper itself, never guessed at by the browser from a timer, so it never appears while
+  nothing is being composed for that person, and Skipper's words never land on a screen that
+  showed no sign anything was coming.
+implements:
+- app_platform/presence.py::set_typing
+- apps/goals/handlers.py
+- agent.py
+- web/src/hooks/useSkipperSocket.js
+tests: []
+links: {}
+notes: ''

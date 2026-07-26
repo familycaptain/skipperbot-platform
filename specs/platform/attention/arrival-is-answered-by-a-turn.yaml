@@ -1,0 +1,22 @@
+kind: specification
+id: platform.attention.arrival-is-answered-by-a-turn
+title: Arriving is something Skipper notices
+state: live
+autonomy: gated
+behavior: When someone opens their desktop, the arrival is recorded as owed a turn and answered by
+  a real turn rather than a canned line, so the greeting reflects where things actually stood — picking
+  up something outstanding, or a short hello when nothing is. If Skipper said anything to them in
+  the last quarter of an hour it stays quiet, because that is a reload, not a return. Every household
+  member is greeted, not only the person who set the system up, and the greeting turn can speak but
+  cannot act on their behalf or move them around the app.
+implements:
+- app_platform/attention.py::_dispatch
+- apps/goals/handlers.py
+- agent.py
+tests: []
+links:
+  related:
+  - platform.onboarding.live-greeting
+notes: Records current behaviour. platform.onboarding.live-greeting describes the retired priority-event
+  path with its greet-once claim, primary-user-only gate and client-simulated typing, none of which
+  is how arrival is handled now.

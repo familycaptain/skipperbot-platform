@@ -1,0 +1,21 @@
+kind: specification
+id: platform.context.one-timeline
+title: A turn sees one chronological stream, not one conversation
+state: live
+autonomy: gated
+behavior: 'A turn is given the household''s recent history as a single stream in the order things
+  happened — this person''s messages, other members'' messages, the things Skipper did, and events
+  that occurred — rather than only this person''s thread. So a dependency across people is visible
+  in one place: Skipper can tell someone that another member has finished the thing they were waiting
+  on, without being told.'
+implements:
+- app_platform/context.py::build_chat_timeline
+- app_platform/context.py::render_event
+- chat.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'TimelineRendering.test_chronology_is_array_order: the stream''s order is the order things
+    happened, across speakers.'
+links: {}
+notes: ''

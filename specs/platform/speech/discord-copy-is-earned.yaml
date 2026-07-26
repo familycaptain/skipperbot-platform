@@ -1,0 +1,22 @@
+kind: specification
+id: platform.speech.discord-copy-is-earned
+title: A Discord copy follows what the person actually does
+state: live
+autonomy: gated
+behavior: Someone who says Discord is where they talk to Skipper always gets a copy there. Someone
+  who mainly uses the web gets a Discord copy only while they have been writing from Discord recently
+  — a window refreshed by each message they send from it — so answering someone where they wrote
+  from works without direct-messaging them about everything that happens while they are away. Someone
+  with no Discord account linked never gets one.
+implements:
+- app_platform/voice_policy.py::plan_discord
+- app_platform/speak.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_voice_policy.py
+  rubric: Discord-primary always receives; web-primary receives only inside the activity window;
+    an unlinked account never does; an unknown preference behaves as web.
+links: {}
+notes: 'Deliberately keyed on stated preference and recent use rather than presence: nothing tracks
+  Discord presence, and a direct message waits until it is read regardless, so presence would not
+  change the answer even if it were knowable.'

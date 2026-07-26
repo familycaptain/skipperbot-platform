@@ -1,0 +1,17 @@
+kind: specification
+id: notifications.channels.default-surfaces
+title: An unstated surface choice means the configured defaults
+state: live
+autonomy: gated
+behavior: >
+  A message that names no surface goes to the ones the household has configured as its defaults —
+  Discord and Pushover until someone changes them in the Notifications settings. If the setting is
+  missing, empty or unreadable, those same two are used rather than silently sending nowhere. Wanting
+  no external surface has to be asked for explicitly; saying nothing is never read as saying no.
+implements:
+- apps/notifications/delivery.py::_default_channels
+- apps/notifications/delivery.py::_resolve_external_channels
+- apps/notifications/manifest.yaml
+tests: []
+links: {}
+notes: ''

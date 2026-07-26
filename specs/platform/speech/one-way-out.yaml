@@ -1,0 +1,16 @@
+kind: specification
+id: platform.speech.one-way-out
+title: Everything Skipper says leaves by one path
+state: live
+autonomy: gated
+behavior: Whatever decided there was something to say — a chore round, a reminder, a reply, a milestone
+  — the words go out through one path that records them and then chooses the surfaces. Producers
+  decide what is worth saying; they never decide where it lands or whether the person is reachable.
+implements:
+- app_platform/speak.py
+- app_platform/consciousness.py::send_message
+tests: []
+links: {}
+notes: Made one decision in one place because every background feature that reinvented it reinvented
+  it slightly differently, which is how one utterance arrives twice on one surface and not at all
+  on another.

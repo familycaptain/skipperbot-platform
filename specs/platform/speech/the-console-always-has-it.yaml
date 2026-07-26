@@ -1,0 +1,14 @@
+kind: specification
+id: platform.speech.the-console-always-has-it
+title: The console always has it
+state: live
+autonomy: gated
+behavior: A message to a person is in their console whether or not anyone was watching, whether or
+  not any other surface was reachable, and whether or not delivery anywhere succeeded. Surface choices
+  only ever add a copy somewhere else; none of them can take the message out of the console.
+implements:
+- app_platform/speak.py
+- app_platform/voice_policy.py
+tests: []
+links: {}
+notes: ''

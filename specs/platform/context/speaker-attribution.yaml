@@ -1,0 +1,19 @@
+kind: specification
+id: platform.context.speaker-attribution
+title: Every line of the stream says who said it
+state: live
+autonomy: gated
+behavior: In the stream a turn reads, another member's message is attributed to them and a message
+  Skipper sent to somebody else is marked as addressed to that person, while the focal person's own
+  words and Skipper's replies to them are unmarked. Skipper's own actions and household events read
+  as such. So Skipper never mistakes one person's words for another's and never answers someone else's
+  question in this person's chat.
+implements:
+- app_platform/context.py::render_event
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'TimelineRendering: focal-person, other-person, to-someone-else and activity/event lines
+    each render distinguishably.'
+links: {}
+notes: ''

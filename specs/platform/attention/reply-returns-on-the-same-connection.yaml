@@ -1,0 +1,16 @@
+kind: specification
+id: platform.attention.reply-returns-on-the-same-connection
+title: A live message gets its answer back on the same connection
+state: live
+autonomy: gated
+behavior: A message typed into the web console gets its reply back on that connection, so chat still
+  feels like a question and an answer. If the connection drops before the turn finishes the turn
+  still runs and the reply reaches the person on their other surfaces and on their next reload. A
+  turn that has not answered within three minutes returns an error to the console rather than leaving
+  it waiting indefinitely.
+implements:
+- app_platform/attention.py::submit_message
+- agent.py
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: platform.skills.the-subconscious-never-speaks
+title: Background maintenance never talks to anyone
+state: live
+autonomy: gated
+behavior: The processes that maintain what Skipper draws on — indexing the record for recall, writing
+  rolling summaries — never produce a message to a person and never claim work owed a turn. Their
+  effect is visible only in what Skipper knows the next time it speaks.
+implements:
+- app_platform/summarizer.py
+- domain_memory.py
+tests: []
+links: {}
+notes: ''

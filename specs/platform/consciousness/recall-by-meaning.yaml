@@ -1,0 +1,16 @@
+kind: specification
+id: platform.consciousness.recall-by-meaning
+title: Recalling something said long ago
+state: live
+autonomy: gated
+behavior: When a question reaches further back than the recent conversation window holds, Skipper
+  searches the whole record by meaning and gets the closest few entries; weak matches are dropped
+  rather than padding the result, and rolling summaries are excluded so the same content is not returned
+  twice. When the question names a person or a period, the search is narrowed to them.
+implements:
+- app_platform/consciousness.py::search_log
+- tools/chatlog_tool.py
+- chat_domain.py
+tests: []
+links: {}
+notes: ''

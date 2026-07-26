@@ -1,0 +1,20 @@
+kind: specification
+id: platform.context.messages-about-an-item-stay-attached
+title: A message about a particular item stays attached to it
+state: live
+autonomy: gated
+behavior: When Skipper messages someone about a specific project, task or goal, the stream shows
+  which item it was about, and the items it has recently raised with that person are put in front
+  of the turn. So when they answer "that one's blocked on the permit", Skipper knows which item they
+  mean and can record it as a note on that item instead of leaving it in chat.
+implements:
+- app_platform/context.py::subject_marker
+- app_platform/context.py::recent_entity_refs
+- chat_domain.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'EntityNoteCapture: recent entity-tagged messages to a person are offered to the turn,
+    restricted to real item references.'
+links: {}
+notes: ''

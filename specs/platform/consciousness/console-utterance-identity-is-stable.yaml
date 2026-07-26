@@ -1,0 +1,15 @@
+kind: specification
+id: platform.consciousness.console-utterance-identity-is-stable
+title: A reload does not change what an utterance was
+state: live
+autonomy: gated
+behavior: Words Skipper composed and said to a person are drawn on reload the way they were drawn
+  when they arrived — as Skipper speaking. A fired notification (a reminder, a timer, an app's nudge)
+  is drawn as a notification labelled with what raised it. One utterance never has two identities
+  depending on when it is looked at.
+implements:
+- app_platform/context.py::history_projection
+- chat_render.py
+tests: []
+links: {}
+notes: ''

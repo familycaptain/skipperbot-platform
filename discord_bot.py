@@ -200,7 +200,9 @@ async def on_message(message: discord.Message):
     try:
         async with message.channel.typing():
             try:
-                response = await process_chat(person_name, user_message, send_progress=_send_progress)
+                response = await process_chat(person_name, user_message,
+                                               channel="discord",
+                                               send_progress=_send_progress)
             except Exception as e:
                 logger.error("DISCORD: Error processing message from %s: %s", person_name, str(e))
                 response = "Sorry, I ran into an error processing that. Please try again."

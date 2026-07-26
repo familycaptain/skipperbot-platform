@@ -1,0 +1,16 @@
+kind: specification
+id: platform.thinking.daily-budget-throttling
+title: Background thought throttles itself against a daily budget
+state: live
+autonomy: gated
+behavior: Background thought works against a daily spending budget. Past 70% of it an ordinary area
+  runs only when it actually has something waiting — an unreviewed observation or an overdue action
+  — and otherwise waits; past 90%, low-priority areas stop until the budget rolls over. Answering
+  a person is never throttled.
+implements:
+- thinking_scheduler.py::_domain_loop
+- thinking_scheduler.py::get_budget_status
+- thinking_scheduler.py::_has_pending_events
+tests: []
+links: {}
+notes: ''

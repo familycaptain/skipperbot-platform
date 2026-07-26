@@ -1,0 +1,19 @@
+kind: specification
+id: platform.context.summary-then-verbatim
+title: Older history arrives summarised, with no gap
+state: live
+autonomy: gated
+behavior: 'A turn sees the household''s rolling summary, then the summary of Skipper''s own thread
+  with this person, then every entry since the summary ends, verbatim. Nothing appears twice and
+  nothing falls between the two: whatever the verbatim window no longer holds is already covered
+  by the summary.'
+implements:
+- app_platform/context.py::build_chat_timeline
+- app_platform/summarizer.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'Phase4Subconscious.test_timeline_no_gap_invariant: the verbatim window starts where the
+    summary stops, so no entry is both summarised and replayed, and none is lost between them.'
+links: {}
+notes: ''

@@ -3,11 +3,24 @@ id: notifications.delivery.fan-out-delivery
 title: Record & deliver a notification
 state: live
 autonomy: gated
-behavior: A notification event is recorded as a row, then the background delivery loop sends it
-  to the user over each configured/available channel (Discord DM, Pushover, WebSocket, chat log,
-  FCM), marking it delivered once any channel succeeds.
+behavior: >
+  When something in the house has news for a person, the message is RECORDED first and delivered
+  afterwards: a background sweep (roughly every half minute, or immediately for something as
+  time-critical as a timer expiring) picks up everything not yet delivered, oldest first, and
+  attempts each surface that message was addressed to. Delivery is attempted ONCE — after a sweep
+  has handled a message it is no longer pending, whether every surface was reached or none was, so
+  nobody is told the same thing twice by a later sweep.
 implements:
-- apps/notifications/delivery.py
-tests: []
+- apps/notifications/delivery.py::deliver_pending_notifications
+- apps/notifications/delivery.py::_deliver_one
+- apps/notifications/data.py::get_all_undelivered
+- apps/notifications/data.py::mark_delivered
+tests:
+- type: unit
+  path: apps/notifications/tests/test_deliver_one_no_nameerror.py
+  rubric: >
+    Offline static gate over the delivery path: parsing apps/notifications/delivery.py, the
+    single-message delivery function loads no unbound name (in particular not `channel`), so a
+    completed delivery cannot fail while reporting its own outcome.
 links: {}
 notes: ''

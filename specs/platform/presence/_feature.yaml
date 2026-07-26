@@ -1,0 +1,7 @@
+kind: feature
+id: platform.presence
+title: Presence — showing that Skipper is composing
+state: live
+links: {}
+notes: The composing ("typing") indicator on the web console — what it is allowed to mean
+  and when it shows.

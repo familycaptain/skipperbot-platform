@@ -1,0 +1,18 @@
+kind: specification
+id: platform.consciousness.append-is-atomic
+title: Recording something is instant and all-or-nothing
+state: live
+autonomy: gated
+behavior: 'An entry is added to the record in one indivisible write: it either exists, with its place
+  in the household sequence, or it does not exist at all. Nothing expensive rides along — no model
+  call, no indexing, no message delivery — so recording takes milliseconds however busy the rest
+  of the system is, and a failure to deliver a message can never erase the fact that it was said.'
+implements:
+- app_platform/consciousness.py::log_event
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'WriterContract: the append is one INSERT ... RETURNING, the writer never supplies the
+    sequence value, and an unknown kind or empty content is rejected outright.'
+links: {}
+notes: ''

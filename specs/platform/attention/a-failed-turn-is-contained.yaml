@@ -1,0 +1,14 @@
+kind: specification
+id: platform.attention.a-failed-turn-is-contained
+title: One failed turn does not stop the rest
+state: live
+autonomy: gated
+behavior: If a turn raises an error, the person waiting on it is told and the failure is recorded;
+  every other conversation and every background area carries on, and the loop keeps claiming work.
+  A failure never wedges the queue.
+implements:
+- app_platform/attention.py::_run_turn
+- app_platform/attention.py::_loop
+tests: []
+links: {}
+notes: ''

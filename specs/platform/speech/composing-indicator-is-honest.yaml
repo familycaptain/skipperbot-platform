@@ -1,0 +1,14 @@
+kind: specification
+id: platform.speech.composing-indicator-is-honest
+title: The composing indicator means a turn is really running
+state: live
+autonomy: gated
+behavior: When a turn starts that may speak to someone, that person sees the composing indicator,
+  and it clears when the turn ends whether or not it produced any words. It is never shown on a guess
+  about what the server is doing, and never left spinning after a turn that decided to stay quiet.
+implements:
+- app_platform/presence.py
+- apps/goals/handlers.py
+tests: []
+links: {}
+notes: ''

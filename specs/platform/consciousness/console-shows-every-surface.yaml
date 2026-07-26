@@ -1,0 +1,18 @@
+kind: specification
+id: platform.consciousness.console-shows-every-surface
+title: The console shows the whole conversation, except the shared speaker
+state: live
+autonomy: gated
+behavior: 'Opening the web console shows a person their complete conversation with Skipper, oldest
+  to newest — including what they said from Discord or mobile, and messages Skipper sent them unprompted
+  — so they can change surface mid-conversation and pick it up where they left it. Words spoken to
+  the shared household speaker are the one exception: a spoken turn cannot be attributed to an individual,
+  so it never appears in anyone''s console.'
+implements:
+- app_platform/context.py::history_projection
+- agent.py
+tests: []
+links: {}
+notes: 'The speaker exclusion is not tidiness: early in a call Skipper may not yet know who is talking,
+  and speaker recognition may never resolve it, so folding those turns into one person''s console
+  would attribute somebody else''s words to them.'

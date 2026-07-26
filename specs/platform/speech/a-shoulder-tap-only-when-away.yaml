@@ -1,0 +1,13 @@
+kind: specification
+id: platform.speech.a-shoulder-tap-only-when-away
+title: Phone alerts only when nobody is at a screen
+state: live
+autonomy: gated
+behavior: An urgent message also pushes to the person's phone only when they are not at a screen.
+  When they are watching the console it simply appears there — buzzing someone about something already
+  in front of them is noise, not urgency.
+implements:
+- app_platform/speak.py
+tests: []
+links: {}
+notes: ''

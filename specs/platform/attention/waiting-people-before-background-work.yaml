@@ -1,0 +1,12 @@
+kind: specification
+id: platform.attention.waiting-people-before-background-work
+title: A person waiting comes before an alarm
+state: live
+autonomy: gated
+behavior: When the number of turns in flight is at its ceiling, an inbound message from a person
+  is started ahead of a background alarm that is also waiting.
+implements:
+- app_platform/attention.py::_loop
+tests: []
+links: {}
+notes: ''

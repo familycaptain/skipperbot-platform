@@ -1,0 +1,30 @@
+kind: specification
+id: platform.webui.chat-date-grouping
+title: Chat history is grouped by day in the reader's own timezone
+state: live
+autonomy: gated
+behavior: >
+  The console scrollback carries a date heading above the first message of each calendar
+  day, reading "Today" and "Yesterday" for the two most recent days and an explicit date
+  ("June 14, 2026") for anything older, and every message shows the time it was said. Which
+  day a message belongs to is decided in the timezone of the browser reading it, so the same
+  conversation groups identically whether it was watched live or reloaded later, and a
+  console left open across midnight gains a new heading without needing a reload. A browser
+  reporting a timezone Skipper does not recognise falls back to UTC rather than failing to
+  show the history.
+implements:
+- chat_render.py::render_chat_history
+- chat_render.py::relative_label
+- agent.py::chat_history
+- web/src/hooks/useSkipperSocket.js
+tests:
+- type: unit
+  path: tests/webchat/test_chat_history_render.py
+  rubric: >
+    Pure and stdlib-only. Every message carries a timestamp and a date heading precedes the
+    first message of each calendar day, including a leading one; the relative labels are
+    Today/Yesterday/absolute date against the current day; the same turns bucket differently
+    under an extreme-east and an extreme-west timezone (grouping really is per-reader); an
+    unparseable timezone falls back to UTC without raising.
+links: {}
+notes: ''

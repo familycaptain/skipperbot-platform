@@ -1,0 +1,17 @@
+kind: specification
+id: notifications.pushover.per-person-opt-in
+title: Each person opts in with their own account
+state: live
+autonomy: gated
+behavior: >
+  A person switches Pushover on for themselves by saving their own Pushover user key, optionally naming
+  one device to send to instead of all of them; from then on their notifications addressed to Pushover
+  arrive on that account. Switching the opt-in off keeps the saved key but stops Pushover being used
+  for them, and one person's choice never affects anyone else's.
+implements:
+- apps/notifications/data.py::save_pushover_subscription
+- apps/notifications/data.py::get_pushover_creds
+- apps/notifications/routes.py::pushover_save
+tests: []
+links: {}
+notes: ''

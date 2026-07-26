@@ -1,0 +1,15 @@
+kind: specification
+id: platform.thinking.thinking-becomes-memory
+title: What Skipper works out becomes something it remembers
+state: live
+autonomy: gated
+behavior: When a pass actually reasoned about something, its reasoning is distilled into shared memory
+  so a later conversation can draw on it. A pass that did no reasoning contributes nothing, and so
+  does an operational area whose account of itself is status rather than insight — the area whose
+  job is making memories does not narrate its own queue into one.
+implements:
+- thinking_scheduler.py::_run_domain_cycle
+- thinking_digest.py
+tests: []
+links: {}
+notes: ''

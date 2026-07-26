@@ -1,0 +1,13 @@
+kind: specification
+id: platform.skills.work-resumes-where-it-left-off
+title: A work session resumes where the last one stopped
+state: live
+autonomy: gated
+behavior: Each work session ends by recording where it got to and what comes next, and the next session
+  starts from that instead of repeating work already done. A session that achieved nothing leaves
+  no trace; one that did something leaves a single short note of what it did.
+implements:
+- apps/goals/goal_work.py
+tests: []
+links: {}
+notes: ''

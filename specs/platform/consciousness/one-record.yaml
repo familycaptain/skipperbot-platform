@@ -1,0 +1,20 @@
+kind: specification
+id: platform.consciousness.one-record
+title: One record of everything said
+state: live
+autonomy: gated
+behavior: Everything said to Skipper and everything Skipper says — from the web console, Discord,
+  mobile, the shared household speaker, and background nudges alike — is appended to a single household
+  record as it happens. No surface keeps a transcript of its own, and there is no route by which
+  words reach a person without being recorded, so the record is complete by construction rather than
+  by each producer remembering to file a copy.
+implements:
+- app_platform/consciousness.py
+- app_platform/consciousness.py::log_event
+- chat.py
+- chatlog_store.py
+- apps/notifications/store.py
+- app_platform/voice/chatlog.py
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: notifications.receipts.lost-receipt-never-resends
+title: A lost receipt never resends the message
+state: live
+autonomy: gated
+behavior: >
+  If the receipts for a message cannot be stored, the message still counts as delivered and is never
+  sent again — nobody gets told the same thing twice because the bookkeeping failed. Losing the record
+  of where a message went is accepted; sending it again is not.
+implements:
+- apps/notifications/delivery.py::_deliver_one
+tests: []
+links: {}
+notes: ''

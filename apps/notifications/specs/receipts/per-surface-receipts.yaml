@@ -1,0 +1,21 @@
+kind: specification
+id: notifications.receipts.per-surface-receipts
+title: Record which surfaces were actually reached
+state: live
+autonomy: gated
+behavior: >
+  Once a message has been through delivery it carries a receipt for each surface that was tried:
+  whether it landed there, and a short reason when it did not. Where it was ASKED to go and where it
+  LANDED are recorded separately, so a message addressed to Discord and Pushover whose DM bounced
+  says exactly that — and Skipper can answer "I sent that to your phone this morning" from the record
+  instead of guessing.
+implements:
+- apps/notifications/delivery.py::_receipt
+- apps/notifications/data.py::set_receipts
+- apps/notifications/migrations/003_delivery_receipts.sql
+tests: []
+links: {}
+notes: >
+  Receipts belong to the message, never to history: a history entry per surface would show the same
+  utterance two or three times in the web console, which is the duplicate this design exists to
+  prevent.

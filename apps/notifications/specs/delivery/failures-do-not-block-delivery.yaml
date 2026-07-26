@@ -1,0 +1,17 @@
+kind: specification
+id: notifications.delivery.failures-do-not-block-delivery
+title: One failure never stops the rest
+state: live
+autonomy: gated
+behavior: >
+  When a surface refuses a message — credentials missing, the person unreachable there, the service
+  down — the remaining surfaces are still attempted and the refusal is recorded rather than raised.
+  A message that fails outright does not stop the other messages waiting in the same sweep. If the
+  sweep cannot even read what is pending, it gives up quietly and every message stays pending for the
+  next one.
+implements:
+- apps/notifications/delivery.py::deliver_pending_notifications
+- apps/notifications/delivery.py::_deliver_one
+tests: []
+links: {}
+notes: ''

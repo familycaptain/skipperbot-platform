@@ -1,0 +1,15 @@
+kind: specification
+id: platform.thinking.every-cycle-is-recorded
+title: Every pass of thought is recorded
+state: live
+autonomy: gated
+behavior: Each pass an area makes is recorded with what it looked at, what it concluded, what it
+  did, which model it used and what it cost — including a pass that failed, which is recorded as
+  a failure carrying the error rather than disappearing. So the household can see what Skipper has
+  been thinking about and what it spent doing so.
+implements:
+- thinking_scheduler.py::_run_domain_cycle
+- data_layer/thinking_log.py
+tests: []
+links: {}
+notes: ''

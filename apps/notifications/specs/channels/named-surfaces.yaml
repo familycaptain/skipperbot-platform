@@ -1,0 +1,17 @@
+kind: specification
+id: notifications.channels.named-surfaces
+title: Asking for particular surfaces
+state: live
+autonomy: gated
+behavior: >
+  A sender can name the surfaces a message should reach: one of them, several in a list, "both" for
+  Discord and Pushover, "all" for Discord, Pushover and mobile push, or "none" for the web console
+  only. Spoken announcements are never included in "all" — being talked at out loud has to be asked
+  for. Names are matched without regard to case or spacing, and a name nothing recognises simply adds
+  no surface, so a mistyped choice still reaches the web console.
+implements:
+- apps/notifications/delivery.py::_parse_channels
+- apps/notifications/delivery.py::_resolve_external_channels
+tests: []
+links: {}
+notes: ''

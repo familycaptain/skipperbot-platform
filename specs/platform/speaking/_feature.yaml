@@ -1,0 +1,8 @@
+kind: feature
+id: platform.speaking
+title: Speaking — one voice, and where it lands
+state: live
+links: {}
+notes: How anything Skipper says to a person reaches them, and which surfaces it reaches
+  them on. NOT what it says (the agent decides that) and NOT the spoken-audio surface
+  (platform.voice).

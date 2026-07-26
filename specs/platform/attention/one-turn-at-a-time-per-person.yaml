@@ -1,0 +1,20 @@
+kind: specification
+id: platform.attention.one-turn-at-a-time-per-person
+title: Skipper never talks over itself
+state: live
+autonomy: gated
+behavior: Two messages from the same person are answered one at a time, in the order they arrived,
+  so one conversation never has two half-answers interleaved. Conversations with different people,
+  and background work in different areas, run at the same time up to a small ceiling on turns in
+  flight. Which conversation an item serialises with is settled by the platform when the item is
+  recorded — an app cannot choose it.
+implements:
+- app_platform/attention.py
+- app_platform/consciousness.py::lane_for
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'LaneDerivation: a message serialises on the non-Skipper party''s conversation, an event
+    about a person on that person''s, and everything else on its area.'
+links: {}
+notes: ''

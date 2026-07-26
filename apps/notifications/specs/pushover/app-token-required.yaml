@@ -1,0 +1,18 @@
+kind: specification
+id: notifications.pushover.app-token-required
+title: Pushover needs one household token before anyone can opt in
+state: live
+autonomy: gated
+behavior: >
+  Until an administrator has set the household's single Pushover application token, the Notifications
+  app says Pushover is not enabled on this server yet and points at the setting, instead of asking
+  people for user keys that could not be used. No Pushover push is attempted for anyone while the token
+  is missing, however they have configured themselves.
+implements:
+- apps/notifications/data.py::app_token
+- apps/notifications/data.py::get_pushover_status
+- apps/notifications/data.py::get_pushover_creds
+- apps/notifications/ui/NotificationsApp.jsx
+tests: []
+links: {}
+notes: ''

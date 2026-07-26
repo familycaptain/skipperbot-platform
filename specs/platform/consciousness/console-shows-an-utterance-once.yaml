@@ -1,0 +1,15 @@
+kind: specification
+id: platform.consciousness.console-shows-an-utterance-once
+title: One utterance appears once
+state: live
+autonomy: gated
+behavior: If the same words to the same person were recorded twice within a few seconds by two different
+  producers, the console shows them once. A genuine repeat — the same short message actually said
+  again minutes later — still shows twice.
+implements:
+- app_platform/context.py::history_projection
+tests: []
+links: {}
+notes: A double-write is a bug to fix at its source, but the console is what the household trusts
+  to be accurate, so it must not render one utterance twice while such a bug exists. The matching
+  window is deliberately tight.

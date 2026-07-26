@@ -1,0 +1,14 @@
+kind: specification
+id: notifications.delivery.empty-message-not-sent
+title: An empty message is never sent
+state: live
+autonomy: gated
+behavior: >
+  A recorded message with no text, or with nobody to send it to, is discarded when delivery reaches
+  it: no surface is contacted, so nobody gets a blank DM or a push that says nothing. It stops being
+  pending like any other handled message rather than being retried forever.
+implements:
+- apps/notifications/delivery.py::_deliver_one
+tests: []
+links: {}
+notes: ''

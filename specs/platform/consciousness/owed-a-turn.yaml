@@ -1,0 +1,20 @@
+kind: specification
+id: platform.consciousness.owed-a-turn
+title: An inbound message is owed a turn
+state: live
+autonomy: gated
+behavior: When a person sends a message it is recorded as owed a reply, and stays owed until something
+  answers it. Skipper's own words are recorded but never owed, and neither is anything a live responder
+  already answered in the moment — a spoken exchange on the shared speaker is the record of a conversation
+  that has already happened — so nothing is ever answered twice.
+implements:
+- app_platform/consciousness.py::log_inbound_message
+- app_platform/consciousness.py::log_event
+- app_platform/voice/chatlog.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: 'WriterContract.test_pre_attended_forces_not_owed_and_records_responder: an entry marked
+    as already answered by a live responder is never left owed, and names the responder.'
+links: {}
+notes: ''

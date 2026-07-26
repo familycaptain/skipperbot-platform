@@ -1,0 +1,16 @@
+kind: specification
+id: notifications.pushover.test-push
+title: Prove the setup with a test push
+state: live
+autonomy: gated
+behavior: >
+  With a key saved, asking for a test sends a push immediately and reports what happened — arrived, or
+  the reason it did not — so a mistyped key is found while setting it up rather than the next time
+  something important goes unnoticed. Asking for a test before anything is configured explains what is
+  still missing instead of appearing to succeed.
+implements:
+- apps/notifications/routes.py::pushover_test
+- apps/notifications/ui/NotificationsApp.jsx
+tests: []
+links: {}
+notes: ''

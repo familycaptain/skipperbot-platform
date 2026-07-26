@@ -1,0 +1,12 @@
+kind: specification
+id: platform.thinking.cycles-do-not-overlap
+title: An area never runs two cycles at once
+state: live
+autonomy: gated
+behavior: If an area's previous cycle is still running when the next one is due, the next is skipped
+  and re-checked shortly after rather than run alongside it.
+implements:
+- thinking_scheduler.py::_domain_loop
+tests: []
+links: {}
+notes: ''
