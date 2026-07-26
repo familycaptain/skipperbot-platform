@@ -226,6 +226,17 @@ def _run_platform_migrations(conn, *, check_only: bool, verbose: bool) -> None:
         started = time.monotonic()
         try:
             with conn.cursor() as cur:
+                # Every migration starts from a KNOWN search_path. Migrations share one
+                # connection, and a pg_dump-generated baseline runs
+                # `set_config('search_path', '', false)` — session-wide, not
+                # transaction-local — so without this reset the baseline silently
+                # empties the search_path for every migration applied after it in the
+                # same run. That only happens on a FRESH install (where the baseline is
+                # actually applied), which is why it never shows up on an existing
+                # deployment: the next migration's unqualified type/operator names stop
+                # resolving and init_db aborts. One migration must not be able to change
+                # the environment the next one runs in.
+                cur.execute("SET search_path TO public")
                 cur.execute(sql)
                 cur.execute(
                     f"INSERT INTO {PLATFORM_MIGRATIONS_TABLE} (filename, checksum) "

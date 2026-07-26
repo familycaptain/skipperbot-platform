@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.consciousness_log (
     subject_id      text,                                   -- linked entity (g-, t-, ...) (soft ref)
     content         text NOT NULL,
     payload         jsonb,
-    embedding       vector(1536),                           -- backfilled async by the subconscious; NULL until then
+    embedding       public.vector(1536),                    -- backfilled async by the subconscious; NULL until then
     needs_attention boolean NOT NULL DEFAULT false,         -- "a responder is owed and none is live" (§11.5)
     attended_at     timestamptz                             -- responder turn completed (or =created_at when pre-attended by a live/legacy channel)
 );
@@ -41,8 +41,15 @@ CREATE INDEX IF NOT EXISTS idx_cl_attention ON public.consciousness_log (lane, s
     WHERE needs_attention AND attended_at IS NULL;
 
 -- Semantic search over the log (retrieval source 2, §12.3)
+-- SCHEMA-QUALIFIED on purpose (type above too): 000_baseline.sql is pg_dump output
+-- and line 41 runs `set_config('search_path', '', false)` — session-wide, not
+-- transaction-local. On a FRESH install the baseline and this file are applied over
+-- the SAME connection, so by the time we get here the search_path is EMPTY and a
+-- bare `vector` / `vector_cosine_ops` cannot resolve. (It "works" on an existing DB
+-- only because the baseline is skipped there, leaving the default search_path.)
+-- Qualify every extension-provided name, exactly as the baseline itself does.
 CREATE INDEX IF NOT EXISTS idx_cl_embedding ON public.consciousness_log
-    USING ivfflat (embedding vector_cosine_ops) WITH (lists = 10);
+    USING ivfflat (embedding public.vector_cosine_ops) WITH (lists = 10);
 
 -- Backfill idempotency (§11.8): one log event per legacy source row, enforced by the DB
 CREATE UNIQUE INDEX IF NOT EXISTS idx_cl_legacy_id ON public.consciousness_log ((payload->>'legacy_id'))
@@ -54,8 +61,26 @@ SELECT 'cl', 'consciousness event', 'cl-', 'consciousness_log'
 WHERE NOT EXISTS (SELECT 1 FROM public.entity_types WHERE prefix = 'cl');
 
 -- Q3 (§14): thinking_domains survives as the SCHEDULER registry; the legacy
--- three-phase tool columns are ignored (dropped in Phase 5). Nullable so new
--- alarm rows need not carry dummy values. DROP NOT NULL is a no-op if already nullable.
-ALTER TABLE public.thinking_domains ALTER COLUMN observe_tool  DROP NOT NULL;
-ALTER TABLE public.thinking_domains ALTER COLUMN evaluate_tool DROP NOT NULL;
-ALTER TABLE public.thinking_domains ALTER COLUMN act_tool      DROP NOT NULL;
+-- three-phase tool columns are ignored (dropped in 002_alarms_cleanup). Loosen
+-- them so legacy alarm rows need not carry dummy values.
+--
+-- GUARDED, and it must stay guarded: these columns exist ONLY on databases created
+-- before the baseline was regenerated without them. A bare
+-- `ALTER COLUMN ... DROP NOT NULL` is a no-op when a column is already nullable,
+-- but it is a HARD ERROR ("column does not exist") when the column is absent —
+-- which is every FRESH install. That aborts init_db before the agent starts, so a
+-- brand-new user gets a permanent boot loop. Touch only columns that are really
+-- there.
+DO $$
+DECLARE col text;
+BEGIN
+    FOR col IN
+        SELECT column_name FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'thinking_domains'
+          AND column_name IN ('observe_tool', 'evaluate_tool', 'act_tool')
+    LOOP
+        EXECUTE format(
+            'ALTER TABLE public.thinking_domains ALTER COLUMN %I DROP NOT NULL', col);
+    END LOOP;
+END $$;
