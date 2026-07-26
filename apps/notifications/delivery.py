@@ -201,7 +201,11 @@ async def _deliver_one(notif: dict):
                     cooldown_seconds=0,
                 )
                 delivery_results.append(f"Pushover: {result}")
-                _receipt(receipts, "pushover", bool(result), result)
+                # `result` is a human status string, so bool() is True for
+                # "Error: ..." and for a cooldown skip — it recorded every failure
+                # as a success. Match how the test endpoint checks it.
+                _receipt(receipts, "pushover",
+                         str(result).lower().startswith("sent"), result)
         except Exception as e:
             delivery_results.append(f"Pushover failed: {e}")
             _receipt(receipts, "pushover", False, f"failed: {e}")
@@ -273,6 +277,13 @@ async def _deliver_one(notif: dict):
                 "srv_id": str(notif_id),
             }
         ws_sent = await manager.send_to_user(recipient, ws_frame)
+        # The web console is the one surface ALWAYS attempted and the declared source of
+        # truth, so leaving it out made a receipts object of all-false ambiguous: it could
+        # not distinguish "reached nobody" from "reached them on the surface that counts".
+        # ok=False here means only "not watching right now" — the message is still in
+        # their history, which is why the detail says so.
+        _receipt(receipts, "web", bool(ws_sent),
+                 "pushed live" if ws_sent else "not connected — waiting in history")
         if ws_sent:
             logger.info("NOTIF_DELIVERY: WebSocket sent to %s", recipient)
         else:

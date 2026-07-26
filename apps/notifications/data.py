@@ -213,6 +213,11 @@ def _row(row: dict) -> dict:
         "source_id": row.get("source_id") or "",
         "channel": row.get("channel") or "",
         "delivered": row.get("delivered", True),
+        # Which surfaces were actually reached. Every read path goes through here, so
+        # omitting it made the column write-only: recorded on delivery and then invisible
+        # to the API, the tools and the UI alike — which is the whole point of keeping it.
+        # `channel` says where it was ASKED to go; this says where it LANDED.
+        "receipts": row.get("receipts") or {},
         "created_at": row["created_at"].isoformat() if row.get("created_at") else "",
     }
 
