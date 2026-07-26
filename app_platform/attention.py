@@ -24,6 +24,7 @@ when off (nothing writes owed rows).
 """
 
 import asyncio
+import uuid as _uuid
 import logging
 from typing import Optional
 
@@ -100,8 +101,14 @@ async def _run_turn(row: dict) -> None:
     # global sem caps concurrency across lanes.
     lane = row["lane"]
     try:
-        async with _sem:
-            async with _lane_lock(lane):
+        # LANE FIRST, THEN THE SLOT. Reversed, this held a global concurrency slot while
+        # waiting for the person's lane — so three owed messages from one person occupied
+        # every slot, two of them just waiting, and every other person's conversation plus
+        # all background thought stalled until they drained one at a time. Waiting for a
+        # lane is not work; it must not consume capacity. Acquisition order is identical
+        # everywhere, so this cannot deadlock.
+        async with _lane_lock(lane):
+            async with _sem:
                 result_text = await _dispatch(row)
                 fut = _futures.pop(row["id"], None)
                 if fut is not None and not fut.done():
@@ -192,16 +199,31 @@ async def submit_message(
     notification fan-out on reconnect.
     """
     from app_platform.consciousness import log_inbound_message
-    row = await asyncio.to_thread(
-        log_inbound_message,
-        who_from=user_id, content=message, surface=channel,
-    )
+
+    # REGISTER BEFORE APPENDING. The row is claimable the instant it lands, so the poll
+    # could pick it up before the lines below ran: the turn then ran with no progress
+    # callback and no app context, nothing was left to resolve the future, and the caller
+    # waited out the full timeout and reported an error — while the reply had in fact been
+    # produced and delivered. Minting the id here closes the window; the id is ours either
+    # way, so there is nothing to reconcile.
+    event_id = f"cl-{_uuid.uuid4().hex[:8]}"
     fut: asyncio.Future = asyncio.get_running_loop().create_future()
-    _futures[row["id"]] = fut
-    _turn_ctx[row["id"]] = {
+    _futures[event_id] = fut
+    _turn_ctx[event_id] = {
         "send_progress": send_progress,
         "send_event": send_event,
         "app_context": app_context,
     }
+    try:
+        row = await asyncio.to_thread(
+            log_inbound_message,
+            who_from=user_id, content=message, surface=channel, event_id=event_id,
+        )
+    except Exception:
+        # Nothing was appended, so nothing will ever resolve these — drop them rather
+        # than leaking a future and a context dict per failed append.
+        _futures.pop(event_id, None)
+        _turn_ctx.pop(event_id, None)
+        raise
     kick()
     return await asyncio.wait_for(fut, timeout=timeout)

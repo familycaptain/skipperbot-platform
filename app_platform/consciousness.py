@@ -349,6 +349,11 @@ def log_inbound_message(
         reply_to=(parent or {}).get("id"),
         thread_id=(parent or {}).get("thread_id"),
         payload=payload, needs_attention=True,
+        # Callers may supply the id so they can register interest in the turn BEFORE the
+        # row exists to be claimed — see attention.submit_message. Without that, the row
+        # is claimable the instant it lands and a caller can lose the race to its own
+        # reply.
+        event_id=event_id,
     )
 
 
