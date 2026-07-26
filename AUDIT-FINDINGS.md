@@ -73,3 +73,72 @@ behaviour, so it likely wants binding to an existing spec rather than a spec of 
 *asked for*, and its lookup only knows `discord`/`pushover`/`websocket`/`chat` — so real
 stored values like `both`, `all`, `none` and `web` are shown to the user as raw internal
 tokens. With receipts unreadable, there is no way to show where a message actually landed.
+
+---
+
+## platform — attention & consciousness
+
+**The turn pool can wedge on one person.** `attention.py:103-105` takes the global
+concurrency slot and *then* the per-lane lock. Three owed messages from the same person
+each get a task; all three hold slots while two block on that person's lane — so every
+other person's conversation and all background alarms stall until they drain serially.
+The lane lock should be acquired outside the concurrency slot. *(Verified: `async with
+_sem:` wraps `async with _lane_lock(lane):`.)*
+
+**A reply can be delivered and still show as an error.** `attention.py:194-206` appends
+the owed inbound row in a worker thread and registers `_futures[row_id]` / `_turn_ctx`
+only afterwards. The 2s poll can claim and dispatch inside that gap: the turn then runs
+with no progress callback and no app context, `_futures.pop` finds nothing, the future
+never resolves, and the caller waits the full 180s and reports an error — while the real
+reply was produced and delivered. The id is not known until the append returns, so the fix
+is to pre-generate it (`log_event` already accepts `event_id`, as `send_message` does) and
+register before appending. *(Verified.)*
+
+**The consciousness acceptance test is red — 4 of 68 failing.** All four look like test
+drift rather than regressions: it expects `!= "send_dm"` where the code now returns a
+REFUSED string; it expects `send_message` in two modules that correctly route through
+`app_platform.speak` now; a `BEGIN|COMMIT` regex false-positives on the PL/pgSQL `DO $$
+BEGIN` block; and it counts literal `ALTER COLUMN … DROP NOT NULL` statements that are now
+generated inside that block. Red either way — the safety net for this subsystem is not
+protecting it.
+
+**`tests/test_thinking_live_gating.py` asserts APIs that no longer exist**
+(`submit_priority_event`, a `think-priority-consumer` task). It self-skips offline on a
+missing import, so the breakage is invisible locally while failing on the test host, where
+it is a bound test.
+
+**A permanently-failing row blocks recall indexing forever.**
+`summarizer.embed_log_batch:92-94` breaks the batch on any exception and the query is
+`ORDER BY seq ASC`, so one row that deterministically fails to embed is retried first
+every pass and nothing after it is ever indexed.
+
+**An outbound message with no recipient is accepted.** `consciousness.send_message` never
+validates `who_to`; an empty value makes the lane fall back to `domain:<domain>` and passes
+the same empty string as the notification recipient.
+
+**`history_projection`'s channel filter contradicts its own documented rule.**
+`context.py:285-291` matches `surface = %s OR surface IS NULL`, so `?channel=web` excludes
+Discord and mobile — the opposite of the "every surface except voice" rule documented
+directly below it. No in-repo client passes the parameter, but the endpoint accepts it.
+
+**Two specs marked `verified: true` describe code that no longer exists.**
+`platform.onboarding.live-greeting` specifies a priority-event bus, an atomic greet-once
+claim, and client-simulated typing — all replaced. `platform.agent.web-history-channel`
+specifies filtering by a `chat_turns.channel` column and a client that requests
+`channel=web` — neither is true. `verified` should not survive that kind of drift.
+
+**Four thinking specs are invisible to the loader.** `specs/platform/thinking/*.spec.json`
+— the scanner only globs `*.yaml`, so those four records are never validated or loaded.
+
+**Dead code documented as live:** `consciousness.mark_attended` (docstring says the
+attention system uses it; it does not), `unattended()`, `person_window()`, `thread()`,
+`skills.list_skills()`, `domain_modules.register_pattern` (referenced only by a test), and
+`data_layer/thinking_domains.create_domain` — the last of which is what
+`specs/CONSCIOUSNESS.md` §14 promises for Skipper creating its own alarms. Also three
+copies of an unused `_truthy` helper.
+
+**Four spec files break the corpus loader** and must be fixed before validation can run
+clean: `onboarding/timezone-offset.yaml` is not valid YAML (an unquoted `: ` inside
+`implements`), and `onboarding/prompt-fresh-install-greeting.yaml`,
+`onboarding/step-completion-integrity.yaml`, `tools/loader-parent-package-preimport.yaml`
+have `behavior` as a list rather than a string, which crashes the schema.
