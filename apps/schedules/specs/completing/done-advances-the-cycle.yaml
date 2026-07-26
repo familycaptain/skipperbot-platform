@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.completing.done-advances-the-cycle
+title: Marking it done advances the cycle
+state: live
+autonomy: gated
+behavior: >
+  Marking a schedule done records that it was done now, counts it, and moves the schedule on to its
+  next occurrence computed from this moment — so it stops being overdue immediately and the next one
+  is a full interval away rather than still in the past. A schedule whose cadence has no further
+  occurrences is left with no next due instead of being deleted.
+implements:
+- apps/schedules/data.py::complete_schedule
+- agent.py::api_complete_schedule
+tests: []
+links: {}
+notes: ''

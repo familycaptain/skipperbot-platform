@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.reminding.one-bad-schedule-does-not-stop-the-sweep
+title: One bad schedule never stops the rest
+state: live
+autonomy: gated
+behavior: >
+  A schedule the sweep cannot make sense of — an unreadable date, a recipient that cannot be told —
+  is recorded as a failure and skipped, and every other schedule in the same sweep is still
+  processed. If the sweep cannot even read what is due it gives up quietly and tries again next time,
+  leaving every schedule as it was rather than half-processed.
+implements:
+- apps/schedules/notifier.py::check_schedule_notifications
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: chores.checkoff.half-a-chore-name-is-enough
+title: Part of the name is enough to check it off
+state: live
+autonomy: gated
+behavior: >
+  'I did the vacuum' is matched against the chores that person actually has that day, so a
+  fragment of the name is enough and nobody has to quote an identifier. When nothing matches,
+  the answer says so and suggests looking at the list; a chore is never guessed at.
+implements:
+- apps/chores/store.py::find_assignment_for_kid_by_name
+- apps/chores/tools.py::complete_chore
+tests: []
+links: {}
+notes: ''

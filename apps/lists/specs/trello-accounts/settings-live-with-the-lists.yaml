@@ -1,0 +1,16 @@
+kind: specification
+id: lists.trello-accounts.settings-live-with-the-lists
+title: Trello is set up where the lists are
+state: live
+autonomy: gated
+behavior: >
+  Setting Trello up is reached from the Lists app itself rather than a separate administration area,
+  and coming back from it re-reads the lists, so a board registered a moment ago is already there.
+  Loading the settings when Trello cannot be reached at all shows the failure rather than an empty,
+  apparently unconfigured, page.
+implements:
+- apps/lists/ui/ListsApp.jsx::ListsApp
+- apps/lists/ui/TrelloSettings.jsx::TrelloSettings
+tests: []
+links: {}
+notes: ''

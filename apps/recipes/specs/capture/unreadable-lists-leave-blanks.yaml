@@ -1,0 +1,16 @@
+kind: specification
+id: recipes.capture.unreadable-lists-leave-blanks
+title: An unreadable ingredient list still yields a recipe
+state: live
+autonomy: gated
+behavior: >
+  When the ingredients, steps or categories in a request cannot be read as a list, the recipe is
+  still created from the parts that could be read, with the rest left empty — a person keeps a titled
+  recipe they can finish by hand instead of losing the whole thing. Editing an existing recipe is
+  stricter: a list that cannot be read there is refused outright and nothing about the recipe changes.
+implements:
+- apps/recipes/tools.py::create_recipe
+- apps/recipes/tools.py::update_recipe
+tests: []
+links: {}
+notes: ''

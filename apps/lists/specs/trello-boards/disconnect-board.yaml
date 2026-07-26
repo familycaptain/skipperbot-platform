@@ -1,12 +1,17 @@
 kind: specification
 id: lists.trello-boards.disconnect-board
-title: Disconnect a Trello board
+title: Unlinking a board leaves Trello alone
 state: live
 autonomy: gated
-behavior: Disconnecting a board removes its local l- files and its config entry.
+behavior: >
+  Unlinking a board removes the household's mirror of it — every list that mirrored it and the
+  board's registration — and touches nothing on Trello: the board, its lists and all its cards
+  remain. The board can be linked again later and comes back with its cards. Unlinking something
+  that was never linked says so rather than reporting a successful removal.
 implements:
-- apps/lists/tools.py
-- apps/lists/ui/TrelloSettings.jsx
+- apps/lists/tools.py::disconnect_trello_board
+- apps/lists/store.py::delete_list
+- apps/lists/trello_config.py::delete_board
 tests: []
 links: {}
 notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: recipes.recall.a-meal-can-point-at-a-recipe
+title: A planned meal can name the recipe it is cooked from
+state: live
+autonomy: gated
+behavior: >
+  A meal, or one component of it, can name the recipe it is cooked from, and that recipe is shown
+  against it when the week's meals are listed. The link is one way and loose: a recipe knows nothing
+  about the meals that use it, and deleting a recipe leaves the meal in place still naming the recipe
+  that has gone.
+implements:
+- apps/meals/data.py::create_component
+- apps/meals/tools.py::create_meal_component
+tests: []
+links: {}
+notes: ''

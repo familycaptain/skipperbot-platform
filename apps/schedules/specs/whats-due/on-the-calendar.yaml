@@ -1,0 +1,17 @@
+kind: specification
+id: schedules.whats-due.on-the-calendar
+title: Occurrences land on the calendar
+state: live
+autonomy: gated
+behavior: >
+  For any span of dates, a schedule contributes one entry per occurrence that falls inside it — so a
+  twice-weekly chore appears twice a week rather than once — each carrying its title, kind, assignee,
+  time of day and whether it is already overdue. The span can be narrowed to one person or one kind,
+  and a schedule whose occurrences cannot be worked out contributes nothing rather than breaking the
+  calendar.
+implements:
+- apps/schedules/data.py::get_calendar_events
+- apps/schedules/data.py::_expand_occurrences
+tests: []
+links: {}
+notes: ''

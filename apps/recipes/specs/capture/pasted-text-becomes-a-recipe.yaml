@@ -1,0 +1,18 @@
+kind: specification
+id: recipes.capture.pasted-text-becomes-a-recipe
+title: Pasted text becomes a structured recipe
+state: live
+autonomy: gated
+behavior: >
+  When someone pastes or dictates a recipe — however messily written — Skipper files it as a
+  structured recipe rather than as a note or a document: each ingredient split into its quantity, its
+  unit and the thing itself, the instructions kept as an ordered list of steps, with times, servings
+  and categories taken from the text or estimated where the text does not say. It confirms what was
+  saved by naming the recipe and how many ingredients and steps it holds.
+implements:
+- apps/recipes/tools.py::create_recipe
+- apps/recipes/data.py::save_recipe
+- apps/recipes/guide.md
+tests: []
+links: {}
+notes: ''

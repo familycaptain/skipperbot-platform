@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.firing.checked-every-half-minute
+title: A due reminder is noticed within about half a minute
+state: live
+autonomy: gated
+behavior: >
+  Skipper looks for reminders that have come due on a short cycle — every thirty seconds unless
+  the household changes it — so a reminder set for 3:00 arrives at about 3:00, not on the next
+  hour and not at the next login. A changed cycle takes effect when Skipper restarts.
+implements:
+- apps/reminders/scheduler.py::start_reminder_scheduler
+- apps/reminders/scheduler.py::_tick_seconds
+tests: []
+links: {}
+notes: ''

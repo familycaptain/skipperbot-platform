@@ -1,0 +1,16 @@
+kind: specification
+id: reminders.list.nothing-yet
+title: An empty list explains what it is for
+state: live
+autonomy: gated
+behavior: >
+  A person with no reminders at all is shown what reminders are for and how to make one rather
+  than an empty panel, and the nags list does the same in its own words. A list empty only because
+  of the person or the finished-reminders filter says nothing was found instead, so a filter is
+  never mistaken for a fresh start.
+implements:
+- apps/reminders/ui/RemindersApp.jsx::RemindersApp
+- apps/reminders/ui/index.js
+tests: []
+links: {}
+notes: ''

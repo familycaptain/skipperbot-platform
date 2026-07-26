@@ -1,0 +1,19 @@
+kind: specification
+id: meals.components.a-component-in-use-cannot-be-deleted
+title: A component still in use cannot be deleted
+state: live
+autonomy: gated
+behavior: >
+  Deleting a component that any meal still uses is refused, and the meals using it are named —
+  up to ten, then a count of the rest — so they can be dealt with first. Once nothing uses it,
+  deleting it removes it from the library.
+implements:
+- apps/meals/tools.py::delete_component
+- apps/meals/data.py::get_meals_for_component
+tests:
+- type: unit
+  path: tests/evolve/meals/test_crud_tools.py
+links: {}
+notes: >
+  Refusing rather than cascading: silently stripping a component out of a dozen meals is the
+  kind of cleanup nobody can undo.

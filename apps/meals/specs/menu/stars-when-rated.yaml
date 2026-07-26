@@ -1,0 +1,16 @@
+kind: specification
+id: meals.menu.stars-when-rated
+title: Stars appear only where there is a rating
+state: live
+autonomy: gated
+behavior: >
+  A rated meal shows its rating on the menu as filled stars out of five, described in words for
+  anyone using a screen reader. A meal that is unrated, or whose rating is outside one to five,
+  shows no star row at all rather than an empty or misleading one.
+implements:
+- apps/meals/pages/menu.html::renderMealItem
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

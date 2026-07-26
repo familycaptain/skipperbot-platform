@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.whats-due.narrow-by-category
+title: Narrow the list to one kind of thing
+state: live
+autonomy: gated
+behavior: >
+  The list can be narrowed to one kind of schedule — chores, maintenance, school, vehicle, medical or
+  general — and each schedule carries its kind as a visible label wherever it is listed. Narrowing to
+  a kind with nothing in it says that this category is empty, which is a different message from
+  having no schedules at all.
+implements:
+- apps/schedules/ui/SchedulesApp.jsx::ListView
+tests: []
+links: {}
+notes: ''

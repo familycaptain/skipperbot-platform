@@ -1,0 +1,13 @@
+kind: specification
+id: meals.library.who-added-it
+title: Records credit the person who is signed in
+state: live
+autonomy: gated
+behavior: >
+  A meal or log entry records the person who actually made it, taken from the signed-in session
+  rather than from anything the request claims, so 'who added this?' has a trustworthy answer.
+implements:
+- apps/meals/routes.py::_actor
+tests: []
+links: {}
+notes: ''

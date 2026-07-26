@@ -1,0 +1,18 @@
+kind: specification
+id: meals.library.delete-keeps-the-history
+title: Deleting a meal never erases what was eaten
+state: live
+autonomy: gated
+behavior: >
+  Deleting a meal removes it from the library together with its component links and its photo
+  links, but every meal-log entry that pointed at it survives with its link to the meal cleared.
+  The record of what was actually eaten is never lost to a library cleanup.
+implements:
+- apps/meals/tools.py::delete_meal
+- apps/meals/data.py::delete_meal
+- apps/meals/migrations/002_dinner_log.sql
+tests:
+- type: unit
+  path: tests/evolve/meals/test_crud_tools.py
+links: {}
+notes: ''

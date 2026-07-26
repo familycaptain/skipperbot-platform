@@ -1,0 +1,15 @@
+kind: specification
+id: lists.naming.board-and-list-together
+title: Naming the shop and the aisle in either order
+state: live
+autonomy: gated
+behavior: >
+  For a list that mirrors a board, the board and the list can be named together in either order —
+  'the hardware board's paint list' and 'paint, hardware board' both land on the same list. This is
+  how two lists that share a name on different boards are told apart; if the pair still matches more
+  than one list, the qualifier is abandoned rather than a list being picked from it.
+implements:
+- apps/lists/store.py::find_list_by_name
+tests: []
+links: {}
+notes: ''

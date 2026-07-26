@@ -1,0 +1,17 @@
+kind: specification
+id: lists.trello-boards.board-trouble-is-not-data-loss
+title: A board Skipper cannot reach is not an empty board
+state: live
+autonomy: gated
+behavior: >
+  When the board cannot be read — offline, credentials rejected, the list renamed out from under us
+  — the refresh reports the failure and the list is left exactly as it was. An unreachable board
+  never empties a list, and one list's failure does not stop the others in the same sweep from
+  refreshing.
+implements:
+- apps/lists/store.py::sync_from_trello
+- apps/lists/store.py::sync_all_trello_lists
+- trello_sync.py::sync_cycle
+tests: []
+links: {}
+notes: ''

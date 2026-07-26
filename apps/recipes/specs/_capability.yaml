@@ -2,9 +2,11 @@ kind: capability
 id: recipes
 title: Recipes
 app: recipes
-scope: 'Family recipe collection: create, browse, search, and manage recipes with structured ingredients,
-  steps, categories, and images, plus printing to the household printer. NOT meal-idea selection
-  (the Meals app) — Recipes owns the full ingredients-and-steps detail.'
+scope: 'The household recipe box: recipes captured from pasted or dictated text or typed in by hand
+  and kept as structured ingredients, steps, times, servings, categories, ratings and photos —
+  browsed, searched, scaled, cooked from and printed. NOT deciding what the household eats this week
+  (the Meals app) and NOT the shopping run (the Lists app); Recipes owns the ingredients-and-steps
+  detail a person actually cooks from.'
 state: live
 autonomy: gated
 links: {}

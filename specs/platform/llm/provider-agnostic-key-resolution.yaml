@@ -29,14 +29,8 @@ implements:
   apps/meals/tools, thinking_digest, chat_digest, research_runner, tools/brainstorming_tool,
   app_platform/memory)'
 tests: []
+issues:
+- 44
 links: {}
-notes: 'Verified LIVE at Gate-2 (test host) against the operator''s hard bar (the negative
-  test #44 never ran): app boots healthy; 37 offline provider suites pass; KEYLESS LIVE chat
-  returns a real reply with OPENAI_API_KEY popped (stored tier key resolved); non-OpenAI provider-generic
-  threading proven (fast tier->anthropic+dummy key -> Anthropic 401 to api.anthropic.com,
-  NOT the OpenAI ''Missing credentials''); no env-keyed OpenAI client remains; misconfig ->
-  sanitized NoApiKey. Both model AND key resolved per-tier. Panel-folded hardening all present:
-  provider fail-fast, registry full-builtins fallback, embedding-tier dim-lock, TierNotConfigured
-  soft-fail, base Protocol api_key, no-key-logging. Completes #44. Out-of-scope follow-ups
-  (operator noted): CLI onboarding prompt, voice OpenAI dependency, docs/.env.example.'
+notes: ''
 verified: true

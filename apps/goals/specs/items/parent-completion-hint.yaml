@@ -1,0 +1,15 @@
+kind: specification
+id: goals.items.parent-completion-hint
+title: Finishing the last subtask offers to close the parent
+state: live
+autonomy: gated
+behavior: >
+  When the last open subtask of a task is finished, the answer points out that the parent task's
+  children are all complete and suggests closing it — but never closes it, because there is often
+  wrap-up work left on the parent itself. The same holds for a subtask that was cancelled rather
+  than done.
+implements:
+- apps/goals/store.py::_check_parent_completion
+tests: []
+links: {}
+notes: ''

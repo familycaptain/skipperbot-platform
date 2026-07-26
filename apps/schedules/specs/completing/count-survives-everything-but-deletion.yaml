@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.completing.count-survives-everything-but-deletion
+title: The count of times done only ever goes up
+state: live
+autonomy: gated
+behavior: >
+  How many times a schedule has been done counts every completion ever recorded against it — by a
+  person, by an app on their behalf, or by the scheduler starting work — and is never reduced by
+  pausing it, editing it, changing its cadence or its history ageing out of view. Only deleting the
+  schedule removes it.
+implements:
+- apps/schedules/data.py::complete_schedule
+tests: []
+links: {}
+notes: ''

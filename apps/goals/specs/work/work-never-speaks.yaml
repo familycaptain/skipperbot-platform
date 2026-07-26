@@ -1,0 +1,17 @@
+kind: specification
+id: goals.work.work-never-speaks
+title: Work sessions cannot talk to anyone
+state: live
+autonomy: gated
+behavior: >
+  A work session has no way to message a person: it is not offered any means of doing so, and an
+  attempt to reach someone is refused outright. Everything it produces is work — documents,
+  findings, updated items — because Skipper speaks with one voice and background work is not it.
+implements:
+- apps/goals/goal_work.py::handle_goal_work
+- apps/goals/goal_work.py::_WORKER_GUIDANCE
+tests: []
+links: {}
+notes: >
+  One mouth, many hands: if background work could speak, the household would hear from Skipper in
+  several unrelated voices at once.

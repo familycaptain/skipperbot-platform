@@ -1,0 +1,14 @@
+kind: specification
+id: reminders.other-apps.turning-up-in-search
+title: Reminders turn up when you search
+state: live
+autonomy: gated
+behavior: >
+  Searching the household finds the searcher's live reminders whose message matches what was
+  typed, shown with when each is next due, and picking one opens the Reminders app. Cancelled and
+  finished reminders are not offered as search results.
+implements:
+- apps/finder/ui/FinderApp.jsx
+tests: []
+links: {}
+notes: ''

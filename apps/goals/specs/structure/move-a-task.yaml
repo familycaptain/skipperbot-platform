@@ -1,0 +1,18 @@
+kind: specification
+id: goals.structure.move-a-task
+title: A task can be moved under another, or back out
+state: live
+autonomy: gated
+behavior: >
+  A task can be made a subtask of another task, or promoted back to sitting directly under its
+  project, and everything's position is renumbered to match. A task cannot be made its own parent,
+  and moving a task into a different project's tree is refused until the person has been asked and
+  has explicitly confirmed — the refusal names both projects so the question can actually be put
+  to them.
+implements:
+- apps/goals/tools.py::set_task_parent
+tests: []
+links: {}
+notes: >
+  The cross-project confirmation exists because a move between projects silently changes whose
+  reports and progress counts the work appears in.

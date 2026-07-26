@@ -1,0 +1,14 @@
+kind: specification
+id: meals.tags.tags-are-lowercase
+title: A tag is one tag however it is typed
+state: live
+autonomy: gated
+behavior: >
+  Tags are stored and matched in lower case with surrounding space and a leading hash dropped,
+  so 'Mexican', 'mexican' and '#mexican' are one tag rather than three.
+implements:
+- apps/meals/data.py::_ensure_tags
+- apps/meals/data.py::_normalize_tag_value
+tests: []
+links: {}
+notes: ''

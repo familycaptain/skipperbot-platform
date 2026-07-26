@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.other-apps.remembered-for-later-questions
+title: What is set can be asked about later
+state: live
+autonomy: gated
+behavior: >
+  Every reminder set, changed or cancelled is folded into Skipper's memory of the household, so
+  "what have I got coming up?" and "did I ask you to remind me about the septic tank?" can be
+  answered from what is recorded rather than only while the list is open.
+implements:
+- apps/reminders/store.py::create_reminder
+- apps/reminders/data.py::BACKFILL_ENTITIES
+tests: []
+links: {}
+notes: ''

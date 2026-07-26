@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.completing.done-by-whoever-pressed-it
+title: Done by whoever pressed it
+state: live
+autonomy: gated
+behavior: >
+  A completion is attributed to the signed-in person who marked it done, not to whatever name the
+  request carried, so the history cannot be used to credit somebody else. Work started automatically
+  is attributed to the scheduler instead of to a person, so the history distinguishes the two.
+implements:
+- agent.py::api_complete_schedule
+- apps/schedules/job_trigger.py::check_schedule_jobs
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: chores.rounds.the-morning-round
+title: Each morning everybody hears what they owe
+state: live
+autonomy: gated
+behavior: >
+  Once each morning, everybody in the rotation with chores that day is sent one short message
+  that greets them by name and lists what they have, so nobody has to go and look. The message
+  asks them to say when they are done.
+implements:
+- apps/chores/handlers.py::handle_chores_morning
+- apps/chores/handlers.py::_chores_skill_runner
+tests: []
+links: {}
+notes: ''

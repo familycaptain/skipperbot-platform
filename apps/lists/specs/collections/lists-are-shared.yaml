@@ -1,0 +1,16 @@
+kind: specification
+id: lists.collections.lists-are-shared
+title: Every list is everyone's list
+state: live
+autonomy: gated
+behavior: >
+  There is no private list: every list a household has is visible to every member, and anyone can
+  add to it, cross things off it, reorder it or delete it. Asking for 'my lists' returns the same
+  set as asking for all of them.
+implements:
+- agent.py::api_list_lists
+- apps/lists/store.py::get_all_lists
+tests: []
+links: {}
+notes: >
+  A per-person list is expressed by naming it after that person, not by hiding it.

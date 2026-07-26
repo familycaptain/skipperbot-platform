@@ -1,0 +1,16 @@
+kind: specification
+id: meals.library.rate-a-meal
+title: A meal can be rated one to five stars
+state: live
+autonomy: gated
+behavior: >
+  A meal takes a rating of one to five stars, set in the app or from a passing remark in
+  conversation such as 'that was great', and shows those stars everywhere it is listed. A rating
+  outside one to five is refused, and an unrated meal shows no stars at all rather than an empty
+  five or a zero.
+implements:
+- apps/meals/tools.py::rate_meal
+- apps/meals/ui/MealsApp.jsx::StarRating
+tests: []
+links: {}
+notes: ''

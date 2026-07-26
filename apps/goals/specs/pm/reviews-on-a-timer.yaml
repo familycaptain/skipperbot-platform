@@ -1,0 +1,18 @@
+kind: specification
+id: goals.pm.reviews-on-a-timer
+title: Skipper reviews the household's work on its own
+state: live
+autonomy: gated
+behavior: >
+  Without being asked, Skipper periodically reviews the household's goals and projects the way a
+  project manager would: reading what has changed, what is slipping and what is blocked, and
+  deciding whether anything is worth raising with anyone. Reviews happen through the day during
+  the household's waking hours, and doing nothing is a valid outcome of one.
+implements:
+- apps/goals/pm_domain.py::pm_domain_handler
+- apps/goals/pm_domain.py::pm_skill_runner
+- apps/goals/manifest.yaml
+- apps/goals/migrations/004_thinking_cadence_interval.sql
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: goals.views.shown-once-not-twice
+title: A list Skipper has put on screen is not read back
+state: live
+autonomy: gated
+behavior: >
+  When Skipper answers with a list or a detail view it has already rendered, its reply does not
+  repeat, reformat or summarise it — it answers the follow-up or says nothing. The identifiers
+  Skipper needs to act on what it showed stay available to it without being shown to the person.
+implements:
+- apps/goals/store.py::_direct_display
+- apps/goals/store.py::_strip_entity_ids
+tests: []
+links: {}
+notes: >
+  Without this the same list appears twice — once rendered, once narrated back — which reads as a
+  stutter.

@@ -1,0 +1,13 @@
+kind: specification
+id: meals.tags.a-new-tag-appears-by-being-used
+title: Using a tag is all it takes to create it
+state: live
+autonomy: gated
+behavior: >
+  Putting a tag on a meal adds it to the household's tag vocabulary without anyone registering
+  it first, so the classification grows out of use rather than out of administration.
+implements:
+- apps/meals/data.py::_ensure_tags
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: todo.ordering.order-carries-through-to-trello
+title: 'Re-ordering a Trello-backed list moves the cards too'
+state: live
+autonomy: gated
+behavior: >
+  Re-ordering a column whose list is linked to a Trello board also repositions those cards on the
+  board so the two agree. Items with no card of their own are left alone, and a Trello refusal is
+  recorded and does not undo the order that was just saved locally.
+implements:
+- agent.py::api_batch_reorder_todo
+tests: []
+links: {}
+notes: ''

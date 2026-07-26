@@ -1,0 +1,14 @@
+kind: specification
+id: meals.deciding.filter-on-what-goes-in-it
+title: Meals can be found by what goes in them
+state: live
+autonomy: gated
+behavior: >
+  Filtering on a component finds every meal that uses it in any role, matched on part of its
+  name or on the component itself, so 'what can we make with chicken?' is answerable; excluding
+  one rules out every meal that uses it.
+implements:
+- apps/meals/data.py::discover_meals
+tests: []
+links: {}
+notes: ''

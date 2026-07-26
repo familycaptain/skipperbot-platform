@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.set.for-somebody-else
+title: A reminder can be for somebody else
+state: live
+autonomy: gated
+behavior: >
+  A reminder names who it is for, so one person can set one for another — "remind Jess about the
+  dentist" puts it in Jess's list, nudges Jess, and is Jess's to cancel. The name is matched
+  ignoring case and surrounding spaces, so how it was typed never splits one person into two.
+implements:
+- apps/reminders/store.py::create_reminder
+- apps/reminders/store.py::list_reminders
+tests: []
+links: {}
+notes: ''

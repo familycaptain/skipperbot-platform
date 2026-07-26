@@ -1,12 +1,16 @@
 kind: specification
 id: chores.zones.get-zone
-title: Show a zone
+title: One zone in full
 state: live
 autonomy: gated
-behavior: Showing a zone returns its members and the day-of-week × position chore grid.
+behavior: >
+  A single zone can be asked about by name or by identifier, whatever the capitalisation, and
+  comes back with its turn order and its chores laid out day by day in slot order, retired ones
+  included and marked as retired. A zone that is not there is reported as not found rather than
+  the nearest guess.
 implements:
-- apps/chores/tools.py
-- apps/chores/ui/ChoresApp.jsx
+- apps/chores/tools.py::get_chore_zone
+- apps/chores/routes.py::api_get_zone
 tests: []
 links: {}
 notes: ''

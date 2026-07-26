@@ -1,0 +1,23 @@
+kind: specification
+id: reminders.recurrence.tracked-as-a-schedule
+title: A repeating reminder is tracked as a schedule too
+state: live
+autonomy: gated
+behavior: >
+  A repeating reminder is mirrored as a household schedule in the same person's name, so its
+  occurrences and its history of being met appear wherever schedules do, and the reminder's next
+  time follows the schedule's. If the mirror cannot be made, the reminder still repeats on its own
+  rule — the mirror is an enrichment, never a precondition for the reminder working.
+implements:
+- apps/reminders/store.py::_rrule_to_schedule_params
+- apps/reminders/store.py::create_reminder
+tests:
+- type: unit
+  path: test_schedule_rrule.py
+  rubric: >
+    Offline. The calendar rule a repeating reminder was created with reaches the schedule verbatim —
+    an uncommon pattern (the last weekday of the month) is preserved rather than flattened into a
+    simpler recurrence — and the schedule is created as a rule-driven one anchored to the reminder's
+    own time of day.
+links: {}
+notes: ''

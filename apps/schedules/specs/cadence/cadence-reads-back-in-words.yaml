@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.cadence.cadence-reads-back-in-words
+title: A cadence reads back in words
+state: live
+autonomy: gated
+behavior: >
+  Opening a schedule describes its cadence in words — every day, the days of the week it falls on,
+  the day of the month, the last day of the month, every so many days — rather than showing the rule
+  that was stored. A cadence given as a raw rule is shown as that rule, because there is nothing more
+  faithful to say about it.
+implements:
+- apps/schedules/data.py::describe_recurrence
+- apps/schedules/ui/SchedulesApp.jsx::DetailView
+tests: []
+links: {}
+notes: ''

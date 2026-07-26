@@ -1,0 +1,16 @@
+kind: specification
+id: chores.checkoff.a-check-off-is-announced
+title: A check-off is announced to the household
+state: live
+autonomy: gated
+behavior: >
+  Checking a chore off, and undoing it, each raise a household event naming the chore, the
+  person, the day and who acted, so anything else in the house that wants to react to chores
+  being done can, without Chores knowing what.
+implements:
+- apps/chores/store.py::complete_chore
+- apps/chores/store.py::uncomplete_chore
+- apps/chores/store.py::_emit
+tests: []
+links: {}
+notes: ''

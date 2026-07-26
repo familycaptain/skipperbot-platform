@@ -1,0 +1,15 @@
+kind: specification
+id: meals.deciding.random-ideas-on-request
+title: Asking for N ideas gives N different ones
+state: live
+autonomy: gated
+behavior: >
+  Asked for a number of random ideas Skipper returns that many distinct meals drawn from the
+  matching ones, never repeating one and never more than exist, and says how many it chose from.
+  A request for none, for a nonsense count, or for far too many settles on a sensible handful
+  rather than failing.
+implements:
+- apps/meals/tools.py::random_meals
+tests: []
+links: {}
+notes: ''

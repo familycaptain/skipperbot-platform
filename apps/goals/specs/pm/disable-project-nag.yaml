@@ -1,0 +1,14 @@
+kind: specification
+id: goals.pm.disable-project-nag
+title: Turning nagging off cancels it outright
+state: live
+autonomy: gated
+behavior: >
+  Turning nagging off for a project cancels the recurring nudge and leaves the project's tasks and
+  their order untouched. Turning it off when it was not on says so instead of pretending to have
+  cancelled something.
+implements:
+- apps/goals/tools.py::disable_project_nag
+tests: []
+links: {}
+notes: ''

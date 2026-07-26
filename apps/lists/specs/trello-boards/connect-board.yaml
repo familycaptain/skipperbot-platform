@@ -1,13 +1,18 @@
 kind: specification
 id: lists.trello-boards.connect-board
-title: Connect a Trello board
+title: Linking a board makes every column a list
 state: live
 autonomy: gated
-behavior: Connecting a board registers it, scans its lists, creates local l- list files, and syncs
-  cards in.
+behavior: >
+  Linking a Trello board turns each of its lists into one of the household's lists, pulls that
+  list's cards in as items, and applies any nicknames configured for the board so people can name
+  them the way they speak. Lists already linked are left alone and reported as skipped, so linking
+  twice is safe. A board with no lists on it says so; a board that cannot be reached reports why and
+  changes nothing.
 implements:
-- apps/lists/tools.py
-- apps/lists/ui/TrelloSettings.jsx
+- apps/lists/tools.py::connect_trello_board
+- apps/lists/store.py::create_list
+- apps/lists/store.py::sync_from_trello
 tests: []
 links: {}
 notes: ''

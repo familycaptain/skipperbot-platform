@@ -1,0 +1,17 @@
+kind: specification
+id: goals.trello.card-is-the-truth
+title: For linked work, the board is what is true
+state: live
+autonomy: gated
+behavior: >
+  For a board-linked task, its state, who it belongs to, its due date, description, checklists and
+  labels are read from the card at the moment of asking rather than from a stale copy — so
+  somebody moving a card on their phone is immediately reflected in what Skipper says. Which list
+  a card is on is what determines whether it is waiting, in progress or done.
+implements:
+- apps/goals/store.py::_render_trello_task_detail
+- apps/goals/store.py::get_notes
+- apps/goals/store.py::update_notes
+tests: []
+links: {}
+notes: ''

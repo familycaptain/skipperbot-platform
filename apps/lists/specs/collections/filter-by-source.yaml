@@ -1,0 +1,15 @@
+kind: specification
+id: lists.collections.filter-by-source
+title: Filtering to one board or to the local lists
+state: live
+autonomy: gated
+behavior: >
+  The lists can be narrowed to just the standalone ones or to a single board, with one choice
+  offered per board that actually has lists. Choosing a filter clears any search, and searching
+  clears the filter, so the two never silently compound.
+implements:
+- apps/lists/ui/ListsApp.jsx::ListsApp
+- agent.py::api_list_lists
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: chores.rotation.nobody-in-the-zone-nobody-assigned
+title: An empty rotation assigns nothing
+state: live
+autonomy: gated
+behavior: >
+  A zone with nobody in its rotation, or with no chore falling on the day being asked about,
+  produces no assignment at all for that day: the chores are not handed to an arbitrary person
+  and no unassigned placeholder appears in anyone's list.
+implements:
+- apps/chores/store.py::assignments_for_zone
+- apps/chores/store.py::assignments_for_date
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,13 @@
+kind: specification
+id: meals.deciding.discover-starts-empty
+title: Deciding starts with a question, not the whole library
+state: live
+autonomy: gated
+behavior: >
+  The deciding view opens with a prompt to add a filter or hit surprise me and shows no results
+  until asked, so someone who wants help choosing is not handed the entire library to read.
+implements:
+- apps/meals/ui/MealsApp.jsx::DiscoverTab
+tests: []
+links: {}
+notes: ''

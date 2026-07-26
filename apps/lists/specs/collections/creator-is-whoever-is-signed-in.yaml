@@ -1,0 +1,17 @@
+kind: specification
+id: lists.collections.creator-is-whoever-is-signed-in
+title: The app records who really made the list
+state: live
+autonomy: gated
+behavior: >
+  A list created in the app is credited to the signed-in person, whatever name the browser sends
+  with the request. The creator is recorded for interest only: it confers no ownership, and any
+  other member can read, add to, reorder or delete that list.
+implements:
+- agent.py::api_create_list
+- apps/lists/store.py::create_list
+tests: []
+links: {}
+notes: >
+  Attribution is deliberately not a permission boundary — a household shopping list that only its
+  creator could edit would be useless.

@@ -1,13 +1,19 @@
 kind: specification
 id: goals.items.update-item
-title: Update a goal/project/task
+title: Change an item, and be told what was actually saved
 state: live
 autonomy: gated
-behavior: Updating changes any goal, project, or task's fields (status, name, dates, assignee,
-  etc.).
+behavior: >
+  One action changes anything about a goal, project or task — its status, name, dates, priority,
+  who owns or is assigned to it, or what done means for it — and only the parts named are touched.
+  The answer reports the item as it reads back after the write, and says plainly whether that
+  read-back confirmed the change, so a failed save is never reported as a success. An update that
+  asks for nothing says so instead of claiming a change.
 implements:
-- apps/goals/tools.py
-- apps/goals/ui/TasksApp.jsx
+- apps/goals/tools.py::update_item
+- apps/goals/store.py::update_item
 tests: []
 links: {}
-notes: ''
+notes: >
+  The read-after-write report exists because Skipper used to narrate the change it intended rather
+  than the state that landed.

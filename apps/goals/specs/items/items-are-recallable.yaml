@@ -1,0 +1,15 @@
+kind: specification
+id: goals.items.items-are-recallable
+title: What is recorded about the work can be asked about later
+state: live
+autonomy: gated
+behavior: >
+  Creating, changing or deleting a goal, project or task feeds what changed into Skipper's memory,
+  so a later question in conversation — where are we on the trip, who was doing the passports — is
+  answerable without anyone opening the app or naming an id.
+implements:
+- apps/goals/data.py::save_entity
+- apps/goals/data.py::delete_entity
+tests: []
+links: {}
+notes: ''

@@ -118,10 +118,7 @@ tests:
     changed for ev-47 it must be updated to the SAME new literal ("City, Region,
     Country or postal,country") so the comfortable-width guard still finds the input;
     its width assertions (w-56 floor, pl-7, no w-48) are unaffected.
+issues:
+- 47
 links: {}
-notes: 'ev-47: amended the override grammar to accept region-qualified ("City, Region,
-  Country" and 2-piece "City, Region") forms with a US-state abbrev map and a
-  region-first-else-country tie-break; fixed the trailing-2-letter-as-countryCode bug;
-  bundled the Weather placeholder alignment (lockstep with the comfortable-width spec).
-  Corrected the stale bound-test paths (tests/evolve/platform → tests/platform). verified
-  reset to false at build; validate must re-green it before merge.'
+notes: ''

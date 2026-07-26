@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.whats-due.open-ended-cadences-show-one-point
+title: A cadence with no pattern shows only its next occurrence
+state: live
+autonomy: gated
+behavior: >
+  A schedule that repeats a number of days after each completion has no future pattern to lay out —
+  the next one depends on when this one is done — so it appears on the calendar once, on the day it
+  is next due, and nothing beyond. A span that does not contain that day shows it nowhere rather than
+  guessing later occurrences.
+implements:
+- apps/schedules/data.py::_expand_occurrences
+tests: []
+links: {}
+notes: ''

@@ -1,12 +1,16 @@
 kind: specification
 id: goals.trello.link-project
-title: Link/unlink a project to Trello
+title: Point a project at a board
 state: live
 autonomy: gated
-behavior: Linking connects a project to a Trello board for live task↔card integration; unlinking
-  removes it.
+behavior: >
+  A project can be connected to a Trello board, naming which list new work waits on and which list
+  means finished. Lists whose names match household members are recognised as those people's own
+  lists without anybody mapping them by hand, and custom mappings are only used when explicitly
+  given. Once connected the board is the live truth for the work on it and Skipper keeps only
+  enough of its own record to track it.
 implements:
-- apps/goals/tools.py
+- apps/goals/tools.py::link_project_to_trello
 tests: []
 links: {}
 notes: ''

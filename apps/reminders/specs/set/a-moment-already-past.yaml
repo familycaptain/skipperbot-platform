@@ -1,0 +1,16 @@
+kind: specification
+id: reminders.set.a-moment-already-past
+title: A time that has already gone by still nudges
+state: live
+autonomy: gated
+behavior: >
+  A one-off reminder set for a moment that has already passed is kept and comes due on the next
+  check rather than being refused or quietly dropped — so "remind me at three" said at ten past
+  three still nudges, and one created while Skipper was off is not lost. Until it is processed the
+  list shows it as overdue.
+implements:
+- apps/reminders/store.py::get_due_reminders
+- apps/reminders/ui/RemindersApp.jsx::isOverdue
+tests: []
+links: {}
+notes: ''

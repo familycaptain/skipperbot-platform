@@ -1,0 +1,13 @@
+kind: specification
+id: todo.completing.only-your-open-to-do-items-match
+title: 'Completing by description looks only at your open to-dos'
+state: live
+autonomy: gated
+behavior: >
+  Completing by description considers only the open items on the asking person's own to-do list:
+  never something already completed, never their backlog, and never another person's list.
+implements:
+- apps/todo/tools.py::mark_todo_done
+tests: []
+links: {}
+notes: ''

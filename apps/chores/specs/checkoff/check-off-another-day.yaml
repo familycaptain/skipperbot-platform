@@ -1,0 +1,15 @@
+kind: specification
+id: chores.checkoff.check-off-another-day
+title: A chore can be checked off for another day
+state: live
+autonomy: gated
+behavior: >
+  A check-off can be recorded for a day other than today — yesterday's forgotten chore, or
+  tomorrow's done early — and counts for the day given rather than the day it was entered. Which
+  day it was entered on is not what the record says was done.
+implements:
+- apps/chores/tools.py::_resolve_date
+- apps/chores/routes.py::api_complete
+tests: []
+links: {}
+notes: ''

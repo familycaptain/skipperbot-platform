@@ -1,0 +1,17 @@
+kind: specification
+id: reminders.other-apps.a-project-nag-follows-the-work
+title: A project's nag always names the next task
+state: live
+autonomy: gated
+behavior: >
+  A nag attached to a project names the task that is next in it, and when that task is finished the
+  same nag moves on to the following one instead of a second nag appearing. When nothing is left
+  to do — everything finished or blocked — the nag says so and stops nudging; turning the nag off
+  cancels it outright.
+implements:
+- apps/goals/store.py::_refresh_project_nag
+- apps/goals/tools.py::enable_project_nag
+- apps/goals/tools.py::disable_project_nag
+tests: []
+links: {}
+notes: ''

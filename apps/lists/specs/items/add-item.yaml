@@ -1,0 +1,18 @@
+kind: specification
+id: lists.items.add-item
+title: Adding something to a list
+state: live
+autonomy: gated
+behavior: >
+  Naming a list and something to put on it adds that one item and confirms which list it landed on.
+  Blank text is refused, and so is an add that does not say who is adding. When no list answers to
+  the name given, the reply says it was not found and that both the household's own lists and the
+  connected boards were checked — nothing is created on a guess.
+implements:
+- apps/lists/tools.py::add_list_item
+- apps/lists/store.py::add_item
+- apps/lists/ui/ListsApp.jsx::ListCard
+- agent.py::api_add_list_item
+tests: []
+links: {}
+notes: ''

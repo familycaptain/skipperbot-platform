@@ -1,0 +1,18 @@
+kind: specification
+id: meals.menu.an-empty-filtered-menu-names-the-cause
+title: An empty menu says what emptied it
+state: live
+autonomy: gated
+behavior: >
+  Filters that match nothing produce an explanation and an offer to show all meals, not a blank
+  sheet. The tag is named as the cause only when it was the sole filter — otherwise the message
+  says the combination matched nothing, because blaming the tag would be misleading when it was
+  the search or the effort that emptied the menu.
+implements:
+- apps/meals/pages/menu.html::generateMenu
+- apps/meals/pages/menu.html::showState
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

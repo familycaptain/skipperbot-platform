@@ -1,0 +1,20 @@
+kind: specification
+id: lists.items.cross-off-keeps-a-record
+title: Crossing off is not erasing
+state: live
+autonomy: gated
+behavior: >
+  Crossing an item off takes it out of the live list but keeps it, with the time it happened, under
+  a collapsed 'archived' section on that list — so something crossed off by mistake can still be
+  read back. The archived section is hidden until asked for and is left out of counts, previews,
+  searches and printing.
+implements:
+- apps/lists/store.py::remove_item
+- apps/lists/data.py::archive_item
+- apps/lists/ui/ListsApp.jsx::ListCard
+- agent.py::api_get_list
+tests: []
+links: {}
+notes: >
+  Crossing off and deleting outright are deliberately different acts; only deleting the whole list
+  discards the record.

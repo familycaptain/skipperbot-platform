@@ -1,0 +1,13 @@
+kind: specification
+id: meals.deciding.a-hash-is-just-a-tag
+title: A hashtag is the tag it names
+state: live
+autonomy: gated
+behavior: >
+  '#snack', 'Snack' and ' snack ' all filter on the same tag, so a filter typed the way someone
+  talks finds the same meals as one picked from a list.
+implements:
+- apps/meals/data.py::_normalize_tag_value
+tests: []
+links: {}
+notes: ''

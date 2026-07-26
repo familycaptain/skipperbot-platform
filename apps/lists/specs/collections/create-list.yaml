@@ -1,13 +1,18 @@
 kind: specification
 id: lists.collections.create-list
-title: Create a list
+title: Making a list
 state: live
 autonomy: gated
-behavior: Creating a list records a new ordered collection, assigns an l- id, and makes it available
-  to add items to.
+behavior: >
+  Naming a new list produces an empty list straight away, ready to be added to, and it shows up for
+  everyone. A list with no name is refused, and so is a list asked for without saying who is asking.
+  A brand-new list is standalone — it is local only, with no board behind it, until someone links
+  it.
 implements:
-- apps/lists/tools.py
-- apps/lists/ui/ListsApp.jsx
+- apps/lists/tools.py::create_list
+- apps/lists/store.py::create_list
+- apps/lists/ui/ListsApp.jsx::NewListForm
+- agent.py::api_create_list
 tests: []
 links: {}
 notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: meals.menu.print-drops-the-controls-keeps-the-date
+title: Printing drops the controls and keeps the date
+state: live
+autonomy: gated
+behavior: >
+  Printing or saving to PDF leaves out the page's own controls and hints and keeps the menu, its
+  header and the printed date, sized for a portrait letter page with margins — so what comes out
+  of the printer is a menu and not a screenshot of an app.
+implements:
+- apps/meals/pages/menu.html
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

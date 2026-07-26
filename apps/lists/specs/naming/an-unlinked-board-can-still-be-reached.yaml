@@ -1,0 +1,18 @@
+kind: specification
+id: lists.naming.an-unlinked-board-can-still-be-reached
+title: A board nobody has linked can still be named
+state: live
+autonomy: gated
+behavior: >
+  When no local list answers to a name but the name mentions a configured board, that board is
+  searched for a matching list and the request is carried out there — so 'add screws to the hardware
+  board's fixings' works before anyone has linked that board. Whatever is added this way exists only
+  on the board: it does not become one of the household's lists and will not be refreshed until the
+  board is linked. If the board cannot be reached, the name simply does not resolve.
+implements:
+- apps/lists/tools.py::_try_trello_match
+- apps/lists/tools.py::add_list_item
+- apps/lists/tools.py::show_list
+tests: []
+links: {}
+notes: ''

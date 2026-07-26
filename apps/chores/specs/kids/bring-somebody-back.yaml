@@ -1,0 +1,16 @@
+kind: specification
+id: chores.kids.bring-somebody-back
+title: Somebody taken out can be put back
+state: live
+autonomy: gated
+behavior: >
+  Somebody taken out of the rotation is not gone: a parent can put them back, and they return
+  with their history, their colour and their account link intact rather than as a new person.
+  Until then they are still listed in the setup screens, marked as no longer active.
+implements:
+- apps/chores/data.py::update_kid
+- apps/chores/routes.py::api_list_kids
+- apps/chores/ui/ChoresApp.jsx::KidRow
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: meals.nightly-check.a-new-time-takes-effect-at-once
+title: A new time applies the same evening
+state: live
+autonomy: gated
+behavior: >
+  Changing the time reschedules the check immediately, so a time moved earlier in the afternoon
+  can still take effect that evening — no restart and no waiting a day.
+implements:
+- apps/meals/handlers.py::_on_config_changed
+- apps/meals/schedule.py::reconcile_dinner_schedule
+tests:
+- type: unit
+  path: tests/evolve/meals/test_dinner_schedule.py
+links: {}
+notes: ''

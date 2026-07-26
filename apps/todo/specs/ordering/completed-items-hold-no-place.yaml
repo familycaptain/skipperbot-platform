@@ -1,0 +1,14 @@
+kind: specification
+id: todo.ordering.completed-items-hold-no-place
+title: 'Completed items hold no place in the order'
+state: live
+autonomy: gated
+behavior: >
+  The numbering and the ordering controls concern only the open items: something completed never
+  occupies a rank, never counts towards the column's count, and completing an item does not disturb
+  the order of the ones left.
+implements:
+- apps/todo/ui/TodoApp.jsx::TodoColumn
+tests: []
+links: {}
+notes: ''

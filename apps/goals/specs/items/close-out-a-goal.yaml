@@ -1,0 +1,18 @@
+kind: specification
+id: goals.items.close-out-a-goal
+title: Closing a goal stops everything under it
+state: live
+autonomy: gated
+behavior: >
+  Closing a goal out sets it and every still-open project and task beneath it, at any depth, to
+  the same finished state, and clears the follow-ups Skipper was holding about them — so nothing
+  under a closed goal is ever nudged again. Closing a goal that is already finished reports that
+  and changes nothing rather than cascading a second time. If an individual child cannot be
+  closed, the goal itself is still closed.
+implements:
+- apps/goals/store.py::close_out_goal
+tests: []
+links: {}
+notes: >
+  Closing the goal first and cascading afterwards is deliberate: a partial failure still stops the
+  nagging, which is what the person asked for.

@@ -1,0 +1,17 @@
+kind: specification
+id: lists.trello-accounts.add-account
+title: Adding a Trello account
+state: live
+autonomy: gated
+behavior: >
+  A Trello account is added by naming it and giving its key and token. The name is required; saving
+  under a name that already exists updates that account rather than creating a second. More than one
+  account is supported, so boards belonging to different people can be reached from the same
+  installation.
+implements:
+- apps/lists/routes.py::save_trello_account
+- apps/lists/trello_config.py::save_account
+- apps/lists/ui/TrelloSettings.jsx::AddAccountForm
+tests: []
+links: {}
+notes: ''

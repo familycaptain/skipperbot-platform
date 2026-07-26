@@ -1,0 +1,15 @@
+kind: specification
+id: lists.collections.print-a-list
+title: Taking a list to the shop on paper
+state: live
+autonomy: gated
+behavior: >
+  A list can be printed: a clean page with the list's name, today's date, its items numbered in
+  their current order with who added each one, and a count at the foot. Crossed-off items are left
+  out. If the browser refuses the print window nothing else happens — no error, no half-printed
+  page.
+implements:
+- apps/lists/ui/ListsApp.jsx::printList
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: chores.views.week-at-a-glance
+title: The week is a person-by-day grid
+state: live
+autonomy: gated
+behavior: >
+  The week view lays the household out as rows and the seven days as columns, starting from a
+  Sunday, with each person's chores in each day's cell, done ones struck through and a dash
+  where they have nothing. It can be stepped a week at a time or started from a chosen date.
+implements:
+- apps/chores/ui/ChoresApp.jsx::WeekTab
+- apps/chores/store.py::week_by_kid
+- apps/chores/tools.py::get_chores_week
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: meals.nightly-check.a-broken-schedule-breaks-nothing
+title: A schedule that cannot be written breaks nothing
+state: live
+autonomy: gated
+behavior: >
+  If the check's schedule cannot be read or written — at startup, or when the time is changed —
+  the failure is recorded and everything else carries on: the setting still saves and Skipper
+  still starts.
+implements:
+- apps/meals/schedule.py::reconcile_dinner_schedule
+- apps/meals/hooks.py
+tests:
+- type: unit
+  path: tests/evolve/meals/test_dinner_schedule.py
+links: {}
+notes: ''

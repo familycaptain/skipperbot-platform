@@ -1,0 +1,14 @@
+kind: specification
+id: recipes.browsing.one-persons-recipes
+title: The recipes one person added
+state: live
+autonomy: gated
+behavior: >
+  Asked for one person's recipes, only the ones credited to that person are listed, and asking for a
+  person and a category together applies both narrowings. When that combination matches nothing it
+  says so rather than falling back to the whole collection.
+implements:
+- apps/recipes/tools.py::list_recipes
+tests: []
+links: {}
+notes: ''

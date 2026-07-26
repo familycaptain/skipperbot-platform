@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.other-apps.a-deadline-gets-a-warning
+title: A dated thing can be reminded about before it is due
+state: live
+autonomy: gated
+behavior: >
+  A goal, project or task that carries a date can be given a reminder a chosen number of days
+  ahead of it, set for the morning of that day and worded with the item's name and its due date,
+  and linked back to the item so the nudge and the thing it is about lead to each other. An item
+  with no date is refused rather than reminded about at an invented time.
+implements:
+- apps/goals/tools.py::set_due_reminder
+tests: []
+links: {}
+notes: ''

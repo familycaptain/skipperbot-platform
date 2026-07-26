@@ -1,0 +1,16 @@
+kind: specification
+id: meals.components.a-component-needs-a-name-and-a-kind
+title: A component has a name and one of nine kinds
+state: live
+autonomy: gated
+behavior: >
+  A component needs a name, and its kind is one of a fixed set — protein, starch, vegetable,
+  sauce, grain, bread, dairy, fruit or other. Created with a kind outside that set it is
+  recorded as other; asked to change to one, the change is refused and the valid kinds are
+  named.
+implements:
+- apps/meals/tools.py::add_component
+- apps/meals/tools.py::update_component
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: lists.naming.partial-name-resolves
+title: Half a name is enough
+state: live
+autonomy: gated
+behavior: >
+  A list is found from part of its name, and equally from a phrase that contains its name — so both
+  'grocery' and 'add milk to the grocery list' reach the grocery list. When several lists could be
+  meant this way the longest name wins, so a list called 'To-Do' does not take what was meant for
+  'Weekend To-Do', and a board named in the same breath breaks the remaining tie.
+implements:
+- apps/lists/store.py::find_list_by_name
+tests: []
+links: {}
+notes: ''

@@ -1,12 +1,18 @@
 kind: specification
 id: goals.items.create-goal
-title: Create a goal
+title: Start a goal
 state: live
 autonomy: gated
-behavior: Creating a goal records a top-level objective and assigns a g- id.
+behavior: >
+  Naming a goal records a long-horizon outcome the household is working towards, owned by whoever
+  asked for it unless other owners are named, with an optional target date or none at all. A goal
+  with no name, or no-one recorded as creating it, is refused rather than stored half-formed. A
+  brand-new goal starts as not started, sits last in the household's goal order, and its progress
+  reads zero until it has tasks.
 implements:
-- apps/goals/tools.py
-- apps/goals/ui/GoalsApp.jsx
+- apps/goals/tools.py::create_goal
+- apps/goals/store.py::create_goal
+- apps/goals/ui/GoalsApp.jsx::SummaryView
 tests: []
 links: {}
 notes: ''

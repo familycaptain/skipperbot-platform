@@ -1,0 +1,17 @@
+kind: specification
+id: todo.the-list.first-look-is-an-invitation
+title: 'A board that has never been used explains itself'
+state: live
+autonomy: gated
+behavior: >
+  A board that has never held a card — nothing open and nothing completed, on either side — shows
+  one welcome explaining what the app is for, with the add field still reachable beneath it, instead
+  of two empty columns. Once anything has been captured the ordinary columns are shown, even if
+  everything on them has since been completed, because the person has plainly used the app.
+implements:
+- apps/todo/ui/TodoApp.jsx::TodoApp
+- apps/todo/ui/index.js
+- web/src/components/PristineEmpty.jsx
+tests: []
+links: {}
+notes: ''

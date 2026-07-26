@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.recurrence.plain-words-not-a-rule
+title: The list says the repeat in words
+state: live
+autonomy: gated
+behavior: >
+  A repeating reminder shows how often it repeats in words a person reads — "Daily", "Every 2
+  weeks: Mon", "Monthly on day 15" — not as the calendar rule itself. A pattern the list has no
+  words for falls back to showing the rule verbatim, so it is never blank about how often
+  something is going to happen.
+implements:
+- apps/reminders/ui/RemindersApp.jsx::humanRecurrence
+tests: []
+links: {}
+notes: ''

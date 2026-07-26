@@ -1,0 +1,14 @@
+kind: specification
+id: chores.rounds.one-message-each
+title: One message each, and only to the round's list
+state: live
+autonomy: gated
+behavior: >
+  A round sends each person exactly one message. A second attempt at the same person in the same
+  round is refused, and so is any attempt to message somebody the round did not have chores for,
+  so nobody is nudged twice and nobody uninvolved is dragged in.
+implements:
+- apps/chores/handlers.py::_chores_skill_runner
+tests: []
+links: {}
+notes: ''

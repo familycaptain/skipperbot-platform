@@ -1,0 +1,14 @@
+kind: specification
+id: schedules.completing.done-from-the-list
+title: Done without opening it
+state: live
+autonomy: gated
+behavior: >
+  Anything in the list can be marked done from the list itself, and the list immediately reflows so
+  the item stops being overdue and shows its new date. There is no confirmation and no undo, so the
+  action is deliberately the one thing that can be done without opening the schedule.
+implements:
+- apps/schedules/ui/SchedulesApp.jsx::ListView
+tests: []
+links: {}
+notes: ''

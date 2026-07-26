@@ -1,0 +1,16 @@
+kind: specification
+id: lists.naming.a-list-answers-to-its-own-id
+title: A list answers to the identifier shown beside it
+state: live
+autonomy: gated
+behavior: >
+  Every list carries a short identifier, shown in the app next to it, and naming that identifier
+  addresses the list directly with no matching at all. An identifier that belongs to nothing falls
+  back to being treated as a name rather than failing outright.
+implements:
+- apps/lists/tools.py::show_list
+- apps/lists/tools.py::add_list_item
+- apps/lists/store.py::get_list
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: goals.notes.definition-of-done
+title: An item can say what finishing it means
+state: live
+autonomy: gated
+behavior: >
+  A goal, project or task can carry a statement of what done looks like for it, editable wherever
+  the item is shown, and that statement is put in front of Skipper whenever it reviews the item —
+  so it judges completion against the household's criterion rather than its own impression. An
+  item without one is reviewed on everything else.
+implements:
+- apps/goals/ui/GoalShared.jsx::EditableDoD
+- apps/goals/pm_domain.py::_load_project_snapshot
+- apps/goals/work_context.py::_build_goal_snapshot
+tests: []
+links: {}
+notes: ''

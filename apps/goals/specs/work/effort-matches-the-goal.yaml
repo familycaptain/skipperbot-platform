@@ -1,0 +1,14 @@
+kind: specification
+id: goals.work.effort-matches-the-goal
+title: A bigger goal gets more capable thinking
+state: live
+autonomy: gated
+behavior: >
+  A goal with a lot of open work is worked with Skipper's stronger reasoning; a small one is
+  worked with the quicker, cheaper one. The choice follows the size of the goal, so a two-task
+  goal does not cost what a fifty-task goal does.
+implements:
+- apps/goals/goal_work.py::handle_goal_work
+tests: []
+links: {}
+notes: ''

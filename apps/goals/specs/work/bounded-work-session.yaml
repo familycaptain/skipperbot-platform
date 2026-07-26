@@ -1,0 +1,16 @@
+kind: specification
+id: goals.work.bounded-work-session
+title: Skipper works a goal in bounded sessions it can resume
+state: live
+autonomy: gated
+behavior: >
+  A work session on one goal is a single bounded stretch of effort — research, drafting, updating
+  items, recording findings — that stops at a natural checkpoint rather than trying to finish the
+  goal. Sessions run alongside the rest of the household's work rather than holding anything up,
+  at most two at a time, and are abandoned cleanly if the system is shutting down.
+implements:
+- apps/goals/goal_work.py::handle_goal_work
+- apps/goals/manifest.yaml
+tests: []
+links: {}
+notes: ''

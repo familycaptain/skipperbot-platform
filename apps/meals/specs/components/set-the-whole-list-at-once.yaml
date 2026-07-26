@@ -1,0 +1,15 @@
+kind: specification
+id: meals.components.set-the-whole-list-at-once
+title: Editing a meal's components saves the list as shown
+state: live
+autonomy: gated
+behavior: >
+  Saving a meal's components in the app replaces its list with exactly what is on screen — in
+  that order, each with its part and its note — so removing a row in the editor removes it from
+  the meal.
+implements:
+- apps/meals/data.py::set_meal_components
+- apps/meals/routes.py::api_set_meal_components
+tests: []
+links: {}
+notes: ''

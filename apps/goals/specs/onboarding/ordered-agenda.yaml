@@ -1,0 +1,23 @@
+kind: specification
+id: goals.onboarding.ordered-agenda
+title: Setup is five topics, in order, one at a time
+state: live
+autonomy: gated
+behavior: >
+  Setup covers, in this order: who is in the household, what they most want Skipper for, where
+  home is, connecting Discord, and any other integrations. Skipper works them one at a time and
+  finishes one before raising the next, rather than presenting a form or asking everything at
+  once. The household and intent questions come first deliberately, so the rest of setup and which
+  apps get shown can be shaped by the answers.
+implements:
+- apps/goals/onboarding.py::ONBOARDING_AGENDA
+- apps/goals/onboarding.py::ensure_onboarding
+tests:
+- type: unit
+  path: tests/evolve/goals/test_onboarding_agenda.py
+  rubric: >
+    Asserts the seeded topic order household -> intent -> location -> discord -> integrations,
+    that every topic carries its own guidance and a real destination, and that there is no catch-
+    all step.
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: todo.capture.nothing-to-add-is-refused
+title: 'An empty capture is refused'
+state: live
+autonomy: gated
+behavior: >
+  A capture with no wording — blank, or only whitespace — is refused and no item is created
+  anywhere. A capture that does not say whose list it is for is refused the same way rather than
+  being guessed at and landing on somebody else's list.
+implements:
+- apps/todo/tools.py::add_todo_item
+- agent.py::api_add_todo_item
+tests: []
+links: {}
+notes: ''

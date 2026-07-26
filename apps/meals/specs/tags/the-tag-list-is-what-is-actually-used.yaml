@@ -1,0 +1,14 @@
+kind: specification
+id: meals.tags.the-tag-list-is-what-is-actually-used
+title: The tag list is what the library actually uses
+state: live
+autonomy: gated
+behavior: >
+  The tags offered for filtering are the ones meals actually carry, each with how many meals
+  carry it, so the list is a picture of the library rather than a wish list.
+implements:
+- apps/meals/data.py::tag_cloud
+- apps/meals/data.py::list_tags
+tests: []
+links: {}
+notes: ''

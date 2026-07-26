@@ -1,0 +1,16 @@
+kind: specification
+id: recipes.editing.only-the-fields-given-change
+title: Only what was given changes
+state: live
+autonomy: gated
+behavior: >
+  Updating a recipe changes only the parts supplied and leaves everything else exactly as it was —
+  renaming a recipe does not clear its ingredients or its rating. An update that supplies nothing at
+  all is refused and says so, and an ingredient or step list that cannot be read is refused with
+  nothing changed.
+implements:
+- apps/recipes/tools.py::update_recipe
+- apps/recipes/data.py::update_recipe
+tests: []
+links: {}
+notes: ''

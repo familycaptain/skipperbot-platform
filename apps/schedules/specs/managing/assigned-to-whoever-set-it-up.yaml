@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.managing.assigned-to-whoever-set-it-up
+title: Unassigned means whoever set it up
+state: live
+autonomy: gated
+behavior: >
+  A schedule created without naming a person is assigned to whoever created it, so no schedule ends
+  up belonging to nobody by accident. Who created it is taken from the signed-in person rather than
+  from what the caller claimed, and both are recorded so a schedule can always say where it came from.
+implements:
+- apps/schedules/data.py::create_schedule
+- agent.py::api_create_schedule
+tests: []
+links: {}
+notes: ''

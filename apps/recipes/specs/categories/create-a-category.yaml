@@ -1,0 +1,17 @@
+kind: specification
+id: recipes.categories.create-a-category
+title: Creating a category
+state: live
+autonomy: gated
+behavior: >
+  Naming a new category adds it to the household's list and it appears at once as a filter above the
+  collection and as a tag that can be put on a recipe, ordered after the categories that already
+  exist. A name already in use is refused and no duplicate is created.
+implements:
+- apps/recipes/data.py::create_category
+- apps/recipes/tools.py::create_recipe_category
+- apps/recipes/routes.py::api_create_recipe_category
+- apps/recipes/ui/RecipeListApp.jsx
+tests: []
+links: {}
+notes: ''

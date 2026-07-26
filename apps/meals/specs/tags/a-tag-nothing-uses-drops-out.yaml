@@ -1,0 +1,15 @@
+kind: specification
+id: meals.tags.a-tag-nothing-uses-drops-out
+title: A tag nothing uses stops being offered
+state: live
+autonomy: gated
+behavior: >
+  Once the last meal carrying a tag is retagged or removed, that tag stops being offered, so the
+  vocabulary does not silt up with words the library no longer uses.
+implements:
+- apps/meals/data.py::_prune_tags
+tests: []
+links: {}
+notes: >
+  The vocabulary is derived from use; it is deliberately not a curated list someone has to prune
+  by hand.

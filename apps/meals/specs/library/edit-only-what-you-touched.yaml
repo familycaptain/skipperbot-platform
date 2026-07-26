@@ -1,0 +1,16 @@
+kind: specification
+id: meals.library.edit-only-what-you-touched
+title: An edit changes only what it names
+state: live
+autonomy: gated
+behavior: >
+  Saving an edit changes only the fields it names and leaves every other detail of the meal as
+  it was; an edit that names nothing to change says there was nothing to update rather than
+  reporting a save. Editing a meal that no longer exists says so.
+implements:
+- apps/meals/tools.py::update_meal
+- apps/meals/data.py::update_meal
+- apps/meals/routes.py::api_update_meal
+tests: []
+links: {}
+notes: ''

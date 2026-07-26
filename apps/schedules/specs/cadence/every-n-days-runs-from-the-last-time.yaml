@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.cadence.every-n-days-runs-from-the-last-time
+title: Every N days counts from the last time it was done
+state: live
+autonomy: gated
+behavior: >
+  A schedule set to repeat a fixed number of days apart counts from when it was last marked done,
+  not from a fixed calendar date — mark it done a week late and the next one is that many days after
+  the late completion, so the gap between two occurrences is what was asked for. Until it has ever
+  been done, the count runs from when it was set up.
+implements:
+- apps/schedules/data.py::_next_interval
+- apps/schedules/data.py::complete_schedule
+tests: []
+links: {}
+notes: ''

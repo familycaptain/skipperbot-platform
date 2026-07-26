@@ -1,0 +1,16 @@
+kind: specification
+id: reminders.list.what-the-list-shows
+title: What the list tells you at a glance
+state: live
+autonomy: gated
+behavior: >
+  The list shows each reminder's message, when it is next due, whether it repeats or nags, and who
+  it is for, without anything having to be opened. Only live reminders are shown until the
+  finished ones are asked for. Opening one adds its id, when it was created, its exact repeat
+  rule, and for a nag the day it last nudged.
+implements:
+- apps/reminders/ui/RemindersApp.jsx::ReminderCard
+- apps/reminders/store.py::list_reminders
+tests: []
+links: {}
+notes: ''

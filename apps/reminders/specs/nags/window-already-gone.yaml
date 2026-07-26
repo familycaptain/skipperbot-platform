@@ -1,0 +1,14 @@
+kind: specification
+id: reminders.nags.window-already-gone
+title: A nag set too late in the day starts tomorrow
+state: live
+autonomy: gated
+behavior: >
+  A nag created after its window has closed for the day — an evening nag set at midnight, or any
+  nag set past waking hours — takes its first turn tomorrow rather than nudging immediately for
+  having been asked for late.
+implements:
+- apps/reminders/store.py::create_nag
+tests: []
+links: {}
+notes: ''

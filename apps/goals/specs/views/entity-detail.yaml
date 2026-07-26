@@ -1,0 +1,17 @@
+kind: specification
+id: goals.views.entity-detail
+title: Ask for everything about one item
+state: live
+autonomy: gated
+behavior: >
+  Asked for the full detail of any goal, project or task, Skipper gives every field it holds —
+  state, priority, people, dates, who created it and when — plus its place in the tree, its
+  subtasks and dependencies by name, attached files, its notes in full, its most recent history
+  entries with a count of how many older ones are not shown, and everything linked to it from
+  other apps.
+implements:
+- apps/goals/tools.py::get_entity_detail
+- apps/goals/store.py::get_entity_detail
+tests: []
+links: {}
+notes: ''

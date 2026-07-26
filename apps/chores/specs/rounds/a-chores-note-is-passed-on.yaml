@@ -1,0 +1,14 @@
+kind: specification
+id: chores.rounds.a-chores-note-is-passed-on
+title: A chore's note goes out with it
+state: live
+autonomy: gated
+behavior: >
+  Where a chore carries a standing note — a thorough clean this week rather than a quick one —
+  that note goes out in the round message with the chore, so the person is told what is expected
+  of it rather than only its name.
+implements:
+- apps/chores/handlers.py::_chores_skill_runner
+tests: []
+links: {}
+notes: ''

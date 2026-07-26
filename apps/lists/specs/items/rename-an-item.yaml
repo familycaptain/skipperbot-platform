@@ -1,0 +1,16 @@
+kind: specification
+id: lists.items.rename-an-item
+title: Fixing what an item says
+state: live
+autonomy: gated
+behavior: >
+  An item's text can be corrected in place and the list keeps its position. Blanking the text or
+  retyping exactly what was already there changes nothing rather than emptying the line, and
+  abandoning the edit leaves the original text.
+implements:
+- apps/lists/store.py::update_item_text
+- apps/lists/ui/ListsApp.jsx::ListItemRow
+- agent.py::api_update_list_item
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.automation.work-that-would-not-start-stays-due
+title: Work that would not start leaves the schedule due
+state: live
+autonomy: gated
+behavior: >
+  When the work cannot be started at all the failure is recorded and the schedule is left exactly as
+  it was — still due, not marked done, no completion logged — so the next sweep tries again rather
+  than the occurrence being silently lost. A schedule that names no work is skipped the same way, and
+  neither case stops the other due schedules in the sweep from being started.
+implements:
+- apps/schedules/job_trigger.py::check_schedule_jobs
+tests: []
+links: {}
+notes: ''

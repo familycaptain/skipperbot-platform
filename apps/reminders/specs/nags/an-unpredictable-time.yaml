@@ -1,0 +1,17 @@
+kind: specification
+id: reminders.nags.an-unpredictable-time
+title: A nag arrives at a time you cannot learn to ignore
+state: live
+autonomy: gated
+behavior: >
+  A nag's time each day is picked for it rather than chosen by the person, somewhere inside the
+  household's waking hours — 8am to 9pm until somebody changes them — so it never becomes a fixed
+  part of the day that is easy to tune out, and it never goes off overnight.
+implements:
+- apps/reminders/store.py::_nag_time_for_date
+- config.py::NAG_WAKE_HOUR
+tests: []
+links: {}
+notes: >
+  The unpredictability is the point: a nag is for things with no deadline, and a predictable alarm
+  at 9am stops being noticed inside a week.

@@ -1,0 +1,14 @@
+kind: specification
+id: todo.capture.captured-in-chat-is-remembered
+title: 'What you captured in conversation is remembered'
+state: live
+autonomy: gated
+behavior: >
+  An item captured through conversation is also handed to Skipper's memory as a to-do item belonging
+  to the person who asked, so it can be recalled later without reading the list back. If memory is
+  unavailable the item is still captured — remembering is never allowed to fail the capture.
+implements:
+- apps/todo/tools.py::add_todo_item
+tests: []
+links: {}
+notes: ''

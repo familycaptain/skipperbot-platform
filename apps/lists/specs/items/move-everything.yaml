@@ -1,0 +1,15 @@
+kind: specification
+id: lists.items.move-everything
+title: Emptying one list into another
+state: live
+autonomy: gated
+behavior: >
+  Asking to move everything relocates every live item from one list to the other and leaves the
+  source empty, which is how a running list becomes this week's list. Crossed-off items stay behind.
+  A move that names neither specific items nor 'everything' is refused rather than guessed at.
+implements:
+- apps/lists/tools.py::move_list_items
+- apps/lists/store.py::move_items_by_text
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,21 @@
+kind: specification
+id: schedules.identity.ids-are-generated-never-configured
+title: A schedule's id is generated, never configured
+state: live
+autonomy: gated
+behavior: >
+  Every schedule is handed an opaque id when it is created, and every completion gets one of its own.
+  Nothing a person or an installer types chooses it, and no id from one household means anything in
+  another: two installs of the product can create the same recurring thing on the same day and
+  neither can collide with or address the other's copy. Code, settings and documentation that need
+  to find a schedule find it by what it is for — its owner, its cadence, its linked record — not by
+  quoting an id.
+implements:
+- apps/schedules/data.py::_new_id
+- apps/schedules/data.py::_completion_id
+- apps/schedules/manifest.yaml
+tests: []
+links: {}
+notes: >
+  The open-source constraint: an id observed on one install is a coincidence of that install, so
+  nothing shippable may depend on one.

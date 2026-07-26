@@ -1,11 +1,19 @@
 kind: specification
 id: lists.trello-cards.board-labels
-title: Manage board labels
+title: Managing the labels a board offers
 state: live
 autonomy: gated
-behavior: Board-label operations list, create, update, or delete labels at the board level.
+behavior: >
+  A board's own labels can be listed, created, renamed, recoloured or deleted. Creating one that
+  already exists reports it as ready rather than duplicating it; renaming keeps whatever was not
+  given, so a colour change does not blank the name. Every one of these needs the label named, an
+  unrecognised instruction is refused, and a board with no labels says so.
 implements:
-- apps/lists/tools.py
+- apps/lists/tools.py::trello_board_labels
+- trello_client.py::get_labels
+- trello_client.py::ensure_label
+- trello_client.py::update_label
+- trello_client.py::delete_label
 tests: []
 links: {}
 notes: ''

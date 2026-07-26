@@ -1,0 +1,18 @@
+kind: specification
+id: schedules.cadence.an-unreadable-rule-never-comes-due
+title: A cadence that cannot be worked out leaves no next due
+state: live
+autonomy: gated
+behavior: >
+  When a schedule's cadence cannot be turned into a next moment — a malformed rule, a pattern with no
+  remaining occurrences, an end date already passed — the schedule is left with no next due rather
+  than a guessed one. It shows no due date, never becomes overdue, never nags, and sorts below every
+  schedule that does have one; the rest of the schedules are unaffected.
+implements:
+- apps/schedules/data.py::compute_next_due
+- apps/schedules/data.py::list_schedules
+tests: []
+links: {}
+notes: >
+  Failing to a blank rather than to "due now" is deliberate: a schedule nobody can compute must not
+  turn into a daily nag.

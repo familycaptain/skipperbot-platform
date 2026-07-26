@@ -1,0 +1,17 @@
+kind: specification
+id: schedules.whats-due.overdue-and-the-next-few-days
+title: What is due answers with the overdue first
+state: live
+autonomy: gated
+behavior: >
+  Asking what is due returns everything already overdue together with everything falling due inside
+  the window asked for, soonest first, so an overdue chore is never hidden behind next week's. The
+  answer can be narrowed to one person, and a window of nothing means "due right now or earlier".
+  Schedules with no computable next occurrence are not in the answer at all.
+implements:
+- apps/schedules/data.py::get_due_schedules
+tests: []
+links: {}
+notes: >
+  This one query backs the Schedules app, the household calendar, the daily priorities list and both
+  background sweeps, so overdue-plus-window is the shape every one of them sees.

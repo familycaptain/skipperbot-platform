@@ -1,0 +1,16 @@
+kind: specification
+id: todo.setup.pick-a-different-list
+title: 'Any list you own can be your to-do or backlog'
+state: live
+autonomy: gated
+behavior: >
+  Settings offers the lists that person owns, each with how many items it holds and, where it is
+  Trello-linked, which board it came from; choosing one and saving points their to-do or their
+  backlog at it without moving or copying a single item. Cancelling leaves every setting as it was.
+implements:
+- agent.py::api_get_all_lists_for_todo
+- apps/todo/ui/TodoApp.jsx::SettingsPanel
+- apps/todo/data.py::upsert_config
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: goals.notes.authored-guidance-arrives-whole
+title: Guidance written on a project reaches Skipper intact
+state: live
+autonomy: gated
+behavior: >
+  Guidance written into a project's notes is carried to Skipper in full when it works or reviews
+  that project, not clipped to an opening sentence — so instructions whose point is in their last
+  clause still land. Pathologically long notes are bounded rather than allowed to crowd out
+  everything else, and an item with no notes contributes nothing instead of failing.
+implements:
+- apps/goals/work_context.py::_build_goal_snapshot
+tests: []
+links: {}
+notes: >
+  Learned the hard way: onboarding step guidance was being cut mid-instruction, so Skipper
+  improvised the parts it never saw.

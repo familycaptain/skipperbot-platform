@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.nags.several-nags-are-spread-out
+title: Several nags do not arrive together
+state: live
+autonomy: gated
+behavior: >
+  When a person has several nags sharing the same window, their times are spread across that
+  window instead of clustering — five nags are five nudges through the day, not a burst that gets
+  dismissed as one.
+implements:
+- apps/reminders/store.py::_nag_time_for_date
+- apps/reminders/store.py::assign_nag_times
+tests: []
+links: {}
+notes: ''

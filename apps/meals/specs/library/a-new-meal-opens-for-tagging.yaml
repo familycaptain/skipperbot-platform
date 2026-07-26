@@ -1,0 +1,15 @@
+kind: specification
+id: meals.library.a-new-meal-opens-for-tagging
+title: A meal created in the app opens straight away
+state: live
+autonomy: gated
+behavior: >
+  Creating a meal in the app returns to the library, refreshes it, and opens the new meal's page
+  so its tags, components and photos can be filled in immediately rather than hunted for
+  afterwards.
+implements:
+- apps/meals/routes.py::_broadcast
+- apps/meals/ui/MealsApp.jsx::MealsApp
+tests: []
+links: {}
+notes: ''

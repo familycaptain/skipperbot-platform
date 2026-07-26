@@ -1,0 +1,23 @@
+kind: specification
+id: schedules.cadence.rules-for-patterns-words-cannot-express
+title: Rules for the patterns the simple choices cannot express
+state: live
+autonomy: gated
+behavior: >
+  Cadences that the everyday choices cannot say — the last working day of each month, the first
+  weekday of a quarter, a cron-style expression — can be given as a rule instead, and are computed
+  to the same single next-due moment as any other schedule. A calendar covering such a schedule
+  shows each occurrence the rule actually produces in that span, so a month with two qualifying days
+  shows two.
+implements:
+- apps/schedules/data.py::_next_rrule
+- apps/schedules/data.py::_next_cron
+- apps/schedules/data.py::_expand_rrule_occurrences
+tests:
+- type: unit
+  path: test_schedule_rrule.py
+  rubric: >
+    A last-working-day and a first-working-day rule each compute the correct next due moment from a
+    given instant, and expanding the same rule across a month yields exactly the qualifying day.
+links: {}
+notes: ''

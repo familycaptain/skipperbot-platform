@@ -1,0 +1,18 @@
+kind: specification
+id: reminders.firing.handed-to-delivery
+title: The reminder's promise ends at the handover
+state: live
+autonomy: gated
+behavior: >
+  A reminder that comes due is recorded as a message for its person and handed to the platform's
+  delivery, which decides which surfaces it reaches; the reminder neither chooses them nor waits
+  on them. Whatever happens after the handover, the web console holds the record of the person
+  having been told.
+implements:
+- apps/reminders/scheduler.py::process_due_reminder
+- app_platform/notifications.py
+tests: []
+links: {}
+notes: >
+  Where a person is reachable is one platform-wide decision, not one each app makes: a reminder
+  that re-decided it would slowly diverge from every other notice the household gets.

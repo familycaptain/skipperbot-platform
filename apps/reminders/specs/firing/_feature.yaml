@@ -1,0 +1,6 @@
+kind: feature
+id: reminders.firing
+title: When a reminder comes due
+state: live
+links: {}
+notes: ''

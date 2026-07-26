@@ -1,0 +1,14 @@
+kind: specification
+id: recipes.editing.reorder-ingredients-and-steps
+title: Ingredients and steps can be reordered
+state: live
+autonomy: gated
+behavior: >
+  While editing, an ingredient or a step can be moved up or down one place at a time, and that order
+  is what a person then reads, cooks from and prints. The first cannot be moved up and the last
+  cannot be moved down. Steps are numbered by position, so reordering renumbers them.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx
+tests: []
+links: {}
+notes: ''

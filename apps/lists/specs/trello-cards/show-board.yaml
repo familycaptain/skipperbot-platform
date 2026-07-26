@@ -1,11 +1,16 @@
 kind: specification
 id: lists.trello-cards.show-board
-title: Show a board
+title: Seeing a whole board at once
 state: live
 autonomy: gated
-behavior: Showing a board returns all of its lists and cards at once.
+behavior: >
+  A board can be shown in full: every list on it, the cards in each with their labels, and an
+  identifier per card so a particular one can be worked on afterwards. Empty lists are shown as
+  empty rather than omitted, and a single list can be asked for on its own. A board that is not
+  configured says which ones are.
 implements:
-- apps/lists/tools.py
+- apps/lists/tools.py::trello_show_board
+- trello_client.py::get_all_cards_on_board
 tests: []
 links: {}
 notes: ''

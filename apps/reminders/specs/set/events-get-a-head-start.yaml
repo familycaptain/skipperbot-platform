@@ -1,0 +1,19 @@
+kind: specification
+id: reminders.set.events-get-a-head-start
+title: An appointment is reminded before it starts, not as it starts
+state: live
+autonomy: gated
+behavior: >
+  When the time given is when something happens — an appointment, a practice, a reservation — the
+  reminder is set a configurable lead ahead of it, two hours by default, and the message states
+  the event's own time so there is room to travel and to know what the time refers to. When the
+  time given is when to do something ("call the vet at three") it nudges at exactly that time.
+implements:
+- apps/reminders/guide.md
+- config.py::REMINDER_LEAD_MINUTES
+- apps/reminders/manifest.yaml
+tests: []
+links: {}
+notes: >
+  The operator's default, and the tie-break: being reminded early is recoverable, being reminded
+  as the appointment starts is not.

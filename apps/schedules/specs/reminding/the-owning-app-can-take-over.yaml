@@ -1,0 +1,18 @@
+kind: specification
+id: schedules.reminding.the-owning-app-can-take-over
+title: The app that owns the subject can do the reminding itself
+state: live
+autonomy: gated
+behavior: >
+  An app that wants to word its own reminders — a vehicle app that would rather say "oil change
+  overdue on the estate" — claims the kind of record its schedules are attached to, and those
+  schedules are then left alone by the general reminding entirely. Schedules that exist only to back
+  a recurring reminder are likewise never reminded about twice.
+implements:
+- apps/schedules/notifier.py::register_schedule_claim
+- apps/schedules/data.py::get_due_schedules
+tests: []
+links: {}
+notes: >
+  Claiming is all-or-nothing on purpose: half-reminding produces two messages about one thing, which
+  is worse than either app doing it alone.

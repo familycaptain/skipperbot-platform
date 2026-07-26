@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.cooking.quantities-that-arent-numbers
+title: Quantities that are not numbers survive scaling
+state: live
+autonomy: gated
+behavior: >
+  An ingredient whose quantity is not a number — "a pinch", "2-3", "to taste" — is shown exactly as
+  written when the recipe is scaled, rather than being dropped or turned into nonsense. Whole
+  numbers, fractions and mixed numbers are all understood and do scale.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx::parseFraction
+- apps/recipes/ui/RecipeDetailApp.jsx::scaleIngredient
+tests: []
+links: {}
+notes: ''

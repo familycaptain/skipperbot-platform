@@ -1,0 +1,16 @@
+kind: specification
+id: todo.capture.chat-adds-to-the-bottom
+title: 'Asked in conversation, it goes on the end'
+state: live
+autonomy: gated
+behavior: >
+  Asked to put something on a person's to-do in conversation, Skipper adds it after their existing
+  open items and confirms with the wording it saved. Asked for it to go to the top, it becomes their
+  first open item and the confirmation says so. Nobody has to name a list: an unqualified "my to-do"
+  always means the speaking person's own.
+implements:
+- apps/todo/tools.py::add_todo_item
+- apps/todo/guide.md
+tests: []
+links: {}
+notes: ''

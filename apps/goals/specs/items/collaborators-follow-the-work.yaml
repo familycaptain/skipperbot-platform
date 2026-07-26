@@ -1,0 +1,15 @@
+kind: specification
+id: goals.items.collaborators-follow-the-work
+title: Giving someone work on a goal makes them part of it
+state: live
+autonomy: gated
+behavior: >
+  Assigning a person a task, or making them an owner of a project, adds them to the parent goal as
+  a collaborator if they were not already involved — so the goal shows everyone actually working
+  on it, and it appears to them when they ask about their goals. Nobody is ever removed
+  automatically, and re-assigning someone already involved changes nothing.
+implements:
+- apps/goals/store.py::_ensure_goal_collaborators
+tests: []
+links: {}
+notes: ''

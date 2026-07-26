@@ -1,0 +1,17 @@
+kind: specification
+id: chores.kids.the-account-link-is-the-identity
+title: The account link decides what somebody can do
+state: live
+autonomy: gated
+behavior: >
+  The link between a person in the rotation and a household account is what decides who may
+  check their chores off and where their round messages go. Somebody with no link can still be
+  given chores and have them checked off by a parent, but is never messaged and can never act
+  for themselves.
+implements:
+- apps/chores/data.py::get_kid_by_user
+- apps/chores/routes.py::_can_act_on_kid
+- apps/chores/handlers.py::_chores_skill_runner
+tests: []
+links: {}
+notes: ''

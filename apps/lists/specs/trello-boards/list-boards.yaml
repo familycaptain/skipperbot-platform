@@ -1,12 +1,16 @@
 kind: specification
 id: lists.trello-boards.list-boards
-title: List Trello boards
+title: Seeing which boards are set up
 state: live
 autonomy: gated
-behavior: Listing boards returns all configured Trello boards and their settings.
+behavior: >
+  Asking which boards are configured answers with each board's name, which Trello account it uses,
+  whether its board identifier is filled in, and its default list if one was given. With none
+  configured the answer says so plainly instead of returning an empty list.
 implements:
-- apps/lists/tools.py
-- apps/lists/ui/TrelloSettings.jsx
+- apps/lists/tools.py::trello_list_boards
+- apps/lists/trello_config.py::list_boards
+- apps/lists/ui/TrelloSettings.jsx::BoardsSection
 tests: []
 links: {}
 notes: ''

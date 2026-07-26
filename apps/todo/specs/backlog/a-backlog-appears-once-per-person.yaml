@@ -1,0 +1,31 @@
+kind: specification
+id: todo.backlog.a-backlog-appears-once-per-person
+title: 'A backlog is created once, per person'
+state: live
+autonomy: gated
+behavior: >
+  The first time a person reaches a backlog — opening the board, adding to the backlog column, or
+  asking for their backlog in conversation — a backlog list named after them is created and
+  connected, and every later visit reuses it. Several first visits arriving at once still produce
+  exactly one. The to-do list is provisioned independently, so neither ever waits on the other, and
+  a backlog that cannot be created leaves the board as a single to-do column and can be tried again
+  rather than breaking the page.
+implements:
+- apps/todo/store.py::ensure_backlog_list
+- apps/todo/data.py::claim_backlog_list
+- apps/todo/migrations/003_backlog_bootstrapped.sql
+- agent.py::api_get_todo_config
+- apps/todo/tools.py::get_backlog_list
+tests:
+- type: unit
+  path: tests/evolve/todo/test_backlog_bootstrap.py
+  rubric: >
+    Against the real per-user settings store with the list create/read injected as counting fakes and a
+    throwaway person: two consecutive claims create the backlog EXACTLY once and share the same list; a
+    deliberate disconnect (pointer cleared, already-bootstrapped remembered) is not re-provisioned on the
+    next claim; and the backlog's bootstrap is keyed separately from the to-do list's so the two never
+    wait on each other.
+links: {}
+notes: >
+  Provisioning on first reach rather than on demand was the operator's call: a person should find
+  both columns already there.

@@ -1,0 +1,14 @@
+kind: specification
+id: todo.backlog.adding-to-a-backlog-that-is-not-there
+title: 'Adding to a backlog that is not there is refused'
+state: live
+autonomy: gated
+behavior: >
+  An attempt to add to the backlog while a person has deliberately disconnected theirs is refused
+  and no backlog is quietly created to hold it; the item does not silently land on their to-do list
+  instead.
+implements:
+- agent.py::api_add_todo_item
+tests: []
+links: {}
+notes: ''

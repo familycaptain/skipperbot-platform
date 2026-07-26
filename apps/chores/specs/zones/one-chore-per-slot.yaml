@@ -1,0 +1,15 @@
+kind: specification
+id: chores.zones.one-chore-per-slot
+title: Two chores cannot share a slot
+state: live
+autonomy: gated
+behavior: >
+  Within a zone, each numbered slot on a day holds at most one chore. An attempt to put a second
+  chore in an occupied slot is refused and the chore already there keeps it, so the pairing of
+  slot to person in the rotation can never become ambiguous.
+implements:
+- apps/chores/migrations/001_initial.sql::chores
+- apps/chores/data.py::create_chore
+tests: []
+links: {}
+notes: ''

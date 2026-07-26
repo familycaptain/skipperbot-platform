@@ -33,17 +33,7 @@ tests:
     shapes (e.g. Lists and Goals), click the (?) help icon — each renders the real help.md
     guide, NOT ''help is coming soon''.'
 links: {}
-notes: 'Single-file route-precedence fix in agent.py, following the file''s existing ''moved
-  above to avoid route conflict'' precedent. Recommended design fork A (accept that ''help''
-  is reserved for these apps'' path segment; entity ids are numeric/uuid). Out of scope: the
-  already-fixed HTTPException 500 (b940941). Spec unverified until the bound test passes on
-  box 2. | REVISED (r1) per spec-audit + architecture: the bound test now (1) loads/monkeypatches
-  get_loaded_apps so it exercises route PRECEDENCE rather than tripping the manifest 404 guard,
-  (2) is STRUCTURAL — iterates every loaded app with a help.md so future apps are covered,
-  not just the 8 named, and (3) asserts the unknown-app path 404s (pinning the b940941 HTTPException-import
-  fix). Build base = release b940941 (operator''s HTTPException fix already merged). UX''s
-  ''coming soon'' empty-state reword is a noted OUT-OF-SCOPE follow-up. | BUILT: the bound
-  test is realized as a deterministic AST source-order check (chosen over a runtime TestClient,
-  which the offline auth middleware + app-loading lifespan would block); it is structural
-  (covers all current+future apps) and verified GREEN on box 2 (4/4; red on baseline).'
+notes: >-
+  Accepted at Gate 1 that 'help' becomes a reserved path segment for these apps — safe because
+  their entity ids are numeric or uuid.
 verified: true

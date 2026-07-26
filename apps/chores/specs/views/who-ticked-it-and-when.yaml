@@ -1,0 +1,16 @@
+kind: specification
+id: chores.views.who-ticked-it-and-when
+title: A done chore says when, and who if it was not them
+state: live
+autonomy: gated
+behavior: >
+  A completed chore is struck through and shows the time it was checked off. Where somebody
+  other than the person it belongs to did the ticking, that person is named, so a parent
+  checking a chore off on a kid's behalf is visible as exactly that rather than looking like the
+  kid did it.
+implements:
+- apps/chores/ui/ChoresApp.jsx::TodayTab
+- apps/chores/data.py::_completion_row
+tests: []
+links: {}
+notes: ''

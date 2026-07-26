@@ -1,0 +1,16 @@
+kind: specification
+id: recipes.browsing.search-before-asking
+title: Skipper searches before it asks
+state: live
+autonomy: gated
+behavior: >
+  Asked about a recipe by dish or by ingredient — "do we have a salsa recipe?", "what was in mum's
+  lasagne?" — Skipper searches the collection first and answers from what it finds, rather than
+  asking what the recipe was titled. Only when the search comes back empty does it say it cannot find
+  one and offer to create it.
+implements:
+- apps/recipes/guide.md
+- apps/recipes/tools.py::search_recipes
+tests: []
+links: {}
+notes: ''

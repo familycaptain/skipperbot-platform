@@ -1,0 +1,17 @@
+kind: specification
+id: goals.work.milestone-goes-to-the-voice
+title: Something worth telling the family is handed to Skipper's voice
+state: live
+autonomy: gated
+behavior: >
+  When a session reaches a result the household would genuinely want to hear, it raises it once —
+  briefly and self-contained — and Skipper's ordinary voice decides whether and how to pass it on.
+  Routine progress is raised as nothing at all, an empty result is ignored, and a session cannot
+  raise a second one. So a person hears about a finished piece of work, not about every step of
+  it.
+implements:
+- apps/goals/goal_work.py::handle_goal_work
+- apps/goals/handlers.py::_goals_milestone_runner
+tests: []
+links: {}
+notes: ''

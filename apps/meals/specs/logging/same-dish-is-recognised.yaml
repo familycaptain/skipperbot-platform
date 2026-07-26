@@ -1,0 +1,22 @@
+kind: specification
+id: meals.logging.same-dish-is-recognised
+title: The same dish is recognised, not duplicated
+state: live
+autonomy: gated
+behavior: >
+  Logging something the library already knows reuses that meal instead of creating a
+  near-duplicate: candidates are drawn from close name matches and from meals built on the same
+  main dish, then compared as whole meals — main, cuisine and sides together — so two dishes
+  that share only a main are kept apart. When it is genuinely unclear, a new meal is created
+  rather than two different dishes being fused.
+implements:
+- apps/meals/tools.py::_build_meal_match_candidates
+- apps/meals/tools.py::_match_meal_with_llm
+- apps/meals/tools.py::_meal_name_similarity
+tests:
+- type: unit
+  path: test_meals_tools.py
+links: {}
+notes: >
+  Deciding wrongly in favour of a match silently rewrites history for an existing meal, so the
+  tie-break is deliberately biased towards creating a new one.

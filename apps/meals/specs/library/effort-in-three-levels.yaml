@@ -1,0 +1,16 @@
+kind: specification
+id: meals.library.effort-in-three-levels
+title: Effort is always one of three levels
+state: live
+autonomy: gated
+behavior: >
+  Every meal carries one effort level — low, medium or high — shown as a badge wherever the meal
+  is listed, so 'something quick tonight' is answerable at a glance. A meal saved without one is
+  medium, and a level outside the three is never stored.
+implements:
+- apps/meals/routes.py::api_create_meal
+- apps/meals/tools.py::add_meal
+- apps/meals/ui/MealsApp.jsx::EffortBadge
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,20 @@
+kind: specification
+id: goals.structure.rank-references
+title: A position works anywhere an id does
+state: live
+autonomy: gated
+behavior: >
+  A position can be used in place of an id — the third goal, the second project, the fifth task —
+  and it is resolved to the item without anyone looking up an id first. A project position
+  resolves inside the goal most recently viewed and a task position inside the project most
+  recently viewed, so "show me T3" after opening a project means that project's third task. An
+  item's exact name works the same way, and a position that matches nothing produces a clean not-
+  found rather than acting on the wrong item.
+implements:
+- apps/goals/store.py::_resolve_rank
+- apps/goals/store.py::_save_view_context
+tests: []
+links: {}
+notes: >
+  Exists so a person can talk about their work the way they see it on screen instead of reading
+  hex ids back to Skipper.

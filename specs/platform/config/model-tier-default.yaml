@@ -1,29 +1,15 @@
 kind: specification
 id: platform.config.model-tier-default
-title: Model picker marks + seeds a per-tier (smart vs fast) default, not one shared default
+title: Each model tier is pre-selected with the model recommended for that tier
 state: live
-behavior: 'Every connector declares its defaults PER TIER via `ModelEntry.default_tiers` (a
-  subset of {''smart'',''fast'',''embedding''}); the legacy `default: bool` is kept ONLY as
-  a deprecated ModelEntry constructor kwarg (mapped in __post_init__: default=True -> the
-  tier matching the model''s kind — ''smart'' for chat, ''embedding'' for embedding) so out-of-tree
-  connectors don''t break. `ConnectorDescriptor.validate` is FAIL-CLOSED: a connector with
-  >=1 chat model MUST declare exactly one ''smart'' AND exactly one ''fast'' chat default
-  (a connector with a SINGLE chat model satisfies the rule with that one model as BOTH tiers
-  (default_tiers=[''smart'',''fast''], whether declared or AUTO-PROMOTED from a legacy default=True)
-  — so a minimal out-of-tree connector still loads); an embedding connector declares exactly
-  one ''embedding'' default; violations are a LOAD error, not a test-time surprise. `registry.list_models`
-  projects `default_tiers` into each emitted row (plus a backward-compat `default` = the row
-  is its kind''s primary default: ''smart'' in default_tiers for chat, ''embedding'' in default_tiers
-  for embedding — so the Text-encoding marker is preserved). `GET /api/onboarding/models`
-  passes rows through. In the shared `ModelConfig` picker (Onboarding + Settings>Models),
-  ALL THREE tiers are tier-aware: `optLabel(r,tierKey)` appends ''(default)'' iff tierKey
-  ∈ r.default_tiers, and `pickDefault(rows,tierKey)` seeds from the row whose default_tiers
-  includes tierKey, preferring a `verified` row (retain the existing verified-first tiebreak);
-  fallback rows[0] only if — impossible post-validate — none. So Smart marks/seeds the smart
-  default, Fast the FAST default, Text-encoding its embedding default — each tagged in its
-  own tier only, distinct models. Runtime chat routing is unaffected (tier_resolver reads
-  persisted settings). `providers/model_config._SEED` DERIVES its smart/fast values from the
-  OpenAI descriptor''s default_tiers (single source of truth), not a parallel hardcode.'
+behavior: >
+  In first-run setup and in Settings → Models, each of the three model choices — Smart, Fast and
+  Text-encoding — starts out on the model recommended for that particular job and marks it
+  "(default)", so accepting the defaults never sends light work to the expensive model. Where a
+  provider offers more than one chat model the Smart and Fast defaults are different models;
+  where it offers only one, that model is the default for both. A provider that does not name a
+  recommendation for each tier it offers refuses to load rather than quietly picking one, so a
+  household never ends up running on a model nobody chose.
 implements:
 - 'providers/connectors/manifest.py — ModelEntry: `default_tiers: list[str]`; keep `default`
   as a DEPRECATED constructor kwarg mapped in __post_init__ (plugin compat). ConnectorDescriptor.validate
@@ -68,18 +54,11 @@ tests:
     NOT Fast, and the fast-default carries ''(default)'' in Fast but NOT Smart (distinct models);
     the Text-encoding tier still marks its embedding default. Onboarding seeds Fast to the
     fast model. Screenshot both dropdowns -> attach to #54 (before/after).'
+issues:
+- 54
 links: {}
-notes: 'REVISED r1 (folds all critic findings). validate() fail-closed closes the audit HIGH
-  (no undefined missing-default). Embedding tier migrated too (architecture+interop): _embedding_dim_for
-  + the Text-encoding marker. ModelEntry.default kept as a DEPRECATED constructor kwarg for
-  out-of-tree connector compat (interop). e2e is the authoritative UI oracle (no JS runner)
-  and names connectors (audit low). _SEED derives from the descriptor (architecture single-source).
-  Operator Gate-1 decision: the per-connector smart+fast table, incl. the 3 that change the
-  SMART default to keep smart!=fast (DeepSeek smart=reasoner/fast=chat; Kimi smart=32k/fast=8k;
-  Ollama pick distinct) — see design.decisions_needed. r1 polish: single-chat-model auto-promoted
-  to both tiers (legacy-plugin compat under fail-closed validate); pickDefault retains verified-first
-  tiebreak. | Placed under platform.config (Configuration & secrets — the shared config service)
-  rather than a new ''models'' feature. Gate-2: validated GREEN on test host (23/23 bound
-  tests; e2e Settings>Models shows distinct per-tier (default) markers across all 10 connectors,
-  Fast no longer echoes smart, embedding tier intact). verified=true.'
+notes: >-
+  Operator chose the per-connector smart/fast table, including changing the SMART default for
+  DeepSeek (reasoner), Kimi (32k) and Ollama so the two tiers are never the same model where a
+  connector offers more than one.
 verified: true

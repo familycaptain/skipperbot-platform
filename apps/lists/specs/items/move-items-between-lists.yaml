@@ -1,0 +1,17 @@
+kind: specification
+id: lists.items.move-items-between-lists
+title: Moving things from one list to another
+state: live
+autonomy: gated
+behavior: >
+  Named items can be moved from one list to another and arrive at the top of it, keeping who added
+  them and when. The target list must already exist — a move never creates one. Items that match
+  nothing on the source list are skipped, the reply names what actually moved, and a move that
+  matched nothing at all says so rather than reporting success.
+implements:
+- apps/lists/tools.py::move_list_items
+- apps/lists/store.py::move_items_by_text
+- apps/lists/store.py::move_item
+tests: []
+links: {}
+notes: ''

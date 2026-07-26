@@ -1,0 +1,16 @@
+kind: specification
+id: meals.library.search-the-library
+title: Search, tag and effort narrow the same list
+state: live
+autonomy: gated
+behavior: >
+  Typing in the library search narrows it to meals whose names contain what was typed, ignoring
+  case; a tag and an effort narrow it further, and clearing all three brings the whole library
+  back. The list is always in alphabetical order, whatever is filtering it.
+implements:
+- apps/meals/data.py::list_meals
+- apps/meals/tools.py::list_all_meals
+- apps/meals/ui/MealsApp.jsx::BrowseTab
+tests: []
+links: {}
+notes: ''

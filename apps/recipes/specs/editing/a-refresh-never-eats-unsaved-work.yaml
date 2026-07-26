@@ -1,0 +1,14 @@
+kind: specification
+id: recipes.editing.a-refresh-never-eats-unsaved-work
+title: A background refresh never eats unsaved work
+state: live
+autonomy: gated
+behavior: >
+  A recipe page that reloads itself because something changed elsewhere leaves unsaved edits alone:
+  while there is unsaved work on the form the refresh is skipped, so nobody loses a half-typed
+  ingredient list to a chat message in another window.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx
+tests: []
+links: {}
+notes: ''

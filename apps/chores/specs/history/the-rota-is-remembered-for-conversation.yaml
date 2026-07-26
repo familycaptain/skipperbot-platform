@@ -1,0 +1,17 @@
+kind: specification
+id: chores.history.the-rota-is-remembered-for-conversation
+title: The rota is remembered so plain speech works
+state: live
+autonomy: gated
+behavior: >
+  The people, zones and chores a household sets up are remembered as facts about the household,
+  so 'I did the trash' or 'did Sam do the bathroom?' can be understood later without anybody
+  quoting an identifier. Individual check-offs are deliberately not remembered that way — one
+  fact per tick would bury everything worth recalling.
+implements:
+- apps/chores/data.py::_CHORE_HINT
+- apps/chores/data.py::create_chore
+- apps/chores/migrations/004_backfill_memories.py::run
+tests: []
+links: {}
+notes: ''

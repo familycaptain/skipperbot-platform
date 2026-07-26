@@ -1,0 +1,17 @@
+kind: specification
+id: goals.trello.board-trouble-is-visible-not-fatal
+title: If the board cannot be reached, the work still shows
+state: live
+autonomy: gated
+behavior: >
+  When the board cannot be read — credentials missing, service down, network gone — the project
+  and task views fall back to what Skipper holds locally and say plainly that the board fetch
+  failed, rather than showing an error page or nothing. A sync that fails while saving a change
+  leaves the change recorded locally.
+implements:
+- apps/goals/store.py::_render_trello_project_view
+- apps/goals/store.py::_render_trello_task_detail
+- apps/goals/store.py::update_item
+tests: []
+links: {}
+notes: ''

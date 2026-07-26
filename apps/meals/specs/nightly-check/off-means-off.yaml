@@ -1,0 +1,16 @@
+kind: specification
+id: meals.nightly-check.off-means-off
+title: Off stops the check entirely
+state: live
+autonomy: gated
+behavior: >
+  Setting the nightly check to Off stops it: no question is asked on any evening, logged or not,
+  until it is turned back on.
+implements:
+- apps/meals/schedule.py::reconcile_dinner_schedule
+- apps/meals/manifest.yaml::config
+tests:
+- type: unit
+  path: tests/evolve/meals/test_dinner_schedule.py
+links: {}
+notes: ''

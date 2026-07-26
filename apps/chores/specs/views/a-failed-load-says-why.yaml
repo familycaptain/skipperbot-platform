@@ -1,0 +1,15 @@
+kind: specification
+id: chores.views.a-failed-load-says-why
+title: A failed load shows the reason
+state: live
+autonomy: gated
+behavior: >
+  When the app cannot load or save something, the reason it was given is shown in place, and the
+  view keeps the data it already had rather than blanking or silently presenting a stale list as
+  current.
+implements:
+- apps/chores/ui/ChoresApp.jsx::apiFetch
+- apps/chores/ui/ChoresApp.jsx::TodayTab
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,19 @@
+kind: specification
+id: goals.pm.enable-project-nag
+title: Ask to be nagged about a project until it is done
+state: live
+autonomy: gated
+behavior: >
+  Nagging can be turned on for a project, addressed to one person, and it always names the task
+  that is genuinely next: highest in the order, not finished, not waiting on anything, and either
+  a leaf or a parent whose children are all done. As tasks are completed, reordered, reassigned,
+  moved or given dependencies, the nag follows to whatever is next without anybody re-pointing it.
+  Only one nag per project — turning it on again says so and points at turning it off first — and
+  a project with nothing actionable is refused with a note to add tasks.
+implements:
+- apps/goals/tools.py::enable_project_nag
+- apps/goals/store.py::get_next_naggable_task
+- apps/goals/store.py::_refresh_project_nag
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: meals.logging.four-occasions
+title: Four occasions, and the occasion becomes a tag
+state: live
+autonomy: gated
+behavior: >
+  A meal is logged as breakfast, lunch, dinner or snack; anything else is treated as dinner. The
+  occasion is also added to the library meal's tags, so a dish logged as a snack is findable
+  later by looking for snacks.
+implements:
+- apps/meals/tools.py::log_meal
+- apps/meals/routes.py::api_create_meal_log
+tests: []
+links: {}
+notes: ''

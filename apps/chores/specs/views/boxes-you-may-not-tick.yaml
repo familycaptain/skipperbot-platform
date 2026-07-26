@@ -1,0 +1,14 @@
+kind: specification
+id: chores.views.boxes-you-may-not-tick
+title: Someone else's box is visible but inert
+state: live
+autonomy: gated
+behavior: >
+  A chore belonging to someone else is shown in full, but its check box cannot be used and says
+  so on hover rather than being hidden or silently doing nothing. A parent sees every box as
+  usable, and the person's own row is marked as theirs.
+implements:
+- apps/chores/ui/ChoresApp.jsx::TodayTab
+tests: []
+links: {}
+notes: ''

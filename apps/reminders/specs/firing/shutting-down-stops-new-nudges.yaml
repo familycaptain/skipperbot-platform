@@ -1,0 +1,21 @@
+kind: specification
+id: reminders.firing.shutting-down-stops-new-nudges
+title: A shutdown stops taking on new nudges
+state: live
+autonomy: gated
+behavior: >
+  When Skipper is asked to shut down it stops picking up due reminders: they stay due and are
+  handled after the restart rather than being half-processed as the process goes away. The clock
+  starts itself again on the next boot without anybody arranging it.
+implements:
+- apps/reminders/hooks.py::register_hooks
+- apps/reminders/scheduler.py::request_shutdown
+tests:
+- type: unit
+  path: tests/platform/test_lifecycle_registry.py
+  rubric: >
+    Offline. Loading the reminders app registers its clock as a platform background task and its
+    stop signal as a shutdown hook, so the clock is started and stopped by the platform's own
+    lifecycle rather than by anything reaching into the app directly.
+links: {}
+notes: ''

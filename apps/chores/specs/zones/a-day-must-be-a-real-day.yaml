@@ -1,0 +1,14 @@
+kind: specification
+id: chores.zones.a-day-must-be-a-real-day
+title: A day has to be a real day
+state: live
+autonomy: gated
+behavior: >
+  A day of the week can be given as a full name, a short name or a number, in any
+  capitalisation. Something that is not a day at all is refused, saying what was not understood,
+  rather than being accepted into a chore that then never comes round.
+implements:
+- apps/chores/tools.py::_parse_dow
+tests: []
+links: {}
+notes: ''

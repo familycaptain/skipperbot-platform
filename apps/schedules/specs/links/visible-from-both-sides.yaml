@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.links.visible-from-both-sides
+title: A schedule about something is visible from that thing
+state: live
+autonomy: gated
+behavior: >
+  A schedule created about another record — a vehicle's service interval, a goal's weekly review — is
+  connected to it, so the schedule names what it is about and the record shows the schedule among the
+  things linked to it. Repointing a schedule at a different record connects it to the new one.
+implements:
+- apps/schedules/data.py::create_schedule
+- apps/schedules/data.py::update_schedule
+tests: []
+links: {}
+notes: ''

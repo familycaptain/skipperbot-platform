@@ -1,0 +1,15 @@
+kind: specification
+id: goals.pm.no-stacked-reviews
+title: Reviews do not pile up on each other
+state: live
+autonomy: gated
+behavior: >
+  A review that is due but has not run yet, or one that ran within the last quarter of an hour,
+  prevents another being started — so a busy or briefly stalled system comes back to one review
+  rather than several at once, and the household is not swept twice in a few minutes.
+implements:
+- apps/goals/pm_domain.py::pm_domain_handler
+tests: []
+links: {}
+notes: >
+  Found by watching it run: two full reviews eight minutes apart, both messaging people.

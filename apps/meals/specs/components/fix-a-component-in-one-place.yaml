@@ -1,0 +1,16 @@
+kind: specification
+id: meals.components.fix-a-component-in-one-place
+title: Fixing a component fixes it everywhere
+state: live
+autonomy: gated
+behavior: >
+  Renaming a component or changing its kind changes it for every meal that uses it, so a typo or
+  a mis-typed ingredient is corrected once rather than meal by meal.
+implements:
+- apps/meals/tools.py::update_component
+- apps/meals/data.py::update_component
+tests:
+- type: unit
+  path: tests/evolve/meals/test_crud_tools.py
+links: {}
+notes: ''

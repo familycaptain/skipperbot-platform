@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.cadence.an-unrecognised-cadence-falls-back
+title: An unrecognised cadence falls back to a known one
+state: live
+autonomy: gated
+behavior: >
+  Asking for a cadence the engine does not know does not fail and does not store the unknown value:
+  the schedule is created with a recognised cadence instead, so the caller gets a working schedule
+  rather than an error, and no schedule can exist with a cadence nothing can compute. The same
+  applies to a category outside the offered set, which becomes the general one.
+implements:
+- apps/schedules/data.py::create_schedule
+- apps/schedules/data.py::upsert_schedule
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: chores.views.the-day-keeps-itself-current
+title: The day view keeps itself current
+state: live
+autonomy: gated
+behavior: >
+  The day in front of someone refreshes on its own every half minute or so, without flicker or
+  losing their place, so a sibling's check-off appears without anyone reloading. There is also a
+  refresh they can press when they want it now.
+implements:
+- apps/chores/ui/ChoresApp.jsx::TodayTab
+tests: []
+links: {}
+notes: ''

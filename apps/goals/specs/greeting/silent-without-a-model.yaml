@@ -1,0 +1,14 @@
+kind: specification
+id: goals.greeting.silent-without-a-model
+title: With no model configured, Skipper says nothing
+state: live
+autonomy: gated
+behavior: >
+  Until the household has configured a language model, arriving produces no greeting at all rather
+  than an error or a canned line. When one is first configured, the greeting the person missed
+  happens within seconds without them having to reload.
+implements:
+- apps/goals/handlers.py::_connection_skill_runner
+tests: []
+links: {}
+notes: ''

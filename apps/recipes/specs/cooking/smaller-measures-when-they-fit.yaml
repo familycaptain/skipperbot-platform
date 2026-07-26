@@ -1,0 +1,17 @@
+kind: specification
+id: recipes.cooking.smaller-measures-when-they-fit
+title: Awkward volumes become measures a kitchen owns
+state: live
+autonomy: gated
+behavior: >
+  When scaling leaves a volume in a measure nobody can measure, it is re-expressed in a smaller one:
+  half a tablespoon is shown as one and a half teaspoons, and cups and larger are only ever shown in
+  halves, thirds and quarters. Teaspoons, tablespoons, cups, pints, quarts and gallons are recognised
+  however they were typed; weights, counts and anything else keep the unit exactly as written.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx::scaleIngredient
+- apps/recipes/ui/RecipeDetailApp.jsx::canonicalUnit
+- apps/recipes/ui/RecipeDetailApp.jsx::isDisplayable
+tests: []
+links: {}
+notes: ''

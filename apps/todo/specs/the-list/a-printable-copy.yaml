@@ -1,0 +1,15 @@
+kind: specification
+id: todo.the-list.a-printable-copy
+title: 'A column can be printed'
+state: live
+autonomy: gated
+behavior: >
+  Printing a column produces a plain page headed with that list's name, its open-item count and
+  today's date: the open items numbered with empty checkboxes, and anything completed today listed
+  struck through underneath. It contains only that column — printing the to-do never prints the
+  backlog.
+implements:
+- apps/todo/ui/TodoApp.jsx::TodoColumn
+tests: []
+links: {}
+notes: ''

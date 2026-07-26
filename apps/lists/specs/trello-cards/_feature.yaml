@@ -1,6 +1,6 @@
 kind: feature
 id: lists.trello-cards
-title: Trello card operations
+title: Working with cards on a board directly
 state: live
 links: {}
 notes: ''

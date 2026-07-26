@@ -1,0 +1,18 @@
+kind: specification
+id: schedules.links.a-schedule-outlives-its-subject
+title: A schedule outlives the thing it was about
+state: live
+autonomy: gated
+behavior: >
+  A schedule holds only a reference to what it is about, so the thing it points at disappearing does
+  not delete the schedule or corrupt it: it keeps its cadence, its next-due date and its history, and
+  everything that lists or completes it keeps working. Deciding what should then happen to it belongs
+  to the app that created it — nothing retires it on its own.
+implements:
+- apps/schedules/data.py::get_schedule
+- apps/schedules/migrations/001_initial.sql
+tests: []
+links: {}
+notes: >
+  Deliberately no cascade from another app's records into this one: an app being absent or mid-upgrade
+  must not be able to delete household history.

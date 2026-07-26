@@ -1,0 +1,15 @@
+kind: specification
+id: lists.collections.preview-without-opening
+title: A glance shows what is on a list
+state: live
+autonomy: gated
+behavior: >
+  A closed list still shows its first few items and, when there are more, how many are hidden — so
+  'is milk already on there?' is answerable without opening anything. Opening a list replaces the
+  preview with everything on it.
+implements:
+- apps/lists/ui/ListsApp.jsx::ListCard
+- agent.py::api_list_lists
+tests: []
+links: {}
+notes: ''

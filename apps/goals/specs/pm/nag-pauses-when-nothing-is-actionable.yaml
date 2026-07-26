@@ -1,0 +1,14 @@
+kind: specification
+id: goals.pm.nag-pauses-when-nothing-is-actionable
+title: Nagging stops on its own when there is nothing to nag about
+state: live
+autonomy: gated
+behavior: >
+  When every task in a nagged project is finished or blocked, the nag goes quiet and says the
+  project is complete or blocked rather than repeating the last task. It resumes on its own as
+  soon as something becomes actionable again.
+implements:
+- apps/goals/store.py::_refresh_project_nag
+tests: []
+links: {}
+notes: ''

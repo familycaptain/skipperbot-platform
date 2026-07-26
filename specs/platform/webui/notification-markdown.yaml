@@ -1,28 +1,16 @@
 kind: specification
 id: platform.webui.notification-markdown
-title: Notification chat bubbles render sanitized markdown like bot bubbles (line breaks preserved)
+title: A notification reads like one of Skipper's replies, not raw markup
 state: live
 autonomy: gated
 verified: true
 behavior: >
-  In the web UI, a NOTIFICATION chat bubble (web/src/components/ChatMessage.jsx,
-  role='notification' — proactive/background messages pushed as {type:'notification'}
-  and the same role on history replay) renders its content as MARKDOWN using the same
-  sanitized renderer the bot bubble uses (react-markdown + remark-gfm), inside the
-  existing .markdown-body, replacing the previous plain whitespace-pre-wrap text node.
-  remark-breaks preserves single newlines as line breaks so a multi-line PLAIN-text
-  notification does not collapse to one line. The notification chrome is preserved: the
-  source icon (Bell etc.), the indigo/purple gradient bubble, start alignment, spacing,
-  and the icon+content flex row (a fenced code block or GFM table stays within the bubble
-  beside the icon — markdown-body is min-w-0 flex-1, tables scroll). USER bubbles remain
-  PLAIN text; bot bubbles unchanged. SECURITY: rendering stays HTML-escaped — no
-  rehype-raw, no dangerouslySetInnerHTML — and react-markdown's default urlTransform
-  (neutralizing javascript:/data: link URLs) is preserved, so a notification containing
-  raw <script>/<img onerror> or a javascript: link is inert. Rendering markdown does make
-  links in notifications clickable <a> (the same property bot bubbles already have) — an
-  accepted, benign affordance. The shared .markdown-body VISUAL STYLING (token-driven,
-  host-relative WCAG-AA in both themes across bot/notification/app surfaces) is governed by
-  platform.webui.theme (amended by this change).
+  A notification arriving in the web console reads the way one of Skipper's own replies does:
+  bold text, headings, lists, tables, links and code blocks come out formatted rather than as
+  raw asterisks, backticks and pipes, and a plain multi-line notification keeps its line breaks
+  instead of collapsing onto one line. Messages the person typed themselves stay plain text.
+  Nothing in a notification's content can run as part of the page or produce a link that
+  executes code — such markup arrives inert — while ordinary links are clickable.
 implements:
 - web/src/components/ChatMessage.jsx
 - web/src/index.css
@@ -41,11 +29,7 @@ tests:
     (5) code/pre background, link, blockquote, and GFM table border/header are token-driven and
     meet WCAG AA against the notification gradient surface in both themes; (6) an injected
     <script>/<img onerror>/[x](javascript:...) renders inert/escaped.
+issues:
+- 41
 links: {}
-notes: >
-  Issue #41 (corrected scope after box-2 reproduction; before/after screenshots on the
-  issue). Reuses the bot-bubble renderer (adds remark-breaks for soft line breaks). The
-  .markdown-body token/AA styling is recorded as an amendment to platform.webui.theme so the
-  markdown-AA contract lives in one spec. No user-bubble markdown. JS/CSS-only surface (no JS
-  unit harness) so the bound proof is the live box-2 acceptance; must be built on box 2
-  (Tailwind v4 / Lightning CSS var() gotcha).
+notes: ''

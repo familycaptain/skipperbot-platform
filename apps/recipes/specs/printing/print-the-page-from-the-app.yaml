@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.printing.print-the-page-from-the-app
+title: Printing the recipe from the page
+state: live
+autonomy: gated
+behavior: >
+  The printer button on a recipe opens the browser's own print dialogue on a clean page: the recipe
+  alone, with none of the app's toolbars or controls, laid out for paper with the ingredients as a
+  list and the instructions numbered. It prints the recipe as stored, at its original quantities,
+  whatever scale is being read on screen.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx::handlePrint
+tests: []
+links: {}
+notes: ''

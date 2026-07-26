@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.automation.set-up-a-routine
+title: Set up a routine Skipper carries out
+state: live
+autonomy: gated
+behavior: >
+  A routine — a standing instruction Skipper carries out on a cadence — is set up from the Schedules
+  app with a name, the instruction itself, the same cadence choices as any other schedule and the
+  tools it should start with. It needs both a name and an instruction before it can be created, and
+  once created it is a schedule like any other: pausable, editable, deletable, and listed alongside
+  the household's chores.
+implements:
+- apps/schedules/ui/SchedulesApp.jsx::NewAgenticTaskForm
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: meals.menu.printing-is-offered-when-there-is-a-menu
+title: Print is offered only once a menu exists
+state: live
+autonomy: gated
+behavior: >
+  Printing is offered only when a menu is actually on screen — never while it is loading, on an
+  error, or when filters matched nothing. An empty but unfiltered library still produces a
+  printable menu that says there are no meals yet, so a new household can print the stationery
+  before it has meals.
+implements:
+- apps/meals/pages/menu.html::setPrintEnabled
+- apps/meals/pages/menu.html::renderPages
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

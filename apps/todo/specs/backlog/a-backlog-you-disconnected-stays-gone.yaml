@@ -1,0 +1,17 @@
+kind: specification
+id: todo.backlog.a-backlog-you-disconnected-stays-gone
+title: 'A backlog you disconnected stays gone'
+state: live
+autonomy: gated
+behavior: >
+  A person who deliberately clears their backlog choice is not handed a new one on their next visit:
+  the board falls back to a single to-do column, and in conversation Skipper says they have no
+  backlog set up and offers to make one. Only somebody who has never had a backlog is given one
+  unasked.
+implements:
+- apps/todo/store.py::ensure_backlog_list
+- apps/todo/data.py::claim_backlog_list
+- apps/todo/tools.py::get_backlog_list
+tests: []
+links: {}
+notes: ''

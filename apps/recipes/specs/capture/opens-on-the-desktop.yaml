@@ -1,0 +1,16 @@
+kind: specification
+id: recipes.capture.opens-on-the-desktop
+title: A new recipe opens itself
+state: live
+autonomy: gated
+behavior: >
+  A recipe created through conversation is opened on the person's desktop as soon as it is saved,
+  showing the recipe that was just filed — nobody has to ask for it afterwards or be handed an
+  identifier to look it up with.
+implements:
+- apps/recipes/tools.py::create_recipe
+- apps/recipes/guide.md
+- local_tools.py::open_app
+tests: []
+links: {}
+notes: ''

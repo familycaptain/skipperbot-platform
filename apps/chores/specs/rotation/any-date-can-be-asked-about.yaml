@@ -1,0 +1,15 @@
+kind: specification
+id: chores.rotation.any-date-can-be-asked-about
+title: Any date can be asked about, forwards or back
+state: live
+autonomy: gated
+behavior: >
+  The schedule for any date can be asked for — last month or next year — and answers straight
+  away; there is no horizon beyond which the rotation is unknown and no period that has to be
+  generated first. The same date always gives the same answer while the zone is unchanged.
+implements:
+- apps/chores/store.py::today_by_kid
+- apps/chores/routes.py::api_today
+tests: []
+links: {}
+notes: ''

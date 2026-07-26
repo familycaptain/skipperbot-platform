@@ -1,0 +1,15 @@
+kind: specification
+id: chores.rounds.an-owed-round-waits-its-turn
+title: A round that is owed is not lost
+state: live
+autonomy: gated
+behavior: >
+  The scheduled time records that a round is owed rather than sending anything itself; the
+  messages are composed on the next pass of Skipper's attention. A round owed while the house is
+  busy, or across a restart, is still composed afterwards instead of being skipped.
+implements:
+- apps/chores/handlers.py::_fire_chores_alarm
+- apps/chores/handlers.py::handle_chores_morning
+tests: []
+links: {}
+notes: ''

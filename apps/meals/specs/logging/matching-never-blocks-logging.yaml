@@ -1,0 +1,15 @@
+kind: specification
+id: meals.logging.matching-never-blocks-logging
+title: A failed match still logs the meal
+state: live
+autonomy: gated
+behavior: >
+  If the matcher cannot be reached or answers unusably, the meal is still logged: a meal whose
+  name matches exactly is used, and otherwise a new one is created. Nothing a person said they
+  ate is ever dropped because the matching step failed.
+implements:
+- apps/meals/tools.py::_match_meal_with_llm
+- apps/meals/tools.py::log_meal
+tests: []
+links: {}
+notes: ''

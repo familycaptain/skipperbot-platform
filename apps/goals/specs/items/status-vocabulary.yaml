@@ -1,0 +1,17 @@
+kind: specification
+id: goals.items.status-vocabulary
+title: An item is in exactly one of six states
+state: live
+autonomy: gated
+behavior: >
+  Every goal, project and task is not started, in progress, done, blocked, deferred or cancelled —
+  nothing else. Asking for a state outside that set is refused and the item is left exactly as it
+  was. Done, cancelled and deferred all count as finished for the purpose of working out what is
+  left and what to do next; blocked does not.
+implements:
+- apps/goals/store.py::VALID_STATUSES
+- apps/goals/store.py::TERMINAL_STATUSES
+- apps/goals/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

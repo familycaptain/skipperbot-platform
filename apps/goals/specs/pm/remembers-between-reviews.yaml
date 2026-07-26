@@ -1,0 +1,15 @@
+kind: specification
+id: goals.pm.remembers-between-reviews
+title: Findings survive from one review to the next
+state: live
+autonomy: gated
+behavior: >
+  What Skipper worked out about a project in one review is available in the next, so it builds a
+  picture instead of starting cold each time, and it can close off a follow-up once it has been
+  answered or has stopped mattering.
+implements:
+- apps/goals/pm_domain.py::pm_skill_runner
+- apps/goals/pm_domain.py::_observe
+tests: []
+links: {}
+notes: ''

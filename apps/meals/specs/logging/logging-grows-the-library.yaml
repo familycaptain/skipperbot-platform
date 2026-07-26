@@ -1,0 +1,17 @@
+kind: specification
+id: meals.logging.logging-grows-the-library
+title: Logging a meal grows the library by itself
+state: live
+autonomy: gated
+behavior: >
+  Recording what was eaten also finds or creates the reusable meal idea behind it and links the
+  dishes to it as components, so the library grows out of what the household actually eats and
+  nobody has to maintain it separately. The reply lists what was created, matched or added.
+implements:
+- apps/meals/tools.py::log_meal
+- apps/meals/guide.md
+tests:
+- type: unit
+  path: test_meals_tools.py
+links: {}
+notes: ''

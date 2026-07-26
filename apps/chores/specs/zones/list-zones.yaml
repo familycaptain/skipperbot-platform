@@ -1,12 +1,15 @@
 kind: specification
 id: chores.zones.list-zones
-title: List zones
+title: Asking what zones exist
 state: live
 autonomy: gated
-behavior: Listing returns all zones with their members and chore counts.
+behavior: >
+  Asking about zones lists each one with the people in it in turn order and how many chores it
+  carries, so it is obvious at a glance which zone is unstaffed or empty. With no zones set up
+  the answer says so.
 implements:
-- apps/chores/tools.py
-- apps/chores/ui/ChoresApp.jsx
+- apps/chores/tools.py::list_chore_zones
+- apps/chores/routes.py::api_list_zones
 tests: []
 links: {}
 notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: chores.history.history-over-a-range
+title: What was done, over a period
+state: live
+autonomy: gated
+behavior: >
+  Asking what has been done returns the check-offs over a period, most recent first, for one
+  person or for the whole household, with the day each was for, the chore, and when it was
+  actually ticked. Left unbounded it covers the last month up to today. A period with nothing in
+  it says so rather than returning an empty list.
+implements:
+- apps/chores/tools.py::get_chore_history
+- apps/chores/routes.py::api_history
+- apps/chores/data.py::list_completions_in_range
+tests: []
+links: {}
+notes: ''

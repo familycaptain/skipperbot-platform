@@ -1,0 +1,14 @@
+kind: specification
+id: meals.logging.exactly-one-main-dish
+title: A logged meal has exactly one main dish
+state: live
+autonomy: gated
+behavior: >
+  A meal being logged must name exactly one main dish with the rest as sides; naming none, or
+  naming two, is refused with an explanation of which to change rather than one being guessed
+  at. A log with no dishes at all is refused the same way.
+implements:
+- apps/meals/tools.py::log_meal
+tests: []
+links: {}
+notes: ''

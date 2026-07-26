@@ -1,0 +1,15 @@
+kind: specification
+id: meals.deciding.no-matches-offers-to-relax
+title: Nothing matching says so and suggests loosening up
+state: live
+autonomy: gated
+behavior: >
+  When no meal satisfies the filters, the answer says nothing matched and suggests relaxing the
+  criteria rather than showing an empty grid or silence — the same in the app and in
+  conversation.
+implements:
+- apps/meals/tools.py::find_meals
+- apps/meals/ui/MealsApp.jsx::DiscoverTab
+tests: []
+links: {}
+notes: ''

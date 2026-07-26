@@ -1,0 +1,24 @@
+kind: specification
+id: goals.work.capabilities-on-demand
+title: A session starts with the goal's tools and asks for more as needed
+state: live
+autonomy: gated
+behavior: >
+  A session begins able to work the goal itself and little else, and can pull in another whole
+  capability mid-session — searching the web, the knowledge base, documents, files — which becomes
+  usable immediately. It is always told which capabilities it currently has and which it could ask
+  for, so it never assumes one it has not loaded, and using something it has not loaded is refused
+  with a pointer to how to get it.
+implements:
+- apps/goals/work_context.py::_build_tools
+- apps/goals/work_context.py::_category_awareness
+- apps/goals/goal_work.py::handle_goal_work
+tests:
+- type: unit
+  path: tests/evolve/goals/test_worker_toolset.py
+  rubric: >
+    Asserts a session's default capabilities are the goal's own plus the core set, that requesting
+    a category adds it for the rest of the session, and that the session is told what it has
+    loaded and what it can request.
+links: {}
+notes: ''

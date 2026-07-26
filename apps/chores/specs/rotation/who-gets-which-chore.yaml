@@ -1,0 +1,18 @@
+kind: specification
+id: chores.rotation.who-gets-which-chore
+title: The rotation advances one person per weekday
+state: live
+autonomy: gated
+behavior: >
+  A zone's chores are shared out among the people who rotate through it in their fixed order,
+  and the starting point moves on by one person each weekday counted from the zone's start date.
+  Where a day has several chores in a zone, they go to consecutive people in that order, so
+  nobody is given two chores in the same zone on the same day while there are at least as many
+  people in the rotation as chores that day.
+implements:
+- apps/chores/store.py::assignments_for_zone
+- apps/chores/store.py::assignments_for_date
+- apps/chores/store.py::networkdays
+tests: []
+links: {}
+notes: ''

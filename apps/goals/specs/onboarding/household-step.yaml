@@ -1,0 +1,27 @@
+kind: specification
+id: goals.onboarding.household-step
+title: Getting to know the household means relationships, not a form
+state: live
+autonomy: gated
+behavior: >
+  Asked about the household, Skipper learns each person's relationship to the primary user
+  conversationally, confirming a larger family in a natural batch rather than interrogating person
+  by person, and infers each one's standing internally without ever asking which category someone
+  belongs to. It never asks or records anyone's age. It explains that being named here is for
+  personalisation and that anyone who will use Skipper themselves needs an account created in
+  settings. A reply that is only names does not finish the topic: Skipper follows up for
+  relationships first. Saying it is just one person finishes it immediately.
+implements:
+- apps/goals/onboarding.py::ONBOARDING_AGENDA
+tests:
+- type: unit
+  path: tests/evolve/goals/test_onboarding_household_depth.py
+  rubric: >
+    Offline source assertions on the real household topic copy: relationships are probed and
+    mapped internally, the category words are never surfaced as a question, no age is asked for,
+    the settings account path is given as distinct from being named, no credentials are invited,
+    and the completion criterion refuses a names-only answer.
+links: {}
+notes: >
+  Roles are inferred, never asked: "is she a member or a kid?" is our vocabulary, not a question a
+  person should have to answer about their own family.

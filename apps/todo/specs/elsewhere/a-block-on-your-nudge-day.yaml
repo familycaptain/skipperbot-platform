@@ -1,0 +1,15 @@
+kind: specification
+id: todo.elsewhere.a-block-on-your-nudge-day
+title: 'The calendar carries a to-do block on your nudge day'
+state: live
+autonomy: gated
+behavior: >
+  The calendar shows an all-day entry naming how many to-do items a person has open, on every
+  occurrence of their nudge weekday inside the range being looked at. Nobody with an empty list, no
+  connected list, or the calendar setting switched off gets an entry, and asking for one person's
+  calendar shows only theirs.
+implements:
+- data_layer/calendar.py::_events_from_todo
+tests: []
+links: {}
+notes: ''

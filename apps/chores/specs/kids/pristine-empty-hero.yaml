@@ -1,0 +1,27 @@
+kind: specification
+id: chores.kids.pristine-empty-hero
+title: An empty rotation explains itself
+state: live
+autonomy: gated
+behavior: >
+  With nobody in the rotation at all, the day view shows the app's introduction — what Chores is
+  for and how to start — in place of an empty grid, and adding the first person replaces it with
+  the normal view. A household that has people but nothing due today gets 'nothing today'
+  against each of them, not the introduction. A fresh install starts genuinely empty: no example
+  family, no example zones and no example chores.
+implements:
+- apps/chores/ui/ChoresApp.jsx::PristineEmpty
+- apps/chores/ui/index.js::blurb
+- apps/chores/migrations/002_seed_from_sheet.sql::no-op
+- apps/chores/migrations/007_remove_placeholder_kids.sql::seed_kid_ids
+tests:
+- type: unit
+  path: tests/evolve/platform/test_chores_no_placeholder_kids.py
+  rubric: >
+    A fresh install seeds nobody; an install that carries the old example family has it removed
+    only while it is untouched, and an adopted one is left entirely intact and does not abort;
+    an empty rotation is read without error and shows the introduction.
+links: {}
+notes: >
+  The example family it used to ship was adoptable, so the cleanup only removes one that nobody
+  has renamed, used or added to.

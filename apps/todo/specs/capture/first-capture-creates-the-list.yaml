@@ -1,0 +1,15 @@
+kind: specification
+id: todo.capture.first-capture-creates-the-list
+title: 'A first capture never fails for want of a list'
+state: live
+autonomy: gated
+behavior: >
+  Someone who has never used the app can capture immediately: their to-do list is created and
+  connected on the spot and the item lands on it. A first "add X to my to-do" is never answered with
+  "you have no list yet".
+implements:
+- apps/todo/store.py::ensure_default_list
+- apps/todo/tools.py::add_todo_item
+tests: []
+links: {}
+notes: ''

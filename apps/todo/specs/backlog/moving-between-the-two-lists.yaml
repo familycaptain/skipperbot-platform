@@ -1,0 +1,18 @@
+kind: specification
+id: todo.backlog.moving-between-the-two-lists
+title: 'Items move both ways between to-do and backlog'
+state: live
+autonomy: gated
+behavior: >
+  An item can be moved from the to-do to the backlog and back, from a control on the row or its
+  right-click menu, and arrives at the top of the destination keeping its wording, its author and
+  its history. Both columns are re-read after a move so neither shows a stale copy. A move is
+  refused when the person has not got both lists connected, or when the item is not on the side it
+  was said to be on.
+implements:
+- apps/todo/store.py::move_item_to_list
+- agent.py::api_move_todo_item
+- apps/todo/ui/TodoApp.jsx::TodoApp
+tests: []
+links: {}
+notes: ''

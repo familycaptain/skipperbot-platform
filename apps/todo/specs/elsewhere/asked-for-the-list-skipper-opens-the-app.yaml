@@ -1,0 +1,14 @@
+kind: specification
+id: todo.elsewhere.asked-for-the-list-skipper-opens-the-app
+title: 'Asked to show the list, Skipper opens the app'
+state: live
+autonomy: gated
+behavior: >
+  "Show my to-do list" opens the To-Do app on that person's desktop as well as answering in
+  conversation, rather than printing the whole list as chat text.
+implements:
+- chat_domain.py::_build_system_prompt
+- apps/todo/guide.md
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: meals.nightly-check.re-enabling-waits-for-the-time
+title: Turning it back on does not fire it now
+state: live
+autonomy: gated
+behavior: >
+  Switching the check back on after Off, or moving it to a new time, schedules the next run at
+  the next occurrence of that time — it never fires at the moment the setting is saved.
+implements:
+- apps/meals/schedule.py::reconcile_dinner_schedule
+tests:
+- type: unit
+  path: tests/evolve/meals/test_dinner_schedule.py
+links: {}
+notes: ''

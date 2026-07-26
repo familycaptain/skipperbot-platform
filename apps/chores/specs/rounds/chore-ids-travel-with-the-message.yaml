@@ -1,0 +1,15 @@
+kind: specification
+id: chores.rounds.chore-ids-travel-with-the-message
+title: Each chore in the message carries its identifier
+state: live
+autonomy: gated
+behavior: >
+  Every chore listed in a round message carries its identifier alongside its name, so a later
+  reply — 'did it', 'all done', 'did the trash' — resolves to the exact chores that were listed
+  without anyone being asked which they meant.
+implements:
+- apps/chores/handlers.py::_CHORES_GUIDANCE
+- apps/chores/handlers.py::_chores_skill_runner
+tests: []
+links: {}
+notes: ''

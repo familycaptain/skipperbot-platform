@@ -1,0 +1,15 @@
+kind: specification
+id: todo.setup.settings-you-did-not-touch-survive
+title: 'Settings you did not touch are left alone'
+state: live
+autonomy: gated
+behavior: >
+  Saving changes only the settings that were actually given; anything not mentioned keeps its stored
+  value. A person who has never saved anything is treated as having the defaults rather than as
+  unconfigured, so their nudge and calendar behave like everyone else's from the first day.
+implements:
+- apps/todo/data.py::upsert_config
+- apps/todo/data.py::get_config
+tests: []
+links: {}
+notes: ''

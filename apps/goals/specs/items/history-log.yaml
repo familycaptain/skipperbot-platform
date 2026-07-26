@@ -1,0 +1,16 @@
+kind: specification
+id: goals.items.history-log
+title: Every change leaves a dated, attributed trail
+state: live
+autonomy: gated
+behavior: >
+  Each change to an item appends an entry saying when it happened, who made it and what changed,
+  and a person or Skipper can add a comment to that trail without changing anything else. The
+  trail is separate from the item's notes: notes are the standing description, the trail is what
+  has happened to it. History is never rewritten or pruned by an edit.
+implements:
+- apps/goals/store.py::_add_history
+- apps/goals/ui/GoalShared.jsx::HistorySection
+tests: []
+links: {}
+notes: ''

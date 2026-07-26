@@ -1,0 +1,17 @@
+kind: specification
+id: chores.rotation.a-removed-person-still-takes-turns
+title: Someone taken out of the rotation still holds their turn
+state: live
+autonomy: gated
+behavior: >
+  Taking a person out of the rotation does not take them out of the zones they belong to. Their
+  turn still comes round, and the chores that fall to them on those days appear for nobody at
+  all rather than passing to the next person, until someone edits the zone's member list.
+implements:
+- apps/chores/data.py::soft_delete_kid
+- apps/chores/store.py::today_by_kid
+tests: []
+links: {}
+notes: >
+  The removal is deliberately shallow so history and zone setup survive it; the cost is a hole
+  in the rotation that only a zone edit closes.

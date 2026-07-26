@@ -1,0 +1,17 @@
+kind: specification
+id: recipes.editing.a-recipe-that-isnt-there
+title: A recipe that is not there says so
+state: live
+autonomy: gated
+behavior: >
+  Asking for, updating, printing or deleting a recipe that does not exist says the recipe was not
+  found and changes nothing. A request that names no recipe at all is refused the same way rather
+  than acting on whichever recipe happens to be at hand.
+implements:
+- apps/recipes/tools.py::get_recipe
+- apps/recipes/tools.py::update_recipe
+- apps/recipes/tools.py::delete_recipe
+- apps/recipes/routes.py::api_get_recipe
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: lists.naming.a-real-name-beats-a-nickname
+title: A real name beats someone else's nickname
+state: live
+autonomy: gated
+behavior: >
+  When a phrase matches one list's actual name and another list's nickname, the real name wins.
+  Nicknames are matched loosely — a nickname found anywhere in the phrase counts — so they are the
+  last thing tried before giving up, not the first.
+implements:
+- apps/lists/store.py::find_list_by_name
+tests: []
+links: {}
+notes: ''

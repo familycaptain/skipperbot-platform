@@ -1,0 +1,14 @@
+kind: specification
+id: recipes.cooking.check-off-steps
+title: Marking steps done
+state: live
+autonomy: gated
+behavior: >
+  A step is marked done by tapping either its number or its text, which dims and strikes it, and
+  tapping again undoes it; the marks survive a reload like the ingredient marks. Ingredients and
+  steps are tracked separately, so having measured everything out does not mark the cooking done.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx::toggleStep
+tests: []
+links: {}
+notes: ''

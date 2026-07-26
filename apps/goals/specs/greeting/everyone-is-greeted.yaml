@@ -1,0 +1,20 @@
+kind: specification
+id: goals.greeting.everyone-is-greeted
+title: Every member is greeted by Skipper itself
+state: live
+autonomy: gated
+behavior: >
+  Each household member who arrives is greeted by Skipper, not just whoever installed it, and not
+  by a canned line the browser made up — a child signing in is met by Skipper the same as anyone
+  else. People are greeted by the name they are known by rather than their account name.
+implements:
+- apps/goals/handlers.py::_connection_skill_runner
+- apps/goals/handlers.py::_greeting_turn
+tests:
+- type: unit
+  path: tests/evolve/platform/test_onboarding_live_greeting.py
+  rubric: >
+    Asserts the greeting is not gated on setup being in progress and that the browser no longer
+    fabricates one of its own.
+links: {}
+notes: ''

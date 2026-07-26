@@ -1,0 +1,14 @@
+kind: specification
+id: todo.the-list.one-column-until-there-is-a-backlog
+title: 'One column until there is a backlog'
+state: live
+autonomy: gated
+behavior: >
+  With no backlog connected the board is a single full-width to-do column, with an invitation to add
+  a backlog in settings; with one connected it becomes to-do and backlog side by side, and the
+  invitation disappears.
+implements:
+- apps/todo/ui/TodoApp.jsx::TodoApp
+tests: []
+links: {}
+notes: ''

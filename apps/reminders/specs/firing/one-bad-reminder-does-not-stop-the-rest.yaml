@@ -1,0 +1,16 @@
+kind: specification
+id: reminders.firing.one-bad-reminder-does-not-stop-the-rest
+title: One reminder failing never holds up the others
+state: live
+autonomy: gated
+behavior: >
+  When one due reminder cannot be processed, the failure is recorded and the other due reminders
+  on the same pass are still handled; one whose time cannot be read is skipped rather than
+  stopping the pass. If a whole pass fails, everything stays due and is tried again on the next
+  one rather than being lost.
+implements:
+- apps/reminders/scheduler.py::check_and_deliver
+- apps/reminders/store.py::get_due_reminders
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,13 @@
+kind: specification
+id: goals.trello.labels-in-the-app
+title: Card labels can be managed from the task
+state: live
+autonomy: gated
+behavior: >
+  A board-linked task shows the labels on its card and lets the board's labels be added or removed
+  from there, so labelling does not require leaving Skipper for the board.
+implements:
+- apps/goals/ui/GoalShared.jsx::TrelloLabels
+tests: []
+links: {}
+notes: ''

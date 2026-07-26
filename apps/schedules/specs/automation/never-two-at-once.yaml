@@ -1,0 +1,14 @@
+kind: specification
+id: schedules.automation.never-two-at-once
+title: Never two runs of the same thing at once
+state: live
+autonomy: gated
+behavior: >
+  If the work a schedule starts is still running from last time, this occurrence is skipped rather
+  than started alongside it, and the schedule stays due so it is picked up once the run finishes. A
+  long run therefore delays its own next occurrence instead of piling up copies.
+implements:
+- apps/schedules/job_trigger.py::check_schedule_jobs
+tests: []
+links: {}
+notes: ''

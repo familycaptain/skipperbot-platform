@@ -1,0 +1,17 @@
+kind: specification
+id: chores.checkoff.checking-off-earns-nothing
+title: A chore never pays out
+state: live
+autonomy: gated
+behavior: >
+  Checking off a chore records that it was done and nothing else: no money, no points, no
+  balance and no leaderboard. The recurring rota is unpaid by design, and anything with an
+  amount attached to it is a one-off paid task belonging to a different app.
+implements:
+- apps/chores/manifest.yaml::tool_category
+- apps/chores/guide.md::Bounties
+tests: []
+links: {}
+notes: >
+  The boundary is worth stating because 'chore' and 'paid task' collapse into one another in
+  conversation; keeping money out of here is what keeps the rota unarguable.

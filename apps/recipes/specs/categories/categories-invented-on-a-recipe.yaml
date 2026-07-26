@@ -1,0 +1,16 @@
+kind: specification
+id: recipes.categories.categories-invented-on-a-recipe
+title: A category invented on a recipe still counts
+state: live
+autonomy: gated
+behavior: >
+  A category typed straight onto a recipe, without anybody formally creating it, still appears in the
+  filter bar and can be filtered on like any other — listed after the categories the household
+  defined. Matching ignores case, so a lower-case spelling typed on a recipe does not produce a second
+  copy of an existing category.
+implements:
+- apps/recipes/data.py::get_all_categories_merged
+- apps/recipes/routes.py::api_list_recipe_categories
+tests: []
+links: {}
+notes: ''

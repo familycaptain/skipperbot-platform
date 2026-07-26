@@ -1,13 +1,17 @@
 kind: specification
 id: goals.views.project-detail
-title: Project detail
+title: Look at one project's tasks
 state: live
 autonomy: gated
-behavior: Project detail returns a project's full task tree — milestones, subtasks, and uncategorized
-  tasks with their ranks.
+behavior: >
+  Asked about a project, Skipper gives its state, priority, owners, due date and check-in cadence,
+  then its whole task tree: milestones with their subtasks nested under them, loose tasks grouped
+  at the end, each with position, state, what it waits on and when it is due. When nagging is on
+  for the project it also names the task that is actually actionable next. A project with no tasks
+  says so.
 implements:
-- apps/goals/tools.py
-- apps/goals/ui/TasksApp.jsx
+- apps/goals/tools.py::get_project_detail
+- apps/goals/store.py::get_project_detail
 tests: []
 links: {}
 notes: ''

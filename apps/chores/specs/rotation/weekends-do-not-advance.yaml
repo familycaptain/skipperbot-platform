@@ -1,0 +1,17 @@
+kind: specification
+id: chores.rotation.weekends-do-not-advance
+title: A weekend does not move the rotation on
+state: live
+autonomy: gated
+behavior: >
+  Only weekdays count towards moving the rotation on, so a chore falling on a Saturday or a
+  Sunday goes to the same person it went to on the Friday before. A zone whose chores are all
+  midweek is unaffected; a zone with weekend chores gives the same person Friday, Saturday and
+  Sunday.
+implements:
+- apps/chores/store.py::networkdays
+tests: []
+links: {}
+notes: >
+  Faithful to the spreadsheet the app replaced, which counted working days. It is the reason a
+  weekend chore appears to skip a turn.

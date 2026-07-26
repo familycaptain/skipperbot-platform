@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.cadence.local-wall-clock
+title: Due times are the household's wall clock
+state: live
+autonomy: gated
+behavior: >
+  A schedule due at seven is due at seven where the household lives, on both sides of a daylight
+  saving change and regardless of where the machine thinks it is. Its next-due moment is always
+  reported with that offset attached, so the app, the calendar and any app reading the schedule agree
+  on the same instant.
+implements:
+- apps/schedules/data.py::_now
+- apps/schedules/data.py::_coerce_central_datetime
+tests: []
+links: {}
+notes: ''

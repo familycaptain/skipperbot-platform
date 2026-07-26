@@ -1,0 +1,17 @@
+kind: specification
+id: goals.pm.one-project-per-review
+title: Each review reads one project properly
+state: live
+autonomy: gated
+behavior: >
+  A review takes one project for a close read rather than skimming everything, chosen by how
+  urgent it is, whether something has happened on it, how long it has been since it was last
+  looked at, and whether Skipper already has findings about it — so nothing is left unlooked-at
+  forever and whatever just moved gets attention soonest. Goals and projects that are finished,
+  cancelled, deferred or archived are never picked.
+implements:
+- apps/goals/pm_domain.py::_pick_next_project
+- apps/goals/pm_domain.py::_load_project_snapshot
+tests: []
+links: {}
+notes: ''

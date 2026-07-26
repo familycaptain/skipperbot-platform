@@ -1,0 +1,17 @@
+kind: specification
+id: chores.checkoff.your-own-chores-only
+title: You check off your own chores
+state: live
+autonomy: gated
+behavior: >
+  Someone may check off, and un-check, only the chores of the person their household account is
+  linked to. An attempt on anybody else's is refused, with a message naming who is allowed, and
+  nothing is recorded. Naming somebody the app does not recognise is refused by name rather than
+  being applied to the nearest match.
+implements:
+- apps/chores/tools.py::complete_chore
+- apps/chores/routes.py::_can_act_on_kid
+- apps/chores/routes.py::api_complete
+tests: []
+links: {}
+notes: ''

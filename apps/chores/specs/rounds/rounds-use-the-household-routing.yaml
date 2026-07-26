@@ -1,0 +1,16 @@
+kind: specification
+id: chores.rounds.rounds-use-the-household-routing
+title: A round message goes out the normal way
+state: live
+autonomy: gated
+behavior: >
+  A round message reaches somebody by the household's ordinary routing — always recorded in
+  their web console, and pushed to their other surfaces according to their own settings. Chores
+  never picks surfaces itself, so a new way of reaching people works for chore rounds with no
+  change here.
+implements:
+- apps/chores/handlers.py::_chores_skill_runner
+- app_platform/speak.py::speak
+tests: []
+links: {}
+notes: ''

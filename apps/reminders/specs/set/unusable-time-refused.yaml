@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.set.unusable-time-refused
+title: A time that is not a real moment saves nothing
+state: live
+autonomy: gated
+behavior: >
+  When the moment given cannot be resolved to a real date and time, the request fails and no
+  reminder is kept — a reminder that could never come due is worse than none, because it looks
+  like cover. The answer reports the failure instead of a confirmation, so it can be asked again.
+implements:
+- apps/reminders/store.py::create_reminder
+- apps/reminders/data.py::save_all_reminders
+tests: []
+links: {}
+notes: ''

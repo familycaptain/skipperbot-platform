@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.printing.copies-stay-between-one-and-ten
+title: Copies stay between one and ten
+state: live
+autonomy: gated
+behavior: >
+  A request for more than ten copies prints ten and a request for fewer than one prints one; a copy
+  count that is not a number at all is treated as one. The printer is never handed an unbounded copy
+  count from a misheard or mistyped request.
+implements:
+- apps/recipes/tools.py::print_recipe
+- apps/jobs/store.py::create_recipe_print_job
+tests: []
+links: {}
+notes: ''

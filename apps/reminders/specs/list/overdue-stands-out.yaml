@@ -1,0 +1,14 @@
+kind: specification
+id: reminders.list.overdue-stands-out
+title: A reminder that has slipped past its time is obvious
+state: live
+autonomy: gated
+behavior: >
+  A live reminder whose time has gone by is labelled overdue and highlighted rather than sitting
+  in the list looking like one due next week — so a reminder that is not being processed shows up
+  as a problem instead of staying silent.
+implements:
+- apps/reminders/ui/RemindersApp.jsx::isOverdue
+tests: []
+links: {}
+notes: ''

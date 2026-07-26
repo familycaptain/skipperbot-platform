@@ -1,0 +1,15 @@
+kind: specification
+id: goals.trello.archived-cards-clean-up
+title: A task whose card is gone is removed and reported
+state: live
+autonomy: gated
+behavior: >
+  When a linked card has been archived or deleted on the board, the task Skipper was keeping for
+  it is removed the next time the project is looked at, and the view says which ones went and why
+  — so the project does not accumulate tasks for work that no longer exists, and the removal is
+  never silent.
+implements:
+- apps/goals/store.py::_render_trello_project_view
+tests: []
+links: {}
+notes: ''

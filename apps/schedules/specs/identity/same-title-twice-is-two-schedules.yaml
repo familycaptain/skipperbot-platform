@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.identity.same-title-twice-is-two-schedules
+title: The same title twice is two schedules
+state: live
+autonomy: gated
+behavior: >
+  A schedule a person creates is never merged with an existing one: adding "Mow the lawn" twice
+  leaves two schedules, both due, both nagging, and either can be deleted without touching the
+  other. Titles, categories and assignees are descriptions, not keys — the only thing that makes two
+  set-ups converge on one schedule is an owner claiming a named check.
+implements:
+- apps/schedules/data.py::create_schedule
+tests: []
+links: {}
+notes: ''

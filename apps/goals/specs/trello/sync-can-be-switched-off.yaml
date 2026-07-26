@@ -1,0 +1,18 @@
+kind: specification
+id: goals.trello.sync-can-be-switched-off
+title: One switch stops all board syncing
+state: live
+autonomy: gated
+behavior: >
+  With board syncing turned off for the household, no project or task syncs to a board even if it
+  is linked — nothing is pushed, nothing is created — and the links themselves are left intact so
+  turning it back on resumes.
+implements:
+- apps/goals/manifest.yaml
+- trello_task_sync.py::_goals_trello_enabled
+- trello_task_sync.py::get_project_trello_config
+tests: []
+links: {}
+notes: >
+  A kill switch rather than unlinking every project: the intended use is pausing sync during a
+  board reorganisation without losing the mapping.

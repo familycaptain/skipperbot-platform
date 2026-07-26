@@ -1,12 +1,17 @@
 kind: specification
 id: goals.views.my-tasks
-title: My tasks
+title: Ask what is on your plate
 state: live
 autonomy: gated
-behavior: My tasks returns all tasks assigned to a person across every goal and project.
+behavior: >
+  Asked what someone has to do, Skipper lists every task assigned to them across all goals and
+  projects, grouped by state with blocked and in-progress work first, each naming its goal and
+  project so it is clear what it is part of. Finished tasks are left out unless asked for, a
+  single state can be asked for on its own, and someone with nothing assigned is told that rather
+  than shown an empty list.
 implements:
-- apps/goals/tools.py
-- apps/goals/ui/TasksApp.jsx
+- apps/goals/tools.py::get_my_tasks
+- apps/goals/store.py::get_user_tasks
 tests: []
 links: {}
 notes: ''

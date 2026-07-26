@@ -1,0 +1,15 @@
+kind: specification
+id: meals.nightly-check.quiet-when-already-logged
+title: Already knowing means staying quiet
+state: live
+autonomy: gated
+behavior: >
+  If dinner for today is already logged the check passes without asking anything, so a household
+  that told Skipper at six is not asked again at nine.
+implements:
+- apps/meals/handlers.py::handle_dinner_check
+tests:
+- type: unit
+  path: tests/evolve/meals/test_dinner_schedule.py
+links: {}
+notes: ''

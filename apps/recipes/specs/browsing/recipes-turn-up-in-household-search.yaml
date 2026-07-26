@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.browsing.recipes-turn-up-in-household-search
+title: Recipes appear in household-wide search
+state: live
+autonomy: gated
+behavior: >
+  A search made from the household's search-everything screen returns recipes alongside documents,
+  goals and the rest, each result showing its times and servings and opening the recipe when picked.
+  The same matching applies as searching inside the app.
+implements:
+- apps/recipes/routes.py::api_list_recipes
+- apps/finder/ui/FinderApp.jsx
+tests: []
+links: {}
+notes: ''

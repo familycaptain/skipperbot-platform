@@ -1,12 +1,20 @@
 kind: specification
 id: goals.items.create-task
-title: Create a task
+title: Add a task or a subtask
 state: live
 autonomy: gated
-behavior: Creating a task records a t- entity under a project, or a subtask under another task.
+behavior: >
+  A task is the unit someone actually does. Created under a project it is a top-level task;
+  created under another task it becomes a subtask of it and belongs to the same project as its
+  parent, so it still shows up in everything asked of that project. Subtasks may nest as deep as
+  the work needs. A task created with neither a project nor a parent task is refused, and a task
+  created without an assignee is simply unassigned.
 implements:
-- apps/goals/tools.py
-- apps/goals/ui/TasksApp.jsx
+- apps/goals/tools.py::create_task
+- apps/goals/store.py::create_task
+- apps/goals/ui/GoalShared.jsx::TaskView
 tests: []
 links: {}
-notes: ''
+notes: >
+  Depth is unbounded on purpose: the shape of real work is not known in advance, and a fixed two
+  levels forces people to flatten milestones into checklists.

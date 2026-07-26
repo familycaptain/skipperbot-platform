@@ -1,0 +1,14 @@
+kind: specification
+id: lists.trello-boards.move-within-a-board
+title: Moving between two lists on the same board moves the card
+state: live
+autonomy: gated
+behavior: >
+  Moving an item between two lists that mirror the same board moves its card to the other column, at
+  the top, so the board reflects the move as well. Where a move cannot be carried out on the board,
+  the item still moves locally and the move still reports success.
+implements:
+- apps/lists/store.py::move_item
+tests: []
+links: {}
+notes: ''

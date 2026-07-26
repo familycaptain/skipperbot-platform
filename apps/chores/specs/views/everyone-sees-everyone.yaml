@@ -1,0 +1,18 @@
+kind: specification
+id: chores.views.everyone-sees-everyone
+title: Everyone can see everyone's chores
+state: live
+autonomy: gated
+behavior: >
+  Chore lists, the week ahead and who has checked what off are visible to the whole household,
+  whoever is looking. Nothing is hidden from a sibling; the restriction is on acting, not on
+  seeing, so a family can settle an argument about whose turn it was by looking.
+implements:
+- apps/chores/routes.py::api_today
+- apps/chores/routes.py::api_week
+- apps/chores/tools.py::get_chores_today
+tests: []
+links: {}
+notes: >
+  A deliberate exception to the platform's usual own-data-only reading: a chore rota only works
+  if it is public within the household.

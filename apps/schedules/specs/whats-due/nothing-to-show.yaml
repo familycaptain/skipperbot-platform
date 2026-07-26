@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.whats-due.nothing-to-show
+title: Nothing to show says so
+state: live
+autonomy: gated
+behavior: >
+  With no schedules set up at all, the app explains what schedules are for and invites the first one
+  rather than showing an empty list. A list that fails to load says what went wrong at the top of the
+  app and keeps the message until it is dismissed, instead of looking like an empty list, and a
+  schedule that has been asked for but no longer exists says it was not found.
+implements:
+- apps/schedules/ui/SchedulesApp.jsx
+- apps/schedules/ui/index.js
+tests: []
+links: {}
+notes: ''

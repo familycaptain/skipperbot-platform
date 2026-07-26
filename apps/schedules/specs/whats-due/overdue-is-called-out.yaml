@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.whats-due.overdue-is-called-out
+title: Overdue is called out, not just listed
+state: live
+autonomy: gated
+behavior: >
+  Anything past its date is marked as overdue in the list and says how far past — days overdue,
+  yesterday, overdue today — and the app puts a count of everything overdue at the top with a single
+  action to show just those. Something due in the next couple of days is distinguished from both, and
+  with nothing overdue neither the banner nor the overdue filter appears.
+implements:
+- apps/schedules/ui/SchedulesApp.jsx::ListView
+- apps/schedules/ui/SchedulesApp.jsx::formatDue
+tests: []
+links: {}
+notes: ''

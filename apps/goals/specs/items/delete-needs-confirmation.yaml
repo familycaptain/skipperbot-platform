@@ -1,0 +1,15 @@
+kind: specification
+id: goals.items.delete-needs-confirmation
+title: Deleting from the app asks first
+state: live
+autonomy: gated
+behavior: >
+  The delete control in the app does not delete on the first press: it turns into an explicit
+  question naming the item, and only the confirming press removes it. After a delete the app moves
+  to the parent of what was deleted rather than leaving an empty screen.
+implements:
+- apps/goals/ui/GoalShared.jsx::DeleteButton
+- apps/goals/ui/GoalsApp.jsx::handleDelete
+tests: []
+links: {}
+notes: ''

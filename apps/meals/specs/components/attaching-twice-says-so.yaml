@@ -1,0 +1,14 @@
+kind: specification
+id: meals.components.attaching-twice-says-so
+title: Attaching the same thing twice is a no-op
+state: live
+autonomy: gated
+behavior: >
+  Attaching a component a meal already has says it is already on that meal and changes nothing,
+  so a meal never lists the same component twice.
+implements:
+- apps/meals/data.py::link_component_to_meal
+- apps/meals/tools.py::add_component_to_meal
+tests: []
+links: {}
+notes: ''

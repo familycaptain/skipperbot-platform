@@ -1,0 +1,17 @@
+kind: specification
+id: chores.views.one-person-at-a-time
+title: A list can be narrowed to one person
+state: live
+autonomy: gated
+behavior: >
+  Both the day and the week can be asked for one person rather than the whole household, by
+  their name, their household account or their record's identifier, in any capitalisation. When
+  the person named has nothing in that period, the answer says so about them by name instead of
+  coming back empty.
+implements:
+- apps/chores/tools.py::_resolve_kid
+- apps/chores/tools.py::get_chores_today
+- apps/chores/tools.py::get_chores_week
+tests: []
+links: {}
+notes: ''

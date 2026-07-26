@@ -1,12 +1,16 @@
 kind: specification
 id: goals.views.goal-detail
-title: Goal detail
+title: Look at one goal
 state: live
 autonomy: gated
-behavior: Goal detail returns a goal's info plus its project list with progress.
+behavior: >
+  Asked about a specific goal, Skipper gives that goal — its state, owners, target date and the
+  opening of its notes — then each of its projects with position, state, priority, due date, task
+  progress, anything it waits on, and whether it is board-linked. It stops there: individual tasks
+  are the project's view, not the goal's.
 implements:
-- apps/goals/tools.py
-- apps/goals/ui/GoalsApp.jsx
+- apps/goals/tools.py::get_goal_detail
+- apps/goals/store.py::get_goal_detail
 tests: []
 links: {}
 notes: ''

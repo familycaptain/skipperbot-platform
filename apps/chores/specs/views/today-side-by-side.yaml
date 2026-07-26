@@ -1,0 +1,16 @@
+kind: specification
+id: chores.views.today-side-by-side
+title: The day shows everyone at once
+state: live
+autonomy: gated
+behavior: >
+  Opening Chores shows every person in the rotation together, each with their chores for the
+  chosen day, which zone each chore belongs to, any note on it, and whether it is done. Someone
+  with nothing that day is still shown, marked as having nothing, rather than left out.
+implements:
+- apps/chores/ui/ChoresApp.jsx::TodayTab
+- apps/chores/store.py::today_by_kid
+- apps/chores/tools.py::get_chores_today
+tests: []
+links: {}
+notes: ''

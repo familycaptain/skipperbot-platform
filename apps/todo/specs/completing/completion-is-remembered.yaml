@@ -1,0 +1,14 @@
+kind: specification
+id: todo.completing.completion-is-remembered
+title: 'A completion is remembered'
+state: live
+autonomy: gated
+behavior: >
+  An item completed through conversation is recorded in Skipper's memory as completed by that
+  person, so a later "did I do X?" can be answered without reading the list. A memory failure never
+  undoes the completion.
+implements:
+- apps/todo/tools.py::mark_todo_done
+tests: []
+links: {}
+notes: ''

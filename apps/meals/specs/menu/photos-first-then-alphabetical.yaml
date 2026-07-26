@@ -1,0 +1,15 @@
+kind: specification
+id: meals.menu.photos-first-then-alphabetical
+title: Meals with photos lead the menu
+state: live
+autonomy: gated
+behavior: >
+  Meals that have a photo come first, and within each group meals are in alphabetical order, so
+  the front page of a printed menu is the appetising one.
+implements:
+- apps/meals/pages/menu.html::renderPages
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: chores.rounds.nothing-to-say-nothing-sent
+title: A round with nothing to say sends nothing
+state: live
+autonomy: gated
+behavior: >
+  Somebody with no chores that day is not messaged in the morning round, and somebody with
+  nothing outstanding is not messaged in the evening one. When that is true of the whole
+  household the round finishes having sent nothing at all, rather than sending empty lists.
+implements:
+- apps/chores/handlers.py::_chores_skill_runner
+tests: []
+links: {}
+notes: ''

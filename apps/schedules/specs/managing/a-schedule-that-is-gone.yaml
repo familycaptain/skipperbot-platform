@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.managing.a-schedule-that-is-gone
+title: A schedule that is gone says so
+state: live
+autonomy: gated
+behavior: >
+  Opening, changing or completing a schedule that no longer exists answers that it was not found and
+  changes nothing — it never creates one to match the request, and no completion is recorded against
+  an id that is not there.
+implements:
+- apps/schedules/data.py::get_schedule
+- apps/schedules/data.py::update_schedule
+- apps/schedules/data.py::complete_schedule
+tests: []
+links: {}
+notes: ''

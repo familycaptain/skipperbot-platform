@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.snooze.nothing-to-snooze
+title: Snoozing something that is not there
+state: live
+autonomy: gated
+behavior: >
+  A snooze aimed at an id that is not a reminder's, or at a reminder that no longer exists, is
+  refused and creates nothing — a mistyped id never produces an orphan nudge carrying somebody
+  else's message.
+implements:
+- apps/reminders/tools.py::snooze_reminder
+- apps/reminders/store.py::snooze_reminder
+tests: []
+links: {}
+notes: ''

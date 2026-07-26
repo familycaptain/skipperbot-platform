@@ -1,0 +1,15 @@
+kind: specification
+id: meals.logging.what-have-we-had-today
+title: Today's meals are answerable in one question
+state: live
+autonomy: gated
+behavior: >
+  Asked what has been eaten today, the answer lists each occasion already logged today with what
+  it was and the library meal it points at. With nothing logged it says so and names the date,
+  rather than answering with an empty list.
+implements:
+- apps/meals/tools.py::check_today_meals
+- apps/meals/routes.py::api_get_today_meals
+tests: []
+links: {}
+notes: ''

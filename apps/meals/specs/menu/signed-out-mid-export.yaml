@@ -1,0 +1,16 @@
+kind: specification
+id: meals.menu.signed-out-mid-export
+title: A stale session is explained, not blamed on the data
+state: live
+autonomy: gated
+behavior: >
+  If the session has expired by the time the menu asks for meals, the page says so and offers a
+  way back into Skipper. Any other failure says the meals could not be loaded and to try again,
+  without echoing the underlying error into the page.
+implements:
+- apps/meals/pages/menu.html::generateMenu
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

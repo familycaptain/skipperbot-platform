@@ -1,0 +1,17 @@
+kind: specification
+id: goals.views.tasks-app-flat-list
+title: A single list of just your tasks
+state: live
+autonomy: gated
+behavior: >
+  The tasks app shows one flat list of everything assigned to the current person across every goal
+  and project, soonest due first and then by priority, each showing the goal and project it
+  belongs to as links. A due date in the past is called out. Finished and cancelled tasks are
+  hidden behind a toggle, so somebody whose only tasks are done sees them on request rather than
+  being told they have none.
+implements:
+- apps/goals/ui/TasksApp.jsx::TasksApp
+- apps/goals/ui/TasksApp.jsx::TaskListView
+tests: []
+links: {}
+notes: ''

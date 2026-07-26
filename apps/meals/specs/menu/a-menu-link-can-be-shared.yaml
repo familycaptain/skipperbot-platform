@@ -1,0 +1,18 @@
+kind: specification
+id: meals.menu.a-menu-link-can-be-shared
+title: A menu can be sent to someone as a link
+state: live
+autonomy: gated
+behavior: >
+  The address of the menu keeps its tag, title, search and effort, so the link reopens the same
+  menu for whoever it is sent to. A link to the menu's previous address still works and keeps
+  its filters rather than dropping them.
+implements:
+- apps/meals/pages/menu.html::syncUrl
+- apps/meals/routes.py::serve_menu_page
+- agent.py::meal_menu_legacy_redirect
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: meals.logging.more-than-one-of-the-same-in-a-day
+title: A day can hold two of the same occasion
+state: live
+autonomy: gated
+behavior: >
+  Two snacks, two lunches, or a second dinner on the same day are each recorded as their own
+  entry; logging again for a day and occasion that already has an entry is not refused and does
+  not overwrite the earlier one.
+implements:
+- apps/meals/migrations/007_allow_multiple_per_day.sql
+- apps/meals/data.py::create_meal_log
+tests: []
+links: {}
+notes: ''

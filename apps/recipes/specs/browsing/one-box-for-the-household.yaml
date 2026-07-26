@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.browsing.one-box-for-the-household
+title: One recipe box, shared
+state: live
+autonomy: gated
+behavior: >
+  The collection belongs to the household rather than to whoever typed each recipe in: anyone signed
+  in can find, open, edit, rate, print and delete any recipe. Authorship is recorded and shown, but
+  it grants nobody exclusive hold over a recipe.
+implements:
+- apps/recipes/routes.py
+- apps/recipes/data.py::get_all_recipes
+tests: []
+links: {}
+notes: ''

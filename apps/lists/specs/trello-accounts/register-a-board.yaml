@@ -1,0 +1,18 @@
+kind: specification
+id: lists.trello-accounts.register-a-board
+title: Registering a board against an account
+state: live
+autonomy: gated
+behavior: >
+  A board is registered by giving it a short name to be called by, choosing which account reaches
+  it, and supplying its Trello identifier; a default list may also be named. The name and the
+  account are both required, and registering under an existing name updates that board. Board and
+  account names are matched without regard to capitals, so the same board is never registered twice
+  under different casing.
+implements:
+- apps/lists/routes.py::save_trello_board
+- apps/lists/trello_config.py::save_board
+- apps/lists/ui/TrelloSettings.jsx::AddBoardForm
+tests: []
+links: {}
+notes: ''

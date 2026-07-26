@@ -1,0 +1,16 @@
+kind: specification
+id: lists.collections.search-lists-and-items
+title: Searching finds the list by what is on it
+state: live
+autonomy: gated
+behavior: >
+  Typing a search narrows the lists to those whose name, nickname or any live item matches it, so
+  searching for an item finds the list holding it. Crossed-off items do not match. When nothing
+  matches, the answer says so rather than showing the same invitation a household with no lists at
+  all would see.
+implements:
+- agent.py::api_list_lists
+- apps/lists/ui/ListsApp.jsx::ListsApp
+tests: []
+links: {}
+notes: ''

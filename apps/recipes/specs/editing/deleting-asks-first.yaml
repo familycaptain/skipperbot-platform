@@ -1,0 +1,16 @@
+kind: specification
+id: recipes.editing.deleting-asks-first
+title: Deleting asks first, then is permanent
+state: live
+autonomy: gated
+behavior: >
+  Deleting a recipe asks for confirmation first; confirmed, the recipe is removed permanently — there
+  is no undo and no archive — and the person is returned to the collection. Deleting a recipe that is
+  already gone reports that it was not found rather than reporting success.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx::handleDelete
+- apps/recipes/tools.py::delete_recipe
+- apps/recipes/data.py::delete_recipe
+tests: []
+links: {}
+notes: ''

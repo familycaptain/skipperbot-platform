@@ -1,0 +1,15 @@
+kind: specification
+id: chores.views.pick-a-day
+title: Any day can be brought up
+state: live
+autonomy: gated
+behavior: >
+  The day being shown can be stepped back and forward a day at a time, typed in directly, or
+  snapped back to today. Asking Skipper works the same way, and accepts 'today', 'yesterday' and
+  'tomorrow' as well as a date.
+implements:
+- apps/chores/ui/ChoresApp.jsx::TodayTab
+- apps/chores/tools.py::_resolve_date
+tests: []
+links: {}
+notes: ''

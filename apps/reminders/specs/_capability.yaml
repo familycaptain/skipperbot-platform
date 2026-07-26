@@ -2,10 +2,11 @@ kind: capability
 id: reminders
 title: Reminders
 app: reminders
-scope: 'Per-user ''tell me X at time Y'' reminders: one-shot and recurring (RRULE), an optional
-  nag mode that re-fires daily until acknowledged, and snooze; plus a desktop UI to edit the list.
-  A fired reminder hands off to the Notifications app for delivery. NOT a calendar or recurring-schedule
-  engine (the Schedules app owns backing schedules), and NOT the notification-delivery layer itself.'
+scope: 'Per-person "remind me X at time Y": one-off reminders, reminders that repeat on a calendar
+  rule, nags that nudge once a day at an unpredictable time until somebody stops them, and snoozing
+  a nudge into a fresh follow-up. Owns what was promised and when it comes due; a reminder that
+  comes due hands its message to the platform''s delivery and stops there. NOT a calendar, NOT the
+  recurring-household-work tracker (Schedules owns that), NOT the delivery layer.'
 state: live
 autonomy: gated
 links: {}

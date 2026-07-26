@@ -1,0 +1,17 @@
+kind: specification
+id: goals.structure.dependencies
+title: One item can be declared to wait on others
+state: live
+autonomy: gated
+behavior: >
+  A goal, project or task can be declared to depend on others of the same kind, and clearing the
+  list removes every dependency. An item cannot depend on itself, and naming something that does
+  not exist or is the wrong kind is refused with nothing recorded. The answer names each
+  dependency and the state it is currently in, so it is clear what is actually holding things up.
+implements:
+- apps/goals/tools.py::set_task_dependency
+- apps/goals/tools.py::set_project_dependency
+- apps/goals/tools.py::set_goal_dependency
+tests: []
+links: {}
+notes: ''

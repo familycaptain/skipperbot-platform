@@ -1,12 +1,16 @@
 kind: specification
 id: chores.zones.update-chore
-title: Update a chore
+title: Editing a chore
 state: live
 autonomy: gated
-behavior: Updating changes a chore (parent only).
+behavior: >
+  A parent can rename a chore, change its note, move it to another day, move it within its day,
+  or retire and un-retire it. Only what is supplied changes; a request that changes nothing says
+  so, and a chore that does not exist is reported as not found rather than silently created.
 implements:
-- apps/chores/tools.py
-- apps/chores/ui/ChoresApp.jsx
+- apps/chores/tools.py::update_chore
+- apps/chores/data.py::update_chore
+- apps/chores/routes.py::api_update_chore
 tests: []
 links: {}
 notes: ''

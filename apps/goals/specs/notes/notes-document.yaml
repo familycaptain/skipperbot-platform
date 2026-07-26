@@ -1,0 +1,19 @@
+kind: specification
+id: goals.notes.notes-document
+title: Each item carries one standing description
+state: live
+autonomy: gated
+behavior: >
+  Every goal, project and task has a single free-form document for what it is, its scope and the
+  decisions behind it — written and read as ordinary prose, replaced as a whole when edited, and
+  kept separate from the dated history of what has happened to it. An item with nothing written
+  says so rather than returning blank.
+implements:
+- apps/goals/tools.py::update_entity_notes
+- apps/goals/tools.py::get_entity_notes
+- apps/goals/store.py::update_notes
+- apps/goals/store.py::get_notes
+- apps/goals/ui/GoalShared.jsx::EditableNotes
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.automation.starting-work-advances-the-schedule
+title: Starting the work advances the schedule
+state: live
+autonomy: gated
+behavior: >
+  Once the work is under way the schedule is marked done and moves to its next occurrence, and the run
+  is in its history attributed to the scheduler with a note of what was started — so an automatic
+  schedule keeps the same visible record as one a person ticks off. Starting the work counts towards
+  how many times the schedule has been done.
+implements:
+- apps/schedules/job_trigger.py::check_schedule_jobs
+- apps/schedules/data.py::complete_schedule
+tests: []
+links: {}
+notes: ''

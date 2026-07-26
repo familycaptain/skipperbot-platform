@@ -1,0 +1,13 @@
+kind: specification
+id: todo.weekly-nudge.an-unreadable-time-still-nudges
+title: 'An unreadable nudge time does not cost the nudge'
+state: live
+autonomy: gated
+behavior: >
+  If a person's nudge time cannot be read as a time of day, they are still nudged on their chosen
+  weekday rather than silently skipped.
+implements:
+- todo_nudge_notifier.py::check_todo_nudges
+tests: []
+links: {}
+notes: ''

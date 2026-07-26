@@ -1,27 +1,16 @@
 kind: specification
 id: platform.webui.forms-no-native-submit
-title: No web SPA form can cause a native page navigation
+title: No form in the web console can reload the page
 state: live
 autonomy: gated
-behavior: 'Across the entire web SPA, no <form> can ever trigger a native HTML form submission
-  / full-page navigation. The primary action button of every form is type="button" with an
-  onClick that runs the form''s submit handler (never type="submit"), so a click cannot perform
-  a default form submit even before/while React is wiring up (the issue #36 hydration race: under
-  load the native submit could fire a default GET / full-page reload before React''s onSubmit
-  preventDefault was in control, wiping SPA state). Each <form> retains onSubmit bound to the
-  same handler so the Enter key still works: single-input-per-step forms (LoginScreen) submit via
-  browser implicit submission; the chat textarea and the multi-input Onboarding form (which has no
-  submit control once the button is type="button") submit via an explicit onKeyDown handler that
-  skips while IME-composing. Every handler calls e?.preventDefault?.() before any work. Forms whose
-  handler fires an async request (LoginScreen handleCheckUser/handleLogin -> /auth/login; Onboarding
-  submit -> /api/onboarding/create-user) carry a synchronous useRef in-flight guard set ONLY after
-  the synchronous validation early-returns and cleared in the finally, so rapid taps issue at most
-  one request and an invalid tap never locks the form. ChatInput needs no ref guard (onSend is the
-  parent''s concern; handleSubmit clears the text synchronously and the parent disabled gates).
-  Onboarding''s credential inputs carry autoComplete (username / new-password) + name so removing
-  the submit button does not weaken the browser save-password heuristic. A committed guardrail
-  (web/scripts/check-no-native-submit.mjs, wired into the web prebuild) fails the build if any
-  type="submit" reappears anywhere under web/src. Folds in issue #40.'
+behavior: >
+  No form anywhere in the web console can reload the page. Submitting one — by clicking its
+  primary button or by pressing Enter in a field — carries out the action in place and leaves
+  the rest of the screen as it was; this holds on the very first interaction after a cold load,
+  which previously reloaded and wiped whatever had been typed. Tapping the button repeatedly
+  issues the underlying request at most once, a tap refused by validation leaves the form usable
+  rather than stuck, and a password manager still offers to save the credentials entered during
+  first-run setup.
 implements:
 - web/src/components/LoginScreen.jsx
 - web/src/components/ChatInput.jsx
@@ -54,16 +43,12 @@ tests:
     (and Enter) sends without a reload (>=3x). Green only if the negative control fires AND all three
     forms survive. On an already-onboarded box the onboarding form cannot render -> the script reports
     CANNOT VALIDATE (never a silent static-only pass).'
+issues:
+- 36
+- 40
 links: {}
-notes: 'Pure CSR app (createRoot, no SSR), React 19. Re-specced from the operator''s Gate-1 COMBINE
-  decision: apply the native-submit fix to EVERY web form as ONE comprehensive deliverable (CHARTER
-  "gate the deliverable, not internal steps"; ARCHITECTURE "comprehensive fixes, no lingering debt").
-  No new dependencies; web/ has no eslint, so the guardrail is a committed prebuild script rather than
-  a lint rule. VERIFY USER ACTION: hard-refresh / reinstall the PWA so the new bundle is served (a
-  cached old bundle keeps the old forms); the service-worker controllerchange reload (main.jsx) is a
-  SEPARATE path and must not be conflated with a native submit. Box-2 live acceptance passed on a FRESH
-  box for ALL THREE forms — Onboarding (click 3x + Enter per multi-input field + no-duplicate-submit +
-  real create), Login (3x), Chat (3x) — with the negative control proving the oracle. (Gate-2 pushback:
-  Onboarding was originally static-only; it is now fully live-exercised since it is the form with the
-  most behavioral change.)'
+notes: >-
+  Operator's Gate-1 decision: fix every form in the SPA as one deliverable rather than only the
+  reported one. web/ has no eslint, so the regression guard is a committed prebuild script rather
+  than a lint rule.
 verified: true

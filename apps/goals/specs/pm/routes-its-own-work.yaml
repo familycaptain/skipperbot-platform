@@ -1,0 +1,16 @@
+kind: specification
+id: goals.pm.routes-its-own-work
+title: Work assigned to Skipper is queued, not done mid-review
+state: live
+autonomy: gated
+behavior: >
+  When a goal's open items belong to Skipper and are the kind it can actually do, the review
+  queues an autonomous work session on that goal instead of attempting the work inside the review.
+  At most two such sessions run at once; beyond that the goal waits for a later review, and the
+  same goal is never queued twice in one review.
+implements:
+- apps/goals/pm_domain.py::pm_skill_runner
+- apps/goals/manifest.yaml
+tests: []
+links: {}
+notes: ''

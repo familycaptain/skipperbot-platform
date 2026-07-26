@@ -1,0 +1,18 @@
+kind: specification
+id: meals.nightly-check.one-check-each-evening
+title: The check runs once a day at the chosen time
+state: live
+autonomy: gated
+behavior: >
+  Once a day, at the local time the household chose, Skipper checks whether tonight's dinner has
+  been logged. The time is picked from a short list of evening times in the app's settings and
+  defaults to nine in the evening.
+implements:
+- apps/meals/manifest.yaml::config
+- apps/meals/schedule.py::VALID_TIMES
+- apps/meals/handlers.py::handle_dinner_check
+tests:
+- type: unit
+  path: tests/evolve/meals/test_dinner_schedule.py
+links: {}
+notes: ''

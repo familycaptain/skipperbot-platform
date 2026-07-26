@@ -1,0 +1,16 @@
+kind: specification
+id: meals.library.same-name-is-the-same-meal
+title: Saving a meal that already exists expands it
+state: live
+autonomy: gated
+behavior: >
+  Saving a meal idea whose name already exists, ignoring case, expands the meal that is already
+  there rather than creating a second copy: its tags are combined, an empty description is
+  filled in, and a given effort, notes or rating are applied. Any components named are linked to
+  that same meal, and the reply says which meal was expanded.
+implements:
+- apps/meals/tools.py::add_meal
+- apps/meals/data.py::find_meal_by_name
+tests: []
+links: {}
+notes: ''

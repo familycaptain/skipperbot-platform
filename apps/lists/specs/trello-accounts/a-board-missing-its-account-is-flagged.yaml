@@ -1,0 +1,14 @@
+kind: specification
+id: lists.trello-accounts.a-board-missing-its-account-is-flagged
+title: A board whose account has gone is flagged
+state: live
+autonomy: gated
+behavior: >
+  A board that names an account which no longer exists is shown as such, marked rather than quietly
+  listed alongside working ones, so the reason its lists stopped refreshing is visible where the
+  boards are managed.
+implements:
+- apps/lists/ui/TrelloSettings.jsx::BoardRow
+tests: []
+links: {}
+notes: ''

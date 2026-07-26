@@ -1,0 +1,16 @@
+kind: specification
+id: chores.kids.anyone-can-be-in-the-rotation
+title: Anyone in the household can be in the rotation
+state: live
+autonomy: gated
+behavior: >
+  The rotation is open to any real person in the household — a younger child, a teenager, a
+  parent taking a turn — and needs no special kind of account. Only Skipper itself is excluded.
+  Somebody already in the rotation is not offered again while they are still in it.
+implements:
+- apps/chores/data.py::eligible_member_accounts
+tests: []
+links: {}
+notes: >
+  There is no 'child' account type to filter on, and inventing one here would have made a parent
+  unable to take a turn.

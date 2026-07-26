@@ -1,0 +1,16 @@
+kind: specification
+id: meals.nightly-check.never-twice-in-a-night
+title: The question is never asked twice in one night
+state: live
+autonomy: gated
+behavior: >
+  However often the time is changed, and however many times Skipper restarts, at most one dinner
+  question goes out per evening — a duplicated or racing setup never turns into two.
+implements:
+- apps/meals/schedule.py::SCHEDULE_ID
+- apps/meals/hooks.py::register_hooks
+tests:
+- type: unit
+  path: tests/evolve/meals/test_dinner_schedule.py
+links: {}
+notes: ''

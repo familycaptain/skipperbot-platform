@@ -1,0 +1,16 @@
+kind: specification
+id: recipes.editing.rate-a-recipe
+title: Rating a recipe out of five
+state: live
+autonomy: gated
+behavior: >
+  Tapping a star on a recipe records that rating at once without entering the edit form, and the
+  stars then show on the recipe and beside it in the browser. Only one to five stars can be recorded:
+  an attempt to record anything outside that range changes nothing and the existing rating stands.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx::handleRate
+- apps/recipes/tools.py::update_recipe
+- apps/recipes/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

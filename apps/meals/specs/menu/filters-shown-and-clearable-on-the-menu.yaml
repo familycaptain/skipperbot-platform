@@ -1,0 +1,17 @@
+kind: specification
+id: meals.menu.filters-shown-and-clearable-on-the-menu
+title: The menu shows what is filtering it
+state: live
+autonomy: gated
+behavior: >
+  The filters that produced the menu are listed above it and each can be dropped on its own,
+  with the menu regenerating; one action clears them all and shows every meal. Filters that
+  arrived in the link are shown the same way as ones typed on the page.
+implements:
+- apps/meals/pages/menu.html::renderFilterChips
+- apps/meals/pages/menu.html::clearAllFilters
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

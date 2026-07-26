@@ -1,0 +1,14 @@
+kind: specification
+id: todo.weekly-nudge.nothing-to-nudge-about
+title: 'An empty list is never announced'
+state: live
+autonomy: gated
+behavior: >
+  A person with no open to-do items gets no nudge that week, and neither does a person with no to-do
+  list connected at all. The nudge exists to prompt a triage, so there is nothing to send when there
+  is nothing on the list.
+implements:
+- todo_nudge_notifier.py::check_todo_nudges
+tests: []
+links: {}
+notes: ''

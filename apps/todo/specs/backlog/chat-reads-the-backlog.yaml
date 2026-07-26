@@ -1,0 +1,15 @@
+kind: specification
+id: todo.backlog.chat-reads-the-backlog
+title: 'Conversation can read the backlog out'
+state: live
+autonomy: gated
+behavior: >
+  Asked for their backlog, a person is told its name and its open items numbered, or that it is
+  empty. Reading is the whole of what conversation offers for the backlog: adding to it, completing
+  from it, and moving items between the two lists are done in the app.
+implements:
+- apps/todo/tools.py::get_backlog_list
+- apps/todo/guide.md
+tests: []
+links: {}
+notes: ''

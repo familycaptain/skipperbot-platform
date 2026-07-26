@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.completing.who-did-it-and-when
+title: A history of who did it and when
+state: live
+autonomy: gated
+behavior: >
+  Every completion is kept with its moment, who did it and any note left with it, and an open
+  schedule lists its recent ones newest first. A schedule never completed shows no history section at
+  all rather than an empty one.
+implements:
+- apps/schedules/data.py::get_completions
+- apps/schedules/ui/SchedulesApp.jsx::DetailView
+tests: []
+links: {}
+notes: ''

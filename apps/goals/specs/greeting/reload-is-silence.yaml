@@ -1,0 +1,22 @@
+kind: specification
+id: goals.greeting.reload-is-silence
+title: Refreshing the page is not an arrival
+state: live
+autonomy: gated
+behavior: >
+  If Skipper said anything to that person within the last quarter of an hour, arriving again is
+  treated as a reconnect and Skipper stays quiet — so finishing a conversation and refreshing the
+  tab, or a flaky connection reattaching, produces no greeting. Being away longer than that does
+  warrant one. The measure is the last thing Skipper said to them by any route, not just on that
+  screen.
+implements:
+- apps/goals/handlers.py::_connection_skill_runner
+- apps/goals/handlers.py::_RECENT_GREETING_MINUTES
+tests:
+- type: unit
+  path: tests/evolve/platform/test_onboarding_live_greeting.py
+  rubric: >
+    Asserts the quiet-on-reconnect window is read from what Skipper last said to that person and
+    is not narrowed to setup conversation only.
+links: {}
+notes: ''

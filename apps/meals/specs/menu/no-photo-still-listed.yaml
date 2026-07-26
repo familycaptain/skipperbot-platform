@@ -1,0 +1,15 @@
+kind: specification
+id: meals.menu.no-photo-still-listed
+title: A meal without a photo still gets its place
+state: live
+autonomy: gated
+behavior: >
+  A meal with no photo is still listed, with a plain placeholder tile where the photo would be,
+  so the menu never silently omits part of the library or prints a broken image.
+implements:
+- apps/meals/pages/menu.html::renderMealItem
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

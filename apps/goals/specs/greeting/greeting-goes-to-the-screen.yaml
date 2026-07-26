@@ -1,0 +1,15 @@
+kind: specification
+id: goals.greeting.greeting-goes-to-the-screen
+title: A greeting lands where the person just arrived
+state: live
+autonomy: gated
+behavior: >
+  The greeting is delivered to the screen the person has just opened and put there immediately,
+  not held for the next delivery sweep — and it is not also fanned out as a Discord message and a
+  phone notification, because they are plainly already here. It appears once in the record of the
+  conversation.
+implements:
+- apps/goals/handlers.py::_greeting_turn
+tests: []
+links: {}
+notes: ''

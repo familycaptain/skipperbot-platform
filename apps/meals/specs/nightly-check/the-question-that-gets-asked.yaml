@@ -1,0 +1,16 @@
+kind: specification
+id: meals.nightly-check.the-question-that-gets-asked
+title: An unlogged dinner is asked about once
+state: live
+autonomy: gated
+behavior: >
+  With no dinner logged, Skipper asks what the household had, addressed to the person who owns
+  this Skipper, and the question is recorded and delivered like any other proactive message. If
+  no household member can be identified, nothing is sent rather than a message going to nobody.
+implements:
+- apps/meals/handlers.py::handle_dinner_check
+tests:
+- type: unit
+  path: tests/evolve/meals/test_dinner_schedule.py
+links: {}
+notes: ''

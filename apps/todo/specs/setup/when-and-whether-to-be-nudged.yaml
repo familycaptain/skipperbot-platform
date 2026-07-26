@@ -1,0 +1,17 @@
+kind: specification
+id: todo.setup.when-and-whether-to-be-nudged
+title: 'Each person sets their own nudge day and time'
+state: live
+autonomy: gated
+behavior: >
+  Each person chooses whether they get the weekly nudge, on which weekday, and at what time of day;
+  the day and time controls are unavailable while the nudge is switched off. Until anyone chooses,
+  everybody is set to Saturday at 07:00 with the nudge on. One person's choice never changes anybody
+  else's.
+implements:
+- apps/todo/ui/TodoApp.jsx::SettingsPanel
+- apps/todo/data.py::upsert_config
+- apps/todo/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

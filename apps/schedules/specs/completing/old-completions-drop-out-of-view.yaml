@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.completing.old-completions-drop-out-of-view
+title: Old completions drop out of view but not out of the record
+state: live
+autonomy: gated
+behavior: >
+  The history shown on a schedule covers a recent window — a configurable number of days, about a
+  month by default — so a chore done weekly for years does not present a wall of entries. Older
+  completions are still kept and still counted in how many times it has been done, and the window can
+  be turned off to see everything.
+implements:
+- apps/schedules/data.py::get_completions
+- apps/schedules/manifest.yaml
+tests: []
+links: {}
+notes: ''

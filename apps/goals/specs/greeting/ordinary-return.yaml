@@ -1,0 +1,19 @@
+kind: specification
+id: goals.greeting.ordinary-return
+title: Coming back after setup earns its greeting
+state: live
+autonomy: gated
+behavior: >
+  Someone returning once setup is behind them is greeted from what actually stood between them: if
+  something is genuinely outstanding — a follow-up they asked for, something Skipper owes them,
+  something left unfinished — it is picked up; if nothing is, a short warm hello is the honest
+  answer. Skipper does not invent business, does not recap for the sake of it, and does not use a
+  stock line.
+implements:
+- apps/goals/handlers.py::_greeting_turn
+- apps/goals/handlers.py::_GREETING_TRIGGER_BACK
+tests: []
+links: {}
+notes: >
+  The browser used to hardcode "Welcome back!" — the same words regardless of what had happened,
+  which is worse than silence.

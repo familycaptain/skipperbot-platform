@@ -1,0 +1,18 @@
+kind: specification
+id: todo.the-list.your-own-list-without-naming-it
+title: '"My to-do" is always your own'
+state: live
+autonomy: gated
+behavior: >
+  Asked what is on their to-do, a person is answered with their own list — its name, how many items
+  are open, and those items numbered in the order they stand in — without having to name a list. An
+  unqualified "my to-do" or "my backlog" is never satisfied by searching for a similarly named list,
+  which could belong to another member of the household; another person's list is only read when
+  that person is named explicitly.
+implements:
+- apps/todo/tools.py::get_todo_list
+- apps/todo/tools.py::get_backlog_list
+- apps/todo/guide.md
+tests: []
+links: {}
+notes: ''

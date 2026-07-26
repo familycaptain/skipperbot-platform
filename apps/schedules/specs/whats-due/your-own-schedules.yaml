@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.whats-due.your-own-schedules
+title: The app shows the schedules that are yours
+state: live
+autonomy: gated
+behavior: >
+  Opening the Schedules app shows the schedules assigned to the person looking, not the whole
+  household's, so a list of chores is a list of your chores. Who a schedule is assigned to is matched
+  regardless of how the name was capitalised when it was entered.
+implements:
+- apps/schedules/ui/SchedulesApp.jsx
+- apps/schedules/data.py::list_schedules
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.cooking.quantities-read-as-kitchen-fractions
+title: Scaled quantities read like a cook would write them
+state: live
+autonomy: gated
+behavior: >
+  Scaled quantities are shown as whole numbers with halves, thirds, quarters or eighths — one and a
+  half, three quarters — and fall back to a short decimal only when no simple fraction is close
+  enough. A quantity that scales down to nothing is shown with no number rather than as zero.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx::friendlyFraction
+- apps/recipes/ui/RecipeDetailApp.jsx::formatQty
+tests: []
+links: {}
+notes: ''

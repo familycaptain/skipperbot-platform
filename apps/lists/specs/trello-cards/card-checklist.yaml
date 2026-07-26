@@ -1,0 +1,17 @@
+kind: specification
+id: lists.trello-cards.card-checklist
+title: Reading and setting a card's checklist
+state: live
+autonomy: gated
+behavior: >
+  Asking about a card's checklists without offering any items reads them back, each with how many of
+  its items are ticked. Offering items instead writes a checklist, replacing any existing one of the
+  same name entirely rather than merging into it; blank lines are ignored and a name is required. A
+  card with no checklists says so.
+implements:
+- apps/lists/tools.py::trello_card_checklist
+- trello_client.py::get_checklists
+- trello_client.py::set_checklist
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: lists.items.who-added-what
+title: Each item remembers who put it there
+state: live
+autonomy: gated
+behavior: >
+  Every item records the person who added it and shows their name beside it, so a shared list
+  answers 'who wanted this?'. An item that arrived from the connected board shows no name, because
+  the board does not say who added the card.
+implements:
+- apps/lists/store.py::add_item
+- apps/lists/ui/ListsApp.jsx::ListItemRow
+- apps/lists/ui/ListsApp.jsx::printList
+tests: []
+links: {}
+notes: ''

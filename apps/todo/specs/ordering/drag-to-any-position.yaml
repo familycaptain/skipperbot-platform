@@ -1,0 +1,17 @@
+kind: specification
+id: todo.ordering.drag-to-any-position
+title: 'Dragging an item leaves it where you dropped it'
+state: live
+autonomy: gated
+behavior: >
+  Dragging an item onto another row puts it in that place and stores the whole column's new order,
+  so a refresh — or the same list opened somewhere else — shows the order that was left. Dropping an
+  item back where it started changes nothing. If the new order cannot be stored the column is re-
+  read, so what is shown is always what is stored rather than an order that only exists on screen.
+implements:
+- apps/todo/ui/TodoApp.jsx::TodoColumn
+- agent.py::api_batch_reorder_todo
+- apps/lists/data.py::batch_reorder
+tests: []
+links: {}
+notes: ''

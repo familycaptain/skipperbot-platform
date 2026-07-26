@@ -1,0 +1,13 @@
+kind: specification
+id: chores.checkoff.an-unannounced-check-off-still-counts
+title: A check-off still counts if the announcement fails
+state: live
+autonomy: gated
+behavior: >
+  If the household announcement cannot be raised, the check-off itself still stands. Recording
+  that a chore was done is never lost to a failure in telling anybody about it.
+implements:
+- apps/chores/store.py::_emit
+tests: []
+links: {}
+notes: ''

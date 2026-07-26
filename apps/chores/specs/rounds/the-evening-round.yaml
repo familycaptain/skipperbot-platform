@@ -1,0 +1,15 @@
+kind: specification
+id: chores.rounds.the-evening-round
+title: The evening round chases only what is left
+state: live
+autonomy: gated
+behavior: >
+  In the evening, a second round goes only to the people who still have something unchecked from
+  that day, and mentions only the unfinished chores. Somebody who finished everything hears
+  nothing, so the nudge stays worth reading.
+implements:
+- apps/chores/handlers.py::handle_chores_evening
+- apps/chores/handlers.py::_chores_skill_runner
+tests: []
+links: {}
+notes: ''

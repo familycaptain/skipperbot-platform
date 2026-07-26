@@ -1,0 +1,16 @@
+kind: specification
+id: reminders.set.one-off-reminder
+title: A reminder for one particular moment
+state: live
+autonomy: gated
+behavior: >
+  Asking to be reminded of something at a particular moment records that message against that
+  moment and hands back a short id to refer to it by; it appears in the person's list straight
+  away, and the answer repeats the exact time and message that were saved rather than confirming
+  in the abstract. It nudges once, at that moment, and is then finished.
+implements:
+- apps/reminders/tools.py::set_reminder
+- apps/reminders/store.py::create_reminder
+tests: []
+links: {}
+notes: ''

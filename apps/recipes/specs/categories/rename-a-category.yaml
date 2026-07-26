@@ -1,0 +1,18 @@
+kind: specification
+id: recipes.categories.rename-a-category
+title: Renaming a category
+state: live
+autonomy: gated
+behavior: >
+  Renaming a category changes the name wherever categories are offered — the filter bar and the tag
+  picker. Recipes already tagged keep the name they were tagged with, so the old name goes on showing
+  on those recipes, and on the filter bar, until each of them is retagged.
+implements:
+- apps/recipes/data.py::update_category
+- apps/recipes/tools.py::update_recipe_category
+tests: []
+links: {}
+notes: >
+  A recipe carries a category's name, not a reference to it, so a rename cannot follow it.
+  Recorded as behaviour because it is what a person sees; flagged in the audit findings as
+  probably not what was intended.

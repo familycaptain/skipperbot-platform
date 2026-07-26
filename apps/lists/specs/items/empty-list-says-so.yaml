@@ -1,0 +1,15 @@
+kind: specification
+id: lists.items.empty-list-says-so
+title: An empty list says it is empty
+state: live
+autonomy: gated
+behavior: >
+  Opening or asking for a list with nothing live on it says the list is empty rather than showing a
+  blank space that could equally mean it failed to load. A list that has only crossed-off items
+  reads as empty too, with the crossed-off count still offered.
+implements:
+- apps/lists/store.py::show_list
+- apps/lists/ui/ListsApp.jsx::ListCard
+tests: []
+links: {}
+notes: ''

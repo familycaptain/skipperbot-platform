@@ -1,0 +1,17 @@
+kind: specification
+id: goals.structure.stack-ranks
+title: Everything has a position, and it is stated
+state: live
+autonomy: gated
+behavior: >
+  Goals are numbered against each other, projects within their goal, and tasks within their
+  project — and that number is shown wherever the item is listed, so what is next is never
+  ambiguous. Positions are contiguous from one: after anything that changes the shape of the work
+  everything is renumbered rather than left with gaps.
+implements:
+- apps/goals/store.py::_rerank_project
+- apps/goals/store.py::_rerank_goal
+- apps/goals/store.py::_rerank_goals
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: meals.library.a-meal-needs-a-name-and-a-tag
+title: A meal needs a name and a tag
+state: live
+autonomy: gated
+behavior: >
+  Adding a meal to the library is refused unless it has a name and at least one tag, and the
+  refusal says what is missing — for a tag, that a cuisine word such as 'american' or 'italian'
+  is what is wanted. Nothing is stored on a refused attempt.
+implements:
+- apps/meals/routes.py::api_create_meal
+- apps/meals/tools.py::add_meal
+tests: []
+links: {}
+notes: >
+  The tag requirement exists because a meal nobody can filter to is invisible in a library whose
+  only classification is tags.

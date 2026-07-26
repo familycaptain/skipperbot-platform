@@ -1,0 +1,15 @@
+kind: specification
+id: meals.deciding.surprise-me
+title: Surprise me picks from what matches
+state: live
+autonomy: gated
+behavior: >
+  Surprise me picks one meal at random from the meals that currently match the filters,
+  highlights it as tonight's pick, and shows the rest of the matches alongside it. With nothing
+  matching, no pick is offered rather than one being invented from outside the filters.
+implements:
+- apps/meals/routes.py::api_discover_random
+- apps/meals/ui/MealsApp.jsx::DiscoverTab
+tests: []
+links: {}
+notes: ''

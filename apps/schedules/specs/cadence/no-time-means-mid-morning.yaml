@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.cadence.no-time-means-mid-morning
+title: No time of day means the morning
+state: live
+autonomy: gated
+behavior: >
+  Time of day is optional: a schedule with none falls due in the middle of the morning rather than
+  at midnight, so "every Saturday" is not something that quietly went overdue while everyone slept.
+  A time that cannot be read as a time of day is treated as none given rather than rejected.
+implements:
+- apps/schedules/data.py::_apply_time
+- apps/schedules/data.py::_parse_time_of_day
+tests: []
+links: {}
+notes: ''

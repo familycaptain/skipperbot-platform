@@ -1,0 +1,15 @@
+kind: specification
+id: chores.zones.retired-chores-stay-visible-in-setup
+title: A retired chore is still visible in setup
+state: live
+autonomy: gated
+behavior: >
+  A retired chore stays listed in the zone's setup grid, struck through in its old place, so a
+  parent can see what a zone used to include and put it back rather than having to remember it.
+  It never appears in anybody's day or week.
+implements:
+- apps/chores/ui/ChoresApp.jsx::ZoneCard
+- apps/chores/data.py::list_chores
+tests: []
+links: {}
+notes: ''

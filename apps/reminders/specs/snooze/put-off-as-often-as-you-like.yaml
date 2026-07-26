@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.snooze.put-off-as-often-as-you-like
+title: There is no limit on putting something off
+state: live
+autonomy: gated
+behavior: >
+  A follow-up can itself be snoozed, and so can that one, with no cap and no escalation: Skipper
+  does not start refusing, or nudging harder, because something has been deferred five times.
+implements:
+- apps/reminders/store.py::snooze_reminder
+tests: []
+links: {}
+notes: >
+  Deliberate: a cap would mean the nudge that disappears is the last one, which is the opposite of
+  what a reminder is for.

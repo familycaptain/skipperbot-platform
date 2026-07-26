@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.nags.moving-a-nag-to-another-window
+title: Moving a nag to another part of the day takes effect at once
+state: live
+autonomy: gated
+behavior: >
+  Changing which part of the day a nag belongs to reschedules it into the new window straight away
+  — later today if there is still room in it, otherwise tomorrow — instead of leaving it at its
+  old time for one more day. Taking the scope away puts it back to any waking hour.
+implements:
+- apps/reminders/store.py::modify_reminder
+- apps/reminders/tools.py::modify_reminder_by_id
+tests: []
+links: {}
+notes: ''

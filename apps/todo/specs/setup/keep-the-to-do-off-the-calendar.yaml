@@ -1,0 +1,15 @@
+kind: specification
+id: todo.setup.keep-the-to-do-off-the-calendar
+title: 'The calendar entry can be switched off'
+state: live
+autonomy: gated
+behavior: >
+  A person can stop their to-do being shown on the calendar; it is shown by default, and the choice
+  affects only their own entry.
+implements:
+- apps/todo/ui/TodoApp.jsx::SettingsPanel
+- apps/todo/data.py::upsert_config
+- data_layer/calendar.py::_events_from_todo
+tests: []
+links: {}
+notes: ''

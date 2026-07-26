@@ -1,0 +1,14 @@
+kind: specification
+id: chores.rounds.no-account-no-message
+title: Someone with no account is never messaged
+state: live
+autonomy: gated
+behavior: >
+  A person in the rotation who is not linked to a household account is never messaged by either
+  round, because there is nowhere to send it. They still appear in the day and week views and
+  their chores can still be checked off by a parent.
+implements:
+- apps/chores/handlers.py::_chores_skill_runner
+tests: []
+links: {}
+notes: ''

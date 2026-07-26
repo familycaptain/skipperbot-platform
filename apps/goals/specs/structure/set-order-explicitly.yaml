@@ -1,0 +1,18 @@
+kind: specification
+id: goals.structure.set-order-explicitly
+title: Listing things in order sets the order
+state: live
+autonomy: gated
+behavior: >
+  Naming goals, a goal's projects, or a project's tasks in the order they should be worked sets
+  exactly that order, first one highest. Anything not named keeps its relative order but moves
+  behind everything that was named, so a partial list is safe. Naming an item that is not in the
+  group being ordered is refused and nothing is reordered.
+implements:
+- apps/goals/tools.py::set_goal_order
+- apps/goals/tools.py::set_project_order
+- apps/goals/tools.py::set_task_order
+- apps/goals/ui/GoalsApp.jsx::ProjectView
+tests: []
+links: {}
+notes: ''

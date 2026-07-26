@@ -1,12 +1,15 @@
 kind: specification
 id: chores.zones.remove-chore
-title: Remove a chore
+title: Retiring a chore keeps its history
 state: live
 autonomy: gated
-behavior: Removing soft-deletes a chore (parent only); old completions are preserved.
+behavior: >
+  Retiring a chore stops it coming round from that day on, while every past check-off of it
+  survives and still names it in the history. Retiring something that is not there is reported
+  as not found.
 implements:
-- apps/chores/tools.py
-- apps/chores/ui/ChoresApp.jsx
+- apps/chores/tools.py::remove_chore
+- apps/chores/data.py::soft_delete_chore
 tests: []
 links: {}
 notes: ''

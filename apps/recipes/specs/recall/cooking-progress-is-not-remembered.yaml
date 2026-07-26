@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.recall.cooking-progress-is-not-remembered
+title: This evening's cooking is not worth remembering
+state: live
+autonomy: gated
+behavior: >
+  Striking ingredients or steps off while cooking, and simply opening a recipe, add nothing to what
+  Skipper remembers — only the recipe itself is worth recalling, not one session with it. So an
+  evening at the stove never buries the household's actual recipes under near-identical memories.
+implements:
+- apps/recipes/data.py::update_recipe
+- apps/recipes/data.py::_MEANINGFUL_FIELDS
+tests: []
+links: {}
+notes: ''

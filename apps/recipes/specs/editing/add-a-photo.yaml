@@ -1,0 +1,18 @@
+kind: specification
+id: recipes.editing.add-a-photo
+title: Photos of the finished dish
+state: live
+autonomy: gated
+behavior: >
+  A photo can be added to a recipe from the recipe itself, taken with the device camera or chosen
+  from files, and appears on the recipe once uploaded; tapping one opens it full size. A recipe with
+  no photo offers to add one. A file that is not really an image, or an image over the platform's
+  size limit, is refused and nothing is attached to the recipe.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx::handleImageUpload
+- apps/recipes/handlers.py
+- apps/recipes/data.py::link_image
+- apps/recipes/data.py::get_recipe_images
+tests: []
+links: {}
+notes: ''

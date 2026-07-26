@@ -2,10 +2,12 @@ kind: capability
 id: lists
 title: Lists
 app: lists
-scope: 'General-purpose ordered collections: drag-reorderable items, optionally backed by a linked
-  Trello board (Trello is the source of truth for board-backed lists). The foundation the To-Do
-  app and any other ''ordered items'' use case build on. NOT a to-do lens itself (that is the
-  Todo app).'
+scope: >
+  General-purpose shared collections a household keeps together: shopping, packing, hardware-store,
+  anything you add to and cross off. Items hold the order people put them in, every list is
+  addressable by name or nickname from conversation, and any list can be made a mirror of one list
+  on a Trello board — where the board is then the source of truth. NOT a personal task lens (that is
+  the To-Do app, which is built on top of a list) and NOT a reminder: a list never nudges anyone.
 state: live
 autonomy: gated
 links: {}

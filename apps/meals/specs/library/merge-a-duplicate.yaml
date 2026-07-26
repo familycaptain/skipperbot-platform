@@ -1,0 +1,17 @@
+kind: specification
+id: meals.library.merge-a-duplicate
+title: Merging a duplicate loses nothing
+state: live
+autonomy: gated
+behavior: >
+  Merging one meal into another moves the duplicate's components, photos, meal-log history and
+  tags onto the keeper before the duplicate is removed, so a cleanup never costs history.
+  Merging a meal into itself, or naming a meal that is not there, changes nothing and says so.
+implements:
+- apps/meals/tools.py::merge_meals
+- apps/meals/data.py::merge_meals
+tests:
+- type: unit
+  path: tests/evolve/meals/test_crud_tools.py
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: goals.views.open-at-an-item
+title: Skipper can take you straight to the item being discussed
+state: live
+autonomy: gated
+behavior: >
+  Skipper, or another app, can open goals or tasks pointed directly at one goal, project or task,
+  and it opens on that item rather than at the top level. Opening a task from a goal shows its
+  project and goal as links back up.
+implements:
+- apps/goals/ui/GoalsApp.jsx::GoalsApp
+- apps/goals/ui/TasksApp.jsx::TasksApp
+tests: []
+links: {}
+notes: ''

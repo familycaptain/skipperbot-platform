@@ -1,11 +1,18 @@
 kind: specification
 id: lists.trello-boards.suggest-location
-title: Suggest where an item lives
+title: Where does this usually go?
 state: live
 autonomy: gated
-behavior: Suggesting looks up where an item was last seen on Trello.
+behavior: >
+  Asking where something usually goes answers with the board and list it was last seen on, best
+  guess first, so 'we need lettuce again' can be put back where it belongs without anyone
+  remembering which aisle list that was. The match is exact first, then partial, then on shared
+  words, and quantities are ignored so 'four light bulbs' and 'light bulbs' are the same thing. An
+  item never seen before says there is no history for it rather than guessing.
 implements:
-- apps/lists/tools.py
+- apps/lists/tools.py::trello_suggest_list
+- data_layer/item_history.py::suggest_list
+- data_layer/item_history.py::_normalize_key
 tests: []
 links: {}
 notes: ''

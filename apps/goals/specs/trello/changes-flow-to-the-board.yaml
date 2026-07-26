@@ -1,0 +1,17 @@
+kind: specification
+id: goals.trello.changes-flow-to-the-board
+title: Changing a linked task moves its card
+state: live
+autonomy: gated
+behavior: >
+  Marking a board-linked task done or cancelled moves its card to the finished list; putting it
+  back to waiting returns it to the waiting list; starting it moves it to the list of whoever
+  started it; reassigning it moves it to the new person's list, created if they do not have one
+  yet; and renaming it or changing its due date pushes through to the card. Deleting the task
+  archives the card.
+implements:
+- apps/goals/store.py::update_item
+- apps/goals/store.py::delete_item
+tests: []
+links: {}
+notes: ''

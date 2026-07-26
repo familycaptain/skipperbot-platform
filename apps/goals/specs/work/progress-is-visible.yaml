@@ -1,0 +1,13 @@
+kind: specification
+id: goals.work.progress-is-visible
+title: A running work session reports its progress
+state: live
+autonomy: gated
+behavior: >
+  While a session is running, the household can see it is in progress and roughly where it is —
+  gathering context, working, complete — rather than a job that sits at nothing until it finishes.
+implements:
+- apps/goals/goal_work.py::handle_goal_work
+tests: []
+links: {}
+notes: ''

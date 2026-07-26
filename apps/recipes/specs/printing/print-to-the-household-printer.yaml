@@ -1,0 +1,19 @@
+kind: specification
+id: recipes.printing.print-to-the-household-printer
+title: Printing a recipe on the household printer
+state: live
+autonomy: gated
+behavior: >
+  Asked to print a recipe, Skipper queues a print job rather than blocking on the printer: it says
+  which job it queued and how many copies, and promises to report back. The job starts within about
+  half a minute, lays the recipe out as a page — title, description, times and servings, categories,
+  ingredients, numbered instructions, chef comments, notes and source — and the person is then told
+  where it was sent or why it failed.
+implements:
+- apps/recipes/tools.py::print_recipe
+- apps/jobs/store.py::create_recipe_print_job
+- print_runner.py::_load_recipe_as_markdown
+- print_runner.py::_run_print_pipeline
+tests: []
+links: {}
+notes: ''

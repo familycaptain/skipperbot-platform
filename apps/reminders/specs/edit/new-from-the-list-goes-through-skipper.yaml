@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.edit.new-from-the-list-goes-through-skipper
+title: Adding from the list goes through Skipper
+state: live
+autonomy: gated
+behavior: >
+  Adding a reminder from the list asks for the message and the timing in plain words and hands the
+  request to Skipper rather than saving a row directly, so "every weekday at 8am" or "tomorrow
+  morning" is read the same way it would be in chat. The confirmation comes back in the
+  conversation, where it can be corrected.
+implements:
+- apps/reminders/ui/RemindersApp.jsx::NewReminderForm
+tests: []
+links: {}
+notes: ''

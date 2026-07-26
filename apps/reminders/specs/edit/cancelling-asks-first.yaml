@@ -1,0 +1,13 @@
+kind: specification
+id: reminders.edit.cancelling-asks-first
+title: Cancelling from the list asks first
+state: live
+autonomy: gated
+behavior: >
+  Cancelling from the list asks for confirmation and quotes the reminder's own message back, so
+  the wrong row cannot be retired by one stray click on a dense list.
+implements:
+- apps/reminders/ui/RemindersApp.jsx::ReminderCard
+tests: []
+links: {}
+notes: ''

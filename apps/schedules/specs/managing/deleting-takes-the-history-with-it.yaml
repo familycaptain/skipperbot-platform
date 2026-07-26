@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.managing.deleting-takes-the-history-with-it
+title: Deleting takes the history with it
+state: live
+autonomy: gated
+behavior: >
+  Deleting a schedule asks for confirmation by name first, then removes the schedule and its whole
+  record of past completions — there is no undo and no archive, so pausing is the reversible choice.
+  Deleting something already gone is reported as done rather than as an error.
+implements:
+- apps/schedules/data.py::delete_schedule
+- apps/schedules/migrations/001_initial.sql
+- apps/schedules/ui/SchedulesApp.jsx::DetailView
+tests: []
+links: {}
+notes: ''

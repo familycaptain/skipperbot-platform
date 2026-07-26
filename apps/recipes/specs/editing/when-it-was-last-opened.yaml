@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.editing.when-it-was-last-opened
+title: When the recipe was last opened
+state: live
+autonomy: gated
+behavior: >
+  Opening a recipe records that it was opened, and the recipe shows when it was last looked at — so a
+  household can tell the recipes they actually cook from the ones they filed and forgot. Looking at a
+  recipe is not treated as changing it.
+implements:
+- apps/recipes/routes.py::api_get_recipe
+- apps/recipes/data.py::touch_recipe
+tests: []
+links: {}
+notes: ''

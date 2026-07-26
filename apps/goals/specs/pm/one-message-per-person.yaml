@@ -1,0 +1,15 @@
+kind: specification
+id: goals.pm.one-message-per-person
+title: At most one message to a person per review
+state: live
+autonomy: gated
+behavior: >
+  A review sends each person at most one message, about their own items, brief and specific.
+  Skipper does not follow up with someone it can see it nudged recently or who has not answered
+  yet, and each message stands on its own because everyone sees only their own conversation.
+implements:
+- apps/goals/pm_domain.py::pm_skill_runner
+- apps/goals/pm_domain.py::_PM_SKILL_GUIDANCE
+tests: []
+links: {}
+notes: ''

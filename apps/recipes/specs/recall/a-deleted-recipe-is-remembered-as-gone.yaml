@@ -1,0 +1,14 @@
+kind: specification
+id: recipes.recall.a-deleted-recipe-is-remembered-as-gone
+title: A deleted recipe is remembered as gone
+state: live
+autonomy: gated
+behavior: >
+  Deleting a recipe records that it was deleted, so Skipper stops offering it as something the
+  household can cook rather than recommending a recipe nobody can open any more.
+implements:
+- apps/recipes/data.py::delete_recipe
+- app_platform/memory.py::digest_record
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: todo.weekly-nudge.nudge-switched-off
+title: 'Switching the nudge off silences it entirely'
+state: live
+autonomy: gated
+behavior: >
+  With the weekly nudge switched off, that person is never nudged, whatever day it is and however
+  long their list gets. Everybody else's nudges are unaffected.
+implements:
+- todo_nudge_notifier.py::check_todo_nudges
+- apps/todo/data.py::upsert_config
+tests: []
+links: {}
+notes: ''

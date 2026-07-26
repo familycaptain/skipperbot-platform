@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.nags.one-nudge-a-day-not-one-a-check
+title: Nudging today puts the nag to bed
+state: live
+autonomy: gated
+behavior: >
+  Once a nag has nudged today it is done for the day: the checks that run every half minute
+  afterwards do not nudge again, and its next turn is a fresh time tomorrow. A nag whose slot went
+  by while Skipper was off nudges once when it is back, not once per check.
+implements:
+- apps/reminders/store.py::mark_delivered
+- apps/reminders/store.py::assign_nag_times
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: meals.deciding.include-filters-all-apply
+title: Every include has to be satisfied
+state: live
+autonomy: gated
+behavior: >
+  A meal is only offered if it satisfies every include filter at once — Italian and low effort
+  means both, not either — and the answer says how many meals matched.
+implements:
+- apps/meals/data.py::discover_meals
+- apps/meals/tools.py::find_meals
+tests: []
+links: {}
+notes: ''

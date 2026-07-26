@@ -1,0 +1,14 @@
+kind: specification
+id: reminders.snooze.a-wait-in-plain-words
+title: How long to wait, said any way
+state: live
+autonomy: gated
+behavior: >
+  The wait can be given as "30m", "1h", "1h30m", "2 hours", "90 minutes", "1.5h" or a bare number
+  of minutes, and each means what it looks like. A wait that cannot be read is refused with
+  examples of ones that can be, and no follow-up is created from a guess.
+implements:
+- apps/reminders/tools.py::_parse_duration_to_minutes
+tests: []
+links: {}
+notes: ''

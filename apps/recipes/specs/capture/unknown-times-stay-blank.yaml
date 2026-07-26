@@ -1,0 +1,16 @@
+kind: specification
+id: recipes.capture.unknown-times-stay-blank
+title: Times nobody knows are left blank
+state: live
+autonomy: gated
+behavior: >
+  Prep and cook time are optional: a recipe with no time recorded shows no time at all rather than
+  claiming zero minutes, and where both are known the browser shows their total instead of the two
+  parts. A recipe that says nothing about servings is treated as making one.
+implements:
+- apps/recipes/tools.py::create_recipe
+- apps/recipes/ui/RecipeListApp.jsx
+- apps/recipes/ui/RecipeDetailApp.jsx
+tests: []
+links: {}
+notes: ''

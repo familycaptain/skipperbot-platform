@@ -1,12 +1,31 @@
 kind: specification
 id: goals.onboarding.stop-onboarding
-title: Stop onboarding
+title: Asking Skipper to stop actually stops it
 state: live
 autonomy: gated
-behavior: Stopping onboarding closes out the first-run 'Get started with Skipper' goal so its
-  nudges cease.
+behavior: >
+  When the person asks to stop, skip or be done with setup, Skipper closes the whole walkthrough
+  out — the goal and everything still open under it — and clears its outstanding follow-ups, so
+  the proactive messages genuinely stop. It closes as finished if the setup topics were completed
+  and as cancelled if it was abandoned early, judged on what was actually done rather than how the
+  request was worded. Recording a preference is not an acceptable substitute, and there is nothing
+  to stop if setup was never created. Skipper confirms warmly and offers to bring it back later.
 implements:
-- apps/goals/tools.py
-tests: []
+- apps/goals/tools.py::stop_onboarding
+- apps/goals/store.py::close_out_goal
+- apps/goals/guide.md
+tests:
+- type: unit
+  path: apps/goals/tests/test_stop_onboarding_routing.py
+  rubric: >
+    Drives the real keyword routing and guide text: a plain "stop the onboarding" message routes
+    the goals tools, so the stop action is offered rather than the always-available remember tool.
+- type: unit
+  path: apps/goals/tests/test_stop_onboarding_tool_signals.py
+  rubric: >
+    Asserts the model-facing wording of both tools stays consistent — stopping is an action to
+    perform, not a preference to record.
 links: {}
-notes: ''
+notes: >
+  The original failure was Skipper saving a memory that the person wanted setup stopped while
+  setup carried on nudging them.

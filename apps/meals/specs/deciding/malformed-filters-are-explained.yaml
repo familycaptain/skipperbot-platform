@@ -1,0 +1,14 @@
+kind: specification
+id: meals.deciding.malformed-filters-are-explained
+title: A malformed filter is explained, not swallowed
+state: live
+autonomy: gated
+behavior: >
+  A set of filters that is not a well-formed list comes back as a plain explanation that the
+  filters were unreadable, and no search is run and no results are invented.
+implements:
+- apps/meals/tools.py::find_meals
+- apps/meals/tools.py::random_meals
+tests: []
+links: {}
+notes: ''

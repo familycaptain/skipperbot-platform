@@ -1,0 +1,18 @@
+kind: specification
+id: lists.trello-boards.connect-needs-a-board-and-an-account
+title: What linking a new board needs
+state: live
+autonomy: gated
+behavior: >
+  Linking a board nobody has registered yet needs its Trello board identifier — the one in the
+  board's own web address — and is refused, with that explanation, without it. It also needs a
+  Trello account to authenticate as: named explicitly, or the only configured one when there is just
+  one. When the named account does not exist the reply lists the accounts that do and where to add
+  another, rather than failing obscurely.
+implements:
+- apps/lists/tools.py::connect_trello_board
+- apps/lists/trello_config.py::save_board
+- apps/lists/trello_config.py::list_accounts
+tests: []
+links: {}
+notes: ''

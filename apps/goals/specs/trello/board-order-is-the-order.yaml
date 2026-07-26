@@ -1,0 +1,15 @@
+kind: specification
+id: goals.trello.board-order-is-the-order
+title: A linked project reads like the board
+state: live
+autonomy: gated
+behavior: >
+  A board-linked project is shown grouped by list, in the board's own left-to-right order, with
+  each list labelled by whose it is where that is known, and tasks that live only in Skipper
+  listed after them. Positions follow the board's arrangement rather than a separate ordering, and
+  a card renamed on the board renames the task without anyone being asked.
+implements:
+- apps/goals/store.py::_render_trello_project_view
+tests: []
+links: {}
+notes: ''

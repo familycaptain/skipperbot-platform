@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.recurrence.stopping-the-repeat
+title: Stopping the repeat leaves one last reminder
+state: live
+autonomy: gated
+behavior: >
+  Taking the repeat off a reminder leaves it as a one-off still set for its current next time: it
+  nudges once more and then finishes, and any schedule that was tracking the repeat stops with
+  it. Nothing is deleted — stopping a repeat and cancelling a reminder are different requests with
+  different outcomes.
+implements:
+- apps/reminders/store.py::modify_reminder
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.managing.what-a-schedule-can-say-about-itself
+title: An open schedule accounts for itself
+state: live
+autonomy: gated
+behavior: >
+  An open schedule shows when it is next due, how many times it has been done, when it was last done,
+  its cadence in words, who it is for, and who created it and when. A schedule never yet completed
+  shows no last-done rather than a placeholder date, and one with no computable next occurrence says
+  so rather than showing an invented one.
+implements:
+- apps/schedules/ui/SchedulesApp.jsx::DetailView
+- agent.py::api_get_schedule
+tests: []
+links: {}
+notes: ''

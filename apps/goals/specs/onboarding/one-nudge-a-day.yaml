@@ -1,0 +1,29 @@
+kind: specification
+id: goals.onboarding.one-nudge-a-day
+title: One setup nudge at a time, and never twice unanswered
+state: live
+autonomy: gated
+behavior: >
+  Skipper nudges about setup at most once a day per person, and not at all while its last nudge to
+  them is still unanswered — so an unanswered question is not followed by a different one, and an
+  unanswered app tour does not march through the app list. Anything the person says afterwards
+  releases the hold and Skipper decides afresh. If it cannot tell whether a nudge is outstanding,
+  it errs towards being allowed to help rather than going silent.
+implements:
+- apps/goals/onboarding.py::tour_nudge_on_hold
+- apps/goals/onboarding.py::onboarding_step_nudge_on_hold
+- apps/goals/onboarding.py::_last_unanswered_nudge
+- apps/goals/pm_domain.py::pm_skill_runner
+tests:
+- type: unit
+  path: tests/evolve/platform/test_step_nudge_cadence.py
+  rubric: >
+    Asserts setup-topic nudges get the same daily, held-until-reply pacing as the app tours, that
+    the hold catches a nudge sent without naming its topic, and that both holds share one query
+    and fail open.
+- type: unit
+  path: tests/evolve/platform/test_tour_guards.py
+  rubric: >
+    Asserts one tour nudge per day across all apps, released only by a genuine reply.
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: chores.views.the-week-is-read-only
+title: Nothing is checked off from the week view
+state: live
+autonomy: gated
+behavior: >
+  The week view is for looking ahead only: chores cannot be ticked or un-ticked from it.
+  Checking off happens on the day itself, so nobody marks the wrong day's chore by clicking in a
+  grid.
+implements:
+- apps/chores/ui/ChoresApp.jsx::WeekTab
+tests: []
+links: {}
+notes: ''

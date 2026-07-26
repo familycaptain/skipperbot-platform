@@ -1,0 +1,14 @@
+kind: specification
+id: lists.naming.exact-name-wins
+title: The name you actually gave wins
+state: live
+autonomy: gated
+behavior: >
+  A name that matches a list exactly, ignoring capitals and surrounding spaces, resolves to that
+  list and nothing else — no partial or nickname match can take precedence over it. This is what
+  keeps a short list name from being stolen by a longer one that happens to contain it.
+implements:
+- apps/lists/store.py::find_list_by_name
+tests: []
+links: {}
+notes: ''

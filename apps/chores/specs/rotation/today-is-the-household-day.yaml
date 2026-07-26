@@ -1,0 +1,15 @@
+kind: specification
+id: chores.rotation.today-is-the-household-day
+title: Today means today where the family lives
+state: live
+autonomy: gated
+behavior: >
+  'Today' is the household's own calendar day, not the machine's. A chore checked off late in
+  the evening counts for the day the family is living in, and the morning list does not roll
+  over to the next day before midnight locally.
+implements:
+- apps/chores/store.py::today_local
+- apps/chores/ui/ChoresApp.jsx::todayISO
+tests: []
+links: {}
+notes: ''

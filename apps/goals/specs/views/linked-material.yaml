@@ -1,0 +1,16 @@
+kind: specification
+id: goals.views.linked-material
+title: Documents and files attached to an item are shown with it
+state: live
+autonomy: gated
+behavior: >
+  A goal, project or task shows the documents and files linked to it, lets a new document be
+  created already attached or an existing one searched for and attached, and lets a link be
+  removed without deleting what it pointed at. Opening one takes you to it in the app that owns
+  it.
+implements:
+- apps/goals/ui/GoalShared.jsx::LinkedDocs
+- apps/goals/ui/GoalShared.jsx::LinkedArtifacts
+tests: []
+links: {}
+notes: ''

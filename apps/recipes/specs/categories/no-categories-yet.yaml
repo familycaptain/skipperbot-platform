@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.categories.no-categories-yet
+title: No categories yet
+state: live
+autonomy: gated
+behavior: >
+  With no categories anywhere — none defined and none typed onto a recipe — the filter bar says there
+  are none instead of showing an empty strip, and asking Skipper for the categories gets a plain "none
+  defined yet" rather than an empty list.
+implements:
+- apps/recipes/ui/RecipeListApp.jsx
+- apps/recipes/tools.py::list_recipe_categories
+tests: []
+links: {}
+notes: ''

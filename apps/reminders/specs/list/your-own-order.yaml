@@ -1,0 +1,16 @@
+kind: specification
+id: reminders.list.your-own-order
+title: The list keeps the order you put it in
+state: live
+autonomy: gated
+behavior: >
+  Reminders hold an order the person controls rather than being sorted for them, and a new one
+  joins the end. Moving one up or down swaps it with the neighbour actually visible in the list as
+  it is currently filtered, so a move never appears to do nothing by trading places with a row
+  that is hidden.
+implements:
+- apps/reminders/data.py::reorder_reminder
+- apps/reminders/data.py::next_sort_order
+tests: []
+links: {}
+notes: ''

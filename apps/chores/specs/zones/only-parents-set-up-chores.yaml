@@ -1,0 +1,15 @@
+kind: specification
+id: chores.zones.only-parents-set-up-chores
+title: Only parents set up zones and chores
+state: live
+autonomy: gated
+behavior: >
+  Creating, editing and removing zones and chores is for a parent or an admin only, over the app
+  and in conversation alike. Anybody else is refused in plain words and nothing is changed, so
+  the rota itself cannot be edited by the people it applies to.
+implements:
+- apps/chores/routes.py::_require_parent
+- apps/chores/tools.py::_is_parent
+tests: []
+links: {}
+notes: ''

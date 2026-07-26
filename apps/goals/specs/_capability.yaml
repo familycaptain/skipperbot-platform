@@ -2,10 +2,16 @@ kind: capability
 id: goals
 title: Goals
 app: goals
-scope: Goals, projects, and tasks — the platform's project-management core that every other app
-  links to for context. A three-level hierarchy (goal → project → task/subtask) with notes, ordering,
-  dependencies, due reminders, Trello integration, and a PM thinking domain that nudges and flags
-  at-risk items. NOT lightweight to-dos (the Todo app) — this is structured, linked project management.
+scope: >
+  Goals, projects and tasks — the household's shared record of what it is trying to get done, from
+  a year-long ambition to this afternoon's errand, and the place every other app hangs its context
+  off. A three-level tree (goal -> project -> task, tasks nesting to any depth) with owners,
+  dates, priority, ordering, dependencies, notes and a definition of done. Also owns the work
+  Skipper does ON that tree unasked: the project-manager review that nudges people about what is
+  slipping, the autonomous work sessions on goals assigned to Skipper itself, the first-run
+  onboarding walkthrough, and the greeting a person gets when they arrive on the desktop. NOT
+  quick throwaway to-dos (the Lists app) and NOT the message-delivery machinery (Notifications) —
+  this app decides what is worth saying about the work, not how it reaches anyone.
 state: live
 autonomy: gated
 links: {}

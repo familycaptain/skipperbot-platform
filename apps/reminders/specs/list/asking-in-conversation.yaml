@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.list.asking-in-conversation
+title: Asking in conversation what is set
+state: live
+autonomy: gated
+behavior: >
+  Asking what reminders are set answers with that person's live ones — each with its id, its next
+  time, whether it is a nag, a one-off or a repeat, and when a nag last nudged — and says plainly
+  that there are none when there are none. Finished and cancelled ones are included only when
+  they are asked for.
+implements:
+- apps/reminders/tools.py::get_reminders
+tests: []
+links: {}
+notes: ''

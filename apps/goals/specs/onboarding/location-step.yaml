@@ -1,0 +1,23 @@
+kind: specification
+id: goals.onboarding.location-step
+title: Home location means a town, not an address
+state: live
+autonomy: gated
+behavior: >
+  Asked where home is, Skipper asks in a sentence for the town or city, the region and the
+  country, leading with why it wants it — weather, daylight, the time of day — and says outright
+  that it is not asking for a street or mailing address. The question makes no assumption about
+  which country the household is in. Any level of detail is enough: a bare city and country
+  completes it and Skipper does not ask again.
+implements:
+- apps/goals/onboarding.py::ONBOARDING_AGENDA
+tests:
+- type: unit
+  path: tests/evolve/goals/test_onboarding_location_copy.py
+  rubric: >
+    Offline source assertions on the real location topic copy: it asks town/region/country,
+    explicitly not a street or mailing address, is country-neutral, accepts any granularity
+    without re-asking, keeps the settings destination, and no US-only postcode phrasing survives
+    anywhere in the docs.
+links: {}
+notes: ''

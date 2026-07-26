@@ -1,0 +1,15 @@
+kind: specification
+id: goals.structure.circular-dependencies-survive
+title: A dependency loop does not break the list
+state: live
+autonomy: gated
+behavior: >
+  If dependencies form a loop, the items involved still all get a position and still all appear —
+  they fall back to the order they already had rather than vanishing from the list or stalling the
+  renumbering of everything else.
+implements:
+- apps/goals/store.py::_rerank_project
+- apps/goals/store.py::_rerank_goal
+tests: []
+links: {}
+notes: ''

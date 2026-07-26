@@ -1,12 +1,17 @@
 kind: specification
 id: chores.zones.add-zone
-title: Add a zone
+title: Creating a zone
 state: live
 autonomy: gated
-behavior: Adding creates a new chore zone (parent only).
+behavior: >
+  A parent creates a zone with a name, the date its turns count from — today unless another is
+  given — and optionally the people in it in turn order. Two zones cannot share a name. When
+  somebody named for the rotation cannot be found, the zone is still created and the answer says
+  which name failed so its members can be set by hand rather than the whole request being lost.
 implements:
-- apps/chores/tools.py
-- apps/chores/ui/ChoresApp.jsx
+- apps/chores/tools.py::add_zone
+- apps/chores/routes.py::api_create_zone
+- apps/chores/data.py::create_zone
 tests: []
 links: {}
 notes: ''

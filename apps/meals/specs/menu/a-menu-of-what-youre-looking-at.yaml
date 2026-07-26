@@ -1,0 +1,17 @@
+kind: specification
+id: meals.menu.a-menu-of-what-youre-looking-at
+title: The menu is the shelf you were looking at
+state: live
+autonomy: gated
+behavior: >
+  Exporting from the library opens a printable menu of exactly the meals on screen, carrying the
+  tag, the search text and the effort filter across, so a filtered shelf prints as a filtered
+  menu rather than as the whole library.
+implements:
+- apps/meals/ui/MealsApp.jsx::BrowseTab
+- apps/meals/pages/menu.html::generateMenu
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

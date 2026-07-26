@@ -1,0 +1,16 @@
+kind: specification
+id: chores.history.history-outlives-the-rota
+title: History outlives the rota it came from
+state: live
+autonomy: gated
+behavior: >
+  A check-off keeps naming its chore and the person who did it after the chore has been retired
+  and after that person has been taken out of the rotation. Tidying up the current rota never
+  rewrites what happened.
+implements:
+- apps/chores/tools.py::get_chore_history
+- apps/chores/data.py::list_chores
+- apps/chores/data.py::list_kids
+tests: []
+links: {}
+notes: ''

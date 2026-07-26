@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.cadence.changing-the-cadence-recomputes-the-next-one
+title: Changing the cadence recomputes what is next
+state: live
+autonomy: gated
+behavior: >
+  Changing when a schedule repeats, or what time of day it falls due, immediately recomputes the next
+  occurrence from when it was last done, so moving a Saturday chore to Tuesdays shows the coming
+  Tuesday rather than the stale Saturday. Setting a next-due moment by hand wins over the cadence for
+  that one occurrence, and changing anything else — title, description, assignee, category — leaves
+  the countdown untouched.
+implements:
+- apps/schedules/data.py::update_schedule
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: schedules.automation.a-schedule-can-start-work
+title: A schedule can start work rather than ask a person
+state: live
+autonomy: gated
+behavior: >
+  A schedule can name a piece of work instead of a person's chore, and when it falls due that work is
+  started on its own with whatever settings the schedule carries, named after the schedule so it can
+  be recognised later. This is the only way anything in the product repeats itself: work started this
+  way runs once and cannot reschedule itself.
+implements:
+- apps/schedules/job_trigger.py::check_schedule_jobs
+tests: []
+links: {}
+notes: >
+  Recurrence lives here and nowhere else. Letting a piece of work carry its own cadence was tried and
+  silently never fired, which is why a single engine owns "again".

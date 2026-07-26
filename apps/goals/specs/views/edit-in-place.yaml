@@ -1,0 +1,18 @@
+kind: specification
+id: goals.views.edit-in-place
+title: Anything shown can be changed where it is shown
+state: live
+autonomy: gated
+behavior: >
+  Titles, states, priorities, owners and assignees, dates, the check-in cadence and the definition
+  of done are all editable directly on the item rather than through a separate form, and
+  cancelling an edit restores what was there. A rejected change is reported at the top of the
+  screen rather than being silently dropped.
+implements:
+- apps/goals/ui/GoalShared.jsx::EditableTitle
+- apps/goals/ui/GoalShared.jsx::StatusBadge
+- apps/goals/ui/GoalShared.jsx::AssigneeField
+- apps/goals/ui/GoalsApp.jsx::patchEntity
+tests: []
+links: {}
+notes: ''

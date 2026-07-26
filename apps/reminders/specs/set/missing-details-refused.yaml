@@ -1,0 +1,14 @@
+kind: specification
+id: reminders.set.missing-details-refused
+title: A reminder with a piece missing is refused, not guessed
+state: live
+autonomy: gated
+behavior: >
+  A request with no person, no message or no time is refused with a note naming the piece that is
+  missing, and nothing is stored — so a half-formed request never becomes a reminder that nudges
+  at a moment nobody chose, or reminds somebody of nothing.
+implements:
+- apps/reminders/tools.py::set_reminder
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.firing.a-restart-loses-nothing
+title: Reminders survive a restart
+state: live
+autonomy: gated
+behavior: >
+  Reminders live in the household's own database, so a restart, an upgrade or a power cut loses
+  none of them: what was pending is still pending, and anything that came due while Skipper was
+  off is picked up on the first check after it is back.
+implements:
+- apps/reminders/data.py::save_all_reminders
+- apps/reminders/store.py::get_due_reminders
+tests: []
+links: {}
+notes: ''

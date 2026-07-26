@@ -1,0 +1,17 @@
+kind: specification
+id: recipes.recall.recipes-become-something-skipper-knows
+title: A saved recipe becomes something Skipper knows
+state: live
+autonomy: gated
+behavior: >
+  Saving a recipe, or changing anything about it that matters — title, description, ingredients,
+  steps, times, servings, categories, rating, chef comments or notes — adds what it is to what
+  Skipper remembers, so later questions like "what can I make with chicken?" are answered without
+  anyone opening the app. The recipe remains the record; what is remembered is a summary of it.
+implements:
+- apps/recipes/data.py::save_recipe
+- apps/recipes/data.py::update_recipe
+- app_platform/memory.py::digest_record
+tests: []
+links: {}
+notes: ''

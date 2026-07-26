@@ -1,0 +1,16 @@
+kind: specification
+id: lists.trello-cards.find-a-card
+title: Naming the card you mean
+state: live
+autonomy: gated
+behavior: >
+  A card is addressed either by its identifier, which is exact, or by its title, which is matched
+  loosely and can be narrowed to one list when two cards are similarly named. Asking with neither is
+  refused. Every card operation accepts both, so a card found once by title can be worked on
+  precisely afterwards.
+implements:
+- apps/lists/tools.py::trello_get_card
+- trello_client.py::_find_card
+tests: []
+links: {}
+notes: ''

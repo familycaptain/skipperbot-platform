@@ -1,0 +1,17 @@
+kind: specification
+id: todo.ordering.nudge-one-place-or-all-the-way
+title: 'One place at a time, or straight to an end'
+state: live
+autonomy: gated
+behavior: >
+  Each item can be moved one place up or down, or straight to the top or the bottom of its column,
+  from the controls on the row or the same entries on its right-click menu. Moves that cannot do
+  anything — up from the first item, down from the last — are visibly unavailable rather than
+  silently ignored.
+implements:
+- apps/todo/ui/TodoApp.jsx::TodoItemRow
+- apps/todo/ui/TodoApp.jsx::ContextMenu
+- agent.py::api_reorder_list_item
+tests: []
+links: {}
+notes: ''

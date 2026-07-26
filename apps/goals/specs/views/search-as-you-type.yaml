@@ -1,0 +1,16 @@
+kind: specification
+id: goals.views.search-as-you-type
+title: Search in the app answers while you type
+state: live
+autonomy: gated
+behavior: >
+  Typing in the app's search box shows matching goals, projects and tasks shortly after you stop
+  typing, marked by kind, and picking one opens it — a task in the task view, a project or goal in
+  the goals view even when the search started from the tasks app. A search with no matches says so
+  instead of showing nothing, and clicking away closes the results.
+implements:
+- apps/goals/ui/GoalShared.jsx::SearchBar
+- apps/goals/ui/TasksApp.jsx::handleSearchSelect
+tests: []
+links: {}
+notes: ''

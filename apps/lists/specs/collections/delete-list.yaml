@@ -1,0 +1,19 @@
+kind: specification
+id: lists.collections.delete-list
+title: Deleting a list, and what it does not delete
+state: live
+autonomy: gated
+behavior: >
+  Deleting a list asks for confirmation first, then takes every item on it — live and crossed off —
+  with it. Deleting a list that mirrored a board removes only the mirror: the board, its list and
+  its cards are untouched, and the deleted list does not reappear on the next poll. Deleting
+  something that is already gone reports that it was not found rather than claiming success.
+implements:
+- apps/lists/tools.py::disconnect_trello_board
+- apps/lists/store.py::delete_list
+- apps/lists/ui/ListsApp.jsx::ListCard
+- agent.py::api_delete_list
+- apps/lists/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

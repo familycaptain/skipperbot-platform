@@ -1,0 +1,14 @@
+kind: specification
+id: reminders.firing.the-nudge-says-what-it-is
+title: A nudge reads as Skipper bringing something up
+state: live
+autonomy: gated
+behavior: >
+  A reminder that comes due reaches its person as the message they chose, marked as a reminder or
+  as a nag, so it reads as Skipper raising something rather than answering something. It arrives
+  as an alert of its own, not as a turn in whatever conversation was last happening.
+implements:
+- apps/reminders/scheduler.py::process_due_reminder
+tests: []
+links: {}
+notes: ''

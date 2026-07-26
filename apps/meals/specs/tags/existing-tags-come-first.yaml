@@ -1,0 +1,16 @@
+kind: specification
+id: meals.tags.existing-tags-come-first
+title: Skipper reuses the tags you already have
+state: live
+autonomy: gated
+behavior: >
+  Asked what tags exist, Skipper lists them with how many meals use each. When it saves a meal
+  it reaches for tags already in use before inventing one, and anything new it does add is short
+  and lower case — so the vocabulary stays small enough to filter by.
+implements:
+- apps/meals/tools.py::list_meal_tags
+- apps/meals/tools.py::get_guide_context
+- apps/meals/guide.md
+tests: []
+links: {}
+notes: ''

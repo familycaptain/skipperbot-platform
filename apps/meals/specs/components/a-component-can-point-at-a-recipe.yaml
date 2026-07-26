@@ -1,0 +1,16 @@
+kind: specification
+id: meals.components.a-component-can-point-at-a-recipe
+title: A component can carry its recipe
+state: live
+autonomy: gated
+behavior: >
+  A component may point at a recipe in the Recipes app, and is then marked as having one
+  wherever it appears — in the component list and among a meal's components — so the
+  instructions can be found from the meal that uses them.
+implements:
+- apps/meals/data.py::_component_row
+- apps/meals/tools.py::get_meal
+- apps/meals/ui/MealsApp.jsx::ComponentsTab
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: schedules.cadence.everyday-language-cadences
+title: Cadences in everyday language
+state: live
+autonomy: gated
+behavior: >
+  A schedule can repeat every day, on chosen days of the week, on a chosen day of each month, on a
+  month and day each year, or a fixed number of days after it was last done — chosen in those terms
+  rather than as a rule to be written. Whichever is chosen, the schedule always knows the single next
+  moment it is due, and picking a cadence with nothing to anchor it to — a weekly schedule with no
+  weekday ticked — anchors on the day it was set up rather than failing.
+implements:
+- apps/schedules/data.py::compute_next_due
+- apps/schedules/ui/SchedulesApp.jsx::RecurrenceFields
+tests: []
+links: {}
+notes: ''

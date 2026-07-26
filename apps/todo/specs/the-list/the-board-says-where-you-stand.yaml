@@ -1,0 +1,14 @@
+kind: specification
+id: todo.the-list.the-board-says-where-you-stand
+title: 'The board shows the count and the nudge at a glance'
+state: live
+autonomy: gated
+behavior: >
+  Each column is headed with how many items are open on it. The toolbar shows which weekday the
+  weekly nudge is set for and whether it is switched on at all, so a person can see their nudge
+  arrangement without opening settings. Refreshing re-reads both lists and the settings together.
+implements:
+- apps/todo/ui/TodoApp.jsx::TodoApp
+tests: []
+links: {}
+notes: ''

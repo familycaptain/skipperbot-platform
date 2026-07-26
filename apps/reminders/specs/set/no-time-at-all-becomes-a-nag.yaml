@@ -1,0 +1,16 @@
+kind: specification
+id: reminders.set.no-time-at-all-becomes-a-nag
+title: A request with no time becomes a nag
+state: live
+autonomy: gated
+behavior: >
+  A request with no time in it at all — "don't let me forget to do my taxes", "keep bugging me
+  about the garage" — is recorded as a nag that nudges once a day until it is stopped, rather
+  than as a timed reminder at a moment nobody asked for. Anything carrying a date, a time or a
+  repeating pattern stays a timed reminder.
+implements:
+- apps/reminders/tools.py::set_nag
+- apps/reminders/guide.md
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: goals.trello.adopt-card
+title: An existing card can be taken over as a task
+state: live
+autonomy: gated
+behavior: >
+  A card already on the board can be adopted so Skipper tracks it as a task, matched by title or
+  named directly. Adopting does not move it — it stays on whatever list it is on, because adopting
+  is Skipper starting to pay attention, not a change to the board.
+implements:
+- apps/goals/tools.py::adopt_trello_card
+tests: []
+links: {}
+notes: ''

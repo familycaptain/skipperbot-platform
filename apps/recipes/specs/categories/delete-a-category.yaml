@@ -1,0 +1,16 @@
+kind: specification
+id: recipes.categories.delete-a-category
+title: Deleting a category
+state: live
+autonomy: gated
+behavior: >
+  Deleting a category takes it out of the tag picker and off the filter bar, and if the collection was
+  filtered to it the filter clears and everything is shown again. No recipe is deleted and no recipe
+  is retagged: recipes that carried the category keep the name on them.
+implements:
+- apps/recipes/data.py::delete_category
+- apps/recipes/tools.py::delete_recipe_category
+- apps/recipes/ui/RecipeListApp.jsx
+tests: []
+links: {}
+notes: ''

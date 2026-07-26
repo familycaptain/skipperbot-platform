@@ -1,0 +1,17 @@
+kind: specification
+id: meals.menu.title-follows-the-filter
+title: The menu names itself after what it is
+state: live
+autonomy: gated
+behavior: >
+  An untitled menu takes its name from the tag it is filtered to — a snack filter prints as
+  'Snack Menu' — and an unfiltered one prints as the family menu; a typed title always wins.
+  Underneath, a subtitle names the filters and any search term that produced this menu.
+implements:
+- apps/meals/pages/menu.html::composedSubtitle
+- apps/meals/pages/menu.html::shortPhrase
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

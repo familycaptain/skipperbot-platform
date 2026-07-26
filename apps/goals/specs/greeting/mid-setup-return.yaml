@@ -1,0 +1,16 @@
+kind: specification
+id: goals.greeting.mid-setup-return
+title: Coming back part-way through setup picks up where you left off
+state: live
+autonomy: gated
+behavior: >
+  Someone who is part-way through setting Skipper up and comes back after being away is greeted in
+  a way that fits where the two of them actually left off — read from the conversation rather than
+  a stock line — and then the current setup step is picked up. One opener, then Skipper waits.
+implements:
+- apps/goals/handlers.py::_greeting_turn
+- apps/goals/handlers.py::_GREETING_TRIGGER_ONBOARDING
+- apps/goals/onboarding.py::onboarding_agenda_in_progress
+tests: []
+links: {}
+notes: ''

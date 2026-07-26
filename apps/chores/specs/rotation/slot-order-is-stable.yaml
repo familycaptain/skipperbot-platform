@@ -1,0 +1,15 @@
+kind: specification
+id: chores.rotation.slot-order-is-stable
+title: A chore keeps its place in the day
+state: live
+autonomy: gated
+behavior: >
+  Each chore holds a numbered place within its day in its zone, and that place is what decides
+  which person in the rotation gets it. Chores are listed and assigned in that order, so the
+  pairing of chore to person is predictable from one week to the next rather than arbitrary.
+implements:
+- apps/chores/store.py::assignments_for_zone
+- apps/chores/data.py::list_chores_for_dow
+tests: []
+links: {}
+notes: ''

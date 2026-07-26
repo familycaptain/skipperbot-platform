@@ -1,6 +1,6 @@
 kind: feature
 id: goals.onboarding
-title: Onboarding lifecycle
+title: First-run setup with Skipper
 state: live
 links: {}
 notes: ''

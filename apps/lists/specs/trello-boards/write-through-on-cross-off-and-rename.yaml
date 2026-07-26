@@ -1,0 +1,15 @@
+kind: specification
+id: lists.trello-boards.write-through-on-cross-off-and-rename
+title: Crossing off and renaming reach the board too
+state: live
+autonomy: gated
+behavior: >
+  Crossing an item off a linked list closes its card on the board, and correcting an item's text
+  renames the card. Either way the change is one thing in two places rather than a divergence the
+  next refresh has to undo. An item that has no card behind it changes only locally.
+implements:
+- apps/lists/store.py::remove_item
+- apps/lists/store.py::update_item_text
+tests: []
+links: {}
+notes: ''

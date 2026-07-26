@@ -1,0 +1,17 @@
+kind: specification
+id: lists.trello-cards.add-card-with-detail
+title: Adding a card that needs more than a title
+state: live
+autonomy: gated
+behavior: >
+  A card can be created on a board with a description as well as a title, for the cases an ordinary
+  list item cannot carry. It is refused without a board, a list and a title, and the reply gives the
+  new card's identifier and its address on Trello. Adding this way does not update the household's
+  mirror of that list until it next refreshes, so adding to the list itself is the better route when
+  the board is linked.
+implements:
+- apps/lists/tools.py::trello_add_card
+- trello_client.py::add_card
+tests: []
+links: {}
+notes: ''

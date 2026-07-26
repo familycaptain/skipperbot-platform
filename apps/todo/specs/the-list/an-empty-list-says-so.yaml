@@ -1,0 +1,17 @@
+kind: specification
+id: todo.the-list.an-empty-list-says-so
+title: 'An empty list says it is empty'
+state: live
+autonomy: gated
+behavior: >
+  With nothing open, the answer says the list is empty and invites adding something rather than
+  returning a bare heading; a list whose every item has been completed reads as empty too. In the
+  app a column with nothing open says so in place of its items, and a person with no backlog
+  connected is told that rather than shown an empty one.
+implements:
+- apps/todo/tools.py::get_todo_list
+- apps/todo/tools.py::get_backlog_list
+- apps/todo/ui/TodoApp.jsx::TodoColumn
+tests: []
+links: {}
+notes: ''

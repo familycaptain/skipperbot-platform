@@ -1,0 +1,16 @@
+kind: specification
+id: meals.menu.tag-suggestions-are-a-bonus
+title: Tag suggestions never cost a menu
+state: live
+autonomy: gated
+behavior: >
+  The menu's tag box suggests tags already in use, and if those suggestions cannot be loaded the
+  box simply offers none — a menu that loaded fine is never blanked by a failure in its
+  suggestions.
+implements:
+- apps/meals/pages/menu.html::loadTagOptions
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: todo.weekly-nudge.a-nudge-for-somebody-who-has-gone
+title: 'No nudge for a name that is no longer a person'
+state: live
+autonomy: gated
+behavior: >
+  Settings left behind for somebody who is no longer a member of the household never produce a
+  message: a nudge addressed to an unknown name is not recorded and not sent.
+implements:
+- todo_nudge_notifier.py::check_todo_nudges
+- apps/notifications/store.py::create_notification
+tests: []
+links: {}
+notes: ''

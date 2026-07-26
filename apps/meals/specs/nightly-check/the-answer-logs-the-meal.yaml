@@ -1,0 +1,16 @@
+kind: specification
+id: meals.nightly-check.the-answer-logs-the-meal
+title: Answering the question is enough to log it
+state: live
+autonomy: gated
+behavior: >
+  A reply to that question is treated as an answer about meals: it becomes today's dinner entry
+  and updates the library, without anyone naming a tool, repeating the date, or opening the app.
+implements:
+- apps/meals/handlers.py::handle_dinner_check
+- app_platform/consciousness.py::domain_for_source_type
+tests:
+- type: unit
+  path: tests/evolve/meals/test_dinner_schedule.py
+links: {}
+notes: ''

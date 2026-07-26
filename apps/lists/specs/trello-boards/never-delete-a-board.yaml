@@ -1,0 +1,17 @@
+kind: specification
+id: lists.trello-boards.never-delete-a-board
+title: Nothing here can delete a board
+state: live
+autonomy: gated
+behavior: >
+  There is no way, from Skipper, to delete a Trello board or empty one wholesale. A board is the
+  household's own data held somewhere else; the strongest thing offered is unlinking, which only
+  discards Skipper's mirror.
+implements:
+- apps/lists/tools.py::disconnect_trello_board
+- apps/lists/guide.md
+tests: []
+links: {}
+notes: >
+  Stated as a guarantee rather than an omission: the operator's rule is that a destructive board
+  operation must never be added.

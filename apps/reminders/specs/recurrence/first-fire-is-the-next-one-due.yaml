@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.recurrence.first-fire-is-the-next-one-due
+title: A repeat starts at its next occurrence, not in the past
+state: live
+autonomy: gated
+behavior: >
+  A repeating reminder first comes due at the next occurrence of its pattern that is still ahead,
+  even when the moment it was anchored to has gone by — so "every Monday at seven" asked for on a
+  Monday evening waits for the following Monday instead of nudging at once. A one-off is the
+  opposite: a time already past nudges on the next check.
+implements:
+- apps/reminders/store.py::create_reminder
+tests: []
+links: {}
+notes: ''

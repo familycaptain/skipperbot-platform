@@ -1,0 +1,17 @@
+kind: specification
+id: goals.structure.blocked-by-dependency
+title: Work waiting on something else is not offered as next
+state: live
+autonomy: gated
+behavior: >
+  A task with a dependency that has not finished is treated as blocked: it is skipped when working
+  out what someone should do next, even if it sits high in the order. When the last thing it was
+  waiting on finishes, a task that had been marked blocked returns to not started on its own, with
+  a note saying why.
+implements:
+- apps/goals/store.py::_is_task_blocked
+- apps/goals/store.py::_auto_unblock_dependents
+- apps/goals/store.py::get_next_naggable_task
+tests: []
+links: {}
+notes: ''

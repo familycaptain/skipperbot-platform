@@ -1,0 +1,16 @@
+kind: specification
+id: reminders.edit.it-answers-with-what-was-saved
+title: A change answers with the state that was saved
+state: live
+autonomy: gated
+behavior: >
+  A change answers with the reminder's whole saved state — next time, message, repeat, nag window,
+  whether it is live — rather than with "done", so what actually took effect can be checked
+  instead of taken on trust.
+implements:
+- apps/reminders/store.py::modify_reminder
+tests: []
+links: {}
+notes: >
+  Deliberate: a reminder whose new time was misread is otherwise only discovered by its not
+  arriving, which is the exact failure a reminder exists to prevent.

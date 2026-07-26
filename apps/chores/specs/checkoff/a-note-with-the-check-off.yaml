@@ -1,0 +1,15 @@
+kind: specification
+id: chores.checkoff.a-note-with-the-check-off
+title: A check-off can carry a note
+state: live
+autonomy: gated
+behavior: >
+  A note can be attached when a chore is checked off — why it was late, what was left, what was
+  done instead — and it stays with that day's record rather than being written onto the chore
+  itself, where it would reappear every week.
+implements:
+- apps/chores/data.py::upsert_completion
+- apps/chores/tools.py::complete_chore
+tests: []
+links: {}
+notes: ''

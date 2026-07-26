@@ -1,0 +1,14 @@
+kind: specification
+id: recipes.capture.creator-is-the-person-signed-in
+title: A recipe is credited to whoever signed in
+state: live
+autonomy: gated
+behavior: >
+  A recipe created from the app is credited to the signed-in person whatever the browser claims, and
+  that credit is shown on the recipe. There is no way to file a recipe under somebody else's name.
+implements:
+- apps/recipes/routes.py::_actor
+- apps/recipes/routes.py::api_create_recipe
+tests: []
+links: {}
+notes: ''

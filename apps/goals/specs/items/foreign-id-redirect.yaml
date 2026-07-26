@@ -1,0 +1,15 @@
+kind: specification
+id: goals.items.foreign-id-redirect
+title: An id from another app is answered, not just rejected
+state: live
+autonomy: gated
+behavior: >
+  Handing a goals action an id that belongs to a different app — a vehicle, a recipe, a schedule —
+  gets an answer that says it is not a goal, project or task and, where one exists, names the
+  action or app that does handle it. So a mistaken id produces a redirect rather than a bare not-
+  found that invites a retry with the same id.
+implements:
+- apps/goals/tools.py::update_item
+tests: []
+links: {}
+notes: ''

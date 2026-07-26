@@ -1,0 +1,19 @@
+kind: specification
+id: lists.naming.one-list-or-none
+title: One list is chosen, or none is
+state: live
+autonomy: gated
+behavior: >
+  Resolving a name always ends in exactly one list or in nothing: the household's lists are never
+  half-matched and an operation is never spread across two of them. When nothing resolves, the
+  request is refused and says so — adding, crossing off and moving never invent a list to satisfy a
+  name nobody recognises.
+implements:
+- apps/lists/store.py::find_list_by_name
+- apps/lists/tools.py::add_list_item
+- apps/lists/tools.py::move_list_items
+tests: []
+links: {}
+notes: >
+  The resolver picks rather than asks. Asking 'which list did you mean?' is the conversation's job
+  before it commits, because the tool has already committed by the time it answers.

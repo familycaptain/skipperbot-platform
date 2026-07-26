@@ -1,0 +1,18 @@
+kind: specification
+id: goals.structure.automatic-ordering
+title: Structure and dependencies order the work on their own
+state: live
+autonomy: gated
+behavior: >
+  Left alone, a project's tasks order themselves so milestones come first in an order that
+  respects what depends on what, each milestone's subtasks follow it immediately, and loose tasks
+  come last — with the existing order breaking ties, so a hand-set order is not thrown away. The
+  same dependency-first ordering applies to projects within a goal and to goals against each
+  other.
+implements:
+- apps/goals/store.py::_rerank_project
+- apps/goals/store.py::_rerank_goal
+- apps/goals/store.py::_rerank_goals
+tests: []
+links: {}
+notes: ''

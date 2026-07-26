@@ -1,0 +1,14 @@
+kind: specification
+id: meals.library.prep-and-cook-time
+title: Recorded times are shown with the meal
+state: live
+autonomy: gated
+behavior: >
+  When a meal records prep or cooking minutes they are shown with its details; a meal that
+  records neither shows no time line rather than zeroes.
+implements:
+- apps/meals/tools.py::get_meal
+- apps/meals/data.py::_meal_row
+tests: []
+links: {}
+notes: ''

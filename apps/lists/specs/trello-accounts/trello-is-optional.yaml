@@ -1,0 +1,17 @@
+kind: specification
+id: lists.trello-accounts.trello-is-optional
+title: Lists work with no Trello at all
+state: live
+autonomy: gated
+behavior: >
+  Lists are fully usable with no Trello account configured: creating lists, adding, crossing off,
+  reordering and printing need nothing outside the household's own installation. Board features
+  simply report themselves as unavailable, saying Trello is not configured and where to add an
+  account, rather than failing as though something were broken.
+implements:
+- apps/lists/hooks.py::register_hooks
+- apps/lists/hooks.py::_trello_configured
+- apps/lists/trello_config.py::any_account_configured
+tests: []
+links: {}
+notes: ''

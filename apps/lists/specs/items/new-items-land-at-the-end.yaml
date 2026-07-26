@@ -1,0 +1,15 @@
+kind: specification
+id: lists.items.new-items-land-at-the-end
+title: New items go to the bottom
+state: live
+autonomy: gated
+behavior: >
+  An item added to a list joins the end of it, so the order someone arranged stays as they left it
+  and the newest thing is always the last line. Nothing reshuffles a list on its own — not
+  alphabetically, not by who added what, not by age.
+implements:
+- apps/lists/store.py::add_item
+- apps/lists/data.py::add_item
+tests: []
+links: {}
+notes: ''

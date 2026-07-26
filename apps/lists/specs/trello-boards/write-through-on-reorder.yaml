@@ -1,0 +1,14 @@
+kind: specification
+id: lists.trello-boards.write-through-on-reorder
+title: The board ends up in the same order
+state: live
+autonomy: gated
+behavior: >
+  Reordering a linked list repositions the card on the board so both show the same order, including
+  when the item is moved to the very top or bottom. Because the board is what a refresh reads back,
+  an order that failed to reach the board is undone at the next refresh rather than fought over.
+implements:
+- apps/lists/store.py::reorder_item
+tests: []
+links: {}
+notes: ''

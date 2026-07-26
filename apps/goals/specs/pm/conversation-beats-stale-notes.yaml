@@ -1,0 +1,15 @@
+kind: specification
+id: goals.pm.conversation-beats-stale-notes
+title: What was said most recently wins
+state: live
+autonomy: gated
+behavior: >
+  When a note Skipper wrote earlier, or a follow-up it is holding, disagrees with something the
+  person said more recently, the conversation wins: Skipper updates or drops the stale item rather
+  than repeating it back at them.
+implements:
+- apps/goals/pm_domain.py::_PM_SKILL_GUIDANCE
+- apps/goals/pm_domain.py::pm_skill_runner
+tests: []
+links: {}
+notes: ''

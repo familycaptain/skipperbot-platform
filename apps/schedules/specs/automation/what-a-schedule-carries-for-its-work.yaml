@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.automation.what-a-schedule-carries-for-its-work
+title: A schedule carries the settings its work needs
+state: live
+autonomy: gated
+behavior: >
+  A schedule that starts work can carry that work's settings with it, and they are handed over
+  unchanged every time it fires — so two schedules can start the same kind of work with different
+  instructions, and changing a schedule's settings changes every run after that without creating a
+  second schedule. A schedule with no settings starts the work with its own defaults.
+implements:
+- apps/schedules/job_trigger.py::check_schedule_jobs
+- apps/schedules/data.py::update_schedule
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.other-apps.one-way-in
+title: Anything can set a reminder, through one door
+state: live
+autonomy: gated
+behavior: >
+  Any part of Skipper can set a reminder or a nag for a person, and what it sets is an ordinary
+  reminder: it shows up in that person's list, comes due the same way, and can be changed,
+  snoozed or cancelled by them like any other. There is no second kind of reminder that behaves
+  differently because a feature made it rather than a person asking.
+implements:
+- app_platform/reminders.py
+tests: []
+links: {}
+notes: ''

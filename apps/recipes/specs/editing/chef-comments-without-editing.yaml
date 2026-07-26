@@ -1,0 +1,14 @@
+kind: specification
+id: recipes.editing.chef-comments-without-editing
+title: Chef comments can be written while looking at the recipe
+state: live
+autonomy: gated
+behavior: >
+  What to do differently next time can be typed straight onto the recipe without opening the edit
+  form; a Save appears as soon as the text differs from what is stored and briefly confirms once
+  saved. Nothing else about the recipe is touched, so a comment can be added mid-cook.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx::ChefCommentsField
+tests: []
+links: {}
+notes: ''

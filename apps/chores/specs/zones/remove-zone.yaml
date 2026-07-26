@@ -1,13 +1,17 @@
 kind: specification
 id: chores.zones.remove-zone
-title: Remove a zone
+title: A zone with history cannot be deleted
 state: live
 autonomy: gated
-behavior: Removing deletes a zone and its chores (parent only); it fails if completion history
-  references those chores.
+behavior: >
+  Deleting a zone takes its chores and its turn order with it, but is refused outright as soon
+  as anybody has ever checked off one of its chores, and the answer says why. History is never
+  lost to a zone being tidied away; a zone that is finished with but has history is emptied of
+  chores instead.
 implements:
-- apps/chores/tools.py
-- apps/chores/ui/ChoresApp.jsx
+- apps/chores/tools.py::remove_zone
+- apps/chores/routes.py::api_delete_zone
+- apps/chores/migrations/001_initial.sql::chore_completions
 tests: []
 links: {}
 notes: ''

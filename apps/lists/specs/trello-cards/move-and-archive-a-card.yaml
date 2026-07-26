@@ -1,0 +1,17 @@
+kind: specification
+id: lists.trello-cards.move-and-archive-a-card
+title: Moving a card, and putting it away
+state: live
+autonomy: gated
+behavior: >
+  A card can be moved to another list on the same board, and the reply names both where it came from
+  and where it went. It can also be archived, which puts it away rather than destroying it — it
+  remains recoverable on Trello. Neither is possible without naming the board and the card.
+implements:
+- apps/lists/tools.py::trello_move_card
+- apps/lists/tools.py::trello_archive_card
+- trello_client.py::move_card
+- trello_client.py::archive_card
+tests: []
+links: {}
+notes: ''

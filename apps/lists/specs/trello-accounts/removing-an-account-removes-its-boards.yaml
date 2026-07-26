@@ -1,0 +1,17 @@
+kind: specification
+id: lists.trello-accounts.removing-an-account-removes-its-boards
+title: Removing an account takes its boards with it
+state: live
+autonomy: gated
+behavior: >
+  Removing a Trello account also removes every board registered against it, and the confirmation
+  asked for beforehand says so — a board with no credentials behind it could not be reached anyway.
+  Removing a board on its own leaves its account and every other board alone.
+implements:
+- apps/lists/routes.py::delete_trello_account
+- apps/lists/trello_config.py::delete_account
+- apps/lists/migrations/002_trello_config.sql
+- apps/lists/ui/TrelloSettings.jsx::AccountRow
+tests: []
+links: {}
+notes: ''

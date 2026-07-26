@@ -1,0 +1,16 @@
+kind: specification
+id: lists.items.cross-off-by-name
+title: Crossing something off by saying what it is
+state: live
+autonomy: gated
+behavior: >
+  Crossing off by name takes the item whose text matches exactly, and failing that the first one
+  that contains what was said — so 'cross off milk' works on '2% milk'. Only live items are
+  considered, so the same thing can be added again and crossed off again. When nothing matches, the
+  reply lists what is actually on the list, up to ten items, instead of just refusing.
+implements:
+- apps/lists/tools.py::remove_list_item
+- apps/lists/store.py::remove_item
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: chores.history.range-first-then-a-cap
+title: The period is applied before the cap
+state: live
+autonomy: gated
+behavior: >
+  The period and the person asked about decide which check-offs are in scope, and only then is
+  the number returned capped. Narrowing to one person therefore reaches further back rather than
+  returning the same rows filtered, and a cap that hides some of them is a shortened answer, not
+  a different period.
+implements:
+- apps/chores/data.py::list_completions_in_range
+tests: []
+links: {}
+notes: ''

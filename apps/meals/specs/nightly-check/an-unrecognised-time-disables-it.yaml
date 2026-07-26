@@ -1,0 +1,19 @@
+kind: specification
+id: meals.nightly-check.an-unrecognised-time-disables-it
+title: A time nobody offered disables the check
+state: live
+autonomy: gated
+behavior: >
+  A stored time that is not one of the offered choices disables the check and is recorded as the
+  reason, rather than being rounded to a guess — so a corrupted or hand-edited setting produces
+  silence, never a question at an unexpected hour.
+implements:
+- apps/meals/schedule.py::VALID_TIMES
+- apps/meals/schedule.py::reconcile_dinner_schedule
+tests:
+- type: unit
+  path: tests/evolve/meals/test_dinner_schedule.py
+links: {}
+notes: >
+  Fail closed: an unexpected value should cost a missed question, not an unexplained message in
+  the middle of the night.

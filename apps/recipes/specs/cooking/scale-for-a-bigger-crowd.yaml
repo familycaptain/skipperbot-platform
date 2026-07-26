@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.cooking.scale-for-a-bigger-crowd
+title: Scaling a recipe for the number eating
+state: live
+autonomy: gated
+behavior: >
+  A recipe can be read at half, one and a half, double, triple or quadruple quantities, and every
+  ingredient quantity is recalculated on the spot. Scaling is a way of reading the recipe, not a
+  change to it: nothing is saved, everyone else still sees the recipe as written, and it is back at
+  its original quantities the next time it is opened.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx::scaleIngredient
+tests: []
+links: {}
+notes: ''

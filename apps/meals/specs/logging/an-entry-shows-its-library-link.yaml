@@ -1,0 +1,15 @@
+kind: specification
+id: meals.logging.an-entry-shows-its-library-link
+title: An entry says which library meal it was
+state: live
+autonomy: gated
+behavior: >
+  Each entry in the log shows its date, its occasion, what was eaten, any note taken with it,
+  and the name of the library meal it points at when it has one — so the history reads as meals
+  rather than as loose text.
+implements:
+- apps/meals/data.py::_meal_log_row
+- apps/meals/ui/MealsApp.jsx::MealLogEntry
+tests: []
+links: {}
+notes: ''

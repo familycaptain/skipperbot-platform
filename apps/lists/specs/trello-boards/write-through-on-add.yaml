@@ -1,0 +1,18 @@
+kind: specification
+id: lists.trello-boards.write-through-on-add
+title: Adding to a linked list adds the card
+state: live
+autonomy: gated
+behavior: >
+  Adding to a list that mirrors a board also creates the card on the board, so the person already at
+  the shop with Trello open sees it. If the board refuses the card the item still goes on the list
+  and the add still reports success — but that item has not reached the board and will vanish at the
+  next refresh.
+implements:
+- apps/lists/store.py::add_item
+- apps/lists/tools.py::add_list_item
+tests: []
+links: {}
+notes: >
+  The silent half-success is honest current behaviour, not a design goal — see the open question
+  about surfacing write-through failures.

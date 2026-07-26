@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.recall.changes-show-in-the-activity-feed
+title: Adding a recipe shows in the activity feed
+state: live
+autonomy: gated
+behavior: >
+  A recipe someone adds appears in that person's activity feed, named and dated alongside what they
+  did in every other app. An entry nobody can be attributed to is not posted at all rather than
+  posted anonymously.
+implements:
+- apps/recipes/data.py::save_recipe
+- app_platform/activity.py::log_activity
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: todo.completing.done-by-description-in-chat
+title: '"I finished X" finds the right item'
+state: live
+autonomy: gated
+behavior: >
+  Told an item is finished, Skipper completes the open item whose wording matches — an exact match
+  first, otherwise the first item containing what was said — and confirms which one it completed.
+  Nothing matching is answered with the items currently on the list so the person can say which they
+  meant, rather than a guess or a silent no-op. Asked on an empty list, it says the list is empty.
+implements:
+- apps/todo/tools.py::mark_todo_done
+tests: []
+links: {}
+notes: ''

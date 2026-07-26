@@ -1,0 +1,19 @@
+kind: specification
+id: lists.naming.nicknames
+title: Teaching a list the name people actually use
+state: live
+autonomy: gated
+behavior: >
+  A list can be given nicknames so it answers to what the household calls it — set 'mum' on 'Mum's
+  List' and 'add milk to mum' lands there. Nicknames are matched without regard to capitals and are
+  shown beside the list so it is clear what it answers to. Setting nicknames replaces the whole set
+  rather than adding to it, at least one is required, and setting them on a list that does not exist
+  is refused.
+implements:
+- apps/lists/tools.py::set_list_aliases
+- apps/lists/store.py::update_aliases
+- apps/lists/ui/ListsApp.jsx::ListCard
+- agent.py::api_update_list_aliases
+tests: []
+links: {}
+notes: ''

@@ -1,6 +1,6 @@
 kind: feature
 id: goals.structure
-title: Ordering, dependencies & hierarchy
+title: Order, dependencies & hierarchy
 state: live
 links: {}
 notes: ''

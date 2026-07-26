@@ -1,0 +1,17 @@
+kind: specification
+id: goals.items.delete-cascades
+title: Deleting takes the whole branch with it
+state: live
+autonomy: gated
+behavior: >
+  Deleting a goal also deletes its projects and all their tasks; deleting a project deletes its
+  tasks; deleting a task removes only that task. Cross-references to whatever was deleted are
+  cleared and the answer says how many were removed, so nothing is left pointing at something
+  gone. Deletion is permanent — closing work out is a separate, reversible thing.
+implements:
+- apps/goals/tools.py::delete_item
+- apps/goals/store.py::delete_item
+- apps/goals/ui/GoalShared.jsx::DeleteButton
+tests: []
+links: {}
+notes: ''

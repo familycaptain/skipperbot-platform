@@ -1,0 +1,17 @@
+kind: specification
+id: schedules.managing.set-one-up
+title: Set a recurring thing up
+state: live
+autonomy: gated
+behavior: >
+  A schedule needs a title and a cadence; kind, who it is for, time of day and a description are
+  offered and each has a sensible default. Saving it computes when it is next due and opens the new
+  schedule so what was created can be seen, and an attempt to save with no title does nothing rather
+  than creating an untitled schedule.
+implements:
+- apps/schedules/ui/SchedulesApp.jsx::NewScheduleForm
+- apps/schedules/data.py::create_schedule
+- agent.py::api_create_schedule
+tests: []
+links: {}
+notes: ''

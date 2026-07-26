@@ -1,12 +1,19 @@
 kind: specification
 id: goals.items.create-project
-title: Create a project
+title: Add a project under a goal
 state: live
 autonomy: gated
-behavior: Creating a project records a p- entity under a goal.
+behavior: >
+  A project records a scoped piece of work under a goal, with its own owners, due date and
+  priority — so a goal can be broken into parts that finish at different times. Naming a goal that
+  does not exist is refused and nothing is created. Priority defaults to the household's
+  configured default for new work, and an unrecognised priority falls back to it rather than being
+  rejected. A new project is added last in its goal's order.
 implements:
-- apps/goals/tools.py
-- apps/goals/ui/GoalsApp.jsx
+- apps/goals/tools.py::create_project
+- apps/goals/store.py::create_project
+- apps/goals/store.py::_default_priority
+- apps/goals/ui/GoalsApp.jsx::GoalView
 tests: []
 links: {}
 notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: reminders.snooze.a-follow-up-not-a-delay
+title: Snoozing makes a fresh follow-up and leaves the original alone
+state: live
+autonomy: gated
+behavior: >
+  Snoozing a nudge creates a new one-off reminder carrying the same message, due after the wait
+  asked for; the reminder it came from is untouched, so a repeating reminder keeps its pattern and
+  a nag still comes tomorrow. Both nudges are the point — the one that was put off, and the thing
+  itself still on its own rhythm.
+implements:
+- apps/reminders/store.py::snooze_reminder
+- apps/reminders/tools.py::snooze_reminder
+tests: []
+links: {}
+notes: ''

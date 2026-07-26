@@ -1,0 +1,15 @@
+kind: specification
+id: todo.completing.done-today-then-out-of-the-way
+title: 'Recently done stays visible, then fades'
+state: live
+autonomy: gated
+behavior: >
+  Items completed today are listed under the open ones and can be seen at a glance. Those completed
+  in the past week are folded behind a "Recently" toggle that shows which weekday each was done.
+  Anything older is reduced to a count. A column with nothing completed shows none of these sections
+  at all.
+implements:
+- apps/todo/ui/TodoApp.jsx::TodoColumn
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: goals.pm.never-a-made-up-person
+title: Skipper only ever messages a real member of the household
+state: live
+autonomy: gated
+behavior: >
+  A message addressed to a name that is not a household member is refused rather than sent — so a
+  nudge never goes to a placeholder or invented person. Where Skipper needs a name to address, it
+  takes it from the actual household roster and defaults to the primary user rather than guessing,
+  and it addresses people by the name they are known by while sending to their account.
+implements:
+- apps/goals/pm_domain.py::pm_skill_runner
+- apps/goals/pm_domain.py::_build_user_prompt
+tests: []
+links: {}
+notes: >
+  Real failure: onboarding nudges addressed to an example name from a tool description, delivered
+  to nobody.

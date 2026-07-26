@@ -1,0 +1,20 @@
+kind: specification
+id: chores.rotation.changing-a-rotation-rewrites-the-past-too
+title: Changing the rotation changes days already gone
+state: live
+autonomy: gated
+behavior: >
+  Reordering the people in a zone, adding or removing one, or moving the zone's start date
+  changes who is assigned on every date — including days already past. A check-off already
+  recorded stays attached to the person who was credited with it, so a past day can end up
+  showing its chore as outstanding while the completion is still in the history under the person
+  who did it.
+implements:
+- apps/chores/data.py::set_zone_members
+- apps/chores/data.py::update_zone
+- apps/chores/store.py::today_by_kid
+tests: []
+links: {}
+notes: >
+  Nothing is snapshotted, so the anchor and the member order are the whole schedule. Anyone
+  reshuffling a live zone should expect the day views behind them to change.

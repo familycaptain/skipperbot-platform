@@ -1,0 +1,22 @@
+kind: specification
+id: goals.onboarding.seeded-once
+title: A fresh install gets one setup plan, once
+state: live
+autonomy: gated
+behavior: >
+  The first time a household finishes creating its first account, Skipper gives itself a "Get
+  started with Skipper" goal holding the whole setup walkthrough, owned by Skipper rather than the
+  person, with about a month to work through. It is created once: starting up again, or re-running
+  setup, never produces a second copy. Because Skipper owns it, its own project-manager review is
+  what walks it — there is no separate onboarding engine.
+implements:
+- apps/goals/onboarding.py::ensure_onboarding
+tests:
+- type: unit
+  path: tests/evolve/goals/test_onboarding_agenda.py
+  rubric: >
+    Offline: drives the real seeder with an explicit app list and asserts the seeded shape — one
+    goal carrying the ordered agenda before the per-app tours, each step present exactly once, and
+    re-running produces nothing new.
+links: {}
+notes: ''

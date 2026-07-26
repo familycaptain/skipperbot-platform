@@ -1,0 +1,16 @@
+kind: specification
+id: meals.menu.the-menu-arrives-ready
+title: The menu arrives already made
+state: live
+autonomy: gated
+behavior: >
+  The menu page builds itself as soon as it opens — the person clicked Export, so they are shown
+  a menu and not a blank form to fill in — and says it is loading while it fetches.
+implements:
+- apps/meals/pages/menu.html::init
+- apps/meals/pages/menu.html::showLoading
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: goals.notes.comment-without-changing
+title: A note can be added to the trail without editing the item
+state: live
+autonomy: gated
+behavior: >
+  A dated, attributed comment can be added to an item's history on its own — a finding, a
+  decision, an instruction from whoever owns it — without touching its state, dates or
+  description. Comments added in the app appear in the same trail as the ones Skipper adds, and
+  Skipper reads the recent ones when it reviews the item.
+implements:
+- apps/goals/store.py::update_item
+- apps/goals/ui/GoalShared.jsx::HistorySection
+- apps/goals/pm_domain.py::_load_project_snapshot
+tests: []
+links: {}
+notes: ''

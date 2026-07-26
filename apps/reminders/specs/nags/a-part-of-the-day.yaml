@@ -1,0 +1,16 @@
+kind: specification
+id: reminders.nags.a-part-of-the-day
+title: A nag can be pinned to a part of the day
+state: live
+autonomy: gated
+behavior: >
+  A nag can be scoped to the morning, the afternoon, the evening or the night, and its daily time
+  is then picked inside that window only — "bug me every night to take my meds" never lands at
+  breakfast. Night means the same window as evening. A scope that is none of these is treated as
+  no scope rather than refusing the nag.
+implements:
+- apps/reminders/store.py::create_nag
+- config.py::NAG_SLOTS
+tests: []
+links: {}
+notes: ''

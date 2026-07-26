@@ -1,0 +1,18 @@
+kind: specification
+id: meals.library.whole-meal-at-a-glance
+title: A meal shows everything known about it
+state: live
+autonomy: gated
+behavior: >
+  Opening a meal shows its effort, its tags, its star rating, its description and notes, its
+  photos, and its components grouped by the part each plays — main, side, sauce, garnish — with
+  a component that has a recipe marked as having one. Asking for a meal that does not exist says
+  so instead of showing a blank record.
+implements:
+- apps/meals/tools.py::get_meal
+- apps/meals/data.py::get_meal
+- apps/meals/routes.py::api_get_meal
+- apps/meals/ui/MealsApp.jsx::MealDetailView
+tests: []
+links: {}
+notes: ''

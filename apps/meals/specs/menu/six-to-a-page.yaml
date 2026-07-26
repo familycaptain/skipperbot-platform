@@ -1,0 +1,15 @@
+kind: specification
+id: meals.menu.six-to-a-page
+title: Six meals to a page, and no meal split in half
+state: live
+autonomy: gated
+behavior: >
+  The menu lays out six meals per page, each page repeating the header and the printed-date
+  footer, with a page break between pages and no single meal broken across one.
+implements:
+- apps/meals/pages/menu.html::renderPages
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: ''

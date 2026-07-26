@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.other-apps.part-of-the-backlog
+title: Reminders and nags are things you can choose to focus on
+state: live
+autonomy: gated
+behavior: >
+  A person's live reminders and nags are offered alongside their tasks and lists as things they
+  could pick for today's focus, in the same order the Reminders app shows them. One that is
+  cancelled or finished drops out of that offer rather than staying there as a choice.
+implements:
+- apps/prioritize/data.py::_backlog_reminders
+- apps/prioritize/data.py::_backlog_nags
+tests: []
+links: {}
+notes: ''

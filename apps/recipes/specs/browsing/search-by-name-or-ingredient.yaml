@@ -1,0 +1,18 @@
+kind: specification
+id: recipes.browsing.search-by-name-or-ingredient
+title: Search reaches into the ingredients
+state: live
+autonomy: gated
+behavior: >
+  Searching matches a recipe by its title, its description, or anything in its ingredient list,
+  ignoring case and matching part of a word — so "chick" finds a chicken dish and "garlic" finds
+  every recipe that uses garlic even when the title never mentions it. It does not look inside the
+  steps, the notes or the chef comments. A search that matches nothing says so and repeats what was
+  searched for.
+implements:
+- apps/recipes/data.py::search_recipes
+- apps/recipes/tools.py::search_recipes
+- apps/recipes/routes.py::api_list_recipes
+tests: []
+links: {}
+notes: ''

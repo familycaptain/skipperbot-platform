@@ -1,0 +1,17 @@
+kind: specification
+id: meals.logging.new-sides-accumulate
+title: New sides join the meal instead of forking it
+state: live
+autonomy: gated
+behavior: >
+  Sides mentioned that the matched meal did not already have are added to it, so a dish collects
+  its variations over time instead of the library filling with one copy per combination of
+  sides.
+implements:
+- apps/meals/tools.py::log_meal
+- apps/meals/data.py::link_component_to_meal
+tests:
+- type: unit
+  path: test_meals_tools.py
+links: {}
+notes: ''

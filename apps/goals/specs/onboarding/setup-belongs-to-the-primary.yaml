@@ -1,0 +1,16 @@
+kind: specification
+id: goals.onboarding.setup-belongs-to-the-primary
+title: Only one person is walked through setup
+state: live
+autonomy: gated
+behavior: >
+  Setup is a conversation with the person who installed Skipper. Another household member arriving
+  part-way through is not walked through the household's configuration steps — they are greeted
+  and helped normally, because being introduced to Skipper and configuring it are different
+  things.
+implements:
+- apps/goals/handlers.py::_greeting_turn
+- apps/goals/onboarding.py::ensure_onboarding
+tests: []
+links: {}
+notes: ''

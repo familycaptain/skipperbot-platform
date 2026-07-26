@@ -1,0 +1,16 @@
+kind: specification
+id: chores.kids.each-person-has-a-colour-and-a-place
+title: Each person has a colour and a place in the list
+state: live
+autonomy: gated
+behavior: >
+  Everybody in the rotation carries a colour and a position in the running order, and both are
+  used consistently wherever they appear — the same colour on their card, their name and their
+  week row, and the same order every time the household is listed, rather than an order that
+  shifts between screens.
+implements:
+- apps/chores/data.py::list_kids
+- apps/chores/ui/ChoresApp.jsx::TodayTab
+tests: []
+links: {}
+notes: ''

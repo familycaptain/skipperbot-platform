@@ -1,0 +1,14 @@
+kind: specification
+id: reminders.edit.rescheduling-is-a-conversation
+title: Rescheduling is asked for in words
+state: live
+autonomy: gated
+behavior: >
+  Rescheduling goes through conversation rather than a date picker, and the list says so where the
+  reminder is opened — so "push it to after school on Thursday" is understood instead of having to
+  be translated into a form by the person.
+implements:
+- apps/reminders/ui/RemindersApp.jsx::ReminderCard
+tests: []
+links: {}
+notes: ''

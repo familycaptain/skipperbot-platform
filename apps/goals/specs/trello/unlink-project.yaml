@@ -1,0 +1,13 @@
+kind: specification
+id: goals.trello.unlink-project
+title: Disconnecting keeps the work, drops the link
+state: live
+autonomy: gated
+behavior: >
+  Disconnecting a project from its board leaves its tasks in place but no longer tied to any card,
+  so nothing is lost and nothing keeps syncing. The cards themselves are untouched.
+implements:
+- apps/goals/tools.py::unlink_project_from_trello
+tests: []
+links: {}
+notes: ''

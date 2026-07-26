@@ -1,0 +1,14 @@
+kind: specification
+id: chores.rounds.addressed-by-their-own-name
+title: People are addressed by the name they go by
+state: live
+autonomy: gated
+behavior: >
+  A round message addresses somebody by the display name on their household account, falling
+  back to their name in the rotation when the account has none. The account name is only used
+  for deciding where the message goes, never for talking to them.
+implements:
+- apps/chores/handlers.py::_chores_skill_runner
+tests: []
+links: {}
+notes: ''

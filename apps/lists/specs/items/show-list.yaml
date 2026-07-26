@@ -1,0 +1,16 @@
+kind: specification
+id: lists.items.show-list
+title: Reading a list back
+state: live
+autonomy: gated
+behavior: >
+  Asking for a list returns its live items numbered in their current order, its name, and — when it
+  mirrors a board — which board list it mirrors. Crossed-off items are left out unless they are
+  asked for, and then they are shown separately, marked as crossed off.
+implements:
+- apps/lists/tools.py::show_list
+- apps/lists/store.py::show_list
+- agent.py::api_get_list
+tests: []
+links: {}
+notes: ''

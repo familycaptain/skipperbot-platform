@@ -1,0 +1,15 @@
+kind: specification
+id: meals.components.search-and-filter-components
+title: Components are searchable by name and kind
+state: live
+autonomy: gated
+behavior: >
+  The component list can be narrowed by part of a name, ignoring case, or to a single kind, and
+  is always in alphabetical order; nothing matching says so rather than showing an empty list.
+implements:
+- apps/meals/data.py::list_components
+- apps/meals/tools.py::list_components
+- apps/meals/ui/MealsApp.jsx::ComponentsTab
+tests: []
+links: {}
+notes: ''

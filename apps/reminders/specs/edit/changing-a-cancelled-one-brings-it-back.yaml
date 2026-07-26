@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.edit.changing-a-cancelled-one-brings-it-back
+title: Changing a cancelled reminder brings it back
+state: live
+autonomy: gated
+behavior: >
+  Giving a cancelled reminder a new time or message makes it live again: rescheduling something
+  that was called off is how it is reinstated, and there is no separate step for it.
+implements:
+- apps/reminders/store.py::modify_reminder
+tests: []
+links: {}
+notes: >
+  A consequence worth knowing rather than a designed step — any change at all revives it,
+  including one that was only correcting a typo in the message.

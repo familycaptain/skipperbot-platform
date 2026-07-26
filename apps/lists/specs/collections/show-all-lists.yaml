@@ -1,13 +1,17 @@
 kind: specification
 id: lists.collections.show-all-lists
-title: Show all lists
+title: Seeing what lists exist
 state: live
 autonomy: gated
-behavior: Showing all lists returns every available list, including board-backed and standalone
-  lists.
+behavior: >
+  Asking what lists exist answers with each one's name, how many live items are on it, any nicknames
+  it answers to, and — for a list that mirrors a board — which board. With nothing created yet the
+  answer says there are no lists rather than showing an empty page. In the app the lists are grouped
+  standalone-first and then one group per board.
 implements:
-- apps/lists/tools.py
-- apps/lists/ui/ListsApp.jsx
+- apps/lists/tools.py::show_all_lists
+- agent.py::api_list_lists
+- apps/lists/ui/ListsApp.jsx::ListsApp
 tests: []
 links: {}
 notes: ''

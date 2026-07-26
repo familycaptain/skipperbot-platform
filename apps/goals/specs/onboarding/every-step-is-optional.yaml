@@ -1,0 +1,15 @@
+kind: specification
+id: goals.onboarding.every-step-is-optional
+title: Any setup topic can be declined
+state: live
+autonomy: gated
+behavior: >
+  Every setup topic can be skipped or declined and is closed off gracefully with no further
+  mention — nothing in setup is required, and nothing that was declined is raised again. A topic
+  put off rather than declined is deferred and does not hold the rest of setup up indefinitely.
+implements:
+- apps/goals/onboarding.py::_OPTIONAL_NOTE
+- apps/goals/onboarding.py::agenda_projects_complete
+tests: []
+links: {}
+notes: ''

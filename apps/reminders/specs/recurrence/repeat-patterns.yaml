@@ -1,0 +1,16 @@
+kind: specification
+id: reminders.recurrence.repeat-patterns
+title: The shapes a repeat can take
+state: live
+autonomy: gated
+behavior: >
+  A reminder can repeat every day, on chosen days of the week, every so many weeks, on given days
+  of the month, on the nth or the last weekday of a month, or once a year; the pattern is held as
+  a standard calendar rule, so an unusual cadence somebody asks for works without new code being
+  written for it. The time of day comes from the moment the reminder was anchored to.
+implements:
+- apps/reminders/store.py::compute_next_occurrence
+- apps/reminders/tools.py::set_reminder
+tests: []
+links: {}
+notes: ''

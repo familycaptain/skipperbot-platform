@@ -2,10 +2,12 @@ kind: capability
 id: chores
 title: Chores
 app: chores
-scope: Recurring household chores rotated across the kids — replaces the family chore-manager
-  spreadsheet. A daily 9am push gives each kid their chores, with kid-driven check-off and full
-  chore/zone/kid CRUD via UI and chat. NOT general task management (the Todo/Tasks apps); chores
-  are the fixed, rotating household duties.
+scope: >
+  The household's recurring, unpaid chore rotation: an area of the house ("zone") carries a fixed set
+  of weekly chores and an ordered list of the people who take turns at them, and Chores works out who
+  owes what on any given day, nudges them morning and evening, and takes their check-off. Owns the
+  rotation rule, the check-off record and the completion history. NOT one-off paid tasks (Bounties
+  owns money and payouts) and NOT general task management (Todo).
 state: live
 autonomy: gated
 links: {}

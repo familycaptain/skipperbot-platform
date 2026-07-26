@@ -1,0 +1,14 @@
+kind: specification
+id: recipes.printing.an-empty-recipe-doesnt-print
+title: An empty recipe does not reach the printer
+state: live
+autonomy: gated
+behavior: >
+  A print job for a recipe with nothing in it, or for a recipe deleted between the request and the
+  job running, fails with a reason instead of sending a blank page, and whoever asked is told why.
+implements:
+- print_runner.py::_load_recipe_as_markdown
+- print_runner.py::_run_print_pipeline
+tests: []
+links: {}
+notes: ''

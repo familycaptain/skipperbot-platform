@@ -1,0 +1,16 @@
+kind: specification
+id: meals.logging.look-back-over-days
+title: The log reads back newest first over a chosen window
+state: live
+autonomy: gated
+behavior: >
+  The log can be read back over a window of days, newest first, optionally narrowed to one
+  occasion. A window with nothing in it says nothing was logged over those days rather than
+  showing a blank list, and a log that cannot be loaded says that instead of looking empty.
+implements:
+- apps/meals/data.py::get_meal_log
+- apps/meals/tools.py::get_meal_log
+- apps/meals/ui/MealsApp.jsx::MealLogTab
+tests: []
+links: {}
+notes: ''

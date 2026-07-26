@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.list.nags-kept-apart
+title: Nags are counted and listed apart from reminders
+state: live
+autonomy: gated
+behavior: >
+  Nags and timed reminders are two lists with their own counts, because they answer different
+  questions — "what is happening today" and "what am I still being chased about". A nudge that
+  arrives opens the list its own kind is on, not the other one.
+implements:
+- apps/reminders/ui/RemindersApp.jsx::RemindersApp
+- web/src/components/Shell.jsx
+tests: []
+links: {}
+notes: ''

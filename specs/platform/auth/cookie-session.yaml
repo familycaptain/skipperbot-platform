@@ -36,21 +36,9 @@ tests:
     header -> no principal; (7) GET with BOTH a valid Authorization header and a valid sb_session
     cookie -> principal resolved from the header (header precedence). No DB, no network.'
 links: {}
-notes: 'Logout is a GET so the SPA can hit it from forceLogout; clearing one''s OWN cookie
-  is harmless, so a cross-site GET to /auth/logout is at most a low-severity nuisance, not
-  a state-changing CSRF. Restricting the fallback to GET/HEAD is the CSRF guard — do NOT widen
-  to mutating methods. Secure flag keyed on request.url.scheme==''https'' (Starlette honors
-  X-Forwarded-Proto when uvicorn runs with proxy headers). verify_token already enforces exp
-  + token_version; reused as-is so revocation is uniform across header and cookie. Keep CORS
-  allow_credentials=False: the cookie is only relied on for same-origin top-level navigations,
-  never credentialed cross-origin fetch. Standard access logs omit request headers, so the
-  cookie-borne token is never written to a log — that is the basis for the #7-preserved claim.
-  Safe-method gating is enforced inside principal_from_request (resolves the architecture
-  reviewer''s layer question). Cookie Max-Age and token exp BOTH derive from SESSION_TTL —
-  keep them from drifting. Add a one-line cross-reference in specs/platform/auth/authorization.yaml
-  noting the cookie is a valid credential transport for safe requests (interop reviewer).
-  The still-unauthenticated pop-out (expired cookie) still renders the platform''s 401 JSON
-  — graceful rendering is the app''s concern, out of scope here. /auth/logout is a public
-  GET: clearing one''s own cookie is harmless, so cross-site logout is a low nuisance, not
-  CSRF — note in release notes.'
+notes: >-
+  Restricting the cookie fallback to GET/HEAD is the CSRF guard — do not widen it to mutating
+  methods, and keep CORS allow_credentials=False, since the cookie is only ever relied on for
+  same-origin navigations. Logout is a GET so the SPA can call it: clearing one's own cookie is a
+  nuisance at worst, not a state-changing CSRF.
 verified: true

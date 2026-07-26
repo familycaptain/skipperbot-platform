@@ -1,6 +1,6 @@
 kind: feature
 id: lists.trello-boards
-title: Trello board integration
+title: Lists that mirror a Trello board
 state: live
 links: {}
 notes: ''

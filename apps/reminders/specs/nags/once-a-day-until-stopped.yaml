@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.nags.once-a-day-until-stopped
+title: A nag comes back every day until somebody stops it
+state: live
+autonomy: gated
+behavior: >
+  A nag has no due date: it nudges once each day, every day, and keeps doing so until somebody
+  cancels it. Nothing about the nudge itself ends it — being nudged, replying, or snoozing the
+  nudge all leave the nag standing for tomorrow; cancelling is the only thing that stops it.
+implements:
+- apps/reminders/store.py::create_nag
+- apps/reminders/store.py::mark_delivered
+tests: []
+links: {}
+notes: ''

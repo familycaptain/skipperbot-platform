@@ -1,0 +1,15 @@
+kind: specification
+id: chores.zones.setup-changes-are-announced
+title: Setup changes are announced to the household
+state: live
+autonomy: gated
+behavior: >
+  Adding, editing or removing a person, a zone or a chore raises a household event naming what
+  changed, so anything else in the house that cares about the rota can follow it without Chores
+  knowing who is listening.
+implements:
+- apps/chores/store.py::_emit
+- apps/chores/manifest.yaml::emits
+tests: []
+links: {}
+notes: ''

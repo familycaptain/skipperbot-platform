@@ -1,0 +1,19 @@
+kind: specification
+id: recipes.capture.where-it-came-from
+title: Where a recipe came from is kept
+state: live
+autonomy: gated
+behavior: >
+  A recipe taken from a website keeps the address it came from, shown at the foot of the recipe as a
+  link that opens in a new tab, and carried onto the printed page. Nothing is ever fetched from that
+  address: the recipe is exactly the text a person handed to Skipper, and a recipe with no source
+  shows none.
+implements:
+- apps/recipes/tools.py::create_recipe
+- apps/recipes/ui/RecipeDetailApp.jsx
+- print_runner.py::_load_recipe_as_markdown
+tests: []
+links: {}
+notes: >
+  Recipes has no importer: the source address is a note about provenance, not something the
+  product retrieves or trusts.

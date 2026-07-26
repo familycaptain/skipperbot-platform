@@ -1,0 +1,16 @@
+kind: specification
+id: lists.items.reorder-one-step-at-a-time
+title: Putting a list in the order you shop it
+state: live
+autonomy: gated
+behavior: >
+  Any item can be moved up or down one place at a time and the new order is what everyone sees from
+  then on. The first item cannot be moved up and the last cannot be moved down. Asked for a position
+  beyond either end, the item lands at that end rather than being lost.
+implements:
+- apps/lists/store.py::reorder_item
+- apps/lists/ui/ListsApp.jsx::ListItemRow
+- agent.py::api_reorder_list_item
+tests: []
+links: {}
+notes: ''

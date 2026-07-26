@@ -1,0 +1,15 @@
+kind: specification
+id: chores.checkoff.only-a-chore-you-actually-have
+title: Only a chore actually assigned that day can be ticked
+state: live
+autonomy: gated
+behavior: >
+  Asking Skipper to check something off only works for a chore the rotation actually gave that
+  person on that date. A chore they do not have that day is refused, with a pointer to their
+  actual list, rather than recorded against them.
+implements:
+- apps/chores/tools.py::complete_chore
+- apps/chores/store.py::find_assignment_for_kid_by_name
+tests: []
+links: {}
+notes: ''

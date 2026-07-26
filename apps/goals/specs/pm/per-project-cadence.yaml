@@ -1,0 +1,18 @@
+kind: specification
+id: goals.pm.per-project-cadence
+title: How often a project is checked in on can be set
+state: live
+autonomy: gated
+behavior: >
+  A project that was reviewed within its check-in window is passed over unless something has
+  actually happened on it, so a quiet project is not revisited daily. The window defaults to a
+  household-wide setting and any individual project can be given its own, editable directly on the
+  project.
+implements:
+- apps/goals/pm_domain.py::_default_cadence_minutes
+- apps/goals/pm_domain.py::_pick_next_project
+- apps/goals/ui/GoalShared.jsx::CadenceField
+- apps/goals/manifest.yaml
+tests: []
+links: {}
+notes: ''

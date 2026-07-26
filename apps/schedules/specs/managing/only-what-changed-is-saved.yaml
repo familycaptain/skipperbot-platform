@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.managing.only-what-changed-is-saved
+title: Only what changed is saved
+state: live
+autonomy: gated
+behavior: >
+  Editing a schedule offers to save only once something has actually been edited, and saves just the
+  fields that differ — so opening a schedule and closing it again changes nothing, including its
+  countdown. A save with nothing changed is a no-op rather than an error, and fields not mentioned in
+  a change keep their values.
+implements:
+- apps/schedules/ui/SchedulesApp.jsx::DetailView
+- apps/schedules/data.py::update_schedule
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: goals.views.search
+title: Search the work by keyword
+state: live
+autonomy: gated
+behavior: >
+  A keyword search matches goals, projects and tasks on their names, their notes and their history
+  comments, without regard to case, and returns them grouped by kind with each one's state and
+  what it sits under. So something remembered only by a phrase written in its notes months ago is
+  still findable. No matches says so with the term quoted back.
+implements:
+- apps/goals/tools.py::search_goals
+- apps/goals/store.py::search_items
+- apps/goals/ui/GoalShared.jsx::SearchBar
+tests: []
+links: {}
+notes: ''

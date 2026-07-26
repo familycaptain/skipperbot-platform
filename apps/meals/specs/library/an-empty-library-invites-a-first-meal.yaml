@@ -1,0 +1,15 @@
+kind: specification
+id: meals.library.an-empty-library-invites-a-first-meal
+title: Empty and filtered-to-empty read differently
+state: live
+autonomy: gated
+behavior: >
+  With nothing in the library at all, the app invites the first meal idea instead of showing an
+  empty list. When a search, tag or effort filter is what matched nothing, it says no meals were
+  found — so 'you have none yet' is never mistaken for 'none match'.
+implements:
+- apps/meals/ui/MealsApp.jsx::BrowseTab
+- apps/meals/ui/index.js
+tests: []
+links: {}
+notes: ''

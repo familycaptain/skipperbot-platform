@@ -1,0 +1,15 @@
+kind: specification
+id: todo.capture.a-refused-capture-keeps-your-words
+title: 'A capture the board could not save keeps your words'
+state: live
+autonomy: gated
+behavior: >
+  When the board cannot save a capture — nothing connected on that side, the service unreachable —
+  no item appears and the typed text stays in the field so it can be retried rather than retyped.
+  The board re-reads both lists from the record after every change instead of assuming the change
+  landed.
+implements:
+- apps/todo/ui/TodoApp.jsx::TodoColumn
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,25 @@
+kind: specification
+id: goals.onboarding.app-tours
+title: Setup finishes by showing round the apps that fit
+state: live
+autonomy: gated
+behavior: >
+  After the setup topics, Skipper offers a short introduction to the household's apps — one per
+  app, only for apps that ask to be part of the walkthrough and have something to look at.
+  Infrastructure and admin apps are never toured. Skipper prunes and orders what is left to what
+  the person said they wanted rather than walking every app in turn, and describes each app as
+  what it will be able to do once set up rather than asserting data the household has not created
+  yet.
+implements:
+- apps/goals/onboarding.py::ensure_onboarding
+- apps/goals/onboarding.py::_INFRA_APPS
+tests:
+- type: unit
+  path: tests/evolve/goals/test_onboarding_agenda.py
+  rubric: >
+    Asserts a tour step is created only for apps that opt in and have a screen, that
+    infrastructure apps get none, and that every tour follows the whole ordered agenda.
+links: {}
+notes: >
+  Framing capabilities conditionally matters on a fresh install: Skipper claiming it "reminds each
+  kid at 9am" on an empty database is a lie about the household.

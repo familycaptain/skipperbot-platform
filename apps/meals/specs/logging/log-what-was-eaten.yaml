@@ -1,0 +1,18 @@
+kind: specification
+id: meals.logging.log-what-was-eaten
+title: What was eaten is recorded against a day and an occasion
+state: live
+autonomy: gated
+behavior: >
+  Saying what was eaten records it against a date and an occasion with the dishes as its
+  description, and is confirmed back naming the date and what was logged. The date is today
+  unless one is given, so something eaten yesterday can still be logged.
+implements:
+- apps/meals/tools.py::log_meal
+- apps/meals/data.py::create_meal_log
+- apps/meals/routes.py::api_create_meal_log
+tests:
+- type: unit
+  path: test_meals_tools.py
+links: {}
+notes: ''

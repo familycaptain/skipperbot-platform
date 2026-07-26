@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.automation.a-routine-says-what-it-will-do
+title: A routine says what it is going to do
+state: live
+autonomy: gated
+behavior: >
+  A routine is marked as one wherever it is listed, and opening it explains that Skipper carries out a
+  saved instruction on this cadence, which tools it starts with, and offers to open the instruction
+  itself for reading or editing. Editing the instruction changes what the routine does from its next
+  run onwards without touching its cadence or its history.
+implements:
+- apps/schedules/ui/SchedulesApp.jsx::DetailView
+- apps/schedules/ui/SchedulesApp.jsx::ListView
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: lists.collections.project-boards-are-not-lists
+title: A project's board columns are not lists
+state: live
+autonomy: gated
+behavior: >
+  When a board is being used as a project's task board, its columns do not appear among the
+  household's lists and are left out of the routine board refresh — they belong to that project,
+  which manages them as tasks. Everything else on Trello still behaves as an ordinary list.
+implements:
+- agent.py::api_list_lists
+- apps/lists/store.py::sync_all_trello_lists
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.reminding.overdue-nags-once-a-day
+title: Overdue nags once a day and says how late
+state: live
+autonomy: gated
+behavior: >
+  A schedule left past its date tells its owner once a day, saying how late it is in days or hours,
+  and keeps doing so until it is done, paused or deleted. Being overdue for a week produces seven
+  messages, not one per check, and the daily nag is separate from the advance nudge so one does not
+  suppress the other.
+implements:
+- apps/schedules/notifier.py::_handle_overdue
+- apps/schedules/notifier.py::_has_overdue_notification_today
+tests: []
+links: {}
+notes: ''

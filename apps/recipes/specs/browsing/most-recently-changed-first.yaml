@@ -1,0 +1,16 @@
+kind: specification
+id: recipes.browsing.most-recently-changed-first
+title: The collection, most recently changed first
+state: live
+autonomy: gated
+behavior: >
+  The recipe browser lists the whole collection with the most recently changed recipe first, each
+  entry giving its title, the opening of its description, its total time, its servings, up to three
+  of its categories, and its rating as stars when it has one. A recipe with no title is listed as
+  untitled rather than as a blank row.
+implements:
+- apps/recipes/data.py::get_all_recipes
+- apps/recipes/ui/RecipeListApp.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: lists.trello-boards.refresh-happens-on-its-own
+title: Linked lists refresh themselves
+state: live
+autonomy: gated
+behavior: >
+  Linked lists are re-read from their boards on a schedule without anyone asking, so a card added on
+  a phone turns up in the app on its own. How often is a setting on this app, five minutes by
+  default, and changing it takes effect when Skipper is next restarted. A refresh can also be
+  demanded for one list at any time.
+implements:
+- trello_sync.py::start_trello_sync
+- trello_sync.py::_sync_interval
+- apps/lists/store.py::sync_all_trello_lists
+- apps/lists/manifest.yaml
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: chores.zones.a-zone-is-an-area-and-a-turn-order
+title: A zone is an area plus a turn order
+state: live
+autonomy: gated
+behavior: >
+  Chores are grouped by the part of the house they belong to — a bathroom, a bedroom, the
+  kitchen — and each such zone carries its own ordered list of the people who take turns at it
+  and its own date the turns are counted from. Somebody can be in several zones at once and
+  takes turns in each independently.
+implements:
+- apps/chores/migrations/001_initial.sql::zone_members
+- apps/chores/data.py::get_zone_members
+tests: []
+links: {}
+notes: ''

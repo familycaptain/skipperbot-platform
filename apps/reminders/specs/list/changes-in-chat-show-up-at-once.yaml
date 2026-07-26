@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.list.changes-in-chat-show-up-at-once
+title: A reminder set in chat appears in the open list
+state: live
+autonomy: gated
+behavior: >
+  Setting, changing, cancelling or snoozing a reminder in conversation refreshes an open Reminders
+  list immediately, so the conversation and the list never disagree about what is set and nobody
+  has to reload the page to believe it.
+implements:
+- chat_domain.py::REMINDER_MUTATING_TOOLS
+- web/src/hooks/useSkipperSocket.js
+tests: []
+links: {}
+notes: ''

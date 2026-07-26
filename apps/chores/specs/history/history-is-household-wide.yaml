@@ -1,0 +1,15 @@
+kind: specification
+id: chores.history.history-is-household-wide
+title: Anyone can ask what anyone did
+state: live
+autonomy: gated
+behavior: >
+  Chore history is not private within the household: anybody can ask what anybody else has done,
+  just as they can see anybody's chores for the day. Acting on somebody else's chores is still
+  restricted; reading about them is not.
+implements:
+- apps/chores/routes.py::api_history
+- apps/chores/tools.py::get_chore_history
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: recipes.cooking.check-off-ingredients
+title: Striking off ingredients as they go in
+state: live
+autonomy: gated
+behavior: >
+  Tapping an ingredient while cooking strikes it through, and tapping it again brings it back. The
+  marks belong to the recipe rather than to the screen: they are still there after a reload, and
+  someone following the same recipe on another device in the same kitchen sees the same ones struck
+  through.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx::toggleIngredient
+- apps/recipes/data.py::update_recipe
+tests: []
+links: {}
+notes: ''

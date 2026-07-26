@@ -1,0 +1,17 @@
+kind: specification
+id: recipes.cooking.yesterdays-checkmarks-clear
+title: Yesterday's marks clear themselves
+state: live
+autonomy: gated
+behavior: >
+  Marks left from more than a day earlier are cleared when the recipe is next opened, so nobody
+  starts cooking against a half-struck list from a previous session. The two lists age out
+  independently: ingredients touched an hour ago are kept even when the steps were last touched last
+  week.
+implements:
+- apps/recipes/routes.py::api_get_recipe
+- apps/recipes/migrations/002_checked_ingredients_at.sql
+- apps/recipes/migrations/003_checked_steps.sql
+tests: []
+links: {}
+notes: ''

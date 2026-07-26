@@ -1,11 +1,16 @@
 kind: specification
 id: goals.notes.due-reminder
-title: Set a due-date reminder
+title: Ask to be reminded before something is due
 state: live
 autonomy: gated
-behavior: Setting a due reminder creates a reminder for a goal/project/task's due date.
+behavior: >
+  Asking for a reminder on a goal, project or task creates one a chosen number of days before its
+  date, in the morning, addressed to whoever should be reminded, worded from the item unless
+  different words are given, and linked to the item so the connection is visible from either side.
+  An item with no date set is refused, and the refusal says which date is missing.
 implements:
-- apps/goals/tools.py
+- apps/goals/tools.py::set_due_reminder
+- apps/goals/store.py::set_due_date_reminder
 tests: []
 links: {}
 notes: ''

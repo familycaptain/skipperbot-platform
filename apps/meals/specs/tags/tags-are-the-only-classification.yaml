@@ -1,0 +1,18 @@
+kind: specification
+id: meals.tags.tags-are-the-only-classification
+title: Tags are the only classification
+state: live
+autonomy: gated
+behavior: >
+  Cuisine, occasion and character are all just tags on a meal — there is no separate cuisine
+  field to keep in step — so filtering to Italian, to snacks, or to kid-friendly are the same
+  kind of filter, and one meal can be several cuisines at once.
+implements:
+- apps/meals/migrations/006_drop_cuisine.sql
+- apps/meals/migrations/005_cuisine_to_tags.py
+- apps/meals/guide.md
+tests: []
+links: {}
+notes: >
+  Cuisine started as its own field and was folded into tags; the operator's decision, and the
+  reason a cuisine filter is a tag filter.

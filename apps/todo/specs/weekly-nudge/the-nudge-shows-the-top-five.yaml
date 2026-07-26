@@ -1,0 +1,14 @@
+kind: specification
+id: todo.weekly-nudge.the-nudge-shows-the-top-five
+title: 'The nudge shows the top five and the total'
+state: live
+autonomy: gated
+behavior: >
+  The nudge lists the first five open items in the person's own order, says how many more there are
+  beyond them, and ends with the total number open. It is worded as an offer of what is on their
+  plate when they have time, not as a demand.
+implements:
+- todo_nudge_notifier.py::check_todo_nudges
+tests: []
+links: {}
+notes: ''

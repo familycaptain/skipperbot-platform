@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.editing.edits-take-effect-on-save
+title: Edits take effect on save, not before
+state: live
+autonomy: gated
+behavior: >
+  Changes typed on the edit form are held until Save: leaving the form without saving discards them
+  and restores the stored recipe, and while there is unsaved work the form says so. Saving returns to
+  the recipe showing the version just stored, including its new title.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx::handleSave
+- apps/recipes/routes.py::api_update_recipe
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: chores.kids.parents-manage-the-rotation
+title: Only parents change who is in the rotation
+state: live
+autonomy: gated
+behavior: >
+  Adding somebody to the rotation, editing them or taking them out is for a parent or an admin
+  only, whether it is asked for in the app or in conversation. Anybody else is refused in plain
+  words and nothing changes.
+implements:
+- apps/chores/routes.py::_require_parent
+- apps/chores/tools.py::add_kid
+- apps/chores/tools.py::remove_kid
+tests: []
+links: {}
+notes: ''

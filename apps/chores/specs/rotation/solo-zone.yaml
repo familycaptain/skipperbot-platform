@@ -1,0 +1,13 @@
+kind: specification
+id: chores.rotation.solo-zone
+title: A zone with one person is always theirs
+state: live
+autonomy: gated
+behavior: >
+  When only one person rotates through a zone, every chore in it is theirs on every day it
+  falls, whatever the start date and however far ahead the question is asked.
+implements:
+- apps/chores/store.py::assignments_for_zone
+tests: []
+links: {}
+notes: ''

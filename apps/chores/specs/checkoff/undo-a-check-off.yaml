@@ -1,0 +1,16 @@
+kind: specification
+id: chores.checkoff.undo-a-check-off
+title: A check-off can be undone
+state: live
+autonomy: gated
+behavior: >
+  Un-checking removes the check-off and the chore goes back to outstanding for that day, for
+  everybody looking. Un-checking something that was never checked off reports that there was
+  nothing to undo rather than pretending to have done something.
+implements:
+- apps/chores/store.py::uncomplete_chore
+- apps/chores/tools.py::uncomplete_chore
+- apps/chores/routes.py::api_uncomplete
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: chores.rounds.opt-out-of-a-round
+title: Either round can be switched off per person
+state: live
+autonomy: gated
+behavior: >
+  Each person in the rotation can be excluded from the morning round, the evening round, or
+  both, and is then not messaged in that round while still appearing in the schedule and still
+  able to check chores off. New people are included in both rounds unless someone says
+  otherwise.
+implements:
+- apps/chores/handlers.py::_chores_skill_runner
+- apps/chores/migrations/001_initial.sql::notify_morning
+- apps/chores/migrations/005_enable_evening_nudge.sql::notify_evening
+tests: []
+links: {}
+notes: ''

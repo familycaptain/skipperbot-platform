@@ -1,0 +1,15 @@
+kind: specification
+id: lists.trello-cards.comment-on-a-card
+title: Leaving a note on a card
+state: live
+autonomy: gated
+behavior: >
+  A comment can be added to a card and the reply confirms which card it landed on. An empty comment
+  is refused. The comment is attributed to the Trello account the board is configured with, not to
+  the person who asked for it.
+implements:
+- apps/lists/tools.py::trello_add_comment
+- trello_client.py::add_comment
+tests: []
+links: {}
+notes: ''

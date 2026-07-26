@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.capture.new-blank-recipe
+title: Starting a recipe from the app
+state: live
+autonomy: gated
+behavior: >
+  The New button in the recipe browser creates an empty recipe immediately and opens it ready to
+  edit, rather than asking for a title up front; until it is given one it is listed as a new recipe
+  and can be found and deleted like any other.
+implements:
+- apps/recipes/ui/RecipeListApp.jsx::handleCreateRecipe
+- apps/recipes/routes.py::api_create_recipe
+tests: []
+links: {}
+notes: ''

@@ -1,11 +1,19 @@
 kind: specification
 id: lists.trello-boards.set-item-tracking
-title: Toggle item tracking
+title: Asking a list to remember what usually goes on it
 state: live
 autonomy: gated
-behavior: Item tracking enables or disables item-history tracking on a Trello-linked list.
+behavior: >
+  Tracking can be switched on for a linked list, and from then on each refresh notes where its cards
+  live so Skipper can later say where an item usually goes. It can be switched off again. Tracking
+  is per list, so it can be on for the recurring shopping lists and off for one-off ones, and
+  switching it on for a list with no board behind it is refused. It costs no extra trips to the
+  board — the noting happens inside the refresh that was already going to run.
 implements:
-- apps/lists/tools.py
+- apps/lists/tools.py::set_item_tracking
+- apps/lists/store.py::set_track_items
+- apps/lists/store.py::sync_from_trello
+- data_layer/item_history.py::record_items
 tests: []
 links: {}
 notes: ''

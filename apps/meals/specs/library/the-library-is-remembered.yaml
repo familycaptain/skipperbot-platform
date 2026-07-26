@@ -1,0 +1,16 @@
+kind: specification
+id: meals.library.the-library-is-remembered
+title: The library is answerable in conversation
+state: live
+autonomy: gated
+behavior: >
+  Every meal, component and log entry added, changed or removed is folded into Skipper's memory,
+  so 'what have we been eating?' or 'what's a good dinner idea?' can be answered in conversation
+  without anyone opening the app.
+implements:
+- apps/meals/data.py::create_meal
+- apps/meals/data.py::create_meal_log
+- apps/meals/data.py::BACKFILL_ENTITIES
+tests: []
+links: {}
+notes: ''

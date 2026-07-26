@@ -1,0 +1,14 @@
+kind: specification
+id: recipes.cooking.start-over
+title: Starting the recipe over
+state: live
+autonomy: gated
+behavior: >
+  As soon as anything is struck through, a Start Over control appears and clears every ingredient and
+  step mark in one go, ready for the next time the dish is cooked. With nothing struck through the
+  control is not offered.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx::handleStartOver
+tests: []
+links: {}
+notes: ''

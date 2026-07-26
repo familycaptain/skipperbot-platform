@@ -1,0 +1,18 @@
+kind: specification
+id: meals.library.photos-on-a-meal
+title: The first photo is the meal's face
+state: live
+autonomy: gated
+behavior: >
+  A photo attached to a meal appears on its page, on its card in the library, and on the printed
+  menu; the first of its photos is the one used everywhere else, and any other can be promoted
+  into that position. Removing a photo only detaches it from the meal — the image itself is
+  untouched — and a meal with no photos says so rather than showing a gap.
+implements:
+- apps/meals/data.py::set_meal_photo_primary
+- apps/meals/data.py::get_meal_photos
+- apps/meals/routes.py::api_link_meal_photo
+- apps/meals/ui/MealsApp.jsx::MealPhotoStrip
+tests: []
+links: {}
+notes: ''

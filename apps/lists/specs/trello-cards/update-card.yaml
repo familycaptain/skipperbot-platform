@@ -1,0 +1,16 @@
+kind: specification
+id: lists.trello-cards.update-card
+title: Changing a card's title, description or due date
+state: live
+autonomy: gated
+behavior: >
+  A card's title, description and due date can each be changed, and anything left out is kept as it
+  was — so setting a due date does not wipe a description. Clearing a description is possible but
+  has to be asked for explicitly. A change that names no field at all is refused, and one that turns
+  out to alter nothing says so instead of claiming an edit.
+implements:
+- apps/lists/tools.py::trello_update_card
+- trello_client.py::update_card
+tests: []
+links: {}
+notes: ''

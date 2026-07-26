@@ -1,0 +1,16 @@
+kind: specification
+id: lists.trello-cards.card-details
+title: Reading everything on a card
+state: live
+autonomy: gated
+behavior: >
+  A card can be read in full: its description, its due date and whether it has been marked done, its
+  labels, each checklist with how many of its items are ticked, its comments with who wrote them and
+  when, and its attachments. Whatever the card does not have is simply absent from the answer rather
+  than shown as empty.
+implements:
+- apps/lists/tools.py::trello_get_card
+- trello_client.py::get_card_details
+tests: []
+links: {}
+notes: ''

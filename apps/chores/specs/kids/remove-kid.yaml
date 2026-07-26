@@ -1,12 +1,17 @@
 kind: specification
 id: chores.kids.remove-kid
-title: Remove a kid
+title: Taking somebody out keeps everything they did
 state: live
 autonomy: gated
-behavior: Removing soft-deletes a kid while preserving their completion history (parent only).
+behavior: >
+  Taking somebody out of the rotation removes them from the day and week views and from the
+  rounds, while every check-off they ever recorded is kept and still shows in the history under
+  their name. They stay a member of any zone until somebody edits it, and the app says so when
+  it takes them out.
 implements:
-- apps/chores/tools.py
-- apps/chores/ui/ChoresApp.jsx
+- apps/chores/tools.py::remove_kid
+- apps/chores/data.py::soft_delete_kid
+- apps/chores/routes.py::api_delete_kid
 tests: []
 links: {}
 notes: ''

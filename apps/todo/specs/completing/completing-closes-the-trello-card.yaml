@@ -1,0 +1,15 @@
+kind: specification
+id: todo.completing.completing-closes-the-trello-card
+title: 'Completing something from Trello closes the card'
+state: live
+autonomy: gated
+behavior: >
+  Completing an item that came from a Trello board also closes the card there, so the next sync does
+  not bring it back as open. If Trello cannot be reached the item still counts as completed here
+  rather than the completion failing.
+implements:
+- apps/todo/tools.py::mark_todo_done
+- apps/lists/store.py::remove_item
+tests: []
+links: {}
+notes: ''

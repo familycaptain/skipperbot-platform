@@ -1,0 +1,16 @@
+kind: specification
+id: todo.setup.duplicates-from-before-are-collapsed
+title: 'Duplicate to-do lists from before are collapsed'
+state: live
+autonomy: gated
+behavior: >
+  An install that already carries two identically named to-do lists for one person ends up with one:
+  the copy holding items is kept and connected, the older one when both are empty. Only an empty
+  non-kept twin that nothing points at is removed — a list with any items, past or present, is never
+  deleted, and no person is left pointing at a list that has gone. Running the cleanup again removes
+  nothing.
+implements:
+- apps/todo/migrations/002_dedupe_default_lists.sql
+tests: []
+links: {}
+notes: ''

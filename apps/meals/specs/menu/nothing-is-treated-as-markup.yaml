@@ -1,0 +1,22 @@
+kind: specification
+id: meals.menu.nothing-is-treated-as-markup
+title: A meal's own words are printed as words
+state: live
+autonomy: gated
+behavior: >
+  Every piece of a meal that reaches the menu — its name, description, tags and effort — is
+  printed as the text it is: a name containing angle brackets, quotes or something that looks
+  like a script appears literally on the page and can never run or restyle it. The only address
+  the page builds from data is a meal photo's, and it is either a stored upload path or that
+  image's own address; nothing else is taken from a record.
+implements:
+- apps/meals/pages/menu.html::el
+- apps/meals/pages/menu.html::renderMealItem
+- apps/meals/pages/menu.html::photoSrc
+tests:
+- type: unit
+  path: tests/evolve/meals/test_menu_export.py
+links: {}
+notes: >
+  The page was once built by pasting values into HTML, which made a meal name an injection
+  point. Nodes and text are now the only way content reaches it.

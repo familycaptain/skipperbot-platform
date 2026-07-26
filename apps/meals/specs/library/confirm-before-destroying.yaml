@@ -1,0 +1,18 @@
+kind: specification
+id: meals.library.confirm-before-destroying
+title: Nothing is deleted or merged without a yes
+state: live
+autonomy: gated
+behavior: >
+  Deleting from the app asks for confirmation first and says what will go and what will survive.
+  Asked in conversation, Skipper shows the exact record — both records, for a merge — and waits
+  for an explicit yes; it never deletes or merges on its own initiative or from a vague request.
+implements:
+- apps/meals/guide.md
+- apps/meals/tools.py::delete_meal
+- apps/meals/ui/MealsApp.jsx::deleteMeal
+tests:
+- type: unit
+  path: tests/evolve/meals/test_crud_tools.py
+links: {}
+notes: ''

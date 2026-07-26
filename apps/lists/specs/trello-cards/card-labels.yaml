@@ -1,0 +1,17 @@
+kind: specification
+id: lists.trello-cards.card-labels
+title: Labelling a card
+state: live
+autonomy: gated
+behavior: >
+  A card's labels can be read, added to, or removed from. Adding a label the board does not have yet
+  creates it, in a colour that can be chosen and otherwise defaults, so labelling never fails merely
+  because the label is new. Adding or removing without naming a label is refused, as is any
+  instruction that is not one of read, add or remove, and a card with no labels says so.
+implements:
+- apps/lists/tools.py::trello_card_labels
+- trello_client.py::add_label_to_card
+- trello_client.py::remove_label_from_card
+tests: []
+links: {}
+notes: ''

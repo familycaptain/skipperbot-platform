@@ -1,0 +1,15 @@
+kind: specification
+id: chores.rotation.every-chore-is-weekly
+title: A chore recurs on its one day, every week
+state: live
+autonomy: gated
+behavior: >
+  Every chore is fixed to a single day of the week and comes round on that day every week,
+  indefinitely. There is no one-off chore, no every-other-week chore and no end date: to stop a
+  chore someone has to retire it, and to change its rhythm they move it to a different day.
+implements:
+- apps/chores/migrations/001_initial.sql::chores
+- apps/chores/store.py::assignments_for_date
+tests: []
+links: {}
+notes: ''

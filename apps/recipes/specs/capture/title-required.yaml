@@ -1,0 +1,14 @@
+kind: specification
+id: recipes.capture.title-required
+title: A recipe with no title is not saved
+state: live
+autonomy: gated
+behavior: >
+  Asked to create a recipe with no title, or with nobody named as its author, Skipper saves nothing
+  and says which part was missing, so a half-finished request does not leave an untitled fragment in
+  the collection.
+implements:
+- apps/recipes/tools.py::create_recipe
+tests: []
+links: {}
+notes: ''

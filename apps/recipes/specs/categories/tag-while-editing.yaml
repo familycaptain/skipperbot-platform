@@ -1,0 +1,14 @@
+kind: specification
+id: recipes.categories.tag-while-editing
+title: Tagging a recipe while editing it
+state: live
+autonomy: gated
+behavior: >
+  While editing a recipe its categories can be added by picking from the ones that exist or by typing
+  a new name, and removed one at a time; a category already on the recipe is not offered again. Like
+  every other edit, the tags take effect when the recipe is saved.
+implements:
+- apps/recipes/ui/RecipeDetailApp.jsx
+tests: []
+links: {}
+notes: ''

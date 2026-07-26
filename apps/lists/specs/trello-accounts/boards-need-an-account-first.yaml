@@ -1,0 +1,15 @@
+kind: specification
+id: lists.trello-accounts.boards-need-an-account-first
+title: No account means no board to add
+state: live
+autonomy: gated
+behavior: >
+  With no account configured, the board form says an account is needed first and will not be filled
+  in, rather than accepting a board that could never be reached. The account to use is chosen from
+  those that exist rather than typed.
+implements:
+- apps/lists/ui/TrelloSettings.jsx::AddBoardForm
+- apps/lists/ui/TrelloSettings.jsx::BoardsSection
+tests: []
+links: {}
+notes: ''

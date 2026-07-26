@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.edit.cancel-stops-it
+title: Cancelling stops it without erasing it
+state: live
+autonomy: gated
+behavior: >
+  Cancelling a reminder stops it nudging, and stops any schedule that was tracking its repeat,
+  while leaving it visible among the inactive ones — cancelling is not deleting. Cancelling one
+  that is already inactive says so and changes nothing, and an id that is not there says so too
+  rather than reporting success.
+implements:
+- apps/reminders/store.py::cancel_reminder
+tests: []
+links: {}
+notes: ''

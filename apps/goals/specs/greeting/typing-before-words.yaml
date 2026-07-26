@@ -1,0 +1,17 @@
+kind: specification
+id: goals.greeting.typing-before-words
+title: The screen shows Skipper thinking before it speaks
+state: live
+autonomy: gated
+behavior: >
+  The moment Skipper decides an arrival warrants a greeting, the person sees it typing — before
+  the model has produced anything — so reaching Skipper feels like reaching someone who is there.
+  The indicator always clears afterwards, whether the greeting was said, came out empty, or
+  failed.
+implements:
+- apps/goals/handlers.py::_connection_skill_runner
+tests: []
+links: {}
+notes: >
+  The client used to fake this on a timer, which raced the real greeting and sometimes showed the
+  message with no typing at all.

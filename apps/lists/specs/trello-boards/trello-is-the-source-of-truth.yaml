@@ -1,0 +1,19 @@
+kind: specification
+id: lists.trello-boards.trello-is-the-source-of-truth
+title: For a linked list, the board wins
+state: live
+autonomy: gated
+behavior: >
+  A list that mirrors a board is a mirror, not a copy that drifts: each refresh replaces its items
+  with the board's cards, in the board's order, and a card closed on the board disappears from the
+  list. Anything that ended up on the list without reaching the board is therefore gone at the next
+  refresh. Items keep their identity across refreshes as long as their card does, so a card only
+  moved or renamed is not treated as a new thing.
+implements:
+- apps/lists/store.py::sync_from_trello
+- apps/lists/data.py::replace_items
+tests: []
+links: {}
+notes: >
+  One direction of truth was chosen deliberately: a two-way merge between a phone editing Trello and
+  someone editing the app has no correct answer when both moved.

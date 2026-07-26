@@ -1,0 +1,16 @@
+kind: specification
+id: goals.views.browse-and-drill-down
+title: The goals app walks down the tree and back up
+state: live
+autonomy: gated
+behavior: >
+  The goals app opens on the household's goals grouped by whose they are, with the current
+  person's first, and each goal opens to its projects and each project to its tasks. The trail
+  across the top names every level above where you are and each part of it goes back there. Moving
+  between levels always starts you at the top of the new screen.
+implements:
+- apps/goals/ui/GoalsApp.jsx::GoalsApp
+- apps/goals/ui/GoalsApp.jsx::SummaryView
+tests: []
+links: {}
+notes: ''

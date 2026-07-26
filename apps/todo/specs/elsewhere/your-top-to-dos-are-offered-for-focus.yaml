@@ -1,0 +1,16 @@
+kind: specification
+id: todo.elsewhere.your-top-to-dos-are-offered-for-focus
+title: 'Your top to-dos are offered as things to focus on'
+state: live
+autonomy: gated
+behavior: >
+  The Prioritize app is offered the first ten open items from a person's to-do list, in the order
+  they stand in and each naming the list it came from, as candidates for a focus slot. The backlog
+  is never offered this way. An item that is checked off stops being offered and stops counting as
+  an active focus.
+implements:
+- apps/prioritize/data.py::_backlog_todo
+- apps/prioritize/data.py::_source_is_active
+tests: []
+links: {}
+notes: ''

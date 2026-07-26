@@ -1,0 +1,14 @@
+kind: specification
+id: schedules.cadence.a-first-date-you-name-is-honoured
+title: A first date you name is honoured exactly
+state: live
+autonomy: gated
+behavior: >
+  When a schedule is created with the date of its first occurrence given, that date is its first
+  due moment verbatim — combined with the time of day if one was given — instead of the cadence
+  being used to pick one. The cadence takes over from the occurrence after that.
+implements:
+- apps/schedules/data.py::create_schedule
+tests: []
+links: {}
+notes: ''

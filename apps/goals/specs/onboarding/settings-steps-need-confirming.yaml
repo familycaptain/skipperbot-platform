@@ -1,0 +1,23 @@
+kind: specification
+id: goals.onboarding.settings-steps-need-confirming
+title: Skipper never claims to have done what only you can do
+state: live
+autonomy: gated
+behavior: >
+  For a setup topic whose work happens on a settings screen — the home location, Discord, other
+  integrations — Skipper has no way to do it and says so: it gives the exact place to go and never
+  states or implies that it has set, enabled or connected anything. Such a topic is finished only
+  when the person confirms in the conversation that they did it, or explicitly declines; saying
+  they will do it later leaves it deferred, not done. Knowing the answer is not the same as it
+  being set.
+implements:
+- apps/goals/onboarding.py::ONBOARDING_AGENDA
+tests:
+- type: unit
+  path: tests/evolve/goals/test_onboarding_completion_integrity.py
+  rubric: >
+    Offline: parses the real agenda and asserts every settings-only topic carries a completion
+    criterion requiring the person's confirmation or explicit decline, forbids claiming the action
+    was performed, names the settings path, and treats "later" as deferred.
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: goals.trello.create-linked-task
+title: A new task on a linked project becomes a card
+state: live
+autonomy: gated
+behavior: >
+  Creating a task on a board-linked project creates the card too — on the assignee's own list if
+  it is assigned to someone, otherwise on the waiting list — with an optional description and
+  checklist. The task and the card are the same piece of work from then on, and a card creation
+  that fails leaves the task usable rather than aborting it.
+implements:
+- apps/goals/tools.py::create_trello_task
+- apps/goals/store.py::create_task
+tests: []
+links: {}
+notes: ''

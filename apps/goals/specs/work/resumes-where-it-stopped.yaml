@@ -1,0 +1,16 @@
+kind: specification
+id: goals.work.resumes-where-it-stopped
+title: The next session carries on rather than starting over
+state: live
+autonomy: gated
+behavior: >
+  Before stopping, a session records where it got to and what is next for that goal, and the next
+  session starts from that — so work is not repeated and a long goal is made progress on across
+  many short sessions. What Skipper already knows about the goal from conversations elsewhere is
+  available to it too.
+implements:
+- apps/goals/goal_work.py::handle_goal_work
+- apps/goals/work_context.py::_recall_memories
+tests: []
+links: {}
+notes: ''

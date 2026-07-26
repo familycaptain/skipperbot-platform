@@ -1,12 +1,18 @@
 kind: specification
 id: chores.zones.add-chore
-title: Add a chore
+title: Adding a chore to a day
 state: live
 autonomy: gated
-behavior: Adding inserts a chore slot into a zone.
+behavior: >
+  A parent adds a chore by naming its zone, the day of the week it falls on and what it is,
+  optionally with a standing note. The day can be given as a name or a number. Left to itself
+  the chore goes after whatever is already on that day; asked for a particular slot, it takes
+  that slot and is refused if another chore already holds it.
 implements:
-- apps/chores/tools.py
-- apps/chores/ui/ChoresApp.jsx
+- apps/chores/tools.py::add_chore
+- apps/chores/data.py::create_chore
+- apps/chores/data.py::next_free_position
+- apps/chores/routes.py::api_create_chore
 tests: []
 links: {}
 notes: ''

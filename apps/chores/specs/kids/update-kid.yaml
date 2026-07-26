@@ -1,12 +1,17 @@
 kind: specification
 id: chores.kids.update-kid
-title: Update a kid
+title: Editing changes only what was given
 state: live
 autonomy: gated
-behavior: Updating changes a kid's fields, leaving unspecified fields unchanged (parent only).
+behavior: >
+  Editing somebody in the rotation changes only the details actually supplied and leaves the
+  rest as they were, so a colour change cannot quietly clear their account link. A request that
+  would change nothing is reported as such rather than counted as an edit, and editing somebody
+  the app does not have is refused by name.
 implements:
-- apps/chores/tools.py
-- apps/chores/ui/ChoresApp.jsx
+- apps/chores/tools.py::update_kid
+- apps/chores/data.py::update_kid
+- apps/chores/routes.py::api_update_kid
 tests: []
 links: {}
 notes: ''

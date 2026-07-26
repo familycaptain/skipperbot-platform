@@ -1,0 +1,19 @@
+kind: specification
+id: todo.setup.one-to-do-list-per-person
+title: 'Exactly one to-do list per person, however it is opened'
+state: live
+autonomy: gated
+behavior: >
+  The first time a person opens the board or asks about their to-do, one list named after them is
+  created and connected — exactly one, even though opening the board reads their settings and their
+  items at the same moment, and even when several requests arrive together. Everything afterwards
+  reuses it. If provisioning cannot settle at once the caller is told to try again rather than being
+  given a second list.
+implements:
+- apps/todo/store.py::ensure_default_list
+- apps/todo/data.py::claim_default_list
+- agent.py::api_get_todo_config
+- agent.py::api_get_todo_items
+tests: []
+links: {}
+notes: ''

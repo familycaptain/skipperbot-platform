@@ -1,0 +1,24 @@
+kind: specification
+id: goals.greeting.arrival-only-speaks
+title: Arriving never throws you into an app
+state: live
+autonomy: gated
+behavior: >
+  The greeting can only speak. On arrival Skipper cannot open an app, switch screens or act on the
+  person's behalf — they have just landed on their desktop and asked for nothing, and being yanked
+  into an app mid-greeting is disorienting. This holds for the arrival turn alone: once the
+  conversation is under way, and during setup, Skipper may open an app to take somebody to a page
+  they need.
+implements:
+- apps/goals/handlers.py::_NO_NAVIGATION
+- apps/goals/handlers.py::_greeting_turn
+tests:
+- type: unit
+  path: tests/evolve/platform/test_onboarding_live_greeting.py
+  rubric: >
+    Asserts the arrival turn is structurally unable to navigate — it is offered no tools at all —
+    as well as being told not to in words.
+links: {}
+notes: >
+  Setup is tracked as a goal, which is exactly why Skipper reached for the Goals app on arrival
+  unless prevented; the guarantee is that the turn has no tools, not that it was asked nicely.

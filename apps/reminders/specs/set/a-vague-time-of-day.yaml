@@ -1,0 +1,16 @@
+kind: specification
+id: reminders.set.a-vague-time-of-day
+title: A part of the day becomes a real time
+state: live
+autonomy: gated
+behavior: >
+  A reminder that names only a part of the day — morning, afternoon, evening, night — is set at
+  the concrete local time the household has configured for it (8am, 1pm and 7pm until somebody
+  changes them, with night treated as evening) rather than being refused for having no clock time
+  or landing at whatever hour the request happened to be made.
+implements:
+- config.py::REMINDER_MORNING_SLOT
+- apps/reminders/manifest.yaml
+tests: []
+links: {}
+notes: ''

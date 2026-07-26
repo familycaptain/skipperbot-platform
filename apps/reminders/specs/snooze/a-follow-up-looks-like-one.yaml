@@ -1,0 +1,14 @@
+kind: specification
+id: reminders.snooze.a-follow-up-looks-like-one
+title: A follow-up is recognisable as one
+state: live
+autonomy: gated
+behavior: >
+  A follow-up carries the original message marked as a return to it, so it reads as the thing
+  coming back rather than as a duplicate somebody set twice. Putting a follow-up off again does
+  not stack the marks — the message stays readable however many times it has been deferred.
+implements:
+- apps/reminders/store.py::snooze_reminder
+tests: []
+links: {}
+notes: ''

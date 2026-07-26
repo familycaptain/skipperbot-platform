@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.browsing.search-and-filter-are-exclusive
+title: One narrowing at a time
+state: live
+autonomy: gated
+behavior: >
+  Typing a search clears any category filter and picking a category clears the search box, so the
+  list on screen is only ever narrowed one way; nobody is left staring at an empty result produced by
+  two filters they cannot both see.
+implements:
+- apps/recipes/ui/RecipeListApp.jsx
+- apps/recipes/routes.py::api_list_recipes
+tests: []
+links: {}
+notes: ''

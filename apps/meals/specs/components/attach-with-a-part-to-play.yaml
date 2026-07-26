@@ -1,0 +1,17 @@
+kind: specification
+id: meals.components.attach-with-a-part-to-play
+title: A component is attached with a part to play
+state: live
+autonomy: gated
+behavior: >
+  A component is attached to a meal as its main, a side, a sauce, a garnish or other, defaulting
+  to a side, and the meal shows its components grouped by that part. A part outside those is
+  refused rather than stored.
+implements:
+- apps/meals/tools.py::add_component_to_meal
+- apps/meals/data.py::link_component_to_meal
+tests:
+- type: unit
+  path: tests/evolve/meals/test_crud_tools.py
+links: {}
+notes: ''

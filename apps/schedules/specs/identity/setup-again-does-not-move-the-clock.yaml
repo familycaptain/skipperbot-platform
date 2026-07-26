@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.identity.setup-again-does-not-move-the-clock
+title: Setting an owned check up again does not move its clock
+state: live
+autonomy: gated
+behavior: >
+  Re-running the set-up of an app-owned check leaves its countdown alone: title, description and
+  cadence are brought up to date, but the occurrence it is already counting down to stays put, so a
+  restart cannot push a nightly check past tonight or make it fire twice. The owning app resets the
+  countdown only when it means to — when the check is switched back on, or when its time changed —
+  and then it lands on the next occurrence in the future, never immediately.
+implements:
+- apps/schedules/data.py::upsert_schedule
+tests: []
+links: {}
+notes: ''

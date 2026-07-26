@@ -1,0 +1,14 @@
+kind: specification
+id: reminders.recurrence.same-clock-time-all-year
+title: A seven-o'clock reminder is seven o'clock all year
+state: live
+autonomy: gated
+behavior: >
+  A repeating reminder keeps its local clock time across a daylight-saving change: a daily 7am
+  nudge is at 7am in both halves of the year rather than drifting to 6am or 8am for half of it.
+implements:
+- apps/reminders/store.py::compute_next_occurrence
+- app_platform/time.py::get_timezone
+tests: []
+links: {}
+notes: ''

@@ -49,10 +49,10 @@ tests:
     repo path. BOOT-SAFETY (runs on the test host under validate, guarded-skip when runtime deps are
     absent): importing domain_modules/job_handlers/tool_dispatch/agent.py succeeds and their registries
     build with no evolve domain, no evolve_unit handler, and none of the seven evolution tool names.
+issues:
+- 49
 links: {}
-notes: >
-  Issue #49 (operator-authored; reproduced on the test host). Operator expanded scope at Gate 1 to
-  retire BOTH the extracted Evolve SDLC app AND the separate legacy in-core evolution-feed, plus the
-  vestigial operator-tooling cluster and the EVOLVE*.md docs; KEEP scripts/evolve_dep_check.py; and do
-  NOT touch the standalone Evolve repo. Legacy-feed removal is surgical (self-contained per the
-  grounding map: no web/test/cron/prompt consumers). DB tables left on existing instances by design.
+notes: >-
+  Operator expanded the scope to retire the legacy in-core evolution feed alongside the extracted
+  app, and to leave existing evolution rows in place — a destructive migration was not worth the
+  risk for dead data.

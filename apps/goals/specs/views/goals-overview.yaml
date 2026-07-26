@@ -1,0 +1,18 @@
+kind: specification
+id: goals.views.goals-overview
+title: Ask what your goals are
+state: live
+autonomy: gated
+behavior: >
+  Asked about someone's goals, Skipper lists them in priority order with each one's state, its
+  target date, how many of its tasks are done as a count and a percentage, and how many projects
+  it has. Someone else's goal appears only if that person owns one of its projects or is assigned
+  one of its tasks; a goal with no owner at all is treated as the household's and shown to
+  everyone. Finished and cancelled goals are struck through rather than hidden. With nothing
+  recorded it says so plainly.
+implements:
+- apps/goals/tools.py::get_goals_summary
+- apps/goals/store.py::get_goals_summary
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: meals.components.detach-keeps-the-component
+title: Taking something off a meal keeps it in the library
+state: live
+autonomy: gated
+behavior: >
+  Removing a component from a meal unlinks it there and leaves the component itself in the
+  library for every other meal that uses it. Removing something the meal did not have says there
+  was nothing to remove.
+implements:
+- apps/meals/tools.py::remove_component_from_meal
+- apps/meals/data.py::unlink_component_from_meal
+tests:
+- type: unit
+  path: tests/evolve/meals/test_crud_tools.py
+links: {}
+notes: ''

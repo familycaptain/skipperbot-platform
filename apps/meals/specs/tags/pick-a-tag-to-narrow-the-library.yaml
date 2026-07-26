@@ -1,0 +1,14 @@
+kind: specification
+id: meals.tags.pick-a-tag-to-narrow-the-library
+title: Picking a tag narrows the library
+state: live
+autonomy: gated
+behavior: >
+  Picking a tag in the library narrows it to meals carrying that tag; picking it again, or
+  choosing All, clears it. A tag and a typed search do not stack — choosing one clears the other
+  — so what is on screen always has one obvious explanation.
+implements:
+- apps/meals/ui/MealsApp.jsx::BrowseTab
+tests: []
+links: {}
+notes: ''

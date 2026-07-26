@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.cadence.a-day-a-month-does-not-have
+title: A day of the month that does not exist is skipped
+state: live
+autonomy: gated
+behavior: >
+  A monthly schedule set to a day some months do not have falls due only in the months that have it,
+  rather than sliding to a nearby day; "the last day of every month" is available as its own choice
+  for the case where end-of-month is what was meant. A schedule that would otherwise resolve to
+  nothing within the next few months falls due the following day rather than losing its place.
+implements:
+- apps/schedules/data.py::_next_monthly
+tests: []
+links: {}
+notes: ''

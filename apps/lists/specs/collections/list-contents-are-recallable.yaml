@@ -1,0 +1,20 @@
+kind: specification
+id: lists.collections.list-contents-are-recallable
+title: Skipper can answer what is on a list
+state: live
+autonomy: gated
+behavior: >
+  A list and its items become things Skipper can recall in conversation, so 'what's on the grocery
+  list?' is answerable without opening the app. This holds however the change arrived — typed in the
+  app, asked for in chat, or pulled in from the connected board. A list's own identity is only
+  re-remembered when its name or nicknames actually change, so routine item churn does not bury the
+  recollection in duplicates.
+implements:
+- apps/lists/data.py::save_list
+- apps/lists/data.py::BACKFILL_ENTITIES
+- apps/lists/store.py::sync_from_trello
+tests: []
+links: {}
+notes: >
+  Operator's rule: a change that arrived from the board is remembered exactly as if someone had
+  typed it into the app.

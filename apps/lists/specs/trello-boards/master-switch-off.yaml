@@ -1,0 +1,19 @@
+kind: specification
+id: lists.trello-boards.master-switch-off
+title: Turning board sync off stops both directions
+state: live
+autonomy: gated
+behavior: >
+  A single setting turns all board traffic off. With it off nothing is read from a board and nothing
+  is written to one: linked lists stop refreshing, adds and cross-offs stay local, and asking for a
+  refresh explains that sync is switched off and points at the setting. Lists themselves keep
+  working entirely. Items added while it was off never reached the board, so they are replaced by
+  the board's own cards when it is switched back on.
+implements:
+- apps/lists/store.py::_trello_enabled
+- apps/lists/store.py::sync_from_trello
+- apps/lists/store.py::sync_all_trello_lists
+- apps/lists/manifest.yaml
+tests: []
+links: {}
+notes: ''

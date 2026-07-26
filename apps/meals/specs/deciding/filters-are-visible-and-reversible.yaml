@@ -1,0 +1,15 @@
+kind: specification
+id: meals.deciding.filters-are-visible-and-reversible
+title: Every filter is visible and removable on its own
+state: live
+autonomy: gated
+behavior: >
+  Each filter added shows as a chip saying whether it includes or excludes and what it is about,
+  and can be removed on its own with the results updating immediately. Clearing all of them
+  returns to the starting prompt rather than listing the whole library.
+implements:
+- apps/meals/ui/MealsApp.jsx::DiscoverTab
+- apps/meals/ui/MealsApp.jsx::TagChip
+tests: []
+links: {}
+notes: ''

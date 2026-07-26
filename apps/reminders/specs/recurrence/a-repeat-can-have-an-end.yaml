@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.recurrence.a-repeat-can-have-an-end
+title: A repeat can be given a last date
+state: live
+autonomy: gated
+behavior: >
+  A repeat can carry a final date, after which the reminder retires itself instead of nudging
+  forever. The date is read in household local time, so a repeat that ends "the 31st of December"
+  is neither cut a day short nor given an extra day by the household's distance from UTC.
+implements:
+- apps/reminders/store.py::_fix_until_tz
+- apps/reminders/store.py::compute_next_occurrence
+tests: []
+links: {}
+notes: ''

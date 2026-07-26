@@ -1,0 +1,15 @@
+kind: specification
+id: goals.work.only-productive-sessions-are-recorded
+title: A session that did nothing leaves no trace
+state: live
+autonomy: gated
+behavior: >
+  A session that actually did something leaves one short record of what it was and how much it
+  did, mentioning any milestone raised. A session that did nothing records nothing at all, so the
+  household's activity history is not filled with Skipper reporting that it thought about
+  something.
+implements:
+- apps/goals/goal_work.py::handle_goal_work
+tests: []
+links: {}
+notes: ''

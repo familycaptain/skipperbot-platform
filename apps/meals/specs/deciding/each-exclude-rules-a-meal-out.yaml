@@ -1,0 +1,14 @@
+kind: specification
+id: meals.deciding.each-exclude-rules-a-meal-out
+title: One exclusion is enough to rule a meal out
+state: live
+autonomy: gated
+behavior: >
+  Any exclude filter a meal matches removes it from the results however well it matches
+  everything else, so 'no Mexican tonight' is honoured even for a meal that is also quick and
+  kid-friendly. Includes and excludes can be combined in one search.
+implements:
+- apps/meals/data.py::discover_meals
+tests: []
+links: {}
+notes: ''

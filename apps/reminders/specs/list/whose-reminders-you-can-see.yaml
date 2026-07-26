@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.list.whose-reminders-you-can-see
+title: You see your own; a parent can see anybody's
+state: live
+autonomy: gated
+behavior: >
+  Asking for reminders returns your own. A parent or an admin may ask for another person's;
+  anybody else asking for another person's is refused outright rather than quietly answered with
+  their own reminders or with the whole household's.
+implements:
+- agent.py::api_list_reminders
+- app_platform/auth.py::resolve_target
+tests: []
+links: {}
+notes: ''

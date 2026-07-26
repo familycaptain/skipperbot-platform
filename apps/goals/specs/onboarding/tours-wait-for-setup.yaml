@@ -1,0 +1,24 @@
+kind: specification
+id: goals.onboarding.tours-wait-for-setup
+title: No app tour before setup is done
+state: live
+autonomy: gated
+behavior: >
+  While any setup topic is still open, an app tour is not offered, not chosen for the next nudge,
+  and not even shown to Skipper as something it could raise — so the walkthrough cannot jump to
+  showing off an app while the household is still being asked who lives there. Once every topic is
+  finished, skipped or deferred, the tours are released.
+implements:
+- apps/goals/onboarding.py::tour_gated
+- apps/goals/onboarding.py::agenda_projects_complete
+- apps/goals/pm_domain.py::_pick_next_project
+- apps/goals/pm_domain.py::pm_skill_runner
+tests:
+- type: unit
+  path: tests/evolve/platform/test_tour_guards.py
+  rubric: >
+    Asserts the ordering guard holds at both the point where Skipper picks what to raise and the
+    point where it actually sends, so a tour nudge is refused outright while a setup topic is open
+    — including when the item is named directly.
+links: {}
+notes: ''

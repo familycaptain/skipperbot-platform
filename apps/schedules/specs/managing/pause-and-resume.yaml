@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.managing.pause-and-resume
+title: Pause instead of deleting
+state: live
+autonomy: gated
+behavior: >
+  A schedule that should stop for now can be paused and later resumed, and while paused it is
+  labelled as paused wherever it is shown. Pausing is not deletion: nothing about the schedule is
+  removed, and resuming puts it back exactly as it was.
+implements:
+- apps/schedules/ui/SchedulesApp.jsx::DetailView
+- apps/schedules/data.py::update_schedule
+tests: []
+links: {}
+notes: ''

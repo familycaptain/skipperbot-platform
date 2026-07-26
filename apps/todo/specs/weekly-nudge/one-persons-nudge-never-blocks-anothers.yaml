@@ -1,0 +1,15 @@
+kind: specification
+id: todo.weekly-nudge.one-persons-nudge-never-blocks-anothers
+title: 'One person''s nudge never blocks anyone else''s'
+state: live
+autonomy: gated
+behavior: >
+  If a nudge cannot be prepared for one person — their list unreadable, the message refused — the
+  failure is recorded and everybody else is still nudged. If the sweep cannot even read who is
+  configured, nobody is nudged on that pass and it tries again on the next rather than half-nudging
+  the household.
+implements:
+- todo_nudge_notifier.py::check_todo_nudges
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,13 @@
+kind: specification
+id: reminders.snooze.at-least-a-minute
+title: A follow-up is never already late
+state: live
+autonomy: gated
+behavior: >
+  A wait of nothing, or a negative one, becomes one minute: a follow-up is always set ahead of
+  now, never at a moment that has already gone by.
+implements:
+- apps/reminders/store.py::snooze_reminder
+tests: []
+links: {}
+notes: ''

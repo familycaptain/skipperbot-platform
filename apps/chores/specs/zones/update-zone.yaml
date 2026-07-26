@@ -1,12 +1,17 @@
 kind: specification
 id: chores.zones.update-zone
-title: Update a zone
+title: Editing a zone, and what it costs
 state: live
 autonomy: gated
-behavior: Updating changes a zone's fields (parent only).
+behavior: >
+  A parent can rename a zone, change its description or move the date its turns count from.
+  Supplying a member list replaces the whole list in the order given rather than adding to it —
+  which reshuffles who is assigned on every day, so the safe way to hand a zone to a new set of
+  people is to reset its start date at the same time.
 implements:
-- apps/chores/tools.py
-- apps/chores/ui/ChoresApp.jsx
+- apps/chores/tools.py::update_zone
+- apps/chores/routes.py::api_update_zone
+- apps/chores/data.py::set_zone_members
 tests: []
 links: {}
 notes: ''

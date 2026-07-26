@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.reminding.a-nudge-before-it-is-due
+title: A nudge before it is due
+state: live
+autonomy: gated
+behavior: >
+  As a schedule comes within its lead time the person it is assigned to is told it is coming, with how
+  long they have and the time it is due. The lead time is per schedule and defaults to an hour, or to
+  whatever the household set as the default; a lead time of nothing means no advance nudge at all,
+  only the overdue one.
+implements:
+- apps/schedules/notifier.py::_handle_upcoming
+- apps/schedules/data.py::create_schedule
+tests: []
+links: {}
+notes: ''

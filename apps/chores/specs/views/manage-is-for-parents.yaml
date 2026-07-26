@@ -1,0 +1,15 @@
+kind: specification
+id: chores.views.manage-is-for-parents
+title: The setup screens are parents-only
+state: live
+autonomy: gated
+behavior: >
+  The screens for editing people, zones and chores are only offered to a parent or an admin, and
+  anyone else is put back on the day view rather than shown a screen that would refuse every
+  action on it.
+implements:
+- apps/chores/ui/ChoresApp.jsx::ChoresApp
+- apps/chores/ui/ChoresApp.jsx::ManageTab
+tests: []
+links: {}
+notes: ''

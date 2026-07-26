@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.edit.only-what-was-asked
+title: Changing one thing changes only that thing
+state: live
+autonomy: gated
+behavior: >
+  A change touches only what it names: a new time leaves the message alone, a new message leaves
+  the time alone, and a nag's window can be moved without restating anything else. Nothing left
+  unmentioned is reset to a default.
+implements:
+- apps/reminders/store.py::modify_reminder
+- apps/reminders/tools.py::modify_reminder_by_id
+tests: []
+links: {}
+notes: ''

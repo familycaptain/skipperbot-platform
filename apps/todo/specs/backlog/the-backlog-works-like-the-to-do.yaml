@@ -1,0 +1,17 @@
+kind: specification
+id: todo.backlog.the-backlog-works-like-the-to-do
+title: 'The backlog behaves like the to-do column'
+state: live
+autonomy: gated
+behavior: >
+  The backlog has its own add field, ordering, wording edits, check-off, completed sections and
+  print, and its own open-item count in its heading. It differs only in what it means — things not
+  being acted on yet — and in which way its move control points.
+implements:
+- apps/todo/ui/TodoApp.jsx::TodoApp
+- apps/todo/ui/TodoApp.jsx::TodoColumn
+- agent.py::api_get_backlog_items
+- agent.py::api_batch_reorder_todo
+tests: []
+links: {}
+notes: ''

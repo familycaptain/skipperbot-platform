@@ -1,0 +1,15 @@
+kind: specification
+id: recipes.printing.only-recipes-can-be-printed
+title: Only a recipe can be sent to the printer
+state: live
+autonomy: gated
+behavior: >
+  Asked to print something that is not a recipe, the request is refused before any job exists and
+  says what kind of thing was expected — so a wrong-kind or mistyped identifier fails immediately
+  rather than as a job that dies at the printer minutes later. A request naming no recipe, or nobody
+  asking, is refused the same way.
+implements:
+- apps/recipes/tools.py::print_recipe
+tests: []
+links: {}
+notes: ''

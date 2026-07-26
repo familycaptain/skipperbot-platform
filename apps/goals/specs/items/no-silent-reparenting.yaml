@@ -1,0 +1,15 @@
+kind: specification
+id: goals.items.no-silent-reparenting
+title: Moving an item between parents is not an ordinary edit
+state: live
+autonomy: gated
+behavior: >
+  Trying to change which project or goal an item belongs to through the ordinary edit path is
+  refused, and the refusal names the move action to use instead. So an item can never quietly
+  change hands as a side effect of a status or rename edit, and a move always goes through the
+  path that renumbers order and re-checks nudges.
+implements:
+- apps/goals/store.py::update_item
+tests: []
+links: {}
+notes: ''

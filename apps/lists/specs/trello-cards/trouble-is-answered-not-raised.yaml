@@ -1,0 +1,17 @@
+kind: specification
+id: lists.trello-cards.trouble-is-answered-not-raised
+title: Trello trouble comes back as an answer
+state: live
+autonomy: gated
+behavior: >
+  When a board operation fails — no credentials, the board or card not found, Trello down, a request
+  refused — the failure comes back as a plain answer naming what went wrong, and the conversation
+  carries on. Nothing about a board being unavailable stops the rest of Skipper, or the household's
+  own lists, from working.
+implements:
+- apps/lists/tools.py::trello_show_board
+- apps/lists/tools.py::trello_get_card
+- trello_client.py::_request
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: reminders.firing.a-one-off-is-finished
+title: A one-off nudges once and is finished
+state: live
+autonomy: gated
+behavior: >
+  A one-off reminder goes inactive as soon as it has been handed over, so it cannot nudge twice
+  however many checks run afterwards. It stays visible among inactive reminders rather than
+  vanishing, so what was nudged about can still be found.
+implements:
+- apps/reminders/store.py::mark_delivered
+tests: []
+links: {}
+notes: ''

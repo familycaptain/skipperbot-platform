@@ -1,0 +1,17 @@
+kind: specification
+id: reminders.recurrence.missed-repeats-are-not-replayed
+title: Time away does not become a pile of nudges
+state: live
+autonomy: gated
+behavior: >
+  A repeating reminder that came due while Skipper was off resumes at its next occurrence from
+  now; the occurrences missed in between are not delivered, so coming back from a week away
+  produces one nudge and not seven. The record of when it was last met still shows the gap.
+implements:
+- apps/reminders/store.py::mark_delivered
+- apps/schedules/data.py::complete_schedule
+tests: []
+links: {}
+notes: >
+  Same reasoning as the delivery layer's abandoning of stale messages: a nudge about a moment long
+  past is worse than no nudge. A repeat with no backing schedule does not yet honour this.

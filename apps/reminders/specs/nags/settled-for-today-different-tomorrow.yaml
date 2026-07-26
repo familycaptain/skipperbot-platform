@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.nags.settled-for-today-different-tomorrow
+title: Today's time is settled; tomorrow's is not
+state: live
+autonomy: gated
+behavior: >
+  Once a nag's time for today has been picked it does not move, so a nag cannot creep earlier and
+  earlier across a day of checks or arrive twice because the time was re-rolled. The following day
+  it gets a different time inside its window.
+implements:
+- apps/reminders/store.py::_nag_time_for_date
+- apps/reminders/store.py::assign_nag_times
+tests: []
+links: {}
+notes: ''

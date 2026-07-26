@@ -1,46 +1,16 @@
 kind: specification
 id: platform.voice.speaker-id-optin
-title: Voice speaker-ID is an opt-in install extra whose enablement is STATEFUL across Docker
-  rebuilds (SKIPPER_VOICE in .env), so `skipper update` never strips it
+title: Recognising who is speaking at the shared speaker is opt-in, and stays on once enabled
 state: live
 behavior: >
-  The default install (`skipper.sh` -> `pip install -r requirements.txt`) MUST NOT pull the
-  speaker-ID stack: `resemblyzer` (and its transitive torch, ~500MB) lives only in the opt-in
-  `requirements-voice.txt` (it lists `resemblyzer` and a torch floor; it does NOT hard-pin a
-  CPU-only build, which would forbid GPU). Enablement is PERSISTED and REBUILD-SAFE via a single
-  source of truth, `SKIPPER_VOICE` in the gitignored `.env`:
-
-  (A) `./skipper.sh enable-voice` persists `SKIPPER_VOICE=1` into `.env` via set_env (guarded on
-  .env existing). Setting `SKIPPER_VOICE=1` in `.env` by hand is by itself sufficient to enable
-  voice on the next build. --dry-run is a PREVIEW: it prints the pip command and persists nothing.
-
-  (B) NATIVE runtime: a successful enable-voice pip-installs `requirements-voice.txt` into the venv
-  (DEFAULT the CPU wheel via `--extra-index-url .../whl/cpu`; `--gpu` installs the CUDA build; `--cpu`
-  forces CPU; a pre-installed compatible torch is HONORED, not overridden) AND persists the flag.
-  Precondition (venv exists) + idempotent + repo-standard warn on unsupported arch are unchanged.
-
-  (C) DOCKER runtime: enable-voice persists the flag, notes it takes effect on the next rebuild, and
-  points at `./skipper.sh update` — it does NOT invoke docker or a host-venv pip (returns immediately,
-  CI-safe). `docker-compose.yml`'s agent service `build` passes `args: SKIPPER_VOICE: ${SKIPPER_VOICE:-0}`
-  (docker compose interpolates `.env`), so EVERY image build from `skipper` (first run) and
-  `skipper update` receives the flag as a build ARG with no tracked-file edit. The `Dockerfile`
-  declares `ARG SKIPPER_VOICE=0` AFTER the base `RUN pip install -r requirements.txt` (so toggling the
-  flag never invalidates the base pip layer cache), COPYs `requirements-voice.txt`, and a conditional
-  `RUN` referencing the ARG installs `pip install -r requirements-voice.txt --extra-index-url
-  https://download.pytorch.org/whl/cpu` ONLY when `SKIPPER_VOICE=1`. Docker builds are CPU-only (`--gpu`
-  applies to native only; enable-voice warns if `--gpu` is passed on Docker). When the flag is absent/0
-  the built image is behaviorally identical to today (the conditional RUN is a no-op layer; no torch).
-
-  (D) Because the flag lives in `.env` (gitignored, untouched by `git pull` and by image rebuilds), a
-  routine `./skipper.sh update` on a voice-enabled Docker install REBUILDS WITH voice still installed —
-  the regression where an update silently stripped speaker-ID cannot recur.
-
-  With the extra absent the platform runs normally (no crash): `speaker_id.available()` is False and every
-  public speaker_id fn no-ops; an enroll/"remember my voice" request while unavailable points at the enable
-  path. `docs/03-extended-functionality.md` §Voice documents the stateful enable, that Docker builds are
-  CPU-only, and the one-line remediation for an install that lost speaker-ID (add `SKIPPER_VOICE=1` to `.env`,
-  then `./skipper.sh update`, or re-run enable-voice). SKIPPER_VOICE is a BUILD-TIME signal only; no runtime
-  code branches on it (its presence in the container env via env_file is inert).
+  Out of the box Skipper answers whoever speaks to the household speaker without knowing who
+  they are, and asking it to remember your voice gets a plain explanation that voice recognition
+  is not set up on this host and who can turn it on — never a failure or a try-again loop. Once
+  whoever runs Skipper has enabled it, a household member can enrol by saying who they are,
+  after which Skipper attributes that voice to them for the rest of the session; an unrecognised
+  or uncertain turn is still answered rather than ignored, and being recognised never turns the
+  shared speaker into that person's own surface. Recognition, once enabled, stays enabled — a
+  routine update of the installation never silently loses it.
 implements:
 - 'skipper.sh — enable_voice() persists SKIPPER_VOICE=1 to .env on both runtimes (guarded on .env);
   the Docker branch writes the flag + points at `./skipper.sh update` (no docker/host-pip invoke);
@@ -76,13 +46,9 @@ tests:
     succeeds in the container and status reports voice speaker-ID installed; then SKIPPER_VOICE=0 + rebuild ->
     torch-free again (import fails, platform healthy). Dry-runs + static checks alone do NOT satisfy this.
 links: {}
-notes: >
-  GATE-3 CHANGE re-spec (operator): the prior approach (Docker enable-voice only printed Dockerfile hand-edit
-  steps; nothing persisted) FAILED verification — a production Docker install that had voice for months lost
-  speaker-ID on a routine `skipper update` rebuild. New approach: stateful SKIPPER_VOICE flag in .env + compose
-  build-arg interpolation + conditional Dockerfile install (ARG after the base pip layer); a hand-set flag alone
-  suffices. Out of scope (operator): an automatic previously-enabled-install upgrade guard. Native path + runtime
-  degradation guards unchanged. Prior merge on release: 0c2710a (superseded). Gate-2: 17/17 bound tests GREEN
-  on the test host; REAL flagged rebuild proven — SKIPPER_VOICE=1 + rebuild -> resemblyzer imports (torch
-  2.12.1+cpu, cuda=None) + status "installed"; SKIPPER_VOICE=0 + rebuild -> torch-free + status "not installed".
+notes: >-
+  Re-specced after a routine `skipper update` silently stripped speaker-ID from a Docker install
+  that had run it for months: the earlier design persisted nothing. Enablement therefore lives in
+  .env, which survives both a git pull and an image rebuild. An automatic upgrade guard for
+  already-enabled installs is out of scope (operator).
 verified: true

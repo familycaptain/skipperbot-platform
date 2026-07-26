@@ -1,0 +1,14 @@
+kind: specification
+id: goals.structure.reorder-in-the-app
+title: Tasks can be nudged up and down by hand
+state: live
+autonomy: gated
+behavior: >
+  In the app a task can be moved one place up or down within its group, and the list reflects the
+  new order immediately. The controls appear only where there is something to reorder, and the
+  ends of a list cannot be moved past.
+implements:
+- apps/goals/ui/GoalsApp.jsx::ProjectView
+tests: []
+links: {}
+notes: ''

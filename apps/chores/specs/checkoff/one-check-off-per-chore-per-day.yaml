@@ -1,0 +1,16 @@
+kind: specification
+id: chores.checkoff.one-check-off-per-chore-per-day
+title: A check-off belongs to one day
+state: live
+autonomy: gated
+behavior: >
+  A check-off is recorded against the chore, the person and the calendar day, so the same weekly
+  chore is checked off afresh each week and yesterday's tick never satisfies today's. Ticking a
+  chore that is already ticked for that day changes nothing and reports the existing check-off
+  rather than failing or recording it twice.
+implements:
+- apps/chores/data.py::upsert_completion
+- apps/chores/migrations/001_initial.sql::chore_completions
+tests: []
+links: {}
+notes: ''

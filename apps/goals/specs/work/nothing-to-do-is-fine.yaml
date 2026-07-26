@@ -1,0 +1,14 @@
+kind: specification
+id: goals.work.nothing-to-do-is-fine
+title: A session with nothing to work on ends quietly
+state: live
+autonomy: gated
+behavior: >
+  A session asked to work a goal that does not exist, that has nothing under it, or that was
+  queued without naming a goal ends immediately saying there was nothing to do — no error, no
+  invented work, and nothing recorded as having happened.
+implements:
+- apps/goals/goal_work.py::handle_goal_work
+tests: []
+links: {}
+notes: ''

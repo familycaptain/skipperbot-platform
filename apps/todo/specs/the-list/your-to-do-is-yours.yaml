@@ -1,0 +1,18 @@
+kind: specification
+id: todo.the-list.your-to-do-is-yours
+title: 'Your to-do is yours'
+state: live
+autonomy: gated
+behavior: >
+  A person's to-do settings, items, ordering, cross-list moves and choice of lists are read and
+  written for whoever is asking, whether or not they named themselves. Acting on another person's is
+  allowed only for a parent or an admin; anybody else is refused outright rather than being quietly
+  handed their own and left thinking they are looking at someone else's.
+implements:
+- agent.py::api_get_todo_config
+- agent.py::api_get_todo_items
+- agent.py::api_get_all_lists_for_todo
+- app_platform/auth.py::scope_user
+tests: []
+links: {}
+notes: ''

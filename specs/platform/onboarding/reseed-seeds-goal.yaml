@@ -45,11 +45,7 @@ tests:
     Live acceptance in the agent container (CLI surface; capture stdout + DB state). GIVEN a primary user
     exists: run `python scripts/reseed_onboarding.py --reset` -> exits 0, output shows the goal reseeded,
     and apps.goals.onboarding.onboarding_agenda_in_progress() returns a goal afterward.
+issues:
+- 87
 links: {}
-notes: >
-  Issue #87 (operator-authored). Gate-1: Option A approved — with no primary user, print the clear skip
-  message and exit 0; --reset stays non-destructive-on-failure (delete/clear/release only when it will
-  then reseed). Test placed under tests/evolve/platform/ (where sibling onboarding tests live; the
-  spec-author's tests/evolve/onboarding/ path does not exist in the tree). Consciousness note
-  (non-blocking, operator): on consciousness_onboarding installs the greeting is log-native, so the
-  greet-once release in --reset is legacy-compat — kept.
+notes: ''

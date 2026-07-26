@@ -1,0 +1,23 @@
+kind: specification
+id: goals.greeting.first-visit
+title: The very first arrival is a welcome, not a welcome back
+state: live
+autonomy: gated
+behavior: >
+  Someone Skipper has never said anything to is welcomed as new and told nothing that implies a
+  shared history, then handed the current setup step — one gentle opener, then it waits for them.
+  Whether they are new is decided from whether Skipper has ever spoken to them, not guessed from
+  how much conversation happens to be on screen.
+implements:
+- apps/goals/handlers.py::_greeting_turn
+- apps/goals/handlers.py::_GREETING_TRIGGER_FIRST
+tests:
+- type: unit
+  path: tests/evolve/platform/test_onboarding_live_greeting.py
+  rubric: >
+    Asserts three distinct arrival greetings exist for three distinct situations, that the
+    greeting is produced in one place, and that a brand-new arrival is not greeted as a return.
+links: {}
+notes: >
+  Skipper greeted a brand-new user with "welcome back" because an empty conversation and a trimmed
+  one look identical — so it is told which it is.

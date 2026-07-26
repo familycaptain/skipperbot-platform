@@ -1,0 +1,13 @@
+kind: specification
+id: goals.trello.checklist-items
+title: Checklist items can be ticked by number
+state: live
+autonomy: gated
+behavior: >
+  A checklist item on a board-linked task can be ticked or unticked by the number it was shown
+  with, so what was read out is what can be acted on without anyone quoting the item's text back.
+implements:
+- apps/goals/tools.py::check_trello_item
+tests: []
+links: {}
+notes: ''

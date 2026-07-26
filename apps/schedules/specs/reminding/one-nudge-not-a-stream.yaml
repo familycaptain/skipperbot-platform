@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.reminding.one-nudge-not-a-stream
+title: One nudge per occurrence, not one per check
+state: live
+autonomy: gated
+behavior: >
+  The check for what is coming runs every half-minute or so, but a person is told about a given
+  schedule once and then not again for half a day — so a chore due in an hour produces one message,
+  not one every tick. A schedule that comes round more often than that is nudged once in the window
+  rather than once per occurrence.
+implements:
+- apps/schedules/notifier.py::_has_recent_notification
+- apps/schedules/notifier.py::check_schedule_notifications
+tests: []
+links: {}
+notes: ''

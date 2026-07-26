@@ -1,0 +1,15 @@
+kind: specification
+id: reminders.firing.nobody-to-tell
+title: A reminder for somebody who is not in the household
+state: live
+autonomy: gated
+behavior: >
+  A reminder aimed at a name that is not a member of the household is consumed at its due time
+  without anybody being nudged — the nudge has nowhere to go — and the reminder is then finished
+  like any other that has fired. The person who set it is not told that it went nowhere.
+implements:
+- apps/reminders/scheduler.py::process_due_reminder
+- apps/notifications/store.py::create_notification
+tests: []
+links: {}
+notes: ''

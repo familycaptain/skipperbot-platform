@@ -1,0 +1,15 @@
+kind: specification
+id: schedules.reminding.nags-arrive-in-waking-hours
+title: Nags arrive during waking hours
+state: live
+autonomy: gated
+behavior: >
+  The daily overdue nag is held until a time within waking hours rather than going out the moment the
+  sweep notices, so nothing overdue buzzes a phone at three in the morning. The time is settled for
+  the whole day, so the nag cannot arrive twice, and it differs between schedules and between days so
+  several overdue things do not all arrive together.
+implements:
+- apps/schedules/notifier.py::_nag_time_for_today
+tests: []
+links: {}
+notes: ''

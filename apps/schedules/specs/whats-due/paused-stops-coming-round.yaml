@@ -1,0 +1,16 @@
+kind: specification
+id: schedules.whats-due.paused-stops-coming-round
+title: Pausing stops it coming round
+state: live
+autonomy: gated
+behavior: >
+  A paused schedule falls out of everything that acts on due dates: it is not in what-is-due, not on
+  the calendar, it sends no reminder and starts no work, however far past its date it drifts. Nothing
+  about it is lost — its cadence, its next-due moment and its whole completion history are still
+  there for when it is switched back on.
+implements:
+- apps/schedules/data.py::get_due_schedules
+- apps/schedules/data.py::get_calendar_events
+tests: []
+links: {}
+notes: ''

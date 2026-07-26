@@ -1,0 +1,18 @@
+kind: specification
+id: schedules.reminding.a-schedule-can-be-silent
+title: A schedule can be set to say nothing
+state: live
+autonomy: gated
+behavior: >
+  A schedule can choose which surfaces its reminders go out on, or none at all — and one set to none
+  produces no message of any kind, neither before it is due nor while it is overdue, while still
+  falling due, appearing on the calendar and being completable. A schedule assigned to nobody is
+  likewise silent, because there is no one to tell.
+implements:
+- apps/schedules/notifier.py::check_schedule_notifications
+- apps/schedules/migrations/001_initial.sql
+tests: []
+links: {}
+notes: >
+  Machinery that fires work rather than asking a person to do it is created silent, which is why
+  "none" has to mean genuinely nothing rather than a default fan-out.

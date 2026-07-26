@@ -2,11 +2,12 @@ kind: capability
 id: schedules
 title: Schedules
 app: schedules
-scope: 'The platform''s recurrence engine: defines recurring events backing chores, maintenance,
-  medical, etc., supporting RRULE, cron-style, friendly (daily/weekly/monthly/yearly/interval),
-  and usage-based (every N miles) recurrence. Owns ''next due'' computation and a completion log.
-  NOT one-shot reminders (the Reminders app) or job execution (the Jobs app) — Schedules answers
-  ''when is it next due?''.'
+scope: 'The platform''s recurring-trigger engine. Anything in the product that has to happen again
+  — a household chore, a maintenance interval, a nightly check an app owns, a routine Skipper runs
+  — is one schedule row here, with a cadence, an owner, a next-due time and a completion log.
+  Schedules answers "when is this next due?", tells the assignee about it, and can start work when
+  it arrives. NOT one-shot reminders (Reminders), NOT running the work itself (Jobs), NOT delivering
+  the message (Notifications).'
 state: live
 autonomy: gated
 links: {}

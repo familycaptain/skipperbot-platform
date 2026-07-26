@@ -1,0 +1,16 @@
+kind: specification
+id: recipes.browsing.nothing-found-vs-nothing-yet
+title: Nothing found reads differently from nothing yet
+state: live
+autonomy: gated
+behavior: >
+  A search or category filter that matches nothing says nothing matched and leaves the search in
+  place to be adjusted. An empty collection with no filter is treated as a different situation: it
+  shows an invitation to add a first recipe instead of an error, and that invitation stops appearing
+  as soon as there is anything to list.
+implements:
+- apps/recipes/ui/RecipeListApp.jsx
+- web/src/components/PristineEmpty.jsx
+tests: []
+links: {}
+notes: ''

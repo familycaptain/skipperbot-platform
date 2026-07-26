@@ -1,0 +1,15 @@
+kind: specification
+id: meals.components.a-component-is-created-once
+title: Each building block exists once
+state: live
+autonomy: gated
+behavior: >
+  A component named while saving or logging a meal is matched to the existing one of that name,
+  ignoring case, and only created when there is none — so 'Grilled Chicken' is one component
+  reused by every meal that has it, never a copy per meal.
+implements:
+- apps/meals/data.py::find_component_by_name
+- apps/meals/tools.py::log_meal
+tests: []
+links: {}
+notes: ''
