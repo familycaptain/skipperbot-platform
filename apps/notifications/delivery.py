@@ -182,8 +182,13 @@ async def _deliver_one(notif: dict):
             from discord_bot import send_dm
             result = await send_dm(recipient, message)
             delivery_results.append(f"Discord: {result}")
-            _receipt(receipts, "discord", "not sent" not in str(result).lower()
-                     and "disabled" not in str(result).lower(), result)
+            # Match on SUCCESS, not on the absence of two failure phrases: send_dm's
+            # error returns ("Error: No Discord ID found for 'X'", "Error: Could not find
+            # Discord user") contain neither, so a failed DM was recorded as delivered.
+            # Same defect its Pushover sibling had — an allow-list of failures can never
+            # be complete, so test for the one string that means it worked.
+            _receipt(receipts, "discord",
+                     str(result).lower().startswith("dm sent"), result)
         except Exception as e:
             delivery_results.append(f"Discord failed: {e}")
             _receipt(receipts, "discord", False, f"failed: {e}")

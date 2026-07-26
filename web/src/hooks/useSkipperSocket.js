@@ -281,13 +281,21 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
           break;
 
         case "notification":
-          setMessages((prev) => appendLive(prev, {
-            id: nextId(),
-            role: "notification",
-            content: data.message,
-            source: data.source,
-            ts: data.ts,
-          }, nextId));
+          setMessages((prev) => {
+            // Same de-dup the chat_response branch does. Delivery attaches srv_id to
+            // this frame specifically so the live card and the reloaded one are known to
+            // be the same utterance — but this branch never carried it through, so the
+            // history load had nothing to match and the card rendered twice.
+            if (data.srv_id && prev.some((m) => m.srv_id === data.srv_id)) return prev;
+            return appendLive(prev, {
+              id: nextId(),
+              role: "notification",
+              content: data.message,
+              source: data.source,
+              ts: data.ts,
+              srv_id: data.srv_id || "",
+            }, nextId);
+          });
           break;
 
         case "message_from_user":
