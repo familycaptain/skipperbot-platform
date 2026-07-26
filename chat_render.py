@@ -106,5 +106,9 @@ def render_chat_history(turns: list[dict], now: datetime, tz: str | None) -> lis
             prev_key = key
         for b in bubbles:
             b["ts"] = ts
+            # Same stable server id the live chat_response frame carries, so the client
+            # can tell a reloaded utterance from a newly-spoken one instead of rendering
+            # both (the socket/history race). Empty for legacy turns with no row id.
+            b["srv_id"] = turn.get("srv_id") or turn.get("id") or ""
             messages.append(b)
     return messages

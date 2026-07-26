@@ -332,13 +332,32 @@ def history_projection(person: str, limit: int = 20,
             parent = by_id.get(r.get("reply_to") or "")
             if parent is not None and parent.get("who_from") == person:
                 continue  # already folded into its inbound turn
+            # HOW AN UTTERANCE LOOKS IS A UI CONCERN, AND IT MUST NOT CHANGE ON RELOAD.
+            # A `[marker]` user_message makes chat_render draw a notification CARD; an
+            # empty one draws a plain bot bubble. Skipper SPEAKING renders as a bubble
+            # live (delivery sends it as a chat_response frame), so it has to reload as a
+            # bubble too — otherwise one utterance has two identities and a reload
+            # silently turns Skipper's words into a notification card.
+            # Discriminator, no migration needed: the ~20 background producers that call
+            # create_notification directly get a shadow row stamped with
+            # payload.source_type ('reminder', 'timer', 'issue', ...), and those ARE
+            # notification cards. A row written by consciousness.send_message skips the
+            # shadow entirely (source_type == 'consciousness' raises _SkipShadow), so it
+            # carries no source_type — that is Skipper's own voice.
+            _src = (_p(r).get("source_type") or "").strip().lower()
+            _is_card = bool(_src) and _src != "consciousness"
             turns.append({
                 "id": r["id"],
-                "user_message": f"[{r.get('domain') or 'notification'}]",
+                "user_message": f"[{_src or r.get('domain') or 'notification'}]" if _is_card else "",
                 "assistant_message": r["content"] or "",
                 "timestamp": r["created_at"].isoformat() if r.get("created_at") else "",
                 "_ct_id": None,
                 "tool_calls": [],
+                # Dedup key the CLIENT matches against the live frame. A card's live frame
+                # knows only the notification id (the shadow row's id is not available at
+                # delivery time), so for cards use the notification_id the shadow row
+                # recorded; Skipper's own voice uses the log-row id, which its frame carries.
+                "srv_id": (str(_p(r).get("notification_id") or "") if _is_card else r["id"]),
             })
     turns.sort(key=lambda t: t["timestamp"])
     turns = turns[-limit:]

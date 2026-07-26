@@ -168,7 +168,16 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
 
       // Show history immediately; the GREETING is deferred behind a short typing
       // beat so Skipper feels present rather than dumping text instantly (issue #16).
-      if (hist.length) setMessages((prev) => [...hist, ...prev]);
+      // De-dupe against anything the socket already delivered. This fetch runs
+      // INDEPENDENTLY of the socket, so an utterance pushed while it was in flight is
+      // already in `prev` and would also arrive inside `hist` — one utterance, two
+      // bubbles. Both carry the same stable server id (srv_id), so drop the history
+      // copy of anything already on screen and keep the live one in place.
+      if (hist.length) setMessages((prev) => {
+        const live = new Set(prev.map((m) => m.srv_id).filter(Boolean));
+        const fresh = live.size ? hist.filter((m) => !m.srv_id || !live.has(m.srv_id)) : hist;
+        return [...fresh, ...prev];
+      });
 
       // Onboarding-in-progress (primary): the canned greeting is ALWAYS
       // suppressed for ALL hist.length (issue #74) — at most the single
@@ -285,8 +294,13 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
           setIsTyping(false);
           setProgress(null);
           setSending(false);
-          setMessages((prev) => appendLive(prev,
-            { id: nextId(), role: "bot", content: data.response, ts: data.ts }, nextId));
+          setMessages((prev) => {
+            // Already on screen (history won the race, or a duplicate frame)? Don't
+            // render the same utterance twice — match on the stable server id.
+            if (data.srv_id && prev.some((m) => m.srv_id === data.srv_id)) return prev;
+            return appendLive(prev, { id: nextId(), role: "bot", content: data.response,
+                                      ts: data.ts, srv_id: data.srv_id || "" }, nextId);
+          });
           break;
 
         case "notification":

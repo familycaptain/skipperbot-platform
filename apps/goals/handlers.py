@@ -35,10 +35,19 @@ logger = logging.getLogger("apps.goals.handlers")
 # ONE model call, delivered as Skipper's own voice. No greet-once claim: the
 # LOG is the memory ("did I greet recently?"), and there is only one producer.
 
-_GREETING_TRIGGER = (
-    "[system event] {user} just connected to the web desktop. Respond as "
-    "Skipper: greet {user} warmly and pick up the current onboarding step — "
+# FIRST-EVER contact vs a return visit. The model cannot infer this — an empty timeline
+# looks the same as a trimmed one — so it must be TOLD, or it guesses. It guessed
+# "welcome back" at a brand-new user's very first moment with Skipper.
+_GREETING_TRIGGER_FIRST = (
+    "[system event] {user} just connected to the web desktop for the FIRST time ever — "
+    "you have never spoken before. Respond as Skipper: welcome {user} (never 'welcome "
+    "back', never imply any shared history) and open the current onboarding step — "
     "ONE gentle opener, then stop and wait for their reply.]"
+)
+_GREETING_TRIGGER_RETURN = (
+    "[system event] {user} just connected to the web desktop and you have spoken "
+    "before. Respond as Skipper: greet {user} warmly and pick up the current onboarding "
+    "step — ONE gentle opener, then stop and wait for their reply.]"
 )
 _RECENT_GREETING_MINUTES = 15
 
@@ -80,6 +89,22 @@ async def _connection_skill_runner(event: dict) -> dict:
     if recent:
         return {"summary": "greeted recently — reconnect, staying quiet"}
 
+    # PRESENCE FIRST (§15). We have decided a turn WILL run that may speak, so say so
+    # now — before the model call, which takes seconds. This is what makes arriving feel
+    # like reaching a live person: dots immediately, then words. The client used to
+    # simulate this with a 2s timer, which raced the real turn and could show the message
+    # with no dots at all. Cleared below on every exit path, so it can never hang.
+    from app_platform.presence import set_typing
+    await set_typing(user, True)
+    try:
+        return await _greeting_turn(user, event)
+    finally:
+        await set_typing(user, False)
+
+
+async def _greeting_turn(user: str, event: dict) -> dict:
+    """The greeting turn itself — split out so presence is guaranteed to clear."""
+    import asyncio as _aio
     # THE GREETING TURN: chat skill + timeline + onboarding overlay, one call.
     from chat_domain import ChatRequest, handle_chat
     from chatlog_store import generate_turn_id
@@ -87,7 +112,18 @@ async def _connection_skill_runner(event: dict) -> dict:
     timeline = await _aio.to_thread(build_chat_timeline, user, None, event.get("id"))
     # Greet by display name (prose); user_id stays the account identifier. (ev-90)
     from data_layer.users import display_name_for
-    trigger = _GREETING_TRIGGER.format(user=display_name_for(user))
+    # Have we EVER spoken to this person? The log is the memory. A brand-new user has no
+    # prior outbound row, and telling the model so is the difference between "welcome"
+    # and a "welcome back" that claims a history that does not exist.
+    from data_layer.db import fetch_one as _fetch_one
+    spoken_before = await _aio.to_thread(
+        _fetch_one,
+        "SELECT id FROM consciousness_log WHERE kind='message' AND who_from='skipper' "
+        "AND who_to=%s LIMIT 1",
+        (user,),
+    )
+    template = _GREETING_TRIGGER_RETURN if spoken_before else _GREETING_TRIGGER_FIRST
+    trigger = template.format(user=display_name_for(user))
     req = ChatRequest(
         user_id=user,
         user_message=trigger,

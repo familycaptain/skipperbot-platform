@@ -193,6 +193,13 @@ async def _deliver_one(notif: dict):
                 "response": message,
                 "user_id": recipient,
                 "ts": _dt.now(_tz.utc).isoformat(),
+                # STABLE SERVER ID for client-side de-duplication. The live frame and the
+                # reloaded history row are the SAME utterance, and the client fetches
+                # history independently of the socket — so a frame arriving during that
+                # fetch lands in the live list AND comes back in the history, rendering
+                # twice. Carrying the consciousness-log id (source_id for a consciousness
+                # notification) lets the client recognise them as one utterance.
+                "srv_id": notif.get("source_id") or "",
             }
         else:
             ws_frame = {
@@ -200,6 +207,11 @@ async def _deliver_one(notif: dict):
                 "source": source_type,
                 "message": message,
                 "user_id": recipient,
+                # Same race, same fix (see the chat_response branch). A background
+                # notification's shadow log row records payload.notification_id, and the
+                # history projection surfaces that as srv_id — so the live card and the
+                # reloaded card agree on one id instead of rendering twice.
+                "srv_id": str(notif_id),
             }
         ws_sent = await manager.send_to_user(recipient, ws_frame)
         if ws_sent:
