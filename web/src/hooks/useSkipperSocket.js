@@ -57,19 +57,6 @@ function appendLive(prev, msg, makeId) {
   return out;
 }
 
-// Greeting typing beat (issue #16): on load, show the typing indicator for a brief
-// beat before the greeting "pops in", so Skipper feels present rather than dumping
-// canned text. Plays on EVERY load (operator's call). prefers-reduced-motion gets
-// the greeting immediately (0ms) — an accessibility carve-out.
-const GREETING_TYPING_MS = 2000;
-function greetingTypingDelay() {
-  if (typeof window !== "undefined" && typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    return 0;
-  }
-  return GREETING_TYPING_MS;
-}
-
 // Live onboarding greeting (platform.onboarding.live-greeting): for a fresh
 // PRIMARY onboarding arrival the greeting is SERVER-driven, so the client shows
 // the typing indicator OPTIMISTICALLY (no empty-silence gap) until the real
@@ -128,7 +115,6 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
     if (!userId || historyLoadedRef.current) return;
     historyLoadedRef.current = true;
     let cancelled = false;
-    let greetingTimer = null;
     (async () => {
       let hist = [];
       try {
@@ -145,10 +131,9 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
       }
       if (cancelled) return;
 
-      // Synchronous 'primary + onboarding-in-progress' signal (NOT hist.length):
-      // a fresh PRIMARY onboarding user gets a SERVER-driven live greeting, so we
-      // suppress the canned client greeting and show typing optimistically. A
-      // fresh NON-primary user (pending=false) still gets their client greeting.
+      // Onboarding-in-progress signal. Every greeting is SERVER-driven now (there is
+      // no canned client greeting left to suppress); this only decides whether to
+      // show typing optimistically while the arrival turn is being composed.
       let liveGreeting = false;
       let onboarding = false;
       try {
@@ -204,34 +189,20 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
         return;
       }
 
-      // UNCHANGED: the welcome-back (returning) greeting and the fresh NON-primary
-      // greeting stay client-side (reconciles platform.agent.greeting-typing-beat).
-      const greeting = {
-        id: nextId(),
-        role: "bot",
-        ts: new Date().toISOString(),
-        content: hist.length
-          ? "Welcome back! Here's where we left off — what can I help you with?"
-          : "Hello! I'm Skipper, your AI assistant. How can I help you today?",
-      };
-      // Append the greeting via the same ts-stamped path live messages use, so a
-      // notification arriving during the beat stays correctly ordered (issue #8).
-      const showGreeting = () => {
-        if (cancelled) return;
-        setIsTyping(false);
-        setMessages((prev) => appendLive(prev, greeting, nextId));
-      };
-      const delay = greetingTypingDelay();
-      if (delay <= 0) {
-        showGreeting();
-      } else {
-        setIsTyping(true);
-        greetingTimer = setTimeout(showGreeting, delay);
-      }
+      // NO CLIENT-SIDE GREETING. The browser used to fabricate one here — a hardcoded
+      // "Welcome back! Here's where we left off" (or a generic hello with no history),
+      // rendered as if Skipper had said it. It never reached the consciousness, carried
+      // no memory of the person, and said the identical words no matter what had
+      // actually happened between you.
+      //
+      // Skipper greets now: the connection event reaches the consciousness on every
+      // arrival, and it composes a greeting from the log — for EVERY household member,
+      // not only the primary, which is what this canned line was quietly covering for.
+      // If nothing is said here, that is a real decision (a reload inside the quiet
+      // window, or models not configured), not a gap to paper over.
     })();
     return () => {
       cancelled = true;
-      if (greetingTimer) clearTimeout(greetingTimer);
       if (optimisticGreetTimer.current) {
         clearTimeout(optimisticGreetTimer.current);
         optimisticGreetTimer.current = null;

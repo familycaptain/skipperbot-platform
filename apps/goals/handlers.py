@@ -93,15 +93,11 @@ async def _connection_skill_runner(event: dict) -> dict:
     # agenda in progress, models configured.
     from data_layer.users import get_primary_user
     primary = ((await _aio.to_thread(get_primary_user)) or "").strip().lower()
-    if user != primary:
-        return {"summary": f"{user} is not the primary — no onboarding greeting"}
-    # Onboarding is a FLAVOUR of the greeting, not a precondition for it. This used to
-    # return here when no agenda was running, which silently removed the greeting for
-    # everyone who had finished setting up — i.e. for normal use, forever. The browser
-    # papered over it with a hardcoded "Welcome back!", so it looked like Skipper was
-    # speaking when nothing had reached the consciousness at all.
-    from apps.goals.onboarding import onboarding_agenda_in_progress
-    goal_id = await _aio.to_thread(onboarding_agenda_in_progress)
+    # EVERY household member gets greeted, not just the primary. This used to return
+    # here for anyone else, and the browser covered for it with a canned line — so a
+    # kid signing in was met by a hardcoded string, not by Skipper. Setup is the
+    # primary's business (below); being greeted is not.
+    is_primary = (user == primary)
     try:
         from providers.tier_resolver import models_configured
         if not models_configured():
@@ -133,12 +129,12 @@ async def _connection_skill_runner(event: dict) -> dict:
     from app_platform.presence import set_typing
     await set_typing(user, True)
     try:
-        return await _greeting_turn(user, event)
+        return await _greeting_turn(user, event, is_primary)
     finally:
         await set_typing(user, False)
 
 
-async def _greeting_turn(user: str, event: dict) -> dict:
+async def _greeting_turn(user: str, event: dict, is_primary: bool = True) -> dict:
     """The greeting turn itself — split out so presence is guaranteed to clear."""
     import asyncio as _aio
     # THE GREETING TURN: chat skill + timeline + onboarding overlay, one call.
@@ -161,7 +157,11 @@ async def _greeting_turn(user: str, event: dict) -> dict:
     # Three genuinely different situations, so three different asks. Onboarding is one
     # flavour of return, not the only reason to greet someone.
     from apps.goals.onboarding import onboarding_agenda_in_progress
-    onboarding_live = bool(await _aio.to_thread(onboarding_agenda_in_progress))
+    # Setup belongs to the primary. Another member arriving mid-setup gets a normal
+    # greeting — walking a kid through the household's configuration steps would be
+    # both confusing and wrong.
+    onboarding_live = is_primary and bool(
+        await _aio.to_thread(onboarding_agenda_in_progress))
     if not spoken_before:
         template = _GREETING_TRIGGER_FIRST
     elif onboarding_live:
