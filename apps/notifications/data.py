@@ -177,6 +177,21 @@ def mark_delivered(notif_id: str) -> bool:
     ) > 0
 
 
+def set_receipts(notif_id: str, receipts: dict) -> bool:
+    """Record which surfaces this notification actually reached.
+
+    Stored on the notification row, NOT as extra consciousness-log entries: the log
+    records what was said once, before any fan-out, and a row per surface would show
+    the same message two or three times in the web console.
+    """
+    import json as _json
+    return execute_in_schema(
+        SCHEMA,
+        "UPDATE notifications SET receipts = %s::jsonb WHERE id = %s",
+        (_json.dumps(receipts or {}), notif_id),
+    ) > 0
+
+
 def delete_notification(notif_id: str) -> bool:
     return execute_in_schema(
         SCHEMA,

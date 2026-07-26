@@ -69,6 +69,17 @@ def _max_delivery_age_minutes() -> int:
         return 5
 
 
+def _receipt(receipts: dict, channel: str, ok: bool, detail: str = "") -> None:
+    """Record what happened on ONE surface.
+
+    Structured deliberately: the existing delivery_results strings are for a human
+    reading a log line, and cannot be reasoned over. Skipper needs to know which
+    surfaces it actually reached before it can say so honestly, or conclude that
+    somebody is unreachable.
+    """
+    receipts[channel] = {"ok": bool(ok), "detail": str(detail)[:200]}
+
+
 async def deliver_pending_notifications():
     """Query all undelivered notifications and deliver them."""
     try:
@@ -106,7 +117,8 @@ async def _deliver_one(notif: dict):
         await asyncio.to_thread(_dl_notif.mark_delivered, notif_id)
         return
 
-    delivery_results = []
+    delivery_results = []      # human-readable, for the log line
+    receipts: dict = {}        # structured, for Skipper
 
     # --- Voice announcement (proactive spoken delivery) ---
     # Runs FIRST so that if voice is the only channel and it can't speak (device
@@ -119,8 +131,10 @@ async def _deliver_one(notif: dict):
                 notif.get("device_id") or "", message,
                 source={"type": notif.get("source_type", ""), "id": notif.get("source_id", "")})
             delivery_results.append(f"Voice: {'spoke' if spoke else 'no device/failed'}")
+            _receipt(receipts, "voice", spoke, "spoke" if spoke else "no device/failed")
         except Exception as e:
             delivery_results.append(f"Voice failed: {e}")
+            _receipt(receipts, "voice", False, f"failed: {e}")
             logger.error("NOTIF_DELIVERY: Voice announce failed for %s: %s", recipient, e)
         if not spoke and targets == {"voice"}:
             targets = {"voice"} | _default_channels()   # fall back to push
@@ -168,8 +182,11 @@ async def _deliver_one(notif: dict):
             from discord_bot import send_dm
             result = await send_dm(recipient, message)
             delivery_results.append(f"Discord: {result}")
+            _receipt(receipts, "discord", "not sent" not in str(result).lower()
+                     and "disabled" not in str(result).lower(), result)
         except Exception as e:
             delivery_results.append(f"Discord failed: {e}")
+            _receipt(receipts, "discord", False, f"failed: {e}")
             logger.error("NOTIF_DELIVERY: Discord DM failed for %s: %s", recipient, e)
 
     # --- Pushover ---
@@ -184,8 +201,10 @@ async def _deliver_one(notif: dict):
                     cooldown_seconds=0,
                 )
                 delivery_results.append(f"Pushover: {result}")
+                _receipt(receipts, "pushover", bool(result), result)
         except Exception as e:
             delivery_results.append(f"Pushover failed: {e}")
+            _receipt(receipts, "pushover", False, f"failed: {e}")
             logger.error("NOTIF_DELIVERY: Pushover failed for %s: %s", recipient, e)
 
     # --- FCM Mobile Push ---
@@ -205,10 +224,13 @@ async def _deliver_one(notif: dict):
                 total = len(results)
                 if total > 0:
                     delivery_results.append(f"FCM: {sent}/{total} devices")
+                    _receipt(receipts, "mobile", sent > 0, f"{sent}/{total} devices")
                 else:
                     delivery_results.append("FCM: no devices registered")
+                    _receipt(receipts, "mobile", False, "no devices registered")
         except Exception as e:
             delivery_results.append(f"FCM failed: {e}")
+            _receipt(receipts, "mobile", False, f"failed: {e}")
             logger.error("NOTIF_DELIVERY: FCM failed for %s: %s", recipient, e)
 
     # --- WebSocket (web UI) ---
@@ -268,6 +290,14 @@ async def _deliver_one(notif: dict):
     # Mark as delivered (best-effort: once any channel succeeded, we're done).
     try:
         await asyncio.to_thread(_dl_notif.mark_delivered, notif_id)
+        # Persist WHICH surfaces were reached, not merely that one of them was.
+        # Best-effort: a receipt that fails to save must never make a delivered
+        # message look undelivered and get sent again.
+        try:
+            await asyncio.to_thread(_dl_notif.set_receipts, notif_id, receipts)
+        except Exception:
+            logger.debug("NOTIF_DELIVERY: receipts not saved for %s", notif_id,
+                         exc_info=True)
     except Exception as e:
         logger.error("NOTIF_DELIVERY: Failed to mark %s as delivered: %s", notif_id, e)
 
