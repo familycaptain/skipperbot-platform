@@ -270,6 +270,25 @@ class ConnectionSkillContract(unittest.TestCase):
         head = body.split("async def _greeting_turn", 1)[0]
         self.assertNotIn('return {"summary": "onboarding agenda not in progress"}', head)
 
+    def test_the_arrival_greeting_cannot_navigate(self):
+        """Structural, not advisory. The greeting fires before the person has said
+        anything, so there is nothing to act on and any UI-moving tool throws them
+        somewhere they did not ask to go (it opened the Goals app, because onboarding
+        is tracked as a goal). A prompt asking the model not to navigate can be
+        ignored; withholding the tools cannot.
+
+        Scoped to this ONE turn — ordinary chat keeps every tool, so asking Skipper to
+        open an app still works."""
+        self.assertIn("speak_only=True", self.src)
+        chat = _read("chat_domain.py")
+        # enforced where every routing/request/context path converges, so nothing
+        # upstream can reintroduce a tool
+        self.assertIn("speak_only", chat)
+        self.assertLess(chat.index('speak_only", False'),
+                        chat.index("allowed -= DISABLED_CHAT_TOOLS"))
+        # exactly one turn opts in
+        self.assertEqual(self.src.count("speak_only=True"), 1)
+
     def test_three_distinct_greetings_for_three_distinct_situations(self):
         # first contact / back mid-setup / back after setup — a stock line for all
         # three is what we are moving away from.

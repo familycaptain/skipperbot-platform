@@ -176,6 +176,10 @@ async def _greeting_turn(user: str, event: dict, is_primary: bool = True) -> dic
         turn_id=generate_turn_id(),
         channel="web",
         loaded_categories=[],
+        # STRUCTURAL, not just asked for: no tools are offered at all, so this turn
+        # CANNOT open an app or act. The trigger still says so in words (it costs
+        # nothing and explains the intent to the model), but the guarantee is here.
+        speak_only=True,
     )
     result = await handle_chat(req)
     text = (result.response_text or "").strip()

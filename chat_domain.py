@@ -84,6 +84,13 @@ class ChatRequest:
     # the session layer (chat.py owns the per-user list and passes it by reference, so in-turn
     # loads/evictions survive to the next turn). NOT the pinned voice/app-context categories.
     loaded_categories: list[str] = field(default_factory=list)
+    # SPEAK-ONLY: this turn may produce words and nothing else. Used by the arrival
+    # greeting, which fires before the person has said anything — so there is no request
+    # to act on, and any tool that moves the UI would throw them somewhere they did not
+    # ask to go. A prompt asking the model not to navigate is advisory; withholding the
+    # tools makes it impossible. Scoped to the one turn: ordinary chat keeps every tool,
+    # so "Skipper, open my recipes" still works exactly as before.
+    speak_only: bool = False
 
 
 @dataclass
@@ -282,6 +289,14 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
         # Add the loaded categories: pinned (voice/app-context) + the swap slots.
         for cat in _loaded_categories():
             allowed |= get_category_tool_names(cat)
+
+        # A speak-only turn gets NO tools at all. Checked here, alongside the disabled
+        # set and for the same reason: this is the one place every routing, request and
+        # context path converges, so nothing upstream can hand the model an action it
+        # was never meant to have.
+        if getattr(req, "speak_only", False):
+            logger.debug("TOOL ROUTER: speak-only turn — no tools offered")
+            return None
 
         # Never offer the disabled (code-authoring / shell / MCP-control) tools to
         # the LLM, no matter how they were routed or requested. Applied last so no
