@@ -1,0 +1,14 @@
+kind: specification
+id: documents.editor.creating-from-the-list-opens-it
+title: Creating from the list drops you into it
+state: live
+autonomy: gated
+behavior: >
+  Typing a title in the list and creating it opens the new document in its own window ready to write
+  in, and the list behind it refreshes to include it. A blank title creates nothing. If creating fails
+  the reason is shown on the list rather than a window opening onto a document that does not exist.
+implements:
+- apps/documents/ui/DocListApp.jsx::handleCreate
+tests: []
+links: {}
+notes: ''

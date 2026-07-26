@@ -1,12 +1,18 @@
 kind: specification
 id: medical.medications.list-medications
-title: List medications
+title: Reading the medication list
 state: live
 autonomy: gated
-behavior: Listing returns medications with their refill status.
+behavior: >
+  The medication list answers with what is currently being taken, soonest to run out first, and
+  includes stopped medications only when they are explicitly asked for. It can be narrowed to one
+  person; asking about a person who is not in the medical records is refused by name rather than
+  quietly answered with the whole household's list.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::list_medications
+- apps/medical/data.py::get_all_medications
+- apps/medical/routes.py::api_list_medications
+- apps/medical/ui/MedicalApp.jsx::MedicationsTab
 tests: []
 links: {}
 notes: ''

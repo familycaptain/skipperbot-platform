@@ -1,0 +1,17 @@
+kind: specification
+id: automation.control.real-devices-are-asked-not-overwritten
+title: A light that Skipper says is on really is on
+state: live
+autonomy: gated
+behavior: >
+  Changing something means asking Home Assistant to perform the action, never overwriting Home
+  Assistant's record of what the thing is doing. So a confirmation from Skipper means the device was
+  actually asked to change — the household never ends up with a light that reads as on and is dark.
+implements:
+- apps/automation/tools.py::call_home_assistant_service
+- apps/automation/routes.py::api_control
+tests: []
+links: {}
+notes: >
+  Stated as a spec because the shortcut it forbids (writing a state back) looks like it works and
+  quietly desynchronises the whole house.

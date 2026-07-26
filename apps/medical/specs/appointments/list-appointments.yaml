@@ -1,0 +1,17 @@
+kind: specification
+id: medical.appointments.list-appointments
+title: What is still to come, soonest first
+state: live
+autonomy: gated
+behavior: >
+  The appointments list shows what is still ahead, soonest first, and one that started within the
+  last hour still counts as current so an appointment being attended does not disappear off the
+  screen mid-visit. Past and cancelled appointments are shown only when asked for, and every one
+  says whose it is.
+implements:
+- apps/medical/data.py::get_all_appointments
+- apps/medical/routes.py::api_list_appointments
+- apps/medical/ui/MedicalApp.jsx::AppointmentsTab
+tests: []
+links: {}
+notes: ''

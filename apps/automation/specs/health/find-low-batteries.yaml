@@ -1,0 +1,16 @@
+kind: specification
+id: automation.health.find-low-batteries
+title: Finding the batteries that need replacing
+state: live
+autonomy: gated
+behavior: >
+  Asked which batteries need replacing, Skipper checks everything in the house that reports a battery —
+  by what it measures or by simply being called a battery — and lists whatever is at or below the
+  threshold, emptiest first, with a quarter charge as the default threshold and any threshold given
+  brought inside a sensible range. Sensors that only say "low" or "normal" rather than a percentage are
+  read that way too. Nothing low says so plainly rather than returning an empty list.
+implements:
+- apps/automation/tools.py::find_home_assistant_low_batteries
+tests: []
+links: {}
+notes: ''

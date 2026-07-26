@@ -1,0 +1,18 @@
+kind: specification
+id: home.issues.narrow-the-list
+title: Narrowing to what you care about
+state: live
+autonomy: gated
+behavior: >
+  The tab opens on open issues with a count of everything not yet fixed, and switches to those
+  being worked on, those fixed, or all of them; choosing a room narrows further, and typing
+  searches title, description and room whatever the case. The filters combine, and any of them
+  scoping the view to nothing says nothing matched rather than implying the house is problem-free.
+implements:
+- apps/home/ui/HomeApp.jsx::HomeIssuesTab
+- apps/home/routes.py::api_list_home_issues
+- apps/home/data.py::get_all_issues
+- apps/home/tools.py::list_home_issues
+tests: []
+links: {}
+notes: ''

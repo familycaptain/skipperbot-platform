@@ -1,0 +1,19 @@
+kind: specification
+id: home.issues.log-a-problem
+title: Logging something that needs fixing
+state: live
+autonomy: gated
+behavior: >
+  Reporting a problem — "leaky faucet under the kitchen sink", "crack in the drywall on the south
+  wall" — records it as open, with where it is, how specific a spot, a category, how bad it is,
+  and the date it was noticed defaulting to today. A report with no title is refused, and a
+  severity outside the four recognised levels is recorded as the mildest rather than rejected.
+implements:
+- apps/home/tools.py::create_home_issue
+- apps/home/data.py::create_issue
+- apps/home/routes.py::api_create_home_issue
+- apps/home/ui/HomeApp.jsx::AddHomeIssueForm
+- apps/home/migrations/003_home_issues.sql
+tests: []
+links: {}
+notes: ''

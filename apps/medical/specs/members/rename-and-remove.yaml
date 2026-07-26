@@ -1,0 +1,22 @@
+kind: specification
+id: medical.members.rename-and-remove
+title: Renaming a person, and removing one
+state: live
+autonomy: gated
+behavior: >
+  A person's name and notes can be corrected at any time and every record already filed under them
+  follows, because records are held against the person and not against the spelling of their name.
+  Removing a person is a confirmed act that takes their appointments and equipment with them; a
+  person who still has medications, treatments, events or lab results on file is not removed, and
+  the refusal is reported rather than passed off as success.
+implements:
+- apps/medical/data.py::update_member
+- apps/medical/data.py::delete_member
+- apps/medical/routes.py::api_update_member
+- apps/medical/routes.py::api_delete_member
+- apps/medical/ui/MedicalApp.jsx::MembersPanel
+tests: []
+links: {}
+notes: >
+  Refusing beats cascading: a lifetime of medications and lab values is worth more than a tidy
+  member list, and an accidental removal would be unrecoverable.

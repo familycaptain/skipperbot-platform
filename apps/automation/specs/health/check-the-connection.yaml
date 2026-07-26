@@ -1,0 +1,16 @@
+kind: specification
+id: automation.health.check-the-connection
+title: Checking the connection
+state: live
+autonomy: gated
+behavior: >
+  "Check Home Assistant" answers with whether it is reachable and, when it is, which home it reached and
+  what version that home is running — enough to tell "the token is wrong" from "I am talking to the
+  wrong house". Not configured gives the setup message; unreachable gives the reason. It never reports
+  OK on the strength of the settings alone: it asks the house.
+implements:
+- apps/automation/tools.py::test_home_assistant_connection
+- apps/automation/routes.py::api_status
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: medical.privacy.everyone-signed-in-sees-everything
+title: Anyone signed in sees every record
+state: live
+autonomy: gated
+behavior: >
+  Anyone with an account on the household's Skipper can read and change every family member's
+  medical records — medications, lab values, appointments, the journal — with no distinction
+  between one member and another and none between an adult and a child. The only line drawn is at
+  the door: every request needs a valid session, and nothing in Medical is readable without one.
+implements:
+- apps/medical/routes.py::_actor
+- app_platform/auth.py::resolve_target
+tests: []
+links: {}
+notes: >
+  Stated as it stands rather than as an aspiration: the platform has a parent/admin guard for
+  acting on another person's data and Medical applies it nowhere.

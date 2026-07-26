@@ -1,0 +1,14 @@
+kind: specification
+id: email.rules.the-first-rule-that-matches-wins
+title: The first rule that matches is the only one that acts
+state: live
+autonomy: gated
+behavior: >
+  Rules are tried in order and the first one that matches takes its actions; no later rule sees
+  that message. So a message is never labelled twice by two rules that both describe it, and a
+  broad rule placed above a specific one hides the specific one entirely.
+implements:
+- apps/email/runner.py::_evaluate_and_execute
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: automation.reading.doors-are-reported-open-or-closed
+title: Doors are open or closed, not on or off
+state: live
+autonomy: gated
+behavior: >
+  Asked about a door, gate, garage, window or contact sensor, Skipper answers "open" or "closed", and
+  asked about a connectivity or ping sensor it answers "online" or "offline" — not the raw on/off that
+  Home Assistant stores, which means the opposite of what people expect about half the time. The raw
+  state is given only when someone actually asks for it.
+implements:
+- apps/automation/guide.md
+tests: []
+links: {}
+notes: ''

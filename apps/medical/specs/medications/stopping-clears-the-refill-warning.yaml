@@ -1,0 +1,15 @@
+kind: specification
+id: medical.medications.stopping-clears-the-refill-warning
+title: Stopping a medication clears its warning
+state: live
+autonomy: gated
+behavior: >
+  Marking a medication as no longer taken, or clearing its run-out date, returns it to on track,
+  so nothing nobody is taking is ever reported as needing a refill. Moving the run-out date out
+  beyond the warning window does the same: a medication that was flagged stops being flagged as
+  soon as it is no longer running out soon.
+implements:
+- apps/medical/data.py::update_medication
+tests: []
+links: {}
+notes: ''

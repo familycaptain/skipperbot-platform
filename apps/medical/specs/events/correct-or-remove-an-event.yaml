@@ -1,0 +1,18 @@
+kind: specification
+id: medical.events.correct-or-remove-an-event
+title: Correcting an entry, and removing one
+state: live
+autonomy: gated
+behavior: >
+  Any part of a journal entry can be corrected afterwards, and clearing a date empties it rather
+  than failing. Removing an entry takes a confirmation naming it; lab values recorded against it
+  survive the removal, no longer attached to a draw rather than deleted along with it.
+implements:
+- apps/medical/data.py::update_event
+- apps/medical/data.py::delete_event
+- apps/medical/routes.py::api_update_event
+- apps/medical/routes.py::api_delete_event
+- apps/medical/ui/MedicalApp.jsx::EventCard
+tests: []
+links: {}
+notes: ''

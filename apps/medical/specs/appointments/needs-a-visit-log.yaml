@@ -1,0 +1,17 @@
+kind: specification
+id: medical.appointments.needs-a-visit-log
+title: A past appointment with nothing written up
+state: live
+autonomy: gated
+behavior: >
+  An appointment whose time has passed, that was not cancelled, and that has nothing written up
+  against it is flagged as needing a visit log — marked on the appointment itself and counted at
+  the top of the appointments tab — and stays flagged until something is written up. Cancelled
+  appointments are never flagged, and the flag clears the moment a write-up is linked.
+implements:
+- apps/medical/data.py::get_past_appointments_without_events
+- apps/medical/routes.py::api_unlogged_appointments
+- apps/medical/ui/MedicalApp.jsx::AppointmentsTab
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,21 @@
+kind: specification
+id: email.accounts.connect-a-mailbox
+title: Connecting a mailbox goes through Google
+state: live
+autonomy: gated
+behavior: >
+  Connecting starts at Google's own sign-in and consent screen in a separate window — Skipper
+  never asks for the mailbox password and never accepts a typed-in address. The mailbox is
+  registered only after the person grants access, and its address is whatever Google reports for
+  the account that was signed in, not what the person expected. If the person refuses, closes
+  the window, or Google returns an error, nothing is added and the error is shown on the page
+  they were returned to.
+implements:
+- apps/email/routes.py::api_email_oauth_start
+- apps/email/routes.py::api_email_oauth_callback
+- apps/email/gmail_client.py::get_oauth_url
+- apps/email/gmail_client.py::exchange_code
+- apps/email/ui/EmailApp.jsx::AccountsTab
+tests: []
+links: {}
+notes: ''

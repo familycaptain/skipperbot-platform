@@ -1,0 +1,17 @@
+kind: specification
+id: automation.reading.read-one-thing
+title: Reading one thing
+state: live
+autonomy: gated
+behavior: >
+  Asked what something reads — by the name people call it or by its Home Assistant id — Skipper answers
+  with the thing's own name, its current value with the unit it is measured in, when that value last
+  changed, and the few attributes that matter for what it is (battery level, brightness, temperature)
+  rather than every attribute it carries. Something that does not exist is reported as not found, not
+  as a blank reading.
+implements:
+- apps/automation/tools.py::get_home_assistant_entity
+- apps/automation/tools.py::_entity_display
+tests: []
+links: {}
+notes: ''

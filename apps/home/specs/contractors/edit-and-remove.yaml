@@ -1,0 +1,17 @@
+kind: specification
+id: home.contractors.edit-and-remove
+title: Correcting or removing a contractor
+state: live
+autonomy: gated
+behavior: >
+  Editing a contractor changes only the fields supplied. Deleting asks for confirmation naming
+  them and removes the record permanently; deleting one that does not exist reports not-found.
+implements:
+- apps/home/tools.py::update_home_contractor
+- apps/home/tools.py::delete_home_contractor
+- apps/home/data.py::update_contractor
+- apps/home/data.py::delete_contractor
+- apps/home/routes.py::api_delete_home_contractor
+tests: []
+links: {}
+notes: ''

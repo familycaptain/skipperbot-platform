@@ -1,0 +1,23 @@
+kind: specification
+id: email.access.a-working-mailbox-can-nudge-again
+title: A mailbox that comes back can ask again later
+state: live
+autonomy: gated
+behavior: >
+  Once a mailbox completes a pass successfully it becomes eligible to ask for reconnection
+  again, so a mailbox that was fixed and then broke a second time is not silent — the household
+  is told about the second outage as clearly as the first.
+implements:
+- apps/email/runner.py::_process_account
+- apps/email/runner.py::_notify_reauth_needed
+tests:
+- type: unit
+  path: tests/evolve/email/test_gmail_service_cache_selfheal.py
+  rubric: >
+    With Google's client, credentials and the notification shim all stubbed and no real tokens:
+    a refused call is retried exactly once against freshly re-established access and succeeds; a
+    second refusal raises without looping and asks the owner to reconnect exactly once; an error
+    that is not a refusal is passed straight through untouched; and no token material appears in
+    anything written to the log.
+links: {}
+notes: ''

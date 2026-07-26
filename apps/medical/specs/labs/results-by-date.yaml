@@ -1,12 +1,24 @@
 kind: specification
 id: medical.labs.results-by-date
-title: Results by date
+title: Everything recorded on one date
 state: live
 autonomy: gated
-behavior: Results-by-date returns all recorded lab results for an exact date.
+behavior: >
+  Asked for the lab results from a particular date, Skipper answers with every value stored for
+  that date — each with its test name, number, unit and note — rather than checking a handful of
+  likely tests one at a time and reporting the rest as absent. It can be narrowed to one person or
+  one draw, and a date with nothing recorded is answered as nothing found.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
-tests: []
+- apps/medical/tools.py::get_lab_results_by_date
+- apps/medical/data.py::get_lab_results
+tests:
+- type: unit
+  path: test_medical_lab_tools.py
+  rubric: >
+    Offline, with the data layer faked. A request for one person's results on an exact date asks
+    the store for that member and that exact date once, with details joined in, and answers with
+    every row it returns, each named by its test rather than by an internal id. The stored query
+    filters on the exact result date and joins the test list, with values passed as bound
+    parameters.
 links: {}
 notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: medical.events.tags
+title: Tagging a strand of care
+state: live
+autonomy: gated
+behavior: >
+  An event can carry free-text tags, entered as a comma-separated list and shown as separate
+  labels, so a strand of care — cardiology, dental — can be followed across visits without
+  inventing a new kind of event for it. Blank entries between commas are dropped rather than
+  stored as empty labels.
+implements:
+- apps/medical/ui/MedicalApp.jsx::AddEventModal
+- apps/medical/ui/MedicalApp.jsx::EventCard
+- apps/medical/data.py::create_event
+tests: []
+links: {}
+notes: ''

@@ -1,12 +1,19 @@
 kind: specification
 id: medical.treatments.add-treatment
-title: Add a treatment
+title: Set up a recurring treatment
 state: live
 autonomy: gated
-behavior: Adding records a recurring treatment (injection, infusion) for a member with its interval.
+behavior: >
+  A recurring treatment — an injection, an infusion — is recorded for one person with how many
+  days apart it happens, and that interval is required, because it is what makes the treatment
+  recurring rather than a one-off event. Told when it was last done, Skipper works out when it is
+  next due from the interval; given an explicit next-due date, that date is respected as it
+  stands.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::add_treatment
+- apps/medical/data.py::create_treatment
+- apps/medical/routes.py::api_create_treatment
+- apps/medical/ui/MedicalApp.jsx::AddTreatmentModal
 tests: []
 links: {}
 notes: ''

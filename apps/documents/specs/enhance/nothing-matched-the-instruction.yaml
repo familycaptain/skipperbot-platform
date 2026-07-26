@@ -1,0 +1,14 @@
+kind: specification
+id: documents.enhance.nothing-matched-the-instruction
+title: Nothing matched the instruction, so nothing changed
+state: live
+autonomy: gated
+behavior: >
+  When no part of the document answers to what was asked for, the document is left completely alone and
+  the answer asks for something more specific. A no-op is reported as a no-op rather than as a
+  successful improvement.
+implements:
+- apps/documents/tools.py::enhance_doc
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: documents.context.a-document-can-belong-to-something
+title: A document can belong to something else
+state: live
+autonomy: gated
+behavior: >
+  A document can be attached to a project, goal, task or any other item Skipper keeps track of, either as
+  it is created or afterwards. Once attached, that item lists the document among its own, newest change
+  first, so the write-up and the work it belongs to are reachable from each other rather than only from
+  the document list.
+implements:
+- apps/documents/store.py::create_doc
+- apps/documents/store.py::update_doc_meta
+- agent.py::api_docs_for_entity
+tests: []
+links: {}
+notes: ''

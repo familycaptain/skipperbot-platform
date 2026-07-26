@@ -1,0 +1,17 @@
+kind: specification
+id: home.appliances.warranty-at-a-glance
+title: Still under warranty, or not
+state: live
+autonomy: gated
+behavior: >
+  Each appliance shows whether its warranty has already expired, expires within the coming month,
+  or still has time left with the date it runs out — so a failing machine can be checked against
+  its cover before anyone pays for a repair. An appliance with no warranty date recorded makes no
+  claim either way rather than being shown as uncovered.
+implements:
+- apps/home/ui/HomeApp.jsx::warrantyStatus
+- apps/home/ui/HomeApp.jsx::WarrantyBadge
+- apps/home/tools.py::list_home_appliances
+tests: []
+links: {}
+notes: ''

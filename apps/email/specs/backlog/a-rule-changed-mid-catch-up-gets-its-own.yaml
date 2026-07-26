@@ -1,0 +1,23 @@
+kind: specification
+id: email.backlog.a-rule-changed-mid-catch-up-gets-its-own
+title: A rule edited during a catch-up still gets its turn
+state: live
+autonomy: gated
+behavior: >
+  A rule written or edited while a catch-up is already running is not swallowed by it: once the
+  running catch-up finishes, the newer change triggers its own catch-up, exactly once. A person
+  who adds two rules in quick succession gets both applied to the backlog.
+implements:
+- apps/email/runner.py::_reprocess_unmatched
+- apps/email/data.py::get_reeval_trigger
+tests:
+- type: unit
+  path: tests/evolve/email/test_reeval_on_rules_change.py
+  rubric: >
+    Driving the catch-up path with the data layer stubbed: unchanged rules read no history and
+    make no calls to Google; a rule change drains the backlog exactly once and then goes quiet;
+    an edit or an enable re-triggers, a delete does not; a backlog larger than one pass drains
+    over several passes, newest first, over the set frozen when catch-up began, and terminates;
+    a rule changed mid-catch-up gets its own later catch-up.
+links: {}
+notes: ''

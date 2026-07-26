@@ -1,0 +1,18 @@
+kind: specification
+id: email.accounts.several-mailboxes-each-on-its-own
+title: Several mailboxes, each on its own
+state: live
+autonomy: gated
+behavior: >
+  A person may connect more than one mailbox. Each keeps its own rules, its own record of what
+  was done, and its own place in the mail stream, so nothing about one mailbox affects another.
+  With a single mailbox connected the app never asks which one — the picker only appears from
+  the second mailbox onwards, and each screen says which mailbox it is showing.
+implements:
+- apps/email/data.py::list_accounts
+- apps/email/data.py::list_rules
+- apps/email/ui/EmailApp.jsx::RulesTab
+- apps/email/ui/EmailApp.jsx::LabelsTab
+tests: []
+links: {}
+notes: ''

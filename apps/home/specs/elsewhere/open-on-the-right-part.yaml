@@ -1,0 +1,15 @@
+kind: specification
+id: home.elsewhere.open-on-the-right-part
+title: Opening straight to the right part of the app
+state: live
+autonomy: gated
+behavior: >
+  Skipper can open the Home app on any of its parts — upkeep, issues, appliances, insurance or
+  contractors — so someone asked to fill something in lands on the page that needs it rather than
+  on a tab they have to find their way out of. An unrecognised destination opens on upkeep.
+implements:
+- apps/home/ui/HomeApp.jsx::HomeApp
+- apps/home/ui/index.js
+tests: []
+links: {}
+notes: ''

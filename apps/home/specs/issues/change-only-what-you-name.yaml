@@ -1,0 +1,16 @@
+kind: specification
+id: home.issues.change-only-what-you-name
+title: Changing only what you name
+state: live
+autonomy: gated
+behavior: >
+  Updating an issue changes only the fields supplied and leaves the rest alone; an update naming
+  nothing is refused as having nothing to change, and an unknown issue is reported as not found
+  rather than created.
+implements:
+- apps/home/tools.py::update_home_issue
+- apps/home/data.py::update_issue
+- apps/home/routes.py::api_update_home_issue
+tests: []
+links: {}
+notes: ''

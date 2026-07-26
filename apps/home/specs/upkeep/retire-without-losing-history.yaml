@@ -1,0 +1,17 @@
+kind: specification
+id: home.upkeep.retire-without-losing-history
+title: Retiring a task without losing its history
+state: live
+autonomy: gated
+behavior: >
+  A task switched off disappears from the everyday list, from what's-due and from the household's
+  backlog, while keeping its record and every completion logged against it; switching it back on
+  restores it exactly as it was. A seasonal job never has to be deleted to get it out of the way.
+implements:
+- apps/home/tools.py::update_home_task
+- apps/home/data.py::get_all_tasks
+- apps/home/data.py::get_due_tasks
+- apps/home/hooks.py::_home_task_is_active
+tests: []
+links: {}
+notes: ''

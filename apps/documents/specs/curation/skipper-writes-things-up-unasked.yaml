@@ -1,0 +1,20 @@
+kind: specification
+id: documents.curation.skipper-writes-things-up-unasked
+title: Skipper writes things up without being asked
+state: live
+autonomy: gated
+behavior: >
+  On its own rhythm, with nobody in the conversation, Skipper reviews what it has learned since it last
+  looked and writes it up as documents — a page about the dog, a page about a person's activities, a
+  page about the cars — creating new ones or growing existing ones. The documents appearing in the
+  library, filed into folders, is the entire visible effect: nobody is told it happened and nothing asks
+  for permission first.
+implements:
+- apps/documents/domain.py::document_domain_handler
+- apps/documents/handlers.py
+- prompts/DOCUMENT_THINK.md
+tests: []
+links: {}
+notes: >
+  The most consequential behaviour in this app: unattended authoring over everything Skipper has heard.
+  Its bounds are specified separately under documents.boundaries.

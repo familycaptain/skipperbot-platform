@@ -1,0 +1,18 @@
+kind: specification
+id: medical.members.one-chooser-scopes-everything
+title: One chooser narrows every tab
+state: live
+autonomy: gated
+behavior: >
+  Choosing a person at the top of the app narrows every tab at once — medications, treatments,
+  events, labs, appointments and equipment — and the choice survives switching between tabs, so
+  nobody reads one person's row believing it belongs to another. "All Members" shows the whole
+  household in one view, and every row then says whose it is.
+implements:
+- apps/medical/ui/MedicalApp.jsx::MedicalApp
+- apps/medical/ui/MedicalApp.jsx::MedicationsTab
+- apps/medical/ui/MedicalApp.jsx::LabsTab
+- apps/medical/ui/MedicalApp.jsx::AppointmentsTab
+tests: []
+links: {}
+notes: ''

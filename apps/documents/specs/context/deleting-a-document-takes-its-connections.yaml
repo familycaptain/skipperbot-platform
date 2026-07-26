@@ -1,0 +1,13 @@
+kind: specification
+id: documents.context.deleting-a-document-takes-its-connections
+title: Deleting a document takes its connections with it
+state: live
+autonomy: gated
+behavior: >
+  Deleting a document removes every connection to it at the same time, so no project is left listing a
+  write-up that no longer exists and no stale reference survives to be followed.
+implements:
+- apps/documents/store.py::delete_doc
+tests: []
+links: {}
+notes: ''

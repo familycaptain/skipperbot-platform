@@ -1,0 +1,17 @@
+kind: specification
+id: documents.library.tags-are-lower-case-whatever-you-type
+title: Tags are lower case whatever you type
+state: live
+autonomy: gated
+behavior: >
+  Tags are stored trimmed and in lower case, and blank ones are dropped, so "Research", "research "
+  and "research" are one tag rather than three. Matching a tag when searching or filtering ignores
+  case in both directions. Giving no tags at all leaves a document untagged; it is still findable by
+  its words.
+implements:
+- apps/documents/store.py::create_doc
+- apps/documents/store.py::update_doc_meta
+- apps/documents/data.py::search_documents_hybrid
+tests: []
+links: {}
+notes: ''

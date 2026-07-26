@@ -1,0 +1,14 @@
+kind: specification
+id: documents.editor.preview-shows-the-formatting
+title: Preview shows how it will read
+state: live
+autonomy: gated
+behavior: >
+  A document can be flipped between its markdown source and how it will read — headings, lists, bold,
+  tables, code and links — and back again, without saving or losing the cursor's work. Opening a
+  document always starts on the source side.
+implements:
+- apps/documents/ui/DocumentEditor.jsx::markdownToHtml
+tests: []
+links: {}
+notes: ''

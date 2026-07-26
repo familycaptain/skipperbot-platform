@@ -1,0 +1,16 @@
+kind: specification
+id: medical.appointments.countdown
+title: How close an appointment is
+state: live
+autonomy: gated
+behavior: >
+  Every appointment still ahead carries how far off it is, in the coarsest useful unit: minutes
+  inside two hours, hours inside the day, "tomorrow", otherwise days — and one whose time has
+  passed reads as past. The nearer it gets the more emphatically it is marked, so the next thing
+  needing attention is obvious without reading any dates.
+implements:
+- apps/medical/ui/MedicalApp.jsx::apptCountdown
+- apps/medical/ui/MedicalApp.jsx::ApptCard
+tests: []
+links: {}
+notes: ''

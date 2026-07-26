@@ -1,0 +1,19 @@
+kind: specification
+id: medical.appointments.reminders-day-and-two-hours-before
+title: A reminder the day before and two hours before
+state: live
+autonomy: gated
+behavior: >
+  Each appointment produces two reminders, one about a day ahead and one about two hours ahead,
+  and each fires at most once — the appointment carries a record of which have gone out, shown on
+  it in the app, so a restart or a slow tick never means being told twice. A reminder names whose
+  appointment it is, what it is, who it is with and the local time; a cancelled appointment
+  produces none, and neither does one already in the past.
+implements:
+- apps/medical/__init__.py::_appointment_reminder_provider
+- apps/medical/data.py::get_appointments_due_for_notification
+- apps/medical/data.py::mark_appointment_notified
+- apps/medical/ui/MedicalApp.jsx::NotifyBadges
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: documents.enhance.improving-writes-over-the-document
+title: An improvement is saved over the document
+state: live
+autonomy: gated
+behavior: >
+  An improvement is not a draft to approve: the rewritten document is saved in place the moment it is
+  produced, and the previous text is gone. Anyone who wants to keep the earlier wording has to have
+  copied it out first. What the improvement did is reported afterwards, not offered beforehand.
+implements:
+- apps/documents/tools.py::enhance_doc
+- apps/documents/store.py::update_doc
+tests: []
+links: {}
+notes: >
+  Recorded as the current bargain, not as an endorsement of it — an AI rewrite with no earlier copy and
+  no confirmation step is the riskiest thing this app does to a person's text.

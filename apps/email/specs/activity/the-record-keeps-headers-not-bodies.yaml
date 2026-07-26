@@ -1,0 +1,17 @@
+kind: specification
+id: email.activity.the-record-keeps-headers-not-bodies
+title: The record keeps the envelope, never the letter
+state: live
+autonomy: gated
+behavior: >
+  What is kept about a processed message is who it was from, what it was about, when it arrived
+  and what was done to it — never the message text. Message text is fetched from the mailbox
+  each time somebody asks to see it and is not stored, so disconnecting a mailbox or losing
+  access removes any way to read the mail through Skipper.
+implements:
+- apps/email/data.py::log_processed
+- apps/email/migrations/001_initial.sql
+- apps/email/routes.py::api_email_message
+tests: []
+links: {}
+notes: ''

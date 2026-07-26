@@ -1,0 +1,18 @@
+kind: specification
+id: automation.reading.a-missing-sensor-is-never-guessed
+title: A reading that does not exist is never invented
+state: live
+autonomy: gated
+behavior: >
+  When no sensor matches what was asked about, Skipper says it cannot find one and offers the forecast
+  instead — it never produces a number from memory, an estimate, or a plausible-sounding value. When
+  several sensors could be meant it names them and asks which, rather than picking one and reporting it
+  as the answer.
+implements:
+- apps/automation/guide.md
+- apps/automation/devices.py::build_voice_alias_block
+tests: []
+links: {}
+notes: >
+  Written because the failure it prevents is the worst one this app can have: a confident fabricated
+  temperature is indistinguishable from a real reading.

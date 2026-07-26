@@ -1,0 +1,20 @@
+kind: specification
+id: documents.boundaries.curated-pages-are-visible-to-the-whole-household
+title: What it writes up is visible to everyone in the household
+state: live
+autonomy: gated
+behavior: >
+  A page curation writes goes into the same shared library as everything else, readable by every
+  signed-in member with no separate step and no per-page audience. Since curation is directed at exactly
+  the kind of thing a household keeps privately — health, medication, money, accounts — the practical
+  consequence is that whatever Skipper is told by one person may be written up where the rest of the
+  household can read it.
+implements:
+- apps/documents/domain.py::document_domain_handler
+- prompts/DOCUMENT_THINK.md
+- agent.py::api_list_documents
+tests: []
+links: {}
+notes: >
+  Recorded as a consequence to be decided about, not as an endorsement: nothing in the app narrows the
+  audience of a curated page. See the audit findings.

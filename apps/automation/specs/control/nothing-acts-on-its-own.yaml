@@ -1,0 +1,19 @@
+kind: specification
+id: automation.control.nothing-acts-on-its-own
+title: Nothing here fires by itself
+state: live
+autonomy: gated
+behavior: >
+  This app holds no rules of its own that trigger anything: every change to the house traces back to a
+  person asking for it in that moment. The only thing that happens unattended is the hourly refresh of
+  the list of devices, which reads and never touches anything in the house. Standing rules belong to
+  Home Assistant's own automations or to Skipper's Behaviors and Schedules — so a household can account
+  for anything that happened by looking at what was asked.
+implements:
+- apps/automation/hooks.py::_refresh_loop
+- apps/automation/manifest.yaml
+tests: []
+links: {}
+notes: >
+  Worth stating because the app's name invites the opposite assumption: it is a remote control, not a
+  rules engine.

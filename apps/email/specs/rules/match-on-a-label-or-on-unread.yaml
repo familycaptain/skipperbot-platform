@@ -1,0 +1,16 @@
+kind: specification
+id: email.rules.match-on-a-label-or-on-unread
+title: Match on a label the mail already has, or on unread
+state: live
+autonomy: gated
+behavior: >
+  A rule can require that the message already carries a particular label — named as the person
+  sees it in Gmail, whatever its capitalisation — or that it is still unread. When the mailbox's
+  labels cannot be read, a label condition stops holding rather than matching the wrong thing,
+  so a rule under-acts instead of mislabelling.
+implements:
+- apps/email/runner.py::_matches
+- apps/email/runner.py::_build_label_map
+tests: []
+links: {}
+notes: ''

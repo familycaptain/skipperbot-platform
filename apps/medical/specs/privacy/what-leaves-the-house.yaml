@@ -1,0 +1,20 @@
+kind: specification
+id: medical.privacy.what-leaves-the-house
+title: What leaves the house, and why
+state: live
+autonomy: gated
+behavior: >
+  Medical records are stored only in the household's own database — no outside service is asked to
+  hold them, and the whole record stays readable with no internet connection. They do leave once
+  each, though: every record added or changed is passed to whichever language model the household
+  has configured, to extract facts worth remembering, and on a default install that model is a
+  hosted one outside the house. A household that wants no medical data leaving it has to point
+  that model at something local.
+implements:
+- app_platform/memory.py::digest_record
+- providers/compat.py::chat_completion
+tests: []
+links: {}
+notes: >
+  Worth stating precisely because the app's own help text says this data never leaves the
+  household: true of storage, not of the memory-extraction pass.

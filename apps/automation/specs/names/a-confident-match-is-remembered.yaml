@@ -1,0 +1,21 @@
+kind: specification
+id: automation.names.a-confident-match-is-remembered
+title: A confident match is remembered without being asked
+state: live
+autonomy: gated
+behavior: >
+  When someone uses a plain name for the first time and one thing is clearly the best match — a good
+  match outright, and comfortably ahead of the runner-up — that name is saved for next time, so the
+  same request is instant afterwards and the household's vocabulary grows by being used. A weak match,
+  or a close-run field where two things score alike, is never saved: the person is offered the
+  candidates instead. A name someone taught deliberately is never overwritten by a guess.
+implements:
+- apps/automation/tools.py::_maybe_learn_alias
+- apps/automation/tools.py::_resolve_entity_id
+- apps/automation/tools.py::resolve_home_assistant_entity
+tests: []
+links: {}
+notes: >
+  Learning on use is what makes the "no entity ids" promise hold up in voice, where nobody will stop
+  to teach names. The gap-to-runner-up condition is what keeps it from confidently learning the wrong
+  lamp.

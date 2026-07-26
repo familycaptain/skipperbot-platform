@@ -1,0 +1,16 @@
+kind: specification
+id: medical.labs.remove-a-whole-draw
+title: Removing a whole draw
+state: live
+autonomy: gated
+behavior: >
+  A whole draw can be removed in one action — every value for that person on that date — after a
+  confirmation that names the date, because results arrive as a sheet and are usually wrong as a
+  sheet. A date with nothing recorded leaves everything as it was.
+implements:
+- apps/medical/data.py::delete_lab_results_by_date
+- apps/medical/routes.py::api_delete_lab_results_by_date
+- apps/medical/ui/MedicalApp.jsx::LabsTab
+tests: []
+links: {}
+notes: ''

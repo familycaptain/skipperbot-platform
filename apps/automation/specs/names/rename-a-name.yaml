@@ -1,0 +1,16 @@
+kind: specification
+id: automation.names.rename-a-name
+title: Editing a name leaves only one of it
+state: live
+autonomy: gated
+behavior: >
+  Editing a taught name in the app can change the name, its target, and its note together, and
+  changing the name replaces the old one rather than leaving both spellings pointing at the thing. An
+  edit that clears the name, or that names something which is not a full entity id, is refused with
+  the reason and the original is left as it was.
+implements:
+- apps/automation/routes.py::api_edit_alias
+- apps/automation/ui/AutomationApp.jsx::NamesManager
+tests: []
+links: {}
+notes: ''

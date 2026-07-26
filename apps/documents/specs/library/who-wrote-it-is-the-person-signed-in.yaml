@@ -1,0 +1,17 @@
+kind: specification
+id: documents.library.who-wrote-it-is-the-person-signed-in
+title: Who wrote it is whoever was signed in
+state: live
+autonomy: gated
+behavior: >
+  A document records its author as the person actually signed in, not whatever name the request
+  claimed, so nobody can be made to appear to have written something they did not. The author never
+  changes afterwards: a document someone else later edits still credits the person who started it.
+implements:
+- agent.py::api_create_document
+- apps/documents/store.py::create_doc
+tests: []
+links: {}
+notes: >
+  The claimed author is discarded rather than trusted because the same create path is reachable from
+  chat, where the name in the request is model-supplied.

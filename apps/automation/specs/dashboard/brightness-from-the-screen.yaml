@@ -1,0 +1,17 @@
+kind: specification
+id: automation.dashboard.brightness-from-the-screen
+title: Brightness from the screen
+state: live
+autonomy: gated
+behavior: >
+  A light that is on and can be dimmed shows its brightness as a percentage and a slider beside its
+  control; moving the slider sets that brightness immediately. Lights that are off, and lights that
+  cannot report a brightness, show the control alone — the app never offers a dimmer that would do
+  nothing.
+implements:
+- apps/automation/routes.py::_shape
+- apps/automation/routes.py::api_control
+- apps/automation/ui/AutomationApp.jsx::EntityRow
+tests: []
+links: {}
+notes: ''

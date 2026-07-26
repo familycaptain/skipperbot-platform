@@ -1,0 +1,20 @@
+kind: specification
+id: home.upkeep.due-at-a-glance
+title: Overdue, due soon, or on schedule
+state: live
+autonomy: gated
+behavior: >
+  Every task carries one of four due signals worked out from its next due date against today:
+  overdue, due within the coming week, on schedule, or no due date set at all. The app groups the
+  list under those same four headings with overdue first, and a listing given in conversation
+  marks each task the same way, so "what needs doing" reads identically wherever it is asked.
+implements:
+- apps/home/ui/HomeApp.jsx::taskStatus
+- apps/home/ui/HomeApp.jsx::MaintenanceTab
+- apps/home/ui/HomeApp.jsx::TaskCard
+- apps/home/tools.py::list_home_tasks
+tests: []
+links: {}
+notes: >
+  A task with no due date is deliberately its own group rather than being treated as on schedule:
+  nothing is claimed about a job the household never dated.

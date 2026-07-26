@@ -1,0 +1,17 @@
+kind: specification
+id: medical.treatments.upcoming-treatments
+title: Treatments due soon
+state: live
+autonomy: gated
+behavior: >
+  Asked what treatments are coming up, Skipper answers with the ones still in use that fall due
+  within the next week — or any window asked for — soonest first, including any already overdue. A
+  stopped treatment never appears however overdue its date looks, and treatments due within three
+  days also show on the household's attention list under Treatment.
+implements:
+- apps/medical/data.py::get_due_treatments
+- apps/medical/routes.py::api_upcoming_treatments
+- apps/medical/__init__.py::_treatment_backlog
+tests: []
+links: {}
+notes: ''

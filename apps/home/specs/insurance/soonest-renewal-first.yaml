@@ -1,0 +1,13 @@
+kind: specification
+id: home.insurance.soonest-renewal-first
+title: Soonest renewal first
+state: live
+autonomy: gated
+behavior: >
+  Policies are listed by renewal date with the soonest first and any policy without a renewal date
+  last, so the order on screen is the order the household has to act in.
+implements:
+- apps/home/data.py::get_all_policies
+tests: []
+links: {}
+notes: ''

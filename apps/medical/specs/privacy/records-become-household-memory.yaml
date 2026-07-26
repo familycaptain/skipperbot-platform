@@ -1,0 +1,19 @@
+kind: specification
+id: medical.privacy.records-become-household-memory
+title: Records become memory the whole house can ask about
+state: live
+autonomy: gated
+behavior: >
+  Every medical record added, changed or removed becomes facts in Skipper's memory so that it can
+  answer about them in conversation later — and that memory is one household-wide store, not one
+  per person, so a fact drawn from one member's lab result can surface in anybody else's
+  conversation. Removing the record does not withdraw what was already remembered; it adds a
+  memory that it was removed.
+implements:
+- apps/medical/data.py::create_medication
+- apps/medical/data.py::create_lab_result
+- apps/medical/data.py::BACKFILL_ENTITIES
+- app_platform/memory.py::digest_record
+tests: []
+links: {}
+notes: ''

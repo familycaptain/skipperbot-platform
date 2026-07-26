@@ -1,0 +1,15 @@
+kind: specification
+id: medical.appointments.nudge-about-unwritten-visits
+title: A daily nudge about visits never written up
+state: live
+autonomy: gated
+behavior: >
+  While any past appointment has nothing written up against it, the household's admins get one
+  nudge a day listing them — whose, what, and the date — at most once a day and inside waking
+  hours. Nothing outstanding means nobody is nudged, and nobody outside the admins is nudged at
+  all.
+implements:
+- apps/medical/__init__.py::_unlogged_appointment_nag_provider
+tests: []
+links: {}
+notes: ''

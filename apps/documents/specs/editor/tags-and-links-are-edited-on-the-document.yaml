@@ -1,0 +1,15 @@
+kind: specification
+id: documents.editor.tags-and-links-are-edited-on-the-document
+title: Tags and links are edited on the document itself
+state: live
+autonomy: gated
+behavior: >
+  A document's tags and the items it is attached to are shown along the top of it and can be added or
+  removed one at a time from there, with no separate settings screen and no need to save the text.
+  Removing the last tag leaves the document untagged rather than refusing, and a document attached to
+  nothing says so instead of showing an empty space.
+implements:
+- apps/documents/ui/DocumentEditor.jsx::DocMetaBar
+tests: []
+links: {}
+notes: ''

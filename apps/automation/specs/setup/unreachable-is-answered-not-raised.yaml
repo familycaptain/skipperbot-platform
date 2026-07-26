@@ -1,0 +1,15 @@
+kind: specification
+id: automation.setup.unreachable-is-answered-not-raised
+title: Home Assistant being unreachable is an answer, not a crash
+state: live
+autonomy: gated
+behavior: >
+  When Home Assistant is down, refuses the token, or does not respond within about fifteen seconds,
+  the person is told what went wrong — refused, unreachable, or the reason Home Assistant gave — as
+  the answer to what they asked. Nothing hangs indefinitely, no request is retried behind their back,
+  and the next thing they ask tries again from scratch.
+implements:
+- apps/automation/tools.py::_ha_request
+tests: []
+links: {}
+notes: ''

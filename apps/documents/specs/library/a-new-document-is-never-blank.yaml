@@ -1,0 +1,16 @@
+kind: specification
+id: documents.library.a-new-document-is-never-blank
+title: A new document is never blank
+state: live
+autonomy: gated
+behavior: >
+  A document asked for with nothing written in it yet opens with its own title as its first heading,
+  so there is always something on the page to write under rather than an empty box. Asking for a
+  document with no title at all is refused and nothing is created. Every document gets its own
+  reference the moment it exists, which is how it can be reopened, linked to, or asked about later.
+implements:
+- apps/documents/store.py::create_doc
+- apps/documents/tools.py::create_doc
+tests: []
+links: {}
+notes: ''

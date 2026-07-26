@@ -1,0 +1,14 @@
+kind: specification
+id: documents.editor.renaming-in-place
+title: Renaming happens in place
+state: live
+autonomy: gated
+behavior: >
+  A document is renamed by clicking its title where it sits and typing over it; the new name shows
+  immediately on the document and on its window. Pressing escape or clicking away abandons the rename,
+  and a blank name is not accepted.
+implements:
+- apps/documents/ui/DocumentEditor.jsx::handleRename
+tests: []
+links: {}
+notes: ''

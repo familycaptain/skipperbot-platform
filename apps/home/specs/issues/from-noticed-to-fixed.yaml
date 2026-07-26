@@ -1,0 +1,18 @@
+kind: specification
+id: home.issues.from-noticed-to-fixed
+title: From noticed to fixed, and back if it returns
+state: live
+autonomy: gated
+behavior: >
+  An issue moves from open, through being worked on, to fixed. Marking it fixed stamps the day and
+  shows it struck through rather than removing it, so the house keeps a record of what has gone
+  wrong and when it was dealt with. A problem that comes back can be reopened and rejoins the open
+  list.
+implements:
+- apps/home/tools.py::update_home_issue
+- apps/home/data.py::update_issue
+- apps/home/routes.py::api_update_home_issue
+- apps/home/ui/HomeApp.jsx::HomeIssueCard
+tests: []
+links: {}
+notes: ''

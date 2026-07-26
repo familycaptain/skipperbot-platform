@@ -1,0 +1,15 @@
+kind: specification
+id: home.attachments.attachments-do-not-outlive-their-record
+title: Attachments do not outlive their record
+state: live
+autonomy: gated
+behavior: >
+  Deleting an issue, appliance or policy removes the link from its attachments, so no receipt or
+  photo is left pointing at a record that no longer exists.
+implements:
+- apps/home/migrations/003_home_issues.sql
+- apps/home/migrations/005_appliances.sql
+- apps/home/migrations/006_insurance.sql
+tests: []
+links: {}
+notes: ''

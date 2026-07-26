@@ -1,0 +1,17 @@
+kind: specification
+id: email.sync.a-pass-is-bounded
+title: One pass never runs unbounded
+state: live
+autonomy: gated
+behavior: >
+  A single pass takes a bounded batch of the newest mail rather than however much has piled up,
+  so a mailbox that has been left alone for months cannot make one pass run for minutes or hold
+  up the other mailboxes waiting behind it.
+implements:
+- apps/email/runner.py::_process_account
+- apps/email/gmail_client.py::fetch_new_messages
+tests: []
+links: {}
+notes: >
+  Boundedness is the intent; how much mail the bound leaves behind, and whether that mail is
+  ever revisited, is a known gap recorded in the audit findings rather than stated here.

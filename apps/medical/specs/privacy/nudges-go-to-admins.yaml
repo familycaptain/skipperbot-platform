@@ -1,0 +1,17 @@
+kind: specification
+id: medical.privacy.nudges-go-to-admins
+title: The recurring nudges go to admins only
+state: live
+autonomy: gated
+behavior: >
+  The nudges Medical raises of its own accord — equipment upkeep overdue, appointments with
+  nothing written up — go to the household's admins rather than to everyone, at most one of each
+  per day, and at a time inside waking hours rather than the moment the condition is noticed. With
+  no admin account set up nobody is nudged and nothing is held over for later.
+implements:
+- apps/medical/__init__.py::_equipment_maintenance_nag_provider
+- apps/medical/__init__.py::_unlogged_appointment_nag_provider
+- nag_registry.py::run_all_nag_providers
+tests: []
+links: {}
+notes: ''

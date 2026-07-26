@@ -1,0 +1,34 @@
+kind: specification
+id: documents.curation.a-round-reads-a-bounded-batch
+title: A round reads a bounded batch and resumes where it stopped
+state: live
+autonomy: gated
+behavior: >
+  One round considers a fixed number of the oldest things Skipper has not yet written up — seventy-five
+  by default, adjustable per household — and remembers where it stopped, so the next round carries on
+  from there. What a round costs therefore stays roughly the same as the household's history grows: an
+  install with years behind it does not read years of it every hour, and nothing is read twice.
+implements:
+- apps/documents/domain.py::_observe
+- apps/documents/domain.py::_memories_per_cycle
+- data_layer/memories.py::load_after_cursor
+tests:
+- type: unit
+  path: tests/evolve/platform/test_doc_observe_bounded_memories.py
+  rubric: >
+    Offline, database-free. The read behind a round is bounded and resumable: with no bookmark it takes
+    the oldest window; with one it takes only what came after it, disambiguating items recorded in the
+    same instant; with a bookmark that no longer exists it takes the most recent window instead of the
+    whole history; it never returns more than the limit; it never fetches the stored understanding
+    vectors it does not need; and the bookmark and limit travel as query parameters rather than being
+    pasted into the query text.
+- type: unit
+  path: tests/evolve/platform/test_doc_observe_catchup_counters.py
+  rubric: >
+    The round's own view of how far behind it is comes from counting, not from the size of the batch it
+    just read: a bookmark far from the end reports the true remaining total, a first run reports the
+    whole history so a fresh large install is recognised as behind, and a bookmark that has been deleted
+    reports only the window actually loaded. A window that turns out to be entirely bookkeeping chatter
+    still moves the bookmark forward, so a round can never stall on it forever.
+links: {}
+notes: ''

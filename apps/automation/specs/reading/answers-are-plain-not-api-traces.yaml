@@ -1,0 +1,14 @@
+kind: specification
+id: automation.reading.answers-are-plain-not-api-traces
+title: Answers are plain sentences, not API traces
+state: live
+autonomy: gated
+behavior: >
+  A normal answer about the house is a sentence — "yes, the garage door is closed" — with no entity
+  ids, domains, device classes or raw states in it. The technical detail appears only when the person
+  is asking for it: troubleshooting, checking a name, or wiring something up.
+implements:
+- apps/automation/guide.md
+tests: []
+links: {}
+notes: ''

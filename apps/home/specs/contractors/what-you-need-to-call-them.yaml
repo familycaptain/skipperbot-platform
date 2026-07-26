@@ -1,0 +1,16 @@
+kind: specification
+id: home.contractors.what-you-need-to-call-them
+title: The card carries what you need to reach them
+state: live
+autonomy: gated
+behavior: >
+  A contractor's phone number and email are shown as a tap-to-dial and tap-to-mail link, and when
+  they were last used is given in plain terms — yesterday, three months ago, two years ago —
+  rather than as a raw date, so how stale the relationship is reads at a glance. Anything not
+  recorded is simply absent rather than shown as an empty field.
+implements:
+- apps/home/ui/HomeApp.jsx::ContractorCard
+- apps/home/ui/HomeApp.jsx::fmtRelative
+tests: []
+links: {}
+notes: ''

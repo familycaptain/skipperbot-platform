@@ -1,0 +1,18 @@
+kind: specification
+id: home.categories.rename-and-recolour
+title: Renaming or recolouring a category
+state: live
+autonomy: gated
+behavior: >
+  Renaming or recolouring a category updates it everywhere the pick-list and the filters are
+  shown. Tasks already filed under the old name keep the label they were given — a category is a
+  suggestion for filing, not a shared record the tasks point at — so no task is silently re-filed
+  by an edit to the list.
+implements:
+- apps/home/tools.py::update_task_category
+- apps/home/data.py::update_task_category
+- apps/home/routes.py::api_update_task_category
+- apps/home/ui/HomeApp.jsx::CategoriesManager
+tests: []
+links: {}
+notes: ''

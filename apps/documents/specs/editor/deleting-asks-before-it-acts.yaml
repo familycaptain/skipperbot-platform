@@ -1,0 +1,14 @@
+kind: specification
+id: documents.editor.deleting-asks-before-it-acts
+title: Deleting asks before it acts
+state: live
+autonomy: gated
+behavior: >
+  Deleting the open document takes two deliberate actions: the button turns into a yes-or-no question
+  and only the second answer deletes. Declining leaves the document exactly as it was. Once deleted the
+  window returns to the list rather than sitting on a document that no longer exists.
+implements:
+- apps/documents/ui/DocumentEditor.jsx::handleDelete
+tests: []
+links: {}
+notes: ''

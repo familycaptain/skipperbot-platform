@@ -1,0 +1,16 @@
+kind: specification
+id: documents.finding.listing-by-author-or-by-what-it-is-attached-to
+title: Listing by author or by what it is attached to
+state: live
+autonomy: gated
+behavior: >
+  Documents can be listed by who wrote them or by the item they are attached to, so "the documents on
+  the kitchen project" and "everything Skipper wrote up itself" are both answerable. Names are matched
+  without regard to case. Combining narrowings requires all of them to hold.
+implements:
+- apps/documents/store.py::list_docs
+- agent.py::api_list_documents
+- agent.py::api_docs_for_entity
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: automation.devices.the-device-picture-refreshes-hourly
+title: The list of devices keeps itself current
+state: live
+autonomy: gated
+behavior: >
+  Skipper keeps its own list of the household's physical devices and refreshes it from Home Assistant
+  on start and about once an hour thereafter, so a device added or renamed in Home Assistant turns up
+  without anyone re-syncing anything. A refresh that fails — Home Assistant down, credentials wrong —
+  leaves the previous list in place and is simply tried again on the next cycle, so nothing is lost by
+  Home Assistant being offline when Skipper starts.
+implements:
+- apps/automation/hooks.py::_refresh_loop
+- apps/automation/devices.py::fetch_and_save
+tests: []
+links: {}
+notes: ''

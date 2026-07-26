@@ -1,0 +1,17 @@
+kind: specification
+id: medical.labs.correct-a-value-in-place
+title: Correcting a value where it sits
+state: live
+autonomy: gated
+behavior: >
+  A recorded value is corrected by clicking it in the grid and typing the new number, which is
+  saved as soon as the field is left or Enter is pressed; abandoning the edit leaves the old value
+  standing. Correcting a value changes nothing else about the draw — not its date, not which visit
+  it belongs to.
+implements:
+- apps/medical/ui/MedicalApp.jsx::LabResultRow
+- apps/medical/data.py::update_lab_result
+- apps/medical/routes.py::api_update_lab_result
+tests: []
+links: {}
+notes: ''

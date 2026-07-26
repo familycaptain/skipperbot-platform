@@ -1,0 +1,21 @@
+kind: specification
+id: documents.curation.the-cycle-never-speaks-to-anyone
+title: The cycle never speaks to anyone
+state: live
+autonomy: gated
+behavior: >
+  Background curation produces documents and nothing else. It never messages, announces, notifies or
+  otherwise starts a conversation with a member of the household, so nobody is interrupted by Skipper
+  thinking. A person discovers what it wrote by looking, or by asking.
+implements:
+- apps/documents/domain.py::DOC_EXCLUDED_TOOLS
+- apps/documents/domain.py::document_domain_handler
+tests:
+- type: unit
+  path: tests/evolve/platform/test_doc_think_lean_baseline.py
+  rubric: >
+    Against the real ability registry: the outbound-messaging abilities (announcing to the household and
+    sending a notification) are absent from the surface the curation cycle is given, so no round can
+    reach them however it is steered.
+links: {}
+notes: ''

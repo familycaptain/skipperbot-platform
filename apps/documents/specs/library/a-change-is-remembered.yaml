@@ -1,0 +1,18 @@
+kind: specification
+id: documents.library.a-change-is-remembered
+title: Writing something down is itself remembered
+state: live
+autonomy: gated
+behavior: >
+  Creating, changing or deleting a document is recorded in the household's activity history with the
+  document's title, its new length and who did it, so "when did we write that up?" is answerable later.
+  A document written or changed in conversation also feeds Skipper's own memory of what it knows, which
+  is how it can later answer "we wrote something about that, didn't we?".
+implements:
+- apps/documents/store.py::create_doc
+- apps/documents/store.py::update_doc
+- apps/documents/store.py::delete_doc
+- apps/documents/tools.py::create_doc
+tests: []
+links: {}
+notes: ''

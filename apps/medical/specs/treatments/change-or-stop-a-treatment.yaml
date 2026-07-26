@@ -1,0 +1,18 @@
+kind: specification
+id: medical.treatments.change-or-stop-a-treatment
+title: Changing or stopping a treatment
+state: live
+autonomy: gated
+behavior: >
+  A treatment's name, description, interval, next-due date and notes can all be changed later, and
+  marking one inactive takes it off every due list while keeping its history readable. Removing a
+  treatment removes its whole history with it, after a confirmation that names it.
+implements:
+- apps/medical/data.py::update_treatment
+- apps/medical/data.py::delete_treatment
+- apps/medical/routes.py::api_update_treatment
+- apps/medical/routes.py::api_delete_treatment
+- apps/medical/ui/MedicalApp.jsx::TreatmentCard
+tests: []
+links: {}
+notes: ''

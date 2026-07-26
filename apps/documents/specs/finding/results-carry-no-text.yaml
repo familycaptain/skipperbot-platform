@@ -1,0 +1,16 @@
+kind: specification
+id: documents.finding.results-carry-no-text
+title: Lists and results carry no document text
+state: live
+autonomy: gated
+behavior: >
+  A list or a set of search results carries each document's title, tags, length, author, when it
+  changed and what it is attached to — never its text. So browsing a large library stays cheap and no
+  private paragraph travels to a screen that was only showing an index. Reading the text takes opening
+  the document.
+implements:
+- apps/documents/data.py::_row_no_content
+- apps/documents/store.py::list_docs
+tests: []
+links: {}
+notes: ''

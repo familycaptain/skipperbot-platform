@@ -1,0 +1,17 @@
+kind: specification
+id: medical.equipment.remove-equipment
+title: Removing a device
+state: live
+autonomy: gated
+behavior: >
+  Removing a device removes its upkeep tasks and their completion history with it, after a
+  confirmation that says so, because upkeep of a machine that is gone is not work anybody has.
+  Keeping the history is what marking a device inactive is for.
+implements:
+- apps/medical/data.py::delete_equipment
+- apps/medical/data.py::delete_equip_task
+- apps/medical/routes.py::api_delete_equipment
+- apps/medical/ui/MedicalApp.jsx::EquipmentCard
+tests: []
+links: {}
+notes: ''

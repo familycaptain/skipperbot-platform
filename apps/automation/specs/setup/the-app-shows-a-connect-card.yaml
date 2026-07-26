@@ -1,0 +1,17 @@
+kind: specification
+id: automation.setup.the-app-shows-a-connect-card
+title: With nothing connected, the app offers to connect
+state: live
+autonomy: gated
+behavior: >
+  Opening the Automation app before Home Assistant is connected shows a single card explaining what
+  is missing, where to set it, and how to make a token in Home Assistant — not an empty dashboard or
+  a wall of controls with nothing behind them. Once it is configured the app opens on the live
+  dashboard and shows at a glance whether the connection is up.
+implements:
+- apps/automation/ui/AutomationApp.jsx::SetupCard
+- apps/automation/ui/AutomationApp.jsx::AutomationApp
+- apps/automation/routes.py::api_status
+tests: []
+links: {}
+notes: ''

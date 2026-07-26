@@ -1,0 +1,18 @@
+kind: specification
+id: home.insurance.find-a-policy
+title: Finding a policy
+state: live
+autonomy: gated
+behavior: >
+  Searching matches a policy on its provider, policy number, kind, what it covers or its notes
+  whatever the case. The kind filter offers only the kinds the household actually holds, while the
+  kind field on the add and edit forms suggests the common ones as well, so an unusual policy can
+  still be filed and then found.
+implements:
+- apps/home/data.py::search_policies
+- apps/home/data.py::get_policy_types
+- apps/home/routes.py::api_list_home_policies
+- apps/home/ui/HomeApp.jsx::InsuranceTab
+tests: []
+links: {}
+notes: ''

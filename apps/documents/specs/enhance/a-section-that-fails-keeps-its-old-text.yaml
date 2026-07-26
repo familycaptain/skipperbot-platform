@@ -1,0 +1,16 @@
+kind: specification
+id: documents.enhance.a-section-that-fails-keeps-its-old-text
+title: A section that cannot be rewritten keeps its old text
+state: live
+autonomy: gated
+behavior: >
+  If one section cannot be rewritten — the language service refuses, times out, or answers with
+  nothing — that section keeps the text it already had and the remaining sections are still improved. A
+  new section that cannot be written is inserted as a visibly marked placeholder rather than left as a
+  silent gap. A partial improvement never costs a person text they already had.
+implements:
+- apps/documents/tools.py::_enhance_section
+- apps/documents/tools.py::_generate_new_section
+tests: []
+links: {}
+notes: ''

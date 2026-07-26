@@ -1,0 +1,18 @@
+kind: specification
+id: medical.labs.results-grid
+title: Results read as a grid
+state: live
+autonomy: gated
+behavior: >
+  Results are read as a grid: one row per person per draw date, newest date first, one column per
+  test — so this month's value is directly above last month's and a trend can be read by eye. A
+  test with no result on a given date reads as a dash rather than as a blank or a zero, and the
+  grid can be narrowed to a single test or a single draw.
+implements:
+- apps/medical/ui/MedicalApp.jsx::LabsTab
+- apps/medical/ui/MedicalApp.jsx::LabResultRow
+- apps/medical/data.py::get_lab_results
+- apps/medical/routes.py::api_list_lab_results
+tests: []
+links: {}
+notes: ''

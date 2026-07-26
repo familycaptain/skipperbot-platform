@@ -1,0 +1,16 @@
+kind: specification
+id: home.upkeep.whats-due
+title: What is due around the house
+state: live
+autonomy: gated
+behavior: >
+  Asked what maintenance is due or overdue, Skipper answers with everything already overdue and
+  how many days late each one is, then anything falling due within the next fortnight and how
+  soon. With nothing due in that window it says so rather than reciting the whole list, and a task
+  with no due date, or one switched off, is never reported as due.
+implements:
+- apps/home/tools.py::get_overdue_home_tasks
+- apps/home/data.py::get_due_tasks
+tests: []
+links: {}
+notes: ''

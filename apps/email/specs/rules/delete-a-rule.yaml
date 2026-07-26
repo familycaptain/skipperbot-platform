@@ -1,0 +1,17 @@
+kind: specification
+id: email.rules.delete-a-rule
+title: Deleting a rule leaves the history it wrote
+state: live
+autonomy: gated
+behavior: >
+  Deleting a rule asks for confirmation and then removes it, but the mail it already acted on
+  keeps showing what was done — the labelling, archiving or marking is not undone and the
+  history is not rewritten. Those messages simply stop naming the rule that handled them, and
+  they are still counted as handled, so no later rule change re-acts on them.
+implements:
+- apps/email/routes.py::api_email_delete_rule
+- apps/email/data.py::delete_rule
+- apps/email/data.py::list_log
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: email.sync.a-pass-says-what-it-did
+title: A pass reports what it did
+state: live
+autonomy: gated
+behavior: >
+  While a pass runs it says which mailbox it is on and how far through it is; when it finishes
+  it reports how many messages it handled, how many a rule acted on, and across how many
+  mailboxes, naming the first few failures if there were any. A person who wonders whether
+  triage is working can answer that from the pass's own summary.
+implements:
+- apps/email/runner.py::run_email_sync
+tests: []
+links: {}
+notes: ''

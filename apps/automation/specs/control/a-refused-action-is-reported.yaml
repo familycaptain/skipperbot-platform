@@ -1,0 +1,16 @@
+kind: specification
+id: automation.control.a-refused-action-is-reported
+title: An action that does not take is reported, not swallowed
+state: live
+autonomy: gated
+behavior: >
+  When an action is refused — no such action, the device offline, the token not permitted to do it —
+  the person is told, with the reason Home Assistant gave, as the answer to what they asked. Nothing
+  else is attempted in its place, nothing is retried silently, and no partial success is reported as
+  a whole one.
+implements:
+- apps/automation/tools.py::call_home_assistant_service
+- apps/automation/tools.py::_ha_request
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: automation.dashboard.when-the-screen-cannot-reach-home-assistant
+title: When the screen cannot reach the house
+state: live
+autonomy: gated
+behavior: >
+  Configured but unable to reach Home Assistant, the app says so where the controls would be — with the
+  reason it was given — and shows the connection as offline beside its title, rather than presenting an
+  empty room of controls that would silently do nothing. It reads as connected only while it actually is.
+implements:
+- apps/automation/routes.py::api_status
+- apps/automation/ui/AutomationApp.jsx::DashboardView
+- apps/automation/ui/AutomationApp.jsx::AutomationApp
+tests: []
+links: {}
+notes: ''

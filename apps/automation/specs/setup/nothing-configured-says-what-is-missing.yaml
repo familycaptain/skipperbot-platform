@@ -1,0 +1,18 @@
+kind: specification
+id: automation.setup.nothing-configured-says-what-is-missing
+title: Unconfigured, it says exactly what is missing
+state: live
+autonomy: gated
+behavior: >
+  Until both the Home Assistant address and an access token have been stored, every request — read,
+  control, or connection check — answers with a setup message naming which of the two is missing and
+  where to set it, and nothing is sent over the network. The answer also says the token has to be a
+  Home Assistant long-lived access token, because that is the one thing a person cannot guess.
+implements:
+- apps/automation/tools.py::_ha_setup_error
+- apps/automation/tools.py::_ha_request
+- apps/automation/routes.py::api_status
+- apps/automation/manifest.yaml
+tests: []
+links: {}
+notes: ''

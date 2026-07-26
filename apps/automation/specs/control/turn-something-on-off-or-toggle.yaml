@@ -1,0 +1,18 @@
+kind: specification
+id: automation.control.turn-something-on-off-or-toggle
+title: Turning something on, off, or the other way
+state: live
+autonomy: gated
+behavior: >
+  "Turn off the living room lights", "toggle the office fan": the thing is worked out from the everyday
+  name or its id, and the right kind of command for what it turns out to be — a light, a switch, a fan,
+  a media player — is used, so one phrasing works across every kind of thing in the house. The answer
+  names what was acted on and what changed as a result.
+implements:
+- apps/automation/tools.py::turn_on_home_assistant_entity
+- apps/automation/tools.py::turn_off_home_assistant_entity
+- apps/automation/tools.py::toggle_home_assistant_entity
+- apps/automation/tools.py::_entity_domain
+tests: []
+links: {}
+notes: ''

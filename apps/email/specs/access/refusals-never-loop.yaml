@@ -1,0 +1,22 @@
+kind: specification
+id: email.access.refusals-never-loop
+title: A refusal is never retried forever
+state: live
+autonomy: gated
+behavior: >
+  Recovery is bounded: one retry, then the person is asked to reconnect and the failure is
+  reported. Losing access can therefore cost a pass and a notification but never a runaway loop
+  of calls to Google, and a mailbox with no access does not slow down the mailboxes that do.
+implements:
+- apps/email/gmail_client.py::_execute_with_reauth
+tests:
+- type: unit
+  path: tests/evolve/email/test_gmail_service_cache_selfheal.py
+  rubric: >
+    With Google's client, credentials and the notification shim all stubbed and no real tokens:
+    a refused call is retried exactly once against freshly re-established access and succeeds; a
+    second refusal raises without looping and asks the owner to reconnect exactly once; an error
+    that is not a refusal is passed straight through untouched; and no token material appears in
+    anything written to the log.
+links: {}
+notes: ''

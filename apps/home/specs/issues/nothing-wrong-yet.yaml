@@ -1,0 +1,24 @@
+kind: specification
+id: home.issues.nothing-wrong-yet
+title: A house with nothing logged against it
+state: live
+autonomy: gated
+behavior: >
+  A household that has never logged an issue is shown what the tab is for and prompted to log the
+  first one, not bare "no issues found" text. Once issues exist, a filter that scopes the view to
+  none of them — only-fixed while the default view is open, an unmatched search, a quiet room —
+  shows the plain text instead.
+implements:
+- apps/home/ui/HomeApp.jsx::HomeIssuesTab
+- apps/home/ui/index.js
+- web/src/components/PristineEmpty.jsx::PristineEmpty
+- web/src/apps/emptyStateHero.js::isPristineEmpty
+tests:
+- type: unit
+  path: web/scripts/check-empty-state-hero.mjs
+  rubric: >
+    Static prebuild guardrail: the shared pristine-empty predicate's truth table, and that the
+    Home app declares a non-empty hero blurb for each of its five views. Where the hero is placed
+    in the tab, and whether every filter counts as filter-active, is not covered here.
+links: {}
+notes: ''

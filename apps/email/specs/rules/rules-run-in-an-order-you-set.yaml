@@ -1,0 +1,17 @@
+kind: specification
+id: email.rules.rules-run-in-an-order-you-set
+title: Rules run in an order the household controls
+state: live
+autonomy: gated
+behavior: >
+  Rules have a position a person can change, and equal positions fall back to which rule was
+  written first, so the order is always defined and never depends on chance. Re-ordering
+  renumbers them so the order given is the order they run in, and counts as a change to the
+  rules — the new order is also applied to mail already seen but unhandled.
+implements:
+- apps/email/data.py::reorder_rules
+- apps/email/data.py::list_rules
+- apps/email/routes.py::api_email_reorder_rules
+tests: []
+links: {}
+notes: ''

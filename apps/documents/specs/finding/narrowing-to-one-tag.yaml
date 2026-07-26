@@ -1,0 +1,15 @@
+kind: specification
+id: documents.finding.narrowing-to-one-tag
+title: Narrowing to one tag
+state: live
+autonomy: gated
+behavior: >
+  A search or a listing can be narrowed to documents carrying a particular tag, matched without regard
+  to case. A tag nothing carries produces an empty answer rather than an error. Narrowing applies to
+  the ranked results, so a tag filter can only ever shrink what a search would otherwise have shown.
+implements:
+- apps/documents/store.py::list_docs
+- apps/documents/data.py::search_documents_hybrid
+tests: []
+links: {}
+notes: ''

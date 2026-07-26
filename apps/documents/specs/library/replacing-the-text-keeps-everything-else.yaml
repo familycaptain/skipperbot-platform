@@ -1,0 +1,15 @@
+kind: specification
+id: documents.library.replacing-the-text-keeps-everything-else
+title: Replacing the text keeps everything else
+state: live
+autonomy: gated
+behavior: >
+  Rewriting a document replaces its text and nothing more: its reference, its author, its tags, its
+  links and anything filed against it survive untouched. A new title or a new set of tags can be
+  supplied in the same breath, and leaving either out keeps what was there rather than clearing it.
+implements:
+- apps/documents/store.py::update_doc
+- agent.py::api_update_document
+tests: []
+links: {}
+notes: ''

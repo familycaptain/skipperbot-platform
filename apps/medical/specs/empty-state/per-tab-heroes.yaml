@@ -1,25 +1,21 @@
 kind: specification
 id: medical.empty-state.per-tab-heroes
-title: Medical app shows a per-tab empty-state hero on each of its 6 record tabs
+title: Each empty tab explains itself
 state: live
 autonomy: gated
-behavior: Each Medical record tab (medications/treatments/events/labs/appointments/equipment),
-  when genuinely empty at All Members, shows its own EmptyStateHero (tab-specific title +
-  blurb) instead of the bare 'No x yet.' text. A tab with records shows its list. A specific-member
-  scoped-empty (memberId set) OR any active tab-local filter (showInactive/typeFilter/filterTestId/filterEventId/showPast/showCancelled)
-  keeps the bare fallback (filterActive), not the onboarding hero.
+behavior: >
+  A tab of the Medical app with nothing in it yet greets the person with what that tab is for and
+  what to add first, written for that tab rather than for the app as a whole, so a fresh install
+  explains itself six times over instead of once. A tab that is empty only because it has been
+  narrowed — to one person, to one kind of event, to a single test or draw, or by hiding stopped
+  records — says plainly that there is nothing matching instead, so a filtered view is never
+  mistaken for a fresh install.
 implements:
-- web/src/apps/emptyStateHero.js
+- apps/medical/ui/MedicalApp.jsx::PristineEmpty
 - apps/medical/ui/index.js
-- apps/medical/ui/MedicalApp.jsx
-- specs/platform/app-ui/empty-state-hero.yaml
+- web/src/components/PristineEmpty.jsx
+- web/src/apps/emptyStateHero.js
 tests: []
 links: {}
-notes: 'Verified at Gate-2 (test host): web bundle compiled; empty-state-hero guardrail EXIT=0
-  (medical per-view, heroes-map keys == 6 views, each blurb non-empty). Member-scope FALLBACK
-  proven LIVE (specific member with 0 labs -> bare ''No lab results yet.'', no hero). Hero-at-All-Members
-  not reachable (all tabs seeded) -> build+guardrail+static confirmed; operator confirms the
-  heroes live on a fresh install at Gate 3. Member-scope matches ev-52''s shipped medications
-  behavior. 2 guardrail warnings = unrelated optional ''anime'' app (pre-existing). Blurbs
-  operator-owned.'
-verified: true
+notes: >
+  Per-tab wording is the operator's; the app-wide greeting was too vague to act on.

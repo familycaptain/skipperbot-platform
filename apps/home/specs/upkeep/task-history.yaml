@@ -1,0 +1,17 @@
+kind: specification
+id: home.upkeep.task-history
+title: A task remembers every time it was done
+state: live
+autonomy: gated
+behavior: >
+  Opening a task shows its completions newest first, each naming the date, who did it and any note
+  left at the time, so how often a job really gets done is answerable from the record rather than
+  from memory. A task never completed says so instead of showing an empty history.
+implements:
+- apps/home/tools.py::get_home_task
+- apps/home/data.py::get_task_log
+- apps/home/routes.py::api_task_log
+- apps/home/ui/HomeApp.jsx::CompletionLog
+tests: []
+links: {}
+notes: ''

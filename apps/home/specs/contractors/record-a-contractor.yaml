@@ -1,0 +1,18 @@
+kind: specification
+id: home.contractors.record-a-contractor
+title: Recording a trade
+state: live
+autonomy: gated
+behavior: >
+  Adding a contractor records the person or firm, their trade, company, phone and email, a rating
+  out of five, when they were last used, and in words the jobs they have done for the household.
+  Only a name is required.
+implements:
+- apps/home/tools.py::create_home_contractor
+- apps/home/data.py::create_contractor
+- apps/home/routes.py::api_create_home_contractor
+- apps/home/ui/HomeApp.jsx::AddContractorForm
+- apps/home/migrations/007_contractors.sql
+tests: []
+links: {}
+notes: ''

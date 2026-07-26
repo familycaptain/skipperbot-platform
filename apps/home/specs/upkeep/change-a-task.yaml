@@ -1,0 +1,18 @@
+kind: specification
+id: home.upkeep.change-a-task
+title: Changing only what you name
+state: live
+autonomy: gated
+behavior: >
+  Editing a task changes only the fields actually supplied and leaves the rest as they were; an
+  edit that names nothing is refused as having nothing to change, and an unknown task is reported
+  as not found rather than quietly created. Renaming, re-categorising or re-dating takes effect in
+  the grouping and the due signals straight away.
+implements:
+- apps/home/tools.py::update_home_task
+- apps/home/data.py::update_task
+- apps/home/routes.py::api_update_task
+- apps/home/ui/HomeApp.jsx::EditTaskForm
+tests: []
+links: {}
+notes: ''

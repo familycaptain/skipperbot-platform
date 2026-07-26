@@ -1,0 +1,14 @@
+kind: specification
+id: email.activity.a-label-whose-counts-are-unreadable-still-appears
+title: A label whose counts cannot be read still appears
+state: live
+autonomy: gated
+behavior: >
+  When the details behind one label cannot be fetched, that label is still listed, with its
+  counts shown as zero rather than vanishing from the list. A person choosing where to file mail
+  sees every label that exists, even on a bad day for the mailbox.
+implements:
+- apps/email/gmail_client.py::list_labels
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: automation.health.batteries-that-cannot-be-read
+title: A battery that cannot be read is its own answer
+state: live
+autonomy: gated
+behavior: >
+  A battery sensor that reports nothing at all is listed separately as unreadable rather than being
+  counted as fine or as flat — an unreachable sensor usually means a dead battery or a device that has
+  dropped off the network, which is exactly what the person asking wants to know. The list is kept to a
+  readable length rather than reciting every one.
+implements:
+- apps/automation/tools.py::find_home_assistant_low_batteries
+tests: []
+links: {}
+notes: ''

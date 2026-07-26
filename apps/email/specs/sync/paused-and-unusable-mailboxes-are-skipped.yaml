@@ -1,0 +1,14 @@
+kind: specification
+id: email.sync.paused-and-unusable-mailboxes-are-skipped
+title: A scheduled pass considers only mailboxes it can actually use
+state: live
+autonomy: gated
+behavior: >
+  A scheduled pass works through every household member's mailboxes that are switched on and
+  still have access — a paused mailbox, or one that was never finished connecting, is not
+  attempted at all and does not count as a failure.
+implements:
+- apps/email/runner.py::_get_all_active_accounts
+tests: []
+links: {}
+notes: ''

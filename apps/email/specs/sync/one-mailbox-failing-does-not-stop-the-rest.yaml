@@ -1,0 +1,17 @@
+kind: specification
+id: email.sync.one-mailbox-failing-does-not-stop-the-rest
+title: One mailbox failing never stops the others
+state: live
+autonomy: gated
+behavior: >
+  When a mailbox cannot be processed — access refused, Google unreachable, anything unexpected —
+  the remaining mailboxes are still processed and the failure is reported in the pass's summary
+  rather than ending the pass. The failing mailbox's position in the mail stream is not moved
+  on, so once it works again it picks up from where it genuinely got to instead of having
+  skipped a gap.
+implements:
+- apps/email/runner.py::run_email_sync
+- apps/email/runner.py::_process_account
+tests: []
+links: {}
+notes: ''

@@ -1,12 +1,19 @@
 kind: specification
 id: medical.medications.add-medication
-title: Add a medication
+title: Start tracking a medication
 state: live
 autonomy: gated
-behavior: Adding tracks a medication for a member with its dosing and refill cycle.
+behavior: >
+  A medication is recorded for one person with what it is, how to take it, who prescribed it,
+  which pharmacy fills it, when they started, the date the current supply runs out, how many days
+  one filled prescription lasts, and how much warning they want before it runs out — a week unless
+  they say otherwise. Only the person and the medication's name are required; a medication with no
+  run-out date is tracked but never reports days left or a refill.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::add_medication
+- apps/medical/data.py::create_medication
+- apps/medical/routes.py::api_create_medication
+- apps/medical/ui/MedicalApp.jsx::AddMedModal
 tests: []
 links: {}
 notes: ''

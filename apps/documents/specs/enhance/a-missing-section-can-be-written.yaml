@@ -1,0 +1,16 @@
+kind: specification
+id: documents.enhance.a-missing-section-can-be-written
+title: A section the document is missing can be written
+state: live
+autonomy: gated
+behavior: >
+  An instruction asking for something the document does not cover — "add a section about maintenance" —
+  produces a new section written to match the document's existing tone and placed after the section it
+  belongs behind, rather than appended at the end regardless. Existing sections are preferred over new
+  ones, so a vague instruction grows what is there instead of accumulating near-duplicate headings.
+implements:
+- apps/documents/tools.py::_generate_new_section
+- apps/documents/tools.py::enhance_doc
+tests: []
+links: {}
+notes: ''

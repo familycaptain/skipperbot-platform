@@ -2,9 +2,13 @@ kind: capability
 id: automation
 title: Automation
 app: automation
-scope: 'Home Assistant bridge: check sensors, control smart-home devices, manage human-friendly
-  aliases, list services, and find low batteries — by talking to the configured Home Assistant
-  REST API. NOT user prompt rules (the Behaviors app); this drives real smart-home entities.'
+scope: 'The bridge between Skipper and the household''s Home Assistant: reading what the house is
+  doing right now (sensors, doors, batteries, media, climate), changing what it is doing (lights,
+  switches, fans, and any other Home Assistant action), and learning the everyday names people use
+  for their things so nobody has to speak in entity ids. NOT the owner of what a household member is
+  allowed to do — the only limits are the ones Home Assistant''s own token enforces and the narrower
+  set the app''s own screen offers. NOT prompt rules or standing behaviour (the Behaviors app), and
+  NOT scheduled work (the Schedules app): this app only ever acts when someone asks it to.'
 state: live
 autonomy: gated
 links: {}

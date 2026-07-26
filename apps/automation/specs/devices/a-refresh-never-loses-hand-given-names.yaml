@@ -1,0 +1,16 @@
+kind: specification
+id: automation.devices.a-refresh-never-loses-hand-given-names
+title: A refresh never overwrites the names people gave
+state: live
+autonomy: gated
+behavior: >
+  Names a person added to a device by hand survive every refresh: the refresh updates what Home
+  Assistant knows — the device's own name, its make and model — and leaves the household's names for it
+  alone. A device appearing for the first time starts with its own name as its only name, so it is
+  findable immediately without anyone doing anything.
+implements:
+- apps/automation/devices.py::_build_device_aliases
+- apps/automation/devices.py::_device_name
+tests: []
+links: {}
+notes: ''

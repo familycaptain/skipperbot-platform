@@ -1,0 +1,25 @@
+kind: specification
+id: email.backlog.deleting-a-rule-starts-no-catch-up
+title: Deleting a rule changes nothing about mail already handled
+state: live
+autonomy: gated
+behavior: >
+  Deleting a rule starts no catch-up and undoes nothing — mail it handled stays handled and
+  stays as it was left in the mailbox. Switching a rule off, or reordering the rules, may start
+  a catch-up that finds nothing new to do; that is harmless and costs one pass, never a wrong
+  action.
+implements:
+- apps/email/data.py::delete_rule
+- apps/email/data.py::reorder_rules
+- apps/email/data.py::get_reeval_trigger
+tests:
+- type: unit
+  path: tests/evolve/email/test_reeval_on_rules_change.py
+  rubric: >
+    Driving the catch-up path with the data layer stubbed: unchanged rules read no history and
+    make no calls to Google; a rule change drains the backlog exactly once and then goes quiet;
+    an edit or an enable re-triggers, a delete does not; a backlog larger than one pass drains
+    over several passes, newest first, over the set frozen when catch-up began, and terminates;
+    a rule changed mid-catch-up gets its own later catch-up.
+links: {}
+notes: ''

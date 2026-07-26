@@ -1,0 +1,17 @@
+kind: specification
+id: medical.equipment.overdue-shows-on-the-device
+title: Overdue upkeep shows on the device
+state: live
+autonomy: gated
+behavior: >
+  A device with overdue upkeep says how many of its tasks are overdue on its own row, and each
+  overdue task is marked out where it is listed, so the machine needing attention is visible
+  without opening every device in turn. A device whose upkeep is merely due soon is not marked as
+  overdue.
+implements:
+- apps/medical/ui/MedicalApp.jsx::EquipmentCard
+- apps/medical/ui/MedicalApp.jsx::taskDueStatus
+- apps/medical/ui/MedicalApp.jsx::TaskRow
+tests: []
+links: {}
+notes: ''

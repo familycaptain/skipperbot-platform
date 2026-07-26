@@ -1,0 +1,16 @@
+kind: specification
+id: automation.reading.search-for-things
+title: Searching for things
+state: live
+autonomy: gated
+behavior: >
+  "What sensors do we have", "which lights are there": the search can be narrowed to one kind of thing,
+  to words matched against a thing's name, id or what it measures, or both, and comes back ordered by
+  name with each thing's current reading. The answer says how many matched and how many are being
+  shown, because a long list is cut short rather than dumped. Nothing matching says so plainly.
+implements:
+- apps/automation/tools.py::list_home_assistant_entities
+- apps/automation/tools.py::_matches_entity
+tests: []
+links: {}
+notes: ''

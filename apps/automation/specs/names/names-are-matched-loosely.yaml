@@ -1,0 +1,16 @@
+kind: specification
+id: automation.names.names-are-matched-loosely
+title: Capitalisation and punctuation never decide a name
+state: live
+autonomy: gated
+behavior: >
+  Taught names are matched with capitalisation, punctuation, doubled spaces and leading or trailing
+  space all ignored, and with "&" read as "and" — so "Kitchen & Hall", "kitchen and hall" and
+  " Kitchen And Hall " are one name, not three. The stored form is the tidied one, which is what gets
+  listed back and what has to be given to delete it.
+implements:
+- apps/automation/tools.py::_normalize_name
+- apps/automation/devices.py::_normalize
+tests: []
+links: {}
+notes: ''

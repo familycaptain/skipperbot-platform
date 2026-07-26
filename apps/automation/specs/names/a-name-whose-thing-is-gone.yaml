@@ -1,0 +1,20 @@
+kind: specification
+id: automation.names.a-name-whose-thing-is-gone
+title: A name outlives the thing it pointed at
+state: live
+autonomy: gated
+behavior: >
+  When the thing a taught name points at no longer exists in Home Assistant — the device was removed
+  or renamed — the name keeps pointing at the missing thing rather than being quietly re-aimed at
+  whatever now looks similar, so a request never operates the wrong device by accident. Reading it
+  reports the failure against that missing target, and clearing it up is a person's decision: names
+  are never deleted automatically.
+implements:
+- apps/automation/tools.py::_resolve_entity
+- apps/automation/tools.py::get_home_assistant_entity
+tests: []
+links: {}
+notes: >
+  Deliberately not self-healing: silently re-pointing a stale name is how "turn off the heater" ends
+  up turning off something else. See findings-automation.md — the control path currently reports
+  success for a missing target instead of the failure.

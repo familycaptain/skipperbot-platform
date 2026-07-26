@@ -1,0 +1,19 @@
+kind: specification
+id: automation.dashboard.what-the-screen-shows
+title: What the screen shows, and in what order
+state: live
+autonomy: gated
+behavior: >
+  The dashboard shows the household's things grouped by what they are — lights, switches, fans and
+  toggles first with an on/off control each, then climate, media, covers, locks and sensors shown with
+  their current reading and no control — every one labelled with the name the household gave it in Home
+  Assistant. Kinds nobody controls or watches from a wall panel are left out entirely, and a household
+  whose Home Assistant has nothing of these kinds is told the list is empty.
+implements:
+- apps/automation/routes.py::api_entities
+- apps/automation/routes.py::TOGGLEABLE
+- apps/automation/routes.py::READONLY
+- apps/automation/ui/AutomationApp.jsx::DashboardView
+tests: []
+links: {}
+notes: ''

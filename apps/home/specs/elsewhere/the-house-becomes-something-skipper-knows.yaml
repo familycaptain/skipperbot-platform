@@ -1,0 +1,20 @@
+kind: specification
+id: home.elsewhere.the-house-becomes-something-skipper-knows
+title: What is recorded becomes something Skipper knows
+state: live
+autonomy: gated
+behavior: >
+  Recording, changing, completing or deleting anything about the house feeds the substance of that
+  record into Skipper's memory, so "when did we last do the gutters", "what's the model of the
+  fridge" and "how much cover do we have" can be answered in conversation without anyone opening
+  the app. A household that already has records when the feature arrives has them taken in too,
+  rather than only what changes from then on.
+implements:
+- apps/home/data.py::create_task
+- apps/home/data.py::complete_task
+- apps/home/data.py::update_issue
+- apps/home/data.py::BACKFILL_ENTITIES
+- app_platform/memory.py::digest_record
+tests: []
+links: {}
+notes: ''

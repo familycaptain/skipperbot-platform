@@ -1,0 +1,18 @@
+kind: specification
+id: home.insurance.coverage-at-a-glance
+title: What the household is covered for, in one band
+state: live
+autonomy: gated
+behavior: >
+  Above the list of policies the household sees how many it holds, the total cover across them,
+  the total premium as a yearly figure, the next renewal coming up, and how many policies of each
+  kind there are. Premiums billed monthly, quarterly or half-yearly are converted to a year's
+  worth before being added, so policies billed on different cycles can be totalled honestly.
+implements:
+- apps/home/ui/HomeApp.jsx::CoverageSummary
+- apps/home/ui/HomeApp.jsx::InsuranceTab
+tests: []
+links: {}
+notes: >
+  Annualising before summing is the point of the band: a household comparing a monthly premium
+  against an annual one by raw number would understate what it actually pays.

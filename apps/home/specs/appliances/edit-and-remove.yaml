@@ -1,0 +1,18 @@
+kind: specification
+id: home.appliances.edit-and-remove
+title: Correcting or removing an appliance
+state: live
+autonomy: gated
+behavior: >
+  Editing an appliance changes only the fields supplied and leaves the rest as they were. Deleting
+  asks for confirmation naming the appliance, then removes it and the receipts and photos attached
+  to it permanently; deleting one that does not exist reports not-found.
+implements:
+- apps/home/tools.py::update_home_appliance
+- apps/home/tools.py::delete_home_appliance
+- apps/home/data.py::update_appliance
+- apps/home/data.py::delete_appliance
+- apps/home/routes.py::api_delete_home_appliance
+tests: []
+links: {}
+notes: ''

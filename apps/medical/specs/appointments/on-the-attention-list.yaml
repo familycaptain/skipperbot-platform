@@ -1,0 +1,17 @@
+kind: specification
+id: medical.appointments.on-the-attention-list
+title: Appointments this week need attention
+state: live
+autonomy: gated
+behavior: >
+  Appointments within the next week appear on the household's attention list under Appointment,
+  each reading as whose it is, what it is, who it is with, and when — "today at 3:15 PM",
+  "tomorrow at …", or how many days off, in the household's own timezone. One that is cancelled
+  drops off the list as soon as it is cancelled.
+implements:
+- apps/medical/__init__.py::_appointment_backlog
+- apps/medical/__init__.py::_appointment_is_active
+- apps/medical/data.py::get_upcoming_appointments
+tests: []
+links: {}
+notes: ''

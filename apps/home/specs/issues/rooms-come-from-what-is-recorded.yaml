@@ -1,0 +1,18 @@
+kind: specification
+id: home.issues.rooms-come-from-what-is-recorded
+title: Rooms are offered from what is already recorded
+state: live
+autonomy: gated
+behavior: >
+  The room an issue is filed under is chosen from the places already recorded against other issues
+  rather than typed fresh each time, so one household does not end up with the same room spelled
+  three ways and the room filter always offers something that matches. Reporting in conversation
+  can name any room in words.
+implements:
+- apps/home/data.py::get_all_locations_merged
+- apps/home/data.py::get_issue_locations
+- apps/home/routes.py::api_list_home_issues
+- apps/home/ui/HomeApp.jsx::AddHomeIssueForm
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: documents.context.attaching-and-detaching-from-the-document
+title: Attaching and detaching happen on the document
+state: live
+autonomy: gated
+behavior: >
+  A document's attachments are added and removed from the document itself by naming the item, and the
+  document immediately shows the change. Detaching removes only that connection and never the document or
+  the item. Detaching something that was not attached reports that there was nothing to remove rather
+  than reporting success.
+implements:
+- agent.py::api_link_doc_to_entity
+- agent.py::api_unlink_doc_from_entity
+- apps/documents/ui/DocumentEditor.jsx::DocMetaBar
+tests: []
+links: {}
+notes: ''

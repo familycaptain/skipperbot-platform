@@ -1,0 +1,16 @@
+kind: specification
+id: email.accounts.pause-a-mailbox
+title: Switching a mailbox off pauses it without losing anything
+state: live
+autonomy: gated
+behavior: >
+  Switching a mailbox off leaves it connected and keeps its rules, its history and its access —
+  the scheduled passes simply skip it, so no new mail is touched. Switching it back on resumes
+  at the next pass, and mail that arrived while it was off is treated as new mail then.
+implements:
+- apps/email/routes.py::api_email_update_account
+- apps/email/runner.py::_get_all_active_accounts
+- apps/email/ui/EmailApp.jsx::AccountsTab
+tests: []
+links: {}
+notes: ''

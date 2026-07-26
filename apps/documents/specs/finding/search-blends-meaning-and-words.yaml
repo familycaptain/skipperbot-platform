@@ -1,0 +1,17 @@
+kind: specification
+id: documents.finding.search-blends-meaning-and-words
+title: Search blends meaning with the actual words
+state: live
+autonomy: gated
+behavior: >
+  Searching the library ranks documents by two things at once: how close a document is in substance to
+  what was asked for, and how many of the asked-for words it actually contains across its title, tags
+  and text. The balance between the two is a household preference running from all-meaning to
+  all-words, so a household that prefers literal matching can have it. Each result comes back with the
+  score it was ranked on.
+implements:
+- apps/documents/data.py::search_documents_hybrid
+- apps/documents/store.py::search_docs
+tests: []
+links: {}
+notes: ''

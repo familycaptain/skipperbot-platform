@@ -1,0 +1,22 @@
+kind: specification
+id: documents.boundaries.an-empty-ability-set-stops-the-round
+title: A round with nothing to work with stops instead of pretending
+state: live
+autonomy: gated
+behavior: >
+  If the abilities a round needs cannot be assembled — an app renamed, a category gone missing — the round
+  refuses to start rather than proceeding with almost nothing and reporting a quiet, empty success. A
+  misconfiguration is therefore visible as a failure instead of as months of rounds that appeared to run
+  and wrote nothing.
+implements:
+- apps/documents/domain.py::document_domain_handler
+- tool_slots.py::ToolSlots
+tests:
+- type: unit
+  path: tests/evolve/platform/test_doc_think_lean_baseline.py
+  rubric: >
+    Each of the cycle's starting ability categories resolves individually to a non-empty set against the
+    real registry — checked one at a time, so a mis-keyed or empty category cannot be masked by the
+    others — and the cycle's own custom abilities are present.
+links: {}
+notes: ''

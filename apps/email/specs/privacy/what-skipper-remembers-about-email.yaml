@@ -1,0 +1,22 @@
+kind: specification
+id: email.privacy.what-skipper-remembers-about-email
+title: Skipper remembers the setup, not the mail
+state: live
+autonomy: gated
+behavior: >
+  Connecting a mailbox, and writing, changing or deleting a rule, become facts Skipper can
+  recall in conversation — which address is connected, what a rule is called, what it looks for
+  and what it does — so somebody can ask what their triage is set up to do. Processed mail is
+  not remembered: no sender, subject or message text from anybody's inbox becomes one of
+  Skipper's memories.
+implements:
+- apps/email/data.py::create_account
+- apps/email/data.py::create_rule
+- apps/email/data.py::update_rule
+- apps/email/data.py::delete_rule
+tests: []
+links: {}
+notes: >
+  Rule text can contain wording lifted verbatim from a stranger's message via the
+  build-a-rule-from-a-message flow; the handling of that untrusted text is recorded in the audit
+  findings.

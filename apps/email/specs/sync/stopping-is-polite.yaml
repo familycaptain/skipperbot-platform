@@ -1,0 +1,19 @@
+kind: specification
+id: email.sync.stopping-is-polite
+title: Asked to stop, a pass stops between messages
+state: live
+autonomy: gated
+behavior: >
+  When Skipper is shutting down or the work is cancelled, a pass stops between messages and
+  between mailboxes rather than in the middle of acting on one — a message is never left
+  half-labelled — and everything already done is recorded and kept. What was not reached is left
+  for the next pass.
+implements:
+- apps/email/runner.py::run_email_sync
+- apps/email/runner.py::_process_account
+- apps/email/runner.py::_reprocess_unmatched
+tests: []
+links: {}
+notes: >
+  Whether the mailbox's position in the mail stream should advance after an interrupted pass is
+  an open question recorded in the audit findings.

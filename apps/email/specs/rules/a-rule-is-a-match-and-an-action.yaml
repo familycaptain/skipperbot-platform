@@ -1,0 +1,17 @@
+kind: specification
+id: email.rules.a-rule-is-a-match-and-an-action
+title: A rule pairs what to look for with what to do
+state: live
+autonomy: gated
+behavior: >
+  A rule belongs to one mailbox, carries a name of the person's choosing, and pairs conditions
+  on incoming mail with actions to take on a match. A rule cannot be saved without a name, so no
+  rule is unidentifiable in the list afterwards. A saved rule takes effect from the next pass
+  onwards without anything else being switched on.
+implements:
+- apps/email/routes.py::api_email_create_rule
+- apps/email/data.py::create_rule
+- apps/email/ui/EmailApp.jsx::RuleForm
+tests: []
+links: {}
+notes: ''

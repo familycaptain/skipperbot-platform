@@ -1,0 +1,16 @@
+kind: specification
+id: documents.library.a-document-belongs-to-the-household
+title: A document belongs to the household, not to one person
+state: live
+autonomy: gated
+behavior: >
+  Any signed-in member can open, edit, retitle and delete any document; documents are a shared
+  household library rather than private notebooks. Being recorded as the author does not reserve a
+  document, and there is no private or per-person visibility to choose.
+implements:
+- agent.py::api_get_document
+- agent.py::api_list_documents
+- agent.py::api_delete_document
+tests: []
+links: {}
+notes: ''

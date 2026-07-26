@@ -1,0 +1,15 @@
+kind: specification
+id: automation.setup.a-corrected-setting-applies-at-once
+title: Fixing the address or token needs no restart
+state: live
+autonomy: gated
+behavior: >
+  A corrected address or a freshly issued token takes effect on the very next request: the person can
+  fix a typo in settings and immediately re-ask "check Home Assistant" and be told it is connected.
+  Nothing has to be restarted and no cached credential keeps the old value alive.
+implements:
+- apps/automation/tools.py::_ha_base_url
+- apps/automation/tools.py::_ha_token
+tests: []
+links: {}
+notes: ''

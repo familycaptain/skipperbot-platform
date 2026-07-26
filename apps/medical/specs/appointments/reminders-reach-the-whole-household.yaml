@@ -1,0 +1,17 @@
+kind: specification
+id: medical.appointments.reminders-reach-the-whole-household
+title: An appointment reminder reaches everyone
+state: live
+autonomy: gated
+behavior: >
+  An appointment reminder goes to every person in the household, not only to the person whose
+  appointment it is, and it names them and the provider. It reaches each person's web console and,
+  additionally, their phone or Discord according to how that person is set up — it is never
+  announced out loud on a shared speaker.
+implements:
+- apps/medical/__init__.py::_appointment_reminder_provider
+tests: []
+links: {}
+notes: >
+  Recorded as it stands, not as intent: this is the widest disclosure the app makes, and there is
+  no per-person addressing of appointment reminders today.

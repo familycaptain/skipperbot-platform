@@ -1,0 +1,16 @@
+kind: specification
+id: medical.appointments.moving-an-appointment-re-arms-reminders
+title: Moving an appointment re-arms its reminders
+state: live
+autonomy: gated
+behavior: >
+  Changing an appointment's date or time re-arms both reminders, so one moved from next month to
+  tomorrow is reminded about again instead of being treated as already announced. Changing
+  anything else — the provider, the location, the notes — leaves the reminders exactly as they
+  were.
+implements:
+- apps/medical/data.py::update_appointment
+- apps/medical/routes.py::api_update_appointment
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: home.attachments.what-can-carry-one
+title: What can carry an attachment
+state: live
+autonomy: gated
+behavior: >
+  Photos and documents attach to issues, appliances and insurance policies. Maintenance tasks,
+  completions and contractors carry none — a completion is described in a note in words instead —
+  so nobody looks for a camera button that is not there.
+implements:
+- apps/home/handlers.py
+- apps/home/manifest.yaml
+tests: []
+links: {}
+notes: ''

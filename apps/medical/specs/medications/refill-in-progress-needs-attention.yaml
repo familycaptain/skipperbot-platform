@@ -1,0 +1,16 @@
+kind: specification
+id: medical.medications.refill-in-progress-needs-attention
+title: A refill in progress stays on the attention list
+state: live
+autonomy: gated
+behavior: >
+  A medication marked as needing ordering, or as ordered and awaiting collection, appears on the
+  household's attention list under Medication with how much supply is left, and stays there until
+  it is marked filled or the medication is stopped. One needing ordering is shown as overdue; one
+  already ordered is not, so the list distinguishes what needs doing from what needs waiting for.
+implements:
+- apps/medical/__init__.py::_med_refill_backlog
+- apps/medical/__init__.py::_med_refill_is_active
+tests: []
+links: {}
+notes: ''

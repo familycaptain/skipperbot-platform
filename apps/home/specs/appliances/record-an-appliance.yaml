@@ -1,0 +1,19 @@
+kind: specification
+id: home.appliances.record-an-appliance
+title: Recording an appliance
+state: live
+autonomy: gated
+behavior: >
+  Adding an appliance records what it is, its type, brand, model and serial number, where in the
+  house it lives, when it was bought and for how much, when its warranty runs out, and any notes.
+  Only a name is required; a price or a date left blank stays genuinely blank rather than becoming
+  zero or today.
+implements:
+- apps/home/tools.py::create_home_appliance
+- apps/home/data.py::create_appliance
+- apps/home/routes.py::api_create_home_appliance
+- apps/home/ui/HomeApp.jsx::AddApplianceForm
+- apps/home/migrations/005_appliances.sql
+tests: []
+links: {}
+notes: ''

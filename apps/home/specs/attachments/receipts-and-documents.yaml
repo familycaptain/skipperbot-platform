@@ -1,0 +1,18 @@
+kind: specification
+id: home.attachments.receipts-and-documents
+title: Receipts and policy documents live with the record
+state: live
+autonomy: gated
+behavior: >
+  An appliance can carry its receipt or a photo of its data plate, and a policy can carry a photo
+  of the policy document, attached the same way as an issue photo and shown when the record is
+  opened. A record with nothing attached shows only the way to add one, not an empty gallery.
+implements:
+- apps/home/ui/HomeApp.jsx::AddApplianceForm
+- apps/home/ui/HomeApp.jsx::AddPolicyForm
+- apps/home/data.py::link_appliance_image
+- apps/home/data.py::link_policy_image
+- apps/home/handlers.py
+tests: []
+links: {}
+notes: ''

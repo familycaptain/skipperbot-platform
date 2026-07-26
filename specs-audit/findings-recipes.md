@@ -51,8 +51,12 @@ rendered safely by the framework elsewhere.
 
 **Scope check (PM).** `print_runner.py::_load_recipe_as_markdown` interpolates the same fields, but
 builds **markdown** for a physical printer (`lines = [f"# {title}\n"]`), not an HTML document — so it
-is not a second script-execution sink. The point stands that fixing `handlePrint` alone leaves the
-stored data unsanitised for any future raw-HTML consumer.
+is not a second script-execution sink.
+
+But the wider point turned out to be much bigger than this app: the same raw-HTML-rendering pattern
+exists in **six apps**, three of them in the main application window via `dangerouslySetInnerHTML`,
+and the three private copies of `markdownToHtml` escape only fenced code blocks. See
+`specs-audit/CROSS-CUTTING.md` §4 — this entry is one instance of a systemic defect, not an outlier.
 
 **`source_url` is never validated as an http(s) address.** Stored as typed
 (`tools.py::create_recipe`, `routes.py`), rendered as `<a href={recipe.source_url}>` in the detail
@@ -83,9 +87,10 @@ tuple as (body, status): it encodes the tuple, so the response is `200` with bod
 - Category delete/rename failures are reported to the UI as success.
 - `apps/finder` and any other consumer sees a 200 for a missing recipe.
 
-**Scope check (PM):** a repo-wide grep found this pattern in **`apps/recipes/routes.py` only** (7
-occurrences). `apps/meals/routes.py` raises `HTTPException` correctly. Recipes is the sole outlier —
-this is *not* a systemic bulk-import defect, contrary to the initial hypothesis.
+**Scope check (PM):** a repo-wide grep for `return {...}, <status>` found this pattern in
+**`apps/recipes/routes.py` only** (7 occurrences). `apps/meals/routes.py` raises `HTTPException`
+correctly. For *this* bug recipes is the sole outlier. NOTE: the documents audit reports the same
+symptom in its own app; if so it arrives by a different shape and needs its own check.
 
 **Prep and cook time cannot be cleared from the edit form.** `RecipeDetailApp::handleSave` sends
 `prep_time_min: null` when the field is emptied, and `routes.py::api_update_recipe` builds `updates`

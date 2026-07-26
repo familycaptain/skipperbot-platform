@@ -1,0 +1,17 @@
+kind: specification
+id: email.rules.match-on-who-what-and-the-text
+title: Match on sender, subject, or anything in the message
+state: live
+autonomy: gated
+behavior: >
+  Sender, subject and message text are matched as 'contains this somewhere', ignoring upper and
+  lower case, so a person can write 'school.edu' or 'invoice' without knowing the exact wording.
+  Matching on the message text means the message itself has to be read from the mailbox; if it
+  cannot be read the condition simply does not hold, so the message is left alone rather than
+  acted on by guesswork.
+implements:
+- apps/email/runner.py::_matches
+- apps/email/gmail_client.py::get_message_body
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: medical.labs.draw-with-no-results-entered
+title: A draw with nothing entered against it
+state: live
+autonomy: gated
+behavior: >
+  A lab draw recorded in the journal a week or more ago with no values entered against it appears
+  on the household's attention list as results missing, saying how long ago the draw was, and
+  drops off the moment any value is filed against it. A draw more recent than that is left alone —
+  the results may simply not be back yet.
+implements:
+- apps/medical/data.py::get_lab_events_missing_results
+- apps/medical/data.py::lab_event_has_results
+- apps/medical/__init__.py::_lab_missing_results_backlog
+- apps/medical/__init__.py::_lab_missing_is_active
+tests: []
+links: {}
+notes: ''

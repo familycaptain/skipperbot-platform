@@ -1,0 +1,22 @@
+kind: specification
+id: home.appliances.nothing-recorded-yet
+title: Nothing recorded yet
+state: live
+autonomy: gated
+behavior: >
+  A household that has never added an appliance is shown what the tab tracks and prompted to add
+  the first one, rather than a bare empty list. Once appliances exist, a search or type filter
+  matching none of them shows plain "nothing matching" text instead.
+implements:
+- apps/home/ui/HomeApp.jsx::AppliancesTab
+- apps/home/ui/index.js
+- web/src/components/PristineEmpty.jsx::PristineEmpty
+tests:
+- type: unit
+  path: web/scripts/check-empty-state-hero.mjs
+  rubric: >
+    Static prebuild guardrail: the shared pristine-empty predicate's truth table, and that the
+    Home app declares a non-empty hero blurb for each of its five views. Where the hero is placed
+    in the tab, and whether every filter counts as filter-active, is not covered here.
+links: {}
+notes: ''

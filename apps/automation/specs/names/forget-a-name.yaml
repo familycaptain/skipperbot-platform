@@ -1,0 +1,16 @@
+kind: specification
+id: automation.names.forget-a-name
+title: Forgetting a name
+state: live
+autonomy: gated
+behavior: >
+  Deleting a taught name confirms which one went, and later requests using it fall back to searching
+  for a match as though it had never been taught. Asking to delete a name that was never taught says
+  so and changes nothing. Deleting a name removes only the name — the device itself is untouched.
+implements:
+- apps/automation/tools.py::delete_home_assistant_alias
+- apps/automation/routes.py::api_delete_alias
+- apps/automation/ui/AutomationApp.jsx::NamesManager
+tests: []
+links: {}
+notes: ''

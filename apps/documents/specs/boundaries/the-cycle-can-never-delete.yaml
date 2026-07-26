@@ -1,0 +1,25 @@
+kind: specification
+id: documents.boundaries.the-cycle-can-never-delete
+title: The unattended cycle can never delete anything
+state: live
+autonomy: gated
+behavior: >
+  Background curation may create, read, change, file and move — it may never delete a document, delete a
+  folder, or forget a memory. The deleting abilities are withheld from it rather than merely discouraged,
+  so no wording in anything it reads can talk it into destroying the household's records. Deleting stays
+  something a person does deliberately.
+implements:
+- apps/documents/domain.py::DOC_EXCLUDED_TOOLS
+- apps/documents/domain.py::_build_doc_slots
+tests:
+- type: unit
+  path: tests/evolve/platform/test_doc_think_lean_baseline.py
+  rubric: >
+    Against the real ability registry: deleting a document, deleting a folder and forgetting a memory are
+    all absent from the ability surface the curation cycle is built with, even though they belong to
+    categories the cycle otherwise loads wholesale — so withdrawing them is enforced at the surface, not
+    left to instructions.
+links: {}
+notes: >
+  The operator's rule is that destructive reach must be provably absent, not merely unlikely — hence
+  subtraction from the final surface rather than an instruction not to use it.

@@ -1,0 +1,19 @@
+kind: specification
+id: medical.equipment.add-equipment-task
+title: Upkeep tasks belong to a device
+state: live
+autonomy: gated
+behavior: >
+  Each device carries its own upkeep tasks — change the filter, flush the line — either recurring
+  every so many days or a one-off with no interval at all, each with the date it is next due.
+  Tasks are listed under their device soonest-due first, and a device with none says so and offers
+  to add one rather than leaving an unexplained gap.
+implements:
+- apps/medical/data.py::create_equip_task
+- apps/medical/data.py::get_tasks_for_equipment
+- apps/medical/routes.py::api_create_equip_task
+- apps/medical/routes.py::api_list_equip_tasks
+- apps/medical/ui/MedicalApp.jsx::AddTaskModal
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,19 @@
+kind: specification
+id: automation.reading.now-is-here-forecasts-are-not
+title: Right now comes from the house; later does not
+state: live
+autonomy: gated
+behavior: >
+  A question about a measurable thing in the house right now — "how warm is the office", "what's the
+  temperature outside", "is the garage door open" — is answered from the household's own sensors. A
+  question about later, earlier, or the weather in general — a forecast, rain, wind, "what was it
+  yesterday" — is handed to the Weather app instead, because the house only knows this moment at the
+  places it has sensors. Skipper never tries to satisfy a forecast from a sensor reading.
+implements:
+- apps/automation/guide.md
+- app_platform/voice/prompting.py
+tests: []
+links: {}
+notes: >
+  "What's the temperature outside" is the one phrase that belongs to both apps; the operator's call is
+  that it means the household's outdoor sensor first, and the forecast only if there is no such sensor.

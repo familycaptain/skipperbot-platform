@@ -1,0 +1,18 @@
+kind: specification
+id: documents.library.editing-something-that-is-gone
+title: Editing something that is gone says so
+state: live
+autonomy: gated
+behavior: >
+  Every way of changing a document — rewriting it, adding to it, retitling it, improving it, deleting
+  it — answers a reference that does not exist with a refusal naming what was asked for. Nothing is
+  created in its place, so a mistyped or already-deleted reference can never quietly produce a second
+  empty document.
+implements:
+- apps/documents/store.py::update_doc
+- apps/documents/store.py::append_to_doc
+- apps/documents/store.py::update_doc_meta
+- apps/documents/tools.py::enhance_doc
+tests: []
+links: {}
+notes: ''

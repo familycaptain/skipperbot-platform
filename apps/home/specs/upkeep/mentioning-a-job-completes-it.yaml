@@ -1,0 +1,20 @@
+kind: specification
+id: home.upkeep.mentioning-a-job-completes-it
+title: Mentioning a job in passing completes it
+state: live
+autonomy: gated
+behavior: >
+  Someone who says they have done something — "I changed the A/C filter" — has the task already
+  tracking that job marked done, rather than a second near-duplicate task created beside it, even
+  when they phrase it differently from the task's name. Only when nothing already tracked matches
+  is a new task recorded.
+implements:
+- apps/home/guide.md
+- apps/home/tools.py::list_home_tasks
+- apps/home/tools.py::complete_home_task
+tests: []
+links: {}
+notes: >
+  This is a judgement made before writing, not a de-duplicating rule in the store: the same job
+  phrased two ways is one task to a household, and a duplicate would quietly split its history in
+  two.

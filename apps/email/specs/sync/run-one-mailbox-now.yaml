@@ -1,0 +1,17 @@
+kind: specification
+id: email.sync.run-one-mailbox-now
+title: Running one mailbox now reports its own result
+state: live
+autonomy: gated
+behavior: >
+  Asking for a mailbox to be processed now processes that mailbox alone and answers with how
+  many messages were handled and how many a rule acted on, so the person who pressed it knows
+  whether anything happened. Asked for a mailbox that is not there, or one with no access, it
+  says so instead of reporting success.
+implements:
+- apps/email/routes.py::api_email_sync
+- apps/email/runner.py::run_single_account_sync
+- apps/email/ui/EmailApp.jsx::ActivityTab
+tests: []
+links: {}
+notes: ''

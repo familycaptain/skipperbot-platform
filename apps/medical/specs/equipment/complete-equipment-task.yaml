@@ -1,12 +1,19 @@
 kind: specification
 id: medical.equipment.complete-equipment-task
-title: Complete an equipment task
+title: Marking upkeep done
 state: live
 autonomy: gated
-behavior: Completing marks an equipment maintenance task done.
+behavior: >
+  Marking an upkeep task done records a dated completion with any note left at the time, and moves
+  a recurring task's next-due date on by its interval counted from the day it was done — so doing
+  it three days late shifts the whole schedule three days rather than compressing the next
+  interval. A one-off task records that it was done and stops being due. Marking a task that does
+  not exist is refused and nothing is logged.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::complete_equipment_task
+- apps/medical/data.py::complete_equip_task
+- apps/medical/routes.py::api_complete_equip_task
+- apps/medical/ui/MedicalApp.jsx::TaskRow
 tests: []
 links: {}
 notes: ''

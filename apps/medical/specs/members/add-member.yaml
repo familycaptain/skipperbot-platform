@@ -1,12 +1,19 @@
 kind: specification
 id: medical.members.add-member
-title: Add a member
+title: Records need a person to belong to
 state: live
 autonomy: gated
-behavior: Adding records a family member in the medical tracker.
+behavior: >
+  Every medical record belongs to exactly one family member, so the person has to exist before
+  anything can be filed under them: asked to record a medication, treatment, event, lab result or
+  appointment for a name that is not in the medical records, Skipper says so and offers to add
+  them rather than guessing at the closest match. Adding someone whose name is already on the list
+  — whatever the capitalisation — adds nobody and hands back the person already there.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::add_medical_member
+- apps/medical/data.py::get_member_by_name
+- apps/medical/routes.py::api_create_member
+- apps/medical/ui/MedicalApp.jsx::MembersPanel
 tests: []
 links: {}
 notes: ''

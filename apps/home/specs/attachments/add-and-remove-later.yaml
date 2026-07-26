@@ -1,0 +1,18 @@
+kind: specification
+id: home.attachments.add-and-remove-later
+title: Adding and removing attachments later
+state: live
+autonomy: gated
+behavior: >
+  Opening a record loads whatever is attached to it and lets another be added, or one removed, at
+  any time; removing detaches it from that record rather than requiring the record to be edited.
+  Attachments are fetched only when a record is opened, so a long list is never made slow by
+  images nobody asked to see.
+implements:
+- apps/home/ui/HomeApp.jsx::IssueImageStrip
+- apps/home/routes.py::api_link_home_issue_image
+- apps/home/routes.py::api_unlink_home_issue_image
+- apps/home/data.py::get_issue_images
+tests: []
+links: {}
+notes: ''

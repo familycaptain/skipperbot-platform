@@ -1,0 +1,18 @@
+kind: specification
+id: email.accounts.disconnect-a-mailbox
+title: Disconnecting withdraws access and takes the history with it
+state: live
+autonomy: gated
+behavior: >
+  Disconnecting asks for confirmation first, then withdraws Skipper's access at Google and
+  removes the mailbox along with its rules and its whole processed-mail history. If Google
+  cannot be reached to withdraw the access the removal still completes rather than leaving a
+  half-connected mailbox, so the household can always get rid of a mailbox.
+implements:
+- apps/email/routes.py::api_email_delete_account
+- apps/email/gmail_client.py::revoke_token
+- apps/email/data.py::delete_account
+- apps/email/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

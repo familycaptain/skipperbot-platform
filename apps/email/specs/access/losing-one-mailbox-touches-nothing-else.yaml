@@ -1,0 +1,18 @@
+kind: specification
+id: email.access.losing-one-mailbox-touches-nothing-else
+title: Losing one mailbox affects only that mailbox
+state: live
+autonomy: gated
+behavior: >
+  Access withdrawn on one mailbox leaves every other mailbox — the same person's and everybody
+  else's — working normally, keeps that mailbox's rules and history intact, and leaves the
+  mailbox connected so reconnecting is a sign-in rather than a rebuild. Nothing is deleted
+  because access was lost.
+implements:
+- apps/email/runner.py::run_email_sync
+- apps/email/gmail_client.py::_service_cache_key
+tests: []
+links: {}
+notes: >
+  Each mailbox's access is held under its own stable identity, so one mailbox's access being
+  replaced or discarded cannot disturb another's.

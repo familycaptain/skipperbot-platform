@@ -1,0 +1,31 @@
+kind: specification
+id: email.backlog.unchanged-rules-mean-no-catching-up
+title: Unchanged rules cost nothing
+state: live
+autonomy: gated
+behavior: >
+  When nothing about a mailbox's switched-on rules has changed since the last catch-up, a pass
+  does no catch-up work at all: it does not read back over the history and does not ask Google
+  about a single old message. A household that leaves its rules alone pays only for new mail,
+  however much history has built up.
+implements:
+- apps/email/runner.py::_reprocess_unmatched
+- apps/email/data.py::get_reeval_trigger
+tests:
+- type: unit
+  path: tests/evolve/email/test_reeval_on_rules_change.py
+  rubric: >
+    Driving the catch-up path with the data layer stubbed: unchanged rules read no history and
+    make no calls to Google; a rule change drains the backlog exactly once and then goes quiet;
+    an edit or an enable re-triggers, a delete does not; a backlog larger than one pass drains
+    over several passes, newest first, over the set frozen when catch-up began, and terminates;
+    a rule changed mid-catch-up gets its own later catch-up.
+- type: unit
+  path: tests/evolve/email/test_reeval_foundation.py
+  rubric: >
+    Against the real email schema: a newly created rule is immediately eligible to trigger a
+    catch-up; the trigger reads the latest change across a mailbox's switched-on rules; and the
+    unhandled-mail query honours its newest-first bounds and resume point consistently with the
+    order it scans in.
+links: {}
+notes: ''

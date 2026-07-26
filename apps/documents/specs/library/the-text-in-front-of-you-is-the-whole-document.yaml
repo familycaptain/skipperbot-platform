@@ -1,0 +1,18 @@
+kind: specification
+id: documents.library.the-text-in-front-of-you-is-the-whole-document
+title: A document keeps one current text, not a history
+state: live
+autonomy: gated
+behavior: >
+  A document holds exactly one version of itself: the text as it stands now. Every save, append and
+  AI improvement writes over what was there, and no earlier text is kept anywhere, so nobody can be
+  shown "what it said last week". Its length in words is kept in step with every change, which is what
+  the list and Skipper's own judgements about a document being too long are based on.
+implements:
+- apps/documents/data.py::save_document
+- apps/documents/store.py::update_doc
+tests: []
+links: {}
+notes: >
+  Stated because it is what someone would most reasonably assume otherwise. Whether documents should
+  keep revisions is an open product question, not settled here.

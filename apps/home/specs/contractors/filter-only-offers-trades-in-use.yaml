@@ -1,0 +1,16 @@
+kind: specification
+id: home.contractors.filter-only-offers-trades-in-use
+title: The trade filter only offers trades someone is filed under
+state: live
+autonomy: gated
+behavior: >
+  The trade filter above the directory lists only the trades actually recorded against a
+  contractor, not every trade the household has configured, so every choice in it returns at least
+  one result.
+implements:
+- apps/home/data.py::get_contractor_trades
+- apps/home/routes.py::api_list_home_contractors
+- apps/home/ui/HomeApp.jsx::ContractorsTab
+tests: []
+links: {}
+notes: ''

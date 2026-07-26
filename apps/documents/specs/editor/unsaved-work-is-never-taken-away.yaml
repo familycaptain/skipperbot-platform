@@ -1,0 +1,17 @@
+kind: specification
+id: documents.editor.unsaved-work-is-never-taken-away
+title: Unsaved work is never taken away
+state: live
+autonomy: gated
+behavior: >
+  While a document has unsaved edits the window says so, and Skipper changing that document elsewhere
+  does NOT reload it underneath the person typing — the automatic refresh is skipped until the edits are
+  saved. Saving is a keystroke as well as a button, and a save that fails leaves the edits in place with
+  the reason shown rather than clearing the unsaved marker.
+implements:
+- apps/documents/ui/DocumentEditor.jsx::handleSave
+tests: []
+links: {}
+notes: >
+  The refresh-suppression is the point: this window is reloaded whenever chat touches documents, and a
+  reload during typing would be indistinguishable from losing the work.

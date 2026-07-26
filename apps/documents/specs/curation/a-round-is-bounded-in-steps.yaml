@@ -1,0 +1,17 @@
+kind: specification
+id: documents.curation.a-round-is-bounded-in-steps
+title: A round is bounded in steps, not just in reading
+state: live
+autonomy: gated
+behavior: >
+  A round is allowed a limited number of turns of thought and a limited number of actions within them,
+  and then it ends and reports whatever it managed. A round that becomes confused, or is steered into
+  repeating itself by something it read, therefore costs a bounded amount and cannot run away with the
+  household's model budget or hold the queue open indefinitely.
+implements:
+- apps/documents/domain.py::document_domain_handler
+tests: []
+links: {}
+notes: >
+  A blast-radius bound rather than a tuning preference: the round's inputs include text Skipper did not
+  write, so the ceiling has to hold regardless of what that text says.

@@ -1,12 +1,19 @@
 kind: specification
 id: medical.treatments.log-treatment
-title: Log a treatment
+title: Recording that a treatment was done
 state: live
 autonomy: gated
-behavior: Logging records an instance of a treatment and advances its next-due date by the interval.
+behavior: >
+  Recording that a treatment was done adds a dated entry to that treatment's history — with the
+  drug or lot used and any note about that occasion — and moves the next-due date on by the
+  interval counted from the day it was actually done, not from today, so catching up on a late
+  entry does not shift the schedule. With no date given, today is assumed; recording against a
+  treatment that does not exist records nothing.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::log_treatment
+- apps/medical/data.py::log_treatment
+- apps/medical/routes.py::api_log_treatment
+- apps/medical/ui/MedicalApp.jsx::LogTreatmentModal
 tests: []
 links: {}
 notes: ''

@@ -1,12 +1,19 @@
 kind: specification
 id: medical.events.log-event
-title: Log a medical event
+title: Writing something into the journal
 state: live
 autonomy: gated
-behavior: Logging records a medical event — visit, surgery, procedure, lab, note, or emergency.
+behavior: >
+  A visit, surgery, procedure, lab draw, note or emergency is recorded against one person with the
+  date it happened, a title, who provided it, what happened, and optionally a follow-up date and
+  what the follow-up is for. Only those six kinds are accepted, so the journal can be read by kind
+  later; a kind outside them is rejected rather than filed where nothing will look for it.
+  Recording against a person who is not in the medical records is refused by name.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::log_medical_event
+- apps/medical/data.py::create_event
+- apps/medical/routes.py::api_create_event
+- apps/medical/ui/MedicalApp.jsx::AddEventModal
 tests: []
 links: {}
 notes: ''

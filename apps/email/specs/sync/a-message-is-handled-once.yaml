@@ -1,0 +1,18 @@
+kind: specification
+id: email.sync.a-message-is-handled-once
+title: A message is only ever handled once
+state: live
+autonomy: gated
+behavior: >
+  A message already in the record is skipped, so running a pass twice — or a scheduled pass
+  overlapping a manual one — does not label, archive or mark the same message again, and does
+  not produce two history entries for it. The record is what makes this true, so it holds across
+  restarts and rule changes.
+implements:
+- apps/email/runner.py::_process_account
+- apps/email/data.py::was_processed
+- apps/email/data.py::log_processed
+- apps/email/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

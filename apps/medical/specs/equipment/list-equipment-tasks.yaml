@@ -1,12 +1,17 @@
 kind: specification
 id: medical.equipment.list-equipment-tasks
-title: List equipment tasks
+title: Finding a task to act on
 state: live
 autonomy: gated
-behavior: Listing returns equipment maintenance tasks and their due dates.
+behavior: >
+  Asked what upkeep a device or a person's devices need, Skipper answers with the tasks and their
+  due dates — soonest first across every matching device, each saying which device and which
+  person it belongs to — so a task named in conversation ("I flushed the drain line") can be
+  matched to the one meant. Asking about a device that does not exist is refused rather than
+  answered with someone else's tasks.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::list_equipment_tasks
+- apps/medical/data.py::get_tasks_for_equipment
 tests: []
 links: {}
 notes: ''

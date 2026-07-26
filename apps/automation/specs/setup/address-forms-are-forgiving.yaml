@@ -1,0 +1,17 @@
+kind: specification
+id: automation.setup.address-forms-are-forgiving
+title: The address is accepted in the forms people paste
+state: live
+autonomy: gated
+behavior: >
+  The Home Assistant address works whether it is pasted with a trailing slash, with the API path on
+  the end, or as the bare base address, and whether it is a hostname on the home network or a
+  published https address — so a person copying the URL out of their browser does not have to know
+  which part to trim.
+implements:
+- apps/automation/tools.py::_ha_base_url
+- apps/automation/devices.py::_ha_base_url
+- apps/automation/devices.py::_ws_url
+tests: []
+links: {}
+notes: ''

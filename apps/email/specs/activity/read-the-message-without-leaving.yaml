@@ -1,0 +1,17 @@
+kind: specification
+id: email.activity.read-the-message-without-leaving
+title: A message can be read in place
+state: live
+autonomy: gated
+behavior: >
+  Opening an unhandled entry shows the sender, the subject and the message text, fetched from
+  the mailbox at that moment, so a person can decide what rule to write without going to Gmail.
+  If the text cannot be fetched the entry still opens and says the body is empty rather than
+  failing to open.
+implements:
+- apps/email/routes.py::api_email_message
+- apps/email/gmail_client.py::get_message_body
+- apps/email/ui/EmailApp.jsx::EmailPreview
+tests: []
+links: {}
+notes: ''

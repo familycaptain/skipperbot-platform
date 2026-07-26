@@ -1,0 +1,24 @@
+kind: specification
+id: home.upkeep.nothing-tracked-yet
+title: A house with nothing tracked yet
+state: live
+autonomy: gated
+behavior: >
+  A household that has never added a maintenance task is shown what the tab is for and prompted to
+  add the first one, not a bare empty list. Once tasks exist, a search or filter that happens to
+  match none of them shows plain "nothing matching" text instead — the introduction is for a
+  genuinely empty collection, never for a narrow filter.
+implements:
+- apps/home/ui/HomeApp.jsx::MaintenanceTab
+- apps/home/ui/index.js
+- web/src/components/PristineEmpty.jsx::PristineEmpty
+- web/src/apps/emptyStateHero.js::isPristineEmpty
+tests:
+- type: unit
+  path: web/scripts/check-empty-state-hero.mjs
+  rubric: >
+    Static prebuild guardrail: the shared pristine-empty predicate's truth table, and that the
+    Home app declares a non-empty hero blurb for each of its five views. Where the hero is placed
+    in the tab, and whether every filter counts as filter-active, is not covered here.
+links: {}
+notes: ''

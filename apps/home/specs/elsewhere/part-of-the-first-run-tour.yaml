@@ -1,0 +1,14 @@
+kind: specification
+id: home.elsewhere.part-of-the-first-run-tour
+title: Home is part of the first-run tour
+state: live
+autonomy: gated
+behavior: >
+  Home is one of the apps a new household is walked through during onboarding, so someone is shown
+  where the house's upkeep is recorded rather than finding it months later.
+implements:
+- apps/home/manifest.yaml
+- apps/goals/onboarding.py
+tests: []
+links: {}
+notes: ''

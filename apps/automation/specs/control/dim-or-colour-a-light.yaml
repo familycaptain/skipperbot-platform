@@ -1,0 +1,16 @@
+kind: specification
+id: automation.control.dim-or-colour-a-light
+title: Dimming or colouring a light
+state: live
+autonomy: gated
+behavior: >
+  A light can be set to a brightness given as a percentage, to a named colour, or both at once, by
+  everyday name or by id. A brightness outside the sensible range is brought back inside it rather than
+  refused, and asking only for a colour leaves the brightness exactly as it was. A request that names
+  something which is not a light resolves against lights only, so "dim the kitchen" cannot end up
+  aiming at the kitchen speaker.
+implements:
+- apps/automation/tools.py::set_home_assistant_light
+tests: []
+links: {}
+notes: ''

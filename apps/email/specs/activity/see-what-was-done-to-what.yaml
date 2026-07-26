@@ -1,0 +1,18 @@
+kind: specification
+id: email.activity.see-what-was-done-to-what
+title: The history says what happened to which message
+state: live
+autonomy: gated
+behavior: >
+  The history lists processed mail newest first, grouped under the day it arrived and counted
+  per day, and each entry names the sender, the subject, the rule that acted, and what was done
+  — labelled, archived, marked read. It is the record a person checks to answer 'is the triage
+  actually doing anything', and it can be refreshed without leaving the screen.
+implements:
+- apps/email/routes.py::api_email_log
+- apps/email/data.py::list_log
+- apps/email/ui/EmailApp.jsx::ActivityTab
+- apps/email/ui/EmailApp.jsx::LogEntry
+tests: []
+links: {}
+notes: ''

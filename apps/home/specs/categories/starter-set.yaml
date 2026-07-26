@@ -1,0 +1,15 @@
+kind: specification
+id: home.categories.starter-set
+title: Usable categories from the first day
+state: live
+autonomy: gated
+behavior: >
+  A new install already has a working set of maintenance categories — a general one plus the
+  common household trades — so the very first task can be filed without configuring anything.
+  Setting the household up again never duplicates them.
+implements:
+- apps/home/migrations/004_task_categories.sql
+- apps/home/data.py::get_all_task_categories
+tests: []
+links: {}
+notes: ''

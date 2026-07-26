@@ -1,0 +1,17 @@
+kind: specification
+id: email.privacy.skipper-does-not-read-your-mail-in-conversation
+title: Skipper cannot read or send your mail in conversation
+state: live
+autonomy: gated
+behavior: >
+  A connected mailbox is not something Skipper can search, summarise, reply from, or act on when
+  asked in chat. Everything that touches the mail happens through the rules the household wrote
+  and the app's own screens, so the blast radius of a connected mailbox is exactly the rules in
+  it. Nothing arriving in the mail can ask Skipper to do anything.
+implements:
+- apps/email/manifest.yaml
+tests: []
+links: {}
+notes: >
+  A deliberate boundary, and the reason a stranger's message cannot become an instruction. The
+  app's own help text currently promises the opposite — recorded in the audit findings.

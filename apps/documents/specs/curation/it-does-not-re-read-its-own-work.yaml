@@ -1,0 +1,19 @@
+kind: specification
+id: documents.curation.it-does-not-re-read-its-own-work
+title: It does not feed on its own output
+state: live
+autonomy: gated
+behavior: >
+  Everything a round produces is kept out of what later rounds review: the documents it writes are not
+  turned back into things-to-write-up, its pointers to itself are filtered out of its own queue, and its
+  reflection on a round is not remembered as something learned. So curation cannot spiral on its own
+  words, endlessly re-documenting the fact that it documented something. Documents a person wrote are
+  treated the opposite way and do feed Skipper's memory, because that is how chat recalls them.
+implements:
+- apps/documents/store.py::DOMAIN_AUTHOR
+- apps/documents/domain.py::_is_noise_memory
+- apps/documents/tools.py::create_doc
+tests: []
+links: {}
+notes: >
+  Two independent guards, one on each side of the loop, because either alone leaves a path back in.

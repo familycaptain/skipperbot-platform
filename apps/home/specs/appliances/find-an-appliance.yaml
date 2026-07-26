@@ -1,0 +1,19 @@
+kind: specification
+id: home.appliances.find-an-appliance
+title: Finding an appliance
+state: live
+autonomy: gated
+behavior: >
+  Searching matches an appliance on its name, type, brand, model, serial number, location or notes
+  whatever the case, so a half-remembered brand or a serial off a warranty card both find the
+  record. Filtering instead narrows to one type, and the types offered are those the household
+  actually owns so every choice returns something. Nothing matching says which search found
+  nothing.
+implements:
+- apps/home/data.py::search_appliances
+- apps/home/data.py::get_appliance_types
+- apps/home/routes.py::api_list_home_appliances
+- apps/home/ui/HomeApp.jsx::AppliancesTab
+tests: []
+links: {}
+notes: ''

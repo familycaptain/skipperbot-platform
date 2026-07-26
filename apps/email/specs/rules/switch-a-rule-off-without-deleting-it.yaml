@@ -1,0 +1,17 @@
+kind: specification
+id: email.rules.switch-a-rule-off-without-deleting-it
+title: A rule can be switched off without being lost
+state: live
+autonomy: gated
+behavior: >
+  Switching a rule off keeps it, its conditions and its tally, but it stops matching: passes
+  ignore it and it no longer drives any catch-up over mail already seen. It reads as switched
+  off in the list rather than disappearing, and switching it back on makes it a change to the
+  rules again — so it catches up on the mail it missed while it was off.
+implements:
+- apps/email/routes.py::api_email_update_rule
+- apps/email/runner.py::_process_account
+- apps/email/data.py::get_reeval_trigger
+tests: []
+links: {}
+notes: ''

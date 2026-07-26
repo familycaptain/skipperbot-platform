@@ -1,0 +1,19 @@
+kind: specification
+id: home.contractors.changing-the-list-never-rewrites-a-contractor
+title: Changing the list never rewrites a contractor
+state: live
+autonomy: gated
+behavior: >
+  Renaming or deleting a trade leaves every contractor's recorded trade exactly as it was — the
+  manage screen says so before deleting — and editing a contractor whose trade is no longer on the
+  list keeps that value as a choice, so it cannot be lost merely by opening the form. A trade
+  label belongs to the contractor rather than pointing at the list.
+implements:
+- apps/home/data.py::update_contractor_trade
+- apps/home/data.py::delete_contractor_trade
+- apps/home/tools.py::update_contractor_trade
+- apps/home/ui/HomeApp.jsx::tradeOptions
+- apps/home/ui/HomeApp.jsx::TradesManager
+tests: []
+links: {}
+notes: ''

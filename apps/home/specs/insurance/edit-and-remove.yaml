@@ -1,0 +1,18 @@
+kind: specification
+id: home.insurance.edit-and-remove
+title: Correcting or removing a policy
+state: live
+autonomy: gated
+behavior: >
+  Editing a policy changes only the fields supplied. Deleting asks for confirmation naming the
+  provider, then removes the policy and any documents attached to it permanently; deleting one
+  that does not exist reports not-found.
+implements:
+- apps/home/tools.py::update_home_insurance_policy
+- apps/home/tools.py::delete_home_insurance_policy
+- apps/home/data.py::update_policy
+- apps/home/data.py::delete_policy
+- apps/home/routes.py::api_delete_home_policy
+tests: []
+links: {}
+notes: ''

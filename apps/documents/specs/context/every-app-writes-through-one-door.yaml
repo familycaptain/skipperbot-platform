@@ -1,0 +1,19 @@
+kind: specification
+id: documents.context.every-app-writes-through-one-door
+title: Every app writes long-form text through this one library
+state: live
+autonomy: gated
+behavior: >
+  Anything in Skipper that produces long-form prose — a research run, a brainstorm, a plan, something
+  printed — stores it as an ordinary document here, so a page Skipper researched is opened, searched,
+  tagged, edited, attached and deleted exactly like one somebody typed. There is no second kind of
+  document with different rules. Because so much depends on it, this library is not an optional part of
+  the install.
+implements:
+- app_platform/documents.py
+- apps/documents/manifest.yaml
+tests: []
+links: {}
+notes: >
+  The single-door part is the intent: a second long-form store would immediately diverge in search,
+  tagging and permissions.

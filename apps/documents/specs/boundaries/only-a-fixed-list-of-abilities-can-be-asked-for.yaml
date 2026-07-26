@@ -1,0 +1,27 @@
+kind: specification
+id: documents.boundaries.only-a-fixed-list-of-abilities-can-be-asked-for
+title: It can only ask for abilities from a fixed list
+state: live
+autonomy: gated
+behavior: >
+  A round starts with a narrow set of abilities and may ask for more, but only from a short reviewed list
+  of reading and reference kinds it plausibly needs. Anything outside that list — managing people,
+  backups, settings and credentials, email, the filesystem, the web, another app entirely — is refused
+  outright rather than granted on request, and both the request and the refusal are recorded. So text
+  Skipper did not write cannot talk a round into reaching for something dangerous, because the reach does
+  not exist to be talked into.
+implements:
+- apps/documents/domain.py::DOC_ALLOWED_REQUEST_CATEGORIES
+- apps/documents/domain.py::_build_doc_slots
+- tool_slots.py::ToolSlots
+tests:
+- type: unit
+  path: tests/evolve/platform/test_doc_think_category_allowlist.py
+  rubric: >
+    Against the real ability registry: an allowed reviewed kind loads; sensitive kinds outside the list
+    are denied and load nothing; an unknown name is unreachable; the list is demonstrably an allowlist
+    rather than everything-minus-a-denylist; and each grant and each refusal is logged.
+links: {}
+notes: >
+  Deny-by-default specifically because this cycle's inputs are text the household did not write and
+  nobody is watching the round.

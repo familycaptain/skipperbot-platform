@@ -1,0 +1,18 @@
+kind: specification
+id: automation.devices.device-names-edited-in-the-app
+title: Naming devices from the app
+state: live
+autonomy: gated
+behavior: >
+  The app lists every device Skipper knows about with its make, model and the names it answers to, and
+  a name can be added or removed on the spot — the same names voice and chat then recognise. Removing
+  one asks first, because a removed name is how a spoken request stops working. Names are tidied and
+  de-duplicated as they are saved, so the same name cannot be attached twice.
+implements:
+- apps/automation/devices.py::set_device_aliases
+- apps/automation/routes.py::api_set_device_aliases
+- apps/automation/routes.py::api_list_devices
+- apps/automation/ui/AutomationApp.jsx::DeviceRow
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,25 @@
+kind: specification
+id: email.access.one-nudge-a-day-at-most
+title: Nobody is nagged more than once a day about it
+state: live
+autonomy: gated
+behavior: >
+  A mailbox whose access is gone fails every pass until somebody reconnects it, so the request
+  to reconnect is sent at most once a day per mailbox however many passes fail in between.
+  Restarting Skipper does not restart the nagging, because what has already been sent is
+  remembered rather than held in memory.
+implements:
+- apps/email/runner.py::_notify_reauth_needed
+tests:
+- type: unit
+  path: tests/evolve/email/test_gmail_service_cache_selfheal.py
+  rubric: >
+    With Google's client, credentials and the notification shim all stubbed and no real tokens:
+    a refused call is retried exactly once against freshly re-established access and succeeds; a
+    second refusal raises without looping and asks the owner to reconnect exactly once; an error
+    that is not a refusal is passed straight through untouched; and no token material appears in
+    anything written to the log.
+links: {}
+notes: >
+  Cadence is measured from the request being recorded, not from it reaching anyone: the platform
+  records one delivery attempt and does not retry.

@@ -1,0 +1,19 @@
+kind: specification
+id: home.upkeep.the-maintenance-log
+title: Recent completions across the whole house
+state: live
+autonomy: gated
+behavior: >
+  Asked when something was last done, Skipper answers from one log of the most recent completions
+  across every task, newest first, each naming the task, the date, who did it and any note. With
+  nothing ever completed it says so plainly. Removing an entry erases that completion for good,
+  and it disappears from the task's own history with it.
+implements:
+- apps/home/tools.py::get_recent_maintenance_log
+- apps/home/tools.py::delete_maintenance_log_entry
+- apps/home/data.py::get_recent_log
+- apps/home/data.py::delete_log_entry
+- apps/home/routes.py::api_recent_log
+tests: []
+links: {}
+notes: ''

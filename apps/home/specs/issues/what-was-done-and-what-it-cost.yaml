@@ -1,0 +1,18 @@
+kind: specification
+id: home.issues.what-was-done-and-what-it-cost
+title: What was done, and what it cost
+state: live
+autonomy: gated
+behavior: >
+  Closing an issue can record what was actually done to fix it and what it cost, kept with the issue
+  so a question like what the household has spent on the roof is answerable years later. Both are
+  optional — an issue can be closed with neither — and an unrecorded cost is reported as unknown
+  rather than as nothing spent.
+implements:
+- apps/home/tools.py::update_home_issue
+- apps/home/tools.py::get_home_issue
+- apps/home/data.py::_issue_row
+- apps/home/migrations/003_home_issues.sql
+tests: []
+links: {}
+notes: ''

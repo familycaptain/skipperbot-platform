@@ -1,0 +1,20 @@
+kind: specification
+id: home.elsewhere.due-upkeep-in-the-backlog
+title: Due upkeep competes with everything else
+state: live
+autonomy: gated
+behavior: >
+  Home maintenance that is overdue, or falls due within the coming week, appears in the
+  household's backlog of things needing attention, each labelled with its category and either how
+  many days overdue it is or how soon it falls due — so house jobs compete for attention with
+  everything else instead of only existing inside one app. A task switched off drops out. If the
+  Home records cannot be read, the backlog is simply short that section rather than failing to
+  load at all.
+implements:
+- apps/home/hooks.py::_home_maintenance_backlog
+- apps/home/hooks.py::_home_task_is_active
+- apps/home/hooks.py::register_hooks
+- apps/home/data.py::get_due_tasks
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,33 @@
+kind: specification
+id: email.backlog.a-new-rule-catches-up-on-old-mail
+title: A new rule applies to mail already sitting there
+state: live
+autonomy: gated
+behavior: >
+  Writing a rule, editing one, or switching one back on makes it apply to mail already seen that
+  no rule handled — not just to mail arriving afterwards — because a person writes a rule after
+  noticing the mail it is meant for. The most recent unhandled mail is caught up first, since
+  that is the mail they just noticed, and each message caught up is recorded as handled by the
+  rule that caught it.
+implements:
+- apps/email/runner.py::_reprocess_unmatched
+- apps/email/data.py::get_unmatched_log_entries
+- apps/email/data.py::update_log_entry_match
+tests:
+- type: unit
+  path: tests/evolve/email/test_reeval_on_rules_change.py
+  rubric: >
+    Driving the catch-up path with the data layer stubbed: unchanged rules read no history and
+    make no calls to Google; a rule change drains the backlog exactly once and then goes quiet;
+    an edit or an enable re-triggers, a delete does not; a backlog larger than one pass drains
+    over several passes, newest first, over the set frozen when catch-up began, and terminates;
+    a rule changed mid-catch-up gets its own later catch-up.
+- type: unit
+  path: tests/evolve/email/test_reeval_foundation.py
+  rubric: >
+    Against the real email schema: a newly created rule is immediately eligible to trigger a
+    catch-up; the trigger reads the latest change across a mailbox's switched-on rules; and the
+    unhandled-mail query honours its newest-first bounds and resume point consistently with the
+    order it scans in.
+links: {}
+notes: ''

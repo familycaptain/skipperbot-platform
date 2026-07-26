@@ -1,12 +1,19 @@
 kind: specification
 id: medical.equipment.list-equipment
-title: List equipment
+title: The devices on record
 state: live
 autonomy: gated
-behavior: Listing returns medical equipment such as dialysis machines and supply systems.
+behavior: >
+  Devices are listed by name for the person being looked at, or for the whole household, each
+  showing whose it is and how many upkeep tasks it carries. A device no longer in use is marked
+  inactive and hidden from the list rather than deleted, and is shown again on request with its
+  history intact.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::list_medical_equipment
+- apps/medical/data.py::get_all_equipment
+- apps/medical/routes.py::api_list_equipment
+- apps/medical/ui/MedicalApp.jsx::EquipmentTab
+- apps/medical/ui/MedicalApp.jsx::EquipmentCard
 tests: []
 links: {}
 notes: ''

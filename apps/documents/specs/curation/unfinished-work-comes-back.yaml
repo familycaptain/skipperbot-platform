@@ -1,0 +1,18 @@
+kind: specification
+id: documents.curation.unfinished-work-comes-back
+title: What a round did not get to comes back next time
+state: live
+autonomy: gated
+behavior: >
+  A round counts as handled only what it explicitly says it handled — whether it wrote that information
+  down or judged it not worth documenting. Anything it ran out of room for is offered again next round,
+  so running low mid-round costs nothing. If a round plainly did work but never said what it handled,
+  the whole batch is treated as done rather than being offered forever.
+implements:
+- apps/documents/domain.py::document_domain_handler
+- apps/documents/domain.py::MARK_MEMORIES_PROCESSED_TOOL
+tests: []
+links: {}
+notes: >
+  The final sentence is a deliberate anti-livelock measure, and it can silently skip items — see the
+  audit findings. It is recorded because it is observable, not because it is settled.

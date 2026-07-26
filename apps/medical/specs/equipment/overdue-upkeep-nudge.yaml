@@ -1,0 +1,15 @@
+kind: specification
+id: medical.equipment.overdue-upkeep-nudge
+title: A daily nudge while upkeep is overdue
+state: live
+autonomy: gated
+behavior: >
+  While any equipment upkeep is past its due date, the household's admins get one nudge a day
+  naming each overdue task, whose device it is on and how many days late it is. Nothing overdue
+  means nobody is nudged, upkeep merely due soon does not trigger it, and with no admin account
+  set up the nudge is dropped rather than queued.
+implements:
+- apps/medical/__init__.py::_equipment_maintenance_nag_provider
+tests: []
+links: {}
+notes: ''

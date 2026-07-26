@@ -1,0 +1,18 @@
+kind: specification
+id: automation.names.teach-a-name
+title: Teaching Skipper what something is called
+state: live
+autonomy: gated
+behavior: >
+  Telling Skipper that an everyday name means a particular thing ("the corner lamp means
+  light.living_room_floor_lamp") saves that name, and from then on any request naming it goes straight
+  to that thing without searching. Teaching the same name again re-points it, so a correction is just
+  saying the right thing once. A name given with no real target, or with something that is not a full
+  Home Assistant entity id, is refused with the reason rather than saved as a dud.
+implements:
+- apps/automation/tools.py::add_home_assistant_alias
+- apps/automation/routes.py::api_add_alias
+- apps/automation/ui/AutomationApp.jsx::NamesManager
+tests: []
+links: {}
+notes: ''

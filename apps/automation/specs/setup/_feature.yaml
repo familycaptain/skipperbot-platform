@@ -1,0 +1,6 @@
+kind: feature
+id: automation.setup
+title: Connecting Home Assistant
+state: live
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: email.rules.build-a-rule-from-mail-you-just-noticed
+title: Build a rule out of the message that annoyed you
+state: live
+autonomy: gated
+behavior: >
+  From a message nothing handled, a person can open it, highlight the piece of the sender,
+  subject or text that identifies mail like it, and go straight to a new rule with those pieces
+  already filled in as conditions and a name suggested from the sender's domain. Highlighting in
+  one field only fills that field's condition, and each captured piece can be dropped again
+  before continuing, so the rule that gets written is the one the person meant.
+implements:
+- apps/email/ui/EmailApp.jsx::EmailPreview
+- apps/email/ui/EmailApp.jsx::LogEntry
+- apps/email/ui/EmailApp.jsx::RuleForm
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: documents.library.deleting-is-immediate-and-final
+title: Deleting is immediate and final
+state: live
+autonomy: gated
+behavior: >
+  Deleting a document removes it and every cross-reference to it at once. There is no wastebasket and
+  no earlier copy to restore from, so the confirmation someone gives in the app is the only chance to
+  change their mind. Deleting something already gone reports it as not found rather than reporting
+  success.
+implements:
+- apps/documents/store.py::delete_doc
+- agent.py::api_delete_document
+tests: []
+links: {}
+notes: ''

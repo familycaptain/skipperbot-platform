@@ -1,0 +1,15 @@
+kind: specification
+id: documents.context.clearing-an-attachment
+title: Clearing what a document is about
+state: live
+autonomy: gated
+behavior: >
+  The item a document is primarily about can be changed to a different one or cleared entirely, and
+  clearing it is distinguishable in the request from simply not mentioning it — so a metadata edit that
+  says nothing about attachments never quietly detaches a document from its project.
+implements:
+- apps/documents/store.py::update_doc_meta
+- apps/documents/tools.py::update_doc_meta
+tests: []
+links: {}
+notes: ''

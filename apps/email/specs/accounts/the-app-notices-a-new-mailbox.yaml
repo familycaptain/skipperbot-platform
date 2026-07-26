@@ -1,0 +1,15 @@
+kind: specification
+id: email.accounts.the-app-notices-a-new-mailbox
+title: The app notices a new mailbox without being refreshed
+state: live
+autonomy: gated
+behavior: >
+  Because consent happens in a separate window, the app watches for the mailbox to appear and
+  shows it within a few seconds of the person granting access — nobody has to reload. It stops
+  watching after about a minute and a half, so an abandoned sign-in does not leave the app
+  polling forever; reopening the app shows any mailbox that was in fact connected.
+implements:
+- apps/email/ui/EmailApp.jsx::AccountsTab
+tests: []
+links: {}
+notes: ''

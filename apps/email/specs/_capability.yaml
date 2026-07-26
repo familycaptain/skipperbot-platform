@@ -2,9 +2,12 @@ kind: capability
 id: email
 title: Email
 app: email
-scope: 'Gmail integration: connect Gmail accounts via OAuth, define rule-based inbox processing
-  (label, archive, mark read), and view a processed-email activity log. NOT a full mail client
-  — it''s account linking + automated inbox rules.'
+scope: >
+  Connect household Gmail mailboxes and triage them automatically: rules that label, archive or
+  mark mail as read, applied to new mail on every sync pass and re-applied to mail already seen
+  when the rules change, plus a per-mailbox history of what was done. NOT a mail client and NOT
+  a way for Skipper to read or send mail in conversation — linking a mailbox, automating its
+  inbox, and showing the record.
 state: live
 autonomy: gated
 links: {}

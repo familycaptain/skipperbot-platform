@@ -1,6 +1,6 @@
 kind: feature
 id: email.accounts
-title: Gmail accounts
+title: Connected mailboxes
 state: live
 links: {}
 notes: ''

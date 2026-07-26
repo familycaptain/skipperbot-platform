@@ -1,0 +1,19 @@
+kind: specification
+id: home.insurance.record-a-policy
+title: Recording a policy
+state: live
+autonomy: gated
+behavior: >
+  Adding a policy records the provider, the policy number, what kind of cover it is, how much
+  cover it carries, the premium and how often it is billed, the deductible, when it renews, and in
+  words what it actually covers. Only the provider is required, and any amount or date left out
+  stays unrecorded rather than becoming zero.
+implements:
+- apps/home/tools.py::create_home_insurance_policy
+- apps/home/data.py::create_policy
+- apps/home/routes.py::api_create_home_policy
+- apps/home/ui/HomeApp.jsx::AddPolicyForm
+- apps/home/migrations/006_insurance.sql
+tests: []
+links: {}
+notes: ''

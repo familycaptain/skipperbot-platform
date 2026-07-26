@@ -1,0 +1,16 @@
+kind: specification
+id: home.insurance.summary-follows-the-filter
+title: The summary describes what is on screen
+state: live
+autonomy: gated
+behavior: >
+  Narrowing to one kind of policy narrows the summary band with it, so filtering to car insurance
+  shows the car totals rather than the household total — the band always describes the list
+  beneath it. With no policies matching at all there is no band, and the empty-state text takes
+  its place.
+implements:
+- apps/home/ui/HomeApp.jsx::InsuranceTab
+- apps/home/ui/HomeApp.jsx::CoverageSummary
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: documents.curation.it-updates-rather-than-duplicates
+title: It grows a page rather than starting a second one
+state: live
+autonomy: gated
+behavior: >
+  Before writing anything, a round is shown the documents that already cover the same ground — matched
+  both by meaning and by shared tags — together with the titles of every other document, and is required
+  to read a candidate before changing it. So a second mention of the dog grows the page about the dog
+  instead of creating "Jasper (2)", and new information is woven into the right place rather than tacked
+  onto the end.
+implements:
+- apps/documents/domain.py::_observe
+- apps/documents/domain.py::_build_user_prompt
+- prompts/DOCUMENT_THINK.md
+tests: []
+links: {}
+notes: ''

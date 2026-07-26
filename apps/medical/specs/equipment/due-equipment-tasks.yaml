@@ -1,12 +1,17 @@
 kind: specification
 id: medical.equipment.due-equipment-tasks
-title: Due equipment tasks
+title: What upkeep is due
 state: live
 autonomy: gated
-behavior: Due-tasks returns equipment maintenance due soon or overdue.
+behavior: >
+  Asked what equipment upkeep is due, Skipper answers with the tasks falling due inside the window
+  asked for — or only what is overdue and due today when the window is nothing — each with the
+  device, whose it is, and how overdue it is. Tasks switched off, and tasks on devices marked
+  inactive, are never included: upkeep of a machine nobody uses is not a job.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::get_due_equipment_tasks
+- apps/medical/data.py::get_overdue_equip_tasks
+- apps/medical/__init__.py::_equipment_backlog
 tests: []
 links: {}
 notes: ''

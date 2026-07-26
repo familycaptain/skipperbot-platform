@@ -1,0 +1,17 @@
+kind: specification
+id: home.categories.delete-keeps-the-tasks
+title: Deleting a category never deletes tasks
+state: live
+autonomy: gated
+behavior: >
+  Deleting a category asks for confirmation and says plainly that tasks using it keep their
+  category value; the tasks themselves are untouched, none is deleted and none is moved. The
+  category simply stops being offered.
+implements:
+- apps/home/tools.py::delete_task_category
+- apps/home/data.py::delete_task_category
+- apps/home/routes.py::api_delete_task_category
+- apps/home/ui/HomeApp.jsx::CategoriesManager
+tests: []
+links: {}
+notes: ''

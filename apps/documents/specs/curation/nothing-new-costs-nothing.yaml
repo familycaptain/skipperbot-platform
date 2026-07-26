@@ -1,0 +1,15 @@
+kind: specification
+id: documents.curation.nothing-new-costs-nothing
+title: Nothing new to write up costs nothing
+state: live
+autonomy: gated
+behavior: >
+  A round that finds nothing Skipper has not already written up ends immediately without consulting a
+  model at all, records that it had nothing to do, and waits about an hour before looking again. So a
+  quiet household is not paying for background thinking, and the app's share of the day's model budget
+  tracks how much is actually being learned.
+implements:
+- apps/documents/domain.py::document_domain_handler
+tests: []
+links: {}
+notes: ''

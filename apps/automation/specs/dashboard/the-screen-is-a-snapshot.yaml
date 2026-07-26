@@ -1,0 +1,15 @@
+kind: specification
+id: automation.dashboard.the-screen-is-a-snapshot
+title: The screen is a snapshot, refreshed on request
+state: live
+autonomy: gated
+behavior: >
+  The dashboard reads the house when it is opened and when someone presses refresh — it does not follow
+  along live, so a light someone switches at the wall is not reflected until the next read. Rows the
+  person changes from the screen are updated as they happen, and a refresh is always available rather
+  than requiring the page to be reloaded.
+implements:
+- apps/automation/ui/AutomationApp.jsx::DashboardView
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: email.rules.conditions-all-have-to-hold
+title: Every condition you fill in has to hold
+state: live
+autonomy: gated
+behavior: >
+  A rule matches only when every condition the person filled in holds; conditions left blank are
+  ignored rather than treated as 'must be empty'. A rule with no conditions at all therefore
+  matches every message that reaches it — which is how a catch-all is written, and why order
+  matters.
+implements:
+- apps/email/runner.py::_matches
+- apps/email/ui/EmailApp.jsx::RuleForm
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: documents.finding.the-most-recently-changed-first
+title: The most recently changed comes first
+state: live
+autonomy: gated
+behavior: >
+  A listing of documents is ordered by when each was last changed, newest first, so whatever is
+  currently being worked on is at the top without anyone sorting. An empty library lists nothing rather
+  than failing.
+implements:
+- apps/documents/store.py::list_docs
+tests: []
+links: {}
+notes: ''

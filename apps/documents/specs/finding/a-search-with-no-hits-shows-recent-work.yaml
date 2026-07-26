@@ -1,0 +1,17 @@
+kind: specification
+id: documents.finding.a-search-with-no-hits-shows-recent-work
+title: A search that hits nothing shows recent work instead
+state: live
+autonomy: gated
+behavior: >
+  When a search finds nothing to rank at all, the most recently changed documents are returned rather
+  than an empty answer, on the reasoning that something to click beats a dead end. The consequence to
+  be aware of is that a search never comes back empty, so a result appearing is not by itself proof
+  that anything matched — the relevance score alongside it is.
+implements:
+- apps/documents/data.py::search_documents_hybrid
+tests: []
+links: {}
+notes: >
+  Written up as current behaviour, not as a settled decision: returning recent documents for a query
+  that matched nothing is easy to read as a false positive. See the audit findings.

@@ -1,0 +1,16 @@
+kind: specification
+id: documents.boundaries.the-cycle-writes-as-itself
+title: The cycle writes as itself, never as a person
+state: live
+autonomy: gated
+behavior: >
+  Every document background curation creates is attributed to the curation cycle, not to any member of
+  the household, whatever the round says about who is writing. So nobody is shown a page apparently
+  written by their partner that Skipper actually composed, and "everything Skipper wrote up itself" is a
+  question with an answer.
+implements:
+- apps/documents/domain.py::_doc_dispatch
+- apps/documents/domain.py::DOMAIN_SAVED_BY
+tests: []
+links: {}
+notes: ''

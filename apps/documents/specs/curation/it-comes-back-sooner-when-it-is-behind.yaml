@@ -1,0 +1,17 @@
+kind: specification
+id: documents.curation.it-comes-back-sooner-when-it-is-behind
+title: It comes back sooner when it is behind
+state: live
+autonomy: gated
+behavior: >
+  How soon curation looks again depends on how much is waiting: badly behind — a fresh install with a
+  large history — it returns within about ten minutes until it catches up; having just written
+  something it returns in about half an hour to keep the thread; otherwise about an hour. So a new
+  install organises itself over an evening rather than a month, and a settled one ticks quietly.
+implements:
+- apps/documents/domain.py::document_domain_handler
+- apps/documents/domain.py::CATCHUP_INTERVAL_SECONDS
+- apps/documents/domain.py::STEADY_INTERVAL_SECONDS
+tests: []
+links: {}
+notes: ''

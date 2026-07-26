@@ -1,0 +1,17 @@
+kind: specification
+id: medical.equipment.add-equipment
+title: Recording a device
+state: live
+autonomy: gated
+behavior: >
+  A medical device — a dialysis machine, a CPAP, a nebuliser — is recorded against the person who
+  uses it, with make, model and serial number, so consumables and service calls can be matched to
+  the right machine rather than to a household. The person and a name are required; everything
+  else can be filled in later.
+implements:
+- apps/medical/data.py::create_equipment
+- apps/medical/routes.py::api_create_equipment
+- apps/medical/ui/MedicalApp.jsx::AddEquipmentModal
+tests: []
+links: {}
+notes: ''

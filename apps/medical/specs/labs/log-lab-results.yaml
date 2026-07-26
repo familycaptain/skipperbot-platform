@@ -1,12 +1,18 @@
 kind: specification
 id: medical.labs.log-lab-results
-title: Log lab results
+title: Recording a set of results
 state: live
 autonomy: gated
-behavior: Logging records lab results for a member.
+behavior: >
+  A set of results is recorded for one person against one draw date, several values at once, each
+  matched to a test on the household list. A value naming a test that is not on the list is
+  reported as such and every other value in the set is still saved, so one unrecognised name never
+  loses the whole draw; a test left blank is skipped rather than stored as zero.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::log_lab_results
+- apps/medical/data.py::create_lab_result
+- apps/medical/routes.py::api_bulk_create_lab_results
+- apps/medical/ui/MedicalApp.jsx::LogLabResultsModal
 tests: []
 links: {}
 notes: ''

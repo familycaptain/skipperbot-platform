@@ -1,0 +1,17 @@
+kind: specification
+id: email.rules.only-labels-that-exist-are-offered
+title: Only labels the mailbox actually has are offered
+state: live
+autonomy: gated
+behavior: >
+  The label choices come from the mailbox itself rather than being typed, with the person's own
+  labels ahead of Gmail's and Gmail's marked as such, so a rule cannot be written against a
+  label that does not exist. Places that need somewhere to move mail to exclude the labels that
+  are not destinations — the inbox, spam, trash, sent, drafts and the status markers.
+implements:
+- apps/email/routes.py::api_email_labels
+- apps/email/gmail_client.py::list_labels
+- apps/email/ui/EmailApp.jsx::RuleForm
+tests: []
+links: {}
+notes: ''

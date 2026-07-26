@@ -1,0 +1,19 @@
+kind: specification
+id: automation.control.anything-home-assistant-can-do
+title: Anything Home Assistant can do, with the parameters it needs
+state: live
+autonomy: gated
+behavior: >
+  Beyond on, off and dim, any action Home Assistant offers can be asked for by name with its own
+  parameters — set a thermostat, run a script, close a cover — and the answer reports what changed
+  (a handful of things, not hundreds) plus whatever the action itself returned, shortened if it is
+  enormous. A request missing the action, or carrying parameters that are not a well-formed object, is
+  refused before anything is sent, so a malformed instruction never half-executes.
+implements:
+- apps/automation/tools.py::call_home_assistant_service
+- apps/automation/tools.py::list_home_assistant_services
+tests: []
+links: {}
+notes: >
+  The general escape hatch is deliberate — a household's Home Assistant has actions this app will never
+  have a purpose-built wrapper for. What bounds it is the token the operator issued, not this app.

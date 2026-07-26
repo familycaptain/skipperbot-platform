@@ -1,0 +1,17 @@
+kind: specification
+id: medical.appointments.cancel-without-losing-it
+title: Cancelling keeps the appointment on the record
+state: live
+autonomy: gated
+behavior: >
+  Cancelling an appointment keeps it on the record marked cancelled rather than erasing it, drops
+  it out of the default list, and stops its reminders and its place on the attention list; un-
+  cancelling puts it back. Deleting one, by contrast, removes it altogether and takes a
+  confirmation naming it.
+implements:
+- apps/medical/data.py::update_appointment
+- apps/medical/data.py::delete_appointment
+- apps/medical/ui/MedicalApp.jsx::ApptCard
+tests: []
+links: {}
+notes: ''

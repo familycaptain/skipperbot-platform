@@ -1,0 +1,17 @@
+kind: specification
+id: home.elsewhere.one-nudge-a-day-about-overdue-upkeep
+title: One nudge a day about overdue upkeep
+state: live
+autonomy: gated
+behavior: >
+  When maintenance is overdue, the household's administrators are sent a single consolidated
+  message listing every overdue task with its category and how many days late it is — not one
+  message per task. Nothing overdue means no message at all, and no more than one such message
+  reaches the same person on the same day.
+implements:
+- apps/home/hooks.py::_home_maintenance_nag_provider
+- apps/home/hooks.py::_build_nag_message
+- nag_registry.py::run_all_nag_providers
+tests: []
+links: {}
+notes: ''

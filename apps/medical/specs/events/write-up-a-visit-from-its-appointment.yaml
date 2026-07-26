@@ -1,0 +1,17 @@
+kind: specification
+id: medical.events.write-up-a-visit-from-its-appointment
+title: Writing up a visit from the appointment it happened at
+state: live
+autonomy: gated
+behavior: >
+  Writing up a visit from the appointment it happened at starts from everything already known —
+  the same person, the appointment's title, provider and date, and a kind of event that matches
+  the kind of appointment — leaving only the findings to type. The write-up is linked back to the
+  appointment, which is what clears that appointment's "no visit log" flag.
+implements:
+- apps/medical/ui/MedicalApp.jsx::LogVisitModal
+- apps/medical/routes.py::api_create_event
+- apps/medical/migrations/004_appt_event_link.sql
+tests: []
+links: {}
+notes: ''

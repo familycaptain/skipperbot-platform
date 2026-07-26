@@ -1,0 +1,24 @@
+kind: specification
+id: email.backlog.mail-arriving-during-a-catch-up-is-not-chased
+title: Mail arriving during a catch-up is treated as new mail
+state: live
+autonomy: gated
+behavior: >
+  The backlog a catch-up is responsible for is fixed at the moment it starts. Mail arriving
+  while it runs is handled as new mail on the ordinary path instead of being added to the
+  backlog, so a busy mailbox cannot keep a catch-up running indefinitely and 'finished' is
+  something that can actually be reached.
+implements:
+- apps/email/runner.py::_reprocess_unmatched
+- apps/email/data.py::get_unmatched_log_entries
+tests:
+- type: unit
+  path: tests/evolve/email/test_reeval_on_rules_change.py
+  rubric: >
+    Driving the catch-up path with the data layer stubbed: unchanged rules read no history and
+    make no calls to Google; a rule change drains the backlog exactly once and then goes quiet;
+    an edit or an enable re-triggers, a delete does not; a backlog larger than one pass drains
+    over several passes, newest first, over the set frozen when catch-up began, and terminates;
+    a rule changed mid-catch-up gets its own later catch-up.
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: documents.editor.an-empty-library-explains-itself
+title: An empty library explains itself
+state: live
+autonomy: gated
+behavior: >
+  Opening Documents before anything has been written shows what the app is for and how to start, not a
+  blank panel. That is different from a search or filter that matched nothing, which says so plainly so
+  nobody mistakes an unlucky search for an empty library.
+implements:
+- apps/documents/ui/DocListApp.jsx::DocList
+tests: []
+links: {}
+notes: ''

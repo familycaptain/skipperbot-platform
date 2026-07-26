@@ -1,0 +1,22 @@
+kind: specification
+id: email.backlog.nothing-unhandled-means-nothing-to-catch-up
+title: A rule change with nothing unhandled finishes immediately
+state: live
+autonomy: gated
+behavior: >
+  A rule change on a mailbox with no unhandled mail records that there was nothing to catch up
+  on and does not look again on the next pass, so writing rules on a tidy mailbox is free and
+  does not leave a catch-up running in the background.
+implements:
+- apps/email/runner.py::_reprocess_unmatched
+tests:
+- type: unit
+  path: tests/evolve/email/test_reeval_on_rules_change.py
+  rubric: >
+    Driving the catch-up path with the data layer stubbed: unchanged rules read no history and
+    make no calls to Google; a rule change drains the backlog exactly once and then goes quiet;
+    an edit or an enable re-triggers, a delete does not; a backlog larger than one pass drains
+    over several passes, newest first, over the set frozen when catch-up began, and terminates;
+    a rule changed mid-catch-up gets its own later catch-up.
+links: {}
+notes: ''

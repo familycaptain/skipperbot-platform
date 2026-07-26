@@ -1,0 +1,19 @@
+kind: specification
+id: medical.empty-state.loading-and-failed-loads
+title: Loading, and a load that fails
+state: live
+autonomy: gated
+behavior: >
+  Each tab says it is loading while it fetches and shows its records the moment they arrive. A
+  fetch that fails is not reported: the tab stops loading and shows its empty state, which reads
+  exactly like having no records — so an unreachable server and an empty tab are indistinguishable
+  to the person looking at them.
+implements:
+- apps/medical/ui/MedicalApp.jsx::MedicationsTab
+- apps/medical/ui/MedicalApp.jsx::LabsTab
+- apps/medical/ui/MedicalApp.jsx::EquipmentTab
+tests: []
+links: {}
+notes: >
+  Recorded as it stands, not as intent — the silent failure is the behaviour today, and in an app
+  where an empty screen can mean "no medications" it is worth stating plainly.

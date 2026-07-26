@@ -1,0 +1,16 @@
+kind: specification
+id: medical.privacy.never-spoken-aloud
+title: Nothing medical is announced out loud
+state: live
+autonomy: gated
+behavior: >
+  Nothing Medical raises ever asks to be spoken on a shared speaker: reminders and nudges are
+  recorded in the person's web console and, additionally, pushed to their phone or sent to Discord
+  according to how that person is set up. So a household with a speaker in the kitchen never hears
+  who has which appointment tomorrow.
+implements:
+- apps/medical/__init__.py::_appointment_reminder_provider
+- apps/notifications/delivery.py::_deliver_one
+tests: []
+links: {}
+notes: ''

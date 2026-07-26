@@ -1,0 +1,15 @@
+kind: specification
+id: documents.curation.it-writes-for-a-person-to-read
+title: It writes for a person to read
+state: live
+autonomy: gated
+behavior: >
+  A curated document reads as notes a person would keep — one topic per page, headings, facts in
+  bullets, an "open questions" section where Skipper knows it is guessing — rather than a transcript of
+  what Skipper remembers. Skipper's internal references never appear in the text, and each page is
+  tagged with the subjects it covers so it can be found by asking for them.
+implements:
+- prompts/DOCUMENT_THINK.md
+tests: []
+links: {}
+notes: ''

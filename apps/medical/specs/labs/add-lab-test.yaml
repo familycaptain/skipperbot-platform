@@ -1,12 +1,20 @@
 kind: specification
 id: medical.labs.add-lab-test
-title: Add a lab test
+title: The household's list of tests
 state: live
 autonomy: gated
-behavior: Adding registers a lab test on the master list.
+behavior: >
+  Lab values are recorded against a named test held on one household-wide list, each with its
+  unit, its normal range and where it should sit in the display order, so the same test means the
+  same thing every time it is recorded and any range check has something to check against. Adding
+  a test whose name is already on the list adds nothing and hands back the one already there; a
+  test may be added with no unit and no range and still be recorded against.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::add_lab_test
+- apps/medical/data.py::create_lab_test
+- apps/medical/data.py::get_lab_test_by_name
+- apps/medical/routes.py::api_create_lab_test
+- apps/medical/ui/MedicalApp.jsx::ManageLabTests
 tests: []
 links: {}
 notes: ''

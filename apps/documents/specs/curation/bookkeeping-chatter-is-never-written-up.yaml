@@ -1,0 +1,23 @@
+kind: specification
+id: documents.curation.bookkeeping-chatter-is-never-written-up
+title: Bookkeeping chatter is never written up
+state: live
+autonomy: gated
+behavior: >
+  Skipper's own internal record-keeping — a task changing status, one item being linked to another, a
+  notification going out, a job finishing — is discarded before a round reads anything, so no document
+  is ever composed out of it and it is not re-examined on later rounds. What survives the filter is the
+  kind of thing a member of the household would actually want to read: facts about people and pets,
+  household knowledge, preferences, routines, vehicles, health and money.
+implements:
+- apps/documents/domain.py::_is_noise_memory
+- apps/documents/domain.py::_NOISE_PATTERNS
+- prompts/DOCUMENT_THINK.md
+tests:
+- type: unit
+  path: tests/evolve/platform/test_doc_observe_catchup_counters.py
+  rubric: >
+    A window containing nothing but bookkeeping chatter still advances the bookmark to the last item
+    examined, so filtered-out items are never re-scanned on subsequent rounds.
+links: {}
+notes: ''

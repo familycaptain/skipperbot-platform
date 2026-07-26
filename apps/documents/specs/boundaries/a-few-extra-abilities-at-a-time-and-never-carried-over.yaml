@@ -1,0 +1,16 @@
+kind: specification
+id: documents.boundaries.a-few-extra-abilities-at-a-time-and-never-carried-over
+title: A few extra abilities at a time, never carried over
+state: live
+autonomy: gated
+behavior: >
+  A round can hold only a small number of extra abilities at once, and every round begins from the same
+  narrow starting point regardless of what the previous one asked for. Nothing accumulates, so a round
+  that was talked into loading something odd cannot leave that reach lying around for the next one, and
+  the abilities a round holds are never larger than what one round of work needs.
+implements:
+- apps/documents/domain.py::DOC_SLOT_CAPACITY
+- apps/documents/domain.py::_build_doc_slots
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,21 @@
+kind: specification
+id: home.contractors.picker-is-never-empty
+title: There is always a trade to file under
+state: live
+autonomy: gated
+behavior: >
+  With every trade removed from the list, the trade choice on the add and edit forms still offers
+  a general fallback rather than being empty, so a contractor can always be recorded and the tab
+  cannot be configured into uselessness.
+implements:
+- apps/home/ui/HomeApp.jsx::tradeOptions
+- apps/home/ui/HomeApp.jsx::AddContractorForm
+tests:
+- type: unit
+  path: web/scripts/check-contractor-trades.mjs
+  rubric: >
+    Static prebuild guardrail: the trades table exists and is seeded idempotently with the common
+    trades; the add and edit trade controls are pick-lists drawn from the managed list with no
+    free-text fallback left behind; a manage screen talks to the trades API.
+links: {}
+notes: ''

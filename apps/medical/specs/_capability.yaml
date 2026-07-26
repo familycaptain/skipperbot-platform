@@ -2,10 +2,13 @@ kind: capability
 id: medical
 title: Medical
 app: medical
-scope: 'Family medical tracker: per-member medications with refill-nag reminders, recurring treatments
-  (injections/infusions), a medical event journal (visits, surgeries, labs, notes), lab results
-  with trend history, and medical-equipment maintenance. NOT a diagnosis or clinical-advice tool
-  — it''s a household record and reminder system.'
+scope: >
+  The household's health record: the people it is kept for, their medications and refill cycles,
+  recurring treatments such as injections and infusions, scheduled appointments and their
+  reminders, a journal of visits, procedures and emergencies, lab values over time, and medical
+  equipment with its upkeep. Every record belongs to exactly one family member. NOT a diagnosis or
+  clinical-advice tool, and not the homeopathy tracker (its own app) — this is a household record-
+  and-reminder system holding the most sensitive data on the platform.
 state: live
 autonomy: gated
 links: {}

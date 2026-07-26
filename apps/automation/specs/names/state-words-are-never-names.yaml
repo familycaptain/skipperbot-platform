@@ -1,0 +1,14 @@
+kind: specification
+id: automation.names.state-words-are-never-names
+title: Words that describe a state never become names
+state: live
+autonomy: gated
+behavior: >
+  Words that describe a condition rather than a thing — on, off, open, closed, up, down — are never
+  saved as names for anything, and neither is something that is already a full entity id. So a
+  misparsed command like "turn the lamp on" can never leave "on" permanently meaning a light.
+implements:
+- apps/automation/tools.py::_maybe_learn_alias
+tests: []
+links: {}
+notes: ''

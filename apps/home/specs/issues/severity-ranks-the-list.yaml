@@ -1,0 +1,16 @@
+kind: specification
+id: home.issues.severity-ranks-the-list
+title: The worst thing is at the top
+state: live
+autonomy: gated
+behavior: >
+  Issues are listed with the unfinished ones first, then the most severe first — critical, major,
+  moderate, minor — and the most recently reported first within a severity. Someone opening the
+  tab sees whatever is most likely to matter without sorting anything.
+implements:
+- apps/home/data.py::get_all_issues
+- apps/home/tools.py::list_home_issues
+- apps/home/ui/HomeApp.jsx::HomeIssuesTab
+tests: []
+links: {}
+notes: ''

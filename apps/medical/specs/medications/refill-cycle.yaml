@@ -1,0 +1,19 @@
+kind: specification
+id: medical.medications.refill-cycle
+title: The refill cycle, and what it offers next
+state: live
+autonomy: gated
+behavior: >
+  A medication moves through a refill cycle — on track, needing to be ordered, ordered and waiting
+  to be collected, and back on track once the new supply is in hand — and the stage it is at
+  decides what the app offers to do about it: "Mark ordered" only while it needs ordering, "Mark
+  filled" only while it is ordered. Nobody is offered a step that has already been taken, and the
+  stage is shown as a plain label on the medication rather than left to be inferred from dates.
+implements:
+- apps/medical/data.py::update_medication
+- apps/medical/ui/MedicalApp.jsx::REFILL_BADGE
+- apps/medical/ui/MedicalApp.jsx::MedCard
+- apps/medical/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

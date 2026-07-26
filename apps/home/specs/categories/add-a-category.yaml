@@ -1,0 +1,17 @@
+kind: specification
+id: home.categories.add-a-category
+title: Adding a category of your own
+state: live
+autonomy: gated
+behavior: >
+  Naming a new category adds it to the end of the pick-list with a colour chosen from a fixed
+  palette, and it is offered for filing immediately. A name that already exists is refused with a
+  message saying so rather than appearing twice in the list.
+implements:
+- apps/home/tools.py::create_task_category
+- apps/home/data.py::create_task_category
+- apps/home/routes.py::api_create_task_category
+- apps/home/ui/HomeApp.jsx::CategoriesManager
+tests: []
+links: {}
+notes: ''

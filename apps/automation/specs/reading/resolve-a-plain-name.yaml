@@ -1,0 +1,20 @@
+kind: specification
+id: automation.reading.resolve-a-plain-name
+title: Working out which thing a plain name means
+state: live
+autonomy: gated
+behavior: >
+  Given an everyday name, a name the household taught wins outright; otherwise the closest match by
+  name, by id and by what the thing measures is returned with its current reading, and the kind of
+  thing being asked about ("a light called office") is allowed to break a tie. When several things are
+  plausible the candidates are offered — a handful, not a hundred — instead of one being picked. When
+  nothing is plausible Skipper says so and shows the names it does know, so the person can see what to
+  ask for.
+implements:
+- apps/automation/tools.py::resolve_home_assistant_entity
+- apps/automation/tools.py::_resolve_entity
+- apps/automation/tools.py::_entity_score
+- apps/automation/tools.py::_rank_entities
+tests: []
+links: {}
+notes: ''

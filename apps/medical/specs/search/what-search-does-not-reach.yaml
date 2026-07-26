@@ -1,0 +1,17 @@
+kind: specification
+id: medical.search.what-search-does-not-reach
+title: What a search will not find
+state: live
+autonomy: gated
+behavior: >
+  A search reaches medications and journal entries and nothing else: treatments, lab values,
+  appointments and equipment are not searched, and neither are medications that have been stopped.
+  So a question about a lab value or a device has to be asked of those records directly, and a
+  search that finds nothing is not evidence that nothing was recorded.
+implements:
+- apps/medical/data.py::search_medical
+tests: []
+links: {}
+notes: >
+  Written down because the boundary is invisible from the answer: an empty result reads the same
+  whether the search covered the record or never looked at it.

@@ -1,0 +1,14 @@
+kind: specification
+id: documents.editor.printing-a-document
+title: Printing a document prints what it says
+state: live
+autonomy: gated
+behavior: >
+  A document can be sent to the printer as the formatted page it reads as, titled with the document's
+  own title — not as raw markdown and not as a screenshot of the editor. What is printed is the text
+  currently on screen, including edits not yet saved.
+implements:
+- apps/documents/ui/DocumentEditor.jsx::handlePrint
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: email.access.expired-access-is-renewed-quietly
+title: Access that has merely expired is renewed without anyone noticing
+state: live
+autonomy: gated
+behavior: >
+  Google's permission to read a mailbox lapses routinely. When it has, it is renewed before the
+  pass reads any mail, the renewal is remembered so the next pass does not start from a lapsed
+  permission either, and nobody is told anything — an expiry is not a problem and is not
+  reported as one.
+implements:
+- apps/email/gmail_client.py::_build_service
+- apps/email/runner.py::_process_account
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: home.appliances.the-number-you-need
+title: The model and serial without going to the machine
+state: live
+autonomy: gated
+behavior: >
+  Asked for an appliance's model or serial number, Skipper answers from the record, so ordering a
+  part or registering a warranty does not mean crawling behind the machine with a torch. An
+  appliance that is not recorded is reported as not found rather than guessed at.
+implements:
+- apps/home/tools.py::get_home_appliance
+- apps/home/data.py::get_appliance
+tests: []
+links: {}
+notes: ''

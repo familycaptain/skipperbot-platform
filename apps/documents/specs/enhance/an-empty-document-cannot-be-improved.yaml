@@ -1,0 +1,14 @@
+kind: specification
+id: documents.enhance.an-empty-document-cannot-be-improved
+title: An empty document cannot be improved
+state: live
+autonomy: gated
+behavior: >
+  A document with nothing in it, or a request with no instruction, is refused with a reason and an
+  example of what to ask for — Skipper does not invent a document out of nothing under the guise of
+  improving one.
+implements:
+- apps/documents/tools.py::enhance_doc
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: documents.finding.an-empty-search-is-not-a-search
+title: An empty search is not a search
+state: live
+autonomy: gated
+behavior: >
+  Asking Skipper to search for nothing is refused with a note that something to search for is
+  required, rather than silently returning the whole library. Clearing the search box in the app is
+  different and does what it looks like: it goes back to the full list.
+implements:
+- apps/documents/tools.py::search_docs
+- apps/documents/ui/DocListApp.jsx::loadList
+tests: []
+links: {}
+notes: ''

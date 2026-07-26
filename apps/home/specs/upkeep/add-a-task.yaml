@@ -1,0 +1,20 @@
+kind: specification
+id: home.upkeep.add-a-task
+title: Add something the house needs doing
+state: live
+autonomy: gated
+behavior: >
+  Asked to track a chore — "add a task to clean the A/C filter every 90 days", "one-off job to
+  clear the gutters, due the first of April" — Skipper records it under a category with whether it
+  repeats, how often, and when it is first due. A task with no name is refused outright, a repeat
+  interval that is not a positive number of days is recorded as no interval at all, and anything
+  described as neither repeating nor one-off is treated as repeating.
+implements:
+- apps/home/tools.py::create_home_task
+- apps/home/data.py::create_task
+- apps/home/routes.py::api_create_task
+- apps/home/ui/HomeApp.jsx::AddTaskForm
+- apps/home/migrations/002_maintenance.sql
+tests: []
+links: {}
+notes: ''

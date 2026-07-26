@@ -1,0 +1,16 @@
+kind: specification
+id: medical.equipment.task-history
+title: When it was last done
+state: live
+autonomy: gated
+behavior: >
+  Each upkeep task keeps a dated history of every completion and the note left with it, newest
+  first, opened from the task itself — so whether the filter really was changed last month is
+  settled from the record. A task never completed says so rather than showing an empty list.
+implements:
+- apps/medical/data.py::get_equip_task_log
+- apps/medical/routes.py::api_equip_task_log
+- apps/medical/ui/MedicalApp.jsx::TaskRow
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: documents.library.appending-never-overwrites
+title: Appending never overwrites
+state: live
+autonomy: gated
+behavior: >
+  Adding to a document puts the new text at the end, separated from what was already there by a blank
+  line, so run-on additions never merge into the previous paragraph and nothing existing is lost. This
+  is the safe way to grow a document over many sittings; replacing the whole text is the deliberate
+  alternative.
+implements:
+- apps/documents/store.py::append_to_doc
+- apps/documents/tools.py::append_to_doc
+tests: []
+links: {}
+notes: ''

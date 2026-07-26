@@ -1,0 +1,16 @@
+kind: specification
+id: email.sync.everything-seen-is-recorded-matched-or-not
+title: Every message seen is recorded, even when no rule wanted it
+state: live
+autonomy: gated
+behavior: >
+  Every message a pass looks at is recorded with who it was from, what it was about, when it
+  arrived and what was done to it — including messages no rule matched, which are recorded with
+  no actions. That is what makes 'nothing is handling this mail' something a person can see and
+  act on rather than something they have to notice in their inbox.
+implements:
+- apps/email/runner.py::_process_account
+- apps/email/data.py::log_processed
+tests: []
+links: {}
+notes: ''

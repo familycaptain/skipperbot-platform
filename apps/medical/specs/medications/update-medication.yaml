@@ -1,12 +1,18 @@
 kind: specification
 id: medical.medications.update-medication
-title: Update a medication
+title: Correcting a medication
 state: live
 autonomy: gated
-behavior: Updating changes only the supplied fields of a medication record.
+behavior: >
+  Editing a medication changes only the fields actually supplied and leaves the rest as they were,
+  so correcting a pharmacy name cannot silently wipe a dose note. Editing a medication that does
+  not exist is refused by name, and an edit that supplies nothing leaves the record untouched
+  rather than stamping it as changed.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::update_medication
+- apps/medical/data.py::update_medication
+- apps/medical/routes.py::api_update_medication
+- apps/medical/ui/MedicalApp.jsx::MedCard
 tests: []
 links: {}
 notes: ''

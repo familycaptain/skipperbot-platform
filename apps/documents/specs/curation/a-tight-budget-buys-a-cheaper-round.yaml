@@ -1,0 +1,15 @@
+kind: specification
+id: documents.curation.a-tight-budget-buys-a-cheaper-round
+title: A tight budget buys a cheaper round
+state: live
+autonomy: gated
+behavior: >
+  When the day's model budget is nearly spent, curation drops to the cheap, fast model rather than
+  skipping the round, and it uses the cheap model anyway when there is only a little to look at. Only a
+  substantial batch with budget to spare earns the capable model. The effect is that background writing
+  degrades in quality before it degrades in existence, and never competes with answering a person.
+implements:
+- apps/documents/domain.py::document_domain_handler
+tests: []
+links: {}
+notes: ''

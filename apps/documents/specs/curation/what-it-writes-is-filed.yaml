@@ -1,0 +1,17 @@
+kind: specification
+id: documents.curation.what-it-writes-is-filed
+title: What it writes is filed, not left loose
+state: live
+autonomy: gated
+behavior: >
+  Every document a round writes is put into a folder — an existing one where it fits, a newly created
+  one where it does not — because the household browses by folder and a loose document is a document
+  nobody finds. Where the folders app is not installed the filing step simply does not happen and the
+  document is still written and still findable by search.
+implements:
+- apps/documents/domain.py::DOC_BASELINE_CATEGORIES
+- prompts/DOCUMENT_THINK.md
+- apps/folders/store.py::create_doc_in_folder
+tests: []
+links: {}
+notes: ''

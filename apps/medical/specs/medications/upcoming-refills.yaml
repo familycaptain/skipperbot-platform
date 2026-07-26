@@ -1,12 +1,18 @@
 kind: specification
 id: medical.medications.upcoming-refills
-title: Upcoming refills
+title: What is running out soon
 state: live
 autonomy: gated
-behavior: Upcoming refills returns medications needing a refill within the next N days.
+behavior: >
+  Asked what refills are coming up, Skipper answers with the medications whose supply runs out
+  within the next fortnight — or any window asked for — soonest first, each with whose it is and
+  how many days are left, and including ones that have already run out, because those are the most
+  urgent rather than the least. Nothing due in the window is answered as nothing, not as an empty
+  list.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::get_upcoming_refills
+- apps/medical/data.py::get_upcoming_refills
+- apps/medical/routes.py::api_upcoming_refills
 tests: []
 links: {}
 notes: ''

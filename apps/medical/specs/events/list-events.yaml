@@ -1,12 +1,19 @@
 kind: specification
 id: medical.events.list-events
-title: List medical events
+title: The journal reads newest first
 state: live
 autonomy: gated
-behavior: Listing returns medical events with optional filters.
+behavior: >
+  The journal reads newest first by the date the thing happened rather than the date it was typed
+  in, so back-filling last year's surgery puts it in its proper place instead of at the top. It
+  can be narrowed to one person, to one kind of event, or to everything since a given date, and a
+  long summary is trimmed in the list and shown whole when the entry is opened.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::list_medical_events
+- apps/medical/data.py::get_all_events
+- apps/medical/routes.py::api_list_events
+- apps/medical/ui/MedicalApp.jsx::EventsTab
+- apps/medical/ui/MedicalApp.jsx::EventCard
 tests: []
 links: {}
 notes: ''

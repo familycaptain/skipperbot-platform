@@ -1,0 +1,18 @@
+kind: specification
+id: email.privacy.the-stored-permission-is-never-readable-back
+title: The permission to read a mailbox is never readable back
+state: live
+autonomy: gated
+behavior: >
+  Once Google's permission for a mailbox is stored it is never handed back out — not when the
+  mailboxes are listed, not when one is renamed or paused, not in the history, not to Skipper's
+  memory. All anyone can see is which address is connected, whether it is switched on, and when
+  it last completed a pass.
+implements:
+- apps/email/routes.py::api_email_accounts
+- apps/email/routes.py::api_email_update_account
+- apps/email/data.py::create_account
+- apps/email/data.py::delete_account
+tests: []
+links: {}
+notes: ''

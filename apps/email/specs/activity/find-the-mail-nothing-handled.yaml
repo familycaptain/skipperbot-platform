@@ -1,0 +1,16 @@
+kind: specification
+id: email.activity.find-the-mail-nothing-handled
+title: Finding the mail nothing handled is one click
+state: live
+autonomy: gated
+behavior: >
+  The history can be narrowed to just the messages no rule matched, with the count of them
+  shown, because that list is the work queue for writing the next rule. Handled and unhandled
+  messages are distinguishable at a glance in the full list too, so nobody has to filter to see
+  how it is going.
+implements:
+- apps/email/ui/EmailApp.jsx::ActivityTab
+- apps/email/ui/EmailApp.jsx::LogEntry
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: medical.events.lab-draws-to-attach-results-to
+title: Lab draws are offered to attach results to
+state: live
+autonomy: gated
+behavior: >
+  Journal entries recorded as lab draws are offered as the draws that a set of values can be filed
+  against, newest first and narrowed to whoever is being looked at, so values sit with the visit
+  they came from. Choosing a draw takes its date as the result date, so the two cannot disagree.
+implements:
+- apps/medical/data.py::get_lab_events
+- apps/medical/routes.py::api_lab_events
+- apps/medical/ui/MedicalApp.jsx::LogLabResultsModal
+tests: []
+links: {}
+notes: ''

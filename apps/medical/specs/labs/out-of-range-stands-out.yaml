@@ -1,0 +1,16 @@
+kind: specification
+id: medical.labs.out-of-range-stands-out
+title: An abnormal value stands out
+state: live
+autonomy: gated
+behavior: >
+  A value below the low end or above the high end of its test's normal range is shown marked out,
+  and one inside the range is shown plainly, so an abnormal result is spotted without anybody
+  knowing the reference ranges by heart. A test with only one end of its range recorded is checked
+  against that end alone, and a test with no range recorded never marks anything out.
+implements:
+- apps/medical/ui/MedicalApp.jsx::LabResultRow
+- apps/medical/data.py::get_lab_results
+tests: []
+links: {}
+notes: ''

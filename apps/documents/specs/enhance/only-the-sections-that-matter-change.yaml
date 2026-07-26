@@ -1,0 +1,18 @@
+kind: specification
+id: documents.enhance.only-the-sections-that-matter-change
+title: Only the sections the instruction is about change
+state: live
+autonomy: gated
+behavior: >
+  Asking Skipper to improve a document — "flesh out the introduction", "more detail on costs" — rewrites
+  only the parts of it the instruction is about; every other section comes back exactly as it was,
+  character for character. Each rewritten section is shown the rest of the document for context but is
+  told to stay inside its own heading, so improving one section cannot duplicate or absorb another. The
+  answer names which sections were touched.
+implements:
+- apps/documents/tools.py::enhance_doc
+- apps/documents/tools.py::_plan_enhancements
+- apps/documents/tools.py::_enhance_section
+tests: []
+links: {}
+notes: ''

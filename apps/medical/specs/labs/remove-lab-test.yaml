@@ -1,0 +1,16 @@
+kind: specification
+id: medical.labs.remove-lab-test
+title: A test with results recorded stays on the list
+state: live
+autonomy: gated
+behavior: >
+  A test that has results recorded against it cannot be taken off the household list: the attempt
+  is refused and says why, so no stored value is left describing a test nobody can name. A test
+  with no results against it is removed freely.
+implements:
+- apps/medical/data.py::delete_lab_test
+- apps/medical/routes.py::api_delete_lab_test
+- apps/medical/ui/MedicalApp.jsx::ManageLabTests
+tests: []
+links: {}
+notes: ''

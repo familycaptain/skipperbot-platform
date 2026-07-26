@@ -1,0 +1,16 @@
+kind: specification
+id: email.rules.a-rule-shows-how-much-it-has-done
+title: Each rule shows how much work it has done
+state: live
+autonomy: gated
+behavior: >
+  Every rule carries a running count of the messages it has acted on, so a person can see at a
+  glance which rules are earning their place and which have never matched anything. The count
+  rises both on new mail and when a rule catches up on mail already seen, and it survives the
+  rule being switched off and on again.
+implements:
+- apps/email/data.py::increment_match_count
+- apps/email/ui/EmailApp.jsx::RuleCard
+tests: []
+links: {}
+notes: ''

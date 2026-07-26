@@ -1,0 +1,16 @@
+kind: specification
+id: documents.enhance.improving-is-cheap-by-default
+title: Improving a document uses the cheap model
+state: live
+autonomy: gated
+behavior: >
+  Improving a document runs on Skipper's fast, inexpensive model tier rather than its most capable one,
+  and each section is rewritten within a bounded length, so improving a long document cannot quietly
+  become the most expensive thing the household did that day. Which model that tier resolves to is a
+  system-wide choice, not a per-app one.
+implements:
+- apps/documents/tools.py::_enhance_section
+- apps/documents/tools.py::_plan_enhancements
+tests: []
+links: {}
+notes: ''

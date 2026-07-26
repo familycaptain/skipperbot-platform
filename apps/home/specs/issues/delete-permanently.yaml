@@ -1,0 +1,17 @@
+kind: specification
+id: home.issues.delete-permanently
+title: Deleting an issue for good
+state: live
+autonomy: gated
+behavior: >
+  Deleting an issue asks for confirmation naming it, then removes the issue and its attached
+  photos permanently — there is no archive and no undo. Deleting one that does not exist reports
+  not-found.
+implements:
+- apps/home/tools.py::delete_home_issue
+- apps/home/data.py::delete_issue
+- apps/home/routes.py::api_delete_home_issue
+- apps/home/migrations/003_home_issues.sql
+tests: []
+links: {}
+notes: ''

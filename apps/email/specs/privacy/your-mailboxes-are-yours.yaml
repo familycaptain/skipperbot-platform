@@ -1,0 +1,19 @@
+kind: specification
+id: email.privacy.your-mailboxes-are-yours
+title: A person's mail is their own
+state: live
+autonomy: gated
+behavior: >
+  The mailboxes a person sees, and the processed-mail history they can read, are their own.
+  Looking at somebody else's is a parent's or an administrator's privilege, not something
+  anybody in the household can do by asking for it — mail is the most private thing in the house
+  and the app treats it that way.
+implements:
+- apps/email/routes.py::api_email_accounts
+- apps/email/routes.py::api_email_log
+- apps/email/data.py::list_log
+tests: []
+links: {}
+notes: >
+  Stated as the rule for the whole app. Which surfaces actually enforce it today is recorded in
+  the audit findings.

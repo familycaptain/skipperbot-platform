@@ -1,0 +1,15 @@
+kind: specification
+id: documents.editor.the-list-is-the-way-in
+title: The list is the way in
+state: live
+autonomy: gated
+behavior: >
+  The Documents app shows every document with its title, length, when it last changed, who wrote it,
+  its tags and anything it is attached to. Clicking one opens it in its own window, so several
+  documents can be open side by side and moving between them does not lose a place.
+implements:
+- apps/documents/ui/DocListApp.jsx::DocList
+- apps/documents/ui/DocumentEditor.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,19 @@
+kind: specification
+id: medical.medications.days-left
+title: How long the supply lasts
+state: live
+autonomy: gated
+behavior: >
+  A medication with a run-out date is always shown with how that date stands relative to today:
+  already run out and by how many days, last dose today, a refill due when it is inside the
+  warning window, or how many days are left. One with no run-out date shows no countdown rather
+  than a wrong one, and the reading is the same whether it is asked for in conversation or read
+  off the medications tab.
+implements:
+- apps/medical/tools.py::list_medications
+- apps/medical/ui/MedicalApp.jsx::statusDot
+- apps/medical/ui/MedicalApp.jsx::daysFromToday
+- apps/medical/ui/MedicalApp.jsx::MedCard
+tests: []
+links: {}
+notes: ''

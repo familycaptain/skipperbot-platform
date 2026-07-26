@@ -1,0 +1,16 @@
+kind: specification
+id: documents.curation.it-leaves-a-pointer-to-what-it-wrote
+title: It leaves a pointer to what it wrote
+state: live
+autonomy: gated
+behavior: >
+  After writing or growing a document, a round records in plain language which page now covers which
+  subject — "what we know about the dog is in the Jasper page in Pets" — so a later question is answered
+  from the right page instead of from scratch. These pointers are Skipper's own notes to itself and are
+  never offered back to it as new material to write up.
+implements:
+- apps/documents/domain.py::SAVE_TOPIC_MEMORY_TOOL
+- apps/documents/domain.py::DOMAIN_SAVED_BY
+tests: []
+links: {}
+notes: ''

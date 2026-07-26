@@ -1,0 +1,16 @@
+kind: specification
+id: documents.curation.it-remembers-its-own-plan-between-rounds
+title: It remembers its own plan between rounds
+state: live
+autonomy: gated
+behavior: >
+  A round can leave notes for its successor — what it has covered, what it intends to reorganise next —
+  and those notes are handed back to it next time, so a reorganisation too large for one round can be
+  carried out across several. The notes are Skipper's working scratch, not documents, and are not shown
+  to the household.
+implements:
+- apps/documents/domain.py::UPDATE_WORKING_MEMORY_TOOL
+- apps/documents/domain.py::_observe
+tests: []
+links: {}
+notes: ''

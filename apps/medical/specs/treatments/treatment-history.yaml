@@ -1,0 +1,21 @@
+kind: specification
+id: medical.treatments.treatment-history
+title: Every time it was done
+state: live
+autonomy: gated
+behavior: >
+  Each treatment keeps a dated history of every occasion it was carried out, newest first, which
+  opens under the treatment and can be corrected or pruned entry by entry — so "when did she last
+  have it?" is answered from the record rather than from memory. Removing a history entry does not
+  move the next-due date back.
+implements:
+- apps/medical/data.py::get_treatment_log
+- apps/medical/data.py::update_treatment_log_entry
+- apps/medical/data.py::delete_treatment_log_entry
+- apps/medical/routes.py::api_treatment_log
+- apps/medical/ui/MedicalApp.jsx::TreatmentCard
+tests: []
+links: {}
+notes: >
+  The next-due date is a decision about the future; rolling it back whenever a mistyped history
+  entry is deleted would silently reschedule a real treatment.

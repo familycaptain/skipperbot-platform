@@ -1,0 +1,15 @@
+kind: specification
+id: automation.reading.a-full-id-is-taken-at-its-word
+title: A full Home Assistant id is taken at its word
+state: live
+autonomy: gated
+behavior: >
+  A request that already names a thing exactly as Home Assistant does is used as given: no searching,
+  no closest match, and nothing is learned as a household name from it. So someone troubleshooting who
+  pastes an exact id gets that thing or a clear failure, never a helpful substitution.
+implements:
+- apps/automation/tools.py::_resolve_entity
+- apps/automation/tools.py::_maybe_learn_alias
+tests: []
+links: {}
+notes: ''

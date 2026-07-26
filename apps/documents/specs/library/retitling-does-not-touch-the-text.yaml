@@ -1,0 +1,16 @@
+kind: specification
+id: documents.library.retitling-does-not-touch-the-text
+title: Retitling does not touch the text
+state: live
+autonomy: gated
+behavior: >
+  A document can be retitled, retagged or pointed at a different item without its text being read or
+  rewritten, so renaming something long is instant and cannot corrupt it. A request that would change
+  nothing is accepted and changes nothing — not even the last-changed time — so a stray save does not
+  make a document look freshly edited.
+implements:
+- apps/documents/store.py::update_doc_meta
+- agent.py::api_patch_document_meta
+tests: []
+links: {}
+notes: ''

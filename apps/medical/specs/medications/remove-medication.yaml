@@ -1,0 +1,17 @@
+kind: specification
+id: medical.medications.remove-medication
+title: Removing a medication
+state: live
+autonomy: gated
+behavior: >
+  Removing a medication takes it and its refill state off the record entirely, and in the app it
+  takes a confirmation that names the medication first — because for one that has simply ended the
+  right action is marking it inactive and keeping the history. Removing something already gone is
+  reported as not found.
+implements:
+- apps/medical/data.py::delete_medication
+- apps/medical/routes.py::api_delete_medication
+- apps/medical/ui/MedicalApp.jsx::MedCard
+tests: []
+links: {}
+notes: ''

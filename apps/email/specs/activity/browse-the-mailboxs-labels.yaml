@@ -1,0 +1,17 @@
+kind: specification
+id: email.activity.browse-the-mailboxs-labels
+title: The mailbox's labels can be browsed with their counts
+state: live
+autonomy: gated
+behavior: >
+  A person can see the labels a mailbox actually has, with how many messages and threads each
+  holds and how many are unread, the household's own labels ahead of Gmail's and Gmail's marked
+  as such, and can narrow to one kind or the other. It is how somebody decides where a rule
+  should file things.
+implements:
+- apps/email/routes.py::api_email_labels
+- apps/email/gmail_client.py::list_labels
+- apps/email/ui/EmailApp.jsx::LabelsTab
+tests: []
+links: {}
+notes: ''

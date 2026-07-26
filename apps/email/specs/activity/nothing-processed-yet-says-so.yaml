@@ -1,0 +1,14 @@
+kind: specification
+id: email.activity.nothing-processed-yet-says-so
+title: An empty history explains itself
+state: live
+autonomy: gated
+behavior: >
+  With nothing processed yet the history says so and says what to do about it — run a pass now,
+  or wait for the scheduled one — rather than showing an empty list. While it is loading it says
+  it is loading, so an empty screen is never mistaken for an empty history.
+implements:
+- apps/email/ui/EmailApp.jsx::ActivityTab
+tests: []
+links: {}
+notes: ''

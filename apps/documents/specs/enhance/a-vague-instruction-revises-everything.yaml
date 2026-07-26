@@ -1,0 +1,15 @@
+kind: specification
+id: documents.enhance.a-vague-instruction-revises-everything
+title: When the plan cannot be made, every section is revised
+state: live
+autonomy: gated
+behavior: >
+  If Skipper cannot work out which sections an instruction is aimed at — because the instruction is too
+  vague to place, or the planning step itself failed — every section with a heading is revised rather
+  than none. So "make it better" always does something, at the cost of touching more of the document
+  than a precise instruction would.
+implements:
+- apps/documents/tools.py::_plan_enhancements
+tests: []
+links: {}
+notes: ''

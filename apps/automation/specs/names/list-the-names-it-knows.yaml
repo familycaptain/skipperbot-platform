@@ -1,0 +1,17 @@
+kind: specification
+id: automation.names.list-the-names-it-knows
+title: Asking which names it knows
+state: live
+autonomy: gated
+behavior: >
+  Asked what names it knows, Skipper lists each one with the thing it points at and any note that was
+  saved with it, in alphabetical order, and can be narrowed with a search word matched against the
+  name, its target or its note. With nothing taught yet it says so plainly instead of returning an
+  empty list. The app's Names tab shows the same set.
+implements:
+- apps/automation/tools.py::list_home_assistant_aliases
+- apps/automation/routes.py::api_list_aliases
+- apps/automation/ui/AutomationApp.jsx::NamesManager
+tests: []
+links: {}
+notes: ''

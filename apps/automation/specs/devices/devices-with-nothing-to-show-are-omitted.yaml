@@ -1,0 +1,16 @@
+kind: specification
+id: automation.devices.devices-with-nothing-to-show-are-omitted
+title: Devices with nothing to read or control are left out
+state: live
+autonomy: gated
+behavior: >
+  A device that exposes nothing usable — no readings, or only ones that were disabled or hidden in
+  Home Assistant — is left out of the list Skipper keeps, so asking about the house does not turn up
+  bridges, hubs and integrations nobody thinks of as things in a room. Whatever a person hid in Home
+  Assistant stays hidden here.
+implements:
+- apps/automation/devices.py::_build_entities_by_device
+- apps/automation/devices.py::_build_device_aliases
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: email.accounts.name-your-mailbox
+title: A mailbox can be given a name of your own
+state: live
+autonomy: gated
+behavior: >
+  A person may label a mailbox before connecting it — 'Personal', 'Work' — and that name is what
+  identifies it afterwards, on the Sync buttons and in the mailbox picker. Left blank, the
+  mailbox names itself after the part of the address before the @, so a mailbox is never
+  nameless.
+implements:
+- apps/email/routes.py::api_email_oauth_callback
+- apps/email/ui/EmailApp.jsx::AccountsTab
+tests: []
+links: {}
+notes: ''

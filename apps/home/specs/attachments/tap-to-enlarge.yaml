@@ -1,0 +1,13 @@
+kind: specification
+id: home.attachments.tap-to-enlarge
+title: Tapping an attachment shows it full size
+state: live
+autonomy: gated
+behavior: >
+  Tapping a thumbnail opens the image large enough to read a serial number or a policy clause off
+  it; tapping away from the image closes it again and returns to the record.
+implements:
+- apps/home/ui/HomeApp.jsx::IssueImageStrip
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: email.rules.label-archive-or-mark-read
+title: A match can label, archive, or mark as read
+state: live
+autonomy: gated
+behavior: >
+  A matching message can have labels added or removed, be marked as read, and be archived, in
+  any combination. A label named in an 'add' action that does not exist in the mailbox yet is
+  created there, so a person can name a new category without leaving the app; Gmail's own labels
+  named in a 'remove' action are treated as Gmail's, never re-created as a look-alike.
+implements:
+- apps/email/runner.py::_execute_actions
+- apps/email/gmail_client.py::ensure_label
+- apps/email/gmail_client.py::modify_message
+tests: []
+links: {}
+notes: ''

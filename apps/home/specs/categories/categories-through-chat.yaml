@@ -1,0 +1,18 @@
+kind: specification
+id: home.categories.categories-through-chat
+title: Categories can be managed by asking
+state: live
+autonomy: gated
+behavior: >
+  Skipper can list the household's categories with the identifiers needed to change one, add a
+  category, rename or recolour one, and remove one on request, so the list can be maintained in
+  conversation as well as on the manage screen. Asked to list them when none are configured, it
+  says none are defined.
+implements:
+- apps/home/tools.py::list_task_categories
+- apps/home/tools.py::create_task_category
+- apps/home/tools.py::update_task_category
+- apps/home/tools.py::delete_task_category
+tests: []
+links: {}
+notes: ''

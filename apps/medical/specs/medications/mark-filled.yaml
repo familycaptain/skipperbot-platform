@@ -1,13 +1,19 @@
 kind: specification
 id: medical.medications.mark-filled
-title: Mark a medication filled
+title: Saying a refill has been collected
 state: live
 autonomy: gated
-behavior: Marking filled advances the last-dose date by the supply duration and resets the refill
-  cycle.
+behavior: >
+  Recording that a refill has been collected moves the run-out date on by the length of one supply
+  and puts the medication back on track, so the next warning arrives at the right time without
+  anybody doing the arithmetic. It needs both a run-out date and a supply length to do that;
+  without them nothing is changed and the answer names what is missing instead of inventing a
+  date.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::mark_medication_filled
+- apps/medical/data.py::mark_medication_filled
+- apps/medical/routes.py::api_mark_filled
+- apps/medical/ui/MedicalApp.jsx::MedCard
 tests: []
 links: {}
 notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: medical.appointments.schedule-appointment
+title: Booking an appointment in
+state: live
+autonomy: gated
+behavior: >
+  An appointment is recorded for one person with a date and time, what it is, who it is with,
+  where it is, and what kind it is — a routine visit, a specialist, a procedure, a lab draw, the
+  dentist, a follow-up, or other. The person, a title and a time are required; nothing is
+  scheduled without telling the person, at the moment they book it, that reminders will go out a
+  day before and two hours before.
+implements:
+- apps/medical/data.py::create_appointment
+- apps/medical/routes.py::api_create_appointment
+- apps/medical/ui/MedicalApp.jsx::AddApptModal
+tests: []
+links: {}
+notes: ''

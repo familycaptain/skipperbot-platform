@@ -1,0 +1,17 @@
+kind: specification
+id: home.attachments.photograph-the-problem
+title: A photo of the problem, taken while reporting it
+state: live
+autonomy: gated
+behavior: >
+  A photo can be taken with the device camera while an issue is being logged and is attached to
+  that issue once the record exists, so what the problem actually looks like travels with it. If
+  the photo fails to upload the issue is still recorded — a report is never lost for the sake of
+  the picture.
+implements:
+- apps/home/ui/HomeApp.jsx::AddHomeIssueForm
+- apps/home/handlers.py
+- apps/home/data.py::link_issue_image
+tests: []
+links: {}
+notes: ''

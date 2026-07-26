@@ -1,12 +1,18 @@
 kind: specification
 id: medical.treatments.list-treatments
-title: List treatments
+title: How overdue a treatment is
 state: live
 autonomy: gated
-behavior: Listing returns recurring treatments with their due status.
+behavior: >
+  Each treatment still in use is reported with how it stands against its next-due date: overdue by
+  so many days, due within the week, or due later. One with no next-due date is listed without a
+  countdown rather than being assumed due, asking for only the overdue ones leaves out everything
+  not yet due, and stopped treatments are left out altogether.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::list_treatments
+- apps/medical/data.py::get_all_treatments
+- apps/medical/routes.py::api_list_treatments
+- apps/medical/ui/MedicalApp.jsx::TreatmentsTab
 tests: []
 links: {}
 notes: ''

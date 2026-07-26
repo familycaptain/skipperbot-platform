@@ -1,0 +1,20 @@
+kind: specification
+id: automation.names.voice-is-told-which-names-are-real
+title: Spoken requests know which names are real
+state: live
+autonomy: gated
+behavior: >
+  In a spoken conversation Skipper is given the list of names the household has registered — the names
+  only, with no states, values or ids — so that a name it hears is recognised as something it can
+  look up rather than something to interpret or answer from memory: asked about "outside" it reads the
+  sensor instead of describing the weather. Any actual value still has to be fetched, and with no
+  names registered nothing is added to the conversation at all.
+implements:
+- apps/automation/devices.py::build_voice_alias_block
+- apps/automation/hooks.py::_automation_voice_alias_provider
+- app_platform/voice/prompting.py
+tests: []
+links: {}
+notes: >
+  The block is names-only on purpose: including values would make a stale reading look authoritative,
+  which is the exact failure it exists to prevent.

@@ -1,0 +1,19 @@
+kind: specification
+id: automation.reading.unavailable-things-are-not-answers
+title: Something unplugged is not offered as an answer
+state: live
+autonomy: gated
+behavior: >
+  A thing Home Assistant reports as unavailable or unknown is ranked below working ones and is left out
+  of searches and name matching unless it was explicitly asked for — so an unplugged sensor is never
+  handed back as though it had a reading, and a name resolves to the working device of two similarly
+  named ones. Asking to include them (troubleshooting what is offline) brings them back with their
+  state shown as unavailable.
+implements:
+- apps/automation/tools.py::_entity_score
+- apps/automation/tools.py::_rank_entities
+- apps/automation/tools.py::list_home_assistant_entities
+- apps/automation/tools.py::resolve_home_assistant_entity
+tests: []
+links: {}
+notes: ''

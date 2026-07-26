@@ -1,0 +1,18 @@
+kind: specification
+id: home.contractors.rating-out-of-five
+title: A rating is one to five stars, or nothing
+state: live
+autonomy: gated
+behavior: >
+  A contractor can be rated one to five stars, and the rating is shown as filled stars wherever the
+  contractor appears. A rating outside that range, or not a number at all, is stored as no rating
+  rather than being rejected or squashed to the nearest end. A contractor with no rating shows no
+  stars at all, which is a different statement from being rated badly.
+implements:
+- apps/home/tools.py::_norm_contractor_rating
+- apps/home/routes.py::_norm_rating
+- apps/home/migrations/007_contractors.sql
+- apps/home/ui/HomeApp.jsx::StarRating
+tests: []
+links: {}
+notes: ''

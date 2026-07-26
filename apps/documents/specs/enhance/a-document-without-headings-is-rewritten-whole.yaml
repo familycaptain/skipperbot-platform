@@ -1,0 +1,13 @@
+kind: specification
+id: documents.enhance.a-document-without-headings-is-rewritten-whole
+title: A document without headings is improved whole
+state: live
+autonomy: gated
+behavior: >
+  A document with no headings to aim at is improved in one piece and the answer says the whole document
+  was updated, rather than the request failing for want of a section to target.
+implements:
+- apps/documents/tools.py::enhance_doc
+tests: []
+links: {}
+notes: ''

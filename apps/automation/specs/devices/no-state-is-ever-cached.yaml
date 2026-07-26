@@ -1,0 +1,19 @@
+kind: specification
+id: automation.devices.no-state-is-ever-cached
+title: A value Skipper reports was read just now
+state: live
+autonomy: gated
+behavior: >
+  Skipper caches what things ARE — devices, their parts, their names — and never what they READ. Every
+  temperature, battery level, and open-or-closed it reports is fetched at the moment it is asked, so an
+  answer is never a value from an hour ago dressed up as current. Listing a device's parts deliberately
+  shows no values at all.
+implements:
+- apps/automation/devices.py::_build_entities_by_device
+- apps/automation/tools.py::find_home_device
+- apps/automation/tools.py::get_home_assistant_entity
+tests: []
+links: {}
+notes: >
+  The operator's rule for this app: a stale reading is worse than a slow one. It is why finding a
+  device and reading it are two steps rather than one.

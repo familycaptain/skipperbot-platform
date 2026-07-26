@@ -1,0 +1,17 @@
+kind: specification
+id: medical.events.follow-up-dates
+title: A follow-up date puts the event back in front of you
+state: live
+autonomy: gated
+behavior: >
+  An event given a follow-up date appears on the household's attention list as a follow-up from
+  three days before that date, saying whose it is, what it follows up and how overdue it now is,
+  and it keeps appearing until the date is cleared. An event with no follow-up date never appears
+  there.
+implements:
+- apps/medical/data.py::get_pending_followups
+- apps/medical/__init__.py::_followup_backlog
+- apps/medical/__init__.py::_followup_is_active
+tests: []
+links: {}
+notes: ''

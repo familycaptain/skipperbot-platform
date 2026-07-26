@@ -1,0 +1,17 @@
+kind: specification
+id: medical.privacy.who-entered-it
+title: Who entered a record
+state: live
+autonomy: gated
+behavior: >
+  A record created through the app is stamped with the signed-in person who created it, taken from
+  their verified session and never from anything the page claims. A record created in conversation
+  carries whoever is named as entering it, and may carry nobody at all; a later edit does not
+  record who made it, so a record shows who first wrote it down rather than who last touched it.
+implements:
+- apps/medical/routes.py::_actor
+- apps/medical/data.py::create_medication
+- apps/medical/data.py::update_medication
+tests: []
+links: {}
+notes: ''

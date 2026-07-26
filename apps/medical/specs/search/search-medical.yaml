@@ -1,12 +1,18 @@
 kind: specification
 id: medical.search.search-medical
-title: Search medical records
+title: Searching the records for a word
 state: live
 autonomy: gated
-behavior: Searching matches across medications, treatments, and events.
+behavior: >
+  A search matches text anywhere in a medication's name, dose note, prescriber or notes, and
+  anywhere in a journal entry's title, summary, provider or notes, ignoring capitalisation, and
+  answers with the medications and journal entries that matched — medications currently being
+  taken only. It can be limited to one person, and a search with nothing in it matches nothing
+  rather than returning the entire record.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::search_medical
+- apps/medical/data.py::search_medical
+- apps/medical/routes.py::api_search
 tests: []
 links: {}
 notes: ''

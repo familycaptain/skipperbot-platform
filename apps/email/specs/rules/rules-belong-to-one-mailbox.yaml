@@ -1,0 +1,16 @@
+kind: specification
+id: email.rules.rules-belong-to-one-mailbox
+title: A rule belongs to one mailbox only
+state: live
+autonomy: gated
+behavior: >
+  Rules are written per mailbox: the list shows only the selected mailbox's rules, a new rule is
+  attached to the mailbox that was selected when it was written, and no rule can act on mail in
+  another mailbox. Disconnecting a mailbox takes its rules with it.
+implements:
+- apps/email/data.py::list_rules
+- apps/email/data.py::create_rule
+- apps/email/ui/EmailApp.jsx::RulesTab
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,19 @@
+kind: specification
+id: home.upkeep.narrow-the-list
+title: Narrowing the list of tasks
+state: live
+autonomy: gated
+behavior: >
+  Typing into the search box matches a task on its name, description, category or notes whatever
+  the case, and searches only tasks still switched on; choosing a category instead narrows to that
+  category. Starting a search clears any category already chosen rather than combining with it,
+  and a search or category matching nothing says so — naming what was searched for — instead of
+  looking like a house with nothing to do.
+implements:
+- apps/home/data.py::search_tasks
+- apps/home/data.py::get_tasks_by_category
+- apps/home/routes.py::api_list_tasks
+- apps/home/ui/HomeApp.jsx::MaintenanceTab
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: home.contractors.find-a-contractor
+title: Finding a contractor
+state: live
+autonomy: gated
+behavior: >
+  Searching matches a contractor on their name, trade, company, phone number, email, job history
+  or notes whatever the case, so a half-remembered company name, a phone number, or the job they
+  did all find the record. Nothing matching says which search found nothing.
+implements:
+- apps/home/data.py::search_contractors
+- apps/home/routes.py::api_list_home_contractors
+- apps/home/ui/HomeApp.jsx::ContractorsTab
+tests: []
+links: {}
+notes: ''

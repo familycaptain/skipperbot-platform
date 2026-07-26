@@ -1,0 +1,16 @@
+kind: specification
+id: email.rules.move-it-out-of-the-inbox
+title: The common case is 'move it out of my inbox'
+state: live
+autonomy: gated
+behavior: >
+  The simple form of a rule offers exactly one thing — move the message from the inbox into a
+  label — because that is what triaging noisy mail means. Anything more (adding several labels,
+  removing several) is behind an advanced view, and a rule already written that way opens in the
+  advanced view so nothing a person configured is silently simplified away.
+implements:
+- apps/email/ui/EmailApp.jsx::RuleForm
+- apps/email/ui/EmailApp.jsx::LabelPicker
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: home.appliances.what-we-paid
+title: What the household paid, and when
+state: live
+autonomy: gated
+behavior: >
+  An appliance keeps the date it was bought and the price paid, so how old a machine is and what
+  it cost is answerable years later — for an insurance claim, or for deciding whether a repair is
+  worth it. Both are optional and shown only when they were recorded.
+implements:
+- apps/home/data.py::_appliance_row
+- apps/home/ui/HomeApp.jsx::ApplianceCard
+- apps/home/migrations/005_appliances.sql
+tests: []
+links: {}
+notes: ''

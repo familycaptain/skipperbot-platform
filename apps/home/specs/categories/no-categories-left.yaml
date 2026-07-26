@@ -1,0 +1,15 @@
+kind: specification
+id: home.categories.no-categories-left
+title: There is always somewhere to file a task
+state: live
+autonomy: gated
+behavior: >
+  With every category deleted, the add and edit task forms still offer a workable default set
+  rather than an empty dropdown, so a task can always be filed and the tab never becomes unusable
+  through configuration.
+implements:
+- apps/home/ui/HomeApp.jsx::AddTaskForm
+- apps/home/ui/HomeApp.jsx::EditTaskForm
+tests: []
+links: {}
+notes: ''

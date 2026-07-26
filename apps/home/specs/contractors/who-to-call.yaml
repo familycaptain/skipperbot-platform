@@ -1,0 +1,17 @@
+kind: specification
+id: home.contractors.who-to-call
+title: Who to call
+state: live
+autonomy: gated
+behavior: >
+  Asked who the household's plumber is, or who did a particular kind of work, Skipper answers from
+  the directory with the trade, the company, the rating and the phone number, so the call can be
+  made without hunting for a business card. With nobody recorded for that trade it says so rather
+  than offering a name it does not have.
+implements:
+- apps/home/tools.py::list_home_contractors
+- apps/home/tools.py::get_home_contractor
+- apps/home/data.py::get_all_contractors
+tests: []
+links: {}
+notes: ''

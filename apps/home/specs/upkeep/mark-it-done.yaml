@@ -1,0 +1,20 @@
+kind: specification
+id: home.upkeep.mark-it-done
+title: Marking a job done
+state: live
+autonomy: gated
+behavior: >
+  Recording a completion keeps the date it was done — today unless another is given — who did it,
+  and any note about how, such as which filter was used, as a permanent entry against that task. A
+  repeating task's next due date moves forward by its interval counted from the day it was
+  actually done rather than from the day it was due, so finishing late shifts the whole schedule
+  instead of leaving the job immediately due again. A one-off task closes and leaves the everyday
+  list.
+implements:
+- apps/home/tools.py::complete_home_task
+- apps/home/data.py::complete_task
+- apps/home/routes.py::api_complete_task
+- apps/home/ui/HomeApp.jsx::DoneModal
+tests: []
+links: {}
+notes: ''

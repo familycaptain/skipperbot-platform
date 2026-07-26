@@ -1,0 +1,16 @@
+kind: specification
+id: automation.devices.the-first-lookup-builds-the-picture
+title: The first question after a restart still gets an answer
+state: live
+autonomy: gated
+behavior: >
+  If someone asks about a device before the hourly refresh has ever run — Skipper has just started —
+  the list is built there and then rather than answering that no devices are known. If that on-demand
+  attempt cannot reach Home Assistant the request answers from whatever was last known instead of
+  failing outright.
+implements:
+- apps/automation/devices.py::warm_entities_cache_if_empty
+- apps/automation/tools.py::find_home_device
+tests: []
+links: {}
+notes: ''

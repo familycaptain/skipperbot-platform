@@ -1,0 +1,15 @@
+kind: specification
+id: home.issues.ask-about-a-problem
+title: Asking about a problem instead of opening the app
+state: live
+autonomy: gated
+behavior: >
+  Asked about a problem, Skipper answers from the record: how bad it is, where, what state it is
+  in, when it was noticed, and — once fixed — what was done and what it cost. Asked for the list,
+  it gives each issue's severity, place and state, and says plainly when there are none.
+implements:
+- apps/home/tools.py::get_home_issue
+- apps/home/tools.py::list_home_issues
+tests: []
+links: {}
+notes: ''

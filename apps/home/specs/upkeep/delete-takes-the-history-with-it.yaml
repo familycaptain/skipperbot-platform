@@ -1,0 +1,19 @@
+kind: specification
+id: home.upkeep.delete-takes-the-history-with-it
+title: Deleting a task takes its history with it
+state: live
+autonomy: gated
+behavior: >
+  Deleting a task is permanent and takes every completion recorded against it, so those
+  completions also vanish from the maintenance log; the app asks for confirmation naming that
+  consequence first. Deleting a task that does not exist reports not-found rather than reporting
+  success.
+implements:
+- apps/home/tools.py::delete_home_task
+- apps/home/data.py::delete_task
+- apps/home/routes.py::api_delete_task
+- apps/home/migrations/002_maintenance.sql
+- apps/home/ui/HomeApp.jsx::MaintenanceTab
+tests: []
+links: {}
+notes: ''

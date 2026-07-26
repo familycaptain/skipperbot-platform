@@ -1,0 +1,16 @@
+kind: specification
+id: home.categories.colour-marks-the-kind-of-work
+title: Colour marks the kind of work
+state: live
+autonomy: gated
+behavior: >
+  A task shows its category as a coloured badge taking that category's configured colour, so
+  plumbing jobs and electrical jobs are told apart at a glance down a long list. A task whose
+  category has no configured colour shows a neutral badge rather than none at all.
+implements:
+- apps/home/ui/HomeApp.jsx::CatBadge
+- apps/home/ui/HomeApp.jsx::ColorPicker
+- apps/home/data.py::_cat_row
+tests: []
+links: {}
+notes: ''

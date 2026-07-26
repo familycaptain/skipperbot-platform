@@ -1,0 +1,16 @@
+kind: specification
+id: documents.curation.a-round-that-fails-changes-nothing
+title: A round that fails leaves the queue where it was
+state: live
+autonomy: gated
+behavior: >
+  If a round breaks down before doing anything — no model available, the reasoning failing outright, or
+  its own instructions missing — nothing is marked handled and the same batch is offered again next
+  time. The failure is recorded as the round's outcome rather than raised, so one bad round does not
+  stop background curation for good.
+implements:
+- apps/documents/domain.py::document_domain_handler
+- apps/documents/domain.py::_load_prompt
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: automation.control.risky-actions-are-confirmed-first
+title: Locks, alarms and doors are confirmed before they move
+state: live
+autonomy: gated
+behavior: >
+  An action that affects security or is hard to undo — a lock, an alarm, a garage door, a camera — is
+  not carried out on an inferred or ambiguous request: Skipper reads the current state, says what it is
+  about to do, and waits for the person to confirm, or declines. Only an explicit, unambiguous
+  instruction goes straight through.
+implements:
+- apps/automation/guide.md
+- app_platform/voice/prompting.py::build_base_voice_instructions
+tests: []
+links: {}
+notes: >
+  Currently a rule Skipper is instructed to follow rather than one the app enforces — see
+  findings-automation.md.

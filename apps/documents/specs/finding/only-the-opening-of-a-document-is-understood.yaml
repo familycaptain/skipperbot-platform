@@ -1,0 +1,17 @@
+kind: specification
+id: documents.finding.only-the-opening-of-a-document-is-understood
+title: Only the opening of a long document is understood
+state: live
+autonomy: gated
+behavior: >
+  What a document is understood to be about is taken from its title, its tags and roughly its first
+  couple of thousand characters — not the whole of it. A fact buried in the last section of a very long
+  document is therefore found by searching for its actual words rather than by asking for the idea, and
+  splitting an overgrown document into focused ones makes all of it findable again.
+implements:
+- apps/documents/store.py::_embed_document
+tests: []
+links: {}
+notes: >
+  Recorded because it is the surprising half of semantic search: people assume the whole document is
+  understood. The truncation bound itself is not the intent — the observable limit is.

@@ -1,0 +1,22 @@
+kind: specification
+id: email.accounts.no-mailbox-nothing-to-configure
+title: With nothing connected, every screen says so
+state: live
+autonomy: gated
+behavior: >
+  Until a mailbox is connected the Rules, Labels and Activity screens say to connect one first
+  rather than showing empty tables that look broken, and a person opening the app for the first
+  time lands on the mailbox screen with the connect box rather than on an empty history. That
+  landing happens once on a confirmed reading of the mailbox list, so it never overrides a tab
+  the person chose themselves and a failed reading never misroutes someone who does have
+  mailboxes.
+implements:
+- apps/email/ui/EmailApp.jsx::EmailApp
+- apps/email/ui/EmailApp.jsx::RulesTab
+- apps/email/ui/EmailApp.jsx::LabelsTab
+- apps/email/ui/EmailApp.jsx::ActivityTab
+tests: []
+links: {}
+notes: >
+  Landing on the mailbox screen is this app's own empty-state treatment; it is deliberately not
+  the whole-app hero used elsewhere.

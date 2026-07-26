@@ -1,0 +1,18 @@
+kind: specification
+id: automation.dashboard.the-screen-only-switches-simple-things
+title: The screen cannot unlock the front door
+state: live
+autonomy: gated
+behavior: >
+  The dashboard will only switch the harmless kinds of thing — lights, switches, fans and toggles. A
+  request from the screen to operate anything else, including a lock, a cover or an alarm, is refused
+  with a reason naming what it will not do, so a mis-click on a wall panel cannot unlock a door even
+  though the screen shows the lock's state.
+implements:
+- apps/automation/routes.py::api_control
+- apps/automation/routes.py::TOGGLEABLE
+tests: []
+links: {}
+notes: >
+  The narrowest surface in the app, and deliberately narrower than what chat can do: a tap has no
+  confirmation step behind it.

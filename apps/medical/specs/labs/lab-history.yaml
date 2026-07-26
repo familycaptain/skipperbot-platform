@@ -1,12 +1,17 @@
 kind: specification
 id: medical.labs.lab-history
-title: Lab history
+title: One value's trend
 state: live
 autonomy: gated
-behavior: Lab history returns historical results (trend) for a specific test.
+behavior: >
+  Asked how a particular value has moved, Skipper answers with every recorded result for that test
+  in date order, oldest to newest, with the most recent one called out — optionally for one person
+  only, which is what makes a household trend readable. A test name that is not on the household
+  list is refused by name rather than answered with the nearest-looking match.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::get_lab_history
+- apps/medical/data.py::get_lab_history
+- apps/medical/routes.py::api_lab_history
 tests: []
 links: {}
 notes: ''

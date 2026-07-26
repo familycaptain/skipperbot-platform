@@ -1,0 +1,19 @@
+kind: specification
+id: email.sync.sync-happens-on-a-schedule-and-on-demand
+title: Mail is picked up on a schedule, and whenever asked
+state: live
+autonomy: gated
+behavior: >
+  Triage runs as background work the household schedules for itself — there is no interval baked
+  into the software — and any person can also run a mailbox now from the activity screen. With
+  no mailbox connected a scheduled pass says there is nothing to do and stops rather than
+  failing.
+implements:
+- apps/email/manifest.yaml
+- apps/email/runner.py::run_email_sync
+- apps/email/routes.py::api_email_sync
+tests: []
+links: {}
+notes: >
+  The schedule is household data, not intent: the app only declares that it has background work
+  to run and which handler runs it.

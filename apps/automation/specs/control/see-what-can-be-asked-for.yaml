@@ -1,0 +1,15 @@
+kind: specification
+id: automation.control.see-what-can-be-asked-for
+title: Finding out what the house can be asked to do
+state: live
+autonomy: gated
+behavior: >
+  The set of actions this household's Home Assistant supports can be listed, optionally narrowed to one
+  kind of thing, so an unusual request can be checked against what actually exists instead of being
+  attempted blind. A household whose Home Assistant offers nothing back is told that, rather than shown
+  an empty list.
+implements:
+- apps/automation/tools.py::list_home_assistant_services
+tests: []
+links: {}
+notes: ''

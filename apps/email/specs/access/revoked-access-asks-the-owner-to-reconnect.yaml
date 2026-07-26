@@ -1,0 +1,24 @@
+kind: specification
+id: email.access.revoked-access-asks-the-owner-to-reconnect
+title: Access genuinely withdrawn asks its owner to reconnect
+state: live
+autonomy: gated
+behavior: >
+  When the retry is refused as well, the household's permission has really been withdrawn and no
+  amount of retrying will fix it. The mailbox's owner is told, in words that name both what they
+  have lost and exactly how to fix it — reconnect the account in the app's settings — and the
+  pass gives up on that mailbox rather than failing the same way over and over.
+implements:
+- apps/email/runner.py::_notify_reauth_needed
+- apps/email/gmail_client.py::_execute_with_reauth
+tests:
+- type: unit
+  path: tests/evolve/email/test_gmail_service_cache_selfheal.py
+  rubric: >
+    With Google's client, credentials and the notification shim all stubbed and no real tokens:
+    a refused call is retried exactly once against freshly re-established access and succeeds; a
+    second refusal raises without looping and asks the owner to reconnect exactly once; an error
+    that is not a refusal is passed straight through untouched; and no token material appears in
+    anything written to the log.
+links: {}
+notes: ''

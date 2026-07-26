@@ -2,9 +2,13 @@ kind: capability
 id: home
 title: Home
 app: home
-scope: Home management hub — recurring and ad-hoc maintenance tasks, home issues (problems/repairs),
-  and the maintenance log, organized by category. Tracks the upkeep of the house itself. NOT vehicle
-  upkeep (the Auto app) or medical-equipment upkeep (the Medical app).
+scope: >
+  The household's record of the house itself: the recurring and one-off upkeep it needs, the
+  problems waiting to be fixed, the appliances in it and what they are still covered for, the
+  insurance over it, and the trades to call. Answers 'what's due around the house', 'when did we
+  last do this', 'what's the model number', 'what are we covered for' and 'who did our roof'. NOT
+  vehicle upkeep (the Auto app), medical-equipment upkeep (the Medical app), or where household
+  objects are stored (the Locator app).
 state: live
 autonomy: gated
 links: {}

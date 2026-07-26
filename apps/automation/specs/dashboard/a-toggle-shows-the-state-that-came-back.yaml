@@ -1,0 +1,17 @@
+kind: specification
+id: automation.dashboard.a-toggle-shows-the-state-that-came-back
+title: A tapped control shows what actually happened
+state: live
+autonomy: gated
+behavior: >
+  Tapping a control disables it until the house answers, then redraws that row from the state read back
+  out of Home Assistant — not from what was asked for — so a device that did not respond does not appear
+  to have switched. If the action failed, the reason is shown above the list and the row stays exactly
+  as it was.
+implements:
+- apps/automation/routes.py::api_control
+- apps/automation/ui/AutomationApp.jsx::DashboardView
+- apps/automation/ui/AutomationApp.jsx::EntityRow
+tests: []
+links: {}
+notes: ''

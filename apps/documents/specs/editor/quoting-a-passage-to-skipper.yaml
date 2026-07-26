@@ -1,0 +1,16 @@
+kind: specification
+id: documents.editor.quoting-a-passage-to-skipper
+title: Quoting a passage to Skipper
+state: live
+autonomy: gated
+behavior: >
+  Selecting text inside a document offers to hand that passage to Skipper, and once handed over it
+  stays visible above the document until cleared, so there is never doubt about which passage the next
+  question is about. With nothing selected, Skipper is still told which document is open, so "summarise
+  this" works without selecting anything.
+implements:
+- apps/documents/ui/DocumentEditor.jsx::handlePinSelection
+- apps/documents/ui/DocumentEditor.jsx::handleClearPin
+tests: []
+links: {}
+notes: ''

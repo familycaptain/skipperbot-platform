@@ -1,0 +1,22 @@
+kind: specification
+id: email.backlog.only-unhandled-mail-is-revisited
+title: Only unhandled mail is ever revisited
+state: live
+autonomy: gated
+behavior: >
+  A catch-up considers only mail that no rule handled. Mail a rule already acted on is never
+  revisited, so a rule change cannot label, archive or mark the same message a second time, and
+  it cannot overwrite the record of what an earlier rule did.
+implements:
+- apps/email/data.py::get_unmatched_log_entries
+- apps/email/runner.py::_reprocess_unmatched
+tests:
+- type: unit
+  path: tests/evolve/email/test_reeval_foundation.py
+  rubric: >
+    Against the real email schema: a newly created rule is immediately eligible to trigger a
+    catch-up; the trigger reads the latest change across a mailbox's switched-on rules; and the
+    unhandled-mail query honours its newest-first bounds and resume point consistently with the
+    order it scans in.
+links: {}
+notes: ''

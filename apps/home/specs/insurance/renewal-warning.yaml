@@ -1,0 +1,16 @@
+kind: specification
+id: home.insurance.renewal-warning
+title: A renewal coming up, or already passed
+state: live
+autonomy: gated
+behavior: >
+  Each policy shows whether its renewal date has already gone by, falls within the coming month,
+  or is further off with the date itself, so a lapse in cover is visible before it happens. A
+  policy with no renewal date recorded makes no claim either way.
+implements:
+- apps/home/ui/HomeApp.jsx::renewalStatus
+- apps/home/ui/HomeApp.jsx::RenewalBadge
+- apps/home/tools.py::list_home_insurance_policies
+tests: []
+links: {}
+notes: ''

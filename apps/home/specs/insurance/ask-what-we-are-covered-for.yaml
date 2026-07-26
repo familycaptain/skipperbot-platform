@@ -1,0 +1,15 @@
+kind: specification
+id: home.insurance.ask-what-we-are-covered-for
+title: Asking what the household is covered for
+state: live
+autonomy: gated
+behavior: >
+  Asked about insurance — who the provider is, what the deductible is, how much cover a policy
+  carries, when it renews — Skipper answers from the recorded policies, including how often the
+  premium is paid. With no policies recorded it says so rather than answering vaguely.
+implements:
+- apps/home/tools.py::get_home_insurance_policy
+- apps/home/tools.py::list_home_insurance_policies
+tests: []
+links: {}
+notes: ''

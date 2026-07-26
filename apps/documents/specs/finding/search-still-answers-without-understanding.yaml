@@ -1,0 +1,17 @@
+kind: specification
+id: documents.finding.search-still-answers-without-understanding
+title: Search still answers when meaning is unavailable
+state: live
+autonomy: gated
+behavior: >
+  When Skipper cannot work out what a query means — no language service configured, the service down,
+  or a document that was never understood in the first place — searching falls back to matching the
+  actual words and still answers, rather than failing or returning nothing. A document created while
+  the service was unavailable is still saved and still findable by its words; it simply will not be
+  found by asking for the idea until it is next edited.
+implements:
+- apps/documents/store.py::search_docs
+- apps/documents/store.py::_embed_document
+tests: []
+links: {}
+notes: ''

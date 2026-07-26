@@ -1,0 +1,18 @@
+kind: specification
+id: automation.devices.find-a-device-and-its-parts
+title: Finding a thing, then the right part of it
+state: live
+autonomy: gated
+behavior: >
+  Asked about a physical thing by the name people call it ("is alfred jr charged?"), Skipper finds the
+  device and lists what that device can report or do — each part with its name, kind and units — so the
+  right one can be chosen and then read. A name that matches a device exactly wins over one that merely
+  contains it, and when nothing matches the answer says so and offers to be taught the name rather than
+  guessing at a different device.
+implements:
+- apps/automation/tools.py::find_home_device
+- apps/automation/devices.py::find_device
+- apps/automation/devices.py::get_entities_for_device
+tests: []
+links: {}
+notes: ''

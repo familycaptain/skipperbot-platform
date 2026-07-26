@@ -1,13 +1,18 @@
 kind: specification
 id: medical.medications.mark-ordered
-title: Mark a medication ordered
+title: Saying a refill has been ordered
 state: live
 autonomy: gated
-behavior: Marking ordered stops the 'needs ordering' nag; the nag continues daily as 'ordered,
-  awaiting fill'.
+behavior: >
+  Recording that a refill has been ordered stops the medication reading as needing ordering and
+  starts it reading as ordered and awaiting collection, so a repeat trip to the pharmacy is not
+  prompted for something already on its way. This applies only to a medication still being taken:
+  doing it to a stopped or unknown medication changes nothing and says so.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::mark_medication_ordered
+- apps/medical/data.py::mark_medication_ordered
+- apps/medical/routes.py::api_mark_ordered
+- apps/medical/ui/MedicalApp.jsx::MedCard
 tests: []
 links: {}
 notes: ''

@@ -1,12 +1,18 @@
 kind: specification
 id: medical.members.list-members
-title: List members
+title: The people, in name order
 state: live
 autonomy: gated
-behavior: Listing returns all family members in the medical tracker.
+behavior: >
+  The people records are kept for are listed alphabetically, and that list is what fills the
+  chooser at the top of the app and the "For" field of every add form. A household that has added
+  nobody sees an empty list and can only choose "All Members", which is why adding a person is the
+  first thing the app asks for.
 implements:
-- apps/medical/tools.py
-- apps/medical/ui/MedicalApp.jsx
+- apps/medical/tools.py::list_medical_members
+- apps/medical/data.py::get_all_members
+- apps/medical/routes.py::api_list_members
+- apps/medical/ui/MedicalApp.jsx::MedicalApp
 tests: []
 links: {}
 notes: ''
