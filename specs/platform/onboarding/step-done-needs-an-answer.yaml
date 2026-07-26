@@ -1,0 +1,17 @@
+kind: specification
+id: platform.onboarding.step-done-needs-an-answer
+title: A setup step is finished only when the person says so
+state: live
+autonomy: gated
+behavior: >
+  A step that the person must apply themselves counts as finished only when they confirm they have
+  done it, or say they do not want it. Saying they will get to it later is neither: the step is set
+  aside instead, which resolves it without pretending it happened. Skipper knowing the answer is not
+  the same as the answer having been applied, so a step is never closed on Skipper's own say-so. A
+  step whose real effect is the conversation itself — learning how someone wants to use Skipper — is
+  complete once they have answered, because there is nothing further to apply.
+implements:
+- chat_domain.py::_inject_onboarding_context
+tests: []
+links: {}
+notes: ''

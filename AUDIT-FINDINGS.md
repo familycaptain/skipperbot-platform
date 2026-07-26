@@ -78,6 +78,9 @@ tokens. With receipts unreadable, there is no way to show where a message actual
 
 ## platform — attention & consciousness
 
+**FIXED (f00150e)** — the two concurrency defects and the four red consciousness tests below
+are resolved; kept here for the record. **FIXED** — `test_thinking_live_gating` too.
+
 **The turn pool can wedge on one person.** `attention.py:103-105` takes the global
 concurrency slot and *then* the per-lane lock. Three owed messages from the same person
 each get a task; all three hold slots while two block on that person's lane — so every
@@ -141,4 +144,31 @@ copies of an unused `_truthy` helper.
 clean: `onboarding/timezone-offset.yaml` is not valid YAML (an unquoted `: ` inside
 `implements`), and `onboarding/prompt-fresh-install-greeting.yaml`,
 `onboarding/step-completion-integrity.yaml`, `tools/loader-parent-package-preimport.yaml`
-have `behavior` as a list rather than a string, which crashes the schema.
+have `behavior` as a list rather than a string, which crashes the schema. **FIXED** — and the
+count was low: a corpus-wide check found **50** bad records, including two more unparseable
+files (`apps/goals/specs/onboarding/household-relationships-roles.yaml`,
+`location-international-copy.yaml`) and 44 with `notes` over the 400-char cap. The cap is only
+a warning, so nothing surfaced it. Worth making the loader hard-fail on an unparseable record —
+one bad file silently drops every spec after it in that scan.
+
+**A green test is defending behaviour the operator overruled, on code nothing calls.**
+`tests/webchat/test_chat_history_channel.py` (4 assertions, all passing) locks in
+`chatlog_channels.is_web_visible` / `WEB_VISIBLE_SQL` / `select_display_turns` and the
+`channel=` branch of `data_layer/chatlogs.get_recent_turns` — the rule that the web console
+shows only web turns and hides Discord. That rule was explicitly reversed: the console is the
+complete record from every surface except voice. Nothing calls any of it any more (the console
+reads `context.history_projection` instead), so it is dead code with a passing test on top —
+the most durable way to reintroduce a decision that was already rejected. `normalize_channel`
+from the same module IS still live (it stamps the surface on write); only the read-filter half
+is orphaned. Recommend deleting the read-filter helpers, the `channel=` branch, and this test.
+
+**Bound tests under `tests/evolve/platform/` hard-error offline instead of skipping.**
+`test_prompt_fresh_install_greeting.py` does `import agent`, which pulls FastAPI, so off the
+test host it reports as an ERROR indistinguishable from a real failure; no test in that
+directory calls `skipTest`, unlike `test_thinking_live_gating.py`, which degrades cleanly.
+Anyone running the suite locally sees a red result they will learn to ignore — which is how
+the four genuinely-red consciousness tests went unnoticed.
+
+**One app's specs live in two places.** `specs/chores/kids/pristine-empty-hero.yaml` sits at
+the repo top level while every other chores spec is under `apps/chores/specs/`. A per-app
+corpus split across two roots will keep getting missed by anything that iterates apps.

@@ -1,4 +1,5 @@
-"""Bound test for platform.onboarding.step-completion-integrity (ev-82).
+"""Bound test for platform.onboarding.no-fabricated-settings-change and
+platform.onboarding.step-done-needs-an-answer (was platform.onboarding.step-completion-integrity, ev-82).
 
 Generalizes ev-80's household completion gate to ALL Settings-only onboarding steps
 (location, discord, integrations) and adds an anti-fabrication rule: the agent has no

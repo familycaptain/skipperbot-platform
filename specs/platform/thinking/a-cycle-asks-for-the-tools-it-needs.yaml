@@ -1,0 +1,17 @@
+kind: specification
+id: platform.thinking.a-cycle-asks-for-the-tools-it-needs
+title: A thinking cycle starts with a narrow set of abilities and asks for more
+state: live
+autonomy: gated
+behavior: >
+  A round of background thinking begins with only the abilities its area plausibly needs, rather than
+  everything Skipper can do, and asks for further ones when it turns out to need them. Anything not
+  asked for is unavailable rather than quietly present. The effect a person notices is that background
+  thinking stays affordable and stays on topic — a round reasoning about documents does not have the
+  means to send messages or change settings unless it deliberately asked for them.
+implements:
+- tool_slots.py
+- tool_router.py
+tests: []
+links: {}
+notes: ''

@@ -1,29 +1,24 @@
 kind: specification
 id: platform.tools.loader-parent-package-preimport
-title: Legacy-tool loader pre-imports the parent 'tools' package so submodules with module-level
-  tools.* imports register
+title: Every tool file's abilities become available, including ones that import their siblings
 state: live
 autonomy: gated
-behavior:
-- GIVEN a tools/*.py submodule with a module-level `from tools.X import Y` WHEN the agent
-  boots and the legacy-tool loader runs THEN the submodule loads and its tools register (no
-  partial-module ImportError).
-- GIVEN artifact_tool.py specifically WHEN the loader runs THEN attach_artifact / read_artifact
-  / list_entity_artifacts / delete_artifact_by_id register (and the 5 MCP artifact tools become
-  available) — the full legacy-tool set (114) loads, not 109.
-- GIVEN the loader WHEN it runs THEN behavior for all other tools is unchanged (idempotent
-  parent import; per-file loop reuses fully-built submodules).
+behavior: >
+  All of Skipper's abilities are available once it has started, including those defined in a file that
+  references another file in the same group. Such a file is loaded whole rather than abandoned
+  part-way, so none of the abilities it defines go missing — the failure this prevents is not an error
+  anyone sees, but a capability Skipper quietly no longer has, with no complaint at startup and no
+  symptom until someone asks for it. Loading is repeatable: starting twice registers nothing twice,
+  and a file that genuinely cannot load costs only its own abilities, not those of the files after it.
 implements:
-- 'tool_dispatch.py (_discover_legacy_tools: pre-import parent ''tools'' before the per-file
-  loop)'
+- tool_dispatch.py::_discover_legacy_tools
 tests:
 - type: integration
   path: tests/test_tool_loader_artifact.py
-  rubric: 'After tool_dispatch.init()/_discover_legacy_tools(), attach_artifact (and the other
-    artifact tools) ARE in the legacy-tool registry; the loaded-tool count is the full set
-    (>=114 / includes artifact_tool''s 4). Regression guard: importing a submodule with a
-    module-level tools.* import via the loader does not raise a partial-module ImportError.'
+  rubric: >
+    Abilities defined in a file with a sibling import are present in the registry after startup, and
+    loading such a file does not fail part-way.
 links: {}
-notes: Fixes a partial-module circular import in the loader's import ordering (not artifact_tool
-  itself). Reproduce-verified in-container (114 vs 109 tools). No plain-import failure — loader-order-specific.
-verified: true
+notes: >
+  Stated without an exact tool count on purpose: a total is a fact about today's build and would make
+  this spec stale the moment an ability is added.

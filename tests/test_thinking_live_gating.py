@@ -2,15 +2,18 @@
 
 Regression guard for the keyless-boot -> models-configured self-activation contract:
 
-  - Keyless boot: the priority-event consumer starts and drains events, but
-    ``_supervise_domains`` starts NO timer domain tasks and runs NO embedding
-    backfill while ``models_configured()`` is False (no LLM work).
+  - Keyless boot: ``_supervise_domains`` starts NO timer domain tasks and runs NO
+    embedding backfill while ``models_configured()`` is False (no LLM work), and the
+    scheduler itself still comes up.
   - Flipping ``models_configured()`` -> True makes the next ``_supervise_domains``
     tick start the domain tasks AND run the one-shot embedding backfill/migrate
     exactly once (run-once latch; a second tick does not re-run it).
-  - ``start_thinking_scheduler()`` is idempotent: a second call is a no-op (no
-    second priority-event consumer).
-  - The running priority-event consumer drains a submitted ``desktop.arrival``.
+  - ``start_thinking_scheduler()`` is idempotent: a second call is a no-op.
+
+Arrival events are NOT covered here any more: the priority-event queue and its
+``think-priority-consumer`` task are retired, and a desktop arrival now reaches the
+registered "connection" skill through the attention system instead. This test asserting
+that retired plumbing is what made it fail on the test host while skipping offline.
 
 Follows the offline pattern of tests/test_keyless_boot.py: the scheduler's lazily
 imported collaborators (providers.tier_resolver, data_layer.thinking_domains,
@@ -42,7 +45,7 @@ class ThinkingLiveGatingTests(unittest.TestCase):
         self._saved = {name: sys.modules.get(name) for name in _FAKED}
 
         self.ready = {"v": False}
-        self.calls = {"backfill": 0, "migrate": 0, "arrival": []}
+        self.calls = {"backfill": 0, "migrate": 0}
 
         # providers.tier_resolver.models_configured — the live gate.
         tr = types.ModuleType("providers.tier_resolver")
@@ -57,20 +60,11 @@ class ThinkingLiveGatingTests(unittest.TestCase):
         sys.modules["data_layer.thinking_domains"] = dl
 
         # domain_modules.get_domain_handler — routes the "pm" domain loop and the
-        # "desktop.arrival" priority event.
         async def _pm_handler(*a, **k):
             await asyncio.sleep(3600)  # a live domain loop that never finishes within the test
 
-        async def _arrival_handler(payload):
-            self.calls["arrival"].append(payload)
-            return {"greeted": True}
-
         def _get_handler(name):
-            if name == "pm":
-                return _pm_handler
-            if name == "desktop.arrival":
-                return _arrival_handler
-            return None
+            return _pm_handler if name == "pm" else None
 
         dm = types.ModuleType("domain_modules")
         dm.get_domain_handler = _get_handler
@@ -107,12 +101,7 @@ class ThinkingLiveGatingTests(unittest.TestCase):
         ts._embedding_backfill_done = False
         ts._shutting_down = False
         ts._domain_tasks.clear()
-        ts._priority_queue = None
         ts._last_keyless_log = 0.0
-
-    @staticmethod
-    def _consumers():
-        return [t for t in asyncio.all_tasks() if t.get_name() == "think-priority-consumer"]
 
     def test_live_gating_and_run_once_backfill(self):
         try:
@@ -131,34 +120,27 @@ class ThinkingLiveGatingTests(unittest.TestCase):
                 self.assertEqual(self.calls["backfill"], 0, "keyless: no embedding backfill")
                 self.assertEqual(self.calls["migrate"], 0, "keyless: no embedding migrate")
 
-                # (2) Start the scheduler (keyless). The LLM-free consumer must start.
+                # (2) Start the scheduler keyless: it comes up, but starts NO domain work.
                 sched_task = asyncio.create_task(ts.start_thinking_scheduler())
-                await asyncio.sleep(0.05)  # let it start the consumer + run its first tick
+                await asyncio.sleep(0.05)  # let it start and run its first tick
                 self.assertTrue(ts._scheduler_started)
-                self.assertEqual(len(self._consumers()), 1, "exactly one priority-event consumer")
                 self.assertEqual(ts._domain_tasks, {}, "keyless: still no timer domain tasks")
 
-                # (3) Idempotency: a second start is a no-op (no second consumer).
+                # (3) Idempotency: a second start is a no-op — it must not double-start
+                # anything, so the domain-task set is still untouched while keyless.
                 await ts.start_thinking_scheduler()
                 await asyncio.sleep(0.01)
-                self.assertEqual(len(self._consumers()), 1, "second start must not add a consumer")
+                self.assertTrue(ts._scheduler_started)
+                self.assertEqual(ts._domain_tasks, {}, "second start must not add domain tasks")
 
-                # (4) The running consumer drains a submitted desktop.arrival.
-                res = await asyncio.wait_for(
-                    ts.submit_priority_event("desktop.arrival", {"user_id": "primary"}),
-                    timeout=2,
-                )
-                self.assertEqual(res, {"greeted": True})
-                self.assertEqual(len(self.calls["arrival"]), 1, "arrival routed to its handler once")
-
-                # (5) Flip models ready -> next tick starts domain tasks AND backfills once.
+                # (4) Flip models ready -> next tick starts domain tasks AND backfills once.
                 self.ready["v"] = True
                 await ts._supervise_domains()
                 self.assertIn("pm", ts._domain_tasks, "domains self-activate once configured")
                 self.assertEqual(self.calls["backfill"], 1, "embedding backfill runs exactly once")
                 self.assertEqual(self.calls["migrate"], 1, "embedding migrate runs exactly once")
 
-                # (6) Run-once latch: a second ready tick does NOT re-run the backfill.
+                # (5) Run-once latch: a second ready tick does NOT re-run the backfill.
                 await ts._supervise_domains()
                 self.assertEqual(self.calls["backfill"], 1, "backfill is not re-run (run-once latch)")
                 self.assertEqual(self.calls["migrate"], 1, "migrate is not re-run (run-once latch)")
@@ -168,8 +150,6 @@ class ThinkingLiveGatingTests(unittest.TestCase):
                 if sched_task is not None:
                     sched_task.cancel()
                 for t in list(ts._domain_tasks.values()):
-                    t.cancel()
-                for t in self._consumers():
                     t.cancel()
                 await asyncio.sleep(0)
                 self._reset_scheduler_state(ts)

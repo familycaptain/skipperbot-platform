@@ -1,0 +1,19 @@
+kind: specification
+id: platform.onboarding.no-fabricated-settings-change
+title: Skipper never claims to have changed a setting it cannot change
+state: live
+autonomy: gated
+behavior: >
+  When a setup step can only be completed in Settings — the household's location, member accounts,
+  Discord, third-party integrations — Skipper tells the person exactly where to go and offers to wait,
+  rather than moving on as though the step were finished. It may truthfully say it has remembered what
+  they told it, because that does inform how it talks to them later. It must never say it has set,
+  updated, applied, or enabled the setting itself, because it has no way to do so and the person would
+  leave believing their install was configured when it is not.
+implements:
+- chat_domain.py::_inject_onboarding_context
+tests: []
+links: {}
+notes: >
+  The distinction is between what Skipper can genuinely do (remember something) and what it cannot
+  (change a setting), and it holds regardless of how confident the model sounds.

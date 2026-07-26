@@ -1,0 +1,18 @@
+kind: specification
+id: platform.thinking.a-cycle-reads-a-bounded-batch
+title: A thinking cycle reads a bounded batch and resumes where it stopped
+state: live
+autonomy: gated
+behavior: >
+  When Skipper reviews what it has learned since it last thought about an area, it takes a bounded
+  batch of the newest items and remembers where it stopped, so the next round continues from there
+  rather than starting over. The work a single round does therefore stays roughly constant as the
+  install ages: an install with years of history costs no more per round than a fresh one, and no item
+  is skipped or reviewed twice. A round with nothing new to review does nothing and says so.
+implements:
+- data_layer/memories.py::load_after_cursor
+tests: []
+links: {}
+notes: >
+  The consequence worth protecting is that cost does not grow with history — an unbounded read is
+  invisible on a new install and fatal on an old one.

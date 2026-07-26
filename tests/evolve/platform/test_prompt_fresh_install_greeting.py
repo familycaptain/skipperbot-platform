@@ -1,4 +1,5 @@
-"""Bound test for platform.onboarding.prompt-fresh-install-greeting (ev-79) — server side.
+"""Bound test for platform.onboarding.greeting-after-first-configuration (was
+prompt-fresh-install-greeting, ev-79) — server side.
 
 On a genuinely fresh install the primary's desktop WS connects while keyless, so the
 connection-event greeting early-skips (models not configured). When the user then configures

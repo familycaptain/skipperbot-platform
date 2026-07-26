@@ -1,0 +1,20 @@
+kind: specification
+id: platform.thinking.a-finished-cycle-is-never-recorded-as-failed
+title: A thinking cycle that finished is never recorded as having failed
+state: live
+autonomy: gated
+behavior: >
+  Every round of Skipper's own thinking is recorded, and the record says what actually happened: a
+  round that completed is never filed as a failure because of a bookkeeping clash with another round.
+  Two rounds recorded at the same moment each keep their own entry rather than one displacing the
+  other. This matters because the thinking record is what Skipper and the operator both read to judge
+  whether the background reasoning is working at all — a log that invents failures is worse than no
+  log, since it prompts investigation of problems that never happened.
+implements:
+- data_layer/thinking_log.py::_new_id
+- data_layer/thinking_log.py::log_cycle
+tests: []
+links: {}
+notes: >
+  Recorded as an outcome rather than an id width: the id happens to be 128-bit today, but the
+  requirement is that clashes cannot mislabel a cycle, however that is achieved.

@@ -1,0 +1,17 @@
+kind: specification
+id: platform.onboarding.set-aside-step-is-not-renudged
+title: A step set aside for later is not asked about again every turn
+state: live
+autonomy: gated
+behavior: >
+  A step the person has put off is treated as settled for the purposes of moving on: setup does not
+  keep selecting it as the thing to talk about, and does not raise it again on each turn. Skipper may
+  mention it once more, and lists everything still outstanding — with where to go for each — once at
+  the end. Setup as a whole can finish with steps left in this state, so putting something off never
+  blocks the rest of the walkthrough, and never starves the app introductions that follow it.
+implements:
+- chat_domain.py::_inject_onboarding_context
+- apps/goals/handlers.py
+tests: []
+links: {}
+notes: ''

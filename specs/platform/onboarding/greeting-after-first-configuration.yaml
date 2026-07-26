@@ -1,0 +1,30 @@
+kind: specification
+id: platform.onboarding.greeting-after-first-configuration
+title: A brand-new install greets as soon as it is able to speak
+state: live
+autonomy: gated
+behavior: >
+  On a brand-new install the first person reaches the desktop before Skipper has been given any model
+  credentials, so it cannot say anything yet and stays silent rather than greeting them emptily. The
+  moment those credentials are saved and Skipper can speak, it greets them within seconds — it does not
+  wait for the next background cycle, which would leave someone who just finished setup staring at an
+  empty screen for minutes. They are greeted exactly once however many paths could have produced it,
+  including reloading or opening a second tab. If the greeting cannot be delivered because nobody is
+  connected, they are still greeted later rather than being permanently passed over. Saving credentials
+  that were already configured, or saving when the save itself fails, greets nobody and changes nothing
+  about the save.
+implements:
+- agent.py::save_models
+- apps/goals/onboarding.py
+- app_platform/attention.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_prompt_fresh_install_greeting.py
+  rubric: >
+    A first successful credential save on an install with a primary user raises exactly one greeting;
+    a save with no primary user, a failed save, or a save when credentials were already present raises
+    none, and the save's own result is unchanged either way.
+links: {}
+notes: >
+  The trigger is "Skipper became able to speak", not "setup finished" — someone can configure
+  credentials without completing the rest of the walkthrough.

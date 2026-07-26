@@ -1,0 +1,26 @@
+kind: specification
+id: platform.thinking.live-model-readiness
+title: Skipper starts healthy with no credentials, and starts thinking when it gets them
+state: live
+autonomy: gated
+behavior: >
+  An install with no model credentials yet still starts up healthy and serves its interface — it simply
+  does no thinking, attempts no reasoning, and builds no search indexes, because there is nothing to
+  reason with. It says so once rather than logging a failure on every cycle. When credentials are
+  supplied it begins thinking on its own within a cycle or two, with no restart: someone who has just
+  finished setup is never told to go and restart the thing they just configured. The one-off indexing
+  of existing history that becomes possible at that moment runs exactly once, not on every cycle
+  thereafter.
+implements:
+- thinking_scheduler.py::start_thinking_scheduler
+- thinking_scheduler.py::_supervise_domains
+- providers/tier_resolver.py::models_configured
+tests:
+- type: unit
+  path: tests/test_thinking_live_gating.py
+  rubric: >
+    While unconfigured, no area work starts and no indexing runs; a second start is a no-op; once
+    configured, the next supervision tick starts area work and runs the one-off indexing exactly once,
+    and a later tick does not repeat it.
+links: {}
+notes: ''
