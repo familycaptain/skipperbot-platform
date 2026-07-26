@@ -1,0 +1,15 @@
+kind: specification
+id: locator.places.a-place-need-not-be-defined-first
+title: A place does not have to be defined first
+state: live
+autonomy: gated
+behavior: >
+  An item's place is whatever someone says it is: a place never named in advance is accepted and the
+  item is filed there. The named places are offered as suggestions while typing, never as the only
+  allowed answers, so putting something on record is never blocked by housekeeping nobody has done yet.
+implements:
+- apps/locator/tools.py::create_located_item
+- apps/locator/ui/LocatorDetailApp.jsx
+tests: []
+links: {}
+notes: ''

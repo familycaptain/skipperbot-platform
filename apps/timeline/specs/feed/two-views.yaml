@@ -1,0 +1,20 @@
+kind: specification
+id: timeline.feed.two-views
+title: Two feeds, never mixed
+state: live
+autonomy: gated
+behavior: >
+  The app opens on the shared family journal — the entries people in the household wrote, visible
+  to everyone. Switching to the activity view replaces it with one person's automatic record of
+  the changes they made in other apps, and the two never mix: a journal entry never appears in an
+  activity view and an activity line never appears in the family feed. Composing is offered in the
+  family view only, because activity lines are not written by hand.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+- apps/timeline/routes.py::api_list_posts
+- apps/timeline/data.py::list_posts
+tests: []
+links: {}
+notes: >
+  Two audiences for one store: "what did the household choose to record" and "what changed lately"
+  answer different questions, and mixing them buries the first under the second.

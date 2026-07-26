@@ -1,0 +1,18 @@
+kind: specification
+id: timeline.find.search-the-feed
+title: Search the words in an entry
+state: live
+autonomy: gated
+behavior: >
+  Submitting search text narrows the feed to entries whose title or body contains it, ignoring
+  case and matching anywhere in the text rather than only whole words. The search stays applied
+  while the reader keeps scrolling and paging until it is cleared, and clearing it restores the
+  full feed. When nothing matches, the feed comes back empty rather than quietly falling back to
+  unfiltered results.
+implements:
+- apps/timeline/data.py::list_posts
+- apps/timeline/routes.py::api_list_posts
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+tests: []
+links: {}
+notes: ''

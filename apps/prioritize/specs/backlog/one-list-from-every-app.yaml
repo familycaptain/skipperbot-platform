@@ -1,0 +1,19 @@
+kind: specification
+id: prioritize.backlog.one-list-from-every-app
+title: Everything actionable, gathered in one place
+state: live
+autonomy: gated
+behavior: >
+  The backlog is assembled on demand from every installed app that has work for this person: their
+  open goals, projects and tasks, their active reminders, their active nags, schedules assigned to
+  them, the top of their to-do list, and whatever else an installed app offers up — vehicle issues,
+  home maintenance, medication refills and the like. Nothing is copied or cached: each read asks the
+  owning apps again, so something closed elsewhere a moment ago is already gone from the list.
+implements:
+- apps/prioritize/data.py::get_backlog
+- apps/prioritize/data.py::register_backlog_provider
+- agent.py::api_get_backlog
+- apps/prioritize/ui/PrioritizeApp.jsx::PrioritizeApp
+tests: []
+links: {}
+notes: ''

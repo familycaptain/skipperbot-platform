@@ -1,0 +1,17 @@
+kind: specification
+id: auto.vehicles.who-logged-it
+title: Who logged it is recorded, and not taken from the browser
+state: live
+autonomy: gated
+behavior: >
+  Everything recorded — a vehicle, a service, an issue, a condition report, a valuation — carries
+  who recorded it, so a shared household log says which member added each entry. When the entry
+  comes from the app that name is the signed-in person, never a name the page supplied, so it
+  cannot be attributed to somebody else by editing the request.
+implements:
+- apps/auto/routes.py::_actor
+- apps/auto/routes.py::api_create_vehicle
+- apps/auto/routes.py::api_log_service
+tests: []
+links: {}
+notes: ''

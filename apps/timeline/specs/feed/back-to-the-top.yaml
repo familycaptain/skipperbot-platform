@@ -1,0 +1,13 @@
+kind: specification
+id: timeline.feed.back-to-the-top
+title: Getting back to the newest entry
+state: live
+autonomy: gated
+behavior: >
+  Once the feed holds more than a handful of entries, a control is available that returns the
+  reader to the newest entry, so reading a long way back does not have to be undone by scrolling.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+tests: []
+links: {}
+notes: ''

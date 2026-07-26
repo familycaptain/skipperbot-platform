@@ -1,0 +1,16 @@
+kind: specification
+id: folders.browsing.one-persons-folders
+title: Narrow the list to one person
+state: live
+autonomy: gated
+behavior: >
+  Filtering by a person narrows the list to the folders marked as theirs, and the household's
+  unmarked folders are not mixed back in. A name nobody's folders are marked with returns nothing
+  rather than falling back to everything.
+implements:
+- apps/folders/tools.py::list_folders
+- apps/folders/data.py::get_all_folders
+- agent.py::api_list_folders
+tests: []
+links: {}
+notes: ''

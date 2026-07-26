@@ -1,0 +1,16 @@
+kind: specification
+id: folders.folders.a-parent-that-does-not-exist
+title: A folder is never created under a parent that is not there
+state: live
+autonomy: gated
+behavior: >
+  Naming a parent that does not exist — a mistyped id, or a folder that has since been deleted —
+  creates nothing: no folder appears at the top level as a consolation, and the person is told the
+  create did not happen rather than being handed an id for something unreachable.
+implements:
+- apps/folders/tools.py::create_folder
+- apps/folders/data.py::create_folder
+- apps/folders/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

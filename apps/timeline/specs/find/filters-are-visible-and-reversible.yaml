@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.find.filters-are-visible-and-reversible
+title: Every narrowing is visible and undoable
+state: live
+autonomy: gated
+behavior: >
+  Each active narrowing — search text, tag, author, date — is shown as a labelled chip above the
+  feed with its own dismiss, so a reader who has scrolled a long way can still see why they are
+  not seeing everything and can undo one narrowing without losing the others. With nothing
+  narrowed the bar is absent rather than empty.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+tests: []
+links: {}
+notes: ''

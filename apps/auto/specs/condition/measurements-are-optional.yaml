@@ -1,0 +1,16 @@
+kind: specification
+id: auto.condition.measurements-are-optional
+title: A measurement not taken is not a zero
+state: live
+autonomy: gated
+behavior: >
+  Tire tread depth and remaining oil life are recorded only when they were actually measured; not
+  measuring them leaves them absent from the report rather than recorded as zero. So a snapshot
+  never claims bald tires and dead oil because nobody had a gauge, and a report that does carry a
+  measurement can be trusted as a measurement.
+implements:
+- apps/auto/tools.py::log_vehicle_condition
+- apps/auto/tools.py::_format_condition
+tests: []
+links: {}
+notes: ''

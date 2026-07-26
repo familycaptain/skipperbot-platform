@@ -1,0 +1,18 @@
+kind: specification
+id: auto.value.log-valuation
+title: Recording what a vehicle is worth
+state: live
+autonomy: gated
+behavior: >
+  A valuation records what a vehicle was worth on a given date: what it would fetch sold
+  privately and what it would fetch as a trade-in, the condition it was valued in, the mileage at
+  the time, and where the figure came from. The date defaults to today. A source or condition
+  nobody recognises is recorded as the ordinary default instead of being refused, so a rough
+  figure someone quotes is still captured.
+implements:
+- apps/auto/tools.py::log_vehicle_valuation
+- apps/auto/routes.py::api_log_valuation
+- apps/auto/data.py::save_valuation
+tests: []
+links: {}
+notes: ''

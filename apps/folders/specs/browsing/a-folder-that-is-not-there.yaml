@@ -1,0 +1,17 @@
+kind: specification
+id: folders.browsing.a-folder-that-is-not-there
+title: A folder that is not there is reported, not faked
+state: live
+autonomy: gated
+behavior: >
+  Asking for an id that belongs to no folder, or to one that has been deleted, reports that the
+  folder was not found; the app shows 'folder not found' rather than an empty folder someone could
+  file into and then lose what they filed.
+implements:
+- apps/folders/tools.py::get_folder
+- apps/folders/store.py::get_folder_detail
+- apps/folders/ui/FolderDetailApp.jsx
+- agent.py::api_get_folder
+tests: []
+links: {}
+notes: ''

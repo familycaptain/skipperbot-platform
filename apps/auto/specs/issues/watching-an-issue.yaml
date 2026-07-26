@@ -1,0 +1,17 @@
+kind: specification
+id: auto.issues.watching-an-issue
+title: An issue can be one to keep an eye on
+state: live
+autonomy: gated
+behavior: >
+  An issue need not be either urgent or resolved: it can be marked as one being kept an eye on —
+  a chip that has not spread, a noise that comes and goes — and that is recorded on the issue.
+  It still counts as unresolved everywhere issues are counted, because it is still wrong with the
+  car. Only actually fixing it takes it off the open list.
+implements:
+- apps/auto/tools.py::update_vehicle_issue
+- apps/auto/data.py::get_all_open_issues
+- apps/auto/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

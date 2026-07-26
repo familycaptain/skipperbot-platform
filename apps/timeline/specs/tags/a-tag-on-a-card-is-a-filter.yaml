@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.tags.a-tag-on-a-card-is-a-filter
+title: A tag on an entry is a way in
+state: live
+autonomy: gated
+behavior: >
+  An entry's tags are shown on its card, and choosing one narrows the feed to that tag — so a
+  reader follows a thread back through the journal from any entry, without going to the filter
+  controls.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::PostCard
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+tests: []
+links: {}
+notes: ''

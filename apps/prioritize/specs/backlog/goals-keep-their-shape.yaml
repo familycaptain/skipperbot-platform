@@ -1,0 +1,17 @@
+kind: specification
+id: prioritize.backlog.goals-keep-their-shape
+title: Goals keep their shape
+state: live
+autonomy: gated
+behavior: >
+  Goals, projects and tasks appear nested — tasks indented under their project, projects under their
+  goal — so a person can see what a task is in service of, and any of the three levels can be
+  promoted to focus on its own. A project or task whose parent is not itself in this person's
+  backlog still appears rather than being dropped for having nowhere to sit, and a goal or project
+  is pulled in when it merely contains work assigned to them.
+implements:
+- apps/prioritize/data.py::_backlog_goals_tree
+- apps/prioritize/ui/PrioritizeApp.jsx::GoalsTreeNode
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: locator.finding.matched-as-one-phrase
+title: What is said is matched as one phrase
+state: live
+autonomy: gated
+behavior: >
+  What someone asks for is matched as a single run of characters appearing anywhere in an item's
+  details, ignoring capitals: "camping" finds "Camping Gear" and "drill" finds "Power Drill (18V)".
+  The words are not matched separately or loosely, so a longer spoken description only finds something
+  when those words appear together in that order, and a paraphrase of an item's name finds nothing
+  rather than a near miss.
+implements:
+- apps/locator/data.py::search_items
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: bounties.claiming.a-claim-waits-for-a-parent
+title: A claim waits for a parent
+state: live
+autonomy: gated
+behavior: >
+  Having claimed, the claimant is told the work is now waiting on a parent, and the app offers
+  them no way to approve it themselves — approve and reject appear only for parents. Nothing is
+  credited until a parent decides, however long that takes.
+implements:
+- apps/bounties/ui/BountiesApp.jsx::BountyCard
+- apps/bounties/tools.py::submit_bounty
+- apps/bounties/routes.py::api_approve_bounty
+tests: []
+links: {}
+notes: ''

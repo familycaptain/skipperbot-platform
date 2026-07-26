@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.posts.an-entry-can-name-its-source
+title: An entry written on another app's behalf says so
+state: live
+autonomy: gated
+behavior: >
+  An entry created on behalf of another app carries that app's name, the identity of the record it
+  came from, and a readable label for it, and the card shows the entry as coming via that app with
+  the label beneath it. An entry a person wrote by hand shows no source at all.
+implements:
+- apps/timeline/data.py::create_post
+- apps/timeline/tools.py::post_to_timeline
+- apps/timeline/ui/TimelineApp.jsx::PostCard
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,20 @@
+kind: specification
+id: folders.cross-app.skipper-files-things-on-its-own
+title: Skipper files things without being asked
+state: live
+autonomy: gated
+behavior: >
+  Skipper organises unprompted: as background work it makes folders, writes documents into them
+  and moves things between them, and what it made is indistinguishable in the app from what a
+  person made. It never deletes a folder or a document on its own, and it never interrupts anyone
+  to report that it has been tidying.
+implements:
+- apps/documents/domain.py
+- apps/folders/tools.py::create_folder
+- apps/folders/tools.py::add_to_folder
+- apps/folders/tools.py::move_to_folder
+tests: []
+links: {}
+notes: >
+  Deleting is deliberately withheld from the background organiser: a wrong file is recoverable, a
+  deleted folder someone never saw deleted is not.

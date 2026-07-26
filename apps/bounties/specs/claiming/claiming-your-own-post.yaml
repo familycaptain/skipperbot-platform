@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.claiming.claiming-your-own-post
+title: Nothing stops you claiming your own post
+state: live
+autonomy: gated
+behavior: >
+  Claiming is open to every household member, parents included, and nothing stops the person who
+  posted a bounty from claiming it themselves. A parent who claims their own posting can also be
+  the one who approves it — the household, not the app, is what keeps posting and claiming honest.
+implements:
+- apps/bounties/routes.py::api_submit_bounty
+- apps/bounties/store.py::submit_bounty
+tests: []
+links: {}
+notes: >
+  Written down because it is the standing behaviour of a tool built on household trust: requiring
+  a different person to approve would be a change of intent, not a clarification of this one.

@@ -1,0 +1,16 @@
+kind: specification
+id: locator.recording.a-new-item-exists-as-soon-as-it-is-started
+title: A new item in the app exists as soon as it is started
+state: live
+autonomy: gated
+behavior: >
+  Starting a new item in the app creates the record immediately, under a placeholder name, and opens it
+  ready to edit — so the place and the details are typed into something that already exists and cannot
+  be lost by closing the wrong thing. It appears in the list at once, and an editing session that is
+  abandoned leaves that placeholder on the list to be renamed or removed.
+implements:
+- apps/locator/ui/LocatorListApp.jsx
+- apps/locator/routes.py::api_create_located_item
+tests: []
+links: {}
+notes: ''

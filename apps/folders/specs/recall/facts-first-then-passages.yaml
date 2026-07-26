@@ -1,0 +1,17 @@
+kind: specification
+id: folders.recall.facts-first-then-passages
+title: Facts first, raw passages only to fill the gap
+state: live
+autonomy: gated
+behavior: >
+  Recall prefers the extracted facts and only falls back to raw passages of the source to fill
+  whatever room is left, and both have to clear a likeness threshold before they count. A question
+  nothing filed is relevant to contributes nothing at all — Skipper answers from what it otherwise
+  knows rather than padding the reply with the nearest folder text it could find.
+implements:
+- apps/folders/intelligence.py::get_relevant_folder_knowledge
+- apps/folders/data.py::search_knowledge
+- chat_domain.py
+tests: []
+links: {}
+notes: ''

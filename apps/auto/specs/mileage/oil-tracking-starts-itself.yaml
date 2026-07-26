@@ -1,0 +1,18 @@
+kind: specification
+id: auto.mileage.oil-tracking-starts-itself
+title: Logging an oil change starts tracking the next one
+state: live
+autonomy: gated
+behavior: >
+  Logging an oil change together with a mileage reading starts mileage-based tracking for that
+  vehicle by itself — next due five thousand miles later unless the household has said otherwise
+  — and the reply gives the mileage it is next due at, so nobody has to set anything up to be
+  reminded. Other ways of naming the same job ("oil & filter", "oil and filter change") count as
+  one. An oil change logged with no mileage cannot start it, because there is nothing to count
+  from, and it is recorded as ordinary history instead.
+implements:
+- apps/auto/tools.py::log_service
+- apps/auto/data.py::upsert_oil_tracking
+tests: []
+links: {}
+notes: ''

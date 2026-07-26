@@ -1,0 +1,15 @@
+kind: specification
+id: bounties.claiming.one-claim-at-a-time
+title: One claim at a time
+state: live
+autonomy: gated
+behavior: >
+  A bounty holds at most one claim: the moment somebody claims it, it leaves the open list and a
+  second person cannot claim it too, so two people are never waiting to be paid for the same task.
+  Only a rejection frees it for somebody else.
+implements:
+- apps/bounties/store.py::submit_bounty
+- apps/bounties/data.py::get_all_bounties
+tests: []
+links: {}
+notes: ''

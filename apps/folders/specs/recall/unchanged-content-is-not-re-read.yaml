@@ -1,0 +1,17 @@
+kind: specification
+id: folders.recall.unchanged-content-is-not-re-read
+title: Unchanged content is never read twice
+state: live
+autonomy: gated
+behavior: >
+  Re-filing or re-saving something whose content has not changed since it was last read does no
+  work: nothing is re-extracted, no model is called, and nothing is charged for it. Content that
+  HAS changed is read from scratch and replaces what was known about it, so a document never
+  accumulates facts from two different versions of itself.
+implements:
+- apps/folders/intelligence.py::process_folder_item
+- apps/folders/data.py::get_content_hash
+- apps/folders/data.py::delete_knowledge_for_entity
+tests: []
+links: {}
+notes: ''

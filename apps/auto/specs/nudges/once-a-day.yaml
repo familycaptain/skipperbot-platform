@@ -1,0 +1,19 @@
+kind: specification
+id: auto.nudges.once-a-day
+title: One message a day, not one per problem
+state: live
+autonomy: gated
+behavior: >
+  Auto's unprompted chasing reaches a person at most once a day, as a single message covering
+  every vehicle they are responsible for and every finding on each, grouped under the vehicle it
+  belongs to. Two neglected vehicles are one message, not two. It arrives at a time of day that
+  varies rather than the same minute every day, and never outside waking hours.
+implements:
+- apps/auto/hooks.py::_vehicle_nag_provider
+- apps/auto/hooks.py::_build_nag_message
+- nag_registry.py::run_all_nag_providers
+tests: []
+links: {}
+notes: >
+  One consolidated message per person per day is the operator's ceiling: per-finding messages
+  turn a useful prompt into something people mute.

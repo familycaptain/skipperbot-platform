@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.photos.remove-or-reorder-before-saving
+title: Remove and reorder before saving
+state: live
+autonomy: gated
+behavior: >
+  Any attachment can be removed while composing, and attachments can be moved earlier or later so
+  the carousel reads in the order the person intends. The order shown in the composer is the order
+  the photos are stored in and the order they are later shown in.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::PostComposer
+- apps/timeline/data.py::add_photo
+tests: []
+links: {}
+notes: ''

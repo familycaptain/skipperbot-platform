@@ -1,12 +1,17 @@
 kind: specification
 id: auto.issues.update-issue
-title: Edit a vehicle issue
+title: An issue that gets worse is the same issue
 state: live
 autonomy: gated
-behavior: An existing vehicle issue can be updated — its status, description, and resolution changed
-  after it was first saved.
+behavior: >
+  An issue's title, description, severity and notes can all be revised after it was reported — a
+  chip that has become a crack is the same issue escalated, not a second one — changing only what
+  is given. An update naming no fields reports that there was nothing to change, and updating an
+  issue that does not exist says so.
 implements:
-- apps/auto/tools.py
+- apps/auto/tools.py::update_vehicle_issue
+- apps/auto/routes.py::api_update_issue
+- apps/auto/data.py::update_issue
 tests: []
 links: {}
 notes: ''

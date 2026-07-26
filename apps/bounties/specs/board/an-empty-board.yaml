@@ -1,0 +1,16 @@
+kind: specification
+id: bounties.board.an-empty-board
+title: Which kind of empty
+state: live
+autonomy: gated
+behavior: >
+  With nothing ever posted, the board shows the app's introduction to what bounties are for rather
+  than a bare empty list. Narrowing down to no matches instead says nothing matched, which is a
+  different answer from having no bounties at all, and Skipper asked the same question says none
+  were found rather than replying with nothing.
+implements:
+- apps/bounties/ui/BountiesApp.jsx::BoardTab
+- apps/bounties/tools.py::list_bounties
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: auto.upkeep.cadence-must-be-recognised
+title: A cadence has to be one Skipper recognises
+state: live
+autonomy: gated
+behavior: >
+  A custom cadence must say how many days apart; asking for one without that is refused. A
+  cadence nobody recognises is refused with the list of ones that work, rather than quietly
+  falling back to a default the household never asked for — an item silently made yearly instead
+  of monthly is worse than one that was not created. A recurring item can only be attached to a
+  vehicle that exists.
+implements:
+- apps/auto/tools.py::create_maintenance_schedule
+tests: []
+links: {}
+notes: ''

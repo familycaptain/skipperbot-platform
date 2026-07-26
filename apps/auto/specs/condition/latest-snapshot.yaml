@@ -1,0 +1,16 @@
+kind: specification
+id: auto.condition.latest-snapshot
+title: How a vehicle is doing right now
+state: live
+autonomy: gated
+behavior: >
+  Asked how a vehicle is doing, Auto answers from its most recent condition report alone — its
+  date, the mileage then, every component rating, tread and oil life if they were measured, and
+  whatever was observed at the time — rather than leaving the reader to pick the newest out of
+  history. A vehicle never checked says so.
+implements:
+- apps/auto/tools.py::get_latest_vehicle_condition
+- apps/auto/data.py::get_latest_condition
+tests: []
+links: {}
+notes: ''

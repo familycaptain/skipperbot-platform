@@ -1,0 +1,18 @@
+kind: specification
+id: folders.cross-app.a-folder-holds-references-not-copies
+title: A folder holds references, not copies
+state: live
+autonomy: gated
+behavior: >
+  A folder holds a reference to an item, never a copy of it: its title, length, file type and
+  content are read live from the app that owns it, so editing a document in Documents changes what
+  the folder shows without anyone touching the folder. The reference is nothing but an id, and no
+  app tells Folders when what it points at changes hands.
+implements:
+- apps/folders/store.py::get_folder_detail
+- apps/folders/data.py::add_item
+- apps/folders/data.py::get_items
+- apps/folders/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

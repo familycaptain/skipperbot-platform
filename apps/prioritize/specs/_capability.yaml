@@ -2,10 +2,12 @@ kind: capability
 id: prioritize
 title: Prioritize
 app: prioritize
-scope: 'Per-user focus: up to 3 active priority slots, plus a backlog aggregator that combines
-  goals, reminders, schedules, to-do items, and any other app-package provider into one ranked
-  list. A required core app surfacing ''show my priorities''. NOT the source of the underlying
-  items (each owning app is) — Prioritize ranks and focuses them.'
+scope: 'One place to answer "what should I work on?". Each person pins up to three things as their
+  current focus, chosen from a backlog gathered live out of every installed app that has actionable
+  work for them (goals, reminders, nags, schedules, to-do, plus whatever else an installed app
+  offers). Owns only the pinned choice and the daily empty-slot nudge — every item in it belongs to
+  another app, which stays the authority on its title, its state, and finishing it. NOT a task
+  tracker, and NOT the To-Do app''s "my backlog" list.'
 state: live
 autonomy: gated
 links: {}

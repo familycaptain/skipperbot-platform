@@ -1,0 +1,16 @@
+kind: specification
+id: auto.mileage.stop-tracking
+title: Stopping oil tracking
+state: live
+autonomy: gated
+behavior: >
+  Oil-change tracking can be removed from a vehicle, which stops every mileage prompt and overdue
+  warning about it at once — the way out for a household that would rather not be chased. The
+  vehicle keeps every oil change already in its service history, and tracking can be set up again
+  later from the last of them.
+implements:
+- apps/auto/data.py::delete_oil_tracking
+- apps/auto/routes.py::api_delete_oil_tracking
+tests: []
+links: {}
+notes: ''

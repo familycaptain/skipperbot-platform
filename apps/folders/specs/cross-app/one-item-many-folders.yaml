@@ -1,0 +1,18 @@
+kind: specification
+id: folders.cross-app.one-item-many-folders
+title: The same thing can be filed in several folders
+state: live
+autonomy: gated
+behavior: >
+  One document or attachment can be filed in several folders at once, and each folder holds it
+  independently: removing it from one leaves it in the others, and deleting one folder does not
+  unfile it anywhere else. Asking where something is filed lists every folder holding it, deleted
+  folders excluded.
+implements:
+- apps/folders/data.py::get_folders_containing
+- apps/folders/data.py::add_item
+- apps/folders/store.py::remove_item
+- agent.py::api_folders_containing
+tests: []
+links: {}
+notes: ''

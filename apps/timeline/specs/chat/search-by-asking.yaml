@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.chat.search-by-asking
+title: Search by asking
+state: live
+autonomy: gated
+behavior: >
+  Asked to find something in the timeline, Skipper matches the text against entry titles and
+  bodies ignoring case, optionally within a single tag, and reports how many entries matched with
+  a short extract of each. With nothing matching it says so and repeats what it searched for,
+  rather than returning an empty answer.
+implements:
+- apps/timeline/tools.py::search_timeline
+- apps/timeline/data.py::list_posts
+tests: []
+links: {}
+notes: ''

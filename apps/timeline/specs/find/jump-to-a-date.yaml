@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.find.jump-to-a-date
+title: Jump to a day
+state: live
+autonomy: gated
+behavior: >
+  Choosing a date narrows the feed to the entries from that calendar day alone, using the reader's
+  own local day boundaries rather than the server's, so "what happened on our anniversary" is one
+  action. Clearing the date returns to the full feed.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+- apps/timeline/data.py::list_posts
+tests: []
+links: {}
+notes: ''

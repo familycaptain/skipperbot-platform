@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.tags.tags-are-normalised
+title: Tags are one thing however they are typed
+state: live
+autonomy: gated
+behavior: >
+  Tags are given as a comma-separated list and kept lowercased and trimmed, with blanks and
+  repeats dropped. So "Vacation", " vacation " and "vacation" are the same tag, a trailing comma
+  adds nothing, and an entry never carries the same tag twice.
+implements:
+- apps/timeline/data.py::_normalize_tags
+- apps/timeline/tools.py::post_to_timeline
+tests: []
+links: {}
+notes: ''

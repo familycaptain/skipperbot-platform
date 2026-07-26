@@ -1,0 +1,16 @@
+kind: specification
+id: bounties.review.the-claimant-hears-the-verdict
+title: The claimant hears the verdict
+state: live
+autonomy: gated
+behavior: >
+  The claimant is told the outcome either way — on approval, what they earned and for which task;
+  on rejection, that it was turned down, together with the reviewer's reason when one was given.
+  Both go to the claimant alone and not to the rest of the household.
+implements:
+- apps/bounties/store.py::approve_bounty
+- apps/bounties/store.py::reject_bounty
+- apps/bounties/store.py::_notify_user
+tests: []
+links: {}
+notes: ''

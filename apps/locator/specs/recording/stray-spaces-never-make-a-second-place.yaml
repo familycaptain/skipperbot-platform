@@ -1,0 +1,16 @@
+kind: specification
+id: locator.recording.stray-spaces-never-make-a-second-place
+title: Stray spaces never make a second place
+state: live
+autonomy: gated
+behavior: >
+  Spaces around anything typed or dictated are dropped before it is stored, so "Garage " and "Garage"
+  are one place rather than two that look identical in a list, and " Power Drill" is not a second power
+  drill. What ends up on record is what a person would have written by hand.
+implements:
+- apps/locator/tools.py::create_located_item
+- apps/locator/tools.py::update_located_item
+- apps/locator/routes.py::api_create_located_item
+tests: []
+links: {}
+notes: ''

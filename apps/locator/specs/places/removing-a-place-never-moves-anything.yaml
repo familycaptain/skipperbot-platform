@@ -1,0 +1,17 @@
+kind: specification
+id: locator.places.removing-a-place-never-moves-anything
+title: Removing a place never moves anything
+state: live
+autonomy: gated
+behavior: >
+  Removing a place definition leaves every thing exactly where it was recorded: nothing is deleted,
+  nothing is reset to having no location, and the place goes on being offered in the app as one of the
+  places things are actually kept until the last thing there is moved. Removing a place that was never
+  named, or one already gone, reports that it was not found and changes nothing.
+implements:
+- apps/locator/data.py::delete_location
+- apps/locator/tools.py::delete_item_location
+- apps/locator/routes.py::api_delete_item_location
+tests: []
+links: {}
+notes: ''

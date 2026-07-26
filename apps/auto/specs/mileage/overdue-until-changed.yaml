@@ -1,0 +1,16 @@
+kind: specification
+id: auto.mileage.overdue-until-changed
+title: Once the oil is due, it keeps being said
+state: live
+autonomy: gated
+behavior: >
+  When a reported reading reaches or passes the next-due mileage, the vehicle is flagged as
+  overdue for its oil change and stays flagged — said every day, with both the current and the
+  due figure — until an oil change is recorded against it. Before that point, what is said is how
+  many miles are left, sharpening to an "almost due" warning inside the last five hundred.
+implements:
+- apps/auto/data.py::record_mileage_check
+- apps/auto/hooks.py::_check_oil_change_tracking
+tests: []
+links: {}
+notes: ''

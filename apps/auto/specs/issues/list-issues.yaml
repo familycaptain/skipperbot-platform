@@ -1,11 +1,18 @@
 kind: specification
 id: auto.issues.list-issues
-title: List vehicle issues
+title: Worst first, across the fleet or one vehicle
 state: live
 autonomy: gated
-behavior: A vehicle's issues can be listed, optionally filtered by status (e.g. open vs resolved).
+behavior: >
+  Unresolved issues are listed worst first — critical, then major, moderate, minor, and newest
+  within each — either across the whole fleet or for one vehicle, each line marked with its
+  severity and, when the list spans vehicles, which vehicle it belongs to. One vehicle's issues
+  can be narrowed to a single status. With nothing unresolved it says so.
 implements:
-- apps/auto/tools.py
+- apps/auto/tools.py::list_vehicle_issues
+- apps/auto/data.py::get_all_open_issues
+- apps/auto/data.py::get_issues
+- apps/auto/routes.py::api_get_issues
 tests: []
 links: {}
 notes: ''

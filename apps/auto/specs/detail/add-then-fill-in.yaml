@@ -1,0 +1,16 @@
+kind: specification
+id: auto.detail.add-then-fill-in
+title: Adding from the app opens straight into editing
+state: live
+autonomy: gated
+behavior: >
+  Adding a vehicle from the fleet list creates it immediately and opens it ready to edit, so the
+  details are typed into a vehicle that already exists rather than into a form that could be
+  abandoned halfway. Until anything is filled in it is listed as "New Vehicle" and can be found
+  and finished later.
+implements:
+- apps/auto/ui/AutoListApp.jsx
+- apps/auto/routes.py::api_create_vehicle
+tests: []
+links: {}
+notes: ''

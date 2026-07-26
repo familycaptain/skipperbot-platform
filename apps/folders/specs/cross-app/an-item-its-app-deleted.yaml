@@ -1,0 +1,17 @@
+kind: specification
+id: folders.cross-app.an-item-its-app-deleted
+title: A folder survives an item its owner deleted
+state: live
+autonomy: gated
+behavior: >
+  When the app that owns an item deletes it, the folder that held it still opens, still lists
+  everything else, and shows the missing item as a bare id with nothing to open — rather than
+  failing to load or hiding the whole folder. The entry can be removed like any other.
+implements:
+- apps/folders/store.py::get_folder_detail
+- apps/folders/ui/FolderDetailApp.jsx
+- apps/folders/tools.py::get_folder
+- apps/documents/store.py::delete_doc
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: auto.service-records.mileage-comes-along
+title: Logging work brings the odometer with it
+state: live
+autonomy: gated
+behavior: >
+  A mileage reading given with a piece of work also becomes the vehicle's current odometer, so
+  the fleet list and every mileage-based calculation reflect the newest reading anybody mentioned
+  without a separate step. Work logged with no mileage leaves the odometer as it was.
+implements:
+- apps/auto/tools.py::log_service
+- apps/auto/routes.py::api_log_service
+- apps/auto/data.py::update_vehicle
+tests: []
+links: {}
+notes: ''

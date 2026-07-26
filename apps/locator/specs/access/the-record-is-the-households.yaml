@@ -1,0 +1,18 @@
+kind: specification
+id: locator.access.the-record-is-the-households
+title: The record belongs to the whole household
+state: live
+autonomy: gated
+behavior: >
+  Everyone in the household sees the same record and can add to it, correct it and remove from it:
+  there is no private item, no per-person list, and no place only some people may look inside. Where a
+  thing is kept is treated as shared household knowledge, which is what lets any member answer any
+  other member's "where is the …?".
+implements:
+- apps/locator/routes.py::api_list_located_items
+- apps/locator/data.py::get_all_items
+tests: []
+links: {}
+notes: >
+  Stated explicitly because this app is a natural home for sensitive spots — spare keys, documents,
+  medicines — and nobody should assume a restricted or per-person view exists.

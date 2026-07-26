@@ -1,0 +1,23 @@
+kind: specification
+id: auto.nudges.what-gets-chased
+title: What Auto will chase you about
+state: live
+autonomy: gated
+behavior: >
+  Auto chases six kinds of neglect on a vehicle, each as one line under that vehicle: identifying
+  details still blank and which ones; no plan of any kind for its oil changes; recurring work past
+  its due date and how long by; a condition check more than six months old, or none; a valuation
+  more than six months old, or none; and a mileage reading it needs before it can say whether the
+  oil change is due. Nothing else is chased.
+implements:
+- apps/auto/hooks.py::_check_missing_fields
+- apps/auto/hooks.py::_check_oil_change_schedule
+- apps/auto/hooks.py::_check_overdue_maintenance
+- apps/auto/hooks.py::_check_stale_condition
+- apps/auto/hooks.py::_check_stale_valuation
+- apps/auto/hooks.py::_check_oil_change_tracking
+tests: []
+links: {}
+notes: >
+  Six months for condition and valuation, and the closed list itself, are the operator's: the
+  point of naming what is chased is that nothing else quietly joins it.

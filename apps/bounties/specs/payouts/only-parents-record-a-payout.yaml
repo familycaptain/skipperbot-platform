@@ -1,0 +1,16 @@
+kind: specification
+id: bounties.payouts.only-parents-record-a-payout
+title: Only parents record a payout
+state: live
+autonomy: gated
+behavior: >
+  Only a parent or admin can record a payout, and it is recorded as made by the person signed in;
+  anyone else is refused with a reason and no balance moves. The app never pays anybody — the cash
+  or transfer happens outside Skipper and is written down here afterwards.
+implements:
+- apps/bounties/routes.py::api_record_payment
+- apps/bounties/store.py::record_payment
+- apps/bounties/tools.py::record_bounty_payment
+tests: []
+links: {}
+notes: ''

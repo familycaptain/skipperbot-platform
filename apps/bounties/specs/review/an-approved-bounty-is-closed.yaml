@@ -1,0 +1,15 @@
+kind: specification
+id: bounties.review.an-approved-bounty-is-closed
+title: An approved bounty is a closed record
+state: live
+autonomy: gated
+behavior: >
+  An approved bounty stays on the board as the record of work that was paid for: it cannot be
+  claimed again, decided again or skipped, and the app does not offer to delete it. What it shows
+  — the amount, the claimant, the reviewer and their note — is what the credit was based on.
+implements:
+- apps/bounties/store.py::approve_bounty
+- apps/bounties/ui/BountiesApp.jsx::BountyCard
+tests: []
+links: {}
+notes: ''

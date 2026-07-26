@@ -1,0 +1,17 @@
+kind: specification
+id: folders.browsing.sorted-by-name
+title: The app sorts by name; chat lists in filing order
+state: live
+autonomy: gated
+behavior: >
+  In the app, folders, subfolders and a folder's items are listed alphabetically by name, and an
+  item with no title sorts under its id. Asked in chat, a folder's contents come back in the order
+  they were filed instead, oldest first.
+implements:
+- apps/folders/ui/FoldersApp.jsx
+- apps/folders/ui/FolderDetailApp.jsx
+- apps/folders/data.py::get_items
+- apps/folders/tools.py::get_folder
+tests: []
+links: {}
+notes: ''

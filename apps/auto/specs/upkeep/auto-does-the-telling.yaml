@@ -1,0 +1,16 @@
+kind: specification
+id: auto.upkeep.auto-does-the-telling
+title: Auto, not the schedules app, does the telling about vehicles
+state: live
+autonomy: gated
+behavior: >
+  A recurring item attached to a vehicle is announced by Auto's own upkeep chasing and by nothing
+  else, so a household hears once about an overdue oil change rather than twice from two
+  different parts of Skipper. Recurring items that are not about a vehicle are unaffected and
+  keep being announced as usual.
+implements:
+- apps/auto/hooks.py::register_hooks
+- apps/schedules/notifier.py::register_schedule_claim
+tests: []
+links: {}
+notes: ''

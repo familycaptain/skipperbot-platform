@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.recurring.changes-reach-whats-still-open
+title: Changes reach what is still open
+state: live
+autonomy: gated
+behavior: >
+  Changing a recurring bounty's title, description, amount or category also updates the instances
+  of it still open on the board, so what people can claim matches what the parent has just decided
+  it is worth. Instances already claimed or settled are left as they were, and a changed interval
+  applies only from the next one onwards.
+implements:
+- apps/bounties/store.py::update_template
+tests: []
+links: {}
+notes: >
+  Open instances are corrected because a stale amount on the board is a promise the household did
+  not make; settled ones are history and are never rewritten.

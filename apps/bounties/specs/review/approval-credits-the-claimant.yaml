@@ -1,0 +1,16 @@
+kind: specification
+id: bounties.review.approval-credits-the-claimant
+title: Approval credits the claimant
+state: live
+autonomy: gated
+behavior: >
+  Approving a claim credits the claimant with the bounty's amount as it stands at that moment,
+  adds it to their lifetime earnings, records who approved it and when, and closes the bounty as
+  approved. That credit is the app's whole record of the debt — no money moves until a payout is
+  recorded separately.
+implements:
+- apps/bounties/store.py::approve_bounty
+- apps/bounties/data.py::credit_balance
+tests: []
+links: {}
+notes: ''

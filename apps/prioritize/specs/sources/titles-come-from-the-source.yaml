@@ -1,0 +1,18 @@
+kind: specification
+id: prioritize.sources.titles-come-from-the-source
+title: Titles are read live from the owning app
+state: live
+autonomy: gated
+behavior: >
+  A focused or backlog item is labelled with the title and supporting detail the owning app holds
+  right now — a task's project and due date, a reminder's time, a vehicle issue's severity — so
+  renaming something in its own app renames it here with no sync step and no stale copy. When those
+  details cannot be read the item still shows, identified by its id, so a person can see it and clear
+  it rather than facing a blank row.
+implements:
+- apps/prioritize/tools.py::_resolve_title
+- agent.py::_resolve_source_item
+- apps/prioritize/ui/PrioritizeApp.jsx::FocusCard
+tests: []
+links: {}
+notes: ''

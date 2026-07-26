@@ -1,0 +1,18 @@
+kind: specification
+id: bounties.claiming.a-claim-is-in-your-own-name
+title: A claim is always in your own name
+state: live
+autonomy: gated
+behavior: >
+  A claim is recorded against the person making it, taken from who is signed in rather than from
+  whatever name the request carried, so nobody can claim a bounty as somebody else or bank their
+  earnings. The moment the claim was made is recorded with it.
+implements:
+- apps/bounties/routes.py::_actor
+- apps/bounties/routes.py::api_submit_bounty
+- apps/bounties/store.py::submit_bounty
+tests: []
+links: {}
+notes: >
+  The name on the claim decides who gets paid, so it comes from the verified session and any name
+  supplied with the request is ignored.

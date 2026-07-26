@@ -1,0 +1,16 @@
+kind: specification
+id: bounties.claiming.only-open-work-can-be-claimed
+title: Only open work can be claimed
+state: live
+autonomy: gated
+behavior: >
+  Only an open bounty can be claimed. Claiming one that is already claimed, already approved, or
+  cancelled is refused and the refusal names the state it is actually in, leaving the existing
+  claim and any credit untouched. Claiming a bounty that does not exist says it was not found.
+implements:
+- apps/bounties/store.py::submit_bounty
+- apps/bounties/routes.py::api_submit_bounty
+- apps/bounties/tools.py::submit_bounty
+tests: []
+links: {}
+notes: ''

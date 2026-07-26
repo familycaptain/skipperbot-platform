@@ -1,0 +1,16 @@
+kind: specification
+id: folders.contents.filing-into-a-folder-that-is-not-there
+title: Filing into a folder that is not there changes nothing
+state: live
+autonomy: gated
+behavior: >
+  Adding to a folder id that belongs to nothing, or to a folder that has been deleted, files
+  nothing and reports that the folder was not found — no half-filed item is left behind and no
+  reading is started.
+implements:
+- apps/folders/store.py::add_item
+- apps/folders/tools.py::add_to_folder
+- agent.py::api_add_folder_item
+tests: []
+links: {}
+notes: ''

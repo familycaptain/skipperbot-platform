@@ -1,0 +1,17 @@
+kind: specification
+id: timeline.posts.write-an-entry
+title: Write an entry
+state: live
+autonomy: gated
+behavior: >
+  An entry needs a body; a title is optional. Once saved it appears at the top of the family feed
+  straight away, stamped with when it was written, and is visible to everyone in the household. An
+  attempt to save with an empty body is refused before anything is stored, and the save control
+  stays unavailable until there is something to save.
+implements:
+- apps/timeline/data.py::create_post
+- apps/timeline/routes.py::api_create_post
+- apps/timeline/ui/TimelineApp.jsx::PostComposer
+tests: []
+links: {}
+notes: ''

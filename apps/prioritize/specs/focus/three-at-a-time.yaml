@@ -1,0 +1,18 @@
+kind: specification
+id: prioritize.focus.three-at-a-time
+title: Only three things at a time
+state: live
+autonomy: gated
+behavior: >
+  A person holds at most three items in focus at once — the ceiling is the point of the app, not an
+  incidental limit. Promoting a fourth is refused and says what to do instead (clear one first);
+  nothing is pinned and nothing already pinned is displaced to make room. The number is a household
+  setting rather than a fixed constant, so an install can raise or lower it.
+implements:
+- apps/prioritize/data.py::promote_to_focus
+- apps/prioritize/data.py::_max_focus_slots
+- apps/prioritize/tools.py::promote_focus
+- apps/prioritize/manifest.yaml
+tests: []
+links: {}
+notes: ''

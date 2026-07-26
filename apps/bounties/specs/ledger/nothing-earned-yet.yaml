@@ -1,0 +1,16 @@
+kind: specification
+id: bounties.ledger.nothing-earned-yet
+title: Nothing earned yet
+state: live
+autonomy: gated
+behavior: >
+  Somebody who has never earned anything reads as a balance of zero, with nothing earned and
+  nothing paid out, rather than an error or a blank panel — a person with no history and a person
+  paid out in full read the same way. Asked for everyone's balances when the household has none,
+  Skipper says none are recorded yet.
+implements:
+- apps/bounties/data.py::get_balance
+- apps/bounties/tools.py::get_bounty_balance
+tests: []
+links: {}
+notes: ''

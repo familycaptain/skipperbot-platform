@@ -1,0 +1,20 @@
+kind: specification
+id: folders.cross-app.everyone-sees-every-folder
+title: There is no private folder
+state: live
+autonomy: gated
+behavior: >
+  Every signed-in member of the household can open, change, file into and delete any folder,
+  whoever it is marked for; and anything filed in any folder can surface in anyone's conversation
+  with Skipper, because recall is not scoped to the person asking. Marking an owner narrows a
+  list, not access.
+implements:
+- apps/folders/data.py::get_all_folders
+- apps/folders/intelligence.py::get_relevant_folder_knowledge
+- chat_domain.py
+- agent.py::api_list_folders
+tests: []
+links: {}
+notes: >
+  Operator's 'no secrets' rule. Worth stating explicitly because the alternative — a folder
+  someone believes is private but is not — is worse than no privacy at all.

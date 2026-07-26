@@ -1,0 +1,17 @@
+kind: specification
+id: auto.service-records.next-due-with-the-work
+title: Recording when the same job is next due
+state: live
+autonomy: gated
+behavior: >
+  A piece of work can be logged together with when it is next due — a date, a mileage, or both —
+  and that is what puts it among the things coming up. Work recorded with neither is history
+  only, and never appears as due. Where a next-due mileage and the vehicle's current odometer are
+  both known, how many miles remain is worked out rather than left to the reader.
+implements:
+- apps/auto/tools.py::log_service
+- apps/auto/data.py::get_upcoming_maintenance
+- apps/auto/data.py::get_vehicle_summary
+tests: []
+links: {}
+notes: ''

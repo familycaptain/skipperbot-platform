@@ -1,0 +1,17 @@
+kind: specification
+id: folders.browsing.nothing-filed-yet
+title: A household with no folders is told what they are for
+state: live
+autonomy: gated
+behavior: >
+  The first time someone opens Folders with nothing in it, they are shown what folders are and how
+  they fill up — with the create action still to hand — rather than a bare empty pane. Asked in
+  chat with nothing created, Skipper says there are no folders instead of returning an empty list.
+implements:
+- apps/folders/ui/FoldersApp.jsx
+- web/src/components/PristineEmpty.jsx
+- apps/folders/tools.py::list_folders
+- apps/folders/ui/index.js
+tests: []
+links: {}
+notes: ''

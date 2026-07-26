@@ -1,0 +1,19 @@
+kind: specification
+id: auto.vehicles.unknown-vehicle
+title: A vehicle nobody tracks is named, not guessed
+state: live
+autonomy: gated
+behavior: >
+  Every request that names a vehicle — its details, its history, its schedules, its condition, its
+  value — answers with the fact that no such vehicle is tracked, rather than an empty result or an
+  error. That is a different answer from a vehicle which exists but has nothing recorded in the
+  area asked about, which says there is nothing yet. So "we do not have that car" and "that car
+  has never been serviced" are never confused for each other.
+implements:
+- apps/auto/tools.py::get_vehicle
+- apps/auto/tools.py::get_vehicle_history
+- apps/auto/tools.py::get_vehicle_maintenance
+- apps/auto/routes.py::api_get_vehicle
+tests: []
+links: {}
+notes: ''

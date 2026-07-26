@@ -1,0 +1,19 @@
+kind: specification
+id: locator.places.everywhere-things-actually-are
+title: The app lists everywhere things actually are
+state: live
+autonomy: gated
+behavior: >
+  The app's list of places covers both the places someone has named and the places that exist only
+  because an item says so, the latter listed after the named ones — so narrowing the list reaches
+  everywhere things are actually kept, not just the tidy half. A place that exists only through its
+  contents cannot be removed, as there is no definition to remove, and it disappears once nothing is
+  kept there. Asked in conversation, only the named places are listed.
+implements:
+- apps/locator/data.py::get_all_locations_merged
+- apps/locator/routes.py::api_list_item_locations
+- apps/locator/ui/LocatorListApp.jsx
+- apps/locator/tools.py::list_item_locations
+tests: []
+links: {}
+notes: ''

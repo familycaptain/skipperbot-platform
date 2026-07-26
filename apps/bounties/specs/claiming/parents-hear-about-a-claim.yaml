@@ -1,0 +1,15 @@
+kind: specification
+id: bounties.claiming.parents-hear-about-a-claim
+title: The parents hear about a claim
+state: live
+autonomy: gated
+behavior: >
+  When a bounty is claimed, every parent and admin is told what was claimed, what it is worth and
+  who claimed it, so an approval is never waiting on somebody happening to open the app. If they
+  cannot be told, the claim still stands and still shows on the board as waiting.
+implements:
+- apps/bounties/store.py::submit_bounty
+- apps/bounties/store.py::_notify_parents
+tests: []
+links: {}
+notes: ''

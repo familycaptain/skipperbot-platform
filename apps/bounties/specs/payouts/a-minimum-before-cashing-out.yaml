@@ -1,0 +1,18 @@
+kind: specification
+id: bounties.payouts.a-minimum-before-cashing-out
+title: A minimum before cashing out
+state: live
+autonomy: gated
+behavior: >
+  A household can set a minimum balance before any payout may be recorded, and while somebody is
+  under it every attempt for them is refused naming both their balance and the threshold, so small
+  amounts accumulate instead of being paid out in dribs. A parent can raise, lower or effectively
+  remove the minimum in the app's settings.
+implements:
+- apps/bounties/store.py::record_payment
+- apps/bounties/data.py::get_config
+- apps/bounties/data.py::update_config
+- apps/bounties/ui/BountiesApp.jsx::SettingsTab
+tests: []
+links: {}
+notes: ''

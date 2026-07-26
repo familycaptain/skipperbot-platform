@@ -1,0 +1,19 @@
+kind: specification
+id: folders.contents.file-an-existing-item
+title: File something that already exists
+state: live
+autonomy: gated
+behavior: >
+  Adding a document or attachment to a folder files it there and starts reading it in the
+  background so it can be asked about later. The item itself is untouched: it stays in the app
+  that owns it, keeps its own title, content and history, and is neither moved nor copied — filing
+  is a reference, not a relocation.
+implements:
+- apps/folders/tools.py::add_to_folder
+- apps/folders/store.py::add_item
+- apps/folders/data.py::add_item
+- apps/folders/ui/FolderDetailApp.jsx
+- agent.py::api_add_folder_item
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.posting.only-parents-post
+title: Only parents post a bounty
+state: live
+autonomy: gated
+behavior: >
+  Only a parent or admin can post a bounty: anyone else asking is refused with a reason and
+  nothing is posted, and the app does not offer them the button in the first place. The poster
+  recorded is always the person signed in, so a bounty cannot be posted in someone else's name.
+implements:
+- apps/bounties/routes.py::api_create_bounty
+- apps/bounties/routes.py::_require_parent_actor
+- apps/bounties/routes.py::_actor
+- apps/bounties/ui/BountiesApp.jsx::BoardTab
+tests: []
+links: {}
+notes: ''

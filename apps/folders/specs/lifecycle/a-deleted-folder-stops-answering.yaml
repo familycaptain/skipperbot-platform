@@ -1,0 +1,17 @@
+kind: specification
+id: folders.lifecycle.a-deleted-folder-stops-answering
+title: A deleted folder stops answering questions
+state: live
+autonomy: gated
+behavior: >
+  Nothing filed in a deleted folder is used to answer anything any more: what Skipper learned from
+  that folder's contents is set aside along with the folder, so a question that would have been
+  answered from it is answered from elsewhere or not at all. Bringing the folder back brings its
+  answers back with it.
+implements:
+- apps/folders/data.py::search_knowledge
+- apps/folders/data.py::get_folders_containing
+- apps/folders/store.py::delete_folder
+tests: []
+links: {}
+notes: ''

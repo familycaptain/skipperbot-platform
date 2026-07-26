@@ -1,0 +1,18 @@
+kind: specification
+id: folders.contents.an-id-that-resolves-to-nothing
+title: An id that resolves to nothing is still filed
+state: live
+autonomy: gated
+behavior: >
+  Filing is done by id, and an id Folders cannot resolve — a mistyped reference, or a kind of
+  record Folders cannot read — is still accepted: the folder gains an entry showing the bare id,
+  with no title, no type and nothing to open. The rest of the folder is unaffected and the entry
+  can be removed like any other.
+implements:
+- apps/folders/data.py::add_item
+- apps/folders/data.py::_entity_type_from_id
+- apps/folders/store.py::get_folder_detail
+- apps/folders/ui/FolderDetailApp.jsx
+tests: []
+links: {}
+notes: ''

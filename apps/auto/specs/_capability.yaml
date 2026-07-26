@@ -2,9 +2,11 @@ kind: capability
 id: auto
 title: Auto Maintenance
 app: auto
-scope: 'Track the household''s vehicles and everything about keeping them running: service history,
-  issues/repairs, maintenance schedules, mileage, valuations, and condition reports. NOT a marketplace,
-  dealership, or driving/navigation tool.'
+scope: 'A logbook for every vehicle in the household and for what it takes to keep each one
+  running: what the vehicle is, what has been done to it, what is due next by date or by mileage,
+  what is currently wrong with it, how worn it is, and what it is worth. Auto also speaks up
+  unprompted about upkeep the household is letting slide. NOT a marketplace, dealership, parts
+  catalogue, fuel or economy log, or driving/navigation tool.'
 state: live
 autonomy: gated
 links: {}

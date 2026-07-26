@@ -1,0 +1,14 @@
+kind: specification
+id: timeline.photos.images-load-as-they-are-reached
+title: A photo-heavy history still scrolls
+state: live
+autonomy: gated
+behavior: >
+  Photos further down the feed are not fetched until the reader is close to them, so scrolling
+  back through years of a photo-heavy journal does not pull every image in the household's history
+  at once.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::PhotoCarousel
+tests: []
+links: {}
+notes: ''

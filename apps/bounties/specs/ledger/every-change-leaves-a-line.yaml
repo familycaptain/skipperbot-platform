@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.ledger.every-change-leaves-a-line
+title: Every change leaves a line
+state: live
+autonomy: gated
+behavior: >
+  Every credit and every payout is a dated line naming the amount, the reason, how it was paid
+  where that applies, and the balance it left behind. Lines are only ever added, never edited or
+  removed, so any balance can be traced back through the work and the payments that produced it.
+implements:
+- apps/bounties/data.py::credit_balance
+- apps/bounties/data.py::debit_payment
+- apps/bounties/data.py::get_transactions
+- apps/bounties/ui/BountiesApp.jsx::BalanceTab
+tests: []
+links: {}
+notes: ''

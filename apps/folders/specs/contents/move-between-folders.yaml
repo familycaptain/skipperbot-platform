@@ -1,0 +1,17 @@
+kind: specification
+id: folders.contents.move-between-folders
+title: Move something from one folder to another
+state: live
+autonomy: gated
+behavior: >
+  Moving an item unfiles it from one folder and files it in another in a single step: the
+  destination reads it afresh and the source stops answering from it. The item ends up in exactly
+  one of the two.
+implements:
+- apps/folders/tools.py::move_to_folder
+- apps/folders/store.py::move_item
+- apps/folders/data.py::add_item
+- apps/folders/data.py::remove_item
+tests: []
+links: {}
+notes: ''

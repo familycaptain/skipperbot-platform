@@ -1,0 +1,17 @@
+kind: specification
+id: auto.detail.open-a-vehicle
+title: Opening one vehicle
+state: live
+autonomy: gated
+behavior: >
+  Choosing a vehicle from the fleet, or being taken to it just after creating one, opens a single
+  screen for it: what it is along the top — make, model and trim, colour, mileage, plate, VIN,
+  who owns it and who looks after it — with its upkeep, service history, issues, condition and
+  value on tabs beneath. Fields the vehicle does not have are simply absent rather than shown
+  empty. Opening the screen with no vehicle chosen says so rather than showing an empty shell.
+implements:
+- apps/auto/ui/AutoDetailApp.jsx
+- apps/auto/routes.py::api_get_vehicle
+tests: []
+links: {}
+notes: ''

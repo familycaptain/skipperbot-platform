@@ -1,0 +1,18 @@
+kind: specification
+id: auto.vehicles.find-a-vehicle
+title: Finding one vehicle among several
+state: live
+autonomy: gated
+behavior: >
+  A vehicle can be found by any text that distinguishes it — its name, make, model, colour, VIN,
+  plate or its notes — matched on part of a word and without regard to case, so "f-150", "the
+  white one" and half a plate all land on the same truck. A search matching nothing says so
+  rather than falling back to the whole fleet. Unsearched, vehicles are ordered newest model year
+  first, so the cars a household actually drives come before the older one it still tracks.
+implements:
+- apps/auto/data.py::search_vehicles
+- apps/auto/data.py::get_all_vehicles
+- apps/auto/routes.py::api_list_vehicles
+tests: []
+links: {}
+notes: ''

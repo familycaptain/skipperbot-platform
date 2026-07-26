@@ -1,0 +1,17 @@
+kind: specification
+id: prioritize.backlog.already-in-focus-is-marked
+title: Items already in focus are marked, not repeated
+state: live
+autonomy: gated
+behavior: >
+  An item that is already one of the person's focus items still shows in the backlog, but dimmed and
+  labelled as focused, and its promote control is inert so it cannot be pinned a second time. When
+  every focus position is full, promote controls throughout the backlog are disabled and say why, so
+  the limit is visible before anyone clicks rather than surfacing as a refusal afterwards.
+implements:
+- agent.py::api_get_backlog
+- apps/prioritize/ui/PrioritizeApp.jsx::BacklogItem
+- apps/prioritize/ui/PrioritizeApp.jsx::GoalsTreeNode
+tests: []
+links: {}
+notes: ''

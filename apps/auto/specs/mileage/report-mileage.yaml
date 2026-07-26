@@ -1,0 +1,18 @@
+kind: specification
+id: auto.mileage.report-mileage
+title: Reporting the current mileage
+state: live
+autonomy: gated
+behavior: >
+  A vehicle's current mileage can be reported at any moment — mentioned in conversation, or typed
+  on the vehicle's screen — and becomes the vehicle's odometer. When that vehicle's oil changes
+  are being tracked by mileage, the same reading is measured against the next-due figure and the
+  answer says whether the change is overdue or how many miles are left. A reading of zero or less,
+  or none at all, is refused rather than stored.
+implements:
+- apps/auto/tools.py::report_mileage
+- apps/auto/data.py::record_mileage_check
+- apps/auto/routes.py::api_report_mileage
+tests: []
+links: {}
+notes: ''

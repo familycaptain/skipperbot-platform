@@ -1,0 +1,17 @@
+kind: specification
+id: timeline.feed.whose-activity
+title: The activity view belongs to one person
+state: live
+autonomy: gated
+behavior: >
+  The activity view opens on the person looking at it and offers everyone who has entries, with
+  the viewer listed first as themselves. Choosing someone else shows their record instead. It
+  never shows everybody's changes at once — with nobody chosen the view stays empty rather than
+  merging the household's activity into one stream.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+- apps/timeline/routes.py::api_list_authors
+- apps/timeline/data.py::list_authors
+tests: []
+links: {}
+notes: ''

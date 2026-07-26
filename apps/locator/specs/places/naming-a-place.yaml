@@ -1,0 +1,18 @@
+kind: specification
+id: locator.places.naming-a-place
+title: Naming a place things are kept
+state: live
+autonomy: gated
+behavior: >
+  A place — garage, attic, fireproof box, storage shed — can be named once, with an optional
+  description of the space, and from then on it is offered for narrowing the list and suggested while
+  someone is typing an item's place. Newly named places come after the ones already there, so the
+  order a household is used to settles rather than being reshuffled on every addition.
+implements:
+- apps/locator/tools.py::create_item_location
+- apps/locator/data.py::create_location
+- apps/locator/routes.py::api_create_item_location
+- apps/locator/ui/LocatorListApp.jsx
+tests: []
+links: {}
+notes: ''

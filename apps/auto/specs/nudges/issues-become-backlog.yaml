@@ -1,0 +1,18 @@
+kind: specification
+id: auto.nudges.issues-become-backlog
+title: A car problem competes with everything else
+state: live
+autonomy: gated
+behavior: >
+  Unresolved issues on the vehicles a person looks after are offered to them as work in their
+  priority backlog, worst severity first and each labelled with the vehicle — so a car problem
+  competes for attention alongside the rest of their life rather than only existing inside the
+  Auto app. An issue marked fixed stops counting as live work and releases any attention it was
+  holding.
+implements:
+- apps/auto/hooks.py::_backlog_auto_issues
+- apps/auto/hooks.py::_is_auto_issue_active
+- apps/prioritize/data.py::register_backlog_provider
+tests: []
+links: {}
+notes: ''

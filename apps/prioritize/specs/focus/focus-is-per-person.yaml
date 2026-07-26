@@ -1,0 +1,18 @@
+kind: specification
+id: prioritize.focus.focus-is-per-person
+title: Each person's focus is their own
+state: live
+autonomy: gated
+behavior: >
+  Focus belongs to one person: reading or changing it acts on whoever is asking, and one household
+  member cannot promote, clear or reorder another member's focus. A parent or admin may act on
+  someone else's behalf; anyone else who asks to is refused outright rather than quietly given their
+  own focus instead.
+implements:
+- app_platform/auth.py::resolve_target
+- agent.py::api_get_focus
+- agent.py::api_promote_focus
+- agent.py::api_reorder_focus
+tests: []
+links: {}
+notes: ''

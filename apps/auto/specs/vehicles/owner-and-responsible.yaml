@@ -1,0 +1,21 @@
+kind: specification
+id: auto.vehicles.owner-and-responsible
+title: Who owns it and who looks after it
+state: live
+autonomy: gated
+behavior: >
+  A vehicle carries two people, and they need not be the same one: an owner, meaning whose
+  vehicle it is, and a responsible person, meaning who hears about its upkeep. Either left unset
+  falls back to whoever added the vehicle, so every vehicle always has somebody accountable and
+  no reminder about it is addressed to nobody. Changing the responsible person moves all future
+  chasing about that vehicle to them and stops it reaching the previous one.
+implements:
+- apps/auto/data.py::_vehicle_row
+- apps/auto/hooks.py::_get_responsible_user
+- apps/auto/migrations/002_responsible_user.sql
+- apps/auto/migrations/004_owner.sql
+tests: []
+links: {}
+notes: >
+  Two separate people because a parent commonly owns the car a teenager drives, and the person
+  who should be nagged about the oil is not always the person on the title.

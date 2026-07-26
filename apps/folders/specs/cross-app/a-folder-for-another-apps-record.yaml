@@ -1,0 +1,18 @@
+kind: specification
+id: folders.cross-app.a-folder-for-another-apps-record
+title: A folder can be anchored to another app's record
+state: live
+autonomy: gated
+behavior: >
+  A folder can be tied to a record somewhere else on the platform — a project, a trip, a person's
+  medical history — so that record has one obvious place for its paperwork, and the tie is
+  followable from either end. An anchored folder behaves like any other folder in every other
+  respect.
+implements:
+- apps/folders/store.py::create_folder
+- apps/folders/store.py::ensure_folder_for_entity
+- apps/folders/data.py::get_folder_by_related_entity
+- agent.py::api_create_folder
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: bounties.digest.one-person-unreachable
+title: One person unreachable stops nothing
+state: live
+autonomy: gated
+behavior: >
+  If the daily board cannot be got to one person, everyone else still receives theirs and the
+  failure is recorded rather than raised. The run reports how many of the household it actually
+  reached, so a day where most of it failed is visible instead of looking like a success.
+implements:
+- apps/bounties/handlers.py::handle_daily_digest
+tests: []
+links: {}
+notes: ''

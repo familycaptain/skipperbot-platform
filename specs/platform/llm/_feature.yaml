@@ -1,0 +1,6 @@
+kind: feature
+id: platform.llm
+title: Language models — how Skipper reaches whichever provider it was given
+state: live
+links: {}
+notes: ''

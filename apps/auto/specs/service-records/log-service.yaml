@@ -1,12 +1,19 @@
 kind: specification
 id: auto.service-records.log-service
-title: Log a service record
+title: Log what was done
 state: live
 autonomy: gated
-behavior: A service record (date, mileage, type, cost, notes) is logged against a vehicle and
-  appears in that vehicle's history; it gets a svc- id.
+behavior: >
+  Work on a vehicle is logged with what was done, when, at what mileage, what it cost, who did it
+  (a shop, or DIY) and any detail worth keeping, and it appears in that vehicle's history
+  immediately. The date defaults to today when it is not stated, so "I changed the oil" is enough
+  to file a record. What kind of work it was is the one thing that must be given. Cost and
+  mileage left unstated stay unknown rather than being recorded as zero, so an unpriced job is
+  not history of a free one.
 implements:
-- apps/auto/tools.py
+- apps/auto/tools.py::log_service
+- apps/auto/routes.py::api_log_service
+- apps/auto/data.py::save_service_record
 tests: []
 links: {}
 notes: ''

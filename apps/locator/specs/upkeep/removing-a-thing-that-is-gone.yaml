@@ -1,0 +1,17 @@
+kind: specification
+id: locator.upkeep.removing-a-thing-that-is-gone
+title: Removing a thing that is gone
+state: live
+autonomy: gated
+behavior: >
+  Removing an item takes it off the record for good, along with its photo attachments, and it stops
+  appearing in answers about where things are. In the app the removal is confirmed first and the item's
+  page closes once it is done. There is no undo and nothing waits in a bin, so the confirmation is the
+  only guard.
+implements:
+- apps/locator/tools.py::delete_located_item
+- apps/locator/data.py::delete_item
+- apps/locator/ui/LocatorDetailApp.jsx
+tests: []
+links: {}
+notes: ''

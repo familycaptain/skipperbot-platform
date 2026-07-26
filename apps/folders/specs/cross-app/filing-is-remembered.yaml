@@ -1,0 +1,19 @@
+kind: specification
+id: folders.cross-app.filing-is-remembered
+title: Filing is remembered, so it can be asked about later
+state: live
+autonomy: gated
+behavior: >
+  Making a folder, filing something into it, taking it out again and deleting the folder are each
+  written into Skipper's memory as they happen, naming the folder and what moved. That is what lets
+  'where did I put the insurance paperwork?' be answered months later by someone who no longer
+  remembers the folder's name.
+implements:
+- apps/folders/store.py::create_folder
+- apps/folders/store.py::add_item
+- apps/folders/store.py::remove_item
+- apps/folders/tools.py::create_folder
+- apps/folders/tools.py::delete_folder
+tests: []
+links: {}
+notes: ''

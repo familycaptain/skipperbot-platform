@@ -1,0 +1,18 @@
+kind: specification
+id: timeline.chat.act-on-an-entry-by-asking
+title: Change an entry by asking
+state: live
+autonomy: gated
+behavior: >
+  Given the identity of an entry, Skipper can pin or unpin it, edit its title, body, or tags,
+  delete it, and attach photos to it, and reports the outcome in the terms the person asked in —
+  what is now pinned, what changed, what was removed, how many photos were added. An instruction
+  that names no change at all is answered with what could be changed instead of a silent no-op.
+implements:
+- apps/timeline/tools.py::pin_timeline_post
+- apps/timeline/tools.py::update_timeline_post
+- apps/timeline/tools.py::delete_timeline_post
+- apps/timeline/tools.py::add_timeline_photos
+tests: []
+links: {}
+notes: ''

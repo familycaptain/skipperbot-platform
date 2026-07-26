@@ -1,0 +1,17 @@
+kind: specification
+id: prioritize.backlog.schedules-only-when-close
+title: Schedules appear only when they are close
+state: live
+autonomy: gated
+behavior: >
+  A schedule joins the backlog only while it is active, assigned to this person, and either overdue
+  or falling due within the coming week — labelled with how many days overdue it is, or with the time
+  it is due today. Something scheduled for next month stays out of the way until it is close. A
+  schedule that exists only to drive a reminder is left out, so the same obligation is not listed
+  twice under two names.
+implements:
+- apps/prioritize/data.py::_backlog_schedules
+- apps/schedules/data.py::get_due_schedules
+tests: []
+links: {}
+notes: ''

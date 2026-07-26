@@ -1,0 +1,17 @@
+kind: specification
+id: timeline.chat.a-failure-comes-back-as-a-sentence
+title: A failure is answered, not raised
+state: live
+autonomy: gated
+behavior: >
+  Every timeline request that cannot be carried out — a missing identity, an entry that does not
+  exist, a store that cannot be reached — comes back as a sentence saying what went wrong, and the
+  conversation continues. A timeline request never reaches the person as a crash, and never leaves
+  them unsure whether what they said was saved.
+implements:
+- apps/timeline/tools.py::post_to_timeline
+- apps/timeline/tools.py::list_timeline
+- apps/timeline/tools.py::add_timeline_photos
+tests: []
+links: {}
+notes: ''

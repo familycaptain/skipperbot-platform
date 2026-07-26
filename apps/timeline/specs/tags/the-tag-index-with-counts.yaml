@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.tags.the-tag-index-with-counts
+title: Every tag in use, with counts
+state: live
+autonomy: gated
+behavior: >
+  The household can see every tag in use and how many entries carry it, most-used first and
+  alphabetical within a count. With no tags in use the answer says so plainly rather than returning
+  an empty list with no explanation.
+implements:
+- apps/timeline/data.py::list_tags
+- apps/timeline/routes.py::api_list_tags
+- apps/timeline/tools.py::list_timeline_tags
+tests: []
+links: {}
+notes: ''

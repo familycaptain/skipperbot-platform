@@ -1,0 +1,15 @@
+kind: specification
+id: prioritize.backlog.one-source-failing
+title: One app failing never empties the backlog
+state: live
+autonomy: gated
+behavior: >
+  When a contributing app cannot answer — its data is unreachable, it raises, it is mid-upgrade — it
+  contributes nothing for that read and every other app's work still appears. The failure is
+  recorded for the operator rather than shown to the person as a broken screen, and the missing group
+  is simply not there. The next read tries again, so a transient failure heals itself.
+implements:
+- apps/prioritize/data.py::get_backlog
+tests: []
+links: {}
+notes: ''

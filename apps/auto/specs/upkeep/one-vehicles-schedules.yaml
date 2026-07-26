@@ -1,0 +1,17 @@
+kind: specification
+id: auto.upkeep.one-vehicles-schedules
+title: One vehicle's recurring items on their own
+state: live
+autonomy: gated
+behavior: >
+  A single vehicle's recurring upkeep can be listed by itself, each item with its next due date,
+  its cadence in words, how many times it has already been done and when it was last done, and a
+  mark if it has been paused. A vehicle with no recurring items says so by name; a vehicle nobody
+  tracks says that instead.
+implements:
+- apps/auto/tools.py::get_vehicle_maintenance
+- apps/auto/data.py::get_vehicle_maintenance
+- apps/auto/routes.py::api_get_vehicle_maintenance
+tests: []
+links: {}
+notes: ''

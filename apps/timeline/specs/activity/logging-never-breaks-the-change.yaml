@@ -1,0 +1,14 @@
+kind: specification
+id: timeline.activity.logging-never-breaks-the-change
+title: A missing line never costs an action
+state: live
+autonomy: gated
+behavior: >
+  If the activity line cannot be written — the store is unreachable, the record is not what was
+  expected — the change it was describing still succeeds and the person sees no error and no
+  warning. A missing line is a gap in the record, never a failed action.
+implements:
+- app_platform/activity.py::log_activity
+tests: []
+links: {}
+notes: ''

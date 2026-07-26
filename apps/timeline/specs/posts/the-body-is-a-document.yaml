@@ -1,0 +1,20 @@
+kind: specification
+id: timeline.posts.the-body-is-a-document
+title: An entry's body is one of the household's documents
+state: live
+autonomy: gated
+behavior: >
+  An entry's body is kept as a document in the household's document store, so a journal entry is
+  readable, searchable, and counted there as well as in the feed. Deleting the entry deletes that
+  document with it, and an entry that has no body of its own — an automatically logged change —
+  has no document.
+implements:
+- apps/timeline/data.py::create_post
+- apps/timeline/data.py::delete_post
+- app_platform/documents.py
+tests: []
+links: {}
+notes: >
+  Reusing documents rather than keeping a second body store is deliberate: it is what makes a
+  journal entry findable through the document surfaces without Timeline reimplementing any of
+  them.

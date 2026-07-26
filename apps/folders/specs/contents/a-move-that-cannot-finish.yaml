@@ -1,0 +1,15 @@
+kind: specification
+id: folders.contents.a-move-that-cannot-finish
+title: A move that cannot finish leaves the item where it was
+state: live
+autonomy: gated
+behavior: >
+  If the destination cannot accept the item — the folder does not exist, or the write fails — the
+  item stays filed where it was and the person is told the move did not happen. A mistyped
+  destination is a failed move, never a way to quietly unfile something.
+implements:
+- apps/folders/store.py::move_item
+- apps/folders/tools.py::move_to_folder
+tests: []
+links: {}
+notes: ''

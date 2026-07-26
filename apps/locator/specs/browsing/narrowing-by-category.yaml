@@ -1,0 +1,16 @@
+kind: specification
+id: locator.browsing.narrowing-by-category
+title: Asking for a whole category of things
+state: live
+autonomy: gated
+behavior: >
+  Asked in conversation for a category — the tools, the seasonal things, the documents — the answer
+  lists just that category's items with their places, so a whole class of belongings can be reviewed at
+  once. A category nobody has used returns a plain answer naming it rather than an error.
+implements:
+- apps/locator/tools.py::list_located_items
+- apps/locator/data.py::filter_by_category
+- apps/locator/routes.py::api_list_located_items
+tests: []
+links: {}
+notes: ''

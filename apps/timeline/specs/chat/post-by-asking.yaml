@@ -1,0 +1,17 @@
+kind: specification
+id: timeline.chat.post-by-asking
+title: Note something down by asking
+state: live
+autonomy: gated
+behavior: >
+  Asked to note something down — "post that we went to the zoo", "journal this" — Skipper writes a
+  family-feed entry from what it was given, tags it if tags were named, and confirms with the
+  entry's identity, its author, its tags, and when it was created, so the person can refer back to
+  it in the same breath. An entry dictated this way is a shared journal entry, never a private
+  activity line.
+implements:
+- apps/timeline/tools.py::post_to_timeline
+- apps/timeline/data.py::create_post
+tests: []
+links: {}
+notes: ''

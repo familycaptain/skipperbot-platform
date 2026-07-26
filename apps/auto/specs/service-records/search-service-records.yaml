@@ -1,0 +1,17 @@
+kind: specification
+id: auto.service-records.search-service-records
+title: Searching every vehicle's history at once
+state: live
+autonomy: gated
+behavior: >
+  Service history can be searched across the whole fleet in one go — by what was done, its
+  description, the shop, its notes, or the vehicle's name — matched on part of a word and without
+  regard to case, and every result says which vehicle it belongs to. A search that matches
+  nothing says so and repeats what was looked for; a search with no terms at all is refused
+  rather than returning every record ever logged.
+implements:
+- apps/auto/tools.py::search_service_records
+- apps/auto/data.py::search_service_records
+tests: []
+links: {}
+notes: ''

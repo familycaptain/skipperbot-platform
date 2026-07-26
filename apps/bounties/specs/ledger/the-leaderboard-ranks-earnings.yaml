@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.ledger.the-leaderboard-ranks-earnings
+title: The leaderboard ranks earnings
+state: live
+autonomy: gated
+behavior: >
+  The leaderboard ranks household members by what they have earned from approved bounties, showing
+  each person's total and how many bounties they completed, over all time, this month, or this
+  week. Only approved work counts — a claim still waiting on a parent, or one that was rejected,
+  does not appear.
+implements:
+- apps/bounties/data.py::get_leaderboard
+- apps/bounties/tools.py::get_bounty_leaderboard
+- apps/bounties/ui/BountiesApp.jsx::LeaderboardTab
+tests: []
+links: {}
+notes: ''

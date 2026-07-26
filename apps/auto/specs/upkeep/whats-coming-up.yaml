@@ -1,0 +1,18 @@
+kind: specification
+id: auto.upkeep.whats-coming-up
+title: What's due across the whole fleet
+state: live
+autonomy: gated
+behavior: >
+  Asked what is coming up, Auto answers for every vehicle at once, merging recurring items with
+  the next-due dates and mileages recorded on past work, soonest first, each line saying which
+  vehicle it belongs to and how it recurs. Where a mileage target and a current reading are both
+  known it also says how many miles are left. With nothing due anywhere it says so plainly rather
+  than returning an empty list.
+implements:
+- apps/auto/tools.py::get_upcoming_maintenance
+- apps/auto/data.py::get_upcoming_maintenance
+- apps/auto/routes.py::api_upcoming_maintenance
+tests: []
+links: {}
+notes: ''

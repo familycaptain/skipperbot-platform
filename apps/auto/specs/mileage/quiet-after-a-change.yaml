@@ -1,0 +1,19 @@
+kind: specification
+id: auto.mileage.quiet-after-a-change
+title: Nothing is asked for a while after a change
+state: live
+autonomy: gated
+behavior: >
+  For a set period after an oil change — three months unless the household changes it — nobody is
+  asked for mileage readings and nothing is said about oil, because the next change cannot
+  plausibly be due yet; the vehicle's screen says when that quiet period ends. Once it has
+  passed, mileage is asked for at most about monthly, and only until a reading settles whether the
+  change is due.
+implements:
+- apps/auto/hooks.py::_check_oil_change_tracking
+- apps/auto/data.py::upsert_oil_tracking
+tests: []
+links: {}
+notes: >
+  The cooldown exists because mileage-based tracking otherwise asks for a reading the day after a
+  service, which is how a useful prompt becomes noise people learn to ignore.

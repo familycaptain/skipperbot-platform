@@ -1,0 +1,14 @@
+kind: specification
+id: timeline.chat.who-is-posting-must-be-known
+title: Skipper will not file an entry under a guess
+state: live
+autonomy: gated
+behavior: >
+  Skipper does not write an entry without knowing whose it is: asked to post with nobody named, it
+  says so and asks rather than filing the entry under a guess or a placeholder. A body with
+  nothing in it is refused the same way.
+implements:
+- apps/timeline/tools.py::post_to_timeline
+tests: []
+links: {}
+notes: ''

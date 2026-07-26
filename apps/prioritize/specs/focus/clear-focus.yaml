@@ -3,10 +3,17 @@ id: prioritize.focus.clear-focus
 title: Clear a focus item
 state: live
 autonomy: gated
-behavior: Clearing removes an item from focus by its source id.
+behavior: >
+  Removing an item from focus frees its position for something else and leaves the item itself
+  untouched in the app that owns it. Asked to clear something the person does not have in focus,
+  Skipper says it was not in focus rather than reporting a removal that did not happen. In the app
+  each focus card carries its own remove control; in conversation the item is named.
 implements:
-- apps/prioritize/tools.py
-- apps/prioritize/ui/PrioritizeApp.jsx
+- apps/prioritize/tools.py::clear_focus
+- apps/prioritize/data.py::clear_focus_by_source
+- apps/prioritize/data.py::clear_focus
+- apps/prioritize/ui/PrioritizeApp.jsx::FocusCard
+- agent.py::api_clear_focus
 tests: []
 links: {}
 notes: ''

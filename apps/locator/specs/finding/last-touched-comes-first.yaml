@@ -1,0 +1,16 @@
+kind: specification
+id: locator.finding.last-touched-comes-first
+title: What was touched last comes first
+state: live
+autonomy: gated
+behavior: >
+  Answers and lists are ordered by when each item was last changed, most recent first, so a thing just
+  put away or just moved is at the top and something untouched for years sinks to the bottom. How many
+  things matched is stated alongside the answer, so a long list is obviously a long list.
+implements:
+- apps/locator/data.py::search_items
+- apps/locator/data.py::get_all_items
+- apps/locator/tools.py::list_located_items
+tests: []
+links: {}
+notes: ''

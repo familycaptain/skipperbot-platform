@@ -1,0 +1,26 @@
+kind: specification
+id: folders.recall.one-index-for-the-whole-house
+title: Filed material shares the household's one index
+state: live
+autonomy: gated
+behavior: >
+  Filed material is indexed with the same embedding model as the rest of Skipper's memory, fixed
+  once when the install is set up, so a single question searches folders, memories and documents
+  together. Changing that choice later is an install-wide decision, not a per-app one, and nothing
+  filed has to be re-read for the folders to stay searchable alongside everything else.
+implements:
+- apps/folders/data.py::search_knowledge
+- apps/folders/intelligence.py::_get_embedding
+- providers/model_config.py::provisioned_embedding_dim
+tests:
+- type: unit
+  path: tests/test_embedding_dim_provision.py
+  rubric: >
+    Offline: the provisioned embedding dimension has one source with a fail-closed mismatch guard,
+    and the folders data + intelligence modules are statically confirmed to read that source
+    rather than carrying a dimension of their own — so folder knowledge cannot end up in a vector
+    space of its own.
+links: {}
+notes: >
+  Stated as a constraint because the interop IS the intent: folder facts are useless if they sit
+  in a vector space the rest of recall cannot search.

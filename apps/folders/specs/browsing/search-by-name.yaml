@@ -1,0 +1,18 @@
+kind: specification
+id: folders.browsing.search-by-name
+title: Search folders by name
+state: live
+autonomy: gated
+behavior: >
+  Searching matches any part of a folder's name or description, ignoring case, across every level
+  — so a subfolder can be found without knowing which folder it sits in. Searching for nothing at
+  all returns nothing rather than the whole list, and a folder's tags are not searched.
+implements:
+- apps/folders/tools.py::search_folders
+- apps/folders/store.py::search_folders
+- apps/folders/data.py::search_folders
+- apps/folders/ui/FoldersApp.jsx
+- agent.py::api_search_folders
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.ledger.a-balance-is-what-is-owed
+title: A balance is what is owed
+state: live
+autonomy: gated
+behavior: >
+  A person's balance is what they have earned from approved bounties and not yet been paid, shown
+  next to their lifetime earnings and lifetime payouts so both halves of the story are visible at
+  once. Approving work raises the balance, recording a payout lowers it, and lifetime earnings
+  only ever go up.
+implements:
+- apps/bounties/data.py::get_balance
+- apps/bounties/tools.py::get_bounty_balance
+- apps/bounties/ui/BountiesApp.jsx::BalanceTab
+tests: []
+links: {}
+notes: ''

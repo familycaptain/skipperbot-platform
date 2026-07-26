@@ -1,0 +1,18 @@
+kind: specification
+id: prioritize.focus.order-is-the-persons
+title: The order is the person's, not a score
+state: live
+autonomy: gated
+behavior: >
+  Focus is ordered by hand — move up, move down, move to top, move to bottom — and renumbers from
+  one straight away, so the position numbers a person sees always match the order in front of them.
+  Nothing re-ranks focus on its own: due dates, priorities, severities and how long something has
+  been sitting there never reshuffle it. Reordering a single item leaves the rest in their relative
+  order.
+implements:
+- apps/prioritize/data.py::reorder_focus
+- apps/prioritize/ui/PrioritizeApp.jsx::FocusCard
+- agent.py::api_reorder_focus
+tests: []
+links: {}
+notes: ''

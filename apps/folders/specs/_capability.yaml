@@ -2,10 +2,12 @@ kind: capability
 id: folders
 title: Folders
 app: folders
-scope: Hierarchical folders for organizing entities (documents, links, projects) with tags, icons,
-  colors, soft delete, and breadcrumbs, plus an LLM intelligence pipeline that extracts facts
-  + embeddings from each folder's contents for chat-grounded retrieval. NOT the documents themselves
-  (the Documents app owns those) — Folders organizes them.
+scope: >
+  Named, nestable folders that group things from anywhere on the platform — documents,
+  attachments, anything with an id — into one place, plus the reading pass that turns whatever is
+  filed into facts Skipper can answer from later. A folder holds references, not copies: the
+  owning app still owns the item. NOT the items themselves (Documents owns documents) and NOT an
+  access-control boundary — Folders organises and indexes.
 state: live
 autonomy: gated
 links: {}

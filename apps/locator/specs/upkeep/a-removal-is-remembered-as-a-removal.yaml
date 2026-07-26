@@ -1,0 +1,16 @@
+kind: specification
+id: locator.upkeep.a-removal-is-remembered-as-a-removal
+title: A removal is remembered as a removal
+state: live
+autonomy: gated
+behavior: >
+  When a thing is taken off the record, the fact that it is gone joins Skipper's memory of the
+  household, so a later question about it is answered with "that was removed" rather than with the
+  place it used to be kept. What was removed, and when, is remembered even though the item itself is
+  no longer on the list.
+implements:
+- apps/locator/data.py::delete_item
+- app_platform/memory.py::_write_delete_memory
+tests: []
+links: {}
+notes: ''

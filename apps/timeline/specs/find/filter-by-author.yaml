@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.find.filter-by-author
+title: Narrow to one person's posts
+state: live
+autonomy: gated
+behavior: >
+  In the family view the feed can be narrowed to a single person's entries, with each person shown
+  alongside how many they have written, and "all authors" restores everyone. The activity view
+  offers no author filter because that view is already one person's record.
+implements:
+- apps/timeline/routes.py::api_list_authors
+- apps/timeline/data.py::list_authors
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+tests: []
+links: {}
+notes: ''

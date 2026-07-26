@@ -1,0 +1,19 @@
+kind: specification
+id: bounties.posting.categories-are-the-households-own
+title: Categories are the household's own
+state: live
+autonomy: gated
+behavior: >
+  A household starts with a usable set of bounty categories and a parent can add or remove them,
+  with a name that already exists refused rather than duplicated. A bounty may have no category at
+  all, and removing a category leaves the bounties already filed under it untouched — they simply
+  stop being offered as a filter.
+implements:
+- apps/bounties/data.py::get_all_categories
+- apps/bounties/data.py::create_category
+- apps/bounties/data.py::delete_category
+- apps/bounties/routes.py::api_create_category
+- apps/bounties/ui/BountiesApp.jsx::SettingsTab
+tests: []
+links: {}
+notes: ''

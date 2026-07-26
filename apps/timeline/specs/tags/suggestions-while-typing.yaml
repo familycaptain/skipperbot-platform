@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.tags.suggestions-while-typing
+title: Existing tags are suggested as you type
+state: live
+autonomy: gated
+behavior: >
+  While tags are being typed, tags already in use that begin with what has been typed so far are
+  offered, leaving out ones already on this entry, and choosing one completes it and leaves the
+  field ready for the next. With nothing matching, no suggestions appear and typing a brand-new
+  tag is never blocked.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::PostComposer
+tests: []
+links: {}
+notes: ''

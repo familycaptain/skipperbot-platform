@@ -1,0 +1,19 @@
+kind: specification
+id: timeline.activity.not-the-record-of-what-was-said
+title: The timeline is not the conversation record
+state: live
+autonomy: gated
+behavior: >
+  The timeline records what the household did and wrote, not what was said: a conversation on any
+  surface is not an entry here, and no entry is created for a message Skipper sent or received.
+  Equally, writing a journal entry is not an utterance and does not appear as one in the
+  conversation record.
+implements:
+- app_platform/activity.py::log_activity
+- apps/timeline/data.py::create_post
+tests: []
+links: {}
+notes: >
+  The household has one append-only record of conversation, which the console shows. Timeline is a
+  separate store about records rather than talk, so neither is a projection of the other and the
+  distinction has to be stated rather than inferred.

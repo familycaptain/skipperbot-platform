@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.activity.activity-lines-are-one-line
+title: A line is a line, not a post
+state: live
+autonomy: gated
+behavior: >
+  An automatically logged entry is a single line — what happened, its tags, and the time — with no
+  body to expand, no photos, and no author shown, because the whole view already belongs to one
+  person. The bookkeeping tag the log gives itself is not shown back to the reader as though
+  someone had chosen it.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::ActivityCard
+- app_platform/activity.py::_write_activity_post
+tests: []
+links: {}
+notes: ''

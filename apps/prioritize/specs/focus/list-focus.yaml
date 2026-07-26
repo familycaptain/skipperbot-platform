@@ -1,12 +1,18 @@
 kind: specification
 id: prioritize.focus.list-focus
-title: Show focus
+title: Show me my focus
 state: live
 autonomy: gated
-behavior: Showing focus returns the user's current priority slots (at most 3 active).
+behavior: >
+  Asked what they are focused on, a person gets their positions in order, each with the kind of work
+  it is and its current title. With nothing pinned Skipper says so and invites them to pick up to
+  three, rather than returning an empty list. Naming another household member asks about that
+  person's focus instead of the asker's.
 implements:
-- apps/prioritize/tools.py
-- apps/prioritize/ui/PrioritizeApp.jsx
+- apps/prioritize/tools.py::list_focus
+- apps/prioritize/data.py::get_focus_slots
+- apps/prioritize/ui/PrioritizeApp.jsx::PrioritizeApp
+- agent.py::api_get_focus
 tests: []
 links: {}
 notes: ''

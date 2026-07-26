@@ -1,0 +1,14 @@
+kind: specification
+id: bounties.ledger.crossing-a-milestone
+title: Crossing a milestone is noticed
+state: live
+autonomy: gated
+behavior: >
+  When an approval takes somebody's lifetime earnings past a round milestone, they are told they
+  have reached it, so a long earning stretch gets marked rather than passing in silence.
+  Milestones are about what has been earned over time, so being paid out never undoes one.
+implements:
+- apps/bounties/store.py::_check_milestones
+tests: []
+links: {}
+notes: ''

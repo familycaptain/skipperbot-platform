@@ -1,0 +1,17 @@
+kind: specification
+id: folders.recall.nothing-to-read
+title: Something with no readable text is filed anyway
+state: live
+autonomy: gated
+behavior: >
+  An item with no text to read is left unindexed and the folder carries on working — the entry is
+  still there, and everything else in the folder is still recallable. An attachment with no text
+  of its own is indexed by what IS known about it: its name, its file type, its tags and its
+  description.
+implements:
+- apps/folders/intelligence.py::_load_content
+- apps/folders/intelligence.py::process_folder_item
+- apps/folders/handlers.py::_handle_folder_intelligence
+tests: []
+links: {}
+notes: ''

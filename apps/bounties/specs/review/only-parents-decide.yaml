@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.review.only-parents-decide
+title: Only parents decide a claim
+state: live
+autonomy: gated
+behavior: >
+  Approving, rejecting and skipping are parent and admin actions: anyone else asking is refused
+  with a reason and nothing changes. The reviewer recorded is the person signed in rather than a
+  name supplied with the request, so a decision about money cannot be attributed to somebody else.
+implements:
+- apps/bounties/routes.py::api_approve_bounty
+- apps/bounties/routes.py::api_reject_bounty
+- apps/bounties/routes.py::api_skip_bounty
+- apps/bounties/routes.py::_require_parent_actor
+tests: []
+links: {}
+notes: ''

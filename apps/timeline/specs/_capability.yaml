@@ -2,10 +2,12 @@ kind: capability
 id: timeline
 title: Timeline
 app: timeline
-scope: Family journal + microblog of posts, photos, and tags. Doubles as the platform's automatic
-  activity log — whenever any app fires digest_record on a non-read CRUD, a personal post is written
-  here, so every action is also a journal entry. NOT a per-app history view; Timeline is the unified
-  family feed.
+scope: >
+  The household's browsable record of what happened: dated entries people write by hand — with
+  photos, tags, and Markdown bodies — plus an automatic per-person line for every change any other
+  app records. Owns the chronological feed and what a reader sees in it. NOT the record of
+  conversation: what was said, on any surface, belongs to the console's own record, and no
+  utterance is ever a timeline entry.
 state: live
 autonomy: gated
 links: {}

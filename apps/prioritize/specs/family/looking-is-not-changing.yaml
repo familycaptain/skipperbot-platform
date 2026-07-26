@@ -1,0 +1,16 @@
+kind: specification
+id: prioritize.family.looking-is-not-changing
+title: Looking at someone's focus is not changing it
+state: live
+autonomy: gated
+behavior: >
+  The household view shows other people's focus and offers no way to promote, clear or reorder it —
+  a person's three are theirs to set. The nudge toggle and the reorder and remove controls appear
+  only on the viewer's own focus. Setting someone else's priorities for them is possible only for a
+  parent or admin, and only by asking for that person by name.
+implements:
+- apps/prioritize/ui/PrioritizeApp.jsx::FamilyView
+- app_platform/auth.py::resolve_target
+tests: []
+links: {}
+notes: ''

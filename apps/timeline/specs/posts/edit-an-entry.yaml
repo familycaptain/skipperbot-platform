@@ -1,0 +1,18 @@
+kind: specification
+id: timeline.posts.edit-an-entry
+title: Edit an entry
+state: live
+autonomy: gated
+behavior: >
+  An entry can be reopened and its title, body, tags, and photos changed; the editor opens pre-
+  filled with what is already there, and saving changes only what was given. The entry keeps its
+  author and its place in the feed — editing records that it was updated, it does not republish
+  it. Editing an entry that no longer exists reports that rather than creating a new one.
+implements:
+- apps/timeline/data.py::update_post
+- apps/timeline/routes.py::api_update_post
+- apps/timeline/tools.py::update_timeline_post
+- apps/timeline/ui/TimelineApp.jsx::PostComposer
+tests: []
+links: {}
+notes: ''

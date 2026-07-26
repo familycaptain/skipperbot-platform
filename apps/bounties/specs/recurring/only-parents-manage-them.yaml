@@ -1,0 +1,19 @@
+kind: specification
+id: bounties.recurring.only-parents-manage-them
+title: Only parents manage recurring bounties
+state: live
+autonomy: gated
+behavior: >
+  Recurring bounties are a parent's tool: the app does not show anyone else the screen and tells
+  them so if they reach it, and every request to create, change, pause, delete or generate from
+  one is refused for anyone who is not a parent or admin. The bounties they produce are visible to
+  everyone like any other.
+implements:
+- apps/bounties/ui/BountiesApp.jsx::TemplatesTab
+- apps/bounties/routes.py::api_create_template
+- apps/bounties/routes.py::api_update_template
+- apps/bounties/routes.py::api_delete_template
+- apps/bounties/routes.py::api_generate_from_template
+tests: []
+links: {}
+notes: ''

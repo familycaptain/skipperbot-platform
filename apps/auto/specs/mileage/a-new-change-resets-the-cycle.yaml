@@ -1,0 +1,18 @@
+kind: specification
+id: auto.mileage.a-new-change-resets-the-cycle
+title: A fresh oil change resets the cycle
+state: live
+autonomy: gated
+behavior: >
+  Recording a new oil change replaces whatever cycle was being tracked for that vehicle rather
+  than adding a second one: the next-due mileage is recomputed from the new reading, the vehicle
+  stops being flagged as overdue, the quiet period starts again, and earlier mileage checks are
+  cleared. A vehicle that has just been serviced is never still being chased about it.
+implements:
+- apps/auto/data.py::upsert_oil_tracking
+- apps/auto/migrations/003_oil_change_tracking.sql
+tests: []
+links: {}
+notes: >
+  One live cycle per vehicle, not a history of cycles: the history of oil changes is the service
+  records, and two cycles at once produce contradictory answers to "is it due?".

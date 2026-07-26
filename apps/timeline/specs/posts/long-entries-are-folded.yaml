@@ -1,0 +1,14 @@
+kind: specification
+id: timeline.posts.long-entries-are-folded
+title: A long entry is folded, not truncated
+state: live
+autonomy: gated
+behavior: >
+  An entry much longer than a screenful is shown shortened with a control to read the rest, and
+  can be folded again, so one long journal entry does not push the rest of the feed off the page.
+  An entry short enough to show whole is shown whole, with no control.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::PostCard
+tests: []
+links: {}
+notes: ''

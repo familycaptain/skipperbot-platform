@@ -1,0 +1,17 @@
+kind: specification
+id: timeline.posts.pin-an-entry
+title: Pin an entry to the top
+state: live
+autonomy: gated
+behavior: >
+  Pinning an entry holds it above every other entry in the feed however old it is, and the card
+  shows that it is pinned; pinning again releases it back into date order. A pin belongs to the
+  entry and not to the reader — everyone in the household sees the same entries pinned.
+implements:
+- apps/timeline/data.py::toggle_pin
+- apps/timeline/routes.py::api_toggle_pin
+- apps/timeline/tools.py::pin_timeline_post
+- apps/timeline/ui/TimelineApp.jsx::PostCard
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: locator.photos.photos-of-an-item
+title: A thing can carry photos of itself and its spot
+state: live
+autonomy: gated
+behavior: >
+  An item can have photos attached — the thing itself, or the shelf it sits on — and they come back with
+  it in a stable order, arranged order first and otherwise oldest upload first, each with its title and
+  file details. So one bin among twenty identical bins is unmistakable. An item with no photos reports
+  none rather than failing.
+implements:
+- apps/locator/data.py::get_item_images
+- apps/locator/routes.py::api_get_item_images
+tests: []
+links: {}
+notes: ''

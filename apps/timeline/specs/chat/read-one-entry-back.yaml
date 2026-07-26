@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.chat.read-one-entry-back
+title: Read one entry back
+state: live
+autonomy: gated
+behavior: >
+  Asked about a particular entry, Skipper reads back its title, author, tags, where it came from
+  if it came from an app, how many photos it has, when it was created and last changed, and its
+  body in full. Asked about an identity that matches nothing, it says the entry was not found.
+implements:
+- apps/timeline/tools.py::get_timeline_post
+- apps/timeline/data.py::get_post
+tests: []
+links: {}
+notes: ''

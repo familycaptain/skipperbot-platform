@@ -1,0 +1,17 @@
+kind: specification
+id: locator.finding.asking-where-something-is
+title: Asking where something is
+state: live
+autonomy: gated
+behavior: >
+  Asked where a thing is — "where are the spare batteries?", "find the good scissors" — Skipper looks
+  across everything on record: names, descriptions, places, precise spots, notes and tags. Each match
+  comes back with its place and precise spot, so a thing found by one of its tags is still answered
+  with where to go and look, which is the whole point of asking.
+implements:
+- apps/locator/tools.py::search_located_items
+- apps/locator/data.py::search_items
+- apps/locator/manifest.yaml
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: auto.value.value-over-time
+title: What it is worth now, and what it was worth
+state: live
+autonomy: gated
+behavior: >
+  A vehicle's valuations are listed newest first so depreciation reads as a trend, with the most
+  recent shown prominently as what the vehicle is worth now — both figures, its date, its source
+  and the condition assumed — and the older ones beneath it as one line each. A vehicle never
+  valued says so rather than showing nothing at all.
+implements:
+- apps/auto/tools.py::get_vehicle_valuations
+- apps/auto/data.py::get_valuations
+- apps/auto/ui/AutoDetailApp.jsx::ValueTab
+tests: []
+links: {}
+notes: ''

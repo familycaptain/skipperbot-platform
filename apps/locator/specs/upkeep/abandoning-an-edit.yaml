@@ -1,0 +1,14 @@
+kind: specification
+id: locator.upkeep.abandoning-an-edit
+title: Abandoning an edit leaves the record alone
+state: live
+autonomy: gated
+behavior: >
+  Backing out of editing an item puts every field back to the last saved version and leaves the record
+  untouched, so a half-finished correction is discarded rather than committed by accident. Nothing an
+  editor types reaches the record until saving is asked for.
+implements:
+- apps/locator/ui/LocatorDetailApp.jsx
+tests: []
+links: {}
+notes: ''

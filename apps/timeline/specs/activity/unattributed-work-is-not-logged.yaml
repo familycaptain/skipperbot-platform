@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.activity.unattributed-work-is-not-logged
+title: Work with nobody behind it is not logged
+state: live
+autonomy: gated
+behavior: >
+  A change with no person attached to it — background upkeep, scheduled work, anything Skipper did
+  on its own — produces no activity line. The view stays a record of what the household did rather
+  than what the machine did.
+implements:
+- app_platform/activity.py::log_activity
+tests: []
+links: {}
+notes: >
+  The activity view answers "what did I do". Work nobody asked for cannot honestly be shown under
+  anyone's name, and shown under a placeholder it would drown out the real answer.

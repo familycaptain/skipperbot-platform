@@ -1,0 +1,17 @@
+kind: specification
+id: locator.browsing.searching-and-narrowing-never-combine
+title: Searching and narrowing are never combined
+state: live
+autonomy: gated
+behavior: >
+  Typing a search clears any chosen place and choosing a place clears the search box, so nobody is ever
+  looking at a list narrowed two ways with one of them out of sight. Asked in conversation for a place
+  and a category at once, the place is what is honoured and the category is ignored rather than
+  silently intersected.
+implements:
+- apps/locator/ui/LocatorListApp.jsx
+- apps/locator/tools.py::list_located_items
+- apps/locator/routes.py::api_list_located_items
+tests: []
+links: {}
+notes: ''

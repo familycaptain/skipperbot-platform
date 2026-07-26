@@ -1,0 +1,15 @@
+kind: specification
+id: bounties.posting.open-the-moment-it-is-posted
+title: Open the moment it is posted
+state: live
+autonomy: gated
+behavior: >
+  A newly posted bounty is open and claimable immediately, with no review or scheduling step in
+  between, and it appears among the other open work on the board. It carries no claimant and no
+  reviewer until somebody acts on it.
+implements:
+- apps/bounties/data.py::create_bounty
+- apps/bounties/ui/BountiesApp.jsx::BoardTab
+tests: []
+links: {}
+notes: ''

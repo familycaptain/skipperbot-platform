@@ -1,0 +1,17 @@
+kind: specification
+id: timeline.chat.how-much-at-once
+title: A readable page, not the whole journal
+state: live
+autonomy: gated
+behavior: >
+  Skipper answers with a readable page of entries rather than the whole journal — twenty by
+  default and never more than fifty at once — and when more matched it says how many there were in
+  total and how to ask for the next page. Long bodies are shortened to an opening in a list and
+  shown whole only when one entry is asked about.
+implements:
+- apps/timeline/tools.py::list_timeline
+- apps/timeline/tools.py::search_timeline
+- apps/timeline/data.py::list_posts
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: prioritize.sources.clearing-is-not-completing
+title: Clearing focus never completes anything
+state: live
+autonomy: gated
+behavior: >
+  Removing something from focus, replacing it, or reordering around it changes only what the person
+  has chosen to focus on. The underlying goal, reminder, schedule or to-do item is untouched, stays
+  exactly as it was, and reappears in the backlog immediately — which is why a person who is actually
+  done with something has to close it in the app that owns it, not just unpin it.
+implements:
+- apps/prioritize/data.py::clear_focus
+- apps/prioritize/data.py::clear_focus_by_source
+- apps/prioritize/data.py::set_focus
+tests: []
+links: {}
+notes: ''

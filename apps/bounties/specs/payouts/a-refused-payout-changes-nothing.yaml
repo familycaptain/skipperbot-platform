@@ -1,0 +1,15 @@
+kind: specification
+id: bounties.payouts.a-refused-payout-changes-nothing
+title: A refused payout changes nothing
+state: live
+autonomy: gated
+behavior: >
+  When a payout is refused — too large, below the minimum, or not recorded by a parent — no
+  balance changes, no ledger line is written, and nobody is told a payment happened. The reason it
+  was refused appears where the amount was entered, so it can be corrected and tried again.
+implements:
+- apps/bounties/store.py::record_payment
+- apps/bounties/ui/BountiesApp.jsx::RecordPaymentForm
+tests: []
+links: {}
+notes: ''

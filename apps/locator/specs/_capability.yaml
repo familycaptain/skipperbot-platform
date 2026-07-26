@@ -2,9 +2,11 @@ kind: capability
 id: locator
 title: Locator
 app: locator
-scope: Item locator — track where physical items are stored around the household. Find things
-  by location, category, tags, or search, attach photos, and manage the set of storage locations.
-  NOT inventory/shopping (the Lists app) — Locator answers 'where did we put it?'.
+scope: 'Where the household keeps its things: a person records what a physical object is and where
+  it lives — room, container, precise spot, category, tags, count, photos — and can ask for it back
+  later in conversation or in the app. Also owns the set of named storage places. NOT inventory,
+  stock levels or shopping (the Lists app), and NOT where PEOPLE are — Locator answers ''where did we
+  put it?''.'
 state: live
 autonomy: gated
 links: {}

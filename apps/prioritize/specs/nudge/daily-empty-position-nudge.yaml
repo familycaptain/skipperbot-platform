@@ -1,0 +1,17 @@
+kind: specification
+id: prioritize.nudge.daily-empty-position-nudge
+title: A daily nudge when focus is not set
+state: live
+autonomy: gated
+behavior: >
+  Once a day, a person with unfilled focus positions gets a short nudge — how many are open, what they
+  already have pinned, and an invitation to reply with what they want to focus on — and can set their
+  priorities by simply answering it. Someone whose positions are all full is not nudged at all, and
+  nobody is nudged twice in a day however many times the check runs.
+implements:
+- apps/goals/pm_runner.py::_append_focus_nags
+- apps/goals/pm_runner.py::check_and_run_pm
+- apps/prioritize/data.py::get_focus_nag_enabled
+tests: []
+links: {}
+notes: ''

@@ -1,11 +1,18 @@
 kind: specification
 id: auto.service-records.update-service
-title: Correct a service record
+title: Correcting a service record
 state: live
 autonomy: gated
-behavior: An existing service record can be updated to fix a wrong date, mileage, cost, or note.
+behavior: >
+  An existing service record can be corrected — wrong date, wrong mileage, wrong cost, wrong
+  shop, a fuller description — changing only the fields given and leaving the rest as they were.
+  Cost and mileage can be explicitly cleared back to unknown, for a figure that turned out to be
+  a guess. A correction naming no fields reports that there was nothing to change, and correcting
+  a record that no longer exists says so.
 implements:
-- apps/auto/tools.py
+- apps/auto/tools.py::update_service_record
+- apps/auto/routes.py::api_update_service
+- apps/auto/data.py::update_service_record
 tests: []
 links: {}
 notes: ''

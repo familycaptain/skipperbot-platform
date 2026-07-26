@@ -1,0 +1,18 @@
+kind: specification
+id: folders.folders.tags-icon-and-colour
+title: Tags, icon and colour are decoration
+state: live
+autonomy: gated
+behavior: >
+  A folder can carry tags and a chosen icon and colour, which is how the app lets someone tell
+  folders apart at a glance; tags are stored lower-cased with blanks dropped, so 'Tax, ,tax'
+  becomes one tag. None of the three changes what the folder does, and none of them is matched
+  when searching for a folder.
+implements:
+- apps/folders/tools.py::create_folder
+- apps/folders/data.py::create_folder
+- apps/folders/data.py::search_folders
+- apps/folders/ui/FoldersApp.jsx
+tests: []
+links: {}
+notes: ''

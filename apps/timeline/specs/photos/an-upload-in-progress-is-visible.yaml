@@ -1,0 +1,14 @@
+kind: specification
+id: timeline.photos.an-upload-in-progress-is-visible
+title: An entry cannot be saved mid-upload
+state: live
+autonomy: gated
+behavior: >
+  While a photo is still uploading its thumbnail is shown dimmed and marked as working, and cannot
+  be removed or reordered; the entry itself cannot be saved until every attachment has finished.
+  So an entry is never stored pointing at a photo that never arrived.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::PostComposer
+tests: []
+links: {}
+notes: ''

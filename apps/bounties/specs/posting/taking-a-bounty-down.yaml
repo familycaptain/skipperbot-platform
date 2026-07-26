@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.posting.taking-a-bounty-down
+title: Taking a bounty down
+state: live
+autonomy: gated
+behavior: >
+  A parent can delete a bounty that has not been approved, and the app asks for confirmation
+  before it goes. Deletion is offered only while it is unapproved, so a bounty somebody was
+  already paid for stays as the record of that. Anyone else asking to delete is refused, and
+  deleting something already gone says it was not found.
+implements:
+- apps/bounties/routes.py::api_delete_bounty
+- apps/bounties/data.py::delete_bounty
+- apps/bounties/ui/BountiesApp.jsx::BountyCard
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: prioritize.sources.jump-to-the-item
+title: One click opens the item where it lives
+state: live
+autonomy: gated
+behavior: >
+  Selecting an item — in focus, in the backlog, in the household view, or in the strip at the top of
+  the console — opens the app that owns it, already on that item: a task opens Goals on the task, a
+  reminder opens Reminders on the right tab, a vehicle issue opens that vehicle. Prioritize itself
+  never edits the item; changing or completing it happens where it lives.
+implements:
+- apps/prioritize/ui/PrioritizeApp.jsx::PrioritizeApp
+- apps/prioritize/ui/PrioritizeApp.jsx::FamilyView
+- web/src/components/Shell.jsx::loadFocus
+tests: []
+links: {}
+notes: ''

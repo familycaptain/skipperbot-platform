@@ -1,0 +1,18 @@
+kind: specification
+id: auto.mileage.set-up-tracking
+title: Setting oil tracking up directly
+state: live
+autonomy: gated
+behavior: >
+  Oil-change tracking can be set up directly for a vehicle already on the road, by giving the
+  mileage at its last oil change and optionally when that was, how many miles between changes,
+  and how long to stay quiet afterwards — so a household does not have to wait for its next oil
+  change to start being reminded. It needs a positive mileage to count from, and it answers with
+  the mileage the next change is due at. Setting it up for a vehicle nobody tracks says so.
+implements:
+- apps/auto/tools.py::setup_oil_tracking
+- apps/auto/routes.py::api_create_oil_tracking
+- apps/auto/data.py::upsert_oil_tracking
+tests: []
+links: {}
+notes: ''

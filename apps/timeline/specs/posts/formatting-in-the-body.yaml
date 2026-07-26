@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.posts.formatting-in-the-body
+title: Bodies are written and shown as formatted text
+state: live
+autonomy: gated
+behavior: >
+  A body is written in Markdown and displayed formatted — headings, bold and italic, lists, rules,
+  tables, inline code and fenced blocks, and links. A bare web address becomes a link even when it
+  was not written as one, and following any link in an entry opens it in a new window instead of
+  navigating the reader away from the feed.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::markdownToHtml
+- apps/timeline/ui/TimelineApp.jsx::PostCard
+tests: []
+links: {}
+notes: ''

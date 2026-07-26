@@ -1,0 +1,17 @@
+kind: specification
+id: prioritize.sources.only-live-items-hold-a-position
+title: Only a real, open item can hold a position
+state: live
+autonomy: gated
+behavior: >
+  A focus position is only ever held by something that still exists and is still open in an app this
+  install actually has. Pinning something that cannot be found — a mistyped id, an item since
+  deleted, a kind of work no installed app recognises — does not stick: the position is empty again
+  the next time focus is read, so focus can never point at nothing.
+implements:
+- apps/prioritize/data.py::_source_is_active
+- apps/prioritize/data.py::cleanup_stale_focus
+- apps/prioritize/data.py::register_activity_checker
+tests: []
+links: {}
+notes: ''

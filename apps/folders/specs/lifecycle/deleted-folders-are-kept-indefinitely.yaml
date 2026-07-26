@@ -1,0 +1,18 @@
+kind: specification
+id: folders.lifecycle.deleted-folders-are-kept-indefinitely
+title: A deleted folder is kept indefinitely, and only chat can bring it back
+state: live
+autonomy: gated
+behavior: >
+  A deleted folder is never purged — it stays recoverable for as long as the install lives, and
+  nothing sweeps it up after a grace period. It is also invisible from then on: the app offers no
+  list of what has been deleted, so restoring one has to be asked for by name or id in
+  conversation.
+implements:
+- apps/folders/data.py::delete_folder
+- apps/folders/data.py::get_all_folders
+- apps/folders/tools.py::restore_folder
+- apps/folders/ui/FoldersApp.jsx
+tests: []
+links: {}
+notes: ''

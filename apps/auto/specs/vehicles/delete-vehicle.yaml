@@ -1,12 +1,21 @@
 kind: specification
 id: auto.vehicles.delete-vehicle
-title: Delete a vehicle
+title: Removing a vehicle takes its records with it
 state: live
 autonomy: gated
-behavior: A vehicle can be removed from the fleet; its dependent records are handled per the data
-  model.
+behavior: >
+  Deleting a vehicle removes it and everything recorded against it — service history, issues,
+  condition reports, valuations, attached photos and its mileage tracking — permanently, in one
+  action, and from the app only after confirming. Nothing left behind may still speak up about a
+  vehicle the household no longer has. Deleting a vehicle that is not tracked reports that rather
+  than claiming success.
 implements:
-- apps/auto/tools.py
+- apps/auto/tools.py::delete_vehicle
+- apps/auto/routes.py::api_delete_vehicle
+- apps/auto/data.py::delete_vehicle
+- apps/auto/migrations/001_initial.sql
 tests: []
 links: {}
-notes: ''
+notes: >
+  The rule that a deleted vehicle can no longer generate reminders or nagging is the operator's:
+  a household that sold a car should stop hearing about its oil.

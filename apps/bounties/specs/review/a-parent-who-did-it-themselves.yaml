@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.review.a-parent-who-did-it-themselves
+title: A parent who did it themselves
+state: live
+autonomy: gated
+behavior: >
+  A parent can take a bounty off the board as done-by-them instead of approving or rejecting it:
+  nobody is credited, the bounty is cancelled, and the record says which parent skipped it and
+  why. This is possible only while the bounty is open or claimed — a bounty already approved or
+  cancelled cannot be skipped.
+implements:
+- apps/bounties/store.py::skip_bounty
+- apps/bounties/routes.py::api_skip_bounty
+- apps/bounties/ui/BountiesApp.jsx::BountyCard
+tests: []
+links: {}
+notes: ''

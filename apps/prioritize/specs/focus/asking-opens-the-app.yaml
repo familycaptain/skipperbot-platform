@@ -1,0 +1,16 @@
+kind: specification
+id: prioritize.focus.asking-opens-the-app
+title: Asking on the web opens the app as well as answering
+state: live
+autonomy: gated
+behavior: >
+  A person at the web console who asks about their priorities, or what they should work on, gets
+  Prioritize opened on their desktop alongside the spoken answer, so they can promote and clear by
+  hand instead of dictating ids. On a surface with no desktop the answer is text only and no app is
+  opened.
+implements:
+- chat_domain.py::_build_system_prompt
+- apps/prioritize/guide.md
+tests: []
+links: {}
+notes: ''

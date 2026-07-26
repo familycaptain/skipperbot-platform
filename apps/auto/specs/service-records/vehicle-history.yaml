@@ -1,11 +1,17 @@
 kind: specification
 id: auto.service-records.vehicle-history
-title: View vehicle service history
+title: A vehicle's history reads newest first
 state: live
 autonomy: gated
-behavior: A vehicle's full service history is retrievable, ordered chronologically by date/mileage.
+behavior: >
+  A vehicle's service history is a dated timeline with the most recent work first — each entry
+  giving the date, what was done, the cost, the mileage and where — so the last oil change is the
+  first thing read rather than the last. A vehicle with nothing logged yet says so by name
+  instead of returning an empty timeline.
 implements:
-- apps/auto/tools.py
+- apps/auto/tools.py::get_vehicle_history
+- apps/auto/routes.py::api_get_services
+- apps/auto/data.py::get_service_records
 tests: []
 links: {}
 notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: auto.condition.correct-or-remove
+title: Correcting or removing a condition report
+state: live
+autonomy: gated
+behavior: >
+  A condition report can be corrected after the fact — any rating, the date, the mileage, a
+  measurement, the observations — or removed entirely, from the vehicle's condition screen.
+  Correcting or removing a report that no longer exists says so rather than appearing to succeed.
+implements:
+- apps/auto/routes.py::api_update_condition
+- apps/auto/routes.py::api_delete_condition
+- apps/auto/data.py::update_condition
+- apps/auto/data.py::delete_condition
+tests: []
+links: {}
+notes: ''

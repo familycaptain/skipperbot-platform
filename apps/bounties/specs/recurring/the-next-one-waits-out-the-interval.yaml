@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.recurring.the-next-one-waits-out-the-interval
+title: The next one waits out the interval
+state: live
+autonomy: gated
+behavior: >
+  Once an instance of a recurring bounty is settled — approved, or skipped by a parent — the next
+  one does not appear until its interval has passed, whether that is a day, a week, a fortnight or
+  a month. Doing a weekly task twice in one afternoon therefore earns it once.
+implements:
+- apps/bounties/store.py::approve_bounty
+- apps/bounties/store.py::skip_bounty
+- apps/bounties/data.py::set_template_cooldown
+- apps/bounties/data.py::get_due_templates
+tests: []
+links: {}
+notes: ''

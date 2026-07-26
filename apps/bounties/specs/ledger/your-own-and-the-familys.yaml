@@ -1,0 +1,16 @@
+kind: specification
+id: bounties.ledger.your-own-and-the-familys
+title: Your own balance, and the family's
+state: live
+autonomy: gated
+behavior: >
+  Everyone sees their own balance with their recent lines. A parent additionally sees every
+  member's balance in one list, each with a way to record a payout against it — the view that
+  makes settling up possible without asking each person what they think they are owed.
+implements:
+- apps/bounties/ui/BountiesApp.jsx::BalanceTab
+- apps/bounties/routes.py::api_list_balances
+- apps/bounties/routes.py::api_get_balance
+tests: []
+links: {}
+notes: ''

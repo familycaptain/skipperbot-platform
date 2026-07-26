@@ -1,0 +1,16 @@
+kind: specification
+id: locator.browsing.narrowing-to-one-place
+title: Narrowing the list to one place
+state: live
+autonomy: gated
+behavior: >
+  Choosing a place narrows the list to the things kept there, and the chosen place stays marked so it
+  is never a mystery why the list looks short; clearing it, or choosing "all", brings everything back.
+  Places with nothing in them are still offered and simply show an empty result, so an empty shelf is
+  visibly empty rather than missing.
+implements:
+- apps/locator/ui/LocatorListApp.jsx
+- apps/locator/routes.py::api_list_located_items
+tests: []
+links: {}
+notes: ''

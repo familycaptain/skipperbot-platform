@@ -1,0 +1,21 @@
+kind: specification
+id: folders.folders.owner-is-a-label-not-a-lock
+title: An owner is a label, not a lock
+state: live
+autonomy: gated
+behavior: >
+  A folder can be marked as one person's, which is what 'show me Alice's folders' filters on, but
+  the mark grants nothing and withholds nothing: anyone signed in can open, change, file into and
+  delete any folder no matter who it is marked for. Left unset, the folder is simply the
+  household's.
+implements:
+- apps/folders/tools.py::create_folder
+- apps/folders/tools.py::list_folders
+- apps/folders/data.py::get_all_folders
+- apps/folders/ui/FoldersApp.jsx
+- apps/folders/guide.md
+tests: []
+links: {}
+notes: >
+  The operator's 'no secrets' rule for a per-family assistant: the household shares one Skipper,
+  so a folder is a filing choice rather than a privacy boundary.

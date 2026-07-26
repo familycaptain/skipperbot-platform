@@ -1,0 +1,17 @@
+kind: specification
+id: folders.recall.one-bad-passage-does-not-lose-the-rest
+title: One passage that cannot be read never loses the rest
+state: live
+autonomy: gated
+behavior: >
+  A passage or fact that cannot be indexed is skipped and the others are still saved, and material
+  whose facts could not be extracted at all — an unreachable model, an unusable reply — is still
+  findable by its passages. Filing is never undone by a failure to read, and the attempt reports
+  how much it managed.
+implements:
+- apps/folders/intelligence.py::process_folder_item
+- apps/folders/intelligence.py::_extract_facts
+- apps/folders/handlers.py::_handle_folder_intelligence
+tests: []
+links: {}
+notes: ''

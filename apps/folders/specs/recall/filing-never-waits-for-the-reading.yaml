@@ -1,0 +1,18 @@
+kind: specification
+id: folders.recall.filing-never-waits-for-the-reading
+title: Filing never waits for the reading
+state: live
+autonomy: gated
+behavior: >
+  Filing something reports success straight away; the reading happens afterwards as background
+  work, a couple of items at a time so a bulk filing cannot swamp the house, and it is dropped
+  rather than left half-done when the server is shutting down. If the work cannot even be queued,
+  the item is still filed and nothing is lost but the indexing.
+implements:
+- apps/folders/store.py::_trigger_intelligence
+- apps/folders/handlers.py::_handle_folder_intelligence
+- apps/folders/tools.py::add_to_folder
+- apps/folders/manifest.yaml
+tests: []
+links: {}
+notes: ''

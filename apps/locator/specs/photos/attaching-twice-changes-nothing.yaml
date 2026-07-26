@@ -1,0 +1,16 @@
+kind: specification
+id: locator.photos.attaching-twice-changes-nothing
+title: Attaching the same photo twice changes nothing
+state: live
+autonomy: gated
+behavior: >
+  Attaching a photo an item already has changes nothing and is not treated as a failure, so a repeated
+  or retried attempt cannot show the same picture twice on one item. Detaching a photo the item does
+  not have is likewise treated as already done.
+implements:
+- apps/locator/data.py::link_image
+- apps/locator/data.py::unlink_image
+- apps/locator/routes.py::api_link_image
+tests: []
+links: {}
+notes: ''

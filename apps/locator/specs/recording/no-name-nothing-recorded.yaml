@@ -1,0 +1,14 @@
+kind: specification
+id: locator.recording.no-name-nothing-recorded
+title: Something with no name is not recorded
+state: live
+autonomy: gated
+behavior: >
+  A request to record a thing with no name, or a name made only of spaces, stores nothing and says
+  what was missing. A request made in conversation that does not say who is recording it is refused
+  the same way. Nothing half-formed is left on the record for someone to find later and wonder about.
+implements:
+- apps/locator/tools.py::create_located_item
+tests: []
+links: {}
+notes: ''

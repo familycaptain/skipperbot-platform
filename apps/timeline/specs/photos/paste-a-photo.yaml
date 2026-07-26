@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.photos.paste-a-photo
+title: Paste a photo straight into an entry
+state: live
+autonomy: gated
+behavior: >
+  Pasting an image while composing attaches it to the entry being written, with no file dialogue:
+  the image appears as a thumbnail immediately, and the paste does not also drop image data into
+  the body text.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::usePasteImage
+- apps/timeline/ui/TimelineApp.jsx::PostComposer
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: auto.upkeep.create-schedule
+title: Set something up to come round again
+state: live
+autonomy: gated
+behavior: >
+  A recurring upkeep item is set up against one vehicle with a name and a cadence — yearly,
+  monthly, quarterly, fortnightly, weekly, or a custom number of days — starting from a stated
+  first-due date or from today. The confirmation names the vehicle, describes the cadence in
+  words and gives the first due date, so what was actually set up is clear before anything is
+  done to it.
+implements:
+- apps/auto/tools.py::create_maintenance_schedule
+- apps/auto/routes.py::api_create_vehicle_maintenance
+- apps/schedules/data.py::create_schedule
+tests: []
+links: {}
+notes: ''

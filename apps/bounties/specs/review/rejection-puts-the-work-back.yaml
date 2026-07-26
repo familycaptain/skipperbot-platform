@@ -1,0 +1,14 @@
+kind: specification
+id: bounties.review.rejection-puts-the-work-back
+title: Rejection puts the work back on the board
+state: live
+autonomy: gated
+behavior: >
+  Rejecting a claim returns the bounty to open with the claim cleared, so it is available again to
+  anyone — including the person whose claim was rejected — to do properly and claim afresh. Who
+  rejected it, when, and the reason they gave stay on the bounty for everyone to read.
+implements:
+- apps/bounties/store.py::reject_bounty
+tests: []
+links: {}
+notes: ''

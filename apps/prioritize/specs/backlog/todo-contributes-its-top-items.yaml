@@ -1,0 +1,16 @@
+kind: specification
+id: prioritize.backlog.todo-contributes-its-top-items
+title: The to-do list contributes its top few
+state: live
+autonomy: gated
+behavior: >
+  The person's own to-do list contributes its first ten unfinished items, labelled with the list's
+  name, so a hundred-item list does not swamp everything else in the backlog. Items already ticked
+  off or archived are left out, and someone with no to-do list set up simply contributes nothing
+  there — no empty group, no prompt to create one.
+implements:
+- apps/prioritize/data.py::_backlog_todo
+- apps/todo/store.py::get_todo_items
+tests: []
+links: {}
+notes: ''

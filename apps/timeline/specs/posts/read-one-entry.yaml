@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.posts.read-one-entry
+title: Read one entry whole
+state: live
+autonomy: gated
+behavior: >
+  Asking for a single entry returns it complete — title, author, tags, when it was created and
+  last changed, its full body, and its photos — rather than the shortened form the feed shows. An
+  identity that matches nothing is reported as not found instead of coming back as a blank entry.
+implements:
+- apps/timeline/data.py::get_post
+- apps/timeline/routes.py::api_get_post
+- apps/timeline/tools.py::get_timeline_post
+tests: []
+links: {}
+notes: ''

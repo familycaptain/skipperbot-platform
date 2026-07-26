@@ -1,0 +1,17 @@
+kind: specification
+id: locator.access.a-handle-is-stable-for-life
+title: A thing's handle is stable for its whole life
+state: live
+autonomy: gated
+behavior: >
+  Each thing and each named place is given a short handle when it is created — the sort of reference
+  Skipper can quote back in conversation — and that handle never changes however often the name, the
+  place or the details are edited, so it can be used to point at exactly one record. A handle is never
+  reused for something else after the thing it named is removed.
+implements:
+- apps/locator/tools.py::create_located_item
+- apps/locator/tools.py::create_item_location
+- apps/locator/manifest.yaml
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: folders.recall.search-inside-one-folder
+title: Search inside one folder, or one kind of material
+state: live
+autonomy: gated
+behavior: >
+  A search over filed material can be narrowed to a single folder, or to extracted facts only, or
+  to raw passages only, and comes back closest-match first with how close each one was. Material
+  in a deleted folder is never returned.
+implements:
+- apps/folders/intelligence.py::search_folder_knowledge
+- apps/folders/data.py::search_knowledge
+tests: []
+links: {}
+notes: ''

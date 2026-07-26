@@ -1,0 +1,18 @@
+kind: specification
+id: timeline.posts.delete-an-entry
+title: Delete an entry
+state: live
+autonomy: gated
+behavior: >
+  Deleting asks for confirmation first, then removes the entry together with its body and its
+  photo attachments, and the feed reflects the removal without needing a reload. Deleting an entry
+  that is already gone reports that rather than reporting success. The app offers no way to get a
+  deleted entry back.
+implements:
+- apps/timeline/data.py::delete_post
+- apps/timeline/routes.py::api_delete_post
+- apps/timeline/tools.py::delete_timeline_post
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+tests: []
+links: {}
+notes: ''

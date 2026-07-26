@@ -1,0 +1,15 @@
+kind: specification
+id: auto.value.both-figures
+title: A valuation needs both figures
+state: live
+autonomy: gated
+behavior: >
+  A valuation entered in the app cannot be saved with only one number: both the private-sale and
+  the trade-in figure are required, because a single amount does not say which kind of value it
+  is and the two are never the same. Everything else about a valuation is optional.
+implements:
+- apps/auto/ui/AutoDetailApp.jsx::ValueTab
+- apps/auto/routes.py::api_log_valuation
+tests: []
+links: {}
+notes: ''

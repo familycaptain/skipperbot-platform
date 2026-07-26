@@ -1,0 +1,18 @@
+kind: specification
+id: auto.issues.fix-an-issue
+title: Fixing an issue keeps the record of it
+state: live
+autonomy: gated
+behavior: >
+  An issue is resolved by recording what was done about it, when, and what it cost; from the app
+  one action marks it fixed as of today. A fixed issue stops counting against the vehicle and
+  stops appearing among open problems, but is folded away under a "fixed" heading and struck
+  through rather than deleted — so what went wrong with a vehicle and what was done about it can
+  still be read years later.
+implements:
+- apps/auto/tools.py::update_vehicle_issue
+- apps/auto/routes.py::api_update_issue
+- apps/auto/ui/AutoDetailApp.jsx::IssuesTab
+tests: []
+links: {}
+notes: ''

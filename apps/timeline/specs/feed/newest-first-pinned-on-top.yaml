@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.feed.newest-first-pinned-on-top
+title: Newest first, pinned above everything
+state: live
+autonomy: gated
+behavior: >
+  Entries are shown newest first, with pinned entries above all others regardless of their date,
+  and that ordering holds in every view and under every filter. Editing an entry does not move it
+  — an entry's place in the feed is fixed by when it happened, not by when it was last touched.
+implements:
+- apps/timeline/data.py::list_posts
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+tests: []
+links: {}
+notes: ''

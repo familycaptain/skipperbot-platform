@@ -1,12 +1,17 @@
 kind: specification
 id: auto.issues.report-issue
-title: Report a vehicle issue
+title: Report something wrong with a vehicle
 state: live
 autonomy: gated
-behavior: An issue (a problem or needed repair) is reported against a vehicle with a description
-  and an initial status, getting a vis- id and appearing in the vehicle's issue list.
+behavior: >
+  A problem with a vehicle is reported with a short title, how serious it is, an optional
+  description and when it was first noticed — today unless stated — and it opens as an unresolved
+  issue against that vehicle. A title is the one thing required. A seriousness nobody recognises
+  is recorded as minor rather than refused, so a report is never lost to the wrong word.
 implements:
-- apps/auto/tools.py
+- apps/auto/tools.py::report_vehicle_issue
+- apps/auto/routes.py::api_report_issue
+- apps/auto/data.py::save_issue
 tests: []
 links: {}
 notes: ''

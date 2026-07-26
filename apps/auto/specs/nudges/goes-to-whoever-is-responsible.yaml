@@ -1,0 +1,16 @@
+kind: specification
+id: auto.nudges.goes-to-whoever-is-responsible
+title: Chasing goes to whoever looks after the vehicle
+state: live
+autonomy: gated
+behavior: >
+  Chasing about a vehicle goes to the person responsible for it — or, when nobody has been named,
+  whoever added it — and to nobody else, so one household member is not chased about another's
+  car. A vehicle with no-one attached to it at all is left out of the chasing entirely rather
+  than being sent to everybody.
+implements:
+- apps/auto/hooks.py::_get_responsible_user
+- apps/auto/hooks.py::_vehicle_nag_provider
+tests: []
+links: {}
+notes: ''

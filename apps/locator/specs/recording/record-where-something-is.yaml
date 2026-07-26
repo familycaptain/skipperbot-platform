@@ -1,0 +1,18 @@
+kind: specification
+id: locator.recording.record-where-something-is
+title: Record where a thing is kept
+state: live
+autonomy: gated
+behavior: >
+  Telling Skipper where something is kept — "the camping gear is in the garage", "the passports are in
+  the fireproof box in the closet" — puts the thing on record with the place, the precise spot within
+  that place, and optionally a category, tags, a count, a description of what is in the box and free
+  notes. The reply names the thing and where it was filed, gives it a short handle, and the item's own
+  page is opened so anything wrong can be corrected on the spot.
+implements:
+- apps/locator/tools.py::create_located_item
+- apps/locator/routes.py::api_create_located_item
+- apps/locator/data.py::save_item
+tests: []
+links: {}
+notes: ''

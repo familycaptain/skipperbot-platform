@@ -1,0 +1,22 @@
+kind: specification
+id: auto.upkeep.mark-it-done
+title: Marking recurring work done does two things
+state: live
+autonomy: gated
+behavior: >
+  Marking a recurring item done both moves it on to its next occurrence and writes it into the
+  vehicle's service history as work performed on that date — so the timeline shows it happened
+  and the item stops being due, from one action. Cost, mileage, where it was done and any notes
+  can be recorded at the same time, and the reply gives the new due date. Marking an item done
+  that does not exist reports that and records no work.
+implements:
+- apps/auto/tools.py::complete_maintenance
+- apps/auto/data.py::complete_maintenance
+- apps/auto/routes.py::api_complete_vehicle_maintenance
+- apps/schedules/data.py::complete_schedule
+tests: []
+links: {}
+notes: >
+  Advancing the schedule without leaving a service record was the earlier shape and left a
+  household unable to answer "when did we last do this?" — the two halves are deliberately one
+  action.

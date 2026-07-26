@@ -1,0 +1,15 @@
+kind: specification
+id: locator.access.signing-in-is-required
+title: Nothing is readable without signing in
+state: live
+autonomy: gated
+behavior: >
+  Where the household keeps its things is not readable or changeable by anyone who is not signed in:
+  an unauthenticated request reaches no item, no place and no photo. Whose request it is is taken from
+  the sign-in and never from what the request claims about itself.
+implements:
+- apps/locator/routes.py::_actor
+- app_platform/auth.py::principal_from_request
+tests: []
+links: {}
+notes: ''

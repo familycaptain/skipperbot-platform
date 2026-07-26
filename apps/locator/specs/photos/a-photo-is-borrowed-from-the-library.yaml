@@ -1,0 +1,17 @@
+kind: specification
+id: locator.photos.a-photo-is-borrowed-from-the-library
+title: A photo is borrowed from the household library, not copied
+state: live
+autonomy: gated
+behavior: >
+  Attaching a photo points the item at a picture already in the household's picture library rather than
+  taking a copy, so the same photo can illustrate more than one thing and a correction made in the
+  library is seen everywhere it is used. Detaching a photo from an item leaves the picture itself in the
+  library untouched.
+implements:
+- apps/locator/data.py::link_image
+- apps/locator/data.py::unlink_image
+- apps/locator/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

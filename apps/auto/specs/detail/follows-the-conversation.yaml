@@ -1,0 +1,16 @@
+kind: specification
+id: auto.detail.follows-the-conversation
+title: The screen follows the conversation
+state: live
+autonomy: gated
+behavior: >
+  A change made by talking to Skipper — a service logged, an issue reported, mileage updated —
+  appears on the open Auto screen without anybody refreshing it, and the fleet list also reloads
+  when it is brought back to the front after being away. So the app and the conversation never
+  disagree about what has been recorded.
+implements:
+- apps/auto/ui/AutoListApp.jsx
+- apps/auto/ui/AutoDetailApp.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.posting.changing-a-posted-bounty
+title: Changing a bounty after it is posted
+state: live
+autonomy: gated
+behavior: >
+  A parent can change a bounty's title, description, amount or category after posting and the
+  change shows on the board straight away; anyone else is refused. An amount raised or lowered
+  before the work is approved is the amount that gets paid, because the credit is worked out at
+  the moment of approval and not when the bounty was written.
+implements:
+- apps/bounties/routes.py::api_update_bounty
+- apps/bounties/data.py::update_bounty
+- apps/bounties/ui/BountiesApp.jsx::EditBountyForm
+tests: []
+links: {}
+notes: ''

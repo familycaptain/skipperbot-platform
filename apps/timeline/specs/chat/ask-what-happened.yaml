@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.chat.ask-what-happened
+title: Ask what has been happening
+state: live
+autonomy: gated
+behavior: >
+  Asked what has been happening, Skipper answers from the timeline newest first, giving each
+  entry's identity, author, date, title, the opening of its body, its tags, whether it is pinned,
+  and how many photos it has. The answer covers both what the household wrote and what was logged
+  automatically, which is what makes "what happened this week" answerable in one question.
+implements:
+- apps/timeline/tools.py::list_timeline
+- apps/timeline/data.py::list_posts
+tests: []
+links: {}
+notes: ''

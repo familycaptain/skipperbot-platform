@@ -1,0 +1,21 @@
+kind: specification
+id: auto.condition.log-condition
+title: A snapshot of how a vehicle is holding up
+state: live
+autonomy: gated
+behavior: >
+  A condition report records how a vehicle is holding up at one moment — brakes, tires, battery,
+  bodywork, interior, lights and signals, fluids — each on a fixed scale rather than in prose, so
+  two reports months apart can be compared. It is dated today unless another date is given.
+  Anything not mentioned is recorded as being in good order, so a partial walk-round still
+  produces a complete snapshot instead of a mostly blank one.
+implements:
+- apps/auto/tools.py::log_vehicle_condition
+- apps/auto/routes.py::api_log_condition
+- apps/auto/data.py::save_condition
+tests: []
+links: {}
+notes: >
+  Unmentioned components defaulting to good is the operator's choice: someone describing a
+  walk-round names what is wrong, and treating silence as unknown would leave every report
+  mostly empty.

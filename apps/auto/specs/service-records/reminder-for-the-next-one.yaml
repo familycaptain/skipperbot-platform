@@ -1,0 +1,17 @@
+kind: specification
+id: auto.service-records.reminder-for-the-next-one
+title: A next-due date becomes a reminder
+state: live
+autonomy: gated
+behavior: >
+  Logging work with a date for the next one also raises a reminder for that date, named after the
+  work and the vehicle so it makes sense out of context, and mentioning the next-due mileage when
+  one was given. If the reminder cannot be raised, the work is still recorded and the reply says
+  plainly that the reminder was not created — a failure to schedule the next one never costs the
+  household the record of this one.
+implements:
+- apps/auto/tools.py::log_service
+- apps/reminders/data.py::save_reminder
+tests: []
+links: {}
+notes: ''

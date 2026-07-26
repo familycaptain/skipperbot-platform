@@ -1,0 +1,16 @@
+kind: specification
+id: auto.upkeep.overdue-stands-out
+title: Overdue work is impossible to miss
+state: live
+autonomy: gated
+behavior: >
+  In the app, a recurring item past its due date reads as how many days overdue it is, in alarm
+  colouring; one due today or inside the coming week is highlighted as approaching; one further
+  out is stated plainly; one with no due date at all says that rather than looking overdue. How
+  many items are overdue is badged on the vehicle's upkeep tab, so a vehicle can be judged
+  without reading every line.
+implements:
+- apps/auto/ui/AutoDetailApp.jsx::MaintenanceTab
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,22 @@
+kind: specification
+id: auto.vehicles.recorded-is-recallable
+title: Anything logged can be asked about later
+state: live
+autonomy: gated
+behavior: >
+  Every vehicle, service record, issue, condition report and valuation is folded into Skipper's
+  memory as it is created, changed or deleted, so questions asked later in conversation — "when
+  did we last rotate the tires?", "what did the last oil change cost?", "which car has the
+  cracked windshield?" — are answerable without anybody opening the app. A household that already
+  has records before this began can have them all taken into memory in one pass. None of it
+  leaves the household.
+implements:
+- apps/auto/data.py::save_vehicle
+- apps/auto/data.py::save_service_record
+- apps/auto/data.py::save_issue
+- apps/auto/data.py::save_condition
+- apps/auto/data.py::save_valuation
+- apps/auto/data.py::BACKFILL_ENTITIES
+tests: []
+links: {}
+notes: ''

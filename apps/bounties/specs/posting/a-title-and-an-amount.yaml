@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.posting.a-title-and-an-amount
+title: A title and an amount, to the cent
+state: live
+autonomy: gated
+behavior: >
+  A bounty cannot be posted without a title and a dollar amount, and the app keeps the post action
+  unavailable until both are given. Amounts are held to the cent, so a task described as five
+  dollars fifty is worth exactly that however often it is read back or edited. A category and a
+  longer description are optional.
+implements:
+- apps/bounties/ui/BountiesApp.jsx::CreateBountyForm
+- apps/bounties/routes.py::CreateBountyRequest
+- apps/bounties/tools.py::create_bounty
+tests: []
+links: {}
+notes: ''

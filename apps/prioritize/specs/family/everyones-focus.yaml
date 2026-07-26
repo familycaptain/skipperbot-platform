@@ -1,0 +1,18 @@
+kind: specification
+id: prioritize.family.everyones-focus
+title: See what the whole household is focused on
+state: live
+autonomy: gated
+behavior: >
+  A household member can see everyone's current focus side by side — each person, their pinned items
+  in order, how many of their positions are filled, and whether their daily nudge is on — with "no
+  focus items set" spelled out for anyone who has picked nothing, so an empty row reads as a choice
+  rather than a loading failure. Selecting one of their items opens the app that owns it. The same
+  answer is available by asking what everyone is focused on.
+implements:
+- apps/prioritize/tools.py::get_family_focus
+- agent.py::api_get_family_focus
+- apps/prioritize/ui/PrioritizeApp.jsx::FamilyView
+tests: []
+links: {}
+notes: ''

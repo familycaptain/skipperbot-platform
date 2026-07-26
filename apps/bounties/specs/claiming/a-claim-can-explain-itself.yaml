@@ -1,0 +1,16 @@
+kind: specification
+id: bounties.claiming.a-claim-can-explain-itself
+title: A claim can explain itself
+state: live
+autonomy: gated
+behavior: >
+  A claim can carry a short note — what was actually done, or why it was only half done — and that
+  note is shown to whoever reviews it and to anyone reading the bounty afterwards. A claim with no
+  note is accepted just the same.
+implements:
+- apps/bounties/store.py::submit_bounty
+- apps/bounties/tools.py::submit_bounty
+- apps/bounties/ui/BountiesApp.jsx::BountyCard
+tests: []
+links: {}
+notes: ''

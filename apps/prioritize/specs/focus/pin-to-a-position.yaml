@@ -1,0 +1,16 @@
+kind: specification
+id: prioritize.focus.pin-to-a-position
+title: Pinning to a position evicts what was there
+state: live
+autonomy: gated
+behavior: >
+  Choosing a specific position for an item, instead of letting it take the next free one, puts it
+  there and turns out whatever held that position. The evicted item is not finished or deleted — it
+  goes back to being ordinary backlog and can be promoted again. Pinning an item to a position it
+  already holds leaves it there once, not twice.
+implements:
+- apps/prioritize/data.py::set_focus
+- agent.py::api_promote_focus
+tests: []
+links: {}
+notes: ''

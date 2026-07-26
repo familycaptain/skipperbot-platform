@@ -1,0 +1,15 @@
+kind: specification
+id: auto.detail.unsaved-edits-preserved
+title: An edit in progress is not overwritten
+state: live
+autonomy: gated
+behavior: >
+  While somebody has unsaved changes to a vehicle open, activity elsewhere — Skipper logging a
+  service from a conversation, another member adding an issue — does not reload the screen
+  underneath them and discard what they have typed. Cancelling an edit puts every field back to
+  what was last saved; saving replaces the vehicle and closes editing.
+implements:
+- apps/auto/ui/AutoDetailApp.jsx
+tests: []
+links: {}
+notes: ''

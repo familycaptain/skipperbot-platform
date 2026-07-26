@@ -1,0 +1,19 @@
+kind: specification
+id: folders.recall.filing-makes-it-askable
+title: Filing something makes it askable
+state: live
+autonomy: gated
+behavior: >
+  Anything filed into a folder is read once in the background: its text is broken into passages
+  and its concrete details — names, dates, figures, decisions — are pulled out as standalone facts
+  that make sense on their own. From then on a question can be answered from a filed document
+  without the asker naming the folder, the document, or any id.
+implements:
+- apps/folders/intelligence.py::process_folder_item
+- apps/folders/intelligence.py::_extract_facts
+- apps/folders/intelligence.py::chunk_text
+- apps/folders/data.py::save_knowledge_row
+- apps/folders/handlers.py::_handle_folder_intelligence
+tests: []
+links: {}
+notes: ''

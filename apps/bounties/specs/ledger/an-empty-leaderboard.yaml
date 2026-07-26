@@ -1,0 +1,15 @@
+kind: specification
+id: bounties.ledger.an-empty-leaderboard
+title: An empty leaderboard
+state: live
+autonomy: gated
+behavior: >
+  With no approved bounties in the period asked for, the leaderboard says there are no completions
+  yet rather than showing an empty ranking, and Skipper answers the same way. A household where
+  work has been claimed but nothing approved leaves it empty.
+implements:
+- apps/bounties/ui/BountiesApp.jsx::LeaderboardTab
+- apps/bounties/tools.py::get_bounty_leaderboard
+tests: []
+links: {}
+notes: ''

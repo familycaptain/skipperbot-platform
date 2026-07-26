@@ -1,0 +1,22 @@
+kind: specification
+id: folders.browsing.folders-explains-itself
+title: Folders explains itself in the app
+state: live
+autonomy: gated
+behavior: >
+  Opening Help inside Folders shows the Folders help — what folders are for, what each screen
+  does, and the things worth asking Skipper — and never the platform's 'help is coming soon'
+  placeholder, even though the app also answers to a one-segment address of its own.
+implements:
+- apps/folders/help.md
+- agent.py::api_app_help
+tests:
+- type: unit
+  path: tests/platform/test_app_help_route.py
+  rubric: >
+    Offline source-order gate: the generic per-app help address is registered before any single-
+    segment per-app entity address (Folders' own folder-id address among them), and
+    apps/folders/help.md ships real content, so the in-app Help panel cannot fall back to the
+    placeholder.
+links: {}
+notes: ''

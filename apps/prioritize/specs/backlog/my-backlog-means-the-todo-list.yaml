@@ -1,0 +1,20 @@
+kind: specification
+id: prioritize.backlog.my-backlog-means-the-todo-list
+title: "\"My backlog\" is not this app's list"
+state: live
+autonomy: gated
+behavior: >
+  An unqualified "my backlog" is not the gathered cross-app list: it means the person's own second
+  to-do list in the To-Do app, and Skipper answers it from there. This app's gathered list is what
+  someone gets by asking what they should work on, asking about their priorities, or opening
+  Prioritize — never by using the word "backlog" on its own.
+implements:
+- prompts/BEHAVIOR.md
+- apps/todo/tools.py::get_backlog_list
+- apps/prioritize/tools.py::get_backlog_summary
+- chat_domain.py::_build_system_prompt
+tests: []
+links: {}
+notes: >
+  Operator's reserved-reference rule: "my to-do" and "my backlog" always mean the speaker's own two
+  To-Do lists, so the phrase can never resolve to another member's list or to a cross-app aggregate.

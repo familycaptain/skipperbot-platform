@@ -1,0 +1,16 @@
+kind: specification
+id: auto.nudges.nothing-wrong-nothing-said
+title: A well-kept vehicle produces silence
+state: live
+autonomy: gated
+behavior: >
+  A vehicle with its details filled in, a plan for its oil changes, nothing overdue, and recent
+  condition and valuation checks produces nothing at all — no message, and no reassuring "all
+  good" either. A person with no vehicle needing anything hears nothing that day. Silence is
+  what a well-kept fleet sounds like, so any message from Auto means something actually needs
+  doing.
+implements:
+- apps/auto/hooks.py::_vehicle_nag_provider
+tests: []
+links: {}
+notes: ''

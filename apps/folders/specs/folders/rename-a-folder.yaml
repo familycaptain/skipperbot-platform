@@ -1,0 +1,18 @@
+kind: specification
+id: folders.folders.rename-a-folder
+title: Rename or redescribe a folder
+state: live
+autonomy: gated
+behavior: >
+  A folder's name and description can be changed at any time, and the new name is what every list,
+  breadcrumb, search result and answer uses from then on; the folder keeps its id and everything
+  filed in it. A change that names no field to alter is rejected rather than reported as a
+  successful no-op.
+implements:
+- apps/folders/store.py::update_folder
+- apps/folders/data.py::update_folder
+- agent.py::api_update_folder
+- apps/folders/ui/FolderDetailApp.jsx
+tests: []
+links: {}
+notes: ''

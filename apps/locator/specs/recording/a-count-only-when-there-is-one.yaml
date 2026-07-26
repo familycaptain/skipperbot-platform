@@ -1,0 +1,17 @@
+kind: specification
+id: locator.recording.a-count-only-when-there-is-one
+title: A count is kept only when there is one
+state: live
+autonomy: gated
+behavior: >
+  A count is recorded only when a real number of things is given — "three boxes of decorations" — and
+  saying nothing means the item simply has no count, with none shown in lists, on its page or in
+  answers. Setting an existing item's count to zero clears the count rather than recording that there
+  are none of the thing left; an item nobody has counted and an item counted at zero read the same.
+implements:
+- apps/locator/tools.py::create_located_item
+- apps/locator/tools.py::update_located_item
+- apps/locator/ui/LocatorDetailApp.jsx
+tests: []
+links: {}
+notes: ''

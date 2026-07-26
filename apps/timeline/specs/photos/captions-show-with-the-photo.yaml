@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.photos.captions-show-with-the-photo
+title: A caption is shown with its photo
+state: live
+autonomy: gated
+behavior: >
+  A photo that has a caption shows it over the thumbnail on the card and beneath the image when
+  opened full-screen. A photo with no caption shows the image alone, never an empty caption bar.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::PhotoCarousel
+- apps/timeline/ui/TimelineApp.jsx::Lightbox
+- apps/timeline/data.py::add_photo
+tests: []
+links: {}
+notes: ''

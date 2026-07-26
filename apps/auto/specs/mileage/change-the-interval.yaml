@@ -1,0 +1,18 @@
+kind: specification
+id: auto.mileage.change-the-interval
+title: Changing how often the oil is due
+state: live
+autonomy: gated
+behavior: >
+  How many miles a vehicle goes between oil changes, and how long the quiet period after one
+  lasts, can both be changed afterwards, and the next-due mileage and quiet period are recomputed
+  from the last recorded change rather than from today — so raising the interval does not lose the
+  miles already driven on this oil. Changing nothing reports nothing to change; changing settings
+  on a vehicle with no tracking says so and says to set it up first.
+implements:
+- apps/auto/tools.py::update_oil_tracking
+- apps/auto/data.py::update_oil_tracking_settings
+- apps/auto/routes.py::api_update_oil_tracking
+tests: []
+links: {}
+notes: ''

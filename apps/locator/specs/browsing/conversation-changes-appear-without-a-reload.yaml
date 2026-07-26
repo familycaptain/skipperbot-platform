@@ -1,0 +1,16 @@
+kind: specification
+id: locator.browsing.conversation-changes-appear-without-a-reload
+title: Changes made in conversation appear without a reload
+state: live
+autonomy: gated
+behavior: >
+  Something recorded or moved in conversation shows up in an open list, and on an open item page,
+  without anyone reloading. If that person is midway through editing the same item their unsaved typing
+  is left alone rather than being overwritten by the incoming version. Returning to the app after
+  leaving it open refreshes it too, so a list left up for hours is not quietly out of date.
+implements:
+- apps/locator/ui/LocatorListApp.jsx
+- apps/locator/ui/LocatorDetailApp.jsx
+tests: []
+links: {}
+notes: ''

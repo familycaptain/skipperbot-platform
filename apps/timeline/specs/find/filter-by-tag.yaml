@@ -1,0 +1,17 @@
+kind: specification
+id: timeline.find.filter-by-tag
+title: Narrow to one tag
+state: live
+autonomy: gated
+behavior: >
+  Choosing a tag narrows the feed to entries carrying it, and choosing "all tags" or dismissing
+  the tag restores the full feed. The tags offered are the ones actually in use, most-used first
+  and alphabetical within a count, each shown with how many entries carry it; on a household with
+  none in use the picker says so instead of opening empty.
+implements:
+- apps/timeline/routes.py::api_list_tags
+- apps/timeline/data.py::list_tags
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+tests: []
+links: {}
+notes: ''

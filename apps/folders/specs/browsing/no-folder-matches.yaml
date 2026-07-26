@@ -1,0 +1,15 @@
+kind: specification
+id: folders.browsing.no-folder-matches
+title: A search that matches nothing says so
+state: live
+autonomy: gated
+behavior: >
+  A search no folder matches says so and repeats what was searched for, and never falls back to
+  listing every folder — so an empty result is unmistakably an empty result rather than looking
+  like the whole collection.
+implements:
+- apps/folders/tools.py::search_folders
+- apps/folders/ui/FoldersApp.jsx
+tests: []
+links: {}
+notes: ''

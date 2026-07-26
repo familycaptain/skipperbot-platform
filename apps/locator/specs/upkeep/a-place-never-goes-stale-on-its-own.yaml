@@ -1,0 +1,18 @@
+kind: specification
+id: locator.upkeep.a-place-never-goes-stale-on-its-own
+title: A recorded place never goes stale on its own
+state: live
+autonomy: gated
+behavior: >
+  A thing stays recorded where it was last put until a person says otherwise: nothing expires, nothing
+  is archived for neglect, and Skipper never doubts an old entry, downgrades it, or asks whether the
+  thing is still there. The only sign of age is when the item was last changed, and that is what orders
+  lists and answers.
+implements:
+- apps/locator/data.py::get_all_items
+- apps/locator/data.py::update_item
+tests: []
+links: {}
+notes: >
+  Deliberately no expiry: a household's storage places change rarely, and an answer that says where a
+  thing was last seen is more use than no answer at all.

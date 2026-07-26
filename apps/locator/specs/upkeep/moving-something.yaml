@@ -1,0 +1,16 @@
+kind: specification
+id: locator.upkeep.moving-something
+title: Moving something changes only where it is
+state: live
+autonomy: gated
+behavior: >
+  Saying a thing has moved — "the camping gear is in the attic now" — changes where it is recorded and
+  nothing else: the same item keeps its handle, its name, its photos, its tags, its count and who first
+  recorded it, and it rises to the top of the list as the most recently touched thing. No second record
+  of the old place is left behind to be found by a later search.
+implements:
+- apps/locator/tools.py::update_located_item
+- apps/locator/data.py::update_item
+tests: []
+links: {}
+notes: ''

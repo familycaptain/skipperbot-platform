@@ -1,0 +1,15 @@
+kind: specification
+id: bounties.payouts.the-payee-hears-about-it
+title: The payee hears about it
+state: live
+autonomy: gated
+behavior: >
+  The person paid is told the amount, who recorded it and how it was paid, so a payout is never
+  something that exists only in a parent's copy of the record. Nobody else in the household is
+  told.
+implements:
+- apps/bounties/store.py::record_payment
+- apps/bounties/store.py::_notify_user
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: folders.folders.subfolders
+title: A folder can live inside a folder
+state: live
+autonomy: gated
+behavior: >
+  Naming an existing folder as the parent files the new folder inside it, and opening the child
+  shows the path back to the top level so someone landing there can see where they are and step
+  back up it. Nesting is not limited to one level deep.
+implements:
+- apps/folders/tools.py::create_folder
+- apps/folders/data.py::get_child_folders
+- apps/folders/data.py::get_breadcrumbs
+- apps/folders/ui/FolderDetailApp.jsx
+tests: []
+links: {}
+notes: ''

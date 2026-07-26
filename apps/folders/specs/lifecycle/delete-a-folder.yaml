@@ -1,0 +1,19 @@
+kind: specification
+id: folders.lifecycle.delete-a-folder
+title: Deleting a folder deletes nothing that was in it
+state: live
+autonomy: gated
+behavior: >
+  Deleting a folder takes it out of every list, search and answer, but deletes none of its
+  contents: the documents and attachments live on in the apps that own them, and the folder still
+  remembers holding them if it is ever brought back. Deleting an id that belongs to no folder
+  reports that instead.
+implements:
+- apps/folders/tools.py::delete_folder
+- apps/folders/store.py::delete_folder
+- apps/folders/data.py::delete_folder
+- apps/folders/ui/FolderDetailApp.jsx
+- agent.py::api_delete_folder
+tests: []
+links: {}
+notes: ''

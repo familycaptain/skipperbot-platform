@@ -1,0 +1,16 @@
+kind: specification
+id: locator.finding.similar-names-all-come-back
+title: Similar names all come back, and the person picks
+state: live
+autonomy: gated
+behavior: >
+  Two things with similar names are both returned, each with its own handle, place and precise spot,
+  and the person chooses which they meant — nothing is guessed at, merged, or dropped as the weaker
+  match. Names do not have to be unique, so a household can keep two sets of keys or two toolboxes on
+  record and tell them apart by where each one lives.
+implements:
+- apps/locator/data.py::search_items
+- apps/locator/tools.py::search_located_items
+tests: []
+links: {}
+notes: ''

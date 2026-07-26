@@ -1,13 +1,18 @@
 kind: specification
 id: prioritize.focus.promote-focus
-title: Promote to focus
+title: Promote something into focus
 state: live
 autonomy: gated
-behavior: Promoting moves a backlog item (by its source type + id) into the next available focus
-  slot 1–3.
+behavior: >
+  Promoting an item puts it in the lowest free focus position and confirms which position it took,
+  naming the item rather than echoing an id. An item already in focus is left exactly where it is —
+  never moved, never listed twice. Promoting requires both what kind of thing it is and which one;
+  either one missing is refused, saying which was missing, and nothing is pinned.
 implements:
-- apps/prioritize/tools.py
-- apps/prioritize/ui/PrioritizeApp.jsx
+- apps/prioritize/tools.py::promote_focus
+- apps/prioritize/data.py::promote_to_focus
+- apps/prioritize/ui/PrioritizeApp.jsx::BacklogItem
+- agent.py::api_promote_focus
 tests: []
 links: {}
 notes: ''

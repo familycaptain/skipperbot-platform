@@ -1,0 +1,16 @@
+kind: specification
+id: prioritize.backlog.nothing-to-do
+title: Nothing to do says so
+state: live
+autonomy: gated
+behavior: >
+  A person with nothing actionable anywhere is told so plainly — a short "nothing in your backlog"
+  in the app and a said-out-loud version in conversation — rather than a blank panel or a column of
+  empty group headings. A group with no items in it is left out entirely, so the list only ever shows
+  work that exists.
+implements:
+- apps/prioritize/ui/PrioritizeApp.jsx::PrioritizeApp
+- apps/prioritize/tools.py::get_backlog_summary
+tests: []
+links: {}
+notes: ''

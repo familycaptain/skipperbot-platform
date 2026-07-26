@@ -1,0 +1,17 @@
+kind: specification
+id: locator.recording.what-is-recorded-becomes-something-skipper-knows
+title: What is recorded becomes something Skipper knows
+state: live
+autonomy: gated
+behavior: >
+  Recording a thing folds it into Skipper's longer-term memory of the household — what it is, where it
+  is kept, its category and count — so "where do we keep the spare batteries?" can be answered in
+  conversation months later without anyone opening the app. Taking a thing off the record likewise
+  leaves a note that it is gone, so it stops being offered as an answer.
+implements:
+- apps/locator/data.py::save_item
+- apps/locator/data.py::delete_item
+- app_platform/memory.py::digest_record
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.photos.open-a-photo-full-screen
+title: Open a photo full-screen
+state: live
+autonomy: gated
+behavior: >
+  Clicking a photo opens it full-screen over the feed with its position in the set, its caption if
+  it has one, and controls to step to the previous and next photo; the arrow keys move between
+  photos, and Escape or a click outside closes it and returns the reader to their place in the
+  feed. Stepping stops at the first and last photo rather than wrapping.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::Lightbox
+tests: []
+links: {}
+notes: ''

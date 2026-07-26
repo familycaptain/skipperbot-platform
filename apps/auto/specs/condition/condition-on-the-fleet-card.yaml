@@ -1,0 +1,15 @@
+kind: specification
+id: auto.condition.condition-on-the-fleet-card
+title: The last check shows on the fleet list
+state: live
+autonomy: gated
+behavior: >
+  A vehicle's latest brake, tire and battery ratings appear as colour-coded markers on its card in
+  the fleet list, so the whole fleet can be scanned for the one that needs attention. A vehicle
+  never checked shows no markers at all rather than reassuring green ones.
+implements:
+- apps/auto/data.py::get_vehicle_summary
+- apps/auto/ui/AutoListApp.jsx
+tests: []
+links: {}
+notes: ''

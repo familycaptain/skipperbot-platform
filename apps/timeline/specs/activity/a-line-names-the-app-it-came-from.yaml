@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.activity.a-line-names-the-app-it-came-from
+title: Each line names where the change happened
+state: live
+autonomy: gated
+behavior: >
+  Every automatically logged line shows which app the change happened in, marked distinctly enough
+  that a day's activity can be scanned by app at a glance, and carries the identity of the record
+  it describes so the line can be traced back to it. A line with no app of origin is still shown,
+  just unmarked.
+implements:
+- app_platform/activity.py::_write_activity_post
+- apps/timeline/ui/TimelineApp.jsx::ActivityCard
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,19 @@
+kind: specification
+id: folders.browsing.open-a-folder
+title: Open a folder and see everything in it
+state: live
+autonomy: gated
+behavior: >
+  Opening a folder shows its description, who it is marked for, how many items and subfolders it
+  holds, the path back to the top level, the subfolders themselves, and every item with its title
+  and either its length in words or its file type. An item Folders cannot look up is still listed,
+  by its id, rather than being hidden.
+implements:
+- apps/folders/tools.py::get_folder
+- apps/folders/store.py::get_folder_detail
+- apps/folders/data.py::get_items
+- apps/folders/ui/FolderDetailApp.jsx
+- agent.py::api_get_folder
+tests: []
+links: {}
+notes: ''

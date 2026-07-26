@@ -1,0 +1,14 @@
+kind: specification
+id: timeline.links.at-most-three-previews
+title: An entry full of links is not a wall of cards
+state: live
+autonomy: gated
+behavior: >
+  At most three links in one entry are previewed, and an address repeated in the same entry is
+  previewed once, so an entry that is mostly a list of links stays an entry rather than becoming a
+  wall of cards.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::LinkPreviews
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: folders.folders.move-a-folder-under-another
+title: Moving a folder takes its contents with it
+state: live
+autonomy: gated
+behavior: >
+  A folder can be re-parented, and its whole subtree goes with it: the items filed in it and the
+  folders inside it are untouched, so only the path above it changes. Clearing the parent returns
+  it to the top level.
+implements:
+- apps/folders/store.py::update_folder
+- apps/folders/data.py::update_folder
+- agent.py::api_update_folder
+- apps/folders/data.py::get_breadcrumbs
+tests: []
+links: {}
+notes: ''

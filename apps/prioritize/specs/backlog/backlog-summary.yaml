@@ -1,12 +1,17 @@
 kind: specification
 id: prioritize.backlog.backlog-summary
-title: Backlog summary
+title: Asked what to work on, Skipper reads the backlog out
 state: live
 autonomy: gated
-behavior: The backlog summary aggregates actionable items across goals, reminders, schedules,
-  to-dos, and any other registered provider into one ranked list.
+behavior: >
+  Asked what they should work on, or to show what is outstanding, a person hears back the same
+  gathered backlog the app shows: every kind of work that has items, each headed and counted, with
+  the goal hierarchy kept intact. A group longer than ten items is cut short with a count of how many
+  more there are, so an answer stays readable in a chat window. With nothing outstanding Skipper says
+  so instead of reciting headings.
 implements:
-- apps/prioritize/tools.py
+- apps/prioritize/tools.py::get_backlog_summary
+- apps/prioritize/data.py::get_backlog
 tests: []
 links: {}
 notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: auto.issues.open-count-follows-the-vehicle
+title: How many are open follows the vehicle around
+state: live
+autonomy: gated
+behavior: >
+  How many issues a vehicle has unresolved is shown on its card in the fleet list and badged on
+  its issues tab, so a vehicle with something wrong is visible without opening it. The count
+  covers everything not yet fixed, including issues only being kept an eye on, and disappears
+  entirely once nothing is outstanding.
+implements:
+- apps/auto/data.py::get_vehicle_summary
+- apps/auto/ui/AutoListApp.jsx
+- apps/auto/ui/AutoDetailApp.jsx
+tests: []
+links: {}
+notes: ''

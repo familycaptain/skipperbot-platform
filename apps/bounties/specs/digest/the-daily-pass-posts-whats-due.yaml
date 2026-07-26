@@ -1,0 +1,15 @@
+kind: specification
+id: bounties.digest.the-daily-pass-posts-whats-due
+title: The daily pass posts what is due
+state: live
+autonomy: gated
+behavior: >
+  Before the daily board goes out, every recurring bounty whose interval has elapsed is posted, so
+  the message people read already includes the work that has just come round again instead of
+  describing yesterday's board.
+implements:
+- apps/bounties/handlers.py::handle_daily_digest
+- apps/bounties/store.py::process_due_templates
+tests: []
+links: {}
+notes: ''

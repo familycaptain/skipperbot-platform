@@ -1,0 +1,16 @@
+kind: specification
+id: auto.detail.people-picked-from-household
+title: Owner and responsible person are picked, not typed
+state: live
+autonomy: gated
+behavior: >
+  Editing a vehicle offers the household's actual members to choose between for owner and for
+  responsible person, alongside a default meaning "whoever added it", rather than a free-text
+  name. So chasing about a vehicle cannot be aimed at a misspelled person who will never
+  receive it.
+implements:
+- apps/auto/ui/AutoDetailApp.jsx::EditForm
+- apps/auto/routes.py::api_update_vehicle
+tests: []
+links: {}
+notes: ''

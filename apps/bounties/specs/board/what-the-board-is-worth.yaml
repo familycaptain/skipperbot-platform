@@ -1,0 +1,15 @@
+kind: specification
+id: bounties.board.what-the-board-is-worth
+title: What the board is worth
+state: live
+autonomy: gated
+behavior: >
+  The board shows three running totals in money above the list — what is still open to be claimed,
+  what is claimed and waiting on a parent, and what has already been approved — so a member can
+  see what there is to earn and a parent can see what they owe. The totals count every bounty in
+  the household, not only those currently filtered into view.
+implements:
+- apps/bounties/ui/BountiesApp.jsx::BoardTab
+tests: []
+links: {}
+notes: ''

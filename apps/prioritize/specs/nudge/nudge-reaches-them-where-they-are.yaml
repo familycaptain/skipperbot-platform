@@ -1,0 +1,16 @@
+kind: specification
+id: prioritize.nudge.nudge-reaches-them-where-they-are
+title: The nudge reaches a person where they are
+state: live
+autonomy: gated
+behavior: >
+  The daily nudge is said by Skipper the same way anything else it raises unprompted is said: it lands
+  in that person's web console record whether or not they are looking at it, and additionally reaches
+  them on Discord when that is where they live. Replying to it in either place continues the same
+  conversation, so answering the nudge is how most people set their focus.
+implements:
+- apps/goals/pm_runner.py::_deliver_pm_messages
+- app_platform/speak.py::speak
+tests: []
+links: {}
+notes: ''

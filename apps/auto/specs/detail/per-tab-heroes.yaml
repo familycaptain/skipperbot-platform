@@ -1,21 +1,19 @@
 kind: specification
 id: auto.detail.per-tab-heroes
-title: Auto vehicle-detail tabs show a per-tab empty-state hero when blank
+title: An empty tab explains what it is for
 state: live
 autonomy: gated
-behavior: Each Auto vehicle-detail tab (maintenance/services/issues/condition/value), when
-  empty for the vehicle, shows its own EmptyStateHero (Auto icon + tab-specific title + blurb)
-  instead of bare 'No x yet.' text (Value, which previously showed nothing when empty, now
-  shows a hero). A tab with records shows its normal list. A dedicated subLoading state gates
-  the heroes so they don't flash during the concurrent sub-data fetch.
+behavior: >
+  Each tab of a vehicle's screen — upkeep, service history, issues, condition, value — explains
+  what it is for and how to start when that vehicle has nothing of the kind yet, instead of a
+  bare "none yet". A tab with records shows its list as normal. The explanation is held back
+  until the vehicle's records have actually arrived, so it never flashes on a vehicle that does
+  have them.
 implements:
 - apps/auto/ui/AutoDetailApp.jsx
+- web/src/components/PristineEmpty.jsx
 tests: []
 links: {}
-notes: 'Verified LIVE at Gate-2 (test host): feature bundle compiled; the empty Tesla detail
-  tabs (Maintenance default, Service History, Issues) render the hero (Car icon + title +
-  blurb, bare text gone); the populated Condition tab (8 reports) shows its list with no hero;
-  no flash/crash. AutoDetailApp is a SUBVIEW (auto-vehicle) -> heroes render directly with
-  a local DETAIL_HEROES const; NO ev-52 registry/guardrail/spec change (the guardrail keys
-  off primary ids + excludes subviews). Sibling of ev-65. Per-tab blurbs operator-owned.'
-verified: true
+notes: >
+  Per-tab rather than one screen-level empty state, because a vehicle commonly has plenty of
+  service history and no valuations at all; the wording of each is the operator's.

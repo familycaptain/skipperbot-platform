@@ -1,0 +1,18 @@
+kind: specification
+id: locator.browsing.an-untouched-app-invites-a-first-item
+title: An untouched app invites a first item
+state: live
+autonomy: gated
+behavior: >
+  With nothing recorded at all, the app explains what it is for and how to start rather than showing an
+  empty list, and the way to add the first thing stays in reach. When there IS something on record but
+  a search or a chosen place matches none of it, the app says nothing matched — so an over-narrow
+  search is never mistaken for a fresh start. Asked in conversation with nothing on record, Skipper
+  says nothing is tracked yet.
+implements:
+- apps/locator/ui/LocatorListApp.jsx
+- apps/locator/tools.py::list_located_items
+- web/src/components/PristineEmpty.jsx
+tests: []
+links: {}
+notes: ''

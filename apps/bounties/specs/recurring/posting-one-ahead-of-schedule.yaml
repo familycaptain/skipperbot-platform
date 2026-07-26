@@ -1,0 +1,15 @@
+kind: specification
+id: bounties.recurring.posting-one-ahead-of-schedule
+title: Posting one ahead of schedule
+state: live
+autonomy: gated
+behavior: >
+  A parent can post an instance of a recurring bounty straight away without waiting for its
+  interval, for the week the task needs doing early. Asking this of a paused recurring bounty, or
+  of one that no longer exists, is refused and says why.
+implements:
+- apps/bounties/routes.py::api_generate_from_template
+- apps/bounties/store.py::generate_from_template
+tests: []
+links: {}
+notes: ''

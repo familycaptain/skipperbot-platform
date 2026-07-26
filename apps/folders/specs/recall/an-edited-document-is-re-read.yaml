@@ -1,0 +1,16 @@
+kind: specification
+id: folders.recall.an-edited-document-is-re-read
+title: Editing a filed document refreshes what is known about it
+state: live
+autonomy: gated
+behavior: >
+  Editing a document that lives in a folder makes the folder read it again, so later answers
+  reflect what the document says now rather than what it said when it was filed — including when
+  the edit was Skipper's own. The person editing waits for none of it.
+implements:
+- apps/folders/intelligence.py::reprocess_folder_item
+- apps/documents/store.py::_trigger_folder_reprocess
+- apps/folders/data.py::get_folders_containing
+tests: []
+links: {}
+notes: ''

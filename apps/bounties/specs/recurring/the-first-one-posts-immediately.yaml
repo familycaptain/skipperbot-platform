@@ -1,0 +1,16 @@
+kind: specification
+id: bounties.recurring.the-first-one-posts-immediately
+title: The first one posts immediately
+state: live
+autonomy: gated
+behavior: >
+  Setting up a recurring bounty posts its first instance on the board at once, so nobody waits a
+  whole interval to see whether it works. That instance is an ordinary bounty — claimable,
+  reviewable and payable like any other — and the household is told about it the same way as a
+  one-off.
+implements:
+- apps/bounties/store.py::create_template
+- apps/bounties/store.py::generate_from_template
+tests: []
+links: {}
+notes: ''

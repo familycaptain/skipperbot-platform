@@ -1,0 +1,17 @@
+kind: specification
+id: timeline.activity.every-change-becomes-a-line
+title: Changes anywhere become lines here
+state: live
+autonomy: gated
+behavior: >
+  When any app records that someone created, updated, completed, removed, or logged something, a
+  dated line appears in that person's activity view naming what happened — the action, the kind of
+  thing, and its name where the record has one. Nobody has to write it, and it happens for every
+  app without each one having to ask.
+implements:
+- app_platform/activity.py::log_activity
+- app_platform/activity.py::_make_title
+- app_platform/activity.py::_write_activity_post
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: locator.places.asking-what-places-exist
+title: Asking what places exist
+state: live
+autonomy: gated
+behavior: >
+  Asked what places the household has, Skipper lists each named place with its description and its
+  handle, in the household's own order. With none named it says so plainly instead of returning an
+  empty list, which is the cue to name the first one.
+implements:
+- apps/locator/tools.py::list_item_locations
+- apps/locator/data.py::get_all_locations
+tests: []
+links: {}
+notes: ''

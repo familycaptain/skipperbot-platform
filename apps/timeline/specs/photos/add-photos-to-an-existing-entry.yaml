@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.photos.add-photos-to-an-existing-entry
+title: Photos can be added to an entry already posted
+state: live
+autonomy: gated
+behavior: >
+  Photos can be attached to an entry after it was written; new ones are appended after the ones
+  already there rather than replacing them, and photos dropped in the editor are detached when the
+  edit is saved. Attaching to an entry that does not exist reports that and attaches nothing.
+implements:
+- apps/timeline/routes.py::api_add_photos
+- apps/timeline/tools.py::add_timeline_photos
+- apps/timeline/data.py::add_photo
+tests: []
+links: {}
+notes: ''

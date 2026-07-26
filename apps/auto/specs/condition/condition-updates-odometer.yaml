@@ -1,0 +1,15 @@
+kind: specification
+id: auto.condition.condition-updates-odometer
+title: A condition report with mileage updates the odometer
+state: live
+autonomy: gated
+behavior: >
+  A mileage reading noted on a condition report also becomes the vehicle's current odometer, so
+  the reading taken during a check counts everywhere mileage matters rather than only inside that
+  report. A report with no mileage leaves the odometer as it was.
+implements:
+- apps/auto/tools.py::log_vehicle_condition
+- apps/auto/routes.py::api_log_condition
+tests: []
+links: {}
+notes: ''

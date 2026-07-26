@@ -1,0 +1,15 @@
+kind: specification
+id: folders.browsing.an-empty-folder
+title: An empty folder says it is empty
+state: live
+autonomy: gated
+behavior: >
+  A folder holding neither items nor subfolders says so plainly and points at the ways to fill it
+  — file something that already exists, write a new document in place, or add a subfolder — rather
+  than showing an unexplained blank area.
+implements:
+- apps/folders/tools.py::get_folder
+- apps/folders/ui/FolderDetailApp.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: bounties.recurring.pausing-stops-new-ones
+title: Pausing stops new ones
+state: live
+autonomy: gated
+behavior: >
+  A paused recurring bounty generates nothing — not on the daily pass, and not when a parent asks
+  for one right now, which is refused. Instances already on the board are left alone and can still
+  be claimed and approved. Resuming makes it eligible again from wherever its interval had
+  reached, so a long pause means the next one is due immediately.
+implements:
+- apps/bounties/routes.py::api_update_template
+- apps/bounties/store.py::generate_from_template
+- apps/bounties/data.py::get_due_templates
+- apps/bounties/ui/BountiesApp.jsx::TemplateCard
+tests: []
+links: {}
+notes: ''

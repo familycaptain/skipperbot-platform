@@ -1,11 +1,20 @@
 kind: specification
 id: auto.vehicles.list-vehicles
-title: List vehicles
+title: The fleet at a glance
 state: live
 autonomy: gated
-behavior: All household vehicles are listed with their key details (name, mileage, status).
+behavior: >
+  Every vehicle is listed with enough status to judge it without opening it: current mileage,
+  plate, how many issues are open, what service is due next and when, and markers for the
+  brakes, tires and battery from its most recent condition check. A vehicle with nothing wrong
+  and nothing due shows none of those, so the ones needing attention are the ones that stand
+  out. With no vehicles tracked at all, the app explains what it is for instead of showing an
+  empty list, and Skipper says plainly that no vehicles are tracked yet.
 implements:
-- apps/auto/tools.py
+- apps/auto/tools.py::list_vehicles
+- apps/auto/routes.py::api_list_vehicles
+- apps/auto/data.py::get_vehicle_summary
+- apps/auto/ui/AutoListApp.jsx
 tests: []
 links: {}
 notes: ''

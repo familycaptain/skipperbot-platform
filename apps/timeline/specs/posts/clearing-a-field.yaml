@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.posts.clearing-a-field
+title: Clearing a title is different from leaving it alone
+state: live
+autonomy: gated
+behavior: >
+  Emptying an entry's title and saving removes the title, and the entry then shows with its body
+  alone. A field the editor did not touch keeps what it had — an edit never blanks something it was
+  not asked to change, so editing only the tags cannot lose the body.
+implements:
+- apps/timeline/data.py::update_post
+- apps/timeline/tools.py::update_timeline_post
+- apps/timeline/ui/TimelineApp.jsx::PostComposer
+tests: []
+links: {}
+notes: ''

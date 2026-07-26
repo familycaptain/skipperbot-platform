@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.tags.counts-follow-edits
+title: Counts track what the entries actually say
+state: live
+autonomy: gated
+behavior: >
+  Adding a tag to an entry raises that tag's count, removing one lowers it, and deleting an entry
+  lowers the count of every tag it carried. A tag no entry uses any more stops being offered at
+  all rather than lingering at zero, and a count never falls below zero.
+implements:
+- apps/timeline/data.py::_update_tag_index_add
+- apps/timeline/data.py::_update_tag_index_remove
+- apps/timeline/data.py::update_post
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: auto.upkeep.never-winds-the-odometer-back
+title: Recording an old job never winds the odometer back
+state: live
+autonomy: gated
+behavior: >
+  A mileage reading given while marking recurring work done updates the vehicle's odometer only
+  when it is higher than the reading already on file. So back-filling a job done months ago at a
+  lower mileage cannot make the vehicle look as though it has driven fewer miles than it has, and
+  cannot make an oil change that is due look far away.
+implements:
+- apps/auto/data.py::complete_maintenance
+- apps/auto/data.py::record_mileage_check
+tests: []
+links: {}
+notes: ''

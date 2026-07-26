@@ -1,0 +1,19 @@
+kind: specification
+id: prioritize.backlog.only-your-own-work
+title: A person's backlog is their own work
+state: live
+autonomy: gated
+behavior: >
+  The backlog is built for one named person and holds only work that is theirs: tasks assigned to
+  them, projects and goals they own or that contain their assigned work, their own reminders and
+  nags, schedules assigned to them, their own to-do list. Every contributing app is asked for that
+  one person's items, so household-wide work does not land in everyone's list, and one member's
+  backlog never discloses another member's items.
+implements:
+- apps/prioritize/data.py::get_backlog
+- apps/prioritize/data.py::_backlog_goals_tree
+- apps/prioritize/data.py::register_backlog_provider
+- app_platform/auth.py::resolve_target
+tests: []
+links: {}
+notes: ''

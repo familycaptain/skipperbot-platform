@@ -1,0 +1,17 @@
+kind: specification
+id: locator.recording.every-item-says-who-recorded-it
+title: Every item says who recorded it
+state: live
+autonomy: gated
+behavior: >
+  Each item carries the name of whoever put it on record, shown on its page with the date it was
+  recorded, so a place that looks wrong can be asked about rather than guessed at. Recorded from the
+  app that name is always the signed-in person — a caller cannot claim to be someone else — and it
+  stays as first recorded however many other people edit the item afterwards.
+implements:
+- apps/locator/routes.py::_actor
+- apps/locator/data.py::save_item
+- apps/locator/ui/LocatorDetailApp.jsx
+tests: []
+links: {}
+notes: ''

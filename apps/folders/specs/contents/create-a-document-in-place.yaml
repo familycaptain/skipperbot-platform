@@ -1,0 +1,17 @@
+kind: specification
+id: folders.contents.create-a-document-in-place
+title: Write a new document straight into a folder
+state: live
+autonomy: gated
+behavior: >
+  Creating a document from inside a folder makes the document and files it there in the same step,
+  then opens it for editing so the person can keep typing where they were. The body may be left
+  empty; the title may not. If the folder does not exist, no document is created.
+implements:
+- apps/folders/tools.py::create_doc_in_folder
+- apps/folders/store.py::create_doc_in_folder
+- apps/folders/ui/FolderDetailApp.jsx
+- agent.py::api_create_doc_in_folder
+tests: []
+links: {}
+notes: ''

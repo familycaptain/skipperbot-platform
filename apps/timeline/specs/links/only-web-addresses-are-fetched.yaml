@@ -1,0 +1,17 @@
+kind: specification
+id: timeline.links.only-web-addresses-are-fetched
+title: Only web pages, and only the beginning of one
+state: live
+autonomy: gated
+behavior: >
+  Only http and https addresses are ever fetched for a preview, and only the beginning of a page
+  is read before the fetch is abandoned, so a link in an entry cannot make the household's server
+  open something that is not a web page or pull an unbounded amount of data.
+implements:
+- apps/timeline/routes.py::api_link_preview
+tests: []
+links: {}
+notes: >
+  The fetch happens on the household's own server rather than in the reader's browser, so what an
+  entry's text is allowed to make it fetch is a boundary in its own right, not an implementation
+  detail.

@@ -1,11 +1,18 @@
 kind: specification
 id: auto.vehicles.update-vehicle
-title: Update a vehicle
+title: Editing changes only what was named
 state: live
 autonomy: gated
-behavior: An existing vehicle's fields (make/model/trim/color/status) can be edited and saved.
+behavior: >
+  Updating a vehicle changes only the fields actually given and leaves every other one alone, so
+  correcting the plate cannot wipe the VIN. Year and mileage can be explicitly emptied back to
+  unknown as well as corrected. An edit that names no fields at all reports that there was
+  nothing to change, and editing a vehicle that is not tracked says so rather than quietly
+  creating one.
 implements:
-- apps/auto/tools.py
+- apps/auto/tools.py::update_vehicle
+- apps/auto/routes.py::api_update_vehicle
+- apps/auto/data.py::update_vehicle
 tests: []
 links: {}
 notes: ''

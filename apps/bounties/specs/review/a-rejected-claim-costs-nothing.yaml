@@ -1,0 +1,15 @@
+kind: specification
+id: bounties.review.a-rejected-claim-costs-nothing
+title: A rejected claim costs nothing
+state: live
+autonomy: gated
+behavior: >
+  A rejected claim moves no money in either direction: nothing was credited while the claim was
+  waiting, so nothing is clawed back and no ledger line appears. Somebody whose claim is rejected
+  has exactly the balance they had before they claimed, and their standing in the household
+  leaderboard is unchanged.
+implements:
+- apps/bounties/store.py::reject_bounty
+tests: []
+links: {}
+notes: ''

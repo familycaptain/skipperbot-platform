@@ -1,0 +1,17 @@
+kind: specification
+id: locator.recording.a-name-is-enough
+title: A name is the only thing required
+state: live
+autonomy: gated
+behavior: >
+  A thing can be put on record before anyone has decided where it will live: a name on its own is
+  accepted and the item reads as having no location set until a place is filled in later. Nothing else
+  — place, precise spot, category, tags, count, description, notes — is required, and an item holding
+  only a name is a finished record rather than a draft awaiting completion.
+implements:
+- apps/locator/tools.py::create_located_item
+- apps/locator/tools.py::_format_item
+- apps/locator/ui/LocatorDetailApp.jsx
+tests: []
+links: {}
+notes: ''

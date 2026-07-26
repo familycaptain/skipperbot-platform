@@ -1,0 +1,20 @@
+kind: specification
+id: locator.upkeep.an-omitted-detail-is-not-an-erasure
+title: An omitted detail is never read as an erasure
+state: live
+autonomy: gated
+behavior: >
+  Saying nothing about a detail means "leave it as it is", never "empty it", so correcting where a thing
+  is kept cannot silently wipe its notes, its category or its tags. Emptying a detail is a thing a
+  person has to ask for outright, and it then really is emptied; a count is emptied by setting it to
+  zero. Asked in conversation, a detail left blank is read as saying nothing about it rather than as an
+  instruction to clear it.
+implements:
+- apps/locator/tools.py::update_located_item
+- apps/locator/routes.py::api_update_located_item
+- apps/locator/data.py::update_item
+tests: []
+links: {}
+notes: >
+  Omission-means-unchanged is what makes a partial correction always safe; it is why clearing a detail
+  has to be said explicitly rather than implied by a blank.

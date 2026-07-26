@@ -1,0 +1,18 @@
+kind: specification
+id: auto.mileage.the-oil-card
+title: The oil-change card tells the whole story
+state: live
+autonomy: gated
+behavior: >
+  A vehicle's upkeep screen carries one card for oil changes showing when it was last changed and
+  at what mileage, the mileage the next one is due at, the current reading, how far is left or how
+  far overdue it is, and a plain status — overdue, in its quiet period, or being watched. During
+  the quiet period it says when that ends instead of asking for anything; outside it, a reading
+  can be entered on the card itself. With nothing set up, the card says so and offers to start
+  from the vehicle's current mileage.
+implements:
+- apps/auto/ui/AutoDetailApp.jsx::OilTrackingCard
+- apps/auto/routes.py::api_get_oil_tracking
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,20 @@
+kind: specification
+id: folders.contents.remove-an-item
+title: Take something out of a folder without deleting it
+state: live
+autonomy: gated
+behavior: >
+  Removing an item takes it out of that folder and makes the folder forget what it had learned
+  from it, without deleting the item: it stays in the app that owns it and stays filed in any
+  other folder it was in. Removing something the folder does not hold reports that rather than
+  reporting success.
+implements:
+- apps/folders/tools.py::remove_from_folder
+- apps/folders/store.py::remove_item
+- apps/folders/data.py::remove_item
+- apps/folders/data.py::delete_knowledge_for_entity
+- apps/folders/ui/FolderDetailApp.jsx
+- agent.py::api_remove_folder_item
+tests: []
+links: {}
+notes: ''

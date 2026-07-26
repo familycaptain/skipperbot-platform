@@ -1,0 +1,15 @@
+kind: specification
+id: prioritize.focus.focus-is-remembered
+title: Focus persists until it is changed
+state: live
+autonomy: gated
+behavior: >
+  A person's focus is remembered indefinitely — across sign-outs, restarts and upgrades. It never
+  expires, resets overnight, or rotates on its own. The only two things that change it are the person
+  choosing differently and the underlying item being finished in the app that owns it.
+implements:
+- apps/prioritize/data.py::get_focus_slots
+- apps/prioritize/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

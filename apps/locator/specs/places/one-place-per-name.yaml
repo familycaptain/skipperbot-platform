@@ -1,0 +1,16 @@
+kind: specification
+id: locator.places.one-place-per-name
+title: One place per name
+state: live
+autonomy: gated
+behavior: >
+  Naming a place that already exists never produces a second place with that name: the request fails
+  and the existing place keeps its description and its position in the order. A household cannot end up
+  with two indistinguishable "Garage" chips, one of which holds half the things.
+implements:
+- apps/locator/data.py::create_location
+- apps/locator/tools.py::create_item_location
+- apps/locator/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

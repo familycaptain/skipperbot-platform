@@ -1,0 +1,15 @@
+kind: specification
+id: bounties.recurring.never-two-of-the-same-at-once
+title: Never two of the same at once
+state: live
+autonomy: gated
+behavior: >
+  While an instance of a recurring bounty is still open or waiting on a parent, no further
+  instance of it is generated, so the board never shows the same recurring task twice over and
+  nobody can be paid twice for one turn of it.
+implements:
+- apps/bounties/data.py::get_due_templates
+- apps/bounties/store.py::process_due_templates
+tests: []
+links: {}
+notes: ''

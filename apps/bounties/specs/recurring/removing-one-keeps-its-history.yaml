@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.recurring.removing-one-keeps-its-history
+title: Removing one keeps its history
+state: live
+autonomy: gated
+behavior: >
+  Deleting a recurring bounty stops future instances but leaves the bounties it already posted on
+  the board, with the approvals and credits that came from them intact, so tidying up templates
+  never rewrites history or anyone's balance. Deleting one that does not exist says it was not
+  found.
+implements:
+- apps/bounties/routes.py::api_delete_template
+- apps/bounties/data.py::delete_template
+- apps/bounties/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

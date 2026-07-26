@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.tags.tags-are-household-wide
+title: One vocabulary for the household
+state: live
+autonomy: gated
+behavior: >
+  Tags are a single household-wide vocabulary rather than per person: a tag one person used is
+  suggested to everyone, and the counts are counts across the whole journal, not per author and
+  not per view.
+implements:
+- apps/timeline/data.py::list_tags
+- apps/timeline/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

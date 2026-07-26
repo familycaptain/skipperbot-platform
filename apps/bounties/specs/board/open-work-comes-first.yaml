@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.board.open-work-comes-first
+title: Open work comes first
+state: live
+autonomy: gated
+behavior: >
+  Everything still open is listed before anything waiting on a parent, and both before bounties
+  already settled, so the tasks somebody could actually pick up sit at the top of the board.
+  Within each group the most recently posted comes first. Asking Skipper for the board gives the
+  same ordering, and a very long board is cut off rather than returned in full.
+implements:
+- apps/bounties/data.py::get_all_bounties
+- apps/bounties/tools.py::list_bounties
+- apps/bounties/ui/BountiesApp.jsx::BoardTab
+tests: []
+links: {}
+notes: ''

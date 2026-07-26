@@ -1,0 +1,17 @@
+kind: specification
+id: prioritize.focus.focus-stays-on-screen
+title: Focus is visible without opening anything
+state: live
+autonomy: gated
+behavior: >
+  The web console keeps the person's focus on screen above whatever else they are doing — their
+  pinned items in order, each one opening the app that owns it when selected. While they have fewer
+  than three, that strip carries a standing invitation to fill the rest, naming how many are open.
+  It updates as soon as focus changes in the app and re-reads itself periodically, so a change made
+  somewhere else appears without a reload.
+implements:
+- web/src/components/Shell.jsx::loadFocus
+- apps/prioritize/ui/PrioritizeApp.jsx::PrioritizeApp
+tests: []
+links: {}
+notes: ''

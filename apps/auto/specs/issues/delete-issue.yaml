@@ -1,0 +1,17 @@
+kind: specification
+id: auto.issues.delete-issue
+title: Deleting an issue is not the same as fixing it
+state: live
+autonomy: gated
+behavior: >
+  An issue can be deleted permanently, for one raised by mistake or against the wrong vehicle,
+  and this is deliberately different from fixing it: a deleted issue leaves no trace, a fixed one
+  stays in the vehicle's record. Deleting one that does not exist reports that rather than
+  claiming success.
+implements:
+- apps/auto/tools.py::delete_vehicle_issue
+- apps/auto/routes.py::api_delete_issue
+- apps/auto/data.py::delete_issue
+tests: []
+links: {}
+notes: ''

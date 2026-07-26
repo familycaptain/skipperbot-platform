@@ -1,0 +1,16 @@
+kind: specification
+id: folders.lifecycle.subfolders-become-top-level
+title: A deleted folder's subfolders survive it
+state: live
+autonomy: gated
+behavior: >
+  Deleting a folder does not delete the folders inside it: each one is promoted to the top level
+  with its own name, contents and subfolders intact, where it can be found in the ordinary list.
+  Nothing is ever deleted merely because the folder above it was.
+implements:
+- apps/folders/data.py::delete_folder
+- apps/folders/store.py::delete_folder
+- apps/folders/tools.py::delete_folder
+tests: []
+links: {}
+notes: ''

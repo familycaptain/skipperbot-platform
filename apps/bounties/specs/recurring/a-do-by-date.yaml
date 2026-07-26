@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.recurring.a-do-by-date
+title: A recurring bounty carries a do-by date
+state: live
+autonomy: gated
+behavior: >
+  An instance generated from a recurring bounty carries the date it is meant to be done by, one
+  interval out from when it was posted, and the board shows it — so somebody can see which work is
+  running out of time. A one-off bounty posted by hand carries no such date unless one is given.
+implements:
+- apps/bounties/store.py::generate_from_template
+- apps/bounties/ui/BountiesApp.jsx::BountyCard
+tests: []
+links: {}
+notes: >
+  The date is shown as information for the household. Nothing in the app acts on it when it
+  passes.

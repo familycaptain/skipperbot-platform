@@ -1,0 +1,16 @@
+kind: specification
+id: auto.value.delete-valuation
+title: Removing a valuation
+state: live
+autonomy: gated
+behavior: >
+  A valuation can be removed permanently, for a figure that was mistyped or looked up for the
+  wrong vehicle, and removing one that no longer exists reports that rather than claiming success.
+  Removing the newest promotes the one before it to being what the vehicle is currently worth.
+implements:
+- apps/auto/tools.py::delete_vehicle_valuation
+- apps/auto/routes.py::api_delete_valuation
+- apps/auto/data.py::delete_valuation
+tests: []
+links: {}
+notes: ''

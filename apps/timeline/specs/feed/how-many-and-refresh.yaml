@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.feed.how-many-and-refresh
+title: How many there are, and reloading in place
+state: live
+autonomy: gated
+behavior: >
+  The feed states how many entries match what is currently being viewed, counted across the whole
+  match rather than the page on screen, and names them as posts in the family view and entries in
+  the activity view. A refresh control reloads the current view without losing the filters, and
+  shows that it is working while it does.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+- apps/timeline/data.py::list_posts
+tests: []
+links: {}
+notes: ''

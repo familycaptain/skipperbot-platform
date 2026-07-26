@@ -1,0 +1,18 @@
+kind: specification
+id: prioritize.backlog.uninstalled-app-is-absent
+title: An app that isn't installed is simply absent
+state: live
+autonomy: gated
+behavior: >
+  The backlog holds groups only for the apps this install actually has. An app that was never
+  installed, or has been removed, produces no group, no items and no error — not an empty heading and
+  not a broken row. An app added later contributes its work as soon as the platform has loaded it,
+  with no change to Prioritize itself.
+implements:
+- apps/prioritize/data.py::register_backlog_provider
+- apps/prioritize/data.py::get_backlog
+- apps/auto/hooks.py::register_hooks
+- apps/home/hooks.py::register_hooks
+tests: []
+links: {}
+notes: ''

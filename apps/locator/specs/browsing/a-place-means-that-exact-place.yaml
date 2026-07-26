@@ -1,0 +1,17 @@
+kind: specification
+id: locator.browsing.a-place-means-that-exact-place
+title: Narrowing by place means that exact place
+state: live
+autonomy: gated
+behavior: >
+  Narrowing to a place matches the whole place name ignoring capitals, so "garage" and "Garage" are the
+  same place while "Gar" and "Garage shelf" are different places that return nothing. Narrowing by
+  category behaves the same way. An empty result names the place or category that was asked for, rather
+  than implying there is nothing on record at all.
+implements:
+- apps/locator/data.py::filter_by_location
+- apps/locator/data.py::filter_by_category
+- apps/locator/tools.py::list_located_items
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: folders.lifecycle.restoring-something-not-deleted
+title: Restoring what was never deleted changes nothing
+state: live
+autonomy: gated
+behavior: >
+  Asking to restore a folder that is not deleted, or an id that belongs to no folder at all,
+  changes nothing and says so — a live folder is never disturbed by an attempt to restore it.
+implements:
+- apps/folders/tools.py::restore_folder
+- apps/folders/data.py::restore_folder
+tests: []
+links: {}
+notes: ''

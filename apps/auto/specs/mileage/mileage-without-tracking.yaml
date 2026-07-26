@@ -1,0 +1,15 @@
+kind: specification
+id: auto.mileage.mileage-without-tracking
+title: A mileage reading counts even with nothing tracking it
+state: live
+autonomy: gated
+behavior: >
+  Reporting mileage for a vehicle whose oil changes are not being tracked still records the
+  odometer, and says that nothing is tracking oil changes for that vehicle — the reading is not
+  thrown away merely because there was nothing to compare it against.
+implements:
+- apps/auto/tools.py::report_mileage
+- apps/auto/data.py::update_vehicle
+tests: []
+links: {}
+notes: ''

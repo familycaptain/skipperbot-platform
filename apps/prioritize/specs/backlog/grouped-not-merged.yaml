@@ -1,0 +1,21 @@
+kind: specification
+id: prioritize.backlog.grouped-not-merged
+title: Grouped by kind, each in its own order
+state: live
+autonomy: gated
+behavior: >
+  The backlog is presented as labelled, counted groups — one per kind of work — rather than a single
+  merged league table: nothing decides that a reminder outranks a task or that a critical vehicle
+  issue beats an overdue chore. Inside a group the owning app's own order is kept — goals, projects
+  and tasks in the rank that app gives them, schedules soonest-due first, to-do items in list order.
+  The ranking a person actually gets is the one they do themselves by promoting three things to
+  focus.
+implements:
+- apps/prioritize/data.py::get_backlog
+- apps/prioritize/ui/PrioritizeApp.jsx::PrioritizeApp
+- apps/prioritize/tools.py::get_backlog_summary
+tests: []
+links: {}
+notes: >
+  Names the deliberate absence of a cross-app score, because the app's own description calls the
+  result a "ranked list" and readers keep looking for the ranking.

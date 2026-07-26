@@ -1,0 +1,16 @@
+kind: specification
+id: locator.finding.asking-about-a-place
+title: Asking about a place lists what is kept there
+state: live
+autonomy: gated
+behavior: >
+  Naming a place instead of a thing — "what's in the attic?" — comes back with everything recorded as
+  kept there, because a place and a precise spot are searched exactly as a name is. Asking about a
+  precise spot works the same way, so a labelled bin or shelf can be looked up by its label and its
+  contents read back.
+implements:
+- apps/locator/data.py::search_items
+- apps/locator/tools.py::search_located_items
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,19 @@
+kind: specification
+id: folders.folders.no-two-siblings-share-a-name
+title: Two folders in the same place cannot share a name
+state: live
+autonomy: gated
+behavior: >
+  Creating a folder whose name already belongs to a sibling in the same place is refused, the
+  reason is shown, and nothing is created — the comparison ignores case, so 'Taxes' and 'taxes'
+  collide. The same name IS allowed under a different parent, so every folder can have its own
+  'Receipts'.
+implements:
+- apps/folders/data.py::create_folder
+- apps/folders/tools.py::create_folder
+- agent.py::api_create_folder
+- apps/folders/ui/FoldersApp.jsx
+- apps/folders/ui/FolderDetailApp.jsx
+tests: []
+links: {}
+notes: ''

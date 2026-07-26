@@ -1,0 +1,17 @@
+kind: specification
+id: bounties.board.the-board-is-shared
+title: The board is not private
+state: live
+autonomy: gated
+behavior: >
+  Every household member sees every bounty, including who claimed it and what a reviewer said
+  about it — the board is a shared noticeboard, not a per-person worklist. Nothing about a bounty
+  is hidden from the person who claimed it, or from the people who did not.
+implements:
+- apps/bounties/routes.py::api_list_bounties
+- apps/bounties/ui/BountiesApp.jsx::BoardTab
+tests: []
+links: {}
+notes: >
+  A shared board is what lets a household see who is picking work up; it also means a review note
+  is read by more people than the one it was written for.

@@ -1,0 +1,18 @@
+kind: specification
+id: prioritize.nudge.nudge-can-be-switched-off
+title: The nudge can be switched off, one person at a time
+state: live
+autonomy: gated
+behavior: >
+  Each person turns their own daily focus nudge on or off from the Prioritize app, and the choice is
+  theirs alone — switching it off silences their nudge and nobody else's. The current state is visible
+  in the app's toolbar and beside their name in the household view. Off is remembered until they turn
+  it back on, and someone who has never touched it is nudged by default.
+implements:
+- apps/prioritize/data.py::set_focus_nag_enabled
+- apps/prioritize/data.py::get_focus_nag_enabled
+- apps/prioritize/ui/PrioritizeApp.jsx::PrioritizeApp
+- agent.py::api_toggle_focus_nag
+tests: []
+links: {}
+notes: ''

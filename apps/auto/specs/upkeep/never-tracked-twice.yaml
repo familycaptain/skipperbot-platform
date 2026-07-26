@@ -1,0 +1,18 @@
+kind: specification
+id: auto.upkeep.never-tracked-twice
+title: The same job is never tracked twice
+state: live
+autonomy: gated
+behavior: >
+  When somebody says they have done something a recurring item already covers, that item is
+  marked done rather than a second item being created beside it — even when the words used are
+  nothing like its title. So a household that says "I started the car" every month ends up with
+  one item completed repeatedly, not twelve near-duplicates nobody can tell apart.
+implements:
+- apps/auto/guide.md
+- apps/auto/tools.py::get_vehicle_maintenance
+tests: []
+links: {}
+notes: >
+  The operator's rule, and carried as instruction to Skipper rather than a check in the code:
+  duplicate near-identical schedules are what accumulate when it is skipped.

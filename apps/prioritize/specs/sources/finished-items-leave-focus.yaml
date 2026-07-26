@@ -1,0 +1,18 @@
+kind: specification
+id: prioritize.sources.finished-items-leave-focus
+title: Finishing something frees its position
+state: live
+autonomy: gated
+behavior: >
+  When the item behind a focus position is completed, cancelled, switched off or deleted in the app
+  that owns it, it leaves focus by itself the next time that person's focus is read — in the app, in
+  conversation, in the household view, or in the strip along the top of the web console — freeing the
+  position with no tidying up to do. Items still open are left exactly where they are; nothing else
+  is disturbed by the sweep.
+implements:
+- apps/prioritize/data.py::cleanup_stale_focus
+- apps/prioritize/data.py::_source_is_active
+- agent.py::api_get_focus
+tests: []
+links: {}
+notes: ''

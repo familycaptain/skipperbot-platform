@@ -1,0 +1,14 @@
+kind: specification
+id: timeline.activity.the-journal-does-not-log-itself
+title: Writing an entry logs nothing
+state: live
+autonomy: gated
+behavior: >
+  Writing, editing, or deleting a journal entry produces no activity line about it. The entry is
+  already the record; a line saying an entry was created would double every entry, and being
+  itself a change it would never stop.
+implements:
+- app_platform/activity.py::log_activity
+tests: []
+links: {}
+notes: ''

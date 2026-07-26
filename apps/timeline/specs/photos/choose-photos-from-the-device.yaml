@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.photos.choose-photos-from-the-device
+title: Choose photos from the device
+state: live
+autonomy: gated
+behavior: >
+  The composer accepts one or more image files chosen from the device and attaches each to the
+  entry being written. Only images are offered for selection, and the same file can be chosen
+  again after the picker closes rather than being silently ignored the second time.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::PostComposer
+- apps/timeline/ui/TimelineApp.jsx::uploadImageFile
+tests: []
+links: {}
+notes: ''

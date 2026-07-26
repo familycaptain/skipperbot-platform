@@ -1,12 +1,19 @@
 kind: specification
 id: auto.vehicles.create-vehicle
-title: Create a vehicle
+title: Add a vehicle
 state: live
 autonomy: gated
-behavior: Adding a vehicle records its year, make, model, trim, and color, derives a display name,
-  assigns a veh- id, and lists it among the household vehicles.
+behavior: >
+  Adding a vehicle records whatever is known about it — year, make, model, trim, colour, VIN,
+  plate, current mileage, notes — and it appears among the household's vehicles straight away
+  with its own permanent reference. The only thing genuinely required is who is adding it: a
+  vehicle with nothing else filled in is still created, so someone can add the car now and
+  finish describing it later. Mileage and year given as zero are stored as still-unknown rather
+  than as the number nought, so a vehicle never claims to be a year 0 model with no miles on it.
 implements:
-- apps/auto/tools.py
+- apps/auto/tools.py::create_vehicle
+- apps/auto/routes.py::api_create_vehicle
+- apps/auto/data.py::save_vehicle
 tests: []
 links: {}
 notes: ''

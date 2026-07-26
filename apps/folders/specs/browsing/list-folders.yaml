@@ -1,0 +1,19 @@
+kind: specification
+id: folders.browsing.list-folders
+title: List the folders
+state: live
+autonomy: gated
+behavior: >
+  Asking for the folders lists the top level only, each one with how many items and how many
+  subfolders it holds and who it is marked for; subfolders are reached by opening their parent
+  rather than being flattened into the same list. Asking for everything instead returns every
+  folder at every level.
+implements:
+- apps/folders/tools.py::list_folders
+- apps/folders/store.py::list_folders
+- apps/folders/data.py::get_all_folders
+- apps/folders/ui/FoldersApp.jsx
+- agent.py::api_list_folders
+tests: []
+links: {}
+notes: ''

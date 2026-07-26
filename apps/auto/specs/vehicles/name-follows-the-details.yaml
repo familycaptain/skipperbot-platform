@@ -1,0 +1,18 @@
+kind: specification
+id: auto.vehicles.name-follows-the-details
+title: A vehicle names itself
+state: live
+autonomy: gated
+behavior: >
+  A vehicle is never given a name by hand: its name is assembled from its year, make, model, trim
+  and colour, and reassembled whenever any of those change — so correcting the model year renames
+  the vehicle everywhere it is listed, with no second edit. A vehicle with none of those details
+  yet reads as "New Vehicle" rather than as a blank line in the list.
+implements:
+- apps/auto/tools.py::_build_name
+- apps/auto/routes.py::_build_vehicle_name
+tests: []
+links: {}
+notes: >
+  Derived rather than typed because the name is what everything else in the house refers to the
+  vehicle by; a hand-typed name drifts from the details underneath it and then two names exist.

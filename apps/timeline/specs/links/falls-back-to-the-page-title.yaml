@@ -1,0 +1,14 @@
+kind: specification
+id: timeline.links.falls-back-to-the-page-title
+title: A page with no sharing metadata still shows a name
+state: live
+autonomy: gated
+behavior: >
+  A page that publishes no sharing metadata is previewed with its plain document title, trimmed to
+  a reasonable length, so most links still show something a reader recognises. A page offering
+  neither is not previewed at all rather than shown as an empty card.
+implements:
+- apps/timeline/routes.py::api_link_preview
+tests: []
+links: {}
+notes: ''

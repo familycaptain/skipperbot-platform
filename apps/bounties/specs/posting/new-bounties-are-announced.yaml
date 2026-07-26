@@ -1,0 +1,16 @@
+kind: specification
+id: bounties.posting.new-bounties-are-announced
+title: The household hears about new bounties
+state: live
+autonomy: gated
+behavior: >
+  When a bounty is posted, every household member who is not a parent or admin is told its title
+  and what it is worth, so work does not sit unnoticed on a board nobody opened. Parents are not
+  told about their own household's postings. If nobody can be told, the bounty still stands.
+implements:
+- apps/bounties/store.py::_notify_non_parents
+- apps/bounties/tools.py::create_bounty
+- apps/bounties/routes.py::api_create_bounty
+tests: []
+links: {}
+notes: ''

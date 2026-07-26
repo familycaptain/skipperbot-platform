@@ -1,0 +1,18 @@
+kind: specification
+id: bounties.review.paid-exactly-once
+title: A bounty pays exactly once
+state: live
+autonomy: gated
+behavior: >
+  One approved bounty produces exactly one credit, of exactly its amount, to exactly the person
+  who claimed it. Changing the bounty afterwards does not change what was credited, and deleting
+  the bounty does not take the credit back — the ledger line and the balance behind it stand on
+  their own.
+implements:
+- apps/bounties/store.py::approve_bounty
+- apps/bounties/data.py::credit_balance
+tests: []
+links: {}
+notes: >
+  The credit and the new balance are written together, so a balance and the ledger lines behind it
+  can never disagree about what someone is owed.

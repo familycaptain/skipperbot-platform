@@ -1,0 +1,17 @@
+kind: specification
+id: auto.condition.condition-history
+title: How a vehicle has worn over time
+state: live
+autonomy: gated
+behavior: >
+  A vehicle's condition reports are listed newest first, each with its date, the mileage and the
+  component ratings, so wear reads as a trend rather than as a single verdict. In the app the
+  ratings are colour-graded from good through to needing replacement, so a component that is
+  deteriorating is visible without comparing words across reports.
+implements:
+- apps/auto/tools.py::get_vehicle_conditions
+- apps/auto/data.py::get_conditions
+- apps/auto/ui/AutoDetailApp.jsx::ConditionTab
+tests: []
+links: {}
+notes: ''

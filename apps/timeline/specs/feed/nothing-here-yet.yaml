@@ -1,0 +1,18 @@
+kind: specification
+id: timeline.feed.nothing-here-yet
+title: '"Nothing yet" and "nothing matched" read differently'
+state: live
+autonomy: gated
+behavior: >
+  On a household that has never written an entry, the family feed shows what the app is for and an
+  invitation to write the first one, instead of an empty page. When a view is empty only because a
+  search, a filter, or the chosen person excluded everything, that introduction is withheld and
+  the reader is told this scope is empty — so a first-run household and a too-narrow filter are
+  never described the same way.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+- web/src/components/PristineEmpty.jsx::PristineEmpty
+- apps/timeline/ui/index.js
+tests: []
+links: {}
+notes: ''

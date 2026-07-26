@@ -2,9 +2,12 @@ kind: capability
 id: bounties
 title: Bounties
 app: bounties
-scope: 'Family chore-and-reward system: parents post tasks with dollar values, kids complete them
-  for balance credits, and parents record external payments. Tracks balances and a family leaderboard.
-  NOT the recurring chore rotation (the Chores app) — bounties are one-off, money-valued tasks.'
+scope: 'Paid tasks and what they are worth: a parent posts a task with a dollar value, a household
+  member claims it as done, a parent approves or rejects that claim, and approval credits the
+  claimant a balance the household later settles for real. Owns the shared board, the
+  claim-and-review flow, per-person balances, the payout ledger and the standings. NOT the unpaid
+  recurring chore rotation (the Chores app), and not a payment rail — money moves outside Skipper
+  and is written down here afterwards.'
 state: live
 autonomy: gated
 links: {}

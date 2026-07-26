@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.find.filters-combine
+title: Narrowings combine
+state: live
+autonomy: gated
+behavior: >
+  Narrowings apply together, not in place of one another: a tag and a search, or a date and a
+  person, give the entries that satisfy both, and the count reflects the combination. Dropping one
+  narrowing leaves the rest in force.
+implements:
+- apps/timeline/data.py::list_posts
+- apps/timeline/routes.py::api_list_posts
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+tests: []
+links: {}
+notes: ''

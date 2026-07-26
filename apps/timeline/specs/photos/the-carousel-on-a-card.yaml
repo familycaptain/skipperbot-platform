@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.photos.the-carousel-on-a-card
+title: Photos ride the card as a strip
+state: live
+autonomy: gated
+behavior: >
+  An entry with photos shows them as a horizontal strip on its card, sized so the entry's text
+  stays the main thing on screen. When there are more photos than fit, controls to scroll the
+  strip appear and each one disappears at its end of the strip. An entry with no photos shows no
+  strip.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::PhotoCarousel
+tests: []
+links: {}
+notes: ''

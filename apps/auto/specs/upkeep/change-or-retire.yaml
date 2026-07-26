@@ -1,0 +1,18 @@
+kind: specification
+id: auto.upkeep.change-or-retire
+title: Changing or retiring a recurring item
+state: live
+autonomy: gated
+behavior: >
+  A recurring item can be renamed, put on a different cadence, or have its next due date moved,
+  without losing the record of how many times it has already been done. It can also be retired
+  outright; retiring one that does not exist reports that rather than claiming success. Retiring
+  an item never removes the service records of the times it was done — the history of the work
+  outlives the plan to keep doing it.
+implements:
+- apps/auto/tools.py::delete_maintenance_schedule
+- apps/auto/routes.py::api_delete_vehicle_maintenance
+- apps/auto/ui/AutoDetailApp.jsx::MaintenanceTab
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: prioritize.nudge.asking-to-stop-it-points-at-the-switch
+title: Asking Skipper to stop the nudge points at the switch
+state: live
+autonomy: gated
+behavior: >
+  The focus nudge is not a reminder and there is no way to cancel, snooze or delete it in
+  conversation. Asked to stop it, Skipper says it is a setting in the Prioritize app and where to find
+  it, rather than claiming to have turned it off, hunting for a reminder to delete, or creating some
+  other reminder to compensate.
+implements:
+- apps/prioritize/guide.md
+- apps/prioritize/tools.py
+tests: []
+links: {}
+notes: >
+  Operator's rule. The nudge lives outside the reminders system, so an agent that treats it as a
+  reminder deletes the wrong thing and reports success.

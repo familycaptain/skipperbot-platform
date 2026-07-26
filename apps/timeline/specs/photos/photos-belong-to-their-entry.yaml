@@ -1,0 +1,17 @@
+kind: specification
+id: timeline.photos.photos-belong-to-their-entry
+title: Photos live and die with their entry
+state: live
+autonomy: gated
+behavior: >
+  Deleting an entry removes its photos with it, and a photo removed from an entry disappears from
+  that entry's carousel at once. Removing a photo that is already gone reports that rather than
+  reporting success.
+implements:
+- apps/timeline/data.py::delete_post
+- apps/timeline/data.py::remove_photo
+- apps/timeline/routes.py::api_remove_photo
+- apps/timeline/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

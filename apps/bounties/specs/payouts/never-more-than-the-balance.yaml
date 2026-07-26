@@ -1,0 +1,14 @@
+kind: specification
+id: bounties.payouts.never-more-than-the-balance
+title: Never more than the balance
+state: live
+autonomy: gated
+behavior: >
+  A payout larger than the recipient's balance is refused, and the refusal names both the amount
+  asked for and the balance available, so a balance can never be driven below zero. A payout of
+  nothing, or of a negative amount, is refused as well.
+implements:
+- apps/bounties/store.py::record_payment
+tests: []
+links: {}
+notes: ''

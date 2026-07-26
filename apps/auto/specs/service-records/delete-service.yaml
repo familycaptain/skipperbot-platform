@@ -1,0 +1,17 @@
+kind: specification
+id: auto.service-records.delete-service
+title: Removing a service record
+state: live
+autonomy: gated
+behavior: >
+  A service record can be removed from a vehicle's history permanently, for one filed twice or
+  against the wrong car, and removing one that no longer exists reports that rather than claiming
+  success. The vehicle's odometer is not wound back by the removal: the reading was true when it
+  was taken, whatever happened to the record of the work.
+implements:
+- apps/auto/tools.py::delete_service_record
+- apps/auto/routes.py::api_delete_service
+- apps/auto/data.py::delete_service_record
+tests: []
+links: {}
+notes: ''

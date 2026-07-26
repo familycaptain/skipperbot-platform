@@ -1,0 +1,14 @@
+kind: specification
+id: locator.finding.nothing-found-is-said-plainly
+title: Nothing found is said plainly
+state: live
+autonomy: gated
+behavior: >
+  When nothing matches, the answer says so and repeats what was looked for, rather than returning an
+  empty list or offering a likely-looking place nobody recorded. Asked to search for nothing at all,
+  Skipper asks what to look for instead of listing everything on record.
+implements:
+- apps/locator/tools.py::search_located_items
+tests: []
+links: {}
+notes: ''

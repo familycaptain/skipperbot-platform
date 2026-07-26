@@ -1,0 +1,17 @@
+kind: specification
+id: timeline.posts.who-wrote-it-and-when
+title: Every entry says who and when
+state: live
+autonomy: gated
+behavior: >
+  Every entry records exactly one author and the moment it was created, and the card shows both.
+  An entry can never be anonymous: a request to create one without naming who is writing it is
+  refused rather than stored under nobody, and a person's name is treated the same however it is
+  capitalised or spaced so one person never becomes two authors.
+implements:
+- apps/timeline/data.py::create_post
+- apps/timeline/routes.py::api_create_post
+- apps/timeline/tools.py::post_to_timeline
+tests: []
+links: {}
+notes: ''

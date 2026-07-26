@@ -1,0 +1,15 @@
+kind: specification
+id: timeline.photos.a-failed-upload-does-not-block-the-entry
+title: A photo that fails to upload is dropped, not stored
+state: live
+autonomy: gated
+behavior: >
+  When a photo fails to upload it is removed from the composer rather than left behind as a broken
+  attachment, and the rest of the entry — its text, its tags, and the photos that did upload — can
+  still be saved.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::PostComposer
+- apps/timeline/ui/TimelineApp.jsx::uploadImageFile
+tests: []
+links: {}
+notes: ''

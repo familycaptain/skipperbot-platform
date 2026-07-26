@@ -1,0 +1,16 @@
+kind: specification
+id: folders.lifecycle.restore-a-folder
+title: Bring a deleted folder back
+state: live
+autonomy: gated
+behavior: >
+  A deleted folder can be brought back and returns with everything that was filed in it still
+  filed there, under its old name and id. Subfolders promoted when it was deleted stay at the top
+  level — restoring a parent does not reclaim its children.
+implements:
+- apps/folders/tools.py::restore_folder
+- apps/folders/store.py::restore_folder
+- apps/folders/data.py::restore_folder
+tests: []
+links: {}
+notes: ''

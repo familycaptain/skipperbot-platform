@@ -1,0 +1,14 @@
+kind: specification
+id: locator.photos.photos-go-when-the-item-goes
+title: Photo attachments go when the item goes
+state: live
+autonomy: gated
+behavior: >
+  Removing an item removes its photo attachments with it, so no photo is left pointing at a thing that
+  is no longer on record. The pictures themselves stay in the household library for other things to use.
+implements:
+- apps/locator/migrations/001_initial.sql
+- apps/locator/data.py::delete_item
+tests: []
+links: {}
+notes: ''

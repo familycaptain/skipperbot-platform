@@ -3,11 +3,17 @@ id: folders.folders.create-folder
 title: Create a folder
 state: live
 autonomy: gated
-behavior: Creating a folder records a new container (with name, tags, icon, color) for organizing
-  documents and artifacts.
+behavior: >
+  Naming a folder creates it empty and ready to file into, and hands back the id everything else
+  refers to it by. Given no parent it sits at the top level; given one it appears inside that
+  folder. A name is the only thing required — description, owner, tags, icon and colour are all
+  optional, and a folder created from the app opens straight away so the person can start filing.
 implements:
-- apps/folders/tools.py
+- apps/folders/tools.py::create_folder
+- apps/folders/store.py::create_folder
+- apps/folders/data.py::create_folder
 - apps/folders/ui/FoldersApp.jsx
+- agent.py::api_create_folder
 tests: []
 links: {}
 notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: auto.issues.photograph-the-problem
+title: Photograph the problem instead of describing it
+state: live
+autonomy: gated
+behavior: >
+  Photos can be attached to an issue, taken straight from a phone camera, and appear on it as
+  thumbnails that open full size when tapped and can be removed one at a time — so a paint chip,
+  a dashboard light or a cracked lens is shown rather than described. An issue with no photos
+  shows only the way to add one; photos stay with the issue and go when the vehicle does.
+implements:
+- apps/auto/ui/AutoDetailApp.jsx::AutoIssuePhotoPanel
+- apps/auto/handlers.py
+- apps/auto/data.py::link_image_to_issue
+- apps/auto/routes.py::api_get_issue_images
+tests: []
+links: {}
+notes: ''

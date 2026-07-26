@@ -1,0 +1,16 @@
+kind: specification
+id: timeline.activity.activity-lines-stay-out-of-the-family-feed
+title: An activity line is not a journal entry
+state: live
+autonomy: gated
+behavior: >
+  An automatically logged change is addressed to the person who made it and appears only in an
+  activity view, never in the shared family feed, so routine record-keeping never buries what the
+  household chose to write down.
+implements:
+- app_platform/activity.py::_write_activity_post
+- apps/timeline/data.py::list_posts
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+tests: []
+links: {}
+notes: ''

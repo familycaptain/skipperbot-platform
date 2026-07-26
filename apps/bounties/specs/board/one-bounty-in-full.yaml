@@ -1,0 +1,18 @@
+kind: specification
+id: bounties.board.one-bounty-in-full
+title: One bounty in full
+state: live
+autonomy: gated
+behavior: >
+  A single bounty can be read on its own and tells its whole story: title, amount, category and
+  description, who posted it, who claimed it and when with the note they left, who reviewed it and
+  when with their feedback, and any date it is meant to be done by. Asking about a bounty that
+  does not exist says so plainly instead of showing an empty record.
+implements:
+- apps/bounties/tools.py::get_bounty
+- apps/bounties/data.py::get_bounty
+- apps/bounties/routes.py::api_get_bounty
+- apps/bounties/ui/BountiesApp.jsx::BountyCard
+tests: []
+links: {}
+notes: ''

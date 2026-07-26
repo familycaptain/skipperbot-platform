@@ -1,0 +1,14 @@
+kind: specification
+id: bounties.digest.the-parents-copy-leads-with-approvals
+title: A parent's copy leads with approvals
+state: live
+autonomy: gated
+behavior: >
+  A parent's copy of the daily board opens with how many claims are waiting on them before it
+  lists anything else, because that is the one part of the board that cannot move without them. It
+  carries no personal balance.
+implements:
+- apps/bounties/handlers.py::handle_daily_digest
+tests: []
+links: {}
+notes: ''

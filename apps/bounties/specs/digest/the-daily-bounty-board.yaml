@@ -1,0 +1,20 @@
+kind: specification
+id: bounties.digest.the-daily-bounty-board
+title: The daily bounty board
+state: live
+autonomy: gated
+behavior: >
+  Once a day the household is sent the state of the board in Skipper's own voice: what is open
+  with each amount and the total on offer, what is claimed and waiting on approval, and who
+  completed what recently. Members are also told their own current balance in the same message.
+implements:
+- apps/bounties/handlers.py::handle_daily_digest
+- apps/bounties/migrations/003_seed_daily_digest.py
+tests:
+- type: unit
+  path: tests/evolve/platform/test_consciousness_log.py
+  rubric: >
+    ShadowHooksPresent::test_bypass_paths_speak_in_one_voice — the bounty digest reaches people
+    through the one speak path under the bounties domain, rather than sending to a surface directly.
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: bounties.digest.telling-people-never-undoes-it
+title: Telling people never undoes the action
+state: live
+autonomy: gated
+behavior: >
+  Posting, claiming, approving, rejecting and recording a payout all stand even when telling
+  anyone about them fails: the failure is recorded, and the action is neither rolled back nor
+  retried. Somebody may therefore first learn of a bounty from the daily board or by opening the
+  app rather than from the announcement itself.
+implements:
+- apps/bounties/store.py::_notify_user
+- apps/bounties/store.py::_notify_parents
+- apps/bounties/store.py::_notify_non_parents
+- apps/bounties/store.py::_emit
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,20 @@
+kind: specification
+id: timeline.activity.the-activity-view-is-not-an-audit-trail
+title: A convenience record, not proof
+state: live
+autonomy: gated
+behavior: >
+  The activity view is a convenience record and not evidence: it holds only the changes that were
+  attributed to a person and reported at the time, it is never rebuilt from anything else, and its
+  lines can be edited or deleted like any other entry. Nothing should be decided on the strength
+  of a change being absent from it.
+implements:
+- app_platform/activity.py::log_activity
+- apps/timeline/data.py::update_post
+- apps/timeline/data.py::delete_post
+tests: []
+links: {}
+notes: >
+  Timeline keeps its own store and has its own writers rather than deriving from the household's
+  append-only record, so the two can differ. Saying so is better than letting readers infer an
+  audit trail the app does not provide.

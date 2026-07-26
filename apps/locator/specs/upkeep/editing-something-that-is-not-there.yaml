@@ -1,0 +1,17 @@
+kind: specification
+id: locator.upkeep.editing-something-that-is-not-there
+title: Editing something that is not there
+state: live
+autonomy: gated
+behavior: >
+  An edit or a removal aimed at a thing that does not exist — a mistyped handle, something already
+  taken off the record — changes nothing and says it was not found. It is never created as a side
+  effect of trying to change it, and never fails silently as though it had worked.
+implements:
+- apps/locator/tools.py::update_located_item
+- apps/locator/tools.py::delete_located_item
+- apps/locator/tools.py::get_located_item
+- apps/locator/routes.py::api_get_located_item
+tests: []
+links: {}
+notes: ''

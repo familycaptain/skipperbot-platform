@@ -1,0 +1,14 @@
+kind: specification
+id: bounties.digest.nobody-to-tell
+title: Nobody to tell
+state: live
+autonomy: gated
+behavior: >
+  With no household members to send it to, the daily pass does nothing and says so rather than
+  failing. Recurring bounties that had come due are posted first regardless, so the board is up to
+  date for whenever somebody does look.
+implements:
+- apps/bounties/handlers.py::handle_daily_digest
+tests: []
+links: {}
+notes: ''

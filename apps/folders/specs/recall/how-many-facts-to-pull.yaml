@@ -1,0 +1,18 @@
+kind: specification
+id: folders.recall.how-many-facts-to-pull
+title: The household sets how densely things are mined
+state: live
+autonomy: gated
+behavior: >
+  How many facts are pulled out of filed material is a household setting, and the target scales
+  with the length of what was filed, so a long document yields proportionally more than a short
+  one. The setting is clamped to a sane range, so a mistyped value can neither demand a fact per
+  sentence nor turn extraction off, and the result still flexes with how much the document
+  actually says.
+implements:
+- apps/folders/intelligence.py::_facts_per_chunk
+- apps/folders/intelligence.py::_extract_facts
+- apps/folders/manifest.yaml
+tests: []
+links: {}
+notes: ''

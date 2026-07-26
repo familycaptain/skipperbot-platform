@@ -1,0 +1,16 @@
+kind: specification
+id: bounties.board.narrowing-the-board
+title: Narrowing the board
+state: live
+autonomy: gated
+behavior: >
+  The board can be narrowed to one status, to one category, or to both at once, and only bounties
+  matching every filter given are listed. A category matches by name whatever its capitalisation.
+  Narrowing changes only the list — the money totals above it still describe the whole board.
+implements:
+- apps/bounties/data.py::get_all_bounties
+- apps/bounties/tools.py::list_bounties
+- apps/bounties/ui/BountiesApp.jsx::BoardTab
+tests: []
+links: {}
+notes: ''

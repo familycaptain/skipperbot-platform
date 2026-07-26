@@ -1,0 +1,18 @@
+kind: specification
+id: timeline.feed.page-as-you-scroll
+title: The feed pages itself as you scroll
+state: live
+autonomy: gated
+behavior: >
+  The feed loads a screenful at a time — twenty entries — and fetches the next batch as the reader
+  nears the bottom, so scrolling back through years of history never waits on one enormous load.
+  While a batch is in flight the feed says it is loading more, and when there is nothing older
+  left it shows an end-of-timeline marker rather than continuing to reach for pages that do not
+  exist.
+implements:
+- apps/timeline/ui/TimelineApp.jsx::TimelineApp
+- apps/timeline/routes.py::api_list_posts
+- apps/timeline/data.py::list_posts
+tests: []
+links: {}
+notes: ''

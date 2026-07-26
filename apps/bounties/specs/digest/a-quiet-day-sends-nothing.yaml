@@ -1,0 +1,14 @@
+kind: specification
+id: bounties.digest.a-quiet-day-sends-nothing
+title: A quiet day sends nothing
+state: live
+autonomy: gated
+behavior: >
+  If nothing is open and nothing is waiting on approval, the daily board is not sent at all rather
+  than sent empty — a household with no bounties running hears nothing from the app that day.
+  Recent completions on their own are not reason enough to send it.
+implements:
+- apps/bounties/handlers.py::handle_daily_digest
+tests: []
+links: {}
+notes: ''

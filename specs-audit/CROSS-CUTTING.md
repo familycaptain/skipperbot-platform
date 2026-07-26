@@ -230,9 +230,16 @@ check.
 
 ---
 
-## 9. A privacy claim in user-facing docs is untrue
+## 9. Sending records to a hosted model — DECIDED, not a defect
 
-`apps/medical/help.md` states the data never leaves the household. `digest_record` sends every
-record to the configured chat model, which defaults to a hosted provider. Whatever the right answer
-is, the documentation and the behaviour must agree — and for medical data the claim is the kind
-someone relies on.
+`digest_record` sends records, including medical ones, to the configured chat model, which defaults
+to a hosted provider.
+
+**Operator decision:** from a PHI standpoint this is the API-key holder's call — whether to use the
+medical feature at all, and how much to trust their chat provider. It is not the platform's concern
+and not a defect. Do not file it as one.
+
+**The one residual, which follows from that decision rather than against it:**
+`apps/medical/help.md` states the data never leaves the household. Since the choice belongs to the
+key holder, the documentation must not tell them the opposite — that removes their ability to make
+the decision knowingly. A text correction in `help.md`, not an architectural change.

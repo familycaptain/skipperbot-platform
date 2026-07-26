@@ -1,0 +1,16 @@
+kind: specification
+id: bounties.review.decided-once
+title: A claim is decided once
+state: live
+autonomy: gated
+behavior: >
+  Only a bounty with a claim waiting on it can be approved or rejected; asking to approve one that
+  is open, already approved, or cancelled is refused and the refusal names the state it is
+  actually in. A second approval of the same bounty is refused for exactly that reason, which is
+  what stops it being paid twice.
+implements:
+- apps/bounties/store.py::approve_bounty
+- apps/bounties/store.py::reject_bounty
+tests: []
+links: {}
+notes: ''

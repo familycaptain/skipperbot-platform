@@ -1,0 +1,16 @@
+kind: specification
+id: folders.recall.answers-say-where-they-came-from
+title: Recalled material says where it came from
+state: live
+autonomy: gated
+behavior: >
+  Material recalled from a folder reaches Skipper grouped by which folder and which document it
+  came from, with extracted facts marked apart from raw passages and each one carrying how close a
+  match it was — so Skipper can say where an answer came from instead of asserting it flatly.
+implements:
+- apps/folders/intelligence.py::format_folder_knowledge_for_context
+- apps/folders/intelligence.py::get_relevant_folder_knowledge
+- chat_domain.py
+tests: []
+links: {}
+notes: ''
