@@ -329,6 +329,7 @@ def log_inbound_message(
     surface: Optional[str] = None,
     domain: str = "chat",
     payload: Optional[dict] = None,
+    event_id: Optional[str] = None,
 ) -> dict:
     """A person speaks: append the REAL inbound row, owed a turn
     (``needs_attention=True``), inheriting the thread of Skipper's most recent
