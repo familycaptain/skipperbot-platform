@@ -67,12 +67,21 @@ def get_config() -> dict[str, Any]:
 
 
 def set_config(updates: dict[str, Any], *, by: str = "") -> dict[str, Any]:
-    """Patch one or more keys in the ``app:backups`` config and return the new dict."""
+    """Patch one or more keys in the ``app:backups`` config and return the new dict.
+
+    Configuring a destination also wires up the nightly run. Every path that changes backup
+    config funnels through here, so this is the one place that can guarantee it — before,
+    nothing created the ``schedules`` row the dispatcher polls, so a user could configure a
+    destination, see it saved, and never be backed up.
+    """
     for key, value in updates.items():
         if key not in CONFIG_KEYS:
             raise ValueError(f"unknown backups config key: {key!r}")
         _config.set(key, value, scope=CONFIG_SCOPE, by=by)
-    return get_config()
+    cfg = get_config()
+    from apps.backups.schedule import ensure_schedules
+    ensure_schedules(cfg)
+    return cfg
 
 
 __all__ = [
