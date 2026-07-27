@@ -1,0 +1,17 @@
+kind: specification
+id: thinking.alarms.turn-an-area-off
+title: Turning an area off stops it after the pass it is on
+state: live
+autonomy: gated
+behavior: >
+  Switching an area off lets the pass it is already taking finish and then stops it — no restart,
+  and no half-finished pass abandoned partway. The area stays in the list, visibly dimmed, keeping
+  its rhythm and its budget standing so switching it back on resumes the same settings, and
+  everything it did before it was switched off stays in the log.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx::DomainCard
+- agent.py::api_thinking_domain_update
+- thinking_scheduler.py::_supervise_domains
+tests: []
+links: {}
+notes: ''

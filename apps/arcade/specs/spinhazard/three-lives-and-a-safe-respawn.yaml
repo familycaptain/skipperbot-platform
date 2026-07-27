@@ -1,0 +1,16 @@
+kind: specification
+id: arcade.spinhazard.three-lives-and-a-safe-respawn
+title: A collision costs a life and buys a moment
+state: live
+autonomy: gated
+behavior: >
+  Touching a rock or the crosser costs a life. The ship comes back stationary in the middle of the
+  field and, for a couple of seconds, blinks and cannot be hit — long enough to get clear of
+  whatever is already there, and visibly so rather than silently. The remaining lives are shown at
+  all times.
+implements:
+- apps/arcade/ui/games/Spinhazard.jsx::killShip
+- apps/arcade/ui/games/Spinhazard.jsx::render
+tests: []
+links: {}
+notes: ''

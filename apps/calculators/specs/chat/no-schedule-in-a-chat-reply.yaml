@@ -1,0 +1,15 @@
+kind: specification
+id: calculators.chat.no-schedule-in-a-chat-reply
+title: The full schedule stays in the app
+state: live
+autonomy: gated
+behavior: >
+  Asked about a loan in conversation, Skipper gives the payment, the total paid and the total
+  interest but not the payment-by-payment schedule. The schedule is something the app shows on a
+  screen that can be scrolled, because hundreds of rows is not a reply.
+implements:
+- apps/calculators/tools.py::loan_amortization
+- apps/calculators/ui/CalculatorsApp.jsx::LoanTab
+tests: []
+links: {}
+notes: ''

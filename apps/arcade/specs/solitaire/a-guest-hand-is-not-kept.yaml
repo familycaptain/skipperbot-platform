@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.solitaire.a-guest-hand-is-not-kept
+title: A hand nobody owns is not kept
+state: live
+autonomy: gated
+behavior: >
+  Someone playing without Skipper knowing who they are gets a fully playable hand that is never
+  kept: leaving and returning deals a fresh one. Nothing warns them, and nothing is written under
+  anyone else's name.
+implements:
+- apps/arcade/ui/games/Solitaire.jsx
+- apps/arcade/data.py::set_solitaire_save
+tests: []
+links: {}
+notes: ''

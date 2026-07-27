@@ -1,0 +1,18 @@
+kind: specification
+id: system.restart.skipper-cannot-restart-itself
+title: Skipper cannot restart itself on request
+state: live
+autonomy: gated
+behavior: >
+  Restarting is an action an administrator takes in the console, not something Skipper can be
+  talked into: asking it in conversation to restart does not restart it, because this app gives
+  the model no ability to do so. The only route is the confirmed control behind the
+  administrator check.
+implements:
+- apps/system/manifest.yaml
+- agent.py::api_admin_restart
+tests: []
+links: {}
+notes: >
+  Recorded as current behaviour. The app's own help text advertises a chat route to restart that
+  does not exist.

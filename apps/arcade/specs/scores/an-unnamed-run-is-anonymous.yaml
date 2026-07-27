@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.scores.an-unnamed-run-is-anonymous
+title: A run by nobody in particular is still recorded
+state: live
+autonomy: gated
+behavior: >
+  A run finished when Skipper does not know who is playing is still recorded and appears on the
+  board as anonymous, so an unattributed good run is not silently discarded.
+implements:
+- apps/arcade/data.py::save_score
+- apps/arcade/ui/ArcadeApp.jsx::Leaderboard
+tests: []
+links: {}
+notes: ''

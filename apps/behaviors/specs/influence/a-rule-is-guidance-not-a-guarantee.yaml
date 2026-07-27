@@ -1,0 +1,19 @@
+kind: specification
+id: behaviors.influence.a-rule-is-guidance-not-a-guarantee
+title: A rule is a standing instruction, not an interlock
+state: live
+autonomy: gated
+behavior: >
+  A rule is handed to Skipper as a standing instruction and Skipper decides each turn whether what was
+  said matches the trigger; nothing in the product independently detects the trigger, forces the
+  action, or blocks anything on a rule's behalf. So a rule fires as reliably as the wording is clear:
+  a specific, concretely-phrased trigger fires nearly always, a vague or overlapping one sometimes
+  will not, and a rule is never a safety mechanism.
+implements:
+- chat_domain.py::_build_system_prompt
+- app_platform/voice/prompting.py::build_active_behavior_rules
+tests: []
+links: {}
+notes: >
+  Stated explicitly because both the app and the help text call rules "guaranteed to fire", which
+  overstates what an instruction can promise and sets people up to rely on one for safety.

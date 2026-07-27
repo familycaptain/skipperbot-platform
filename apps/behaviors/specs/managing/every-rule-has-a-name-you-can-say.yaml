@@ -1,0 +1,16 @@
+kind: specification
+id: behaviors.managing.every-rule-has-a-name-you-can-say
+title: Every rule has an identifier you can quote back
+state: live
+autonomy: gated
+behavior: >
+  Each rule carries a short identifier, shown beside it in the list and returned whenever a rule is
+  created, so a person can name one rule out of several in conversation — "disable that one",
+  "delete beh-1a2b3c4d" — without having to describe its wording. The identifier never changes for the
+  life of the rule.
+implements:
+- apps/behaviors/data.py::create_behavior
+- apps/behaviors/ui/BehaviorsApp.jsx
+tests: []
+links: {}
+notes: ''

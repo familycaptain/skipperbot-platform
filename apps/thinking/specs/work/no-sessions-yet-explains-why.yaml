@@ -1,0 +1,14 @@
+kind: specification
+id: thinking.work.no-sessions-yet-explains-why
+title: No work sessions yet explains what would create one
+state: live
+autonomy: gated
+behavior: >
+  Before Skipper has ever worked on something by itself, the screen says so and says what would
+  cause a session — work on a goal that was assigned to Skipper — rather than showing an empty
+  list that reads like a broken feature.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx
+tests: []
+links: {}
+notes: ''

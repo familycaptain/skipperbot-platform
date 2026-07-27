@@ -1,0 +1,17 @@
+kind: specification
+id: behaviors.managing.deleting-is-permanent-and-asked-twice
+title: Deleting is permanent, and asked for twice
+state: live
+autonomy: gated
+behavior: >
+  Deleting a rule removes its wording for good — there is no undo and no recycle bin. In the app the
+  delete button turns into a confirm-or-cancel pair rather than acting on the first click, and when
+  asked in conversation Skipper offers switching the rule off as the reversible alternative. The rule
+  stops applying from the next turn.
+implements:
+- apps/behaviors/tools.py::remove_behavior
+- apps/behaviors/data.py::delete_behavior
+- apps/behaviors/ui/BehaviorsApp.jsx
+tests: []
+links: {}
+notes: ''

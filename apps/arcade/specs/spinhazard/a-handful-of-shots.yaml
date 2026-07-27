@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.spinhazard.a-handful-of-shots
+title: Only a handful of shots at a time
+state: live
+autonomy: gated
+behavior: >
+  Firing is limited two ways: a short cooldown between shots, and a small cap on how many can be
+  in the air at once. Each shot also expires after a short flight, so holding fire cannot flood
+  the field and a missed shot frees the slot again shortly.
+implements:
+- apps/arcade/ui/games/Spinhazard.jsx::update
+tests: []
+links: {}
+notes: ''

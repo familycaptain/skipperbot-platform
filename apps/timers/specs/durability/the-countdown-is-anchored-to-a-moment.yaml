@@ -1,0 +1,17 @@
+kind: specification
+id: timers.durability.the-countdown-is-anchored-to-a-moment
+title: The time left is worked out from the moment it is due
+state: live
+autonomy: gated
+behavior: >
+  A timer is fixed to the moment it is due as soon as it is set, and the time left is always the
+  distance from now to that moment. It is not accumulated by counting elapsed ticks, so a busy or
+  briefly stalled machine cannot make a five-minute timer report six minutes remaining, and asking
+  twice in a row never shows the countdown going up.
+implements:
+- apps/timers/store.py::register
+- apps/timers/store.py::seconds_remaining
+- app_platform/time.py::get_timezone
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.wardenfall.gold-comes-from-killing-and-clearing
+title: Gold comes from killing and from clearing
+state: live
+autonomy: gated
+behavior: >
+  Beyond the starting purse, gold comes from two places: a bounty for each enemy killed, and a
+  bonus for clearing a wave that grows with the wave number. Letting an enemy through pays
+  nothing, so a leak costs a life and the income at the same time.
+implements:
+- apps/arcade/ui/games/Wardenfall.jsx::step
+- apps/arcade/ui/games/Wardenfall.jsx::spawnWave
+tests: []
+links: {}
+notes: ''

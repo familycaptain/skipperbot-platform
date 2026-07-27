@@ -1,0 +1,26 @@
+kind: specification
+id: timers.going-off.set-out-loud-goes-off-out-loud
+title: A timer set by speaking is announced in the room it was set in
+state: live
+autonomy: gated
+behavior: >
+  A timer asked for out loud belongs to the room, not to a person: when it runs out it is spoken
+  aloud on the device that took the request, whether or not Skipper ever worked out whose voice set
+  it. Somebody can walk up to the kitchen speaker, say "timer for ten minutes", walk away, and hear
+  it go off — the announcement is never held back for want of a name to attach it to.
+implements:
+- apps/timers/scheduler.py::start_timer
+- apps/timers/scheduler.py::_run_timer
+- app_platform/voice/origin.py::get_voice_origin
+- app_platform/voice/announce.py::announce_to_device
+tests:
+- type: unit
+  path: tests/evolve/voice/test_timer_voice_origin.py
+  rubric: >
+    Offline. A tool call carries where it came from, so a timer set through the speaker knows the
+    room; the expiry speaks in that room independently of whether a person was identified, and the
+    person's other surfaces are an addition to it rather than the only route.
+links: {}
+notes: >
+  Device-scoped on purpose: a shared speaker may never resolve who spoke, and holding the
+  announcement back until it did would mean the commonest voice timer never went off at all.

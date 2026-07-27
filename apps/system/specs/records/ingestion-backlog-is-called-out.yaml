@@ -1,0 +1,15 @@
+kind: specification
+id: system.records.ingestion-backlog-is-called-out
+title: A backlog waiting to be taken in is called out
+state: live
+autonomy: gated
+behavior: >
+  When nothing is waiting to be taken into Skipper's memory the dashboard says so in settled
+  terms; when anything is waiting it gives the number and marks it as wanting attention. So a
+  person can tell a quiet house from a stuck one without reading a log.
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/ui/SystemApp.jsx::SystemApp
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: finder.categories.one-category-at-a-time
+title: Search one app instead of all of them
+state: live
+autonomy: gated
+behavior: >
+  Choosing a category narrows the results to that one app's matches, and choosing "All" widens them
+  back, without the query having to be typed again. The choice stays put across later searches until
+  it is changed, so someone who knows they are looking for a recipe keeps looking only at recipes.
+implements:
+- apps/finder/ui/FinderApp.jsx::FilterBubble
+- apps/finder/ui/FinderApp.jsx::runSearch
+tests: []
+links: {}
+notes: ''

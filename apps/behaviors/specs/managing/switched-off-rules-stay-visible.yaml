@@ -1,0 +1,15 @@
+kind: specification
+id: behaviors.managing.switched-off-rules-stay-visible
+title: A switched-off rule is still in the list
+state: live
+autonomy: gated
+behavior: >
+  A rule that has been switched off stays in the list, marked as off and visibly dimmed, and is
+  reported as disabled when the rules are read out in conversation. It is not hidden away in a
+  separate archive, so the list doubles as the record of what was tried and abandoned.
+implements:
+- apps/behaviors/tools.py::list_behaviors
+- apps/behaviors/ui/BehaviorsApp.jsx
+tests: []
+links: {}
+notes: ''

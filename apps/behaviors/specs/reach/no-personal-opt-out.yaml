@@ -1,0 +1,16 @@
+kind: specification
+id: behaviors.reach.no-personal-opt-out
+title: A household rule cannot be switched off for one person
+state: live
+autonomy: gated
+behavior: >
+  There is one switch on a household-wide rule and it governs everybody: a person who does not want it
+  can only switch it off for the whole household or leave it on for themselves. Nobody gets a private
+  exception, so a household rule someone finds annoying becomes a conversation between people rather
+  than a setting.
+implements:
+- apps/behaviors/data.py::toggle_behavior
+- apps/behaviors/data.py::get_active_behaviors_for_user
+tests: []
+links: {}
+notes: ''

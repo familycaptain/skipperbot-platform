@@ -1,0 +1,7 @@
+kind: feature
+id: timers.going-off
+title: When it goes off
+state: live
+links: {}
+notes: 'What a person hears when a timer runs out, and where. NOT which surfaces reach
+  them — that is one platform-wide decision (platform.speaking).'

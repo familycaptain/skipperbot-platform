@@ -1,0 +1,17 @@
+kind: specification
+id: calculators.trust.a-number-is-not-advice
+title: A result is arithmetic, never a recommendation
+state: live
+autonomy: gated
+behavior: >
+  The calculators report what the arithmetic gives and never a course of action: a loan result says
+  what the loan costs, never whether to take it, and a savings result says what a balance grows to,
+  never where to put the money.
+implements:
+- apps/calculators/tools.py::compound_interest
+- apps/calculators/tools.py::loan_amortization
+- apps/calculators/ui/CalculatorsApp.jsx::solveLoan
+- apps/calculators/ui/CalculatorsApp.jsx::solveCompound
+tests: []
+links: {}
+notes: ''

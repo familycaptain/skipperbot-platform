@@ -1,0 +1,14 @@
+kind: specification
+id: thinking.log.nothing-logged-yet
+title: An empty log says why it is empty
+state: live
+autonomy: gated
+behavior: >
+  Before any pass has run, the log says so and says that passes will appear as the scheduler takes
+  them — a fresh install is not left staring at a blank panel wondering whether the screen is
+  broken.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx
+tests: []
+links: {}
+notes: ''

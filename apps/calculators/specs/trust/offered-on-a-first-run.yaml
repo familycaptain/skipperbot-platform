@@ -1,0 +1,14 @@
+kind: specification
+id: calculators.trust.offered-on-a-first-run
+title: Someone new is shown it exists
+state: live
+autonomy: gated
+behavior: >
+  Calculators is one of the apps offered during a first run, so somebody new to Skipper is shown
+  that it is there rather than having to come across it in the app grid later.
+implements:
+- apps/calculators/manifest.yaml
+- apps/goals/onboarding.py
+tests: []
+links: {}
+notes: ''

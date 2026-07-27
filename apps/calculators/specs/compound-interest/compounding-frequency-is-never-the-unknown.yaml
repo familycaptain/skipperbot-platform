@@ -1,0 +1,16 @@
+kind: specification
+id: calculators.compound-interest.compounding-frequency-is-never-the-unknown
+title: How often it compounds is always given
+state: live
+autonomy: gated
+behavior: >
+  The compounding frequency is never the value being solved for: it starts at monthly, and cleared
+  or set to nought the calculator asks for it — naming twelve as monthly — rather than assuming a
+  frequency and returning a figure that quietly assumed something else.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::CompoundTab
+- apps/calculators/ui/CalculatorsApp.jsx::solveCompound
+- apps/calculators/tools.py::compound_interest
+tests: []
+links: {}
+notes: ''

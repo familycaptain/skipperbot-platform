@@ -1,0 +1,15 @@
+kind: specification
+id: timers.going-off.it-goes-off-once
+title: A timer goes off once and is done
+state: live
+autonomy: gated
+behavior: >
+  When a timer reaches its moment it announces itself exactly once. There is no snooze, no repeat
+  until acknowledged, and no second nudge for somebody who was out of the room — a timer that has
+  gone off is finished and cannot go off again, however long it takes the person to notice.
+implements:
+- apps/timers/scheduler.py::_run_timer
+- apps/timers/store.py::pop
+tests: []
+links: {}
+notes: ''

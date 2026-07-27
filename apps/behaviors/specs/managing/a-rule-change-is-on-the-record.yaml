@@ -1,0 +1,19 @@
+kind: specification
+id: behaviors.managing.a-rule-change-is-on-the-record
+title: Setting up a rule is on your activity record
+state: live
+autonomy: gated
+behavior: >
+  Creating, editing or deleting a rule is recorded on the author's own activity record and taken into
+  what Skipper knows about them, so "what rules did I set up?" can be answered later without opening
+  the app, and a rule that vanished can be traced to the moment it was deleted. Recording a change
+  never blocks the change itself: if it cannot be recorded the rule is still saved.
+implements:
+- apps/behaviors/tools.py::add_behavior
+- apps/behaviors/tools.py::remove_behavior
+- app_platform/memory.py::digest_record
+tests: []
+links: {}
+notes: >
+  Stated as the intent for every route into the app; changes made in the app's own screens currently
+  do not reach the activity record.

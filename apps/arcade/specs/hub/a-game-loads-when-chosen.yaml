@@ -1,0 +1,17 @@
+kind: specification
+id: arcade.hub.a-game-loads-when-chosen
+title: The menu opens fast whatever a game weighs
+state: live
+autonomy: gated
+behavior: >
+  The menu appears without waiting for any game, and a game is fetched only when its card is
+  clicked, so the heaviest game in the arcade never slows down opening the app. Until the chosen
+  game is ready the panel shows a spinner rather than staying blank, and if it cannot be loaded at
+  all the spinner is what the person is left with.
+implements:
+- apps/arcade/ui/ArcadeApp.jsx
+tests: []
+links: {}
+notes: >
+  Second sentence records what actually happens on a failed chunk load — there is no error state,
+  only the fallback. Stated so it is not mistaken for an unwritten requirement.

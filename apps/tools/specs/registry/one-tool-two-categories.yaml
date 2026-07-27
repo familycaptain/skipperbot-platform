@@ -1,0 +1,14 @@
+kind: specification
+id: tools.registry.one-tool-two-categories
+title: A tool routed twice appears twice
+state: live
+autonomy: gated
+behavior: >
+  A tool routed under more than one category is shown under each of them, and the totals count it
+  once per appearance: this is a view of the routing, not a de-duplicated inventory of what exists.
+implements:
+- apps/tools/routes.py::api_tool_categories
+- apps/tools/ui/ToolsApp.jsx::ToolsApp
+tests: []
+links: {}
+notes: ''

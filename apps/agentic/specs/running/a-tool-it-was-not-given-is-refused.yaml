@@ -1,0 +1,15 @@
+kind: specification
+id: agentic.running.a-tool-it-was-not-given-is-refused
+title: An ability it was not given is refused, not silently skipped
+state: live
+autonomy: gated
+behavior: >
+  A run that reaches for something outside the abilities it currently holds is refused and told to
+  load that group first, rather than the attempt appearing to have worked. A refusal ends nothing: the
+  run carries on and can load the group and try again, so a routine never records having done
+  something it was not able to do.
+implements:
+- apps/agentic/agentic.py::handle_agentic
+tests: []
+links: {}
+notes: ''

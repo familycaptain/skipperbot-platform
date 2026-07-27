@@ -1,0 +1,15 @@
+kind: specification
+id: behaviors.teaching.both-halves-required
+title: A half-written rule is not saved
+state: live
+autonomy: gated
+behavior: >
+  Trying to save a rule in the app with either half blank, or containing only spaces, is refused with
+  a message saying both are needed and nothing is stored. A rule with a missing half would sit in the
+  list looking active while being unusable, which is worse than being told to finish it.
+implements:
+- apps/behaviors/ui/BehaviorsApp.jsx
+tests: []
+links: {}
+notes: >
+  Stated as the intent for every way of creating a rule; today only the app enforces it.

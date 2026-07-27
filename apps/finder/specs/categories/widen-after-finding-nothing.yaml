@@ -1,0 +1,14 @@
+kind: specification
+id: finder.categories.widen-after-finding-nothing
+title: A narrow search that finds nothing offers to widen
+state: live
+autonomy: gated
+behavior: >
+  A search narrowed to one app that finds nothing offers to search everywhere instead, and accepting
+  runs the same words across every app — so a wrong guess about which app holds the thing costs one
+  click rather than a retype.
+implements:
+- apps/finder/ui/FinderApp.jsx::FinderApp
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,20 @@
+kind: specification
+id: arcade.solitaire.klondike-rules
+title: Klondike, drawing three
+state: live
+autonomy: gated
+behavior: >
+  The deal is Klondike: seven columns of one to seven cards with only the last of each face up,
+  the rest in the stock. The stock deals three at a time and, once empty, turns the discards back
+  over in the order they were dealt so the pass can be made again. A card goes onto a tableau card
+  one rank higher and the other colour, and only a King goes onto an empty column; foundations
+  build one suit upwards from the ace. Picking up a face-up tableau card takes everything stacked
+  on it, and uncovering a face-down card turns it up.
+implements:
+- apps/arcade/ui/games/Solitaire.jsx::freshGame
+- apps/arcade/ui/games/Solitaire.jsx::canToTableau
+- apps/arcade/ui/games/Solitaire.jsx::canToFoundation
+- apps/arcade/ui/games/Solitaire.jsx::drawStock
+tests: []
+links: {}
+notes: ''

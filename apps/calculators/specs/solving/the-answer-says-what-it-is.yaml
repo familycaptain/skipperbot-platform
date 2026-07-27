@@ -1,0 +1,19 @@
+kind: specification
+id: calculators.solving.the-answer-says-what-it-is
+title: An answer is labelled with what was solved for
+state: live
+autonomy: gated
+behavior: >
+  Every answer names the field it solved and carries that field's unit — money to the cent, a rate
+  as a percentage, a term in years — so a result can never be read as a different quantity from the
+  one left blank. A figure that cannot be rendered as a number at all is shown as a dash rather than
+  as a misleading zero.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveCompound
+- apps/calculators/ui/CalculatorsApp.jsx::solveLoan
+- apps/calculators/ui/CalculatorsApp.jsx::money
+- apps/calculators/tools.py::compound_interest
+- apps/calculators/tools.py::loan_amortization
+tests: []
+links: {}
+notes: ''

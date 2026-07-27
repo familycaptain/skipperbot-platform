@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.mind.the-mind-is-read-only
+title: Nothing held in mind can be edited from here
+state: live
+autonomy: gated
+behavior: >
+  This screen only reads: nothing a person clicks changes, resolves or deletes what Skipper is
+  holding in mind. Working state is changed by the thinking that produced it, never by the person
+  watching it.
+implements:
+- agent.py::api_thinking_state
+- apps/thinking/ui/ThinkingApp.jsx::StateCard
+tests: []
+links: {}
+notes: ''

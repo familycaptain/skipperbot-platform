@@ -1,0 +1,15 @@
+kind: specification
+id: behaviors.teaching.a-rule-belongs-to-whoever-wrote-it
+title: A rule written in the app belongs to whoever is signed in
+state: live
+autonomy: gated
+behavior: >
+  A rule created in the app is owned by the signed-in person, whoever the browser claims to be
+  acting as — an ownership claim sent by a client is ignored. Ownership decides whose conversations a
+  personal rule reaches, so it cannot be something the caller chooses.
+implements:
+- agent.py::api_create_behavior
+- agent.py::_actor_name
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: tools.access.only-a-signed-in-person
+title: Only a signed-in person can read it
+state: live
+autonomy: gated
+behavior: >
+  The catalogue and every guide require a signed-in person; an unauthenticated request is refused
+  rather than served. Beyond being signed in the app draws no further distinction — any household
+  member who can reach Skipper can read what Skipper can do and how it is told to do it.
+implements:
+- agent.py::auth_gate
+- apps/tools/routes.py
+tests: []
+links: {}
+notes: ''

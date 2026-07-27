@@ -1,0 +1,14 @@
+kind: specification
+id: finder.search.clearing-starts-over
+title: Clearing starts over
+state: live
+autonomy: gated
+behavior: >
+  Pressing Escape, or the clear button in the search box, empties the query and discards the results
+  in one action and leaves the cursor in the box ready for the next search.
+implements:
+- apps/finder/ui/FinderApp.jsx::handleClear
+- apps/finder/ui/FinderApp.jsx::handleKeyDown
+tests: []
+links: {}
+notes: ''

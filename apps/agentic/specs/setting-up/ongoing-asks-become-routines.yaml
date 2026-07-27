@@ -1,0 +1,17 @@
+kind: specification
+id: agentic.setting-up.ongoing-asks-become-routines
+title: An ongoing ask becomes a routine, not a reminder
+state: live
+autonomy: gated
+behavior: >
+  When someone asks for something ongoing rather than one-off — every morning, each week, from now on,
+  keep an eye on this — setting up a routine is one of the answers Skipper reaches for: a written
+  instruction it carries out itself on a cadence. A routine is preferred over a plain reminder
+  whenever the request needs Skipper to actually do something each time rather than nudge a person to
+  do it, and the routine tools surface from the phrasing without anybody naming the feature.
+implements:
+- apps/agentic/manifest.yaml::tool_category
+- prompts/BEHAVIOR.md
+tests: []
+links: {}
+notes: ''

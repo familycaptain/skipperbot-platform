@@ -1,0 +1,15 @@
+kind: specification
+id: calculators.compound-interest.how-long-to-a-goal
+title: How long a goal takes
+state: live
+autonomy: gated
+behavior: >
+  Leaving the years blank reports how long the starting amount takes to reach the goal at that rate,
+  to two decimal places of a year rather than in whole years — so a goal reached part-way through a
+  year is not rounded up into another year of saving.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveCompound
+- apps/calculators/tools.py::compound_interest
+tests: []
+links: {}
+notes: ''

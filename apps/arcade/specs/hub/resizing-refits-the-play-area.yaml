@@ -1,0 +1,16 @@
+kind: specification
+id: arcade.hub.resizing-refits-the-play-area
+title: Resizing refits the game, it does not crop it
+state: live
+autonomy: gated
+behavior: >
+  Resizing the window or the panel refits the play area immediately: the world stays whole and
+  centred, letterboxed if the shape no longer matches, rather than being cropped or stretched. A
+  run continues across the resize with nothing lost.
+implements:
+- apps/arcade/ui/games/Wardenfall.jsx::fitCanvas
+- apps/arcade/ui/games/Spinhazard.jsx::fitCanvas
+- apps/arcade/ui/games/Aeldrift.jsx
+tests: []
+links: {}
+notes: ''

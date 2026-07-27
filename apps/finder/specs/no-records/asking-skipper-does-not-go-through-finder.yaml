@@ -1,0 +1,16 @@
+kind: specification
+id: finder.no-records.asking-skipper-does-not-go-through-finder
+title: Asking Skipper to find something does not go through Finder
+state: live
+autonomy: gated
+behavior: >
+  Finder is a screen for a person, not something Skipper calls: asked in conversation to find
+  something, Skipper searches through the owning apps' own abilities and answers in chat, and it can
+  open Finder for someone who would rather search for themselves. Nothing a person types into Finder
+  reaches the conversation.
+implements:
+- apps/finder/manifest.yaml::tool_category
+- local_tools.py::OPEN_APP_TOOL
+tests: []
+links: {}
+notes: ''

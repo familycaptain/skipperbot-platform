@@ -1,0 +1,16 @@
+kind: specification
+id: arcade.spinhazard.the-game-takes-the-keyboard
+title: The game takes the keyboard when you click it
+state: live
+autonomy: gated
+behavior: >
+  Clicking anywhere in the play area gives the game the keyboard, so the arrow keys steer the ship
+  instead of scrolling the page behind it, and the same happens automatically when a game is
+  launched from its start button. Both the arrow keys and the letter keys work for steering, so a
+  person does not have to know which set the game expects.
+implements:
+- apps/arcade/ui/games/Spinhazard.jsx
+- apps/arcade/ui/games/Aeldrift.jsx
+tests: []
+links: {}
+notes: ''

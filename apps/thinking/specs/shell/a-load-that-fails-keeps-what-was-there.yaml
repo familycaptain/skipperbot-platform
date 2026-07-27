@@ -1,0 +1,14 @@
+kind: specification
+id: thinking.shell.a-load-that-fails-keeps-what-was-there
+title: A screen whose data will not load keeps what it had
+state: live
+autonomy: gated
+behavior: >
+  When a screen cannot re-read its data it keeps showing what it last loaded, rather than clearing
+  itself to empty or replacing the app with an error page. Somebody watching a struggling install
+  still has the last good picture of it.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx
+tests: []
+links: {}
+notes: ''

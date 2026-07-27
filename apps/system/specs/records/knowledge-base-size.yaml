@@ -1,0 +1,15 @@
+kind: specification
+id: system.records.knowledge-base-size
+title: How much has been read into the knowledge base
+state: live
+autonomy: gated
+behavior: >
+  System reports how many knowledge sources have been taken in and how many searchable pieces
+  they were broken into — which is how a person confirms that something they added was actually
+  ingested rather than merely uploaded. Both read zero on a fresh install rather than being
+  hidden.
+implements:
+- apps/system/routes.py::api_system_metrics
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: system.health.runtime-and-process-id
+title: The runtime version and process id are on the screen
+state: live
+autonomy: gated
+behavior: >
+  Server health names the language runtime the agent is running on and the identifier of the
+  process serving the request, which is what lets an operator tie what the dashboard shows to a
+  specific process in the host's logs. Either reads as unknown when it cannot be determined.
+implements:
+- apps/system/routes.py::api_system_metrics
+tests: []
+links: {}
+notes: >
+  Recorded as current behaviour, not as a decision: whether host and runtime detail belongs in
+  front of every signed-in member is still open.

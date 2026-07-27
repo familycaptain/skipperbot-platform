@@ -1,0 +1,17 @@
+kind: specification
+id: arcade.solitaire.winning-scores-and-clears-the-hand
+title: Winning scores the hand and lets it go
+state: live
+autonomy: gated
+behavior: >
+  Filling all four foundations wins: the win is announced with the number of moves it took and an
+  offer to deal again, and the score goes onto the arcade board — higher for fewer moves, with a
+  floor so any win is worth something. The winning hand stops being kept, so opening Solitaire
+  afterwards deals fresh rather than restoring a finished board, and the win is recorded once no
+  matter how long the banner is left up.
+implements:
+- apps/arcade/ui/games/Solitaire.jsx
+- apps/arcade/data.py::clear_solitaire_save
+tests: []
+links: {}
+notes: ''

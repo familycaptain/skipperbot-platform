@@ -1,0 +1,13 @@
+kind: specification
+id: thinking.stream.a-quiet-record-says-so
+title: A quiet record says so
+state: live
+autonomy: gated
+behavior: >
+  When nothing matches — a filter with no entries, or an install where nothing has happened yet —
+  the screen says the stream is quiet rather than showing an empty list that looks like a failure.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx
+tests: []
+links: {}
+notes: ''

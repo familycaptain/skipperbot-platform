@@ -1,0 +1,16 @@
+kind: specification
+id: arcade.spinhazard.launch-and-play-again
+title: Launch, and launch again
+state: live
+autonomy: gated
+behavior: >
+  Spinhazard opens on a title screen with the controls and a launch button, and nothing moves
+  until it is pressed. Play again after a run starts over completely — score back to zero, lives
+  restored, back to the first wave — while the run just finished keeps its place on the arcade
+  board.
+implements:
+- apps/arcade/ui/games/Spinhazard.jsx::launch
+- apps/arcade/ui/games/Spinhazard.jsx::resetWorld
+tests: []
+links: {}
+notes: ''

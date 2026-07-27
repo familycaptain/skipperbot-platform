@@ -1,0 +1,14 @@
+kind: specification
+id: finder.sources.finished-records-stay-hidden
+title: Cancelled, paused and archived records are not found
+state: live
+autonomy: gated
+behavior: >
+  Cancelled reminders, paused schedules and archived to-do items are not returned even when their
+  words match the query; only records that are still live come back. A search does not resurface the
+  things a person has already dealt with.
+implements:
+- apps/finder/ui/FinderApp.jsx::SEARCH_SOURCES
+tests: []
+links: {}
+notes: ''

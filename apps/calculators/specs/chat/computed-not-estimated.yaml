@@ -1,0 +1,14 @@
+kind: specification
+id: calculators.chat.computed-not-estimated
+title: Skipper works the number out rather than guessing it
+state: live
+autonomy: gated
+behavior: >
+  When a conversation needs a number worked out, Skipper uses the calculator rather than answering
+  from its own arithmetic, so a figure quoted in chat is as trustworthy as one from the app.
+implements:
+- apps/calculators/guide.md
+- apps/calculators/manifest.yaml
+tests: []
+links: {}
+notes: ''

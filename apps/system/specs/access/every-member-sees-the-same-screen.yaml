@@ -1,0 +1,17 @@
+kind: specification
+id: system.access.every-member-sees-the-same-screen
+title: Any member can look, and the view is the same
+state: live
+autonomy: gated
+behavior: >
+  Any signed-in household member can open System, and everyone sees exactly the same screen —
+  there is no per-person version of the dashboard, and nothing is hidden or added according to
+  who is looking. Restarting is the only thing here that depends on who you are.
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/ui/SystemApp.jsx::SystemApp
+tests: []
+links: {}
+notes: >
+  Recorded as current behaviour, not as a decision. Host, runtime and process detail, and the
+  household's external-analysis posture, are shown to every account including a child's.

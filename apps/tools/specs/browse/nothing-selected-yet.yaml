@@ -1,0 +1,13 @@
+kind: specification
+id: tools.browse.nothing-selected-yet
+title: Nothing selected yet
+state: live
+autonomy: gated
+behavior: >
+  Until a category is chosen the detail side asks the person to pick one, rather than guessing on
+  their behalf or showing the first category's tools as though they had selected it.
+implements:
+- apps/tools/ui/ToolsApp.jsx::ToolsApp
+tests: []
+links: {}
+notes: ''

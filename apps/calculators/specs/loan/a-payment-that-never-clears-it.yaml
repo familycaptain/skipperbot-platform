@@ -1,0 +1,15 @@
+kind: specification
+id: calculators.loan.a-payment-that-never-clears-it
+title: A payment too small to ever clear the loan
+state: live
+autonomy: gated
+behavior: >
+  A monthly payment at or below the first month's interest can never repay the loan. Asked for the
+  term, the calculator says exactly that — the payment must exceed the first month's interest —
+  instead of reporting an enormous or negative number of years.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveLoan
+- apps/calculators/tools.py::loan_amortization
+tests: []
+links: {}
+notes: ''

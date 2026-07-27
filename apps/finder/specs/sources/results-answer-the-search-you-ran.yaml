@@ -1,0 +1,14 @@
+kind: specification
+id: finder.sources.results-answer-the-search-you-ran
+title: Results answer the search you ran
+state: live
+autonomy: gated
+behavior: >
+  The results on screen are the answer to the search that was run and do not change underneath the
+  reader: records added, edited or deleted afterwards — in another app, or by Skipper in the
+  conversation alongside — show up only when the search is run again.
+implements:
+- apps/finder/ui/FinderApp.jsx::runSearch
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: calculators.chat.every-calculator-works-in-chat
+title: Everything the app does can be asked for
+state: live
+autonomy: gated
+behavior: >
+  Anything the Calculators app can work out can be asked for in conversation instead — a bare sum, a
+  savings projection, a loan payment, how long a payoff takes — and the answer comes back in the
+  reply rather than by opening the app to a form that still has to be filled in.
+implements:
+- apps/calculators/tools.py::calculate
+- apps/calculators/tools.py::compound_interest
+- apps/calculators/tools.py::loan_amortization
+- apps/calculators/manifest.yaml
+tests: []
+links: {}
+notes: ''

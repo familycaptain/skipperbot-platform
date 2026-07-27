@@ -1,0 +1,18 @@
+kind: specification
+id: calculators.solving.an-impossible-request-is-refused
+title: Numbers that cannot be solved say so
+state: live
+autonomy: gated
+behavior: >
+  When the figures given admit no sensible answer — a savings goal already below the balance, a
+  payment that never clears the debt, a term with no interest rate to work from — the calculator
+  says which combination cannot be solved and why, rather than returning a negative or nonsensical
+  figure dressed up as the answer.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveCompound
+- apps/calculators/ui/CalculatorsApp.jsx::solveLoan
+- apps/calculators/tools.py::compound_interest
+- apps/calculators/tools.py::loan_amortization
+tests: []
+links: {}
+notes: ''

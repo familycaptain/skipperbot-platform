@@ -1,0 +1,18 @@
+kind: specification
+id: behaviors.influence.unreadable-rules-degrade-quietly
+title: If rules cannot be read, the conversation still happens
+state: live
+autonomy: gated
+behavior: >
+  When the stored rules cannot be read at all, the turn goes ahead as though the person had no rules
+  rather than failing or refusing to answer. Nothing is said about it, so from the outside the only
+  symptom is that rules stopped firing while everything else works — and they resume by themselves
+  once the rules can be read again.
+implements:
+- chat_domain.py::_build_system_prompt
+- app_platform/voice/prompting.py::build_active_behavior_rules
+tests: []
+links: {}
+notes: >
+  Answering beats erroring: rules are an addition to a conversation, not a precondition for one. The
+  silence is the cost, and it is why the failure is easy to mistake for a rule that stopped matching.

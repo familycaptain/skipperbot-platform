@@ -1,0 +1,16 @@
+kind: specification
+id: timers.setting.not-while-shutting-down
+title: Once Skipper is stopping, a new timer is refused rather than accepted
+state: live
+autonomy: gated
+behavior: >
+  From the moment Skipper begins shutting down, asking for a timer is answered with a refusal that
+  says the timer service is stopping. Accepting one would be a promise that could not be kept — it
+  would be thrown away seconds later without anybody being told — so a person hears "not now" and
+  can set it again after the restart.
+implements:
+- apps/timers/tools.py::start_timer
+- apps/timers/scheduler.py::is_shutting_down
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: arcade.solitaire.take-a-card-back-off-a-foundation
+title: A card sent up too early can come back
+state: live
+autonomy: gated
+behavior: >
+  The top card of a foundation can be picked up and played back down onto the tableau, one card at
+  a time, so sending a card up too early is a setback rather than a lost game. Cards cannot be
+  moved between foundations.
+implements:
+- apps/arcade/ui/games/Solitaire.jsx::clickFoundation
+- apps/arcade/ui/games/Solitaire.jsx::movingCards
+tests: []
+links: {}
+notes: >
+  This is the game's only route backwards; there is no undo.

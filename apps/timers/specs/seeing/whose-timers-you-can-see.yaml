@@ -1,0 +1,19 @@
+kind: specification
+id: timers.seeing.whose-timers-you-can-see
+title: Asking about a person narrows the list; asking about nobody shows the whole house
+state: live
+autonomy: gated
+behavior: >
+  Asking about your own timers returns your own. Asking without naming anybody returns every timer
+  running anywhere in the household, each labelled with whose it is — the same view somebody would
+  get walking into the kitchen and seeing three timers on the counter. A name is matched however it
+  is capitalised or spaced.
+implements:
+- apps/timers/tools.py::list_timers
+- apps/timers/store.py::list_active
+tests: []
+links: {}
+notes: >
+  Household-wide by default is a deliberate consequence of a timer being a kitchen object rather
+  than private correspondence; it is NOT the rule for reminders or notification history, which are
+  each person's own.

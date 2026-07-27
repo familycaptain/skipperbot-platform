@@ -1,0 +1,18 @@
+kind: specification
+id: finder.sources.only-what-you-may-see
+title: You only find what you are allowed to see
+state: live
+autonomy: gated
+behavior: >
+  A search returns the searcher's own personal records — their reminders, their to-do items — and
+  never another person's, whoever is signed in. Records the household shares, such as documents,
+  recipes, schedules, goals, located items, vehicles and ideas, are findable by everyone in the
+  household. Finder offers no way to search as somebody else.
+implements:
+- apps/finder/ui/FinderApp.jsx::SEARCH_SOURCES
+- app_platform/auth.py::scope_user
+tests: []
+links: {}
+notes: >
+  Household-shared by default is the platform's model, not an oversight: a family assistant is not a
+  multi-tenant system. Only the two per-person lists are scoped to the asker.

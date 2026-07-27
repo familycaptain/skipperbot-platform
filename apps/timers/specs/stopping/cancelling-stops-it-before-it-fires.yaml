@@ -1,0 +1,16 @@
+kind: specification
+id: timers.stopping.cancelling-stops-it-before-it-fires
+title: Stopping a timer means it never goes off
+state: live
+autonomy: gated
+behavior: >
+  A timer stopped before its moment never announces itself: nothing is spoken, nothing arrives on
+  anybody's screen or phone, and no trace of it is left in the person's record of what Skipper told
+  them. The confirmation names the timer that was stopped, and it is gone from the running list
+  straight away rather than after a delay.
+implements:
+- apps/timers/tools.py::cancel_timer
+- apps/timers/scheduler.py::cancel
+tests: []
+links: {}
+notes: ''

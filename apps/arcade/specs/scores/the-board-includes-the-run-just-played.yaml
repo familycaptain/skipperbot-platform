@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.scores.the-board-includes-the-run-just-played
+title: The run just played is on the board
+state: live
+autonomy: gated
+behavior: >
+  Returning to the menu after a run shows a board that already includes it, without the person
+  reloading or reopening the app.
+implements:
+- apps/arcade/ui/ArcadeApp.jsx::submitScore
+- apps/arcade/ui/ArcadeApp.jsx::Leaderboard
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: thinking.budget.real-money-when-the-provider-can-be-asked
+title: Real money is shown only when the provider can be asked
+state: live
+autonomy: gated
+behavior: >
+  When the install holds credentials that let it read the model provider's own billing, the day's
+  actual spend in currency is shown beside the token count; without them only tokens are shown,
+  rather than a zero or a placeholder that reads like a fact. A provider that refuses, errors or
+  times out is treated exactly like one that was never configured, and the rest of the bar still
+  renders.
+implements:
+- agent.py::_fetch_openai_daily_cost
+- apps/thinking/ui/ThinkingApp.jsx::BudgetBar
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: calculators.scientific.clearing-and-correcting
+title: Correcting a mistake without starting over
+state: live
+autonomy: gated
+behavior: >
+  C empties the display back to zero and clears any error marking; the backspace key removes the
+  last single character, so a function entered by one key press — which puts its name and an opening
+  bracket on the display — takes several presses to remove. A wrong entry never has to be cleared
+  entirely to be fixed.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::ScientificTab
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: calculators.solving.exactly-one-blank
+title: One blank field is the question
+state: live
+autonomy: gated
+behavior: >
+  Both finance calculators are driven by leaving a field empty: fill in what is known, leave the one
+  unknown blank, and that is what gets solved. With nothing blank, or with two or more fields blank,
+  the calculator names the four fields and asks for exactly one to be left empty instead of guessing
+  which was meant.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveCompound
+- apps/calculators/ui/CalculatorsApp.jsx::solveLoan
+- apps/calculators/tools.py::compound_interest
+- apps/calculators/tools.py::loan_amortization
+tests: []
+links: {}
+notes: ''

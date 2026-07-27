@@ -2,10 +2,12 @@ kind: capability
 id: timers
 title: Timers
 app: timers
-scope: 'Short, in-memory countdown timers (sub-30-minute: cooking, pomodoros) that fire a notification
-  when they expire. Ephemeral — each timer is an asyncio task with no database row; the only persisted
-  artifact is the notification on expiry. NOT long-term reminders (the Reminders app) or recurring
-  schedules (the Schedules app).'
+scope: 'The egg timer: a countdown of a few seconds to a few minutes, started from right now,
+  that announces itself when it runs out. Asked for and asked about entirely in conversation —
+  no page to open. Several can run at once and be told apart by what they were set for. A timer
+  lasts only as long as Skipper keeps running, and is deliberately the throwaway option: anything
+  tied to a wall-clock time, anything further off than about half an hour, and anything that must
+  not be lost belongs to Reminders. Recurring routines belong to Schedules.'
 state: live
 autonomy: gated
 links: {}

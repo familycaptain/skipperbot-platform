@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.wardenfall.waves-come-on-their-own
+title: Waves come whether you are ready or not
+state: live
+autonomy: gated
+behavior: >
+  Between waves a countdown shows how long is left, and when it runs out the next wave starts by
+  itself. It can be called early to spend the wait building instead, but it cannot be delayed, so
+  a break is the only time to prepare.
+implements:
+- apps/arcade/ui/games/Wardenfall.jsx::startNextWaveNow
+- apps/arcade/ui/games/Wardenfall.jsx::step
+tests: []
+links: {}
+notes: ''

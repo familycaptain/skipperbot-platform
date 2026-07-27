@@ -1,0 +1,15 @@
+kind: specification
+id: calculators.compound-interest.solving-backwards-needs-real-amounts
+title: Solving backwards needs a positive balance, goal and rate
+state: live
+autonomy: gated
+behavior: >
+  Solving for the years or for the rate needs a positive starting amount, a positive goal and a
+  positive rate. With any of those at or below nought the calculator says which are needed, rather
+  than answering from a division by nought or the logarithm of a negative number.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveCompound
+- apps/calculators/tools.py::compound_interest
+tests: []
+links: {}
+notes: ''

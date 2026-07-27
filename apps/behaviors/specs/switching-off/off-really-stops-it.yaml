@@ -1,0 +1,19 @@
+kind: specification
+id: behaviors.switching-off.off-really-stops-it
+title: Off means Skipper is never told the rule
+state: live
+autonomy: gated
+behavior: >
+  A rule that has been switched off is not put in front of Skipper at all — not in typed conversation
+  and not in spoken — so it cannot fire, cannot be half-applied, and cannot influence a reply. It stops
+  from the next turn onwards, without a restart. This is the one control in the app that binds rather
+  than advises.
+implements:
+- apps/behaviors/data.py::get_active_behaviors_for_user
+- apps/behaviors/data.py::list_behaviors
+- chat_domain.py::_build_system_prompt
+tests: []
+links: {}
+notes: >
+  Withholding the rule is what makes the switch real; adding "this rule is disabled" to the text would
+  have left it to be interpreted, and a disabled rule is exactly the case where that must not happen.

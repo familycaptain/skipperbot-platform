@@ -1,0 +1,15 @@
+kind: specification
+id: system.health.reading-that-fails-says-so
+title: A reading that fails says so
+state: live
+autonomy: gated
+behavior: >
+  When the dashboard cannot be read at all — the database is unreachable, the request fails —
+  System says plainly that it could not load, instead of showing a screenful of zeros that would
+  read as "the household has no data". A refresh that fails leaves the previous reading on
+  screen rather than blanking it.
+implements:
+- apps/system/ui/SystemApp.jsx::SystemApp
+tests: []
+links: {}
+notes: ''

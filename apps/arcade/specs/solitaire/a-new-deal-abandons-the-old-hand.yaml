@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.solitaire.a-new-deal-abandons-the-old-hand
+title: A new deal gives up the old hand
+state: live
+autonomy: gated
+behavior: >
+  Asking for a new game deals a fresh shuffled hand immediately, with no confirmation and no way
+  back: the hand being abandoned is gone, including a nearly-won one. Move count and any
+  unreported result reset with it.
+implements:
+- apps/arcade/ui/games/Solitaire.jsx::newGame
+tests: []
+links: {}
+notes: ''

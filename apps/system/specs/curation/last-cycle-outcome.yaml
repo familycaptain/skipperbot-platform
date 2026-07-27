@@ -1,0 +1,16 @@
+kind: specification
+id: system.curation.last-cycle-outcome
+title: What the last cycle actually did
+state: live
+autonomy: gated
+behavior: >
+  Beneath the progress bar System reports the most recent curation cycle: when it ran, how many
+  memories it was offered and how many it actually processed, and whether it got through all of
+  them. A cycle that was moved past its batch without the work being confirmed is labelled as
+  such, so an apparently healthy advance can be told from a real one.
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/ui/SystemApp.jsx::SystemApp
+tests: []
+links: {}
+notes: ''

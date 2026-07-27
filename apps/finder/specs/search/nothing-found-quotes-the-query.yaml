@@ -1,0 +1,15 @@
+kind: specification
+id: finder.search.nothing-found-quotes-the-query
+title: Nothing found quotes the query back
+state: live
+autonomy: gated
+behavior: >
+  When no app has a match, Finder says nothing was found and quotes the words it searched for — a
+  different message from the invitation shown before anything has been searched, so "I found
+  nothing" is never confused with "I have not looked". A query that matched nothing is not padded out
+  with recent or loosely related records from any app.
+implements:
+- apps/finder/ui/FinderApp.jsx::FinderApp
+tests: []
+links: {}
+notes: ''

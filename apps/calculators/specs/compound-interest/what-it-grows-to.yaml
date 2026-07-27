@@ -1,0 +1,14 @@
+kind: specification
+id: calculators.compound-interest.what-it-grows-to
+title: What a balance grows to
+state: live
+autonomy: gated
+behavior: >
+  Given a starting amount, an annual rate, how often interest compounds and a number of years, the
+  calculator reports the balance at the end, as money to the cent.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveCompound
+- apps/calculators/tools.py::compound_interest
+tests: []
+links: {}
+notes: ''

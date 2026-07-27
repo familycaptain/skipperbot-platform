@@ -1,0 +1,16 @@
+kind: specification
+id: thinking.log.narrow-the-log
+title: Narrow the log to one area, or to a shorter window
+state: live
+autonomy: gated
+behavior: >
+  The log can be limited to a single area and to a window — the last day, three days, week or
+  month — and it re-reads immediately when either changes. A request for more than a month of
+  history is served a month, and a request for more entries than the screen will show is capped,
+  so no filter choice can make the screen take minutes to load.
+implements:
+- agent.py::api_thinking_log
+- data_layer/thinking_log.py::list_log_entries
+tests: []
+links: {}
+notes: ''

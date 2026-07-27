@@ -1,0 +1,15 @@
+kind: specification
+id: system.health.database-size
+title: How big the database has got
+state: live
+autonomy: gated
+behavior: >
+  Server health reports the size of Skipper's database in human units — megabytes, gigabytes —
+  so a person can watch the install grow without running a query. Where the size cannot be read
+  it is shown as unknown rather than as zero: the two mean very different things to someone
+  deciding whether to prune or add storage.
+implements:
+- apps/system/routes.py::api_system_metrics
+tests: []
+links: {}
+notes: ''

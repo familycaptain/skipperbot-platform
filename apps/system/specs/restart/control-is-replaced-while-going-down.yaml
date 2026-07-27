@@ -1,0 +1,17 @@
+kind: specification
+id: system.restart.control-is-replaced-while-going-down
+title: While it is going down, the control is gone
+state: live
+autonomy: gated
+behavior: >
+  Once a restart is under way the dashboard replaces the control with a restarting indication,
+  so the button cannot be pressed again from the same screen. The dashboard does not recover by
+  itself: that indication stays until the page is reloaded against the restarted agent.
+implements:
+- apps/system/ui/SystemApp.jsx::SystemApp
+- agent.py::api_admin_status
+tests: []
+links: {}
+notes: >
+  The second sentence records what this screen does today, not a decision — the console header
+  polls and reloads itself once the agent is back; this screen does not.

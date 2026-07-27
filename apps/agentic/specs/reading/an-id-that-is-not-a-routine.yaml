@@ -1,0 +1,17 @@
+kind: specification
+id: agentic.reading.an-id-that-is-not-a-routine
+title: An id that is not a routine
+state: live
+autonomy: gated
+behavior: >
+  Asking to read, rewrite or immediately run a routine by an id that does not name one — a chore, a
+  maintenance interval, a mistyped id — answers that there is no such routine and changes nothing, so
+  an ordinary schedule can never be given instructions, have its cadence rewritten, or be fired as
+  though it were autonomous work.
+implements:
+- apps/agentic/tools.py::show_routine
+- apps/agentic/tools.py::update_routine
+- apps/agentic/tools.py::run_routine_now
+tests: []
+links: {}
+notes: ''

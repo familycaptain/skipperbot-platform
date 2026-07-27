@@ -1,0 +1,15 @@
+kind: specification
+id: finder.no-records.finder-keeps-nothing
+title: Finder keeps nothing
+state: live
+autonomy: gated
+behavior: >
+  Finder stores no records of its own: no index, no saved searches, and no history of what anyone
+  typed. Searching never changes a record it finds, so a search is always safe to run, and a backup
+  taken of the household's data loses nothing by not including Finder.
+implements:
+- apps/finder/manifest.yaml::entity_types
+- apps/finder/__init__.py
+tests: []
+links: {}
+notes: ''

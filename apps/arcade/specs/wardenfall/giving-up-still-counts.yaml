@@ -1,0 +1,13 @@
+kind: specification
+id: arcade.wardenfall.giving-up-still-counts
+title: Giving up still counts
+state: live
+autonomy: gated
+behavior: >
+  Giving up ends the run immediately and records the score reached rather than throwing it away,
+  so a run that is clearly going nowhere can be cashed in instead of played out.
+implements:
+- apps/arcade/ui/games/Wardenfall.jsx::giveUp
+tests: []
+links: {}
+notes: ''

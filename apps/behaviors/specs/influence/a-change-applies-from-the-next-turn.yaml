@@ -1,0 +1,16 @@
+kind: specification
+id: behaviors.influence.a-change-applies-from-the-next-turn
+title: A change applies from the next thing you say
+state: live
+autonomy: gated
+behavior: >
+  Adding, editing, switching or deleting a rule takes effect on the next turn of typed conversation,
+  with no restart and no need to reopen anything. A spoken conversation already under way keeps the
+  rules it began with until it is restarted or moves to another app, so a rule changed mid-call does
+  not take hold until the next one.
+implements:
+- chat_domain.py::_build_system_prompt
+- app_platform/voice/prompting.py::build_base_voice_instructions
+tests: []
+links: {}
+notes: ''

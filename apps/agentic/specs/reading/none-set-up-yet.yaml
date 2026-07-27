@@ -1,0 +1,15 @@
+kind: specification
+id: agentic.reading.none-set-up-yet
+title: When there are none
+state: live
+autonomy: gated
+behavior: >
+  With no routines set up, asking says plainly that Skipper runs nothing on its own — not an empty
+  list, not silence, not an error — so "there is no standing work" can be told apart from "the
+  question failed". A question that cannot be answered at all reports the failure instead of reading
+  as none.
+implements:
+- apps/agentic/tools.py::list_routines
+tests: []
+links: {}
+notes: ''

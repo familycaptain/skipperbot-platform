@@ -1,0 +1,15 @@
+kind: specification
+id: system.access.counts-not-contents
+title: How many, not what
+state: live
+autonomy: gated
+behavior: >
+  System answers how much there is and what state it is in, never what any of it says: no
+  reminder text, no document body, no message and no member's name appears on the screen. The
+  most specific things it names are the most recent job's name and the outcome of the last
+  backup and curation cycle.
+implements:
+- apps/system/routes.py::api_system_metrics
+tests: []
+links: {}
+notes: ''

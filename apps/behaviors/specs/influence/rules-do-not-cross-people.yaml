@@ -1,0 +1,15 @@
+kind: specification
+id: behaviors.influence.rules-do-not-cross-people
+title: Your personal rules do not follow other people
+state: live
+autonomy: gated
+behavior: >
+  A personal rule shapes only its owner's conversations. Another member of the household saying the
+  identical trigger phrase gets no rule behaviour from it, and never sees it in their own list, so one
+  person's automation cannot silently start acting on someone else's words.
+implements:
+- apps/behaviors/data.py::list_behaviors
+- apps/behaviors/data.py::get_active_behaviors_for_user
+tests: []
+links: {}
+notes: ''

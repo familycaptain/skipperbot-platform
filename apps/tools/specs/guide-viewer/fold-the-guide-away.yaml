@@ -1,0 +1,14 @@
+kind: specification
+id: tools.guide-viewer.fold-the-guide-away
+title: The guide can be folded away
+state: live
+autonomy: gated
+behavior: >
+  The guide starts open and can be folded away to leave just the description and the tool list, and
+  that choice holds as the person moves between categories — someone comparing tool lists is not
+  re-collapsing it every time.
+implements:
+- apps/tools/ui/ToolsApp.jsx::CategoryDetail
+tests: []
+links: {}
+notes: ''

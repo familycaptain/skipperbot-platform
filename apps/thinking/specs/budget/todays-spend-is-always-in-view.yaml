@@ -1,0 +1,17 @@
+kind: specification
+id: thinking.budget.todays-spend-is-always-in-view
+title: The day's spend is in view on every screen
+state: live
+autonomy: gated
+behavior: >
+  Every screen of the app carries the same bar across the top: what background thought has spent
+  so far today, the ceiling it is measured against, how many passes that took, and the share of
+  the ceiling used. Moving between screens re-reads it, and it refreshes on its own while the app
+  is open, so the figure is never stale by more than about half a minute.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx::BudgetBar
+- agent.py::api_thinking_budget
+- data_layer/thinking_log.py::get_today_token_usage
+tests: []
+links: {}
+notes: ''

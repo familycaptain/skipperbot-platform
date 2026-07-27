@@ -1,0 +1,16 @@
+kind: specification
+id: system.curation.progress-through-the-corpus
+title: How far curation has got
+state: live
+autonomy: gated
+behavior: >
+  System shows how far the document-curation cycle has worked through the household's memories:
+  the position reached out of the total, the same thing as a percentage and a bar, and how many
+  are still ahead of it. With no memories at all it reads as no progress rather than as an
+  impossible or blank figure.
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/ui/SystemApp.jsx::SystemApp
+tests: []
+links: {}
+notes: ''

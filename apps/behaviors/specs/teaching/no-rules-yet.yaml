@@ -1,0 +1,15 @@
+kind: specification
+id: behaviors.teaching.no-rules-yet
+title: Someone with no rules is shown what one looks like
+state: live
+autonomy: gated
+behavior: >
+  Opening the app with no rules of your own and none set for the household shows an explanation and
+  worked examples of triggers rather than an empty list, and offers both ways in — write one here, or
+  just tell Skipper. Until a rule exists, conversations are exactly as they would be without the app.
+implements:
+- apps/behaviors/ui/BehaviorsApp.jsx
+- chat_domain.py::_build_system_prompt
+tests: []
+links: {}
+notes: ''

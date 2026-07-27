@@ -1,0 +1,15 @@
+kind: specification
+id: tools.registry.every-tool-named
+title: Every tool in a category, named
+state: live
+autonomy: gated
+behavior: >
+  Opening a category names each tool it exposes — spelled exactly as Skipper calls it — and how
+  many there are, so someone asking "why didn't it use that tool" can see whether the tool is
+  routed anywhere at all.
+implements:
+- apps/tools/routes.py::api_tool_categories
+- apps/tools/ui/ToolsApp.jsx::CategoryDetail
+tests: []
+links: {}
+notes: ''

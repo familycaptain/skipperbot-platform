@@ -1,0 +1,16 @@
+kind: specification
+id: tools.browse.pick-a-category
+title: Pick a category, see what it holds
+state: live
+autonomy: gated
+behavior: >
+  Choosing a category shows its description, tools, keywords and guide, and marks it as the current
+  one in the list. Choosing another replaces all of that with the new category's own content,
+  including dropping the guide that was on screen, so nothing from the previous category can be
+  read as belonging to this one.
+implements:
+- apps/tools/ui/ToolsApp.jsx::handleSelectCategory
+- apps/tools/ui/ToolsApp.jsx::CategoryDetail
+tests: []
+links: {}
+notes: ''

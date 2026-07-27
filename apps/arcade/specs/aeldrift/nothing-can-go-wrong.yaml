@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.aeldrift.nothing-can-go-wrong
+title: Nothing in Aeldrift can go wrong
+state: live
+autonomy: gated
+behavior: >
+  There is nothing to fight, no timer and no way to fail: a run ends only by gathering everything,
+  finishing early, or leaving. That is the point of the game rather than an omission from it.
+implements:
+- apps/arcade/ui/games/Aeldrift.jsx
+tests: []
+links: {}
+notes: >
+  Kept as an explicit spec because it is the one game in the arcade with no lose condition, and
+  adding one would change what it is.

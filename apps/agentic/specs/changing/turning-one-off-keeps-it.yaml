@@ -1,0 +1,16 @@
+kind: specification
+id: agentic.changing.turning-one-off-keeps-it
+title: Turning one off keeps it
+state: live
+autonomy: gated
+behavior: >
+  A routine can be turned off and stays listed, marked as off, keeping its instructions, cadence,
+  owner and history; while off it never runs and its next run time stops moving. Turned back on it
+  runs at its next due time — which, if that moment passed while it was off, means the next sweep, and
+  once only rather than once for every occurrence it missed.
+implements:
+- apps/agentic/tools.py::set_routine_active
+- apps/schedules/ui/SchedulesApp.jsx::DetailView
+tests: []
+links: {}
+notes: ''

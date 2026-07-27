@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.log.history-outlives-the-area
+title: The log keeps passes taken by areas that no longer exist
+state: live
+autonomy: gated
+behavior: >
+  Passes taken by an area the install has since retired stay in the log and stay readable: the
+  history of what Skipper concluded and spent is never deleted because the registry of areas
+  changed. Such passes appear in the unfiltered list even though the retired area is no longer
+  offered as something to filter by.
+implements:
+- data_layer/thinking_log.py::list_log_entries
+tests: []
+links: {}
+notes: ''

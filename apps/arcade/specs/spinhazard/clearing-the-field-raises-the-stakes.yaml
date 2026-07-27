@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.spinhazard.clearing-the-field-raises-the-stakes
+title: Clearing the field raises the stakes
+state: live
+autonomy: gated
+behavior: >
+  The moment the last rock is gone the next wave arrives immediately, with one more rock than the
+  last and all of them moving faster. There is no break and no end — the waves go on until the
+  ship runs out of lives.
+implements:
+- apps/arcade/ui/games/Spinhazard.jsx::spawnWave
+tests: []
+links: {}
+notes: ''

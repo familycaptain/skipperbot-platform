@@ -1,0 +1,20 @@
+kind: specification
+id: behaviors.teaching.said-in-passing-becomes-a-rule
+title: A standing instruction is saved, not just agreed to
+state: live
+autonomy: gated
+behavior: >
+  When someone phrases an instruction as a standing one — "from now on", "whenever I say", "always",
+  "going forward" — Skipper saves it as a rule and says which rule it saved, rather than replying
+  "got it" and forgetting by the next turn. Anything the person also asked for right now is still
+  done in the same turn, so teaching a rule and acting on it once are not alternatives. Nobody is
+  asked to confirm first; a person can undo it afterwards by switching the rule off or deleting it.
+implements:
+- apps/behaviors/tools.py::add_behavior
+- apps/behaviors/guide.md
+- apps/behaviors/manifest.yaml
+tests: []
+links: {}
+notes: >
+  Confirming with the rule's identifier is what makes the difference visible: an agreement with no
+  saved rule is indistinguishable from a saved one until the trigger next comes round.

@@ -1,0 +1,15 @@
+kind: specification
+id: tools.registry.neither-half-hides-the-other
+title: One source failing never blanks the list
+state: live
+autonomy: gated
+behavior: >
+  If the running registry cannot be read, the categories the routing file declares are still listed
+  and the failure is recorded rather than surfaced as a broken app; a routing file that is simply
+  absent is skipped and the app-declared categories are listed on their own. Only when both come
+  back with nothing does the app report having no categories.
+implements:
+- apps/tools/routes.py::api_tool_categories
+tests: []
+links: {}
+notes: ''

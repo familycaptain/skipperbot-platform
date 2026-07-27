@@ -1,0 +1,16 @@
+kind: specification
+id: thinking.shell.the-app-changes-nothing-but-the-switches
+title: The only thing this app changes is which areas run
+state: live
+autonomy: gated
+behavior: >
+  Every screen but the switches is a window: opening the app, moving around it and refreshing it
+  never alters what Skipper is thinking, holding, or has already recorded. The one change a person
+  can make from here is turning an area of thought on or off.
+implements:
+- agent.py::api_thinking_state
+- agent.py::api_thinking_log
+- agent.py::api_thinking_domain_update
+tests: []
+links: {}
+notes: ''

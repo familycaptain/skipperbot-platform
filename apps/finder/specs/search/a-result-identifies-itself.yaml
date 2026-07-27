@@ -1,0 +1,15 @@
+kind: specification
+id: finder.search.a-result-identifies-itself
+title: A result says which one it is
+state: live
+autonomy: gated
+behavior: >
+  Each match is listed as the record's own name, with its id and a one-line detail that tells two
+  similarly named records apart — where an item is kept, when a reminder is due, whose schedule it is,
+  how many servings a recipe makes, which tags an idea carries. A record with no such detail still
+  says what kind of thing it is rather than showing a blank line.
+implements:
+- apps/finder/ui/FinderApp.jsx::SEARCH_SOURCES
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: agentic.reading.read-one-in-full
+title: Reading exactly what a routine will do
+state: live
+autonomy: gated
+behavior: >
+  A routine can be read in full before anybody changes it: its cadence and run time, whether it is on,
+  the abilities it starts with, where its instructions live, and the text of those instructions as they
+  stand right now rather than as they were when it was set up. Instructions that have been emptied or
+  whose document has gone are shown as empty rather than left out, so a routine that would do nothing
+  looks different from one that would.
+implements:
+- apps/agentic/tools.py::show_routine
+tests: []
+links: {}
+notes: ''

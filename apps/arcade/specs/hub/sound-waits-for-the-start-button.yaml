@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.hub.sound-waits-for-the-start-button
+title: Sound starts when the person does
+state: live
+autonomy: gated
+behavior: >
+  No game makes a sound until the person has pressed its own start button, so opening a game never
+  produces noise on its own. A browser that will not give the arcade audio at all is played
+  through silently — every game stays fully playable without sound.
+implements:
+- apps/arcade/ui/sfx.js::resume
+- apps/arcade/ui/sfx.js::ac
+tests: []
+links: {}
+notes: ''

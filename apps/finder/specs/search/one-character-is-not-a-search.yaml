@@ -1,0 +1,16 @@
+kind: specification
+id: finder.search.one-character-is-not-a-search
+title: One character is not a search
+state: live
+autonomy: gated
+behavior: >
+  A single character, or nothing but spaces, does not start a search: Finder keeps showing its
+  invitation to search, and says how much to type, rather than reporting that nothing was found.
+  Deleting a query back down to one character clears the results, so a half-erased search is never
+  left on screen looking like an answer to it.
+implements:
+- apps/finder/ui/FinderApp.jsx::MIN_QUERY_LEN
+- apps/finder/ui/FinderApp.jsx::handleChange
+tests: []
+links: {}
+notes: ''

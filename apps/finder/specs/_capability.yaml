@@ -2,10 +2,12 @@ kind: capability
 id: finder
 title: Finder
 app: finder
-scope: A pure-UI launcher tile that aggregates search across the apps owning the underlying data
-  (goals, documents, recipes, reminders, schedules, …). Owns no schema, tables, migrations, chat
-  tools, or REST routes — every search dispatches to the owning app. NOT a data store itself;
-  Finder is a unified cross-app search surface.
+scope: >
+  One search box for everything in Skipper: type words, or paste a record's id, and Finder asks
+  every app that owns records to search its own data, then shows the matches grouped under the app
+  they came from with a way to open each one. For "where did I put that?" when the person does not
+  know which app the thing lives in. NOT a store and NOT an index — Finder holds no records and no
+  search history; each owning app answers for its own data.
 state: live
 autonomy: gated
 links: {}

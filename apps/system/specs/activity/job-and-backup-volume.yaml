@@ -1,0 +1,15 @@
+kind: specification
+id: system.activity.job-and-backup-volume
+title: How much work is queued, running and done
+state: live
+autonomy: gated
+behavior: >
+  System reports how many background jobs exist in total, how many are running right now, how
+  many are waiting to start, and how many backups have been taken. Running and queued at zero
+  against a large total is the normal picture for a settled install, and is shown rather than
+  hidden.
+implements:
+- apps/system/routes.py::api_system_metrics
+tests: []
+links: {}
+notes: ''

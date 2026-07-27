@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.stream.how-long-answers-took
+title: How long the last answers took
+state: live
+autonomy: gated
+behavior: >
+  Beside what is owed, the screen lists the turns Skipper most recently answered with how long
+  each took from being asked to being answered. That is how a person tells a slow install from a
+  stuck one without reading any logs.
+implements:
+- agent.py::api_thinking_attention
+- apps/thinking/ui/ThinkingApp.jsx
+tests: []
+links: {}
+notes: ''

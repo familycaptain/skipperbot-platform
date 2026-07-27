@@ -1,0 +1,20 @@
+kind: specification
+id: calculators.chat.the-same-question-gets-the-same-answer
+title: One question, one answer, whichever way it is asked
+state: live
+autonomy: gated
+behavior: >
+  A question produces the same figures whether it is entered in the app or asked in conversation,
+  and the edge cases are worded identically on both — a goal already reached, a payment too low to
+  clear a loan. Nobody is ever left reconciling two different answers to one question.
+implements:
+- apps/calculators/tools.py::compound_interest
+- apps/calculators/ui/CalculatorsApp.jsx::solveCompound
+- apps/calculators/tools.py::loan_amortization
+- apps/calculators/ui/CalculatorsApp.jsx::solveLoan
+tests: []
+links: {}
+notes: >
+  The shared edge-case sentences are held identical deliberately: the same wording has to survive
+  being read on a screen and read aloud, and two surfaces phrasing the same refusal differently
+  reads as two different problems.

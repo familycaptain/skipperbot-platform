@@ -1,0 +1,17 @@
+kind: specification
+id: arcade.solitaire.pick-up-and-put-down
+title: Pick a card up, then say where it goes
+state: live
+autonomy: gated
+behavior: >
+  Play is two clicks, which works the same with a mouse or a finger: clicking a face-up card picks
+  it up and shows it lifted, and clicking a pile puts it there if the rules allow. An illegal
+  destination leaves the board untouched, a face-down card cannot be picked up, and clicking the
+  picked-up card again puts it back down.
+implements:
+- apps/arcade/ui/games/Solitaire.jsx::clickTableauCard
+- apps/arcade/ui/games/Solitaire.jsx::tryMove
+- apps/arcade/ui/games/Solitaire.jsx::clickWaste
+tests: []
+links: {}
+notes: ''

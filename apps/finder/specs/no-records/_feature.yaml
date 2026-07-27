@@ -1,0 +1,6 @@
+kind: feature
+id: finder.no-records
+title: Finder holds nothing of its own
+state: live
+links: {}
+notes: ''

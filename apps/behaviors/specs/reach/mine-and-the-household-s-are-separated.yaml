@@ -1,0 +1,16 @@
+kind: specification
+id: behaviors.reach.mine-and-the-household-s-are-separated
+title: Your rules and the household's are told apart
+state: live
+autonomy: gated
+behavior: >
+  The list keeps personal and household-wide rules in separate labelled groups, each headed with a
+  count and the personal group named after its owner, and every rule carries its reach as a badge. A
+  person can therefore tell at a glance which rules are theirs to rewrite freely and which affect
+  everyone before they touch them.
+implements:
+- apps/behaviors/ui/BehaviorsApp.jsx
+- apps/behaviors/tools.py::list_behaviors
+tests: []
+links: {}
+notes: ''

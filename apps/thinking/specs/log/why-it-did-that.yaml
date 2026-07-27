@@ -1,0 +1,16 @@
+kind: specification
+id: thinking.log.why-it-did-that
+title: Open a pass to see why it did what it did
+state: live
+autonomy: gated
+behavior: >
+  Opening a pass shows the reasoning behind it in full, each action it took, and the snapshot of
+  what it was looking at when it decided — the answer to why Skipper nudged someone about
+  something. A pass that neither reasoned nor acted does not open, because there is nothing behind
+  it.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx::LogCard
+- agent.py::api_thinking_log
+tests: []
+links: {}
+notes: ''

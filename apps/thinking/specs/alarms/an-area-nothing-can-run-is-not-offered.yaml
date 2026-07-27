@@ -1,0 +1,19 @@
+kind: specification
+id: thinking.alarms.an-area-nothing-can-run-is-not-offered
+title: An area nothing can run is never offered as a switch
+state: live
+autonomy: gated
+behavior: >
+  An area of thought with nothing registered to actually carry out its passes is not presented as
+  something to turn on: it is either absent from the list or shown as unavailable with an inert
+  switch. Turning an area on always means passes really start — a person is never left watching an
+  area that reads as on, costs nothing, and has never taken a single pass.
+implements:
+- thinking_scheduler.py::_supervise_domains
+- domain_modules.py::get_domain_handler
+- agent.py::api_thinking_domains
+tests: []
+links: {}
+notes: >
+  A switch that reports success and starts nothing is worse than no switch: the person concludes
+  the feature is broken rather than absent, and has no way to tell which.

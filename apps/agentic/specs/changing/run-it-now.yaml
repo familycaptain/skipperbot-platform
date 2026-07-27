@@ -1,0 +1,15 @@
+kind: specification
+id: agentic.changing.run-it-now
+title: Running one on demand
+state: live
+autonomy: gated
+behavior: >
+  A routine can be run immediately without waiting for its cadence. The run is named as a manual one,
+  is answered with an id so it can be followed while it happens, and follows the instructions and
+  abilities as they stand at that moment. An on-demand run neither consumes nor moves the routine's
+  scheduled next run, and it does not count as one of its completions.
+implements:
+- apps/agentic/tools.py::run_routine_now
+tests: []
+links: {}
+notes: ''

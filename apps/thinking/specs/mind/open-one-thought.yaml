@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.mind.open-one-thought
+title: Open one thought to see all of it
+state: live
+autonomy: gated
+behavior: >
+  Opening an entry shows its content in full — laid out readably when what Skipper stored is
+  structured rather than prose — together with when it is due, when it was settled, when it was
+  created, and the identifier to quote when asking Skipper about it.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx::StateCard
+- agent.py::api_thinking_state_detail
+tests: []
+links: {}
+notes: ''

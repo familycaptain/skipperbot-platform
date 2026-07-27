@@ -1,0 +1,20 @@
+kind: specification
+id: tools.guide-viewer.app-guide-then-shared-folder
+title: An app's own guide wins over the shared folder
+state: live
+autonomy: gated
+behavior: >
+  A guide is looked for first as the guide shipped inside the app of that name and only then in the
+  platform's shared guides folder, and a request that already carries the ".md" ending resolves
+  either way. A guide that moves into its own app is picked up with nothing renamed.
+implements:
+- apps/tools/routes.py::api_tool_guide
+tests:
+- type: unit
+  path: apps/tools/tests/test_tool_guide.py
+  rubric: >
+    Requesting a packaged app's id returns that app's own guide content byte-for-byte from disk and
+    reports where it came from; the same id with a stray .md still resolves; a shared-folder guide
+    name carrying .md resolves from the shared folder.
+links: {}
+notes: ''

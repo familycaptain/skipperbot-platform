@@ -1,0 +1,15 @@
+kind: specification
+id: finder.opening.a-record-with-its-own-page
+title: A record with its own page opens beside Finder
+state: live
+autonomy: gated
+behavior: >
+  A record that has a page of its own — a document, a recipe, a located item, a vehicle — opens in its
+  own tab named after the record, alongside Finder rather than replacing it, so a search that turned up
+  several things can be opened one after another and the search is still there to come back to.
+implements:
+- apps/finder/ui/FinderApp.jsx::SEARCH_SOURCES
+- web/src/App.jsx::handleOpenApp
+tests: []
+links: {}
+notes: ''

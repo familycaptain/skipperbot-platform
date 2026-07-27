@@ -1,0 +1,19 @@
+kind: specification
+id: arcade.scores.top-runs-across-every-game
+title: One board for the whole arcade
+state: live
+autonomy: gated
+behavior: >
+  The board lists the ten highest runs recorded across all four games, best first, with the
+  earlier run winning a tie, and each line naming the score, who set it and which game it was. It
+  ranks runs, not people: one person having ten good runs fills the whole board, and a person's
+  earlier weaker run is never replaced by their better one.
+implements:
+- apps/arcade/data.py::top_scores
+- apps/arcade/ui/ArcadeApp.jsx::Leaderboard
+- apps/arcade/routes.py::api_top_scores
+tests: []
+links: {}
+notes: >
+  Deliberately a board of runs rather than personal bests — the arcade's own framing is 'top
+  runs', and a run is the thing that happened.

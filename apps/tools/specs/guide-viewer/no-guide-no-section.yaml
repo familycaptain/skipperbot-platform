@@ -1,0 +1,21 @@
+kind: specification
+id: tools.guide-viewer.no-guide-no-section
+title: No guide, no guide section
+state: live
+autonomy: gated
+behavior: >
+  A category that has a guide is marked as such in the list and shows a guide section when opened;
+  a category without one shows neither the mark nor the section, so nobody clicks through to an
+  empty panel to find out.
+implements:
+- apps/tools/ui/ToolsApp.jsx::CategoryDetail
+- apps/tools/routes.py::_resolvable_guide
+tests:
+- type: unit
+  path: apps/tools/tests/test_tool_guide.py
+  rubric: >
+    A category whose declared guide file is absent, and a category declaring no guide at all, are
+    both published with no guide name — the state the UI gates the guide section and its list
+    marker on.
+links: {}
+notes: ''

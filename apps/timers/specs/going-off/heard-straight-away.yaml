@@ -1,0 +1,16 @@
+kind: specification
+id: timers.going-off.heard-straight-away
+title: A finishing timer is not left waiting for the next delivery round
+state: live
+autonomy: gated
+behavior: >
+  A timer running out is pushed out immediately rather than waiting for the background round that
+  sweeps up pending messages roughly every half minute. For a thirty-second egg timer that delay
+  would be most of the countdown again, which would make the timer useless — so expiry is the one
+  thing urgent enough to be sent the instant it happens.
+implements:
+- apps/timers/scheduler.py::_run_timer
+- apps/notifications/delivery.py::deliver_pending_notifications
+tests: []
+links: {}
+notes: ''

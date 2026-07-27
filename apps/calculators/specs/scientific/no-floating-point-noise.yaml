@@ -1,0 +1,15 @@
+kind: specification
+id: calculators.scientific.no-floating-point-noise
+title: Ordinary arithmetic reads as ordinary arithmetic
+state: live
+autonomy: gated
+behavior: >
+  Results are rounded before they are shown, so a tenth plus two tenths is three tenths rather than
+  0.30000000000000004, while enough decimal places survive that a genuinely non-terminating division
+  like one third is still visibly non-terminating instead of being flattened to 0.33.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::ScientificTab
+- apps/calculators/tools.py::calculate
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: thinking.alarms.every-area-is-listed
+title: Every area of thought is listed, on or off
+state: live
+autonomy: gated
+behavior: >
+  The areas screen lists every area of background thought this install knows about — enabled and
+  disabled alike, in a stable order — each with a plain description of what it does, whether it is
+  currently running, and how it ranks when the day's budget runs short. An install with no areas
+  registered says so rather than showing a blank screen.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx::DomainCard
+- agent.py::api_thinking_domains
+- data_layer/thinking_domains.py::list_domains
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: calculators.chat.answers-are-sentences
+title: A chat answer is a sentence, not a bare number
+state: live
+autonomy: gated
+behavior: >
+  A calculator answer in conversation is a sentence with money written as money and the figures
+  separated out, so it can be skimmed in a notification or read aloud without the app open. An
+  answer that could not be worked out comes back as a sentence explaining what to check, not as a
+  blank or a raw error.
+implements:
+- apps/calculators/tools.py::calculate
+- apps/calculators/tools.py::compound_interest
+- apps/calculators/tools.py::loan_amortization
+tests: []
+links: {}
+notes: ''

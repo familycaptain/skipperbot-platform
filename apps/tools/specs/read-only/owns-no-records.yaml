@@ -1,0 +1,15 @@
+kind: specification
+id: tools.read-only.owns-no-records
+title: It owns no records
+state: live
+autonomy: gated
+behavior: >
+  Tools stores nothing of its own: no tables, no entities, no events raised or listened for, and
+  nothing a person does in it enters Skipper's memory or history. Removing the app would lose no
+  household data.
+implements:
+- apps/tools/manifest.yaml
+- apps/tools/__init__.py
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,23 @@
+kind: specification
+id: agentic.setting-up.instructions-are-a-document
+title: The instructions are an ordinary document
+state: live
+autonomy: gated
+behavior: >
+  What a routine does is kept as a normal household document, titled after the routine and tagged as a
+  routine's, so it can be read and rewritten later in conversation or in the Documents app without
+  going near the cadence, the history or the id. Setting a routine up says which document that is. If
+  the document cannot be written the routine is not created either, and the attempt says so rather
+  than leaving a routine that would run with nothing to follow.
+implements:
+- apps/agentic/tools.py::create_routine
+- apps/agentic/tools.py::show_routine
+tests:
+- type: unit
+  path: tests/evolve/agentic/test_agentic_task.py
+  rubric: >
+    Offline, source-level: asserts the create path writes the prompt to a document and carries that
+    document's id with the routine, and that the read/rewrite tools go through the same document.
+    Structural only — it does not execute a run, so it evidences the wiring rather than the behaviour.
+links: {}
+notes: ''

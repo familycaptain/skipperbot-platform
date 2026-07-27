@@ -1,0 +1,20 @@
+kind: specification
+id: behaviors.influence.rules-shape-replies-not-initiative
+title: Rules shape replies, never what Skipper starts on its own
+state: live
+autonomy: gated
+behavior: >
+  Rules are consulted only when Skipper is answering its owner — typed or spoken. They are not
+  consulted when Skipper messages someone first, when a reminder or notification goes out, or when
+  background work runs, so a rule cannot quieten, reschedule or veto anything the person did not ask
+  for. A rule worded as a restraint ("stop reminding me about X", "never message me before eight")
+  therefore only ever affects the wording of replies to that person, and the unprompted messages carry
+  on unchanged.
+implements:
+- chat_domain.py::_build_system_prompt
+- app_platform/voice/prompting.py::build_active_behavior_rules
+tests: []
+links: {}
+notes: >
+  The boundary is worth stating plainly because the app invites restraint-shaped rules and gives no
+  hint that they are ignored outside a reply. Quiet hours and per-person opt-ins live with delivery.

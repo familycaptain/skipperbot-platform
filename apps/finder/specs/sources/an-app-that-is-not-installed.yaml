@@ -1,0 +1,16 @@
+kind: specification
+id: finder.sources.an-app-that-is-not-installed
+title: An app that is not there simply has nothing to say
+state: live
+autonomy: gated
+behavior: >
+  An app the household never installed, or one the operator has switched off, contributes nothing to a
+  search: it is not reported as an error and it does not stop the remaining apps from answering.
+  Finder works the same with any subset of apps present, so a search is never a way to discover that
+  something is misconfigured.
+implements:
+- apps/finder/ui/FinderApp.jsx::runSearch
+- app_platform/loader.py::_disabled_app_ids
+tests: []
+links: {}
+notes: ''

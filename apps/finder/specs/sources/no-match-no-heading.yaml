@@ -1,0 +1,14 @@
+kind: specification
+id: finder.sources.no-match-no-heading
+title: An app with no matches is not listed
+state: live
+autonomy: gated
+behavior: >
+  Only apps with at least one match get a section. An app that matched nothing is left out entirely
+  rather than shown as an empty heading, so the answer is as long as the number of places the thing was
+  actually found and no longer.
+implements:
+- apps/finder/ui/FinderApp.jsx::runSearch
+tests: []
+links: {}
+notes: ''

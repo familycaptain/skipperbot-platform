@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.aeldrift.the-edge-turns-you-back
+title: The edge of the world turns you back
+state: live
+autonomy: gated
+behavior: >
+  Pushing outwards past the edge of the world slows the craft and eases it back inside instead of
+  letting it leave, fall or reach a wall. There is no boundary to hit and nothing to be told off
+  about.
+implements:
+- apps/arcade/ui/games/Aeldrift.jsx
+tests: []
+links: {}
+notes: ''

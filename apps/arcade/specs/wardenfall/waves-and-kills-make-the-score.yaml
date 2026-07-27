@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.wardenfall.waves-and-kills-make-the-score
+title: Waves and kills make the score
+state: live
+autonomy: gated
+behavior: >
+  The score is built from how far the waves got and how many enemies were killed on the way, with
+  waves worth far more than individual kills. It is shown while playing and is what reaches the
+  arcade board.
+implements:
+- apps/arcade/ui/games/Wardenfall.jsx::computeScore
+tests: []
+links: {}
+notes: ''

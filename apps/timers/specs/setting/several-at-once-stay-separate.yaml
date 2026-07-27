@@ -1,0 +1,18 @@
+kind: specification
+id: timers.setting.several-at-once-stay-separate
+title: Several timers at once, each with its own handle
+state: live
+autonomy: gated
+behavior: >
+  One person can have several timers running at the same time, and each is given its own handle
+  when it is started. They are entirely independent: one running out, or being stopped early, leaves
+  every other one counting down untouched, and a second timer of the same length for the same person
+  is a second timer rather than a replacement for the first.
+implements:
+- apps/timers/store.py::new_timer_id
+- apps/timers/store.py::register
+tests: []
+links: {}
+notes: >
+  The handle is what makes "cancel the pasta timer" answerable when three are running; without one,
+  a person with two five-minute timers could not say which they meant.

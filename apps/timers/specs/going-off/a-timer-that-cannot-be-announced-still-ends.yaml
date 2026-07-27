@@ -1,0 +1,15 @@
+kind: specification
+id: timers.going-off.a-timer-that-cannot-be-announced-still-ends
+title: A timer that cannot be announced is still finished with
+state: live
+autonomy: gated
+behavior: >
+  If announcing an expiry fails — the speaker refuses, recording the message fails, the person turns
+  out not to be a household member any more — the timer is finished with anyway: it stops counting
+  down, leaves the running list, is not retried, and cannot go off later. A failure to tell somebody
+  is never turned into a timer that lingers or announces itself twice.
+implements:
+- apps/timers/scheduler.py::_run_timer
+tests: []
+links: {}
+notes: ''

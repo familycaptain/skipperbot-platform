@@ -1,0 +1,19 @@
+kind: specification
+id: behaviors.teaching.rule-wording-brings-the-tools
+title: Rule-shaped wording is what puts saving within reach
+state: live
+autonomy: gated
+behavior: >
+  Skipper can only save, list or change rules on turns where the person's wording looks like it is
+  about standing rules — "always", "whenever", "from now on", "going forward", "rule", or asking about
+  their own rules. An instruction meant as permanent but phrased without any such marker is answered as
+  a one-off and no rule is created, so the person's next chance to have it saved is to say it again more
+  explicitly.
+implements:
+- apps/behaviors/manifest.yaml
+- tool_router.py::_match_categories_with_reasons
+tests: []
+links: {}
+notes: >
+  The trade is deliberate: every toolset offered on every turn crowds out the ones that matter. The
+  cost lands here as a teaching moment that reads as permanent to a person and one-off to Skipper.

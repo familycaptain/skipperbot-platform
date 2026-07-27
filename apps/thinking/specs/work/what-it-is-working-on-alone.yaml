@@ -1,0 +1,16 @@
+kind: specification
+id: thinking.work.what-it-is-working-on-alone
+title: What Skipper is working on by itself
+state: live
+autonomy: gated
+behavior: >
+  The work screen lists the most recent stretches of work Skipper ran on its own: what each was
+  for, whether it is running, finished or failed, how far it got, what it last concluded, and how
+  long ago it started. Finished, failed and still-running are distinguishable at a glance without
+  opening anything.
+implements:
+- agent.py::api_thinking_hands
+- apps/thinking/ui/ThinkingApp.jsx::SessionCard
+tests: []
+links: {}
+notes: ''

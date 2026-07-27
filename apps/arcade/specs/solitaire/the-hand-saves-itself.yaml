@@ -1,0 +1,17 @@
+kind: specification
+id: arcade.solitaire.the-hand-saves-itself
+title: The hand saves itself
+state: live
+autonomy: gated
+behavior: >
+  There is no save button: the hand is kept shortly after the person stops moving, so leaving at
+  any point loses at most the last move or two. Nothing about saving interrupts play, and a save
+  that cannot be written is not reported — the person finds out by coming back to a slightly older
+  board.
+implements:
+- apps/arcade/ui/games/Solitaire.jsx
+- apps/arcade/data.py::set_solitaire_save
+- apps/arcade/routes.py::api_put_solitaire_save
+tests: []
+links: {}
+notes: ''

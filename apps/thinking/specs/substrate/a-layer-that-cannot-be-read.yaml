@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.substrate.a-layer-that-cannot-be-read
+title: A layer that cannot be read does not break the screen
+state: live
+autonomy: gated
+behavior: >
+  Each block on this screen is read independently: one that cannot be read is left out, or shown
+  as unknown, while the rest of the screen renders normally. A partial answer matters more here
+  than anywhere else in the app, because this is the screen a person opens when something has
+  already gone wrong.
+implements:
+- agent.py::api_thinking_subconscious
+tests: []
+links: {}
+notes: ''

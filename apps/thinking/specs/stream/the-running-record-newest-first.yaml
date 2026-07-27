@@ -1,0 +1,17 @@
+kind: specification
+id: thinking.stream.the-running-record-newest-first
+title: The running record, newest first
+state: live
+autonomy: gated
+behavior: >
+  The record shows what has happened most recently, newest first: for each entry the time, what
+  kind of entry it is, the area it belongs to, who it was from and to, and its content. A very
+  long entry is shown as its opening rather than filling the screen. The screen holds the most
+  recent stretch of the record — enough to see what Skipper is doing now, not the whole history.
+implements:
+- agent.py::api_thinking_stream
+- apps/thinking/ui/ThinkingApp.jsx::StreamRow
+- app_platform/consciousness.py::log_event
+tests: []
+links: {}
+notes: ''

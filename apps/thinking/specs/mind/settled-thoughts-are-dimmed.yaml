@@ -1,0 +1,14 @@
+kind: specification
+id: thinking.mind.settled-thoughts-are-dimmed
+title: A settled thought is dimmed, never quietly deleted
+state: live
+autonomy: gated
+behavior: >
+  A thought that has been resolved or has expired is shown faded rather than removed whenever the
+  filters include it, and carries when it was settled. So a person can see that Skipper dealt with
+  something instead of wondering whether it forgot.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx::StateCard
+tests: []
+links: {}
+notes: ''

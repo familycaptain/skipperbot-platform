@@ -1,0 +1,15 @@
+kind: specification
+id: system.consciousness.short-entries-are-not-a-backlog
+title: Entries that were never going to be indexed are not counted as behind
+state: live
+autonomy: gated
+behavior: >
+  Entries that were never going to be made searchable — bare events, and anything too short to
+  carry meaning — are left out of the waiting figure, so an install cannot appear permanently
+  behind on work that will never be done. The waiting figure counts only entries that genuinely
+  still owe indexing.
+implements:
+- apps/system/routes.py::api_system_metrics
+tests: []
+links: {}
+notes: ''

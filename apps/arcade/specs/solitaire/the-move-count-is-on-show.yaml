@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.solitaire.the-move-count-is-on-show
+title: The move count is on show, because it is the score
+state: live
+autonomy: gated
+behavior: >
+  The running move count is visible the whole time, because it is what a win is scored on. Every
+  draw and every turn of the stock counts as a move, so a game won by cycling the deck repeatedly
+  scores lower than one won in fewer, better moves.
+implements:
+- apps/arcade/ui/games/Solitaire.jsx
+- apps/arcade/ui/games/Solitaire.jsx::drawStock
+tests: []
+links: {}
+notes: ''

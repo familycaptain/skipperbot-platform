@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.scores.scores-outlive-a-restart
+title: Scores survive a restart
+state: live
+autonomy: gated
+behavior: >
+  A recorded score survives the browser closing, the person signing out and the server restarting.
+  Coming back days later, the board reads the same.
+implements:
+- apps/arcade/data.py::save_score
+- apps/arcade/migrations/001_initial.sql
+tests: []
+links: {}
+notes: ''

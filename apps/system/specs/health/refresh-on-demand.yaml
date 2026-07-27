@@ -1,0 +1,16 @@
+kind: specification
+id: system.health.refresh-on-demand
+title: Refresh takes a new reading
+state: live
+autonomy: gated
+behavior: >
+  Refresh re-reads the whole dashboard — every count, the process figures and the agent's own
+  status together — and is unavailable while a reading is in flight, so clicking it repeatedly
+  cannot stack up requests. When the new reading arrives it replaces the previous one wholesale
+  rather than merging into it.
+implements:
+- apps/system/ui/SystemApp.jsx::SystemApp
+- apps/system/routes.py::api_system_metrics
+tests: []
+links: {}
+notes: ''

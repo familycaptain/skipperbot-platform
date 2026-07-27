@@ -1,0 +1,18 @@
+kind: specification
+id: timers.setting.a-failure-is-a-sentence-not-a-crash
+title: A timer that cannot be set says so and the conversation carries on
+state: live
+autonomy: gated
+behavior: >
+  When anything goes wrong setting, listing or stopping a timer, the answer is a plain sentence
+  saying it did not work — the turn is not abandoned and the rest of what the person asked for is
+  still answered. The same holds in the other direction: a timer whose expiry cannot be announced
+  never takes Skipper down with it.
+implements:
+- apps/timers/tools.py::start_timer
+- apps/timers/tools.py::list_timers
+- apps/timers/tools.py::cancel_timer
+- apps/timers/scheduler.py::_run_timer
+tests: []
+links: {}
+notes: ''

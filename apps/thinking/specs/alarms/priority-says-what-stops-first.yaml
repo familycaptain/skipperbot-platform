@@ -1,0 +1,17 @@
+kind: specification
+id: thinking.alarms.priority-says-what-stops-first
+title: Each area shows what becomes of it when the budget runs short
+state: live
+autonomy: gated
+behavior: >
+  Every area displays its standing against the day's budget — critical, high, standard or low —
+  which is what decides the order things stop in as the day's spend climbs: low areas pause first,
+  ordinary ones start waiting until they have something genuinely pending, and critical areas keep
+  going. So a person reading the list can tell what will still be working late in an expensive
+  day.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx::DomainCard
+- thinking_scheduler.py::_domain_loop
+tests: []
+links: {}
+notes: ''

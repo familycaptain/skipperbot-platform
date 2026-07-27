@@ -1,0 +1,18 @@
+kind: specification
+id: behaviors.teaching.nothing-stops-an-overlapping-rule
+title: Overlapping rules are allowed and all apply
+state: live
+autonomy: gated
+behavior: >
+  Saving a rule whose trigger overlaps or duplicates one that already exists is allowed: both are
+  kept, both are shown in the list, and both are put in front of Skipper. Nobody is warned about the
+  overlap and no rule supersedes another, so two rules that contradict each other leave the outcome
+  unpredictable until one of them is switched off.
+implements:
+- apps/behaviors/data.py::create_behavior
+- apps/behaviors/data.py::get_active_behaviors_for_user
+tests: []
+links: {}
+notes: >
+  Recorded because it is the likely surprise: teaching "the same" rule twice does not replace the
+  first one.

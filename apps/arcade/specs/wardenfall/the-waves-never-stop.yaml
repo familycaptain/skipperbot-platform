@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.wardenfall.the-waves-never-stop
+title: The waves never stop
+state: live
+autonomy: gated
+behavior: >
+  There is no winning Wardenfall. Every wave brings more enemies, with more health and a little
+  more speed than the last, and from the third wave onwards every fifth enemy is a brute with
+  roughly three times the health and three times the bounty, moving slower. A run ends only when
+  the keep falls or the person stops it.
+implements:
+- apps/arcade/ui/games/Wardenfall.jsx::spawnWave
+tests: []
+links: {}
+notes: ''

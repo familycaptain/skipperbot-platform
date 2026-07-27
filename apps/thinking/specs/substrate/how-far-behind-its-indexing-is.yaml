@@ -1,0 +1,16 @@
+kind: specification
+id: thinking.substrate.how-far-behind-its-indexing-is
+title: How far behind its own indexing is
+state: live
+autonomy: gated
+behavior: >
+  The screen shows how much of the record Skipper has indexed for recall, how much is still
+  waiting, how large the whole record is, and how many items are queued to become memories — the
+  answer to why it cannot yet recall something said an hour ago. A count that cannot be read is
+  shown as unknown rather than as zero.
+implements:
+- agent.py::api_thinking_subconscious
+- apps/thinking/ui/ThinkingApp.jsx
+tests: []
+links: {}
+notes: ''

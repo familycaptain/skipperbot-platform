@@ -1,0 +1,16 @@
+kind: specification
+id: arcade.scores.only-real-games-and-no-negative-scores
+title: A score has to belong to a real game
+state: live
+autonomy: gated
+behavior: >
+  A score offered for a game the arcade does not have is refused and nothing is recorded. A score
+  below zero is recorded as zero, so no run can ever sit at the bottom of the board on a negative
+  number, and a zero-scoring run is recorded like any other.
+implements:
+- apps/arcade/data.py::save_score
+- apps/arcade/routes.py::api_save_score
+- apps/arcade/data.py::VALID_GAMES
+tests: []
+links: {}
+notes: ''

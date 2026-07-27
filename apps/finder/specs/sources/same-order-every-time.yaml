@@ -1,0 +1,14 @@
+kind: specification
+id: finder.sources.same-order-every-time
+title: Sections come back in the same order
+state: live
+autonomy: gated
+behavior: >
+  The app sections appear in the same order for every search, whichever app happened to match most,
+  and within a section the owning app's own ordering is kept. Repeating a search therefore puts the
+  same result in the same place, so a familiar record can be reached without reading the whole list.
+implements:
+- apps/finder/ui/FinderApp.jsx::SEARCH_SOURCES
+tests: []
+links: {}
+notes: ''

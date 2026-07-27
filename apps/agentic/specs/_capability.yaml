@@ -1,0 +1,14 @@
+kind: capability
+id: agentic
+title: Routines
+app: agentic
+scope: 'Standing work Skipper does on its own: a routine is a written instruction plus a cadence plus
+  the abilities it may use, and Skipper carries it out unattended with the same reach it has in
+  conversation. Routines owns what a routine IS, how a person sets one up, reads it, rewrites it,
+  pauses it or runs it on demand, and what a run is allowed to do and leaves behind. NOT the cadence
+  engine (Schedules), NOT the queue a run occupies (Jobs), NOT delivery of anything it says
+  (Notifications), NOT the document its instructions live in (Documents).'
+state: live
+autonomy: gated
+links: {}
+notes: ''

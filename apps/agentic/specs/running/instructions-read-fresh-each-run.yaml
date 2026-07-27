@@ -1,0 +1,14 @@
+kind: specification
+id: agentic.running.instructions-read-fresh-each-run
+title: Every run reads the instructions as they are now
+state: live
+autonomy: gated
+behavior: >
+  Each run reads the routine's instructions at the moment it starts, so an edit made minutes earlier
+  is in force next time with nothing to re-save, re-create or restart. A run that started before an
+  edit finishes on the text it began with.
+implements:
+- apps/agentic/agentic.py::handle_agentic
+tests: []
+links: {}
+notes: ''

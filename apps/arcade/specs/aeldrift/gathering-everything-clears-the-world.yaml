@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.aeldrift.gathering-everything-clears-the-world
+title: Gathering them all clears the world
+state: live
+autonomy: gated
+behavior: >
+  Taking the last shard clears the world: it is announced as cleared rather than merely finished,
+  and the full count goes to the arcade board. Because a cleared run is the highest possible, no
+  Aeldrift run can score more than the number of shards in the world.
+implements:
+- apps/arcade/ui/games/Aeldrift.jsx::fireGameOver
+tests: []
+links: {}
+notes: >
+  Worth stating because it caps Aeldrift far below the other games on a board they all share.

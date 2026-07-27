@@ -1,0 +1,16 @@
+kind: specification
+id: arcade.scores.a-finished-run-is-recorded
+title: Finishing a run records it
+state: live
+autonomy: gated
+behavior: >
+  When a run ends the score reached is recorded against the game and the person who was playing,
+  once, however long the end screen is left open and however many times it is re-rendered. A run
+  that is walked away from rather than finished records nothing.
+implements:
+- apps/arcade/ui/ArcadeApp.jsx::submitScore
+- apps/arcade/routes.py::api_save_score
+- apps/arcade/data.py::save_score
+tests: []
+links: {}
+notes: ''

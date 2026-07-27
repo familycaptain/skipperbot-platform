@@ -1,0 +1,15 @@
+kind: specification
+id: timers.seeing.nothing-running-says-so
+title: No timers running says so, and says whose
+state: live
+autonomy: gated
+behavior: >
+  With nothing counting down, asking says there are no active timers rather than answering with an
+  empty list or with silence. When the question was about one person, the answer names them — "none
+  for Alice" is a different and more useful answer than "none at all", because somebody else's
+  kitchen timer may well be running.
+implements:
+- apps/timers/tools.py::list_timers
+tests: []
+links: {}
+notes: ''

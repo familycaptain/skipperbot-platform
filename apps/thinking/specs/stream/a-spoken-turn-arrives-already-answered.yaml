@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.stream.a-spoken-turn-arrives-already-answered
+title: A spoken turn arrives already answered
+state: live
+autonomy: gated
+behavior: >
+  Words spoken aloud to Skipper appear in the record marked as having been handled by the live
+  voice session, and are never listed as owed an answer — a conversation held out loud is never
+  answered a second time in text.
+implements:
+- app_platform/voice/chatlog.py::_persist_voice_turn_sync
+- apps/thinking/ui/ThinkingApp.jsx::StreamRow
+tests: []
+links: {}
+notes: ''

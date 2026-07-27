@@ -1,0 +1,18 @@
+kind: specification
+id: behaviors.influence.filed-under-one-name
+title: A rule fires for one person, matched by name
+state: live
+autonomy: gated
+behavior: >
+  A personal rule is filed against its owner's name and reaches conversations held under that same
+  name. A name that differs in spelling or capitalisation is a different person as far as the rule is
+  concerned: the rule is saved, is confirmed as saved, and appears in a list for that spelling — but
+  never fires and never appears in the owner's own list. Nothing warns about it.
+implements:
+- apps/behaviors/tools.py::add_behavior
+- apps/behaviors/data.py::get_active_behaviors_for_user
+tests: []
+links: {}
+notes: >
+  Recorded rather than endorsed: names are folded to one form on the way in everywhere else in the
+  platform, and doing it here too would make the mismatch impossible.

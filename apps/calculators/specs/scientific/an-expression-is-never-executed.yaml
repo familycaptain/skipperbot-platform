@@ -1,0 +1,21 @@
+kind: specification
+id: calculators.scientific.an-expression-is-never-executed
+title: An expression is arithmetic and nothing else
+state: live
+autonomy: gated
+behavior: >
+  Whatever arrives at the calculator is treated as arithmetic: numbers, brackets, the supported
+  operators, the supported functions and the two constants. Anything else — a name, an attribute, a
+  call to something not on that list — is refused before any of it runs, so an expression that
+  reaches the calculator by way of a chat message cannot read a file, open a connection, or touch
+  anything else on the household's machine.
+implements:
+- apps/calculators/tools.py::_safe_eval
+- apps/calculators/ui/CalculatorsApp.jsx::sciTokenize
+- apps/calculators/ui/CalculatorsApp.jsx::sciEval
+tests: []
+links: {}
+notes: >
+  The expression can originate in model-visible text, so the evaluator is a whitelist of arithmetic
+  rather than a general-purpose one. A convenience evaluator here would make anything Skipper can be
+  told to type into a calculator executable on the host.

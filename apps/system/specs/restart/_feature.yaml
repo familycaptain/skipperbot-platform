@@ -1,0 +1,6 @@
+kind: feature
+id: system.restart
+title: Restarting the agent
+state: live
+links: {}
+notes: ''

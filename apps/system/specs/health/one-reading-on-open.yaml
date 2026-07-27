@@ -1,0 +1,16 @@
+kind: specification
+id: system.health.one-reading-on-open
+title: Opening System takes one reading
+state: live
+autonomy: gated
+behavior: >
+  Opening System fetches every figure on the screen once and shows them together as a single
+  reading taken at that moment; it does not keep refreshing while it sits open, so the numbers
+  are as old as the moment the app was opened. While the first reading is in flight the screen
+  shows that it is loading rather than showing zeros.
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/ui/SystemApp.jsx::SystemApp
+tests: []
+links: {}
+notes: ''

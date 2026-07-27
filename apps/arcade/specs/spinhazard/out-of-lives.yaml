@@ -1,0 +1,13 @@
+kind: specification
+id: arcade.spinhazard.out-of-lives
+title: Out of lives, and the score goes up
+state: live
+autonomy: gated
+behavior: >
+  When the last life is gone the run ends at once: the final score is shown and recorded once, and
+  the field stops moving behind the overlay rather than playing on without a ship.
+implements:
+- apps/arcade/ui/games/Spinhazard.jsx::killShip
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: calculators.scientific.the-keypad-is-the-only-way-in
+title: The display is a readout, not a text box
+state: live
+autonomy: gated
+behavior: >
+  Everything the scientific calculator is asked comes from pressing keys on its pad; the display
+  cannot be typed or pasted into. A function the pad has no key for cannot be entered in the app at
+  all, and has to be asked for in chat instead.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::ScientificTab
+tests: []
+links: {}
+notes: ''

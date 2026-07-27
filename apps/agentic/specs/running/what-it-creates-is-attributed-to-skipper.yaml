@@ -1,0 +1,14 @@
+kind: specification
+id: agentic.running.what-it-creates-is-attributed-to-skipper
+title: What a routine makes is attributed to Skipper
+state: live
+autonomy: gated
+behavior: >
+  Anything a run creates — a document, a list entry, a task, a note — is recorded as made by Skipper
+  rather than by the person who set the routine up, unless the instructions name someone else, so
+  autonomous work can be told from a person's own when it turns up in a shared list days later.
+implements:
+- apps/agentic/agentic.py::handle_agentic
+tests: []
+links: {}
+notes: ''

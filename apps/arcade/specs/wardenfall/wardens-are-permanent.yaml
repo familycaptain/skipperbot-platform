@@ -1,0 +1,13 @@
+kind: specification
+id: arcade.wardenfall.wardens-are-permanent
+title: A warden placed is a warden kept
+state: live
+autonomy: gated
+behavior: >
+  A warden cannot be moved, sold or upgraded once it is down, so every placement commits the gold
+  permanently and a badly-placed warden is a mistake to live with for the rest of the run.
+implements:
+- apps/arcade/ui/games/Wardenfall.jsx::tryPlaceTower
+tests: []
+links: {}
+notes: ''

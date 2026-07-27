@@ -1,0 +1,16 @@
+kind: specification
+id: timers.stopping.say-which-one
+title: Stopping a timer has to say which one
+state: live
+autonomy: gated
+behavior: >
+  A request to stop a timer with no handle at all is refused rather than guessing — with several
+  timers running, guessing would stop the wrong one, and the pasta would burn. Where a person said
+  which timer in words rather than by handle ("cancel the pasta timer"), the running list is what
+  turns that into the handle to stop.
+implements:
+- apps/timers/tools.py::cancel_timer
+- apps/timers/guide.md
+tests: []
+links: {}
+notes: ''

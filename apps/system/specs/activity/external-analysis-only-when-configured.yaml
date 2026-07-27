@@ -1,0 +1,15 @@
+kind: specification
+id: system.activity.external-analysis-only-when-configured
+title: An external service appears only if there is one
+state: live
+autonomy: gated
+behavior: >
+  Where the household has connected an external analysis service, System shows its most recent
+  run alongside the local jobs and backups and counts its stored snapshots with the other record
+  figures. Where no such service is configured, nothing about it appears anywhere on the screen
+  — no empty card, no error.
+implements:
+- apps/system/routes.py::api_system_metrics
+tests: []
+links: {}
+notes: ''

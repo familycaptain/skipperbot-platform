@@ -1,0 +1,16 @@
+kind: specification
+id: arcade.hub.four-games-on-one-menu
+title: The menu shows what there is to play
+state: live
+autonomy: gated
+behavior: >
+  Opening Arcade shows a card for each of the four games giving its name, its genre in a few words
+  and a sentence on what playing it is like, with the shared leaderboard beneath them. Clicking a
+  card hands the whole panel to that game; a breadcrumb above it names the game and leads back.
+  Which games exist is fixed — a household cannot add, hide or reorder them.
+implements:
+- apps/arcade/ui/ArcadeApp.jsx
+- apps/arcade/ui/index.js
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,20 @@
+kind: specification
+id: arcade.hub.play-needs-no-network
+title: A game keeps playing when the server does not
+state: live
+autonomy: gated
+behavior: >
+  Every game draws its own world and synthesises its own sound in the browser, with nothing
+  fetched while playing, so a run is unaffected by the server being slow, restarting or
+  unreachable. The two things that do need the server — recording a finished score and keeping a
+  Solitaire hand — fail silently: the person finishes the run and finds it simply is not on the
+  board.
+implements:
+- apps/arcade/ui/sfx.js
+- apps/arcade/ui/games/Aeldrift.jsx
+- apps/arcade/ui/ArcadeApp.jsx::submitScore
+tests: []
+links: {}
+notes: >
+  Stated as intent rather than as an implementation note: the arcade is the thing a household can
+  still use when the rest of the install is having a bad day.

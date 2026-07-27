@@ -1,0 +1,13 @@
+kind: specification
+id: thinking.mind.an-empty-mind-says-so
+title: An empty mind says so
+state: live
+autonomy: gated
+behavior: >
+  When there is nothing to show, the screen says the mind is empty and that the thinking loop has
+  not produced anything yet, rather than leaving a blank panel that reads like a fault.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx
+tests: []
+links: {}
+notes: ''

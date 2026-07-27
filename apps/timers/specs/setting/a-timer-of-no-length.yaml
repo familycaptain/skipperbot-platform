@@ -1,0 +1,15 @@
+kind: specification
+id: timers.setting.a-timer-of-no-length
+title: A timer with no length is refused rather than started
+state: live
+autonomy: gated
+behavior: >
+  A request that works out to zero time — no duration given at all, or a negative one — starts
+  nothing and says the duration has to be greater than zero. Nothing is left running, so nobody is
+  later surprised by an announcement they never asked for, and a person who forgot to say how long
+  is told to say how long.
+implements:
+- apps/timers/tools.py::start_timer
+tests: []
+links: {}
+notes: ''

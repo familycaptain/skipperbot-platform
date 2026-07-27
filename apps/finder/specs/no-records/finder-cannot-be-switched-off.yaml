@@ -1,0 +1,16 @@
+kind: specification
+id: finder.no-records.finder-cannot-be-switched-off
+title: Finder cannot be switched off
+state: live
+autonomy: gated
+behavior: >
+  Finder is part of every install: it cannot be hidden away by disabling it or removed by uninstalling
+  it, and a system brought up without it refuses to start rather than run with no way to search across
+  apps. Whatever else a household has chosen to install, there is always one place to search from.
+implements:
+- apps/finder/manifest.yaml::core
+- app_platform/loader.py::REQUIRED_APPS
+- app_platform/loader.py::uninstall_app
+tests: []
+links: {}
+notes: ''

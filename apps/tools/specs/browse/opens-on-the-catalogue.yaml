@@ -1,0 +1,14 @@
+kind: specification
+id: tools.browse.opens-on-the-catalogue
+title: It loads itself when opened
+state: live
+autonomy: gated
+behavior: >
+  Opening the app fetches the catalogue straight away, with nothing to press first, and titles its
+  window Tools so it is identifiable among everything else the person has open.
+implements:
+- apps/tools/ui/ToolsApp.jsx::ToolsApp
+- apps/tools/ui/index.js
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: calculators.loan.the-cost-is-always-shown
+title: A payment never appears without its cost
+state: live
+autonomy: gated
+behavior: >
+  No loan answer is only a payment: every result also states the total paid across the whole loan
+  and how much of that total is interest. The cost of stretching a loan out is therefore visible
+  next to the smaller payment that stretching it produced.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::finishLoan
+- apps/calculators/ui/CalculatorsApp.jsx::LoanTab
+- apps/calculators/tools.py::loan_amortization
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: thinking.budget.the-ceiling-is-a-property-of-the-install
+title: The day's ceiling is a property of the install, not a setting on this screen
+state: live
+autonomy: gated
+behavior: >
+  The bar shows the ceiling the throttling is measured against, and nothing in this app changes
+  it: a household that wants to spend more or less on background thought cannot do it from here.
+  What it can do from here is switch expensive areas off, or leave them at a low standing so they
+  are the first to stop.
+implements:
+- thinking_scheduler.py::DAILY_TOKEN_BUDGET
+- agent.py::api_thinking_budget
+tests: []
+links: {}
+notes: ''

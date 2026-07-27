@@ -1,0 +1,13 @@
+kind: specification
+id: system.curation.never-run
+title: Before the first cycle, everything is still ahead
+state: live
+autonomy: gated
+behavior: >
+  Where curation has never recorded a pass, the whole corpus is reported as still ahead of it
+  and no last-cycle line appears — rather than implying a cycle ran and achieved nothing.
+implements:
+- apps/system/routes.py::api_system_metrics
+tests: []
+links: {}
+notes: ''

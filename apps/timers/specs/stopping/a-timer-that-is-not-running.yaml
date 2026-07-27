@@ -1,0 +1,16 @@
+kind: specification
+id: timers.stopping.a-timer-that-is-not-running
+title: Stopping something that is not running says so instead of claiming success
+state: live
+autonomy: gated
+behavior: >
+  Asking to stop a handle that nothing is counting down against — one that has already run out, one
+  already stopped, or one that never existed — answers that there is no active timer with that
+  handle. It is never reported as a successful cancellation, so a person who thinks they stopped
+  their timer in time is never wrong about that.
+implements:
+- apps/timers/tools.py::cancel_timer
+- apps/timers/scheduler.py::cancel
+tests: []
+links: {}
+notes: ''

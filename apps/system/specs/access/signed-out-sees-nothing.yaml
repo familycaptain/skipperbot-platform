@@ -1,0 +1,13 @@
+kind: specification
+id: system.access.signed-out-sees-nothing
+title: Nothing without signing in
+state: live
+autonomy: gated
+behavior: >
+  The dashboard's figures are refused to anyone not signed in, and a browser sent to the app
+  while signed out is asked to sign in rather than shown any part of the household's numbers.
+implements:
+- agent.py::auth_gate
+tests: []
+links: {}
+notes: ''

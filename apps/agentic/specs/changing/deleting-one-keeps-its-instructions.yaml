@@ -1,0 +1,16 @@
+kind: specification
+id: agentic.changing.deleting-one-keeps-its-instructions
+title: Deleting one keeps its instructions
+state: live
+autonomy: gated
+behavior: >
+  A routine is deleted the same way any schedule is, after a confirmation, and stops running at once —
+  no further run is started and its history goes with it. The document holding its instructions is a
+  household document in its own right and survives, so the text is never lost with the routine; it is
+  not tidied away either, and stays until someone deletes it.
+implements:
+- apps/schedules/data.py::delete_schedule
+- apps/schedules/ui/SchedulesApp.jsx::DetailView
+tests: []
+links: {}
+notes: ''

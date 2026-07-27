@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.wardenfall.the-road-to-the-keep
+title: One road, and the keep at the end of it
+state: live
+autonomy: gated
+behavior: >
+  Enemies enter at one edge and walk a fixed winding road towards the keep; each one that reaches
+  it costs a life. Wardens fire on their own at the nearest enemy within their reach and need no
+  aiming, so where a warden stands is the whole of the decision.
+implements:
+- apps/arcade/ui/games/Wardenfall.jsx::step
+- apps/arcade/ui/games/Wardenfall.jsx::PATH
+tests: []
+links: {}
+notes: ''

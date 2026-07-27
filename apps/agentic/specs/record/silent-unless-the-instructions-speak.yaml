@@ -1,0 +1,18 @@
+kind: specification
+id: agentic.record.silent-unless-the-instructions-speak
+title: A routine is silent unless its instructions speak
+state: live
+autonomy: gated
+behavior: >
+  A routine says nothing to anybody unless its instructions say to: setting one up subscribes its
+  owner to no per-run notice, no summary and no warning that a run is about to happen, because a
+  routine is meant to do the work rather than announce it. When the instructions do say to tell
+  somebody, that message reaches them on their ordinary surfaces like anything else Skipper sends.
+implements:
+- apps/agentic/tools.py::create_routine
+- apps/agentic/agentic.py::_SYSTEM
+tests: []
+links: {}
+notes: >
+  Every other piece of work a schedule starts is created silent for this reason; the routine path
+  currently is not, which is a defect rather than intent.

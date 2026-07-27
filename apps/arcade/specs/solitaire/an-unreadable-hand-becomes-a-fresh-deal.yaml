@@ -1,0 +1,16 @@
+kind: specification
+id: arcade.solitaire.an-unreadable-hand-becomes-a-fresh-deal
+title: A hand that cannot be read becomes a fresh deal
+state: live
+autonomy: gated
+behavior: >
+  A kept hand that cannot be read — damaged, or from a version of the game that laid the cards out
+  differently — is discarded and a fresh hand dealt, rather than a half-broken table or an error.
+  The same happens when the server cannot be reached at all: the person gets a new deal and plays
+  on.
+implements:
+- apps/arcade/ui/games/Solitaire.jsx::validSave
+- apps/arcade/data.py::get_solitaire_save
+tests: []
+links: {}
+notes: ''

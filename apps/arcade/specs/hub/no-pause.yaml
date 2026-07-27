@@ -1,0 +1,16 @@
+kind: specification
+id: arcade.hub.no-pause
+title: There is no pause
+state: live
+autonomy: gated
+behavior: >
+  None of the games can be paused. Moving to another window on the Skipper desktop leaves the game
+  running, so a wave can arrive while nobody is watching; hiding the whole browser tab stalls it
+  instead, and it picks up where it stopped rather than fast-forwarding through the time that
+  passed. A long stall never makes the world jump.
+implements:
+- apps/arcade/ui/games/Wardenfall.jsx
+- apps/arcade/ui/games/Spinhazard.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: system.restart.restart-does-not-change-the-code
+title: A restart is not an update
+state: live
+autonomy: gated
+behavior: >
+  A restart brings the agent back on exactly the code it was already running: it fetches
+  nothing, builds nothing and upgrades nothing. Picking up new code is a separate and deliberate
+  act, so nobody can change what the household is running by pressing the button marked restart.
+implements:
+- agent.py::api_admin_restart
+- agent.py::_drain_and_exit
+tests: []
+links: {}
+notes: ''

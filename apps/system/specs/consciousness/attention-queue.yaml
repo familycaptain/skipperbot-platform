@@ -1,0 +1,15 @@
+kind: specification
+id: system.consciousness.attention-queue
+title: What Skipper still owes someone
+state: live
+autonomy: gated
+behavior: >
+  System reports how many entries have been flagged as needing Skipper's attention and not yet
+  attended to. Zero says everything has been attended; anything above zero is marked as wanting
+  attention and names the count, so a person can see that Skipper is behind on answering rather
+  than merely quiet.
+implements:
+- apps/system/routes.py::api_system_metrics
+tests: []
+links: {}
+notes: ''

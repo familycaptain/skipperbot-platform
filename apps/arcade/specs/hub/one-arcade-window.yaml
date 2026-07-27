@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.hub.one-arcade-window
+title: The arcade opens once
+state: live
+autonomy: gated
+behavior: >
+  Arcade is a single window: asking for it again while it is already open brings that window
+  forward instead of starting a second copy, so a run in progress is never displaced by someone
+  re-opening the app.
+implements:
+- apps/arcade/ui/index.js
+- apps/arcade/ui/ArcadeApp.jsx
+tests: []
+links: {}
+notes: ''

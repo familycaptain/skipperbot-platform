@@ -1,0 +1,19 @@
+kind: specification
+id: behaviors.switching-off.the-switch-flips-whatever-it-finds
+title: The switch flips, so ask twice and it is back on
+state: live
+autonomy: gated
+behavior: >
+  There is one switch per rule and it flips whatever state it finds rather than being set to on or off,
+  so asking to disable a rule that is already off turns it back on. Whichever way it went, the
+  resulting state is reported — in the app by the switch and the dimming, in conversation by naming the
+  rule as now enabled or now disabled — so a person can tell they got the opposite of what they meant.
+implements:
+- apps/behaviors/tools.py::toggle_behavior
+- apps/behaviors/data.py::toggle_behavior
+- agent.py::api_toggle_behavior
+tests: []
+links: {}
+notes: >
+  Recorded because "disable it" said twice is a realistic mistake and the outcome is the opposite of
+  what was asked; reporting the resulting state is the only thing that makes it recoverable.

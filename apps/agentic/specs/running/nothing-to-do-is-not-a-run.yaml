@@ -1,0 +1,15 @@
+kind: specification
+id: agentic.running.nothing-to-do-is-not-a-run
+title: A routine with nothing to follow does nothing
+state: live
+autonomy: gated
+behavior: >
+  A run whose instructions are missing, emptied, or point at a document that has been deleted ends
+  immediately having taken no action, and records why it had nothing to do. It is not an error and
+  nothing is half-done: the routine keeps its cadence and will look again next time, so deleting the
+  document pauses a routine's effect without silently breaking it.
+implements:
+- apps/agentic/agentic.py::handle_agentic
+tests: []
+links: {}
+notes: ''

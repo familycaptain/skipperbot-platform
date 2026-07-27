@@ -1,0 +1,17 @@
+kind: specification
+id: thinking.alarms.turning-an-area-off-silences-it
+title: Turning an area off silences everything it sends
+state: live
+autonomy: gated
+behavior: >
+  While an area is off, nothing attributable to it reaches anyone: no message, nudge or
+  announcement it would have produced is delivered, whichever part of the system happens to raise
+  it. Otherwise a person switches an area off, keeps receiving its output, and has nowhere left to
+  go.
+implements:
+- thinking_scheduler.py::_supervise_domains
+- app_platform/attention.py::_dispatch
+- app_platform/skills.py::get_skill
+tests: []
+links: {}
+notes: ''

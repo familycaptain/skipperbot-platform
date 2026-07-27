@@ -1,0 +1,13 @@
+kind: specification
+id: tools.guide-viewer.empty-is-not-broken
+title: An empty guide is not a broken one
+state: live
+autonomy: gated
+behavior: >
+  A guide that exists but says nothing reports having no content — a different answer from a guide
+  that failed to load, and a different answer again from a category that has no guide at all.
+implements:
+- apps/tools/ui/ToolsApp.jsx::CategoryDetail
+tests: []
+links: {}
+notes: ''

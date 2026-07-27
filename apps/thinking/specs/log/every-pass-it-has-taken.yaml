@@ -1,0 +1,17 @@
+kind: specification
+id: thinking.log.every-pass-it-has-taken
+title: Every pass it has taken, newest first
+state: live
+autonomy: gated
+behavior: >
+  The log lists the passes background thought has taken, newest first: the time, the area, what
+  woke it, which class of model it used, what it cost, how many actions it took, and a one-line
+  summary of what it was looking at. That is enough to answer whether an area has been doing
+  anything at all without opening a single entry.
+implements:
+- agent.py::api_thinking_log
+- data_layer/thinking_log.py::list_log_entries
+- apps/thinking/ui/ThinkingApp.jsx::LogCard
+tests: []
+links: {}
+notes: ''

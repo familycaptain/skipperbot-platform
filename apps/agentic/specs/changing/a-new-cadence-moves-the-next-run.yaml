@@ -1,0 +1,16 @@
+kind: specification
+id: agentic.changing.a-new-cadence-moves-the-next-run
+title: A new cadence moves the next run
+state: live
+autonomy: gated
+behavior: >
+  Changing when a routine runs moves its next run to the first time that matches the new cadence,
+  counted from the last time it actually ran, and leaves the runs it has already done untouched. A
+  cadence changed to something the household does not recognise is refused rather than silently
+  accepted, so a routine cannot be edited into never running again.
+implements:
+- apps/agentic/tools.py::update_routine
+- apps/schedules/data.py::update_schedule
+tests: []
+links: {}
+notes: ''

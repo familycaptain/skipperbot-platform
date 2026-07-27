@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.spinhazard.the-crosser-is-the-big-prize
+title: The crosser is the prize worth chasing
+state: live
+autonomy: gated
+behavior: >
+  Every so often a small fast object crosses the field, worth more than any rock. It kills on
+  contact like anything else, and if it is not shot it simply leaves at the far side and comes
+  back some time later, so missing it costs nothing but the points.
+implements:
+- apps/arcade/ui/games/Spinhazard.jsx::update
+tests: []
+links: {}
+notes: ''

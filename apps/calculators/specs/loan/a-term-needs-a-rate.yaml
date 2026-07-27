@@ -1,0 +1,16 @@
+kind: specification
+id: calculators.loan.a-term-needs-a-rate
+title: Solving the term needs a rate above nought
+state: live
+autonomy: gated
+behavior: >
+  Solving for the term requires an interest rate above nought; with the rate at nought or missing
+  the calculator asks for one rather than dividing by nought. A solved term is reported both as a
+  number of years and as a whole number of payments, since a part month is still a payment that has
+  to be made.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveLoan
+- apps/calculators/tools.py::loan_amortization
+tests: []
+links: {}
+notes: ''

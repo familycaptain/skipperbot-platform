@@ -1,0 +1,13 @@
+kind: specification
+id: arcade.aeldrift.drift-in
+title: Drift in, and drift out when you like
+state: live
+autonomy: gated
+behavior: >
+  Aeldrift opens on a title screen naming what there is to do and how to steer, and the world only
+  starts responding once the person drifts in. Leaving is always available and costs nothing.
+implements:
+- apps/arcade/ui/games/Aeldrift.jsx::startPlaying
+tests: []
+links: {}
+notes: ''

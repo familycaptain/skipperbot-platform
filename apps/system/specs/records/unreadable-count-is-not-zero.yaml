@@ -1,0 +1,16 @@
+kind: specification
+id: system.records.unreadable-count-is-not-zero
+title: An unreadable figure is not reported as zero
+state: live
+autonomy: gated
+behavior: >
+  A figure whose store cannot be read — because that app is not installed here, or its data has
+  moved — shows as unavailable, while every other figure on the screen is still reported. A kind
+  that genuinely holds nothing shows zero, and the two are deliberately distinguishable on
+  sight.
+implements:
+- apps/system/routes.py::_count
+- apps/system/ui/SystemApp.jsx::fmtNum
+tests: []
+links: {}
+notes: ''

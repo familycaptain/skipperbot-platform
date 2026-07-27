@@ -1,0 +1,16 @@
+kind: specification
+id: agentic.reach.a-routine-can-set-up-routines
+title: A routine can set up routines
+state: live
+autonomy: gated
+behavior: >
+  A routine given, or asking for, the routine-management abilities can create, rewrite, pause and
+  immediately run routines — including itself — so nothing prevents standing work from adding more
+  standing work. Anything with that reach should be read as able to change what Skipper does
+  unattended from then on, and the household's list of routines is the place that shows it.
+implements:
+- apps/agentic/agentic.py::_build_tools
+- apps/agentic/tools.py::create_routine
+tests: []
+links: {}
+notes: ''

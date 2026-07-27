@@ -1,0 +1,15 @@
+kind: specification
+id: system.access.looking-changes-nothing
+title: Looking at System changes nothing
+state: live
+autonomy: gated
+behavior: >
+  Opening, reading or refreshing System writes nothing anywhere: no record is created, nothing
+  is added to Skipper's memory, and nothing appears in the household's record because somebody
+  looked. Every figure is read live, so closing the app leaves no trace of the visit.
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/manifest.yaml
+tests: []
+links: {}
+notes: ''

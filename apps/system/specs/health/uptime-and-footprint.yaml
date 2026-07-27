@@ -1,0 +1,15 @@
+kind: specification
+id: system.health.uptime-and-footprint
+title: How long it has been up, and how much memory it holds
+state: live
+autonomy: gated
+behavior: >
+  Server health states how long the agent has been running, in days, hours and minutes rather
+  than a raw count of seconds, and how much memory it currently occupies. Both describe the
+  process answering the request as it stands, not an average over time.
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/ui/SystemApp.jsx::fmtDuration
+tests: []
+links: {}
+notes: ''

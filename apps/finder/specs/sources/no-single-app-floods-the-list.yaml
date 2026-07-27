@@ -1,0 +1,16 @@
+kind: specification
+id: finder.sources.no-single-app-floods-the-list
+title: No one app fills the whole list
+state: live
+autonomy: gated
+behavior: >
+  A query that matches a great many records inside one app contributes a bounded number of them rather
+  than everything it matched, so a common word does not bury the single match from another app under
+  one app's list.
+implements:
+- apps/finder/ui/FinderApp.jsx::SEARCH_SOURCES
+tests: []
+links: {}
+notes: >
+  Cross-app search is for locating one record, not for browsing an app's list — so a per-app bound is
+  the point rather than a limitation. Someone who wants the whole list opens that app.

@@ -1,0 +1,18 @@
+kind: specification
+id: behaviors.influence.present-on-every-turn
+title: A rule is in front of Skipper on every turn
+state: live
+autonomy: gated
+behavior: >
+  Every switched-on rule belonging to a person is put in front of Skipper on every single turn of
+  their conversation, whether or not the turn looks related to it. This is the difference between a
+  rule and a remembered fact: a fact is dug up when it seems relevant and can be missed, while a rule
+  is never absent, so an instruction that must fire every time is written as a rule.
+implements:
+- chat_domain.py::_build_system_prompt
+- apps/behaviors/data.py::get_active_behaviors_for_user
+tests: []
+links: {}
+notes: >
+  Reliability is the whole reason the app exists; relevance-based recall was already available and is
+  what this is deliberately not.

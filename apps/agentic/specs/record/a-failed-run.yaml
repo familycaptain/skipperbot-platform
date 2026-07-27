@@ -1,0 +1,16 @@
+kind: specification
+id: agentic.record.a-failed-run
+title: A failed run does not disturb the cadence
+state: live
+autonomy: gated
+behavior: >
+  A run that ends in an error is recorded as failed with the reason, and the routine itself is
+  untouched — still on, still due at its next occurrence, nothing rolled back and nothing retried
+  sooner. One routine's failure never stops another routine's run, and a run interrupted by the server
+  restarting is recorded as failed rather than left looking as though it is still going.
+implements:
+- apps/agentic/agentic.py::handle_agentic
+- apps/schedules/job_trigger.py::check_schedule_jobs
+tests: []
+links: {}
+notes: ''

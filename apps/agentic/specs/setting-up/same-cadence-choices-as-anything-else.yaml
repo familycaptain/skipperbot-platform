@@ -1,0 +1,17 @@
+kind: specification
+id: agentic.setting-up.same-cadence-choices-as-anything-else
+title: It repeats on the same terms as any other schedule
+state: live
+autonomy: gated
+behavior: >
+  A routine takes the same cadence choices as anything else recurring in the household — daily, weekly
+  on named days, monthly, yearly, or a fixed interval — plus an optional local time of day, and the
+  same picker is used whether it is set up in conversation or on a form. A cadence nobody recognises
+  falls back to daily rather than being refused, and one given without the detail it needs (which
+  days, which day of the month) is anchored to the day it was set up rather than rejected.
+implements:
+- apps/agentic/tools.py::create_routine
+- apps/schedules/ui/SchedulesApp.jsx::NewAgenticTaskForm
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: tools.registry.each-category-explains-itself
+title: Each category explains itself
+state: live
+autonomy: gated
+behavior: >
+  A category is shown with the description its owner wrote — the app for an app-declared category,
+  the routing file otherwise — and one whose owner wrote none is still listed, just without a
+  description.
+implements:
+- apps/tools/routes.py::api_tool_categories
+- apps/tools/ui/ToolsApp.jsx::CategoryDetail
+tests: []
+links: {}
+notes: ''

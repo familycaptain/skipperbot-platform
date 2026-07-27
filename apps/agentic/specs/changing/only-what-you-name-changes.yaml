@@ -1,0 +1,15 @@
+kind: specification
+id: agentic.changing.only-what-you-name-changes
+title: Only what you name changes
+state: live
+autonomy: gated
+behavior: >
+  Changing a routine touches only the parts named — its instructions, its cadence, its run time, the
+  abilities it starts with, which model it thinks with — and leaves everything else alone, including
+  its id, its owner, how many times it has run and when it last did. The answer lists what actually
+  changed, and a change that names nothing says so rather than reporting a silent success.
+implements:
+- apps/agentic/tools.py::update_routine
+tests: []
+links: {}
+notes: ''

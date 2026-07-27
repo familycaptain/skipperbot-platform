@@ -1,0 +1,15 @@
+kind: specification
+id: agentic.running.one-run-at-a-time
+title: A due routine waits rather than piling up
+state: live
+autonomy: gated
+behavior: >
+  While a routine run is under way, a routine that comes due waits instead of starting alongside it:
+  it stays due and is started once the way is clear, so a slow run delays the next one rather than two
+  runs treading on each other's work. A run someone asks for by hand is not held back this way.
+implements:
+- apps/schedules/job_trigger.py::check_schedule_jobs
+- apps/agentic/tools.py::run_routine_now
+tests: []
+links: {}
+notes: ''

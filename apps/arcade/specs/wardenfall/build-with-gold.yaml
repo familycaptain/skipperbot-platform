@@ -1,0 +1,18 @@
+kind: specification
+id: arcade.wardenfall.build-with-gold
+title: Build with gold, on ground you are allowed
+state: live
+autonomy: gated
+behavior: >
+  Two kinds of warden can be built, each with a price shown on its button, and clicking open
+  ground puts the selected one there. The cell under the pointer previews where it would land and
+  how far it would reach, in green when the placement is allowed and affordable and in red when it
+  is not. On the road, on top of an existing warden, or without the gold, the click does nothing
+  at all and nothing is spent.
+implements:
+- apps/arcade/ui/games/Wardenfall.jsx::tryPlaceTower
+- apps/arcade/ui/games/Wardenfall.jsx::cellBuildable
+- apps/arcade/ui/games/Wardenfall.jsx::draw
+tests: []
+links: {}
+notes: ''

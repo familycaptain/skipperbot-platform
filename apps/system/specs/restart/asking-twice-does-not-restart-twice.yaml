@@ -1,0 +1,14 @@
+kind: specification
+id: system.restart.asking-twice-does-not-restart-twice
+title: Asking twice does not restart twice
+state: live
+autonomy: gated
+behavior: >
+  A restart asked for while one is already under way is answered with the fact that a shutdown
+  is already in progress. It does not begin a second drain, and it does not shorten the one
+  already running.
+implements:
+- agent.py::api_admin_restart
+tests: []
+links: {}
+notes: ''

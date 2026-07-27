@@ -1,0 +1,15 @@
+kind: specification
+id: timers.going-off.it-says-what-it-was-for
+title: The announcement says which timer finished
+state: live
+autonomy: gated
+behavior: >
+  The announcement names what the timer was for and how long it ran, so a person with the pasta, the
+  eggs and a pomodoro all going knows which one just finished without having to ask. A timer that was
+  never labelled announces itself as simply a timer of that length, which is still enough to pick it
+  out from a differently-sized one.
+implements:
+- apps/timers/scheduler.py::_run_timer
+tests: []
+links: {}
+notes: ''

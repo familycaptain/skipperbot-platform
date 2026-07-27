@@ -2,10 +2,13 @@ kind: capability
 id: arcade
 title: Arcade
 app: arcade
-scope: A small arcade of self-contained canvas/WebGL games — Wardenfall (tower defense), Aeldrift
-  (3D exploration), Spinhazard (vector shooter), and Solitaire (Klondike, with per-user save/resume)
-  — sharing one high-score board. Demonstrates the platform's in-browser game capability. NOT
-  a competitive/online game service; these are local single-player diversions.
+scope: >
+  Four self-contained games that run entirely in the browser — Wardenfall (tower defense),
+  Spinhazard (vector shooter), Aeldrift (3D exploration) and Solitaire (Klondike) — plus one
+  high-score board the whole household shares. Nothing to install, no accounts, no assets to
+  download and no network needed to play; only score recording and Solitaire's resume touch the
+  server. NOT an online or competitive game service, and not a games launcher for anything the
+  household installs itself: these are the diversions Skipper ships with.
 state: live
 autonomy: gated
 links: {}

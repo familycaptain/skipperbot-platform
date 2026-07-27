@@ -1,0 +1,14 @@
+kind: specification
+id: finder.sources.one-app-failing-never-empties-the-search
+title: One app failing never empties the search
+state: live
+autonomy: gated
+behavior: >
+  When one app cannot answer — it is down, refuses the request, or sends back something unreadable —
+  every other app's matches are still shown. A single failing app never turns the whole search into an
+  error, and never costs the person the matches the rest of the apps did find.
+implements:
+- apps/finder/ui/FinderApp.jsx::runSearch
+tests: []
+links: {}
+notes: ''

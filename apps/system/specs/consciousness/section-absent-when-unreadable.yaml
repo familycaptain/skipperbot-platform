@@ -1,0 +1,15 @@
+kind: specification
+id: system.consciousness.section-absent-when-unreadable
+title: An unmeasurable record is left out, not shown as zero
+state: live
+autonomy: gated
+behavior: >
+  Where Skipper's record cannot be read at all, the whole section is left off the dashboard
+  rather than drawn as a row of zeros — because zeros would read as "Skipper has never said
+  anything" when the truth is "this could not be measured".
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/ui/SystemApp.jsx::SystemApp
+tests: []
+links: {}
+notes: ''

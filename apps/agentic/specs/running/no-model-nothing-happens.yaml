@@ -1,0 +1,16 @@
+kind: specification
+id: agentic.running.no-model-nothing-happens
+title: With no model configured, a run does nothing
+state: live
+autonomy: gated
+behavior: >
+  When the household has no model configured for the one a routine thinks with, the run takes no
+  actions at all and ends rather than failing halfway or partially applying its instructions. The
+  routine keeps its cadence and tries again next time, so finishing setup is enough to make it start
+  working with nothing to repair.
+implements:
+- apps/agentic/agentic.py::handle_agentic
+- agent_loop.py::run
+tests: []
+links: {}
+notes: ''

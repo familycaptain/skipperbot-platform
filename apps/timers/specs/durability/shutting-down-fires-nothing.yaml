@@ -1,0 +1,22 @@
+kind: specification
+id: timers.durability.shutting-down-fires-nothing
+title: Nothing goes off while Skipper is stopping
+state: live
+autonomy: gated
+behavior: >
+  On a stop or a restart every running timer is stopped first and waited for, so no announcement is
+  made on the way down — not even by a timer that was a fraction of a second from its moment. A
+  half-spoken expiry during shutdown would be worse than a lost one, and a wedged timer can delay the
+  stop but never prevent it.
+implements:
+- apps/timers/scheduler.py::shutdown_all_timers
+- apps/timers/hooks.py::register_hooks
+tests:
+- type: unit
+  path: tests/platform/test_lifecycle_registry.py
+  rubric: >
+    Offline, no real timers. Loading the timers app registers a stop hook and no background worker,
+    so the platform's own lifecycle is what drains running timers on the way down rather than
+    anything reaching into the app directly.
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: calculators.solving.zero-is-a-value-not-a-blank
+title: Zero is an answer, not an empty field
+state: live
+autonomy: gated
+behavior: >
+  A field holding 0 is a figure that was entered, not a request to solve for it: a nought per cent
+  loan and a nought starting balance are both calculated as given. Only a genuinely empty field is
+  treated as the unknown.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveCompound
+- apps/calculators/ui/CalculatorsApp.jsx::solveLoan
+- apps/calculators/tools.py::_num
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: calculators.loan.the-monthly-payment
+title: The monthly payment
+state: live
+autonomy: gated
+behavior: >
+  Given the amount borrowed, the annual rate and the term in years, the calculator reports the level
+  monthly payment that clears the debt exactly at the end of the term.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveLoan
+- apps/calculators/ui/CalculatorsApp.jsx::payment
+- apps/calculators/tools.py::loan_amortization
+- apps/calculators/tools.py::_payment
+tests: []
+links: {}
+notes: ''

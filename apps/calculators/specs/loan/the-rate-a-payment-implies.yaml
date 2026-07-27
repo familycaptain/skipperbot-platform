@@ -1,0 +1,16 @@
+kind: specification
+id: calculators.loan.the-rate-a-payment-implies
+title: The rate a payment implies
+state: live
+autonomy: gated
+behavior: >
+  Leaving the rate blank reports the annual rate implied by that amount, term and payment, to three
+  decimal places. A payment that no positive rate could produce — one that does not even cover the
+  amount borrowed spread across the term — is refused with the reason rather than answered with a
+  rate of nought.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveLoan
+- apps/calculators/tools.py::loan_amortization
+tests: []
+links: {}
+notes: ''

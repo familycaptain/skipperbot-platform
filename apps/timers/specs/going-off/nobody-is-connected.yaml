@@ -1,0 +1,16 @@
+kind: specification
+id: timers.going-off.nobody-is-connected
+title: A timer that goes off while nobody is looking is still waiting when they come back
+state: live
+autonomy: gated
+behavior: >
+  A timer finishing with nobody at a screen is not lost: the announcement is recorded for that
+  person's web console before any surface is attempted, so it is there the next time they open it,
+  and it appears live on the screen of anybody who is watching. Whether they saw it at the time and
+  whether they see it later are separate questions, and the second is always answered yes.
+implements:
+- apps/timers/scheduler.py::_run_timer
+- app_platform/notifications.py
+tests: []
+links: {}
+notes: ''

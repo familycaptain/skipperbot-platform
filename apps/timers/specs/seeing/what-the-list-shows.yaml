@@ -1,0 +1,16 @@
+kind: specification
+id: timers.seeing.what-the-list-shows
+title: What "what timers do I have?" answers with
+state: live
+autonomy: gated
+behavior: >
+  Asking what is running answers with how many there are and then one line each: the timer's handle,
+  what it is for, whose it is, how much is left, and how long it was set for in the first place.
+  That is enough to tell two five-minute timers apart and to say which one to stop, without needing
+  to remember anything from when they were set.
+implements:
+- apps/timers/tools.py::list_timers
+- apps/timers/store.py::list_active
+tests: []
+links: {}
+notes: ''

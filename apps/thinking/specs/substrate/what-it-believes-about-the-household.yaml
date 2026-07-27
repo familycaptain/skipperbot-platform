@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.substrate.what-it-believes-about-the-household
+title: What it currently believes about the household
+state: live
+autonomy: gated
+behavior: >
+  The rolling summary Skipper keeps of the household is shown in full, with how long ago it was
+  written — the plainest available answer to what it thinks is going on right now. Before any
+  summary exists the block is simply absent rather than shown empty.
+implements:
+- agent.py::api_thinking_subconscious
+- apps/thinking/ui/ThinkingApp.jsx::SummaryBlock
+tests: []
+links: {}
+notes: ''

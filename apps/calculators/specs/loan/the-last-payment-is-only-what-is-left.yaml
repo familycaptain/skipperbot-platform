@@ -1,0 +1,14 @@
+kind: specification
+id: calculators.loan.the-last-payment-is-only-what-is-left
+title: The final payment is only the balance left
+state: live
+autonomy: gated
+behavior: >
+  The final payment of a schedule is only whatever balance remains, not a full instalment, so the
+  schedule never runs past nought into a negative balance and the total paid is not inflated by part
+  of a month that was never owed.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::finishLoan
+tests: []
+links: {}
+notes: ''

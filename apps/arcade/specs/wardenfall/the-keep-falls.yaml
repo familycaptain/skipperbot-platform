@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.wardenfall.the-keep-falls
+title: When the keep falls, the run is over
+state: live
+autonomy: gated
+behavior: >
+  The moment the last life is gone the run stops where it is: the final score is shown once and
+  recorded once, and the field freezes behind it rather than continuing to play out.
+implements:
+- apps/arcade/ui/games/Wardenfall.jsx::step
+- apps/arcade/ui/games/Wardenfall.jsx
+tests: []
+links: {}
+notes: ''

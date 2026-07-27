@@ -1,0 +1,14 @@
+kind: specification
+id: system.activity.external-service-never-blocks-the-screen
+title: A slow external service does not hold up the dashboard
+state: live
+autonomy: gated
+behavior: >
+  An external analysis service that is slow, unreachable or refuses the request costs only its
+  own line: the dashboard waits a short bounded time for it and then renders everything else. It
+  is never the reason a person cannot see their own install's health.
+implements:
+- apps/system/routes.py::api_system_metrics
+tests: []
+links: {}
+notes: ''

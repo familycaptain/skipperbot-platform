@@ -1,0 +1,16 @@
+kind: specification
+id: system.restart.only-an-admin-may-restart
+title: Only an admin can restart Skipper
+state: live
+autonomy: gated
+behavior: >
+  A restart asked for by anyone without administrator rights is refused and the agent keeps
+  running. The check is made where the restart is carried out rather than in the screen that
+  offers it, so it holds however the request is made and not only when it comes from this
+  dashboard.
+implements:
+- agent.py::api_admin_restart
+- agent.py::_is_admin_req
+tests: []
+links: {}
+notes: ''

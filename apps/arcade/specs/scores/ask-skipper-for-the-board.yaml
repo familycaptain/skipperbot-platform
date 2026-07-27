@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.scores.ask-skipper-for-the-board
+title: Asking Skipper reads back the same board
+state: live
+autonomy: gated
+behavior: >
+  Asked in conversation for the arcade high scores — or for the best runs on one named game —
+  Skipper reads back the same ranking the app shows: numbered, each line giving the score, who set
+  it and which game. With nothing recorded it says so plainly and suggests playing something.
+implements:
+- apps/arcade/tools.py::get_arcade_high_scores
+- apps/arcade/data.py::top_scores
+tests: []
+links: {}
+notes: ''

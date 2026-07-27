@@ -1,0 +1,13 @@
+kind: specification
+id: tools.registry.nothing-registered
+title: No categories says so
+state: live
+autonomy: gated
+behavior: >
+  With no categories to show, the list says there are none rather than sitting on a spinner or
+  leaving a blank column, and the detail side keeps its invitation to pick one.
+implements:
+- apps/tools/ui/ToolsApp.jsx::ToolsApp
+tests: []
+links: {}
+notes: ''

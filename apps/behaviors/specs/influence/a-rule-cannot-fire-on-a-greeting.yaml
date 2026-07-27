@@ -1,0 +1,18 @@
+kind: specification
+id: behaviors.influence.a-rule-cannot-fire-on-a-greeting
+title: A rule cannot act before the person has said anything
+state: live
+autonomy: gated
+behavior: >
+  When Skipper greets someone on arrival, that turn can produce words and nothing else — so a rule
+  cannot mark anything done, send anything, or open anything on the strength of a greeting, however
+  its trigger is worded. At most the greeting can mention the rule; the first opportunity for a rule
+  to actually do something is the person's first message.
+implements:
+- apps/goals/handlers.py
+- chat_domain.py::_build_system_prompt
+tests: []
+links: {}
+notes: >
+  Withholding the ability to act is what makes this hold; asking the model not to act on a greeting
+  would be advice, and rules are pushing in the other direction.

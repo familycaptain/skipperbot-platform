@@ -1,0 +1,16 @@
+kind: specification
+id: system.records.live-share-beside-the-total
+title: The live share sits beside the total
+state: live
+autonomy: gated
+behavior: >
+  Where a total on its own would mislead, the figure carries the part that is currently live
+  next to it: reminders state how many of the total are still active, and lists state how many
+  items those lists hold between them. A thousand reminders with three active is a different
+  install from one with a thousand active, and the screen says which.
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/ui/SystemApp.jsx::StatCard
+tests: []
+links: {}
+notes: ''

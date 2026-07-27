@@ -1,0 +1,13 @@
+kind: specification
+id: arcade.solitaire.send-a-card-up-in-one-gesture
+title: Double-click sends a card home
+state: live
+autonomy: gated
+behavior: >
+  Double-clicking the top card of a pile sends it to its own foundation if it is the next card
+  that suit needs, without picking it up first. If it does not fit, nothing happens.
+implements:
+- apps/arcade/ui/games/Solitaire.jsx::autoFoundation
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.alarms.the-list-is-the-whole-switchboard
+title: Anything that can act on its own appears here
+state: live
+autonomy: gated
+behavior: >
+  Everything that can think, act or speak without being asked appears on this screen with a switch
+  — not only the parts that happen to run on the thinking timer. If something reaches a person
+  unprompted and cannot be found here, the household has no way to turn it off.
+implements:
+- agent.py::api_thinking_domains
+- data_layer/thinking_domains.py::list_domains
+tests: []
+links: {}
+notes: ''

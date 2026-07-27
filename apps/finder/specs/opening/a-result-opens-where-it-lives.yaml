@@ -1,0 +1,16 @@
+kind: specification
+id: finder.opening.a-result-opens-where-it-lives
+title: A result opens where it lives
+state: live
+autonomy: gated
+behavior: >
+  Clicking a result opens the app that owns the record, on that record — a goal, project or task in
+  the goals app at that entity, a schedule at that schedule, an idea at that idea — so finding
+  something and getting to it are one action and nobody has to find it a second time inside its own
+  app.
+implements:
+- apps/finder/ui/FinderApp.jsx::SEARCH_SOURCES
+- web/src/App.jsx::handleOpenApp
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: agentic.reach.it-cannot-put-anything-on-a-screen
+title: A routine cannot take over somebody's screen
+state: live
+autonomy: gated
+behavior: >
+  Nothing a routine does appears on anyone's desktop of its own accord: there is no person mid-
+  conversation for it to interrupt, so an instruction to show or open something reaches its owner as a
+  message pointing at what to open, or not at all. What a routine produces is found where it was put —
+  a document, a list, a message — rather than pushed onto a screen.
+implements:
+- apps/agentic/agentic.py::handle_agentic
+- local_tools.py::handle_local_tool
+tests: []
+links: {}
+notes: ''

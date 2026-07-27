@@ -1,0 +1,16 @@
+kind: specification
+id: finder.by-id.pasting-an-id-goes-straight-there
+title: Pasting an id goes straight to the record
+state: live
+autonomy: gated
+behavior: >
+  Pasting a record's id — the one Finder shows beside each result, or one Skipper quoted in the
+  conversation — returns just that record, under the app that owns it, without searching anything
+  else. This is what makes an id mentioned in chat, a notification or an issue followable through to
+  the thing it names.
+implements:
+- apps/finder/ui/FinderApp.jsx::ID_PREFIXES
+- apps/finder/ui/FinderApp.jsx::detectIdLookup
+tests: []
+links: {}
+notes: ''

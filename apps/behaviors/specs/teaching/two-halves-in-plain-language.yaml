@@ -1,0 +1,18 @@
+kind: specification
+id: behaviors.teaching.two-halves-in-plain-language
+title: A rule is two sentences, in the person's own words
+state: live
+autonomy: gated
+behavior: >
+  A rule is exactly two pieces of ordinary language: the situation to watch for, and what to do about
+  it. There is no rule syntax, no list of supported triggers and no fixed vocabulary of actions, so a
+  rule cannot be malformed and nothing has to be learned before writing one. An action may describe
+  several things at once ("check the to-do list, tasks and the home app") and is treated as one rule.
+implements:
+- apps/behaviors/data.py::create_behavior
+- apps/behaviors/ui/BehaviorsApp.jsx
+tests: []
+links: {}
+notes: >
+  Free text is the point rather than a shortcut: the rule is read by the same thing that reads the
+  conversation, so anything the person could say to Skipper is a usable trigger.

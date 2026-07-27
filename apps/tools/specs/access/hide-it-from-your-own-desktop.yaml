@@ -1,0 +1,15 @@
+kind: specification
+id: tools.access.hide-it-from-your-own-desktop
+title: Hide the tile without hiding it from anyone else
+state: live
+autonomy: gated
+behavior: >
+  A person can take the Tools tile off their own desktop and it disappears for them alone,
+  immediately, with the app still loaded and still openable. Hiding a tile is a personal
+  preference, never an install decision made for the household.
+implements:
+- web/src/apps/registry.js::_launcherVisible
+- agent.py::api_set_hidden_apps
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: agentic.reading.list-what-skipper-runs-itself
+title: Asking what Skipper does on its own
+state: live
+autonomy: gated
+behavior: >
+  Asking what Skipper runs by itself lists every routine in the household — including the ones that
+  are turned off, marked as off — with each one's cadence, its run time where it has one, and where
+  its instructions live, so a person can audit the standing work in one answer. Routines set up by
+  other members of the household are listed too: nothing Skipper does unattended is visible only to
+  the person who asked for it.
+implements:
+- apps/agentic/tools.py::list_routines
+tests: []
+links: {}
+notes: ''

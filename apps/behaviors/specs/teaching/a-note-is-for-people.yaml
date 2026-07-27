@@ -1,0 +1,17 @@
+kind: specification
+id: behaviors.teaching.a-note-is-for-people
+title: A note on a rule is never an instruction
+state: live
+autonomy: gated
+behavior: >
+  A rule can carry an optional note explaining why it exists. The note is shown to people — folded
+  away in the list until asked for, and repeated back when the rules are read out in conversation —
+  but it is never part of what Skipper is told to act on, so writing an extra instruction in the note
+  changes nothing about how the rule fires. Rules without a note show no expander at all.
+implements:
+- apps/behaviors/ui/BehaviorsApp.jsx
+- chat_domain.py::_build_system_prompt
+- app_platform/voice/prompting.py::build_active_behavior_rules
+tests: []
+links: {}
+notes: ''

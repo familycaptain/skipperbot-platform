@@ -1,0 +1,18 @@
+kind: specification
+id: tools.registry.what-was-actually-loaded
+title: What this Skipper actually loaded
+state: live
+autonomy: gated
+behavior: >
+  The app-declared half of the catalogue is read from the running platform at the moment you ask,
+  so it shows what this Skipper loaded on its last start: an app the operator turned off
+  contributes no category, and a newly installed app's category shows up after the next restart
+  without anyone editing a routing file. The platform's own routing file supplies the rest,
+  including any category registered while running.
+implements:
+- apps/tools/routes.py::api_tool_categories
+- tool_router.py::TOOL_CATEGORIES
+- app_platform/loader.py::_build_tool_route
+tests: []
+links: {}
+notes: ''

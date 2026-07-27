@@ -1,0 +1,25 @@
+kind: specification
+id: agentic.reach.the-same-reach-as-a-conversation
+title: A routine has the same reach as a conversation
+state: live
+autonomy: gated
+behavior: >
+  A run has the abilities Skipper has in conversation, not a reduced or read-only set: whatever a
+  person could ask Skipper to do in chat, a routine's instructions can have it do unattended, with no
+  approval step at run time and no category of action held back. The instructions are therefore the
+  only thing bounding what a routine does, which is why they are worth reading before a routine is
+  turned on.
+implements:
+- apps/agentic/agentic.py::_build_tools
+- apps/agentic/agentic.py::_SYSTEM
+tests:
+- type: unit
+  path: tests/evolve/agentic/test_agentic_task.py
+  rubric: >
+    Offline, source-level: asserts the run path wires the ordinary local tools and carries no refusal
+    or held-back-messaging machinery of its own. Structural only — it evidences that no reduced tool
+    set exists rather than exercising a run.
+links: {}
+notes: >
+  The operator's decision: a routine is Skipper doing the work, not a restricted robot, so delivery
+  and every other action are the instructions' business.

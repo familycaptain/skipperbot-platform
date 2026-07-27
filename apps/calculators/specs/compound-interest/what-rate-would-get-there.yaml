@@ -1,0 +1,16 @@
+kind: specification
+id: calculators.compound-interest.what-rate-would-get-there
+title: What rate a goal needs
+state: live
+autonomy: gated
+behavior: >
+  Leaving the annual rate blank reports the rate required to turn the starting amount into the goal
+  in the time given, quoted as an annual percentage on the compounding frequency that was entered
+  rather than as a per-period rate — so the figure can be compared directly against a rate a bank
+  advertises.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveCompound
+- apps/calculators/tools.py::compound_interest
+tests: []
+links: {}
+notes: ''

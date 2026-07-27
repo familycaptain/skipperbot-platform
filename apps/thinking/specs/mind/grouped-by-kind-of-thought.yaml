@@ -1,0 +1,16 @@
+kind: specification
+id: thinking.mind.grouped-by-kind-of-thought
+title: The mind is grouped by kind of thought
+state: live
+autonomy: gated
+behavior: >
+  What Skipper is holding is grouped in a fixed order — what it is focused on, what it is waiting
+  to do, working notes, observations, plain notes, then where it has got to in a process — with a
+  count on each group heading. A kind of thought the screen does not recognise is shown last under
+  its own name rather than silently dropped.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx
+- data_layer/skipper_state.py::list_states
+tests: []
+links: {}
+notes: ''

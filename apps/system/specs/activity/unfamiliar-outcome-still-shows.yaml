@@ -1,0 +1,14 @@
+kind: specification
+id: system.activity.unfamiliar-outcome-still-shows
+title: An outcome the dashboard does not recognise is still shown
+state: live
+autonomy: gated
+behavior: >
+  The outcomes the dashboard knows — finished, running, failed, waiting — each get their own
+  distinct treatment so they can be told apart at a glance. An outcome it does not recognise is
+  still printed as it stands, in neutral styling, rather than dropped or shown blank.
+implements:
+- apps/system/ui/SystemApp.jsx::StatusBadge
+tests: []
+links: {}
+notes: ''

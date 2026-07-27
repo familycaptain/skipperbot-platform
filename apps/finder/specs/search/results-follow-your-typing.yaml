@@ -1,0 +1,16 @@
+kind: specification
+id: finder.search.results-follow-your-typing
+title: Results follow your typing
+state: live
+autonomy: gated
+behavior: >
+  Results arrive on their own shortly after typing stops — there is nothing to press and no search
+  button — and each search replaces the previous results rather than adding to them. Typing quickly
+  does not fire a search per keystroke, so a fast typist gets one search for the finished phrase
+  instead of a flicker of answers to its prefixes.
+implements:
+- apps/finder/ui/FinderApp.jsx::handleChange
+- apps/finder/ui/FinderApp.jsx::DEBOUNCE_MS
+tests: []
+links: {}
+notes: ''

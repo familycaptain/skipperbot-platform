@@ -1,0 +1,14 @@
+kind: specification
+id: finder.search.searching-says-so
+title: A search in progress says so
+state: live
+autonomy: gated
+behavior: >
+  While the apps are being asked, Finder says it is searching instead of showing an empty panel or
+  leaving the previous search's results up as though they answered the new words. A slow app makes
+  the wait visible rather than making the search look finished and empty.
+implements:
+- apps/finder/ui/FinderApp.jsx::runSearch
+tests: []
+links: {}
+notes: ''

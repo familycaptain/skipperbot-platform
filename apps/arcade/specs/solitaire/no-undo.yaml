@@ -1,0 +1,13 @@
+kind: specification
+id: arcade.solitaire.no-undo
+title: There is no undo
+state: live
+autonomy: gated
+behavior: >
+  A move once made stands: nothing takes back a draw, a move or a recycled stock. The only ways
+  out of a bad position are playing on, pulling a card back off a foundation, or dealing again.
+implements:
+- apps/arcade/ui/games/Solitaire.jsx
+tests: []
+links: {}
+notes: ''

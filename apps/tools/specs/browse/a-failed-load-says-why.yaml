@@ -1,0 +1,16 @@
+kind: specification
+id: tools.browse.a-failed-load-says-why
+title: A catalogue that will not load says why
+state: live
+autonomy: gated
+behavior: >
+  When the catalogue cannot be fetched, the failure appears as a banner naming what went wrong and
+  can be dismissed; the last catalogue that did load stays on screen and dismissing the banner
+  leaves it alone. A person is never left looking at a stale list with no sign that the last read
+  failed.
+implements:
+- apps/tools/ui/ToolsApp.jsx::loadCategories
+- apps/tools/ui/ToolsApp.jsx::ToolsApp
+tests: []
+links: {}
+notes: ''

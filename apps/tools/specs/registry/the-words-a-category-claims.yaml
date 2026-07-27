@@ -1,0 +1,15 @@
+kind: specification
+id: tools.registry.the-words-a-category-claims
+title: The words a category claims
+state: live
+autonomy: gated
+behavior: >
+  A category that declares routing keywords shows them all, so someone can see which everyday
+  phrases its owner expects to be about it; a category that declares none shows no keyword section
+  rather than an empty heading.
+implements:
+- apps/tools/routes.py::api_tool_categories
+- apps/tools/ui/ToolsApp.jsx::CategoryDetail
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: agentic.record.a-finished-run-says-how-much-it-did
+title: A finished run says how much it did
+state: live
+autonomy: gated
+behavior: >
+  A finished run records which routine ran, and that it acted rather than merely thought, so someone
+  reading back can tell a run that did work from one that found nothing to do. That record is not what
+  the routine produced: the output of a routine is wherever its instructions put it.
+implements:
+- apps/agentic/agentic.py::handle_agentic
+tests: []
+links: {}
+notes: ''

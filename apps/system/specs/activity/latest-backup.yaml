@@ -1,0 +1,16 @@
+kind: specification
+id: system.activity.latest-backup
+title: The last backup taken
+state: live
+autonomy: gated
+behavior: >
+  System reports the most recent backup's outcome, how long it took and when it started — the
+  figure a person checks before trusting that their data is safe. Where no backup has ever been
+  taken no line appears at all; the backup count in the same section is what separates "never"
+  from "not reported".
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/ui/SystemApp.jsx::SystemApp
+tests: []
+links: {}
+notes: ''

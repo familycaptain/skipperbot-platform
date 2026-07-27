@@ -1,0 +1,18 @@
+kind: specification
+id: timers.setting.short-countdowns-only
+title: A timer is for a short countdown, not for a time of day
+state: live
+autonomy: gated
+behavior: >
+  A timer covers a duration counted from now — seconds to a few minutes. Anything pinned to a
+  wall-clock time ("at three", "tomorrow morning"), anything further off than roughly half an hour,
+  and anything a person cannot afford to lose is set as a reminder instead, because only a reminder
+  survives Skipper being restarted. A person who asks for the wrong one gets the right one, not a
+  refusal.
+implements:
+- apps/timers/guide.md
+- apps/timers/help.md
+- apps/timers/manifest.yaml
+tests: []
+links: {}
+notes: ''

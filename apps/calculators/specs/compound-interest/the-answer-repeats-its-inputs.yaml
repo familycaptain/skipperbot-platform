@@ -1,0 +1,16 @@
+kind: specification
+id: calculators.compound-interest.the-answer-repeats-its-inputs
+title: An answer shows what it was worked from
+state: live
+autonomy: gated
+behavior: >
+  A compound-interest answer in chat repeats the figures it used — the starting amount, the rate,
+  the compounding frequency and the term — and in the app those figures are still on screen beside
+  the result. A surprising answer can therefore be traced to a mistyped input instead of having to
+  be taken on trust.
+implements:
+- apps/calculators/tools.py::compound_interest
+- apps/calculators/ui/CalculatorsApp.jsx::CompoundTab
+tests: []
+links: {}
+notes: ''

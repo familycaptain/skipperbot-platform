@@ -1,0 +1,15 @@
+kind: specification
+id: finder.categories.a-category-per-searchable-app
+title: The categories are the apps a search covers
+state: live
+autonomy: gated
+behavior: >
+  The categories on offer are exactly the apps a search reaches — one per app, plus "All" — so the row
+  of categories doubles as the answer to "what can Finder actually find?" and never offers to narrow
+  to an app that a search would not have asked anyway.
+implements:
+- apps/finder/ui/FinderApp.jsx::SEARCH_SOURCES
+- apps/finder/ui/FinderApp.jsx::FilterBubble
+tests: []
+links: {}
+notes: ''

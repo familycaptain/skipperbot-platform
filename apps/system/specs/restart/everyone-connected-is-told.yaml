@@ -1,0 +1,14 @@
+kind: specification
+id: system.restart.everyone-connected-is-told
+title: Everyone watching is told it is going down
+state: live
+autonomy: gated
+behavior: >
+  When a restart is confirmed, every connected screen is told that the agent is restarting and
+  draining — so somebody mid-conversation elsewhere in the house learns why Skipper went quiet
+  instead of experiencing it as a failure.
+implements:
+- agent.py::api_admin_restart
+tests: []
+links: {}
+notes: ''

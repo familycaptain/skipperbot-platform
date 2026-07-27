@@ -1,0 +1,16 @@
+kind: specification
+id: timers.setting.a-timer-for-somebody-unknown
+title: A timer needs a household member to belong to
+state: live
+autonomy: gated
+behavior: >
+  A timer is always somebody's: the person who asked for it is the person it announces itself to.
+  If no person is named, or the name belongs to nobody in the household, nothing is started and the
+  refusal says which of the two it was — rather than accepting a countdown that would have nobody
+  to tell when it ran out.
+implements:
+- apps/timers/tools.py::start_timer
+- data_layer/users.py::get_user
+tests: []
+links: {}
+notes: ''

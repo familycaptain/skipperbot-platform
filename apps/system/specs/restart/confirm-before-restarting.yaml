@@ -1,0 +1,16 @@
+kind: specification
+id: system.restart.confirm-before-restarting
+title: Restart asks before it restarts
+state: live
+autonomy: gated
+behavior: >
+  The restart control does nothing on its first press: it arms and asks for confirmation, and
+  only an explicit yes restarts the agent. Declining puts the control back as it was, having
+  changed nothing. So brushing past the control while reading the dashboard cannot take the
+  household's assistant down.
+implements:
+- apps/system/ui/SystemApp.jsx::SystemApp
+- apps/system/ui/SystemApp.jsx::handleRestart
+tests: []
+links: {}
+notes: ''

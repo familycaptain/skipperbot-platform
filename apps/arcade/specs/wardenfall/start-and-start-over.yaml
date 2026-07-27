@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.wardenfall.start-and-start-over
+title: Starting, and starting over
+state: live
+autonomy: gated
+behavior: >
+  Wardenfall opens on a title screen naming the goal and the controls, and nothing moves until
+  Play is pressed. When the run ends the final score is shown with the choice of playing again or
+  leaving; playing again is a completely fresh start — starting gold, full lives, no towers, back
+  to before the first wave.
+implements:
+- apps/arcade/ui/games/Wardenfall.jsx::startGame
+tests: []
+links: {}
+notes: ''

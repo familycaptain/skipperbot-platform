@@ -1,0 +1,16 @@
+kind: specification
+id: finder.sources.the-owning-app-answers
+title: Each app answers for its own records
+state: live
+autonomy: gated
+behavior: >
+  Every search is answered by the app that owns the records rather than by an index Finder keeps, so a
+  record created a moment ago is findable immediately, one just deleted stops being found, and there
+  is nothing to re-index after a restore or an upgrade. What Finder can find is exactly what those
+  apps have saved.
+implements:
+- apps/finder/ui/FinderApp.jsx::SEARCH_SOURCES
+- apps/finder/manifest.yaml::entity_types
+tests: []
+links: {}
+notes: ''

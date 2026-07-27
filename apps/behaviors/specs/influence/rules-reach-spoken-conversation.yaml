@@ -1,0 +1,18 @@
+kind: specification
+id: behaviors.influence.rules-reach-spoken-conversation
+title: Rules reach spoken conversation too
+state: live
+autonomy: gated
+behavior: >
+  Rules apply to talking to Skipper out loud as well as typing, chosen by who the speaker is
+  understood to be at the time. On a shared speaker where nobody has been identified, no rules apply
+  at all — rather than guessing an owner — so a person's rules can appear to stop working simply
+  because the household speaker does not know who is talking.
+implements:
+- app_platform/voice/prompting.py::build_active_behavior_rules
+- app_platform/voice/prompting.py::build_base_voice_instructions
+tests: []
+links: {}
+notes: >
+  Applying nobody's rules is the safe failure on a shared device: the alternative leaks one person's
+  standing instructions into everyone else's conversations.

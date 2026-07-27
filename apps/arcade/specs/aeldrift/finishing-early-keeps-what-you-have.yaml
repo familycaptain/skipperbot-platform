@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.aeldrift.finishing-early-keeps-what-you-have
+title: Finishing early keeps what you gathered
+state: live
+autonomy: gated
+behavior: >
+  Finishing a run deliberately ends it there and records however many shards were gathered,
+  including none at all, and the closing screen says how many rather than calling the world
+  cleared.
+implements:
+- apps/arcade/ui/games/Aeldrift.jsx::handleFinish
+tests: []
+links: {}
+notes: ''

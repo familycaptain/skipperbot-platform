@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.log.a-failed-pass-is-still-a-pass
+title: A pass that failed appears as a failure, not as a gap
+state: live
+autonomy: gated
+behavior: >
+  When a pass fails it is still recorded, carrying the error as the action it took, so a broken
+  area shows up as a run of failures rather than as silence. The area keeps its rhythm and tries
+  again on its next turn instead of disappearing from the log.
+implements:
+- thinking_scheduler.py::_run_domain_cycle
+- data_layer/thinking_log.py::log_cycle
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.scores.an-empty-board-says-so
+title: An empty board invites the first run
+state: live
+autonomy: gated
+behavior: >
+  With nothing recorded yet the board says so and invites the person to be the first, rather than
+  showing an empty list. If the board cannot be read at all it is shown as empty the same way and
+  the rest of the menu still works — an unavailable leaderboard never stops anyone playing.
+implements:
+- apps/arcade/ui/ArcadeApp.jsx::Leaderboard
+- apps/arcade/tools.py::get_arcade_high_scores
+tests: []
+links: {}
+notes: ''

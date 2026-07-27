@@ -1,0 +1,17 @@
+kind: specification
+id: thinking.alarms.turn-an-area-on
+title: Turning an area on starts it thinking
+state: live
+autonomy: gated
+behavior: >
+  Switching a disabled area on takes effect on its own within a couple of minutes and with no
+  restart: it begins taking passes on its own rhythm, and those passes start appearing in the log
+  where the person who switched it on can see them. Nothing else about the install has to be
+  changed first, and the person is never told to restart anything.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx::DomainCard
+- agent.py::api_thinking_domain_update
+- thinking_scheduler.py::_supervise_domains
+tests: []
+links: {}
+notes: ''

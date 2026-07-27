@@ -1,0 +1,16 @@
+kind: specification
+id: agentic.reach.it-can-always-reach-people
+title: Every routine can reach people and memory
+state: live
+autonomy: gated
+behavior: >
+  Every routine — including one given no abilities at all — can look things up in and add to what
+  Skipper remembers, and can send a message to any member of the household or to everyone at once.
+  Instructions never have to ask for permission to tell somebody something, and a routine set up as
+  thinking-only can still speak.
+implements:
+- apps/agentic/agentic.py::_ALWAYS
+- apps/agentic/agentic.py::_build_tools
+tests: []
+links: {}
+notes: ''

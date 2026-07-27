@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.shell.refresh-re-reads-the-screen-you-are-on
+title: Refresh re-reads the screen you are on
+state: live
+autonomy: gated
+behavior: >
+  The refresh control re-reads the screen currently open, along with the day's spend and the list
+  of areas that sit above every screen; screens that are not open are not re-read. The mind and
+  the log also re-read themselves about every half minute while they are open, and the control
+  shows that work is in progress while a read is running.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx
+tests: []
+links: {}
+notes: ''

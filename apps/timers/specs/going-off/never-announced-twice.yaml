@@ -1,0 +1,21 @@
+kind: specification
+id: timers.going-off.never-announced-twice
+title: A timer set out loud is spoken once, not twice
+state: live
+autonomy: gated
+behavior: >
+  A timer set by speaking is spoken once in its room and shown on the setter's other surfaces; it is
+  never said aloud twice, and the person is never told the same timer finished by two routes that
+  read as two separate timers. A timer set in a conversation on a screen is not spoken aloud at all —
+  being talked at by a speaker has to be asked for.
+implements:
+- apps/timers/scheduler.py::_run_timer
+tests:
+- type: unit
+  path: tests/evolve/voice/test_timer_voice_origin.py
+  rubric: >
+    Offline. The expiry's spoken announcement and the copy sent to the setter's other surfaces are
+    separate routes, and the surfaces asked for on the second one exclude speech — so a voice-set
+    timer cannot be announced aloud twice.
+links: {}
+notes: ''

@@ -2,10 +2,14 @@ kind: capability
 id: behaviors
 title: Behaviors
 app: behaviors
-scope: User-customizable if/then behavior rules, stored per user and unconditionally injected
-  into every chat system prompt — so they reliably steer the assistant ('when I say I started
-  my truck, mark the matching auto maintenance item done'). NOT event-driven automations (the
-  Automation app); these are prompt-injected rules the chat agent follows in conversation.
+scope: >
+  Standing "when I say this, do that" rules a person teaches Skipper in their own words. Every
+  enabled rule is put in front of Skipper on every conversational turn with its owner — typed or
+  spoken — so an automation-style instruction fires reliably instead of only when it happens to look
+  relevant. Behaviors own the rules themselves: their wording, who they belong to, whether they are
+  switched on, and who sees them. NOT event-driven automations (Automation), NOT remembered facts and
+  preferences (memory), and NOT Skipper's own initiative — a rule shapes what Skipper does in reply
+  to its owner, not what Skipper starts on its own.
 state: live
 autonomy: gated
 links: {}

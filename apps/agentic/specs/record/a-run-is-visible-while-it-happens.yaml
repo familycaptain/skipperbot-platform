@@ -1,0 +1,16 @@
+kind: specification
+id: agentic.record.a-run-is-visible-while-it-happens
+title: A run is visible while it happens
+state: live
+autonomy: gated
+behavior: >
+  A run appears in the household's list of background work from the moment it starts, named after the
+  routine and marked as scheduled or as asked for by hand, and its progress moves from loading through
+  running to complete — so a person can see that Skipper is doing something on its own right now, and
+  see it finish, without waiting for a result.
+implements:
+- apps/agentic/agentic.py::handle_agentic
+- apps/schedules/job_trigger.py::check_schedule_jobs
+tests: []
+links: {}
+notes: ''

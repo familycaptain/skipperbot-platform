@@ -1,0 +1,18 @@
+kind: specification
+id: calculators.scientific.what-it-can-work-out
+title: What a scientific calculator is expected to have
+state: live
+autonomy: gated
+behavior: >
+  The four operations, powers, brackets, square root, natural logarithm, logarithm base ten, sine,
+  cosine, tangent, factorial and the constants pi and e are all available, and the two logarithms
+  are never ambiguous: log is always base ten and ln is always natural. Asking in chat additionally
+  reaches the inverse trig functions and the exponential, which the pad has no keys for.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::SCI_FUNCS
+- apps/calculators/ui/CalculatorsApp.jsx::SCI_OPS
+- apps/calculators/tools.py::_safe_eval
+- apps/calculators/help.md
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,23 @@
+kind: specification
+id: agentic.setting-up.every-morning-is-daily
+title: "\"Every morning\" is daily"
+state: live
+autonomy: gated
+behavior: >
+  A routine asked for every morning or every day reads as plainly daily wherever it is listed, even
+  when the request arrived as a weekly cadence with all seven days ticked — a person who asked for a
+  daily routine is never shown a seven-day weekly rule. The same collapsing applies when a routine's
+  cadence is changed later, so it cannot drift back into the longer form on an edit.
+implements:
+- apps/agentic/tools.py::_normalize_recurrence
+- apps/agentic/tools.py::create_routine
+- apps/agentic/tools.py::update_routine
+tests:
+- type: unit
+  path: tests/evolve/agentic/test_agentic_task.py
+  rubric: >
+    Offline, source-level: asserts weekly-with-all-seven-days collapses to a plain daily cadence and
+    that the collapse is applied on both the create and the change path. Structural only — it inspects
+    the source rather than creating a routine.
+links: {}
+notes: ''

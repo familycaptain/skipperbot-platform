@@ -1,0 +1,18 @@
+kind: specification
+id: calculators.scientific.degrees-unless-radians-is-asked-for
+title: Trig angles are degrees until told otherwise
+state: live
+autonomy: gated
+behavior: >
+  Sine, cosine and tangent read their angle in degrees unless radians is chosen, the pad always
+  shows which of the two is in force, and the inverse functions return their answer in whichever
+  unit is selected. Switching the unit does not re-evaluate a result already on the display, so a
+  figure worked out in degrees is never silently relabelled as radians.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::ScientificTab
+- apps/calculators/ui/CalculatorsApp.jsx::SCI_FUNCS
+- apps/calculators/tools.py::_safe_eval
+- apps/calculators/tools.py::calculate
+tests: []
+links: {}
+notes: ''

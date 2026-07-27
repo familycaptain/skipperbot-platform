@@ -1,0 +1,14 @@
+kind: specification
+id: thinking.substrate.when-a-quiet-area-last-did-real-work
+title: When a quiet area last did real work
+state: live
+autonomy: gated
+behavior: >
+  The screen names when the area that turns memories into documents last took a pass that actually
+  reasoned, as opposed to one that found nothing to do — the difference between an area that is
+  idle because the house is quiet and one that is stuck.
+implements:
+- agent.py::api_thinking_subconscious
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: thinking.alarms.cadence-is-visible
+title: Each area shows how often it runs, and when it may
+state: live
+autonomy: gated
+behavior: >
+  Every area shows the rhythm it wakes on and the hours of the day it is allowed to run, including
+  when those are the household's default waking hours rather than something chosen for that area —
+  so a person can tell that an area is asleep overnight without reading anything else. An area
+  whose work arrives as events rather than on a clock says so instead of showing a rhythm it does
+  not have.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx::DomainCard
+- thinking_scheduler.py::_domain_loop
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: agentic.setting-up.creating-one-reports-what-it-will-do
+title: Setting one up says back what it will do
+state: live
+autonomy: gated
+behavior: >
+  Setting a routine up answers with its name and id, when it will run, what abilities it starts with,
+  and where its instructions live — enough for the person to confirm it is what they asked for and to
+  know what to edit if it is not. Set up from the Schedules app, the new routine is opened on its own
+  page straight away instead of only being confirmed.
+implements:
+- apps/agentic/tools.py::create_routine
+- apps/agentic/routes.py::api_create_routine
+- apps/schedules/ui/SchedulesApp.jsx::NewAgenticTaskForm
+tests: []
+links: {}
+notes: ''

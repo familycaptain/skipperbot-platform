@@ -1,0 +1,18 @@
+kind: specification
+id: timers.stopping.anybody-can-stop-any-timer
+title: Any household member can stop any timer
+state: live
+autonomy: gated
+behavior: >
+  Stopping a timer is settled by its handle alone, not by who set it: whoever is at the stove can
+  stop the timer somebody else started, the same way anyone can press the button on a kitchen timer.
+  No permission is asked for and no owner is consulted, and the person who set it is not told it was
+  stopped.
+implements:
+- apps/timers/tools.py::cancel_timer
+- apps/timers/scheduler.py::cancel
+tests: []
+links: {}
+notes: >
+  A shared-object choice that follows from timers being household-visible; it is deliberately
+  looser than reminders, where another person's item cannot be touched.

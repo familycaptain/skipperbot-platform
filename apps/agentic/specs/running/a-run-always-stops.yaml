@@ -1,0 +1,18 @@
+kind: specification
+id: agentic.running.a-run-always-stops
+title: A run always stops
+state: live
+autonomy: gated
+behavior: >
+  Every run is bounded: after a fixed number of rounds of thinking and acting it is made to stop, sum
+  up and end, so instructions that loop, wander or keep finding more to do cannot occupy the
+  household's assistant indefinitely or run up unbounded cost. When the bound cuts a run short, what
+  it already did stands and is not undone.
+implements:
+- apps/agentic/agentic.py::handle_agentic
+- agent_loop.py::run
+tests: []
+links: {}
+notes: >
+  A blast-radius bound, not a preference: the instructions are written by a person and executed
+  unattended, so the ceiling holds regardless of what they say.

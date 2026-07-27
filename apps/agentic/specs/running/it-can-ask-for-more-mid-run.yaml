@@ -1,0 +1,17 @@
+kind: specification
+id: agentic.running.it-can-ask-for-more-mid-run
+title: It can ask for more while it runs
+state: live
+autonomy: gated
+behavior: >
+  A run is told at the start which groups of abilities it holds and which others it could ask for, and
+  a group it asks for becomes usable immediately for the rest of that run without anybody approving
+  it. What it asked for lasts only for that run: the next one starts from the routine's own set again,
+  so a routine does not silently accumulate reach over time.
+implements:
+- apps/agentic/agentic.py::handle_agentic
+- apps/agentic/agentic.py::_awareness
+- apps/agentic/agentic.py::_build_tools
+tests: []
+links: {}
+notes: ''

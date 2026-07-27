@@ -1,0 +1,15 @@
+kind: specification
+id: calculators.scientific.factorial-of-whole-numbers-only
+title: Factorial only answers for whole numbers
+state: live
+autonomy: gated
+behavior: >
+  Factorial is answered for whole numbers from zero upwards. Asked for the factorial of a fraction
+  or a negative number the calculator reports that it cannot be done, rather than quietly answering
+  for a rounded-off whole number as though that had been the question.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::sciFactorial
+- apps/calculators/tools.py::_safe_eval
+tests: []
+links: {}
+notes: ''

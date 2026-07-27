@@ -1,0 +1,16 @@
+kind: specification
+id: timers.setting.minutes-and-seconds-add-up
+title: Minutes and seconds are the same duration however they are said
+state: live
+autonomy: gated
+behavior: >
+  A duration given in minutes, in seconds, or in both at once produces the same countdown: "ninety
+  seconds" and "a minute and a half" are one and the same timer. The confirmation describes a whole
+  number of minutes in minutes and anything else in seconds, so a person is not told their egg
+  timer is running for "0.5 minutes".
+implements:
+- apps/timers/tools.py::start_timer
+- apps/timers/guide.md
+tests: []
+links: {}
+notes: ''

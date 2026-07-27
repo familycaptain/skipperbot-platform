@@ -1,0 +1,19 @@
+kind: specification
+id: thinking.work.milestones-and-whether-they-were-spoken
+title: Milestones raised, and whether they were spoken
+state: live
+autonomy: gated
+behavior: >
+  When work done alone reaches something worth telling the family, the milestone is listed here
+  with whether Skipper has spoken it yet or is still holding it. Work sessions never message
+  anyone directly — they raise a milestone and the speaking part of Skipper decides whether and
+  how to say it, which is why a raised milestone can legitimately never be spoken.
+implements:
+- agent.py::api_thinking_hands
+- apps/goals/goal_work.py
+- apps/thinking/ui/ThinkingApp.jsx
+tests: []
+links: {}
+notes: >
+  Spoken here means a turn was taken over the milestone, not that anyone was confirmed to have
+  received it.

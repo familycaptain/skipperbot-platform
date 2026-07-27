@@ -1,0 +1,14 @@
+kind: specification
+id: tools.browse.refresh-starts-over
+title: Refresh re-reads and starts over
+state: live
+autonomy: gated
+behavior: >
+  Refreshing re-reads the whole catalogue from the platform and returns to nothing being selected,
+  so a category that has since gone away cannot stay on screen. Refreshing is the only way a change
+  made elsewhere becomes visible here — the app never quietly re-reads on its own.
+implements:
+- apps/tools/ui/ToolsApp.jsx::loadCategories
+tests: []
+links: {}
+notes: ''

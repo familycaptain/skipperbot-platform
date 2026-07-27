@@ -1,0 +1,16 @@
+kind: specification
+id: finder.search.one-box-every-app
+title: One box searches every app at once
+state: live
+autonomy: gated
+behavior: >
+  Words typed into Finder are searched for in every app that holds records at the same time, and the
+  matches come back grouped under the app that owns them, each group named and counted. Someone who
+  does not know whether "beach trip" is a document, a reminder, a schedule or a packing list finds it
+  without having to guess which app to open first.
+implements:
+- apps/finder/ui/FinderApp.jsx::SEARCH_SOURCES
+- apps/finder/ui/FinderApp.jsx::runSearch
+tests: []
+links: {}
+notes: ''

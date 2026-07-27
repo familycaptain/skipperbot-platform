@@ -1,0 +1,17 @@
+kind: specification
+id: behaviors.managing.a-rule-that-does-not-exist
+title: Naming a rule that is not there says so
+state: live
+autonomy: gated
+behavior: >
+  Editing, switching or deleting a rule that does not exist — a mistyped identifier, or one already
+  deleted — reports that it was not found and changes nothing. No empty rule is created to stand in
+  for it, and the person is never told an action succeeded on a rule that was never there.
+implements:
+- apps/behaviors/tools.py::update_behavior
+- apps/behaviors/tools.py::remove_behavior
+- apps/behaviors/tools.py::toggle_behavior
+- agent.py::api_update_behavior
+tests: []
+links: {}
+notes: ''

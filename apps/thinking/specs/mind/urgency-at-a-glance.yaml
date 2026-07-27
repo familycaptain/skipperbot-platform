@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.mind.urgency-at-a-glance
+title: The urgent sits above the routine
+state: live
+autonomy: gated
+behavior: >
+  Entries are ordered with the urgent first and, within the same urgency, the most recently
+  touched first, and each carries a mark showing how urgent it is. An entry with no urgency
+  recorded sorts below the ones that have it rather than being treated as urgent.
+implements:
+- data_layer/skipper_state.py::list_states
+- apps/thinking/ui/ThinkingApp.jsx::PriorityDot
+tests: []
+links: {}
+notes: ''

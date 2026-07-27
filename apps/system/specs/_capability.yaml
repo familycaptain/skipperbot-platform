@@ -2,10 +2,11 @@ kind: capability
 id: system
 title: System
 app: system
-scope: 'System-health dashboard: aggregates record counts across every installed app, plus DB
-  size, the latest job and backup, the doc-curation cursor, and a process-level snapshot. Owns
-  no schema — a single read-only metrics route the UI renders. NOT an admin control panel; System
-  observes platform health.'
+scope: 'The health dashboard and the power button: one screen showing how much data Skipper holds,
+  how far behind its record-keeping and document curation have fallen, what ran most recently, and
+  how long the agent has been up — plus the confirmed, admin-only control that gracefully restarts
+  it. Reports figures and state only; owns no records of its own and changes nothing except by
+  restarting. NOT where configuration is changed (Settings), and not where any record is read.'
 state: live
 autonomy: gated
 links: {}

@@ -1,0 +1,15 @@
+kind: specification
+id: system.curation.measured-against-the-whole-corpus
+title: Progress is measured against everything, so the remainder can grow
+state: live
+autonomy: gated
+behavior: >
+  Progress is measured against every memory the household holds rather than against the last
+  batch offered, so the number still ahead can grow even after a perfect cycle — when the house
+  is producing memories faster than curation consumes them. That is exactly the condition the
+  catch-up flag exists to surface.
+implements:
+- apps/system/routes.py::api_system_metrics
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: finder.by-id.an-id-that-matches-nothing
+title: An id that matches nothing says so
+state: live
+autonomy: gated
+behavior: >
+  An id shaped like a record's but naming nothing — deleted, mistyped, or copied from another install
+  — is reported as nothing found, quoting what was pasted, so the person can tell a wrong id from an
+  empty app. Finder never answers with a nameless placeholder result that opens onto an empty page.
+implements:
+- apps/finder/ui/FinderApp.jsx::ID_PREFIXES
+- apps/finder/ui/FinderApp.jsx::runSearch
+tests: []
+links: {}
+notes: ''

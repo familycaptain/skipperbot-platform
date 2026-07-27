@@ -1,0 +1,19 @@
+kind: specification
+id: arcade.hub.one-sound-switch-for-the-arcade
+title: One sound switch, remembered
+state: live
+autonomy: gated
+behavior: >
+  A single speaker toggle governs every game's sound. It appears in the menu header and again in
+  the bar above a running game, both showing the same state, and flipping it silences or restores
+  whatever is playing at once rather than at the next sound. The choice is remembered for the next
+  visit; with nothing chosen yet, sound is on.
+implements:
+- apps/arcade/ui/sfx.js::setMuted
+- apps/arcade/ui/sfx.js::onMuteChange
+- apps/arcade/ui/ArcadeApp.jsx::MuteButton
+tests: []
+links: {}
+notes: >
+  The preference belongs to the browser, not the person's account, so it does not follow them to
+  another device and two people sharing a browser share the setting.

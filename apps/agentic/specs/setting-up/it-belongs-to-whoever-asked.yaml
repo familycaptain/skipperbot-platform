@@ -1,0 +1,16 @@
+kind: specification
+id: agentic.setting-up.it-belongs-to-whoever-asked
+title: A routine belongs to the person who asked for it
+state: live
+autonomy: gated
+behavior: >
+  A routine is recorded as set up by, and assigned to, the person who asked for it, so it appears
+  among their own scheduled things where they can pause, edit or delete it without going through
+  Skipper. A request that names nobody is attributed to Skipper itself, which means it belongs to no
+  person and shows up in no individual's list.
+implements:
+- apps/agentic/tools.py::create_routine
+- apps/agentic/routes.py::api_create_routine
+tests: []
+links: {}
+notes: ''

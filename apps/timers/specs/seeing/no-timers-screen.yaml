@@ -1,0 +1,17 @@
+kind: specification
+id: timers.seeing.no-timers-screen
+title: There is no timers screen — asking is the only way
+state: live
+autonomy: gated
+behavior: >
+  Timers have no page of their own: nothing to open, no window on the desktop, and no ticking
+  countdown on a screen. Everything about them happens by asking — setting, checking and stopping —
+  and a person who wants to know how timers work can ask for the app's manual and get it in the
+  conversation. Removing the app entirely leaves the rest of Skipper working, minus the timer
+  requests.
+implements:
+- apps/timers/manifest.yaml
+- apps/timers/help.md
+tests: []
+links: {}
+notes: ''

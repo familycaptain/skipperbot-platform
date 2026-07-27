@@ -1,0 +1,14 @@
+kind: specification
+id: finder.by-id.text-that-only-looks-like-an-id
+title: Text that only looks like an id is searched as text
+state: live
+autonomy: gated
+behavior: >
+  A query is treated as an id lookup only when it really is one. Ordinary words that happen to begin
+  the way an id does are searched for as words across the apps, so no plain phrase becomes
+  unsearchable because of how it starts.
+implements:
+- apps/finder/ui/FinderApp.jsx::detectIdLookup
+tests: []
+links: {}
+notes: ''

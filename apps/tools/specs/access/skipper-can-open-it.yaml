@@ -1,0 +1,15 @@
+kind: specification
+id: tools.access.skipper-can-open-it
+title: Skipper can open it for you
+state: live
+autonomy: gated
+behavior: >
+  Asking Skipper to open Tools opens it on that person's desktop, including for someone who has
+  hidden the tile; if they have no browser session open, Skipper says the app can only be opened on
+  the web interface rather than claiming it opened.
+implements:
+- local_tools.py::build_open_app_tool
+- web/src/apps/registry.js::getOpenableApps
+tests: []
+links: {}
+notes: ''

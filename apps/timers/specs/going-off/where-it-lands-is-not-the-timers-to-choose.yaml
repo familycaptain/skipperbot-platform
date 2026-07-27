@@ -1,0 +1,18 @@
+kind: specification
+id: timers.going-off.where-it-lands-is-not-the-timers-to-choose
+title: The timer says what finished; the platform decides where that is heard
+state: live
+autonomy: gated
+behavior: >
+  A timer running out records what it has to say and hands it over; which surfaces that reaches — the
+  console, a phone, Discord — is settled by that person's own circumstances, exactly as it is for
+  anything else Skipper says to them. The timer neither picks surfaces nor waits on them, so a timer
+  finishing and a reminder falling due reach the same person in the same places.
+implements:
+- apps/timers/scheduler.py::_run_timer
+- app_platform/notifications.py
+tests: []
+links: {}
+notes: >
+  One platform-wide decision, not one per app: a timer that re-decided its own reach would slowly
+  drift from every other notice the household gets. See platform.speaking.

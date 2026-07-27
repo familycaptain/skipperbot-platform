@@ -1,0 +1,15 @@
+kind: specification
+id: tools.guide-viewer.guide-that-will-not-load
+title: A guide that will not load says so
+state: live
+autonomy: gated
+behavior: >
+  When a guide cannot be fetched, the guide panel says the guide could not be loaded. It never
+  leaves the previous category's guide on screen and never renders the failure as though it were
+  guide content.
+implements:
+- apps/tools/ui/ToolsApp.jsx::loadGuide
+- apps/tools/ui/ToolsApp.jsx::CategoryDetail
+tests: []
+links: {}
+notes: ''

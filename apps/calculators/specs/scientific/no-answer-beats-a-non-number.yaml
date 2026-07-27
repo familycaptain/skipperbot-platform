@@ -1,0 +1,15 @@
+kind: specification
+id: calculators.scientific.no-answer-beats-a-non-number
+title: A result that is not a number is refused
+state: live
+autonomy: gated
+behavior: >
+  A calculation with no finite answer — a division by zero, the square root of a negative number, a
+  value too large to represent — is reported as an error on both surfaces rather than shown as
+  infinity, as NaN, or as a plausible-looking figure that is wrong.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::ScientificTab
+- apps/calculators/tools.py::calculate
+tests: []
+links: {}
+notes: ''

@@ -2,9 +2,13 @@ kind: capability
 id: thinking
 title: Thinking
 app: thinking
-scope: 'A read-only operator surface for inspecting Skipper''s cognition: working memory, the
-  reasoning log, the token budget, and the active cognitive (thinking) domains. A required core
-  viewer. NOT a control surface — it observes the agent''s thinking, it doesn''t change it.'
+scope: >
+  The household's window onto Skipper's own background thought, and the switchboard for it: which
+  areas of thought are allowed to run at all, what each is currently holding in mind, every pass
+  it has taken and what that cost, the running record of everything said, and the work Skipper
+  does on its own. This is the only place in the product where an area of background thought is
+  turned on or off. NOT the thinking itself — the rhythm, budget throttling and reasoning belong
+  to the platform scheduler and to the apps that own each area.
 state: live
 autonomy: gated
 links: {}

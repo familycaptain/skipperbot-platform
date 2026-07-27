@@ -1,0 +1,16 @@
+kind: specification
+id: calculators.loan.an-interest-free-loan
+title: A nought per cent loan is a loan, not an error
+state: live
+autonomy: gated
+behavior: >
+  A rate of nought is calculated rather than refused: the payment is the amount divided by the
+  number of months, the total interest is nought, and the total paid equals the amount borrowed.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::payment
+- apps/calculators/tools.py::_payment
+- apps/calculators/ui/CalculatorsApp.jsx::solveLoan
+- apps/calculators/tools.py::loan_amortization
+tests: []
+links: {}
+notes: ''

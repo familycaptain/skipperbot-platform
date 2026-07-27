@@ -1,0 +1,15 @@
+kind: specification
+id: system.health.dev-build-is-flagged
+title: A development build is labelled
+state: live
+autonomy: gated
+behavior: >
+  When the agent is running as a development instance rather than the household's real one, the
+  header labels it plainly beside the uptime, so somebody with both open cannot act on the wrong
+  Skipper. A production instance carries no such label.
+implements:
+- agent.py::api_admin_status
+- apps/system/ui/SystemApp.jsx::SystemApp
+tests: []
+links: {}
+notes: ''

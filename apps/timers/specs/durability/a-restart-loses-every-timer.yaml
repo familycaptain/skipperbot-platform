@@ -1,0 +1,19 @@
+kind: specification
+id: timers.durability.a-restart-loses-every-timer
+title: A restart loses every running timer, and nobody is told
+state: live
+autonomy: gated
+behavior: >
+  Timers exist only for as long as Skipper keeps running. A restart, an upgrade or a power cut clears
+  every one of them: none goes off afterwards, none reappears in the running list, and the person who
+  set one is not told it is gone. This is the one promise timers deliberately do not make, and the
+  reason anything that must not be lost is set as a reminder instead.
+implements:
+- apps/timers/store.py
+- apps/timers/scheduler.py::shutdown_all_timers
+- apps/timers/help.md
+tests: []
+links: {}
+notes: >
+  Stated as intent rather than as a limitation to fix: a countdown of a few minutes is not worth a
+  durable record, and the alternative for anything longer already exists in Reminders.

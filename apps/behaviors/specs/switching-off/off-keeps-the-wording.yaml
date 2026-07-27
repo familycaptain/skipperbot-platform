@@ -1,0 +1,15 @@
+kind: specification
+id: behaviors.switching-off.off-keeps-the-wording
+title: Switching off loses nothing
+state: live
+autonomy: gated
+behavior: >
+  Switching a rule off keeps its trigger, action and note exactly as written, and switching it back on
+  restores it word for word with no rewriting needed. It is the way to park a rule that misfires or is
+  only wanted at certain times of year, and the reason deleting is never the only option.
+implements:
+- apps/behaviors/data.py::toggle_behavior
+- apps/behaviors/ui/BehaviorsApp.jsx
+tests: []
+links: {}
+notes: ''

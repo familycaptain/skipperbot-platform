@@ -1,0 +1,16 @@
+kind: specification
+id: thinking.stream.filter-the-record-by-kind
+title: Narrow the record to one kind of entry
+state: live
+autonomy: gated
+behavior: >
+  The record can be limited to what people and Skipper said, to notable activity, to alarms
+  firing, or to the periodic summaries, and re-reads at once when the choice changes. Left
+  unfiltered it shows all of them interleaved in the order they happened, which is the point of
+  having one record rather than several.
+implements:
+- agent.py::api_thinking_stream
+- apps/thinking/ui/ThinkingApp.jsx
+tests: []
+links: {}
+notes: ''

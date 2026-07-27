@@ -1,0 +1,15 @@
+kind: specification
+id: behaviors.switching-off.one-click-in-the-app
+title: Switching a rule off takes one click
+state: live
+autonomy: gated
+behavior: >
+  In the app a rule is switched on or off from the list itself, with no confirmation step and no form
+  to open, and the row immediately shows the new state. Deleting is the guarded action; suspending a
+  rule is meant to be cheap enough to do on a hunch and undo a moment later.
+implements:
+- apps/behaviors/ui/BehaviorsApp.jsx
+- agent.py::api_toggle_behavior
+tests: []
+links: {}
+notes: ''

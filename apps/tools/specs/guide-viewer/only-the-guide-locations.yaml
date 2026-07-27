@@ -1,0 +1,23 @@
+kind: specification
+id: tools.guide-viewer.only-the-guide-locations
+title: Guides only ever come from the guide locations
+state: live
+autonomy: gated
+behavior: >
+  A guide request that tries to leave the two guide locations — a path separator either way round, a
+  parent reference — is refused outright rather than read, and a name with nothing behind it is
+  reported as not found. No file of any other kind can be read through this app.
+implements:
+- apps/tools/routes.py::api_tool_guide
+tests:
+- type: unit
+  path: apps/tools/tests/test_tool_guide.py
+  rubric: >
+    Names containing a forward slash, a leading slash, a backslash-parent sequence, or a full
+    relative path are each refused with a client error; a plausible but non-existent name is
+    reported as not found.
+links: {}
+notes: >
+  Refusing rather than sanitising is deliberate: the guide name is always a bare name by
+  construction on the publishing side, so anything with a separator in it is a caller bug or an
+  attempt.

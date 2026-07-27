@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.aeldrift.sixteen-shards-to-gather
+title: Sixteen shards, and a count of them
+state: live
+autonomy: gated
+behavior: >
+  Sixteen glowing shards are scattered across the world, hovering and turning so they can be
+  spotted from a distance. Drifting close enough to one takes it — there is nothing to press — and
+  it is acknowledged with a sound and a running count of how many of the sixteen are in hand.
+implements:
+- apps/arcade/ui/games/Aeldrift.jsx
+tests: []
+links: {}
+notes: ''

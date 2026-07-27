@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.stream.the-live-screens-refresh-themselves
+title: The live screens refresh themselves
+state: live
+autonomy: gated
+behavior: >
+  While the record or the owed queue is open it re-reads itself every few seconds without being
+  asked, so someone watching Skipper work sees entries appear as they happen. Moving off those
+  screens stops the polling, so an app left open on a quiet screen is not asking questions every
+  few seconds.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx
+tests: []
+links: {}
+notes: ''

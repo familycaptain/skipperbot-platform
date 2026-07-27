@@ -1,0 +1,16 @@
+kind: specification
+id: system.restart.in-flight-work-drains-first
+title: In-flight work finishes first
+state: live
+autonomy: gated
+behavior: >
+  A confirmed restart stops taking on new background work and waits for what is already running
+  — jobs and background thinking — to finish before the process exits, so a restart does not
+  tear a half-finished job in two. The wait is bounded: anything still running when it expires
+  is abandoned and the restart proceeds rather than hanging for ever.
+implements:
+- agent.py::api_admin_restart
+- agent.py::_drain_and_exit
+tests: []
+links: {}
+notes: ''

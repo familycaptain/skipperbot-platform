@@ -1,0 +1,16 @@
+kind: specification
+id: thinking.stream.what-is-owed-an-answer
+title: What is still owed an answer
+state: live
+autonomy: gated
+behavior: >
+  The attention screen shows everything Skipper has been asked and has not yet answered, oldest
+  first, and says plainly when nothing is pending. The same entries are flagged in the record
+  itself, so a person can tell whether a question was picked up or is still sitting there — the
+  first thing to look at when Skipper has gone quiet.
+implements:
+- agent.py::api_thinking_attention
+- apps/thinking/ui/ThinkingApp.jsx::StreamRow
+tests: []
+links: {}
+notes: ''

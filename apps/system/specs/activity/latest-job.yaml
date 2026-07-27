@@ -1,0 +1,15 @@
+kind: specification
+id: system.activity.latest-job
+title: The last job that ran
+state: live
+autonomy: gated
+behavior: >
+  System names the most recent background job to have run, its outcome, and when it ran. Where
+  no job has ever run the line is absent rather than drawn empty, so a fresh install does not
+  look broken.
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/ui/SystemApp.jsx::SystemApp
+tests: []
+links: {}
+notes: ''

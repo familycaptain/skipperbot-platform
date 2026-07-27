@@ -1,0 +1,15 @@
+kind: specification
+id: system.health.process-detail-unavailable
+title: Missing process figures do not empty the screen
+state: live
+autonomy: gated
+behavior: >
+  Where the host cannot report on the running process, uptime and memory read as unavailable and
+  every other section of the dashboard still appears. One unreadable figure never costs a person
+  the rest of the screen.
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/ui/SystemApp.jsx::StatCard
+tests: []
+links: {}
+notes: ''

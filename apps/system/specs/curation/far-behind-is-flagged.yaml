@@ -1,0 +1,16 @@
+kind: specification
+id: system.curation.far-behind-is-flagged
+title: Being far behind is flagged, not just counted
+state: live
+autonomy: gated
+behavior: >
+  When the number of memories still ahead of the curation cycle is large enough that ordinary
+  incremental progress will not clear it, the remaining figure is flagged as a catch-up — so a
+  person reads it as a condition to act on rather than one more number to watch.
+implements:
+- apps/system/ui/SystemApp.jsx::SystemApp
+tests: []
+links: {}
+notes: >
+  The threshold is a product judgement about when 'behind' becomes 'stuck'. It belongs to this
+  dashboard, not to the documents app that does the curating.

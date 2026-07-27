@@ -1,0 +1,17 @@
+kind: specification
+id: tools.registry.both-kinds-one-list
+title: Both kinds of category, one list
+state: live
+autonomy: gated
+behavior: >
+  Every tool category the platform knows about appears in one list, whether an installed app
+  declared it or the platform's own routing file did — a person browsing never has to know which
+  kind they are looking at. The list is ordered by category id, so every app-declared category
+  falls together in a single alphabetical run.
+implements:
+- apps/tools/routes.py::api_tool_categories
+- tool_router.py::merge_app_tool_routes
+- apps/tools/ui/ToolsApp.jsx::ToolsApp
+tests: []
+links: {}
+notes: ''

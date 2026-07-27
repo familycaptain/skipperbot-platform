@@ -1,0 +1,14 @@
+kind: specification
+id: tools.guide-viewer.read-as-prose
+title: Guides read as prose, not source
+state: live
+autonomy: gated
+behavior: >
+  A guide is shown as formatted text — headings, lists, tables, links, inline code and code blocks
+  — rather than as raw markup, and content too wide for the panel scrolls inside it instead of
+  stretching the app sideways.
+implements:
+- apps/tools/ui/ToolsApp.jsx::CategoryDetail
+tests: []
+links: {}
+notes: ''

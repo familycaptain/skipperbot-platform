@@ -1,0 +1,18 @@
+kind: specification
+id: timers.setting.asked-for-it-starts-at-once
+title: Asking for a timer starts it, without being asked to confirm
+state: live
+autonomy: gated
+behavior: >
+  Saying "set a timer for ten minutes" starts the countdown there and then: Skipper does not ask
+  whether it should, does not ask what to call it, and does not wait for a second turn. What comes
+  back is a confirmation the person can act on — which timer it is, what it is for, how long it
+  runs, and the moment it is due — so somebody who mis-heard themselves can tell immediately that
+  the wrong duration was set.
+implements:
+- apps/timers/tools.py::start_timer
+- apps/timers/scheduler.py::start_timer
+- apps/timers/guide.md
+tests: []
+links: {}
+notes: ''

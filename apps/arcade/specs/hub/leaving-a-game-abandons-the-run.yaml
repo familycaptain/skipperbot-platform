@@ -1,0 +1,16 @@
+kind: specification
+id: arcade.hub.leaving-a-game-abandons-the-run
+title: Walking away from a run costs the run
+state: live
+autonomy: gated
+behavior: >
+  The breadcrumb back to the arcade is available at every moment of every game, including mid-run,
+  and taking it ends the run there: nothing is recorded, and coming back to that game starts at
+  its own opening screen with a fresh world. Solitaire is the exception — it keeps the hand you
+  were on.
+implements:
+- apps/arcade/ui/ArcadeApp.jsx
+- apps/arcade/ui/games/Solitaire.jsx
+tests: []
+links: {}
+notes: ''

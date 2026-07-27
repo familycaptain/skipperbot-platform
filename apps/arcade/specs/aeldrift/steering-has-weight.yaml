@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.aeldrift.steering-has-weight
+title: Steering has weight, and nothing is solid
+state: live
+autonomy: gated
+behavior: >
+  The craft turns and thrusts along whatever way it faces, carrying its momentum and coasting to a
+  stop rather than halting. Height is not steerable — it hovers. Nothing in the landscape blocks
+  it: trees, rocks and rises are scenery to drift through rather than obstacles, so a run cannot
+  get stuck.
+implements:
+- apps/arcade/ui/games/Aeldrift.jsx
+tests: []
+links: {}
+notes: ''

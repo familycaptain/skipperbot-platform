@@ -1,0 +1,14 @@
+kind: specification
+id: thinking.budget.a-spend-that-cannot-be-read
+title: A spend that cannot be read is absent, not zero
+state: live
+autonomy: gated
+behavior: >
+  If today's spend cannot be read at all, the bar is absent rather than showing a confident zero —
+  nobody is told their background thought was free when the truth is unknown. Every other screen
+  still works while it is missing.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx::BudgetBar
+tests: []
+links: {}
+notes: ''

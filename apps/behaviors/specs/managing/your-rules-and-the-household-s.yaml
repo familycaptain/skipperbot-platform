@@ -1,0 +1,18 @@
+kind: specification
+id: behaviors.managing.your-rules-and-the-household-s
+title: The list shows everything shaping your conversations
+state: live
+autonomy: gated
+behavior: >
+  Asking to see your rules — in the app or by asking Skipper — returns your own rules plus every
+  household-wide one, so nothing can be steering your conversations without appearing in that list.
+  Asking for just your own, or just the household's, narrows it. Someone with no rules at all is told
+  none were found rather than shown an empty answer.
+implements:
+- apps/behaviors/tools.py::list_behaviors
+- apps/behaviors/data.py::list_behaviors
+- apps/behaviors/ui/BehaviorsApp.jsx
+tests: []
+links: {}
+notes: >
+  Completeness is the contract: a rule you cannot see is one you cannot switch off.

@@ -1,0 +1,16 @@
+kind: specification
+id: calculators.scientific.press-equals-for-the-answer
+title: The answer becomes the next starting point
+state: live
+autonomy: gated
+behavior: >
+  Pressing = replaces the expression on the display with its value, so the answer is already in
+  place to be built on for the next calculation rather than having to be copied or retyped. Pressing
+  = with nothing entered does nothing at all — no zero, no error.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::ScientificTab
+- apps/calculators/ui/CalculatorsApp.jsx::sciEval
+- apps/calculators/tools.py::calculate
+tests: []
+links: {}
+notes: ''

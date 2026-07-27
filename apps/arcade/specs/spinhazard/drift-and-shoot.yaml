@@ -1,0 +1,16 @@
+kind: specification
+id: arcade.spinhazard.drift-and-shoot
+title: The ship drifts; nothing stops it but you
+state: live
+autonomy: gated
+behavior: >
+  The ship turns in place, thrusts along whatever way it is pointing and keeps that momentum when
+  the thrust stops, slowing only gradually and never exceeding a top speed. There is no brake and
+  no reverse, so stopping means turning around and thrusting back. Flying off any edge of the
+  field brings the ship back in on the opposite side, and so do the shots.
+implements:
+- apps/arcade/ui/games/Spinhazard.jsx::update
+- apps/arcade/ui/games/Spinhazard.jsx::wrap
+tests: []
+links: {}
+notes: ''

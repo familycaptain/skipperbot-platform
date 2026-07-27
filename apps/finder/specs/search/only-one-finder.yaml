@@ -1,0 +1,14 @@
+kind: specification
+id: finder.search.only-one-finder
+title: There is only one Finder
+state: live
+autonomy: gated
+behavior: >
+  Asking for Finder again while it is already open returns to the Finder that is already there, with
+  the query and results intact, rather than opening a second copy of it.
+implements:
+- apps/finder/ui/index.js
+- web/src/App.jsx::handleOpenApp
+tests: []
+links: {}
+notes: ''

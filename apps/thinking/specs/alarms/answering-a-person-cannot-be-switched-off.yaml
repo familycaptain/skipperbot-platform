@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.alarms.answering-a-person-cannot-be-switched-off
+title: Answering a person can never be switched off
+state: live
+autonomy: gated
+behavior: >
+  The area that answers people is shown as always on and is given no switch, and a request to
+  disable it is refused rather than quietly accepted. Someone exploring the switchboard can never
+  leave the household unable to talk to Skipper.
+implements:
+- agent.py::api_thinking_domain_update
+- apps/thinking/ui/ThinkingApp.jsx::DomainCard
+tests: []
+links: {}
+notes: ''

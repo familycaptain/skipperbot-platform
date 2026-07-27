@@ -1,0 +1,14 @@
+kind: specification
+id: tools.registry.empty-category-still-listed
+title: A category with no tools is still listed
+state: live
+autonomy: gated
+behavior: >
+  A category that exposes no tools is listed like any other, showing zero, instead of being hidden
+  — that a category exists but routes nothing is itself the answer someone came here for.
+implements:
+- apps/tools/routes.py::api_tool_categories
+- apps/tools/ui/ToolsApp.jsx::ToolsApp
+tests: []
+links: {}
+notes: ''

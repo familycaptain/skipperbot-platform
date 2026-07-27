@@ -2,10 +2,12 @@ kind: capability
 id: calculators
 title: Calculators
 app: calculators
-scope: 'A set of in-browser calculators: a scientific calculator (default), a compound-interest
-  calculator, and a loan/amortization calculator. The finance calculators solve for whichever
-  value is left blank and show a full payoff schedule. Runs entirely in the browser; no data is
-  stored.'
+scope: >
+  Three calculators a household can reach either by opening the app or by asking Skipper: a
+  scientific calculator for a quick sum, and two finance calculators — savings growth and a loan or
+  mortgage — that each solve for whichever single value is left blank and show what the money
+  actually costs. Arithmetic only: nothing is stored, nothing is sent anywhere, and no result is a
+  recommendation.
 state: live
 autonomy: gated
 links: {}

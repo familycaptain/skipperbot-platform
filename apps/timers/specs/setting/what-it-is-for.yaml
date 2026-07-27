@@ -1,0 +1,15 @@
+kind: specification
+id: timers.setting.what-it-is-for
+title: Saying what a timer is for is how it gets named
+state: live
+autonomy: gated
+behavior: >
+  "Five minutes for the pasta" labels the timer *pasta*, and that label is what appears in the list
+  of what is running and in the announcement when it runs out. A label is never required and Skipper
+  never asks for one: a timer set without one is simply called "Timer" wherever a name would go.
+implements:
+- apps/timers/tools.py::start_timer
+- apps/timers/scheduler.py::_run_timer
+tests: []
+links: {}
+notes: ''

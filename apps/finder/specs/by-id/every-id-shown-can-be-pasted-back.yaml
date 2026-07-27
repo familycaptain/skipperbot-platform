@@ -1,0 +1,15 @@
+kind: specification
+id: finder.by-id.every-id-shown-can-be-pasted-back
+title: Any id Finder shows can be pasted back in
+state: live
+autonomy: gated
+behavior: >
+  Every id Finder displays beside a result can be pasted into Finder and finds that same record
+  again. An id Finder is willing to show is one it is able to resolve, whichever app the record
+  belongs to.
+implements:
+- apps/finder/ui/FinderApp.jsx::ID_PREFIXES
+- apps/finder/ui/FinderApp.jsx::SEARCH_SOURCES
+tests: []
+links: {}
+notes: ''

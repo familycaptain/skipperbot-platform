@@ -1,0 +1,16 @@
+kind: specification
+id: arcade.scores.everyone-sees-everyones-scores
+title: The board is the household's, not a person's
+state: live
+autonomy: gated
+behavior: >
+  There is one board and every member sees all of it: whose runs are on it is part of the point.
+  Nobody has a private board, and no game keeps a separate personal best alongside it.
+implements:
+- apps/arcade/data.py::top_scores
+- apps/arcade/routes.py::api_top_scores
+tests: []
+links: {}
+notes: >
+  Follows the platform's decision that a household shares its records; the competitive reading of
+  the board depends on everyone seeing the same one.

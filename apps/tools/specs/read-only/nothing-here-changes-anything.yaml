@@ -1,0 +1,15 @@
+kind: specification
+id: tools.read-only.nothing-here-changes-anything
+title: Nothing here changes what Skipper can do
+state: live
+autonomy: gated
+behavior: >
+  The app only ever reads: there is no way from it to add, rename, re-route or remove a tool, a
+  category or a guide. Changing what Skipper can do means changing the app that declares the tools,
+  and the change appears here the next time the catalogue is read.
+implements:
+- apps/tools/routes.py
+- apps/tools/manifest.yaml
+tests: []
+links: {}
+notes: ''

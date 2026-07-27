@@ -1,0 +1,19 @@
+kind: specification
+id: finder.sources.more-than-the-name-matches
+title: A match can come from more than the name
+state: live
+autonomy: gated
+behavior: >
+  A record can match on more than its name — a goal's notes, a recipe's ingredients, an item's room or
+  shelf, a schedule's category, a vehicle's plate or colour, an idea's tags — and matching ignores
+  letter case and matches part of a word, so "cam" finds the Camry. Where the owning app can tell that
+  the match came from a record's notes rather than its name, the result says so.
+implements:
+- agent.py::search_goals_api
+- data_layer/recipes.py::search_recipes
+- data_layer/locator.py::search_items
+- data_layer/auto.py::search_vehicles
+- apps/finder/ui/FinderApp.jsx::SEARCH_SOURCES
+tests: []
+links: {}
+notes: ''

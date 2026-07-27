@@ -1,0 +1,16 @@
+kind: specification
+id: behaviors.managing.an-edit-changes-only-what-you-gave
+title: An edit changes only what you filled in
+state: live
+autonomy: gated
+behavior: >
+  Editing a rule changes the parts that were given and leaves the rest exactly as they were, so
+  rewording a trigger does not wipe the action or the note. An edit that supplies nothing leaves the
+  rule untouched and reports it unchanged rather than failing. Whether a rule is switched on is never
+  altered by an edit.
+implements:
+- apps/behaviors/tools.py::update_behavior
+- apps/behaviors/data.py::update_behavior
+tests: []
+links: {}
+notes: ''

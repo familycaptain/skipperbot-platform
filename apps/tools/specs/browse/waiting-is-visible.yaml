@@ -1,0 +1,15 @@
+kind: specification
+id: tools.browse.waiting-is-visible
+title: Waiting is visible
+state: live
+autonomy: gated
+behavior: >
+  A first load says it is loading; a later reload keeps the list already on screen while the
+  refresh control shows itself working and declines further presses until it finishes. A guide
+  being fetched says so in its own panel instead of leaving the previous one up.
+implements:
+- apps/tools/ui/ToolsApp.jsx::ToolsApp
+- apps/tools/ui/ToolsApp.jsx::CategoryDetail
+tests: []
+links: {}
+notes: ''

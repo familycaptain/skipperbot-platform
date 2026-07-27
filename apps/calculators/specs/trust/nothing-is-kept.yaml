@@ -1,0 +1,18 @@
+kind: specification
+id: calculators.trust.nothing-is-kept
+title: Nothing is written down
+state: live
+autonomy: gated
+behavior: >
+  No calculation is stored: there is no history, nothing appears in a list of records, and asking
+  Skipper later what was worked out yesterday finds nothing to recall because nothing was kept.
+  Leaving the app and coming back starts from the default figures rather than from the last thing
+  entered.
+implements:
+- apps/calculators/__init__.py
+- apps/calculators/manifest.yaml
+- apps/calculators/help.md
+- apps/calculators/ui/CalculatorsApp.jsx::CalculatorsApp
+tests: []
+links: {}
+notes: ''

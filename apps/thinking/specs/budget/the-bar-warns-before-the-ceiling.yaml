@@ -1,0 +1,17 @@
+kind: specification
+id: thinking.budget.the-bar-warns-before-the-ceiling
+title: The bar warns at the two points where thinking actually changes
+state: live
+autonomy: gated
+behavior: >
+  The bar reads green while the day is comfortable, amber past roughly seventy per cent of the
+  ceiling, and red past ninety — the same two points at which ordinary areas start waiting for
+  real work and low-priority ones stop until the day rolls over. So the colour tells a person what
+  is about to happen to their background thought rather than merely how full a bar is, and it
+  never draws past full.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx::BudgetBar
+- thinking_scheduler.py::_domain_loop
+tests: []
+links: {}
+notes: ''

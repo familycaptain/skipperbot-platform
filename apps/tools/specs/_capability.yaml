@@ -2,10 +2,10 @@ kind: capability
 id: tools
 title: Tools
 app: tools
-scope: 'A browser for the tool-routing registry: the categories, the tools each category exposes,
-  and the long-form prompt-guide markdown beside them. An operator/developer surface for understanding
-  what the chat agent can do and how it''s routed. NOT the tool router itself — Tools is the read-only
-  window onto it.'
+scope: 'The window onto what Skipper can do: every tool category the platform has loaded, the
+  tools each one exposes, the words it claims, and the long-form guide that tells Skipper how to
+  use them. A read-only debugging surface for the question "is that ability actually registered?"
+  — NOT the router itself, and not the owner of any tool, guide or record.'
 state: live
 autonomy: gated
 links: {}

@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.substrate.what-it-believes-about-each-person
+title: What it believes about each person
+state: live
+autonomy: gated
+behavior: >
+  Alongside the household summary, the most recent summary Skipper holds for each person is shown
+  as its own block, with how long ago it was written, so a person can see the picture Skipper is
+  carrying into their next conversation.
+implements:
+- agent.py::api_thinking_subconscious
+- apps/thinking/ui/ThinkingApp.jsx::SummaryBlock
+tests: []
+links: {}
+notes: ''

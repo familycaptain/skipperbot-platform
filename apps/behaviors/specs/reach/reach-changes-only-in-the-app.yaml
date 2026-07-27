@@ -1,0 +1,17 @@
+kind: specification
+id: behaviors.reach.reach-changes-only-in-the-app
+title: Widening a rule to the household is a deliberate edit
+state: live
+autonomy: gated
+behavior: >
+  A rule's reach is chosen when it is written and can afterwards be changed only by editing it in the
+  app, where the choice is a visible pair of buttons. Asking Skipper to reword a rule cannot quietly
+  turn a personal rule into one that applies to the whole household, so a rule taught in conversation
+  stays personal unless somebody goes and widens it on purpose.
+implements:
+- agent.py::api_update_behavior
+- apps/behaviors/tools.py::update_behavior
+- apps/behaviors/ui/BehaviorsApp.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,19 @@
+kind: specification
+id: behaviors.reach.household-rules-reach-everyone
+title: A household-wide rule applies to everybody
+state: live
+autonomy: gated
+behavior: >
+  A rule can be marked as applying to the whole household instead of one person, and it is then put in
+  front of Skipper for every member's conversations — including members who never saw it written, and
+  members who joined afterwards. As the app stands, any member can create one; nothing limits it to a
+  parent or an administrator.
+implements:
+- apps/behaviors/data.py::list_behaviors
+- apps/behaviors/ui/BehaviorsApp.jsx
+- apps/behaviors/tools.py::add_behavior
+tests: []
+links: {}
+notes: >
+  The second sentence records what the code actually allows, not the intent: the tool guidance
+  describes household-wide rules as an administrator's choice and nothing enforces that.

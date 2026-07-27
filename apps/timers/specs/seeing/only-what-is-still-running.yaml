@@ -1,0 +1,18 @@
+kind: specification
+id: timers.seeing.only-what-is-still-running
+title: The list is only what is still counting down
+state: live
+autonomy: gated
+behavior: >
+  A timer disappears from the list the moment it stops counting down, whether it ran out or was
+  stopped early, so what the list shows is always what is still going to go off. Nothing keeps a
+  history of timers that have been and gone — "what timers did I set this afternoon?" has no answer
+  beyond the announcements themselves, which are in the person's own record of what Skipper told
+  them.
+implements:
+- apps/timers/store.py::pop
+- apps/timers/scheduler.py::_run_timer
+- apps/timers/scheduler.py::cancel
+tests: []
+links: {}
+notes: ''

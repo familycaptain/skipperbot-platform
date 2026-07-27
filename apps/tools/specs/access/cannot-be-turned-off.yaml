@@ -1,0 +1,15 @@
+kind: specification
+id: tools.access.cannot-be-turned-off
+title: It cannot be turned off
+state: live
+autonomy: gated
+behavior: >
+  Tools is one of the apps this platform will not run without: an attempt to disable it is refused
+  and says which apps were refused and why. The surface that explains what Skipper can do is always
+  present when something looks wrong.
+implements:
+- app_platform/loader.py::REQUIRED_APPS
+- agent.py::api_set_disabled_apps
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.work.where-it-left-off
+title: Where it left off on each thing
+state: live
+autonomy: gated
+behavior: >
+  For each thing Skipper is working on, the screen shows the note it left itself about where it
+  stopped, so a person can see a long job progressing across sessions rather than starting over
+  each time.
+implements:
+- agent.py::api_thinking_hands
+- data_layer/skipper_state.py::get_working_memory
+tests: []
+links: {}
+notes: ''

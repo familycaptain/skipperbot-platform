@@ -1,0 +1,14 @@
+kind: specification
+id: tools.registry.totals-at-a-glance
+title: How much there is, at a glance
+state: live
+autonomy: gated
+behavior: >
+  The header carries a count of categories and of tool entries across them, recomputed whenever
+  the catalogue is reloaded, and stays absent until the first load has actually returned something
+  — an unloaded catalogue never reads as an empty one.
+implements:
+- apps/tools/ui/ToolsApp.jsx::ToolsApp
+tests: []
+links: {}
+notes: ''

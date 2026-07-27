@@ -1,0 +1,18 @@
+kind: specification
+id: agentic.setting-up.name-and-instructions-required
+title: A routine needs a name and instructions
+state: live
+autonomy: gated
+behavior: >
+  A routine is not created without both a short name and the instructions to carry out; either one
+  missing is refused with the reason, and nothing at all is left behind — no named routine with
+  nothing to do, no instructions with no cadence. On the form the create action stays unavailable
+  until both are filled in, and a refusal from a request made any other way is reported as an error
+  rather than as a success with a missing id.
+implements:
+- apps/agentic/tools.py::create_routine
+- apps/agentic/routes.py::api_create_routine
+- apps/schedules/ui/SchedulesApp.jsx::NewAgenticTaskForm
+tests: []
+links: {}
+notes: ''

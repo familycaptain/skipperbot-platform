@@ -1,0 +1,16 @@
+kind: specification
+id: system.consciousness.log-size-and-searchable-share
+title: How much has been said, and how much of it is searchable
+state: live
+autonomy: gated
+behavior: >
+  System reports how many entries Skipper's record holds, how many have been made searchable,
+  and how many are still waiting; with nothing waiting it says it is caught up rather than
+  showing a bare zero. It also gives how many of the entries are summaries, which is how a
+  person sees whether the record is being condensed as it grows.
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/ui/SystemApp.jsx::SystemApp
+tests: []
+links: {}
+notes: ''

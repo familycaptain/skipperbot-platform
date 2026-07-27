@@ -1,0 +1,18 @@
+kind: specification
+id: agentic.setting-up.the-abilities-it-starts-with
+title: Choosing what it starts with
+state: live
+autonomy: gated
+behavior: >
+  A routine can be given the groups of abilities it should have loaded from its first run — the same
+  named groups Skipper draws on in conversation — or none at all for a routine that only has to think
+  and report. Whichever is chosen it can ask for more while it runs, so the choice is a starting point
+  rather than a limit. The groups on offer are this install's actual list with each one's description,
+  so nothing has to be typed from memory or guessed.
+implements:
+- apps/agentic/routes.py::api_agentic_categories
+- apps/agentic/tools.py::create_routine
+- apps/schedules/ui/SchedulesApp.jsx::NewAgenticTaskForm
+tests: []
+links: {}
+notes: ''

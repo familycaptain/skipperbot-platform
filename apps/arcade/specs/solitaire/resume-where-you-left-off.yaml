@@ -1,0 +1,17 @@
+kind: specification
+id: arcade.solitaire.resume-where-you-left-off
+title: Solitaire picks up where you left it
+state: live
+autonomy: gated
+behavior: >
+  Opening Solitaire restores the hand that was in progress exactly as it was — same deal, same
+  piles, same face-down cards, same move count — however long ago it was left and whatever else
+  happened in between. With no hand in progress it deals a fresh one straight away, and while it
+  is finding out it says it is loading your game rather than showing an empty table.
+implements:
+- apps/arcade/ui/games/Solitaire.jsx
+- apps/arcade/data.py::get_solitaire_save
+- apps/arcade/routes.py::api_get_solitaire_save
+tests: []
+links: {}
+notes: ''

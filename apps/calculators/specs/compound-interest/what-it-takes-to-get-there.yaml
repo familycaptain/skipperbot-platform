@@ -1,0 +1,15 @@
+kind: specification
+id: calculators.compound-interest.what-it-takes-to-get-there
+title: What would have to be put in
+state: live
+autonomy: gated
+behavior: >
+  Leaving the starting amount blank answers the question the other way round: the amount that would
+  have to be put in today to arrive at a stated balance at that rate over that term, as money to the
+  cent.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveCompound
+- apps/calculators/tools.py::compound_interest
+tests: []
+links: {}
+notes: ''

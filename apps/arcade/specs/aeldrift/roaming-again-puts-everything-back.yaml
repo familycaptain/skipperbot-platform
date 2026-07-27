@@ -1,0 +1,14 @@
+kind: specification
+id: arcade.aeldrift.roaming-again-puts-everything-back
+title: Roaming again puts every shard back
+state: live
+autonomy: gated
+behavior: >
+  Choosing to roam again returns every gathered shard to the world, puts the craft back where it
+  started and sets the count to zero, so a second run is a full run rather than a mopping-up of
+  what was left.
+implements:
+- apps/arcade/ui/games/Aeldrift.jsx::resetRun
+tests: []
+links: {}
+notes: ''

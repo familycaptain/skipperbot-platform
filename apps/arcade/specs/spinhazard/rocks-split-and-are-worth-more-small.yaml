@@ -1,0 +1,15 @@
+kind: specification
+id: arcade.spinhazard.rocks-split-and-are-worth-more-small
+title: Rocks split, and the pieces are worth more
+state: live
+autonomy: gated
+behavior: >
+  Shooting a large rock breaks it into two medium ones, and each of those into two small ones that
+  vanish when hit. Each step down is worth more than the one before, so clearing a rock properly
+  pays better than avoiding it, and the splinters move faster than what they came from.
+implements:
+- apps/arcade/ui/games/Spinhazard.jsx::update
+- apps/arcade/ui/games/Spinhazard.jsx::ROCK_SIZES
+tests: []
+links: {}
+notes: ''

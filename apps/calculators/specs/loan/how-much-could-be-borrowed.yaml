@@ -1,0 +1,15 @@
+kind: specification
+id: calculators.loan.how-much-could-be-borrowed
+title: How much a payment can borrow
+state: live
+autonomy: gated
+behavior: >
+  Leaving the amount blank answers how much can be borrowed: the principal that the given monthly
+  payment repays over that term at that rate, reported with the same total paid and total interest
+  as any other loan answer.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::solveLoan
+- apps/calculators/tools.py::loan_amortization
+tests: []
+links: {}
+notes: ''

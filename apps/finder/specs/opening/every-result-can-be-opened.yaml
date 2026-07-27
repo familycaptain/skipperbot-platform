@@ -1,0 +1,15 @@
+kind: specification
+id: finder.opening.every-result-can-be-opened
+title: A result you can see is a result you can open
+state: live
+autonomy: gated
+behavior: >
+  Every result Finder shows can be opened: a match is not offered as something to click when clicking
+  it would do nothing, and a record whose app is not present on this system is not offered at all.
+implements:
+- apps/finder/ui/FinderApp.jsx::SEARCH_SOURCES
+- apps/finder/ui/FinderApp.jsx::ID_PREFIXES
+- web/src/apps/registry.js::getAppManifest
+tests: []
+links: {}
+notes: ''

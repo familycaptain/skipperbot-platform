@@ -1,0 +1,16 @@
+kind: specification
+id: timers.seeing.time-left-never-runs-backwards
+title: Time left is counted down in minutes and seconds, and never goes below zero
+state: live
+autonomy: gated
+behavior: >
+  A timer with more than a minute to go shows its remaining time as minutes and seconds; under a
+  minute it shows seconds alone. A timer that has reached its moment but has not yet been announced
+  shows no time left rather than a negative number, so a person reading the list is never told a
+  countdown is "-3s remaining".
+implements:
+- apps/timers/tools.py::list_timers
+- apps/timers/store.py::seconds_remaining
+tests: []
+links: {}
+notes: ''

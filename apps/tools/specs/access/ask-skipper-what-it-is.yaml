@@ -1,0 +1,15 @@
+kind: specification
+id: tools.access.ask-skipper-what-it-is
+title: Asking Skipper what it is
+state: live
+autonomy: gated
+behavior: >
+  Asking Skipper what the Tools app is, or how to use it, is answered from the app's own help text
+  — which says plainly that it is a read-only view for power users and that day to day a person
+  should just ask Skipper instead of browsing it.
+implements:
+- apps/tools/help.md
+- tools/app_help_tool.py::get_app_help
+tests: []
+links: {}
+notes: ''

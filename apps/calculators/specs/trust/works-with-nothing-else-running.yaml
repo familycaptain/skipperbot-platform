@@ -1,0 +1,16 @@
+kind: specification
+id: calculators.trust.works-with-nothing-else-running
+title: No account, no network, no service
+state: live
+autonomy: gated
+behavior: >
+  Every calculator works with no account, no external service and no network call — the arithmetic
+  happens on the household's own machine — so a calculation never fails, and never has to wait,
+  because something outside the house is down.
+implements:
+- apps/calculators/manifest.yaml
+- apps/calculators/tools.py::_safe_eval
+- apps/calculators/ui/CalculatorsApp.jsx::sciEval
+tests: []
+links: {}
+notes: ''

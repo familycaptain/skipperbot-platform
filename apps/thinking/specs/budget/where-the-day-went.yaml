@@ -1,0 +1,17 @@
+kind: specification
+id: thinking.budget.where-the-day-went
+title: Where the day's spend went
+state: live
+autonomy: gated
+behavior: >
+  Beneath the bar the day is broken down per area — tokens spent and passes taken — so a runaway
+  area is obvious at a glance. An area that has not run today is left out rather than shown as a
+  zero, and spend belonging to areas the install has since retired is rolled up under whatever
+  replaced them instead of appearing as strangers.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx::BudgetBar
+- agent.py::api_thinking_budget
+- data_layer/thinking_log.py::get_today_usage_by_domain
+tests: []
+links: {}
+notes: ''

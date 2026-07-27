@@ -1,0 +1,16 @@
+kind: specification
+id: thinking.alarms.the-switch-shows-what-is-stored
+title: The switch shows what was stored, not what was clicked
+state: live
+autonomy: gated
+behavior: >
+  A switch shows that it is working while the change is in flight, then re-reads the area from the
+  record — so what a person sees afterwards is what was actually stored. A change that was
+  refused, or that never reached the server, leaves the switch exactly where it was rather than in
+  the state the person asked for.
+implements:
+- apps/thinking/ui/ThinkingApp.jsx::DomainCard
+- agent.py::api_thinking_domain_update
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: calculators.scientific.an-unreadable-expression-is-marked
+title: An expression it cannot read is marked, not answered
+state: live
+autonomy: gated
+behavior: >
+  An expression the calculator cannot read — an unknown name, a stray character, unbalanced
+  brackets, a function with nothing to work on — is marked as an error with what was entered left on
+  the display so it can be corrected in place. Asked the same thing in chat, Skipper replies that
+  the expression could not be evaluated and what kinds of thing are supported, rather than returning
+  a number.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::ScientificTab
+- apps/calculators/ui/CalculatorsApp.jsx::sciToRPN
+- apps/calculators/tools.py::calculate
+tests: []
+links: {}
+notes: ''

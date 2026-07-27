@@ -1,0 +1,16 @@
+kind: specification
+id: thinking.mind.narrow-the-mind
+title: Narrow the mind to an area, a kind, or what is settled
+state: live
+autonomy: gated
+behavior: >
+  Only live entries are shown by default. The screen can be narrowed to one area, to one kind of
+  thought, or switched to show what has been resolved, what expired, or everything at once; each
+  change re-reads the list. Every status an entry can actually hold is reachable through these
+  choices, so nothing Skipper is holding is invisible from this screen.
+implements:
+- agent.py::api_thinking_state
+- data_layer/skipper_state.py::list_states
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: arcade.solitaire.one-hand-each
+title: One hand each, and it is yours
+state: live
+autonomy: gated
+behavior: >
+  Each member has exactly one in-progress hand of their own. Opening Solitaire never shows another
+  member's board, two people playing at the same time do not disturb each other, and nobody has to
+  wait for a turn. Because there is only one per person, starting another hand replaces the one
+  being kept.
+implements:
+- apps/arcade/data.py::set_solitaire_save
+- apps/arcade/migrations/002_solitaire_saves.sql
+tests: []
+links: {}
+notes: >
+  The one piece of per-person state in the arcade; the score board is deliberately the opposite.

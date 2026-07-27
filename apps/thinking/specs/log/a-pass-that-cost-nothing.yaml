@@ -1,0 +1,15 @@
+kind: specification
+id: thinking.log.a-pass-that-cost-nothing
+title: A pass that found nothing to do is still recorded
+state: live
+autonomy: gated
+behavior: >
+  A pass that decided there was nothing worth reasoning about is recorded like any other, marked
+  as having skipped the model and as having cost nothing. That is what lets a person tell an area
+  that is running and quiet from one that is not running at all.
+implements:
+- thinking_scheduler.py::_run_domain_cycle
+- apps/thinking/ui/ThinkingApp.jsx::ModelBadge
+tests: []
+links: {}
+notes: ''

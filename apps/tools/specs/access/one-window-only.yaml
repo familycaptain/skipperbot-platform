@@ -1,0 +1,14 @@
+kind: specification
+id: tools.access.one-window-only
+title: Only one Tools window
+state: live
+autonomy: gated
+behavior: >
+  Opening Tools while it is already open brings the existing window forward instead of starting a
+  second copy, so there is only ever one place the catalogue is being read.
+implements:
+- apps/tools/ui/index.js
+- web/src/App.jsx::handleOpenApp
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: agentic.changing.rewriting-what-it-does
+title: Rewriting what it does
+state: live
+autonomy: gated
+behavior: >
+  Giving a routine new instructions replaces the text of the instructions it already has, so its
+  identity, cadence, owner and history survive the rewrite and the next run follows the new text —
+  editing the document directly has exactly the same effect. A routine with no instructions to replace
+  refuses instead of quietly starting a second set that nothing would read.
+implements:
+- apps/agentic/tools.py::update_routine
+tests: []
+links: {}
+notes: ''

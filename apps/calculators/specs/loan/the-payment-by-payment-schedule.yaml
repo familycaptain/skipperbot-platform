@@ -1,0 +1,15 @@
+kind: specification
+id: calculators.loan.the-payment-by-payment-schedule
+title: Every payment, split into interest and principal
+state: live
+autonomy: gated
+behavior: >
+  The app lists the loan's payments in order, each split into the interest and the principal it pays
+  and followed by the balance still owed, so it is plain without any explanation that early payments
+  are mostly interest and later ones mostly principal.
+implements:
+- apps/calculators/ui/CalculatorsApp.jsx::finishLoan
+- apps/calculators/ui/CalculatorsApp.jsx::LoanTab
+tests: []
+links: {}
+notes: ''

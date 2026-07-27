@@ -1,0 +1,17 @@
+kind: specification
+id: arcade.scores.a-score-cannot-be-taken-back
+title: A recorded score is permanent
+state: live
+autonomy: gated
+behavior: >
+  Nothing removes a score once it is recorded — not the person who set it, not a parent and not an
+  administrator. There is no reset, no clearing at the end of a season and no editing, so a score
+  only leaves the board by being pushed off it by better runs.
+implements:
+- apps/arcade/routes.py
+- apps/arcade/data.py
+tests: []
+links: {}
+notes: >
+  Recorded because the absence is the behaviour: a household that wants a fresh board has no way
+  to ask for one.

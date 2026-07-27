@@ -1,0 +1,16 @@
+kind: specification
+id: finder.search.opens-ready-to-type
+title: Finder opens ready to type
+state: live
+autonomy: gated
+behavior: >
+  Opening Finder — from the desktop, or because Skipper opened it during a conversation — puts the
+  cursor in an empty search box, and returning to Finder from another tab puts the cursor back in it
+  with the last search and its results still on screen. Finder always starts from what the person
+  types; nothing else can pre-fill the query.
+implements:
+- apps/finder/ui/FinderApp.jsx::FinderApp
+- apps/finder/ui/index.js
+tests: []
+links: {}
+notes: ''

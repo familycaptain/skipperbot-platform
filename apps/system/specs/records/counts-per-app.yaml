@@ -1,0 +1,16 @@
+kind: specification
+id: system.records.counts-per-app
+title: How much of everything there is
+state: live
+autonomy: gated
+behavior: >
+  System shows how many records the household has accumulated, one figure per kind — memories,
+  documents, reminders, chat turns, goals, projects, tasks, lists, images, links, artifacts,
+  notifications — so a person can see at a glance whether the install is being used and where
+  the bulk of it sits. Every figure is a count; nothing on the screen is a record's contents.
+implements:
+- apps/system/routes.py::api_system_metrics
+- apps/system/ui/SystemApp.jsx::SystemApp
+tests: []
+links: {}
+notes: ''

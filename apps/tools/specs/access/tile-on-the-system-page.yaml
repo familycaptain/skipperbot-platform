@@ -1,0 +1,14 @@
+kind: specification
+id: tools.access.tile-on-the-system-page
+title: It lives on the launcher's system page
+state: live
+autonomy: gated
+behavior: >
+  Tools has a launcher tile on the launcher's third, system page rather than among the everyday
+  apps — it is there for the person diagnosing Skipper, not for the person asking about dinner.
+implements:
+- apps/tools/ui/index.js
+- web/src/apps/registry.js::getAppsForPage
+tests: []
+links: {}
+notes: ''

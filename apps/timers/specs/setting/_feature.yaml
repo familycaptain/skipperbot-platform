@@ -1,0 +1,7 @@
+kind: feature
+id: timers.setting
+title: Setting a timer
+state: live
+links: {}
+notes: 'Asking for a countdown and what comes back. NOT what happens when it runs out
+  (timers.going-off).'
