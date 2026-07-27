@@ -3,8 +3,7 @@
 The dead `schedule_expr` field on app_jobs.jobs let callers THINK they'd created
 a recurring job — it was stored but no scheduler ever read it, so the "recurring"
 job silently never fired (it bit multiple apps, e.g. the meals dinner-check).
-Removed so a self-scheduling job cannot even be expressed. Run:
-  python -m unittest tests.evolve.jobs.test_no_self_schedule
+Removed so a self-scheduling job cannot even be expressed.
 """
 import os
 import unittest
@@ -35,8 +34,17 @@ class NoSelfSchedule(unittest.TestCase):
         src = _read("apps/jobs/migrations/003_drop_schedule_expr.sql")
         self.assertIn("DROP COLUMN IF EXISTS schedule_expr", src)
 
-    def test_create_job_tool_makes_one_shot_explicit(self):
+    def test_the_tool_layer_points_recurrence_at_the_schedules_app(self):
+        # This used to assert create_job's docstring; that tool is gone with shell jobs.
+        # The property survives on update_job, which still accepts the legacy `schedule`
+        # argument and must keep refusing to treat it as recurrence.
         src = _read("apps/jobs/tools.py")
-        self.assertIn("runs ONCE", src)
-        self.assertIn("cannot self-schedule", src)
-        self.assertIn("Schedules entry", src)  # points to the real recurrence path
+        self.assertIn("Schedules", src)          # points to the real recurrence path
+        self.assertIn("deprecated", src.lower())
+
+    def test_no_tool_accepts_a_schedule_it_would_honour(self):
+        # The `schedule` parameter may exist for compatibility, but nothing may store or
+        # act on it — that was the original bug, in a different shape.
+        src = _read("apps/jobs/tools.py")
+        self.assertNotIn("schedule_expr", src)
+        self.assertNotIn("recurrence", src.lower())
