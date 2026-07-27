@@ -15,6 +15,30 @@ import sys
 import types
 import unittest
 
+# Replacing an entry in sys.modules is process-global. Without putting it back, every test that
+# runs LATER in the same process sees the fake — surfacing as failures on innocent modules
+# ("data_layer.db has no attribute fetch_one") that look like product breakage. Each of these
+# files passes alone and only fails in company, so the damage is invisible until the whole suite
+# runs in one process.
+_SAVED_MODULES = {}
+
+
+def _stub_module(name, mod):
+    """Install a fake module, remembering what it displaced so tearDownModule can restore it."""
+    _SAVED_MODULES.setdefault(name, sys.modules.get(name))
+    sys.modules[name] = mod
+    return mod
+
+
+def tearDownModule():
+    for _name, _orig in _SAVED_MODULES.items():
+        if _orig is None:
+            sys.modules.pop(_name, None)
+        else:
+            sys.modules[_name] = _orig
+    _SAVED_MODULES.clear()
+
+
 # --- offline stubs (install before importing onboarding) -------------------
 
 _CONFIG_STORE: dict = {}
@@ -31,8 +55,7 @@ def _install_stubs():
 
     cfg.get = _get
     cfg.set = _set
-    sys.modules["app_platform.config"] = cfg
-
+    _stub_module("app_platform.config", cfg)
     store = types.ModuleType("apps.goals.store")
     store.events = []  # ordered (kind, a, b) tuples
     store._pid = [0]
@@ -62,15 +85,13 @@ def _install_stubs():
     store.create_project = create_project
     store.create_task = create_task
     store.update_item = update_item
-    sys.modules["apps.goals.store"] = store
-
+    _stub_module("apps.goals.store", store)
     lifecycle = types.ModuleType("apps.goals.lifecycle")
     lifecycle.sync_goal_domain = lambda goal_id: None
-    sys.modules["apps.goals.lifecycle"] = lifecycle
-
+    _stub_module("apps.goals.lifecycle", lifecycle)
     users = types.ModuleType("data_layer.users")
     users.get_primary_user = lambda: "Rodney"
-    sys.modules["data_layer.users"] = users
+    _stub_module("data_layer.users", users)
     return store
 
 

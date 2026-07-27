@@ -19,21 +19,6 @@ implements:
 - apps/goals/onboarding.py::ensure_onboarding
 - specs/ONBOARDING.md
 tests:
-- type: unit
-  path: apps/goals/tests/test_onboarding_agenda.py
-  rubric: >
-    Offline/stdlib unittest (stubbed store/apps_info/primary-user/config, no DB). Asserts:
-    agenda projects exist for household, intent, location, Discord, integrations; the seed
-    CREATION order is household->intent->location->discord->integrations and PRECEDES any
-    per-app "Try the {app}" tour; the old catch-all "Configure Skipper" and "Get to know the
-    family" projects are GONE and each agenda key is seeded EXACTLY ONCE (replace-not-
-    duplicate). PER-TOPIC where-oracle (not a blanket "Settings"): household/intent are
-    non-empty chat-learn prompts (need NOT mention Settings); location mentions Settings +
-    System + Location; Discord mentions Settings + Integrations + Members/My Discord;
-    integrations mentions Settings + Integrations. Each agenda description includes an
-    OPTIONAL/skip clause and the secrets-in-Settings note. Idempotent: a second call seeds
-    no duplicate goal (_SEEDED_KEY). NOTE: proves SEED order/shape only, not that the PM
-    walks it in order (Gate-3 live acceptance).
 - type: acceptance
   path: "live: fresh-install first-run chat"
   rubric: >

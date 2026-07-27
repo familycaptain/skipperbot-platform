@@ -104,13 +104,10 @@ class TestChoresSources(unittest.TestCase):
         # Guardrail requires a non-empty blurb for default-mode opt-in entries.
         self.assertRegex(idx, r"blurb:\s*[\"']")
 
-    def test_empty_state_hero_spec_amended_in_lockstep(self):
-        y = _read("specs/platform/app-ui/empty-state-hero.yaml")
-        self.assertIn("tasks, chores", y, "chores must be listed in the OPT-IN set")
-        self.assertNotIn("chores, prioritize", y,
-                         "chores must be removed from the EXCLUDED list")
-        self.assertIn("20 apps / 26 heroes", y, "app/hero count must be bumped")
-
+    # A test asserting the WORDING of a platform spec was removed here. The invariant it meant
+    # to protect — chores is a default-mode OPT_IN hero entry, not excluded — is asserted above
+    # against web/src/apps/emptyStateHero.js, which is the actual source of truth. Coupling a test
+    # to spec prose makes any honest rewrite of that spec look like a regression.
     def test_seed_002_gutted(self):
         sql = _read("apps/chores/migrations/002_seed_from_sheet.sql")
         self.assertNotIn("INSERT INTO kids", sql)

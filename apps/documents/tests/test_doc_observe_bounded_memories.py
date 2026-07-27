@@ -31,6 +31,37 @@ import unittest
 from datetime import datetime
 from unittest import mock
 
+# Replacing an entry in sys.modules is process-global. Without putting it back, every test that
+# runs LATER in the same process sees the fake — surfacing as failures on innocent modules
+# ("data_layer.db has no attribute fetch_one") that look like product breakage. Each of these
+# files passes alone and only fails in company, so the damage is invisible until the whole suite
+# runs in one process.
+_SAVED_MODULES = {}
+
+
+def _stub_module(name, mod):
+    """Install a fake module, remembering what it displaced so tearDownModule can restore it."""
+    _SAVED_MODULES.setdefault(name, sys.modules.get(name))
+    sys.modules[name] = mod
+    return mod
+
+
+def tearDownModule():
+    for _name, _orig in _SAVED_MODULES.items():
+        if _orig is None:
+            sys.modules.pop(_name, None)
+        else:
+            sys.modules[_name] = _orig
+    _SAVED_MODULES.clear()
+    # psycopg2 is stubbed here, and it is a module the data layer imports at IMPORT time — so
+    # data_layer.db captured the fake pool class and keeps it even after sys.modules is restored.
+    # Drop the layers that bound it so the next test file re-imports against the real driver;
+    # without this, a later test that opens a connection dies with "object() takes no arguments"
+    # and reads as a product failure.
+    for _name in [n for n in list(sys.modules) if n.split(".")[0] in ("data_layer", "memory_store")]:
+        sys.modules.pop(_name, None)
+
+
 # DB-free: data_layer.memories imports psycopg2 transitively — stub it.
 if "psycopg2" not in sys.modules:
     psycopg2 = types.ModuleType("psycopg2")
@@ -41,11 +72,9 @@ if "psycopg2" not in sys.modules:
     pool.ThreadedConnectionPool = object
     psycopg2.extras = extras
     psycopg2.pool = pool
-    sys.modules["psycopg2"] = psycopg2
-    sys.modules["psycopg2.extras"] = extras
-    sys.modules["psycopg2.pool"] = pool
-
-
+    _stub_module("psycopg2", psycopg2)
+    _stub_module("psycopg2.extras", extras)
+    _stub_module("psycopg2.pool", pool)
 def _row(i, ts=None):
     """A memories row as fetch_* would return it (no embedding column)."""
     return {

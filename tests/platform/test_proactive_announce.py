@@ -14,6 +14,30 @@ import sys
 import types
 import unittest
 
+# Replacing an entry in sys.modules is process-global. Without putting it back, every test that
+# runs LATER in the same process sees the fake — surfacing as failures on innocent modules
+# ("data_layer.db has no attribute fetch_one") that look like product breakage. Each of these
+# files passes alone and only fails in company, so the damage is invisible until the whole suite
+# runs in one process.
+_SAVED_MODULES = {}
+
+
+def _stub_module(name, mod):
+    """Install a fake module, remembering what it displaced so tearDownModule can restore it."""
+    _SAVED_MODULES.setdefault(name, sys.modules.get(name))
+    sys.modules[name] = mod
+    return mod
+
+
+def tearDownModule():
+    for _name, _orig in _SAVED_MODULES.items():
+        if _orig is None:
+            sys.modules.pop(_name, None)
+        else:
+            sys.modules[_name] = _orig
+    _SAVED_MODULES.clear()
+
+
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
@@ -30,7 +54,7 @@ def _load_devices():
     if cfg is None:
         cfg = types.ModuleType("config")
         cfg.logger = logging.getLogger("test-voice-devices")
-        sys.modules["config"] = cfg
+        _stub_module("config", cfg)
     elif not hasattr(cfg, "logger"):
         cfg.logger = logging.getLogger("test-voice-devices")
     import importlib

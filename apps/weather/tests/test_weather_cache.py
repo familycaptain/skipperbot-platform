@@ -10,27 +10,48 @@ import unittest
 from unittest import mock
 from zoneinfo import ZoneInfo
 
+# Replacing an entry in sys.modules is process-global. Without putting it back, every test that
+# runs LATER in the same process sees the fake — surfacing as failures on innocent modules
+# ("data_layer.db has no attribute fetch_one") that look like product breakage. Each of these
+# files passes alone and only fails in company, so the damage is invisible until the whole suite
+# runs in one process.
+_SAVED_MODULES = {}
+
+
+def _stub_module(name, mod):
+    """Install a fake module, remembering what it displaced so tearDownModule can restore it."""
+    _SAVED_MODULES.setdefault(name, sys.modules.get(name))
+    sys.modules[name] = mod
+    return mod
+
+
+def tearDownModule():
+    for _name, _orig in _SAVED_MODULES.items():
+        if _orig is None:
+            sys.modules.pop(_name, None)
+        else:
+            sys.modules[_name] = _orig
+    _SAVED_MODULES.clear()
+
+
 # Offline substrate: apps.weather.tools imports app_platform.time / .config /
 # .location, whose real modules want psycopg2 + a live DB. Stub the leaves of
 # that chain so the import stays pure-stdlib (mirrors test_weather_tools.py).
 if "app_platform.time" not in sys.modules:
     _t = types.ModuleType("app_platform.time")
     _t.get_timezone = lambda user_id=None: ZoneInfo("UTC")
-    sys.modules["app_platform.time"] = _t
-
+    _stub_module("app_platform.time", _t)
 if "app_platform.settings" not in sys.modules:
     _s = types.ModuleType("app_platform.settings")
     _s.get = lambda *a, **k: k.get("default")
     _s.set = lambda *a, **k: None
     _s.is_configured = lambda *a, **k: False
-    sys.modules["app_platform.settings"] = _s
-
+    _stub_module("app_platform.settings", _s)
 if "app_platform.config" not in sys.modules:
     _c = types.ModuleType("app_platform.config")
     # default-returning stub; the real _cache_settings is patched in tests anyway
     _c.get = lambda key, default=None, **k: default
-    sys.modules["app_platform.config"] = _c
-
+    _stub_module("app_platform.config", _c)
 from apps.weather import cache as wcache  # noqa: E402
 from apps.weather import tools  # noqa: E402
 from apps.weather import background  # noqa: E402

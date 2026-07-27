@@ -27,6 +27,30 @@ import sys
 import types
 import unittest
 
+# Replacing an entry in sys.modules is process-global. Without putting it back, every test that
+# runs LATER in the same process sees the fake — surfacing as failures on innocent modules
+# ("data_layer.db has no attribute fetch_one") that look like product breakage. Each of these
+# files passes alone and only fails in company, so the damage is invisible until the whole suite
+# runs in one process.
+_SAVED_MODULES = {}
+
+
+def _stub_module(name, mod):
+    """Install a fake module, remembering what it displaced so tearDownModule can restore it."""
+    _SAVED_MODULES.setdefault(name, sys.modules.get(name))
+    sys.modules[name] = mod
+    return mod
+
+
+def tearDownModule():
+    for _name, _orig in _SAVED_MODULES.items():
+        if _orig is None:
+            sys.modules.pop(_name, None)
+        else:
+            sys.modules[_name] = _orig
+    _SAVED_MODULES.clear()
+
+
 # --------------------------------------------------------------------------
 # Repo root — for the source/AST assertions on files we don't import.
 # --------------------------------------------------------------------------
@@ -61,8 +85,7 @@ def _install_stubs() -> None:
     def _cfg_set(key, value, *, scope=None, by=""):
         _CONFIG_STORE[(scope, key)] = value
     cfg.set = _cfg_set
-    sys.modules["app_platform.config"] = cfg
-
+    _stub_module("app_platform.config", cfg)
     # data_layer.db.execute — simulates INSERT ... ON CONFLICT DO NOTHING + DELETE
     # so the ATOMIC compare-and-set claim is testable with real rowcount semantics.
     db = types.ModuleType("data_layer.db")
@@ -83,43 +106,37 @@ def _install_stubs() -> None:
             return 1 if existed else 0
         return 0
     db.execute = _execute
-    sys.modules["data_layer.db"] = db
-
+    _stub_module("data_layer.db", db)
     # data_layer.users
     users = types.ModuleType("data_layer.users")
     users.get_primary_user = lambda: _PRIMARY["name"]
-    sys.modules["data_layer.users"] = users
-
+    _stub_module("data_layer.users", users)
     # apps.goals.data.load_entity
     data = types.ModuleType("apps.goals.data")
     data.load_entity = lambda entity_id: _DATA_ENTITIES.get(entity_id)
-    sys.modules["apps.goals.data"] = data
-
+    _stub_module("apps.goals.data", data)
     # apps.goals.store / lifecycle — imported at onboarding module load; harmless.
     store = types.ModuleType("apps.goals.store")
     store.create_goal = lambda *a, **k: {"id": "g-onb"}
     store.create_project = lambda *a, **k: {"id": "p-1", "name": "p"}
     store.create_task = lambda *a, **k: {"id": "t-1"}
-    sys.modules["apps.goals.store"] = store
+    _stub_module("apps.goals.store", store)
     lifecycle = types.ModuleType("apps.goals.lifecycle")
     lifecycle.sync_goal_domain = lambda goal_id: None
-    sys.modules["apps.goals.lifecycle"] = lifecycle
-
+    _stub_module("apps.goals.lifecycle", lifecycle)
     # domain_modules — capture registrations (no real scheduler).
     dm = types.ModuleType("domain_modules")
     dm.registered = {}
     dm.patterns = []
     dm.register_domain = lambda name, handler: dm.registered.__setitem__(name, handler)
     dm.register_pattern = lambda prefix, handler: dm.patterns.append((prefix, handler))
-    sys.modules["domain_modules"] = dm
-
+    _stub_module("domain_modules", dm)
     # apps.goals.pm_domain — needed by handlers registration import.
     pm = types.ModuleType("apps.goals.pm_domain")
     async def _pm(domain, budget):  # noqa: ANN001
         return {}
     pm.pm_domain_handler = _pm
-    sys.modules["apps.goals.pm_domain"] = pm
-
+    _stub_module("apps.goals.pm_domain", pm)
     # apps.goals.domain — fake produce handler the arrival path calls.
     domain = types.ModuleType("apps.goals.domain")
     domain.ONBOARDING_GREETING_SOURCE = "onboarding_greeting"
@@ -131,20 +148,18 @@ def _install_stubs() -> None:
         actions = [{"type": "dm_sent"}] if _PRODUCE_RESULT["dm_sent"] else []
         return {"actions_taken": actions}
     domain.goal_domain_handler = _goal_domain_handler
-    sys.modules["apps.goals.domain"] = domain
-
+    _stub_module("apps.goals.domain", domain)
     # apps.notifications(.delivery) — fake canonical deliver-now-inline.
     if "apps.notifications" not in sys.modules:
         pkg = types.ModuleType("apps.notifications")
         pkg.__path__ = []  # mark as a package
-        sys.modules["apps.notifications"] = pkg
+        _stub_module("apps.notifications", pkg)
     delivery = types.ModuleType("apps.notifications.delivery")
 
     async def _deliver_pending():
         _DELIVER_CALLS.append(True)
     delivery.deliver_pending_notifications = _deliver_pending
-    sys.modules["apps.notifications.delivery"] = delivery
-
+    _stub_module("apps.notifications.delivery", delivery)
     # app_platform.notifications — the PLATFORM FACADE the handler actually
     # imports (`from app_platform.notifications import deliver_pending_notifications`
     # inside _run_arrival_greeting). The facade re-exports the same canonical
@@ -155,9 +170,7 @@ def _install_stubs() -> None:
     # same way app_platform.config is above (app_platform itself is light-import).
     plat_notif = types.ModuleType("app_platform.notifications")
     plat_notif.deliver_pending_notifications = _deliver_pending
-    sys.modules["app_platform.notifications"] = plat_notif
-
-
+    _stub_module("app_platform.notifications", plat_notif)
 _install_stubs()
 
 from apps.goals import onboarding          # noqa: E402  (real module, uses stubs)

@@ -11,6 +11,30 @@ import types
 import unittest
 from unittest import mock
 
+# Replacing an entry in sys.modules is process-global. Without putting it back, every test that
+# runs LATER in the same process sees the fake — surfacing as failures on innocent modules
+# ("data_layer.db has no attribute fetch_one") that look like product breakage. Each of these
+# files passes alone and only fails in company, so the damage is invisible until the whole suite
+# runs in one process.
+_SAVED_MODULES = {}
+
+
+def _stub_module(name, mod):
+    """Install a fake module, remembering what it displaced so tearDownModule can restore it."""
+    _SAVED_MODULES.setdefault(name, sys.modules.get(name))
+    sys.modules[name] = mod
+    return mod
+
+
+def tearDownModule():
+    for _name, _orig in _SAVED_MODULES.items():
+        if _orig is None:
+            sys.modules.pop(_name, None)
+        else:
+            sys.modules[_name] = _orig
+    _SAVED_MODULES.clear()
+
+
 # Offline substrate: apps.weather.tools transitively imports app_platform.time
 # -> app_platform.config -> data_layer.db, which requires psycopg2 + a live DB.
 # Stub the timezone helper so the import chain stays pure-stdlib.
@@ -19,8 +43,7 @@ if "app_platform.time" not in sys.modules:
     from zoneinfo import ZoneInfo as _ZoneInfo
 
     _stub.get_timezone = lambda user_id=None: _ZoneInfo("UTC")
-    sys.modules["app_platform.time"] = _stub
-
+    _stub_module("app_platform.time", _stub)
 # app_platform.location reads app_platform.settings lazily; stub settings so the
 # real location module imports without a DB. (We mock resolve_location anyway.)
 if "app_platform.settings" not in sys.modules:
@@ -28,8 +51,7 @@ if "app_platform.settings" not in sys.modules:
     _s.get = lambda *a, **k: k.get("default")
     _s.set = lambda *a, **k: None
     _s.is_configured = lambda *a, **k: False
-    sys.modules["app_platform.settings"] = _s
-
+    _stub_module("app_platform.settings", _s)
 from apps.weather import tools  # noqa: E402
 from apps.weather import data  # noqa: E402
 
