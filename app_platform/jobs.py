@@ -76,7 +76,6 @@ from apps.jobs.data import (
 
 # ---- Store layer (friendly helpers — digest_record + auto_memory) ----
 from apps.jobs.store import (
-    create_job,
     update_job,
     record_run,
     cancel_job,
@@ -103,7 +102,7 @@ __all__ = [
     "append_log", "get_logs",
     "save_job", "get_all_jobs", "get_active_jobs", "delete_job", "save_all_jobs",
     # Store layer
-    "create_job", "update_job", "record_run", "cancel_job",
+    "update_job", "record_run", "cancel_job",
     "create_research_job", "create_print_job", "create_recipe_print_job",
     "create_refine_job", "get_pending_research_jobs",
     "get_pending_print_jobs", "get_pending_refine_jobs",
