@@ -6,7 +6,7 @@ import ChatPanel from "./components/ChatPanel";
 import AppPanel from "./components/AppPanel";
 import Onboarding from "./pages/Onboarding";
 import useSkipperSocket from "./hooks/useSkipperSocket";
-import { getAppManifest, newInstanceId, setDisabledApps, setHiddenApps, getOpenableApps } from "./apps/registry";
+import { getAppManifest, newInstanceId, setDisabledApps, setHiddenApps, setIsAdmin, getOpenableApps } from "./apps/registry";
 
 /**
  * Root application component.
@@ -79,13 +79,19 @@ export default function App() {
     let cancelled = false;
     (async () => {
       try {
-        // Platform-disabled apps (admin) + this user's hidden tiles (per-user).
-        const [dRes, hRes] = await Promise.all([
+        // Platform-disabled apps (admin) + this user's hidden tiles (per-user) + whether
+        // this user is an admin (gates `adminOnly` tiles out of the launcher).
+        const [dRes, hRes, uRes] = await Promise.all([
           fetch("/api/apps/disabled"),
           fetch("/api/apps/hidden"),
+          fetch("/api/users"),
         ]);
         if (dRes.ok) setDisabledApps((await dRes.json()).disabled || []);
         if (hRes.ok) setHiddenApps((await hRes.json()).hidden || []);
+        if (uRes.ok) {
+          const me = (await uRes.json()).find((u) => u.name === user.name);
+          setIsAdmin(!!me && (me.role || "").split(",").map((r) => r.trim()).includes("admin"));
+        }
         // Report the openable app registry so open_app's app list is dynamic
         // (built from installed+enabled apps) rather than a hardcoded enum.
         fetch("/api/apps/openable", {

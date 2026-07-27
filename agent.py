@@ -181,6 +181,24 @@ _PUBLIC_EXACT = {"/", "/api/health", "/auth/login", "/auth/logout",
                  "/api/onboarding/status", "/api/onboarding/timezones"}
 _PUBLIC_PREFIXES = ("/assets/", "/static/", "/web/")
 
+# Path prefixes that require the admin role, not merely a signed-in principal.
+#
+# `/api/apps/thinking` is Skipper's own inner life: the Stream is every message between
+# Skipper and every household member, `/subconscious` is its rolling per-person summaries,
+# and PATCH /domains/{name} switches whole areas of background thought on and off. Adults
+# trusting each other (platform.auth.adults-trust-each-other) does not extend to a kid-role
+# account reading the entire household's correspondence, so the operator's ruling is that
+# the app is admin-only, visible and usable.
+#
+# Enforced here rather than on each handler so a route added later is covered by default —
+# the app had twelve routes and zero authorization checks precisely because each one had to
+# remember.
+_ADMIN_ONLY_PREFIXES = ("/api/apps/thinking",)
+
+
+def _requires_admin_path(request: Request) -> bool:
+    return request.url.path.startswith(_ADMIN_ONLY_PREFIXES)
+
 
 def _is_public_path(request: Request) -> bool:
     path = request.url.path
@@ -211,6 +229,8 @@ async def auth_gate(request: Request, call_next):
         request.state.principal = None
     if request.state.principal is None and not _is_public_path(request):
         return _unauthenticated_response(request)
+    if _requires_admin_path(request) and not has_role(request.state.principal or {}, "admin"):
+        return JSONResponse({"detail": "Admin access required."}, status_code=403)
     return await call_next(request)
 
 

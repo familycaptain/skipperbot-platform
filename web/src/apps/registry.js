@@ -92,8 +92,18 @@ export function subscribeAppVisibility(fn) {
   return () => _visibilityListeners.delete(fn);
 }
 
+// Whether the signed-in user holds the admin role. An app registration may set
+// `adminOnly: true` (see apps/thinking/ui/index.js) to stay out of everyone else's
+// launcher and management lists. Defaults to FALSE so a tile is hidden until the
+// roster confirms otherwise — a brief missing tile is the safe failure, a briefly
+// visible admin tile is not. The server is the real gate; this is presentation.
+let _isAdmin = false;
+export function setIsAdmin(v) { _isAdmin = !!v; _visibilityListeners.forEach((fn) => fn()); }
+export function getIsAdmin() { return _isAdmin; }
+function _rolePermits(a) { return !a.adminOnly || _isAdmin; }
+
 function _launcherVisible(a) {
-  return !a.subview && !_disabledApps.has(a.id) && !_hiddenApps.has(a.id);
+  return !a.subview && _rolePermits(a) && !_disabledApps.has(a.id) && !_hiddenApps.has(a.id);
 }
 
 /** Get all registered app manifests for the launcher UI. Excludes sub-views. */
@@ -105,7 +115,7 @@ export function getAllApps() {
  *  ones so they can be re-enabled. */
 export function getManageableApps() {
   return Object.values(APP_MANIFESTS)
-    .filter(a => !a.subview)
+    .filter(a => !a.subview && _rolePermits(a))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -114,7 +124,7 @@ export function getManageableApps() {
  *  user has hidden, so they can un-hide them. */
 export function getTileApps() {
   return Object.values(APP_MANIFESTS)
-    .filter(a => !a.subview && !_disabledApps.has(a.id))
+    .filter(a => !a.subview && _rolePermits(a) && !_disabledApps.has(a.id))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
