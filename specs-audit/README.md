@@ -16,10 +16,11 @@ been fixed**; the audit surveys, so the findings stay reviewable rather than arr
 Everything that ships is now specified. Twelve of those corpora did not exist at all before this audit —
 `agentic`, all six optional apps, voice, and mobile among them.
 
-Validate everything at once, from any target repo:
+Validate everything at once by running the spec-validation script from the SDLC tooling checkout,
+pointed at this repo:
 
 ```
-python3 ~/repos/evolve/scripts/evolve_specs.py .          # add --quiet for failures only
+python3 <sdlc-tooling>/scripts/evolve_specs.py .          # add --quiet for failures only
 ```
 
 That script and the `corpus_roots()` / `unreadable_paths()` support behind it were added during this audit,
@@ -105,4 +106,4 @@ Others were mechanism: table names, `ON CONFLICT` clauses, migration numbers, Ta
 line numbers. A handful were `verified: true` over code that had been deleted, or bound to test files that
 do not exist anywhere in the repo.
 
-The standard the rewrite was held to is `evolve/docs/writing-specifications.md`.
+The standard the rewrite was held to is the SDLC tooling's `docs/writing-specifications.md`.
