@@ -9,6 +9,12 @@ been fixed**; the audit surveys, so the findings stay reviewable rather than arr
 |---|---|---|---|
 | this repo (35 apps + platform) | **2339** | 2025 | 0 |
 | the six optional-app repos | **371** | — | 0 |
+| `skipperbot-voice` (the speaker device) | **64** | 56 | 0 |
+| `skipperbot-mobile` (Android) | **58** | 51 | 0 |
+| **total** | **2832** | | **0** |
+
+Everything that ships is now specified. Twelve of those corpora did not exist at all before this audit —
+`agentic`, all six optional apps, voice, and mobile among them.
 
 Validate everything at once, from any target repo:
 
@@ -31,6 +37,13 @@ bounties, brainstorming, calculators, chores, documents, email, finder, folders,
 issues, jobs, lists, locator, meals, medical, prioritize, recipes, reminders, schedules, settings, system,
 thinking, timeline, timers, todo, tools, weather. Notifications' findings predate this directory and live in
 [`../AUDIT-FINDINGS.md`](../AUDIT-FINDINGS.md).
+
+**In the client repos** — `skipperbot-voice/specs-audit/findings-voice.md` and
+`skipperbot-mobile/specs-audit/findings-mobile.md`. Headlines: the Android app **does not start**
+(`AuthManager` collects a never-completing DataStore flow and escapes with `return@collect`, called from
+`runBlocking` in `Application.onCreate`), and the speaker device **sends a hardcoded default identity**
+(`--user-id` defaults to the literal `"user1"`, and the platform runs tools as that user), which
+contradicts the shared-speaker rule.
 
 **In the optional-app repos** — each carries its own `specs-audit/findings-<app>.md`, because the fixes
 happen there:
