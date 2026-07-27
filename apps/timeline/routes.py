@@ -31,6 +31,8 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app_platform.outbound import OutboundBlocked, open_public_url
+
 import apps.timeline.data as _dl
 
 logger = logging.getLogger(__name__)
@@ -136,21 +138,26 @@ async def api_link_preview(url: str):
 
     def _scrape() -> dict:
         try:
-            parsed = urllib.parse.urlparse(url.strip())
-            if parsed.scheme not in ("http", "https"):
-                return {}
-            req = urllib.request.Request(
-                url.strip(),
-                headers={
-                    "User-Agent": "Mozilla/5.0 (compatible; Skipperbot-Timeline/1.0)",
-                },
+            # The URL comes from a post body and is fetched BY THE SERVER, automatically, for
+            # every reader — so without this the endpoint is a probe into the household network
+            # (the router, Home Assistant, localhost, cloud metadata) that returns what it found
+            # in the preview card. open_public_url resolves the host, refuses any non-public
+            # address, and re-validates each redirect hop rather than letting urllib follow a
+            # public URL to a private one.
+            resp = open_public_url(
+                url,
+                timeout=5,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; Skipperbot-Timeline/1.0)"},
             )
-            with urllib.request.urlopen(req, timeout=5) as resp:  # noqa: S310 — UI-driven HTTP
+            with resp:
                 ctype = (resp.headers.get("content-type") or "").lower()
                 if "text/html" not in ctype:
                     return {}
                 # Read at most 256 KB to avoid pulling huge pages
                 body = resp.read(262_144).decode("utf-8", errors="replace")
+        except OutboundBlocked as exc:
+            logger.info("link-preview refused for %s: %s", url, exc)
+            return {}
         except Exception as exc:
             logger.debug("link-preview fetch failed for %s: %s", url, exc)
             return {}
