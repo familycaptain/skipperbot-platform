@@ -12,7 +12,7 @@ implements:
 - apps/meals/data.py::get_meals_for_component
 tests:
 - type: unit
-  path: tests/evolve/meals/test_crud_tools.py
+  path: apps/meals/tests/test_crud_tools.py
 links: {}
 notes: >
   Refusing rather than cascading: silently stripping a component out of a dozen meals is the

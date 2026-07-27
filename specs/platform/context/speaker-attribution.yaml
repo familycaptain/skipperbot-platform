@@ -12,7 +12,7 @@ implements:
 - app_platform/context.py::render_event
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: 'TimelineRendering: focal-person, other-person, to-someone-else and activity/event lines
     each render distinguishably.'
 links: {}

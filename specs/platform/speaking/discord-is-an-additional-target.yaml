@@ -20,7 +20,7 @@ implements:
 - migrations/003_user_surface_preference.sql
 tests:
 - type: unit
-  path: tests/evolve/platform/test_voice_policy.py
+  path: tests/platform/test_voice_policy.py
   rubric: >
     Pure, no DB or sockets. A Discord-primary person receives with no recent activity; a
     web-primary person receives only inside the activity window; an unlinked account never

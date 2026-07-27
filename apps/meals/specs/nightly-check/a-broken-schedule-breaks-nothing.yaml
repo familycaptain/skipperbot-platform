@@ -12,6 +12,6 @@ implements:
 - apps/meals/hooks.py
 tests:
 - type: unit
-  path: tests/evolve/meals/test_dinner_schedule.py
+  path: apps/meals/tests/test_dinner_schedule.py
 links: {}
 notes: ''

@@ -11,6 +11,6 @@ implements:
 - apps/meals/handlers.py::handle_dinner_check
 tests:
 - type: unit
-  path: tests/evolve/meals/test_dinner_schedule.py
+  path: apps/meals/tests/test_dinner_schedule.py
 links: {}
 notes: ''

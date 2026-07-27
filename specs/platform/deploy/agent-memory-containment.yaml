@@ -22,7 +22,7 @@ implements:
   reboot + verification), placed after the swap section (folds #97).'
 tests:
 - type: unit
-  path: tests/evolve/deploy/test_agent_memory_containment.py
+  path: tests/platform/test_agent_memory_containment.py
   rubric: >
     Deterministic file-parse (yaml.safe_load docker-compose.yml, no container run): services.agent
     mem_limit == '${AGENT_MEM_LIMIT:-6g}' AND memswap_limit == the same (true RAM ceiling, env-overridable);

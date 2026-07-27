@@ -20,7 +20,7 @@ implements:
 - apps/automation/hooks.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_prompt_context_registry.py
+  path: tests/platform/test_prompt_context_registry.py
   rubric: 'Filtering + join: register voice+app=''automation'' provider; collect_prompt_context(''voice'',app_key=''automation'')
     == its raw output (''''.join, verbatim, no wrapper); (''voice'',app_key=''weather'') ==
     ''''; (''chat'') == '''' (surface+app excluded). A surface=''all'' app=None provider appears
@@ -28,14 +28,14 @@ tests:
     via ''''.join. A single provider returning '''' yields ''''. An UNKNOWN surface yields
     ''''. No providers -> ''''.'
 - type: unit
-  path: tests/evolve/platform/test_prompt_context_registry.py
+  path: tests/platform/test_prompt_context_registry.py
   rubric: 'Robustness: a provider that RAISES contributes '''' and collect_prompt_context
     still returns the other providers'' output (no exception); the failure log contains the
     provider identity but NOT its output/ctx. register_prompt_context twice with the same
     fn/app/surface is idempotent (no duplicate). reset() clears. list_prompt_context_providers()
     enumerates registered (app,surface,name).'
 - type: unit
-  path: tests/evolve/platform/test_prompt_context_registry.py
+  path: tests/platform/test_prompt_context_registry.py
   rubric: 'Automation migration parity incl. empty case: calling apps/automation/hooks.py
     register_hooks() (register_prompt_context spied; build_voice_alias_block stubbed) registers
     a voice+app=''automation'' provider; collect_prompt_context(''voice'',app_key=''automation'')
@@ -43,7 +43,7 @@ tests:
     template''s f"{extra_blocks}\n" reproduces both the populated block and the bare-newline
     empty case byte-for-byte); non-automation app_key -> ''''.'
 - type: unit
-  path: tests/evolve/platform/test_prompt_context_no_app_imports.py
+  path: tests/platform/test_prompt_context_no_app_imports.py
   rubric: 'Dependency-rule guard: ast.walk over app_platform/voice/prompting.py AND config.py
     asserting NO Import/ImportFrom node — module-level OR nested in any function body — references
     apps.* (the prompting.py apps.automation.devices import is gone). Walk MUST include function

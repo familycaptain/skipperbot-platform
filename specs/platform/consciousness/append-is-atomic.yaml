@@ -11,7 +11,7 @@ implements:
 - app_platform/consciousness.py::log_event
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: 'WriterContract: the append is one INSERT ... RETURNING, the writer never supplies the
     sequence value, and an unknown kind or empty content is rejected outright.'
 links: {}

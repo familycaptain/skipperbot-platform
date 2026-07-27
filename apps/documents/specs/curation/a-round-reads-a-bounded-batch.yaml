@@ -14,7 +14,7 @@ implements:
 - data_layer/memories.py::load_after_cursor
 tests:
 - type: unit
-  path: tests/evolve/platform/test_doc_observe_bounded_memories.py
+  path: apps/documents/tests/test_doc_observe_bounded_memories.py
   rubric: >
     Offline, database-free. The read behind a round is bounded and resumable: with no bookmark it takes
     the oldest window; with one it takes only what came after it, disambiguating items recorded in the
@@ -23,7 +23,7 @@ tests:
     vectors it does not need; and the bookmark and limit travel as query parameters rather than being
     pasted into the query text.
 - type: unit
-  path: tests/evolve/platform/test_doc_observe_catchup_counters.py
+  path: apps/documents/tests/test_doc_observe_catchup_counters.py
   rubric: >
     The round's own view of how far behind it is comes from counting, not from the size of the batch it
     just read: a bookmark far from the end reports the true remaining total, a first run reports the

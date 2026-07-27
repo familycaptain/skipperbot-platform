@@ -78,7 +78,7 @@ implements:
 - apps/weather/tests/test_weather_ui.py
 tests:
 - type: unit
-  path: ../../../tests/platform/test_location_service.py
+  path: tests/platform/test_location_service.py
   rubric: >
     Offline (mock all network). (1) resolve_location() with a cached default_location
     {lat,lon,display_name='London',region='England',country_name='United
@@ -105,13 +105,13 @@ tests:
     Texas, US") stores the Texas record; and the existing forms ("London"/"Chicago,
     US"/"Lyon, France"/"SW1A 1AA, UK") keep byte-for-byte URL params.
 - type: unit
-  path: ../../../tests/platform/test_location_layering.py
+  path: tests/platform/test_location_layering.py
   rubric: >
     ast.walk / import-closure check: import app_platform.location and assert NONE of its
     module-level imports reference apps.* (the service stands alone). Unchanged by the
     ev-47 amendment — still GREEN after the abbrev map + parser changes.
 - type: static
-  path: ../../../apps/weather/tests/test_weather_ui.py
+  path: apps/weather/tests/test_weather_ui.py
   rubric: >
     Interop lockstep for weather.current-conditions.location-input-comfortable-width:
     the placeholder literal is that test's <input> locator. When the placeholder is

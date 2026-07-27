@@ -13,7 +13,7 @@ implements:
 - apps/email/gmail_client.py::_execute_with_reauth
 tests:
 - type: unit
-  path: tests/evolve/email/test_gmail_service_cache_selfheal.py
+  path: apps/email/tests/test_gmail_service_cache_selfheal.py
   rubric: >
     With Google's client, credentials and the notification shim all stubbed and no real tokens:
     a refused call is retried exactly once against freshly re-established access and succeeds; a

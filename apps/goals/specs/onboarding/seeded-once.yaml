@@ -13,7 +13,7 @@ implements:
 - apps/goals/onboarding.py::ensure_onboarding
 tests:
 - type: unit
-  path: tests/evolve/goals/test_onboarding_agenda.py
+  path: apps/goals/tests/test_onboarding_agenda.py
   rubric: >
     Offline: drives the real seeder with an explicit app list and asserts the seeded shape — one
     goal carrying the ordered agenda before the per-app tours, each step present exactly once, and

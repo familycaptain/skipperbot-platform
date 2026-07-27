@@ -12,7 +12,7 @@ implements:
 - app_platform/context.py::TIMELINE_BOUNDARY
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: 'TimelineRendering.test_visibility_rule_is_coherence_not_privacy: the rule the turn is
     given is about self-contained replies, not about withholding.'
 links: {}

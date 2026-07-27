@@ -12,7 +12,7 @@ implements:
 - app_platform/summarizer.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: 'Phase4Subconscious.test_timeline_no_gap_invariant: the verbatim window starts where the
     summary stops, so no entry is both summarised and replayed, and none is lost between them.'
 links: {}

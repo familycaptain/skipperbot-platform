@@ -15,7 +15,7 @@ implements:
 - apps/goals/goal_work.py::handle_goal_work
 tests:
 - type: unit
-  path: tests/evolve/goals/test_worker_toolset.py
+  path: apps/goals/tests/test_worker_toolset.py
   rubric: >
     Asserts a session's default capabilities are the goal's own plus the core set, that requesting
     a category adds it for the rest of the session, and that the session is told what it has

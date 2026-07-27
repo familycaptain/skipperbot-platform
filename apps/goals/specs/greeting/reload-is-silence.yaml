@@ -14,7 +14,7 @@ implements:
 - apps/goals/handlers.py::_RECENT_GREETING_MINUTES
 tests:
 - type: unit
-  path: tests/evolve/platform/test_onboarding_live_greeting.py
+  path: apps/goals/tests/test_onboarding_live_greeting.py
   rubric: >
     Asserts the quiet-on-reconnect window is read from what Skipper last said to that person and
     is not narrowed to setup conversation only.

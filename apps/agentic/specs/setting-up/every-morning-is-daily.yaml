@@ -14,7 +14,7 @@ implements:
 - apps/agentic/tools.py::update_routine
 tests:
 - type: unit
-  path: tests/evolve/agentic/test_agentic_task.py
+  path: apps/agentic/tests/test_agentic_task.py
   rubric: >
     Offline, source-level: asserts weekly-with-all-seven-days collapses to a plain daily cadence and
     that the collapse is applied on both the create and the change path. Structural only — it inspects

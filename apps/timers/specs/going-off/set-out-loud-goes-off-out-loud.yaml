@@ -15,7 +15,7 @@ implements:
 - app_platform/voice/announce.py::announce_to_device
 tests:
 - type: unit
-  path: tests/evolve/voice/test_timer_voice_origin.py
+  path: apps/timers/tests/test_timer_voice_origin.py
   rubric: >
     Offline. A tool call carries where it came from, so a timer set through the speaker knows the
     room; the expiry speaks in that room independently of whether a person was identified, and the

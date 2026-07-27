@@ -13,7 +13,7 @@ implements:
 - chat_domain.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: 'EntityNoteCapture: recent entity-tagged messages to a person are offered to the turn,
     restricted to real item references.'
 links: {}

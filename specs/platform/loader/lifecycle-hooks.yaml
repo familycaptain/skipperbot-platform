@@ -20,7 +20,7 @@ implements:
 - apps/timers/hooks.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_lifecycle_registry.py
+  path: tests/platform/test_lifecycle_registry.py
   rubric: 'Registry mechanics (no real workers): register_background_task with a dummy zero-arg
     factory; start_background_tasks() returns a dict with one scheduled asyncio.Task per registration
     and logs the started names; calling start_background_tasks() a SECOND time is a no-op
@@ -30,21 +30,21 @@ tests:
     a sync AND an async fn; run_shutdown_hooks() invokes both and a raising hook is isolated.
     Duplicate task_id across different apps is logged+skipped. reset() clears state (isolation).'
 - type: unit
-  path: tests/evolve/platform/test_lifecycle_registry.py
+  path: tests/platform/test_lifecycle_registry.py
   rubric: 'App registration (workers referenced, not run; lifecycle spied/stubbed): apps/reminders/hooks.py
     register_hooks() registers a background task whose factory is start_reminder_scheduler
     AND a shutdown hook (request_shutdown); apps/jobs/hooks.py register_hooks() registers
     a background task for start_job_runner and NO shutdown hook; apps/timers/hooks.py register_hooks()
     registers a shutdown hook for shutdown_all_timers and NO background task.'
 - type: unit
-  path: tests/evolve/platform/test_agent_no_app_imports.py
+  path: tests/platform/test_agent_no_app_imports.py
   rubric: 'Dependency-rule guard: ast-parse agent.py and assert NO Import/ImportFrom node
     — at module level OR nested inside ANY function body — references apps.reminders, apps.jobs,
     or apps.timers. (The current violation at line 128 is function-local, so the walk must
     include function bodies.) Equivalent to scripts/evolve_dep_check.py finding no platform->app
     violation for these three.'
 - type: unit
-  path: tests/evolve/platform/test_agent_no_app_imports.py
+  path: tests/platform/test_agent_no_app_imports.py
   rubric: 'No double-start: ast-scan agent.py for asyncio.create_task(...) calls and assert
     none wrap start_reminder_scheduler or start_job_runner (those now start exactly once via
     the registry); the registry remains the single start path for the inverted workers.'

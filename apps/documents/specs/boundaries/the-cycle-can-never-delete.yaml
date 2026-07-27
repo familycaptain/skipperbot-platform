@@ -13,7 +13,7 @@ implements:
 - apps/documents/domain.py::_build_doc_slots
 tests:
 - type: unit
-  path: tests/evolve/platform/test_doc_think_lean_baseline.py
+  path: apps/documents/tests/test_doc_think_lean_baseline.py
   rubric: >
     Against the real ability registry: deleting a document, deleting a folder and forgetting a memory are
     all absent from the ability surface the curation cycle is built with, even though they belong to

@@ -12,7 +12,7 @@ implements:
 - app_platform/skills.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: 'Phase2Wiring.test_chores_skill_registered_and_flagged: the chores alarm is answered by
     a registered skill rather than by the job that raised it.'
 links: {}

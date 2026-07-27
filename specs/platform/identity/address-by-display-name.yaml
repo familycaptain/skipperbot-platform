@@ -21,7 +21,7 @@ implements:
 - apps/chores/handlers.py (per-kid message block)
 tests:
 - type: unit
-  path: tests/evolve/platform/test_address_by_display_name.py
+  path: tests/platform/test_address_by_display_name.py
   rubric: >
     Deterministic, DB-free (monkeypatch users.get_user): display_name_for('qa83v') -> 'Rodney'; blank/
     whitespace/missing display_name -> title-cased username; a missing user -> title-cased username;

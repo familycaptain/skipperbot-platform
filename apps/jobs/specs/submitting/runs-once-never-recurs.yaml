@@ -16,7 +16,7 @@ implements:
 - apps/jobs/migrations/003_drop_schedule_expr.sql
 tests:
 - type: unit
-  path: tests/evolve/jobs/test_no_self_schedule.py
+  path: apps/jobs/tests/test_no_self_schedule.py
   rubric: >
     Offline static gate: neither the submit path nor the create path accepts or stores a recurrence
     expression, the migration that drops the column is present, and the create tool's own

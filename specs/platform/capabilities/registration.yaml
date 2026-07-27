@@ -18,30 +18,30 @@ implements:
 - apps/lists/hooks.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_capability_registration.py
+  path: tests/platform/test_capability_registration.py
   rubric: 'Registry mechanics: register_capability(Capability(name=''demo'',...)) makes is_enabled(''demo'')
     resolve via the same env/settings/extra_check logic, appear in status()/boot_banner(),
     and be found by not_configured_message(''demo''); a capability registered AFTER module
     import is found (the dynamic-lookup fix). reset() clears (isolation). _all() = static
     then registered.'
 - type: unit
-  path: tests/evolve/platform/test_capability_registration.py
+  path: tests/platform/test_capability_registration.py
   rubric: 'Authoritative static set: register_capability with a name matching a STATIC platform
     cap (e.g. ''openai'') is REJECTED (logged+skipped) and leaves the static cap''s is_enabled
     and not_configured_message UNCHANGED; a duplicate registered name keeps the first; an
     idempotent same-cap re-register adds no duplicate row.'
 - type: unit
-  path: tests/evolve/platform/test_capability_registration.py
+  path: tests/platform/test_capability_registration.py
   rubric: 'extra_check fail-safe: a registered capability whose extra_check RAISES yields
     is_enabled()==False (not an exception) and status()/boot_banner() still render without
     error.'
 - type: unit
-  path: tests/evolve/platform/test_capability_registration.py
+  path: tests/platform/test_capability_registration.py
   rubric: 'Trello migration parity: calling apps/lists/hooks.py register_hooks() (register_capability
     spied) registers a ''trello'' Capability whose extra_check reflects apps.lists.trello_config.any_account_configured()
     (stub True/False -> is_enabled(''trello'') follows); identical behavior to the old _trello_configured.'
 - type: unit
-  path: tests/evolve/platform/test_capabilities_no_app_imports.py
+  path: tests/platform/test_capabilities_no_app_imports.py
   rubric: 'Dependency-rule guard: ast.walk over app_platform/capabilities.py asserting NO
     Import/ImportFrom node — module-level OR nested in ANY function body — references apps.*
     . (The old violation was a function-local import, so the walk MUST include function bodies

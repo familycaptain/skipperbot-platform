@@ -17,7 +17,7 @@ implements:
 - apps/chores/ui/ChoresApp.jsx::ManageKids
 tests:
 - type: unit
-  path: tests/evolve/chores/test_add_kid_dropdown.py
+  path: apps/chores/tests/test_add_kid_dropdown.py
   rubric: >
     The eligible list excludes accounts already in the rotation, labels and sorts by display
     name, is empty when every account is linked, and is not narrowed by people who have no

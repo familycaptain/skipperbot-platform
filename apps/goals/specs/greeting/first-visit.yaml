@@ -13,7 +13,7 @@ implements:
 - apps/goals/handlers.py::_GREETING_TRIGGER_FIRST
 tests:
 - type: unit
-  path: tests/evolve/platform/test_onboarding_live_greeting.py
+  path: apps/goals/tests/test_onboarding_live_greeting.py
   rubric: >
     Asserts three distinct arrival greetings exist for three distinct situations, that the
     greeting is produced in one place, and that a brand-new arrival is not greeted as a return.

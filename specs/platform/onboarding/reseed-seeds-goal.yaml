@@ -30,7 +30,7 @@ implements:
   also release_onboarding_greeting(); correct the docstring.'
 tests:
 - type: unit
-  path: tests/evolve/platform/test_reseed_onboarding.py
+  path: tests/platform/test_reseed_onboarding.py
   rubric: >
     Deterministic, DB-free (sys.modules-inject stubs for data_layer.users.get_primary_user,
     init_db._seed_onboarding, apps.goals.onboarding.ensure_onboarding + release_onboarding_greeting,

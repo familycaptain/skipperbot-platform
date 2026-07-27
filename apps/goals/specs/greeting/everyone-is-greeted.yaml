@@ -12,7 +12,7 @@ implements:
 - apps/goals/handlers.py::_greeting_turn
 tests:
 - type: unit
-  path: tests/evolve/platform/test_onboarding_live_greeting.py
+  path: apps/goals/tests/test_onboarding_live_greeting.py
   rubric: >
     Asserts the greeting is not gated on setup being in progress and that the browser no longer
     fabricates one of its own.

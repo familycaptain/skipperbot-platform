@@ -12,7 +12,7 @@ implements:
 - apps/bounties/migrations/003_seed_daily_digest.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: >
     ShadowHooksPresent::test_bypass_paths_speak_in_one_voice — the bounty digest reaches people
     through the one speak path under the bounties domain, rather than sending to a surface directly.

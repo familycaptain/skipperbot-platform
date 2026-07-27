@@ -14,7 +14,7 @@ implements:
 - apps/agentic/agentic.py::_SYSTEM
 tests:
 - type: unit
-  path: tests/evolve/agentic/test_agentic_task.py
+  path: apps/agentic/tests/test_agentic_task.py
   rubric: >
     Offline, source-level: asserts the run path wires the ordinary local tools and carries no refusal
     or held-back-messaging machinery of its own. Structural only — it evidences that no reduced tool

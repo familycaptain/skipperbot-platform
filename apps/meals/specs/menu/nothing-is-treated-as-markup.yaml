@@ -15,7 +15,7 @@ implements:
 - apps/meals/pages/menu.html::photoSrc
 tests:
 - type: unit
-  path: tests/evolve/meals/test_menu_export.py
+  path: apps/meals/tests/test_menu_export.py
 links: {}
 notes: >
   The page was once built by pasting values into HTML, which made a meal name an injection

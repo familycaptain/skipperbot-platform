@@ -15,7 +15,7 @@ implements:
 - apps/schedules/migrations/001_initial.sql
 tests:
 - type: unit
-  path: tests/evolve/meals/test_dinner_schedule.py
+  path: apps/meals/tests/test_dinner_schedule.py
   rubric: >
     Repeated and simulated-concurrent set-up of an app-owned check leaves exactly one schedule keyed
     by its stable name, and the engine's own write converges on the primary key rather than

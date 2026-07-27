@@ -13,6 +13,6 @@ implements:
 - apps/meals/migrations/002_dinner_log.sql
 tests:
 - type: unit
-  path: tests/evolve/meals/test_crud_tools.py
+  path: apps/meals/tests/test_crud_tools.py
 links: {}
 notes: ''

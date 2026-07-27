@@ -14,7 +14,7 @@ implements:
 - apps/goals/handlers.py::_greeting_turn
 tests:
 - type: unit
-  path: tests/evolve/platform/test_onboarding_live_greeting.py
+  path: apps/goals/tests/test_onboarding_live_greeting.py
   rubric: >
     Asserts the arrival turn is structurally unable to navigate — it is offered no tools at all —
     as well as being told not to in words.

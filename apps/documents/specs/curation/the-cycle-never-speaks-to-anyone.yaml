@@ -12,7 +12,7 @@ implements:
 - apps/documents/domain.py::document_domain_handler
 tests:
 - type: unit
-  path: tests/evolve/platform/test_doc_think_lean_baseline.py
+  path: apps/documents/tests/test_doc_think_lean_baseline.py
   rubric: >
     Against the real ability registry: the outbound-messaging abilities (announcing to the household and
     sending a notification) are absent from the surface the curation cycle is given, so no round can

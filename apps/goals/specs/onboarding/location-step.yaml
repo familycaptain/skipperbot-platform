@@ -13,7 +13,7 @@ implements:
 - apps/goals/onboarding.py::ONBOARDING_AGENDA
 tests:
 - type: unit
-  path: tests/evolve/goals/test_onboarding_location_copy.py
+  path: apps/goals/tests/test_onboarding_location_copy.py
   rubric: >
     Offline source assertions on the real location topic copy: it asks town/region/country,
     explicitly not a street or mailing address, is country-neutral, accepts any granularity

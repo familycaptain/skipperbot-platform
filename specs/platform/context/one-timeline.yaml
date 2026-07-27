@@ -14,7 +14,7 @@ implements:
 - chat.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: 'TimelineRendering.test_chronology_is_array_order: the stream''s order is the order things
     happened, across speakers.'
 links: {}

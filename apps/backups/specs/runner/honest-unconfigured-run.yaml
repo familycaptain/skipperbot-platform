@@ -15,7 +15,7 @@ implements:
 - apps/backups/runner.py::run_backup
 tests:
 - type: unit
-  path: tests/evolve/platform/test_backups_honest_status.py
+  path: apps/backups/tests/test_backups_honest_status.py
   rubric: >
     A run reads as successful only when at least one destination stored the copies; with a
     destination refusing and none storing, it reads as failed and the reason names the destination;

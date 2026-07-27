@@ -20,7 +20,7 @@ implements:
 - specs/ONBOARDING.md
 tests:
 - type: unit
-  path: ../../../tests/evolve/goals/test_onboarding_agenda.py
+  path: apps/goals/tests/test_onboarding_agenda.py
   rubric: >
     Offline/stdlib unittest (stubbed store/apps_info/primary-user/config, no DB). Asserts:
     agenda projects exist for household, intent, location, Discord, integrations; the seed

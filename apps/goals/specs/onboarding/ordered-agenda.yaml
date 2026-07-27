@@ -14,7 +14,7 @@ implements:
 - apps/goals/onboarding.py::ensure_onboarding
 tests:
 - type: unit
-  path: tests/evolve/goals/test_onboarding_agenda.py
+  path: apps/goals/tests/test_onboarding_agenda.py
   rubric: >
     Asserts the seeded topic order household -> intent -> location -> discord -> integrations,
     that every topic carries its own guidance and a real destination, and that there is no catch-

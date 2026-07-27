@@ -15,7 +15,7 @@ implements:
 - apps/goals/onboarding.py::ONBOARDING_AGENDA
 tests:
 - type: unit
-  path: tests/evolve/goals/test_onboarding_household_depth.py
+  path: apps/goals/tests/test_onboarding_household_depth.py
   rubric: >
     Offline source assertions on the real household topic copy: relationships are probed and
     mapped internally, the category words are never surfaced as a question, no age is asked for,

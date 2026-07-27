@@ -13,7 +13,7 @@ implements:
 - app_platform/speak.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_voice_policy.py
+  path: tests/platform/test_voice_policy.py
   rubric: Discord-primary always receives; web-primary receives only inside the activity window;
     an unlinked account never does; an unknown preference behaves as web.
 links: {}

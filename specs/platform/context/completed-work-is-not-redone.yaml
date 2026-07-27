@@ -11,7 +11,7 @@ implements:
 - chat.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: 'TimelineRendering.test_write_actions_render_completed_marker: a turn''s completed write
     actions are re-rendered as already-done when that turn is read back.'
 links: {}

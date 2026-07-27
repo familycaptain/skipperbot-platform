@@ -15,7 +15,7 @@ implements:
 - app_platform/context.py::build_chat_timeline
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: 'TimeAwareness: every stream line is stamped, the turn is given a current-time anchor,
     and the framing teaches future-plan and unanswered-question restraint.'
 links: {}

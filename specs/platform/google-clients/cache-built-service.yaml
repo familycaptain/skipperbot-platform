@@ -36,7 +36,7 @@ implements:
 - 'DELETE root gmail_client.py and email_runner.py (confirmed dead island; zero references re-checked at build).'
 tests:
 - type: unit
-  path: tests/evolve/platform/test_google_client_cache.py
+  path: tests/platform/test_google_client_cache.py
   rubric: >
     Deterministic, DB-free (monkeypatch app_platform.settings.get, the config seam, Credentials
     .from_service_account_info, and googleapiclient build to a call-counter): (a) gdrive _build_service

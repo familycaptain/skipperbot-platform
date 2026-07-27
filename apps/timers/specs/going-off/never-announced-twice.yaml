@@ -12,7 +12,7 @@ implements:
 - apps/timers/scheduler.py::_run_timer
 tests:
 - type: unit
-  path: tests/evolve/voice/test_timer_voice_origin.py
+  path: apps/timers/tests/test_timer_voice_origin.py
   rubric: >
     Offline. The expiry's spoken announcement and the copy sent to the setter's other surfaces are
     separate routes, and the surfaces asked for on the second one exclude speech — so a voice-set

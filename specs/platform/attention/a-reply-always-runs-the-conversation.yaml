@@ -13,7 +13,7 @@ implements:
 - chat.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: 'Phase2Wiring.test_ws_routes_through_attention_unconditionally and test_chat_attention_mode_no_double_log:
     every inbound message runs the chat turn through attention, and the turn does not re-record the
     message it was given.'

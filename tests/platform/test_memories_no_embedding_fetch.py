@@ -27,7 +27,7 @@ if "psycopg2" not in sys.modules:
     sys.modules["psycopg2.extras"] = extras
     sys.modules["psycopg2.pool"] = pool
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
 
 def _read(rel: str) -> str:

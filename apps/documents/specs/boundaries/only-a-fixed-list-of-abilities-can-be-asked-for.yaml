@@ -16,7 +16,7 @@ implements:
 - tool_slots.py::ToolSlots
 tests:
 - type: unit
-  path: tests/evolve/platform/test_doc_think_category_allowlist.py
+  path: apps/documents/tests/test_doc_think_category_allowlist.py
   rubric: >
     Against the real ability registry: an allowed reviewed kind loads; sensitive kinds outside the list
     are denied and load nothing; an unknown name is unreachable; the list is demonstrably an allowlist

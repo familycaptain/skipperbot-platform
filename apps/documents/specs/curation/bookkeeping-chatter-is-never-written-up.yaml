@@ -15,7 +15,7 @@ implements:
 - prompts/DOCUMENT_THINK.md
 tests:
 - type: unit
-  path: tests/evolve/platform/test_doc_observe_catchup_counters.py
+  path: apps/documents/tests/test_doc_observe_catchup_counters.py
   rubric: >
     A window containing nothing but bookkeeping chatter still advances the bookmark to the last item
     examined, so filtered-out items are never re-scanned on subsequent rounds.

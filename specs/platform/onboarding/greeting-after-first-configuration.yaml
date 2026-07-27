@@ -19,7 +19,7 @@ implements:
 - app_platform/attention.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_prompt_fresh_install_greeting.py
+  path: tests/platform/test_prompt_fresh_install_greeting.py
   rubric: >
     A first successful credential save on an install with a primary user raises exactly one greeting;
     a save with no primary user, a failed save, or a save when credentials were already present raises

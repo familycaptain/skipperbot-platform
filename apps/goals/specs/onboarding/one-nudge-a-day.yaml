@@ -16,13 +16,13 @@ implements:
 - apps/goals/pm_domain.py::pm_skill_runner
 tests:
 - type: unit
-  path: tests/evolve/platform/test_step_nudge_cadence.py
+  path: apps/goals/tests/test_step_nudge_cadence.py
   rubric: >
     Asserts setup-topic nudges get the same daily, held-until-reply pacing as the app tours, that
     the hold catches a nudge sent without naming its topic, and that both holds share one query
     and fail open.
 - type: unit
-  path: tests/evolve/platform/test_tour_guards.py
+  path: apps/goals/tests/test_tour_guards.py
   rubric: >
     Asserts one tour nudge per day across all apps, released only by a genuine reply.
 links: {}

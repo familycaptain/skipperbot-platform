@@ -15,7 +15,7 @@ implements:
 - apps/email/data.py::update_log_entry_match
 tests:
 - type: unit
-  path: tests/evolve/email/test_reeval_on_rules_change.py
+  path: apps/email/tests/test_reeval_on_rules_change.py
   rubric: >
     Driving the catch-up path with the data layer stubbed: unchanged rules read no history and
     make no calls to Google; a rule change drains the backlog exactly once and then goes quiet;
@@ -23,7 +23,7 @@ tests:
     over several passes, newest first, over the set frozen when catch-up began, and terminates;
     a rule changed mid-catch-up gets its own later catch-up.
 - type: unit
-  path: tests/evolve/email/test_reeval_foundation.py
+  path: apps/email/tests/test_reeval_foundation.py
   rubric: >
     Against the real email schema: a newly created rule is immediately eligible to trigger a
     catch-up; the trigger reads the latest change across a mailbox's switched-on rules; and the

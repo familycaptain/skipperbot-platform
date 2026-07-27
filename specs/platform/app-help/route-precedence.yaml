@@ -14,7 +14,7 @@ implements:
 - agent.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_app_help_route.py
+  path: tests/platform/test_app_help_route.py
   rubric: 'Deterministic/offline AST source-order analysis of agent.py (no app import, no
     HTTP, no DB — same approach as test_agent_no_app_imports.py; a runtime TestClient is not
     viable offline here because the global auth middleware + the app-loading lifespan would

@@ -13,7 +13,7 @@ implements:
 - tool_slots.py::ToolSlots
 tests:
 - type: unit
-  path: tests/evolve/platform/test_doc_think_lean_baseline.py
+  path: apps/documents/tests/test_doc_think_lean_baseline.py
   rubric: >
     Each of the cycle's starting ability categories resolves individually to a non-empty set against the
     real registry — checked one at a time, so a mis-keyed or empty category cannot be masked by the

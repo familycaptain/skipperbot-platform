@@ -18,7 +18,7 @@ implements:
 - apps/todo/tools.py::get_backlog_list
 tests:
 - type: unit
-  path: tests/evolve/todo/test_backlog_bootstrap.py
+  path: apps/todo/tests/test_backlog_bootstrap.py
   rubric: >
     Against the real per-user settings store with the list create/read injected as counting fakes and a
     throwaway person: two consecutive claims create the backlog EXACTLY once and share the same list; a

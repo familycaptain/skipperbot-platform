@@ -13,7 +13,7 @@ implements:
 - app_platform/voice/chatlog.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: 'WriterContract.test_pre_attended_forces_not_owed_and_records_responder: an entry marked
     as already answered by a live responder is never left owed, and names the responder.'
 links: {}

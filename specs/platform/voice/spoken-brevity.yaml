@@ -16,7 +16,7 @@ implements:
 - app_platform/voice/prompting.py
 tests:
 - type: unit
-  path: tests/evolve/platform/test_voice_brevity.py
+  path: tests/platform/test_voice_brevity.py
   rubric: 'Deterministic/offline: (1) build_voice_brevity_rules() returns a non-empty block
     whose text conveys (case-insensitive, robust intent-bearing substrings — NOT exact phrases)
     lead-with-the-answer, short/sentence, do-not-omit/offer-more, voice/aloud, and the safety

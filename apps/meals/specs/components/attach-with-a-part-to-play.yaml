@@ -12,6 +12,6 @@ implements:
 - apps/meals/data.py::link_component_to_meal
 tests:
 - type: unit
-  path: tests/evolve/meals/test_crud_tools.py
+  path: apps/meals/tests/test_crud_tools.py
 links: {}
 notes: ''

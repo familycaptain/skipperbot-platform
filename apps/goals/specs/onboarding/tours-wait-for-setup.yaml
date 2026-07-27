@@ -15,7 +15,7 @@ implements:
 - apps/goals/pm_domain.py::pm_skill_runner
 tests:
 - type: unit
-  path: tests/evolve/platform/test_tour_guards.py
+  path: apps/goals/tests/test_tour_guards.py
   rubric: >
     Asserts the ordering guard holds at both the point where Skipper picks what to raise and the
     point where it actually sends, so a tour nudge is refused outright while a setup topic is open

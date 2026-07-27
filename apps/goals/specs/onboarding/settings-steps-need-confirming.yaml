@@ -14,7 +14,7 @@ implements:
 - apps/goals/onboarding.py::ONBOARDING_AGENDA
 tests:
 - type: unit
-  path: tests/evolve/goals/test_onboarding_completion_integrity.py
+  path: apps/goals/tests/test_onboarding_completion_integrity.py
   rubric: >
     Offline: parses the real agenda and asserts every settings-only topic carries a completion
     criterion requiring the person's confirmation or explicit decline, forbids claiming the action

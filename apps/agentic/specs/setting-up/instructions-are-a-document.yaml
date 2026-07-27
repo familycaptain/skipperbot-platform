@@ -14,7 +14,7 @@ implements:
 - apps/agentic/tools.py::show_routine
 tests:
 - type: unit
-  path: tests/evolve/agentic/test_agentic_task.py
+  path: apps/agentic/tests/test_agentic_task.py
   rubric: >
     Offline, source-level: asserts the create path writes the prompt to a document and carries that
     document's id with the routine, and that the read/rewrite tools go through the same document.

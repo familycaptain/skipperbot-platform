@@ -13,7 +13,7 @@ implements:
 - app_platform/consciousness.py::lane_for
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: 'LaneDerivation: a message serialises on the non-Skipper party''s conversation, an event
     about a person on that person''s, and everything else on its area.'
 links: {}

@@ -11,7 +11,7 @@ implements:
 - app_platform/consciousness.py::claim_unattended
 tests:
 - type: unit
-  path: tests/evolve/platform/test_consciousness_log.py
+  path: tests/platform/test_consciousness_log.py
   rubric: 'Phase2Wiring.test_attention_module_contract: the attention loop consumes owed rows through
     the atomic claim rather than a read-then-mark.'
 links: {}

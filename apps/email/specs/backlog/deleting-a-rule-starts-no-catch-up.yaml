@@ -14,7 +14,7 @@ implements:
 - apps/email/data.py::get_reeval_trigger
 tests:
 - type: unit
-  path: tests/evolve/email/test_reeval_on_rules_change.py
+  path: apps/email/tests/test_reeval_on_rules_change.py
   rubric: >
     Driving the catch-up path with the data layer stubbed: unchanged rules read no history and
     make no calls to Google; a rule change drains the backlog exactly once and then goes quiet;

@@ -12,7 +12,7 @@ implements:
 - apps/email/runner.py::_reprocess_unmatched
 tests:
 - type: unit
-  path: tests/evolve/email/test_reeval_foundation.py
+  path: apps/email/tests/test_reeval_foundation.py
   rubric: >
     Against the real email schema: a newly created rule is immediately eligible to trigger a
     catch-up; the trigger reads the latest change across a mailbox's switched-on rules; and the

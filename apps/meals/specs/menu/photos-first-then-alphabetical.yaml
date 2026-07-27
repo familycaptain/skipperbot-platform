@@ -10,6 +10,6 @@ implements:
 - apps/meals/pages/menu.html::renderPages
 tests:
 - type: unit
-  path: tests/evolve/meals/test_menu_export.py
+  path: apps/meals/tests/test_menu_export.py
 links: {}
 notes: ''
