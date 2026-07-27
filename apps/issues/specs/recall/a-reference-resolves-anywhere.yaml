@@ -1,0 +1,19 @@
+kind: specification
+id: issues.recall.a-reference-resolves-anywhere
+title: A report's reference resolves from anywhere
+state: live
+autonomy: gated
+behavior: >
+  Every report has a short reference of its own, shown on the report and copyable from it. Pasting or
+  typing that reference into Skipper's general search finds the report and opens it, and Skipper
+  recognises it as an issue when it appears in conversation — so a reference quoted between household
+  members always leads back to the same report. A reference that matches nothing yields no result
+  rather than a wrong one.
+implements:
+- apps/issues/manifest.yaml
+- apps/finder/ui/FinderApp.jsx
+- config.py
+- apps/issues/ui/IssuesApp.jsx::DetailView
+tests: []
+links: {}
+notes: ''

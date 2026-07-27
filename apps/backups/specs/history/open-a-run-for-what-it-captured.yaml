@@ -1,0 +1,18 @@
+kind: specification
+id: backups.history.open-a-run-for-what-it-captured
+title: Opening a run shows what it captured and where it went
+state: live
+autonomy: gated
+behavior: >
+  Opening a successful run shows how much of the household's data it captured — the largest
+  collections and how many records each held — plus every destination the copies were written to
+  and the run's own reference. Opening a failed run shows the whole recorded reason, wrapped rather
+  than cut off, instead of the one-line summary in the list.
+implements:
+- apps/backups/ui/BackupsApp.jsx
+- apps/backups/runner.py::_get_table_counts
+tests: []
+links: {}
+notes: >
+  Record counts are the only evidence in the product that a backup holds real data rather than an
+  empty file of the right name.

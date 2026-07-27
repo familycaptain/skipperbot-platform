@@ -1,0 +1,17 @@
+kind: specification
+id: backups.destinations.switched-on-but-incomplete
+title: Switched on but half-configured counts as no destination
+state: live
+autonomy: gated
+behavior: >
+  A destination that is switched on but missing what it needs — no path given, no credentials, no
+  account to write as — is treated as not configured: it is passed over rather than crashing the
+  run, and the app reports the household as having no destination configured. So the switch alone
+  never makes anyone believe their data is being stored somewhere.
+implements:
+- apps/backups/runner.py::_copy_to_filesystem
+- apps/backups/gdrive.py::_build_service
+- agent.py::api_backup_config
+tests: []
+links: {}
+notes: ''

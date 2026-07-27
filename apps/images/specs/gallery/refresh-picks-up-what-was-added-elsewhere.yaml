@@ -1,0 +1,15 @@
+kind: specification
+id: images.gallery.refresh-picks-up-what-was-added-elsewhere
+title: Refresh brings in pictures added elsewhere
+state: live
+autonomy: gated
+behavior: >
+  The gallery reads the library when it opens and again each time the refresh control is used, so a
+  photo just attached to a recipe or an issue appears without closing and reopening the app. It does
+  not update by itself while left open, and a failed read leaves the grid as it was rather than
+  emptying it.
+implements:
+- apps/images/ui/ImagesApp.jsx
+tests: []
+links: {}
+notes: ''

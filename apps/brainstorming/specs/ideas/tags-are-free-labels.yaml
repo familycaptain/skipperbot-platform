@@ -1,0 +1,15 @@
+kind: specification
+id: brainstorming.ideas.tags-are-free-labels
+title: Tags are free labels, kept lower case
+state: live
+autonomy: gated
+behavior: >
+  Any word can be added to an idea as a tag, and the app stores what was typed in lower case so
+  the same word entered two ways stays one tag. A tag is removed with one click and the rest are
+  untouched. Tags are only ever labels — nothing is inferred from them.
+implements:
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::handleAddTag
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::handleRemoveTag
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: jobs.control.setting-work-aside
+title: Setting waiting work aside takes it out of the queue for good
+state: live
+autonomy: gated
+behavior: >
+  Changing waiting work's state to anything other than waiting takes it out of the queue and it is no
+  longer picked up. Nothing puts it back: no state, including active, returns it to the queue, so
+  work "paused" this way stays permanently unrun and having it happen means submitting it again.
+implements:
+- apps/jobs/store.py::update_job
+- apps/jobs/data.py::claim_queued_jobs
+tests: []
+links: {}
+notes: >
+  Recorded as it behaves today rather than as a promise: the app's own guidance describes pause and
+  resume, and only the pause half happens.

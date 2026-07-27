@@ -1,0 +1,13 @@
+kind: specification
+id: jobs.progress.logs-never-break-the-work
+title: Capturing a log never breaks the work
+state: live
+autonomy: gated
+behavior: >
+  If a log line cannot be stored, the work carries on unaffected. Losing a line of diagnostic output
+  is accepted; failing a backup because its log could not be written is not.
+implements:
+- apps/jobs/dispatcher.py::JobLogHandler.emit
+tests: []
+links: {}
+notes: ''

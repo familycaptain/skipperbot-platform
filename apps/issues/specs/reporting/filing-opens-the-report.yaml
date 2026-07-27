@@ -1,0 +1,17 @@
+kind: specification
+id: issues.reporting.filing-opens-the-report
+title: Filing lands you on the report you just filed
+state: live
+autonomy: gated
+behavior: >
+  A successful filing goes straight to that report's own page, showing it as stored with its
+  reference and attachments — confirmation that it was received, and a chance to add what was
+  forgotten. If filing is refused the reason is shown and the form is left as it was, with the
+  description and any attachments intact.
+implements:
+- apps/issues/ui/IssuesApp.jsx::NewIssueForm
+- apps/issues/ui/IssuesApp.jsx::IssuesApp
+- apps/issues/routes.py::api_create_issue
+tests: []
+links: {}
+notes: ''

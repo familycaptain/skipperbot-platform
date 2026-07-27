@@ -1,0 +1,15 @@
+kind: specification
+id: images.gallery.delete-asks-first
+title: Deleting a picture is confirmed first
+state: live
+autonomy: gated
+behavior: >
+  Deleting from a tile asks for confirmation before anything happens; dismissing the prompt changes
+  nothing. On confirmation the tile leaves the grid immediately, and the deletion is permanent —
+  there is no undo, no trash, and no restriction to the person who added the picture.
+implements:
+- apps/images/ui/ImagesApp.jsx
+- agent.py::api_delete_image
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.browsing.ask-skipper-about-one-idea
+title: Ask Skipper about one idea
+state: live
+autonomy: gated
+behavior: >
+  Asked about a particular idea, Skipper reports its status, priority, tags and summary along with
+  every part it holds — each part's kind, its name, and the opening of its text — so the shape of
+  the thinking is visible without opening the app. An idea that does not exist, or one that was
+  deleted, gets a plain "not found" rather than an empty description.
+implements:
+- tools/brainstorming_tool.py::get_idea
+- agent.py::api_get_idea
+tests: []
+links: {}
+notes: ''

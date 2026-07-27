@@ -1,0 +1,21 @@
+kind: specification
+id: weather.location.no-home-location-set
+title: "With no home location set, say where to set one"
+state: live
+autonomy: gated
+behavior: >
+  When no home location has been set and the request names no place, the answer is a plain
+  sentence saying no location is configured, where to set it, and what a location may look like.
+  No weather is guessed from an IP address or a default city, no coordinates are invented, and
+  nothing errors out.
+implements:
+- apps/weather/tools.py::_resolve_place
+- apps/weather/data.py::_resolve
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_tools.py
+  rubric: >
+    Offline. An unconfigured location record makes the current-weather answer point at Settings
+    rather than returning weather or raising.
+links: {}
+notes: ''

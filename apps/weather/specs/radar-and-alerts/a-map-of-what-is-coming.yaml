@@ -1,0 +1,15 @@
+kind: specification
+id: weather.radar-and-alerts.a-map-of-what-is-coming
+title: "The Radar tab maps what is heading this way"
+state: live
+autonomy: gated
+behavior: >
+  The Radar tab shows an interactive map centred on the place currently shown, with a marker on
+  it, a live precipitation overlay, and any active severe-weather areas drawn on top. The two
+  overlays can each be turned off independently, and the map can be panned and zoomed.
+implements:
+- apps/weather/ui/WeatherMap.jsx
+- apps/weather/routes.py::api_alerts
+tests: []
+links: {}
+notes: ''

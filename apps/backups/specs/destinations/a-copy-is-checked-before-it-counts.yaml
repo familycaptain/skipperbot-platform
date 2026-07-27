@@ -1,0 +1,17 @@
+kind: specification
+id: backups.destinations.a-copy-is-checked-before-it-counts
+title: A copy is checked before it is counted as stored
+state: live
+autonomy: gated
+behavior: >
+  Each file written to a filesystem destination is checked against its source before that
+  destination counts as having stored it, so a copy truncated by a full disk or a dropped network
+  share is reported as a failure rather than counted as a backup. A destination that fails this
+  check is recorded as failed with the file it failed on named.
+implements:
+- apps/backups/runner.py::_copy_to_filesystem
+tests: []
+links: {}
+notes: >
+  A short write onto a network share is the most common way a backup that reports success turns out
+  to be unrestorable.

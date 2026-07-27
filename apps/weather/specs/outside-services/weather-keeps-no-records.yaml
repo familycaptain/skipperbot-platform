@@ -1,0 +1,14 @@
+kind: specification
+id: weather.outside-services.weather-keeps-no-records
+title: "Weather keeps no records"
+state: live
+autonomy: gated
+behavior: >
+  The app stores nothing: no weather history, no record of what anyone searched for, no per-
+  person preferences, and no tables of its own. There is nothing to read back, export, or
+  delete, and removing the app leaves no weather data behind.
+implements:
+- apps/weather/manifest.yaml::entity_types
+tests: []
+links: {}
+notes: ''

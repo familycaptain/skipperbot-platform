@@ -1,0 +1,15 @@
+kind: specification
+id: weather.outside-services.no-account-and-no-key
+title: "Weather works with no account and no key"
+state: live
+autonomy: gated
+behavior: >
+  Weather needs no signup, no API key, and no paid subscription: a fresh install answers weather
+  questions as soon as a home location is set. No part of the app ever asks the operator to go
+  and obtain a credential.
+implements:
+- apps/weather/manifest.yaml::platform_deps
+- apps/weather/tools.py::_fetch_json
+tests: []
+links: {}
+notes: ''

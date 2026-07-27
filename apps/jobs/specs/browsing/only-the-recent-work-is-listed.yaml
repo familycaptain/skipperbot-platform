@@ -1,0 +1,18 @@
+kind: specification
+id: jobs.browsing.only-the-recent-work-is-listed
+title: The list shows recent work only
+state: live
+autonomy: gated
+behavior: >
+  The app shows the most recent hundred jobs; older work is still recorded and still answerable by
+  identifier, but it is not reachable by scrolling the list, and there is no way to page further back
+  from the app. Asking for what is currently running is never capped — every running job is listed,
+  however many there are.
+implements:
+- agent.py::api_list_jobs
+- apps/jobs/data.py::list_jobs
+- apps/jobs/data.py::list_running
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: ''

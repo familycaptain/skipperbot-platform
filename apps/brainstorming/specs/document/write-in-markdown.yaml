@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.document.write-in-markdown
+title: Write in markdown, and it stays as typed
+state: live
+autonomy: gated
+behavior: >
+  The document is written as plain markdown in an editor that highlights headings, emphasis,
+  lists, quotes, links and code as they are typed, wraps long lines rather than scrolling
+  sideways, and offers find-within-the-document. Nothing is auto-formatted, auto-corrected or
+  restructured: what comes out is what was typed.
+implements:
+- web/src/components/MarkdownEditor.jsx
+- apps/brainstorming/ui/BrainstormDetailApp.jsx
+tests: []
+links: {}
+notes: ''

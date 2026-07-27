@@ -1,0 +1,21 @@
+kind: specification
+id: weather.freshness.each-question-and-place-is-held-apart
+title: "One place's answer is never served as another's"
+state: live
+autonomy: gated
+behavior: >
+  Answers held for reuse are kept apart per place and per kind of question, so asking about a
+  different city never returns the previous city's weather and an hourly answer never stands in
+  for a daily one. Two requests that differ only in how much of the same fetched data is shown
+  share one held answer, which is why asking for six hours right after twelve is also instant.
+implements:
+- apps/weather/cache.py::cached_fetch
+- apps/weather/tools.py::_current_weather_url
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_cache.py
+  rubric: >
+    Offline. Two distinct lookups hold separate values and never cross; the entry the background
+    refresh warms for current conditions is the same one the tool reads.
+links: {}
+notes: ''

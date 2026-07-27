@@ -1,0 +1,18 @@
+kind: specification
+id: issues.triage.a-report-that-is-not-there
+title: A reference that matches no report
+state: live
+autonomy: gated
+behavior: >
+  Asking to read, change or chase a report that does not exist answers with a plain error naming the
+  reference, and changes nothing — no empty report is created to hang the request on, and no alert
+  goes out. The person is shown that error rather than a blank screen or a silent no-op.
+implements:
+- apps/issues/routes.py::api_get_issue
+- apps/issues/routes.py::api_update_issue
+- apps/issues/routes.py::api_nudge_issue_reporter
+- apps/issues/store.py::update_issue
+- apps/issues/store.py::nudge_reporter
+tests: []
+links: {}
+notes: ''

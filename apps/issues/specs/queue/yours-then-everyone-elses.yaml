@@ -1,0 +1,15 @@
+kind: specification
+id: issues.queue.yours-then-everyone-elses
+title: Your own reports, then everyone else's
+state: live
+autonomy: gated
+behavior: >
+  Below anything awaiting your validation, your own unfinished reports are grouped together and
+  labelled as yours, and the rest of the household's follow under their own heading — so a person
+  checking on what they reported does not have to pick their reports out of everyone's. When you have
+  nothing outstanding the split disappears and the list is simply all reports.
+implements:
+- apps/issues/ui/IssuesApp.jsx::ListView
+tests: []
+links: {}
+notes: ''

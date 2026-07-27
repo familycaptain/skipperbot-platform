@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.outcomes.failed-work-says-why
+title: Failed work says why
+state: live
+autonomy: gated
+behavior: >
+  Work that raises an error is recorded as failed with the error and the time it stopped, and the
+  Jobs app shows that error prominently on the job rather than leaving a bare "failed". A failure
+  never takes the queue or the server with it: the next piece of work is picked up as usual.
+implements:
+- apps/jobs/dispatcher.py::_execute_job
+- apps/jobs/data.py::fail_job
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: ''

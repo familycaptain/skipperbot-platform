@@ -1,0 +1,17 @@
+kind: specification
+id: brainstorming.ideas.creator-is-recorded
+title: The person who captured it is recorded
+state: live
+autonomy: gated
+behavior: >
+  An idea records who captured it, taken from the signed-in identity of whoever made the request
+  and never from what the browser claimed. The record is kept on the idea but is not shown
+  anywhere in the app and does not restrict who may open or change it.
+implements:
+- agent.py::api_create_idea
+- agent.py::_actor_name
+tests: []
+links: {}
+notes: >
+  Attribution here is a record, not a boundary: every household member can see and edit every idea
+  (see keeping.ideas-are-shared).

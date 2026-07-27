@@ -1,0 +1,14 @@
+kind: specification
+id: issues.alerts.no-alert-for-your-own-change
+title: Nobody is notified of their own change
+state: live
+autonomy: gated
+behavior: >
+  Someone who closes or advances their own report is not sent a message about it — they were the one
+  who did it. The same applies to a report reattributed to the person making the change. Every alert
+  this app raises is therefore something the recipient did not already know.
+implements:
+- apps/issues/store.py::update_issue
+tests: []
+links: {}
+notes: ''

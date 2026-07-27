@@ -1,0 +1,21 @@
+kind: specification
+id: weather.freshness.asking-twice-is-instant
+title: "Asking the same thing twice comes back instantly"
+state: live
+autonomy: gated
+behavior: >
+  A repeat of the same weather question about the same place within the refresh window is
+  answered from the answer already held, with no new call to the weather service. A second
+  person asking a minute later gets an immediate reply, and the household is not charged a
+  request against a free public service for it.
+implements:
+- apps/weather/cache.py::cached_fetch
+- apps/weather/tools.py::_fetch_current
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_cache.py
+  rubric: >
+    Offline with an injected clock: a second read inside the window returns the same value and the
+    fetch ran exactly once; past the window it fetches again.
+links: {}
+notes: ''

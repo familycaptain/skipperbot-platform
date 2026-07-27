@@ -1,0 +1,15 @@
+kind: specification
+id: images.attachments.one-picture-many-records
+title: One picture, many records, one copy
+state: live
+autonomy: gated
+behavior: >
+  A picture is stored once and may be shown by any number of records in any number of apps; each
+  record holds its own connection to it, and attaching an already-stored picture somewhere else
+  copies nothing and uses no more space. Renaming it in the gallery renames it everywhere it appears.
+implements:
+- image_link_registry.py::link_image_to_entity
+- image_link_registry.py::register_image_link_handler
+tests: []
+links: {}
+notes: ''

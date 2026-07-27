@@ -1,0 +1,18 @@
+kind: specification
+id: backups.destinations.cloud-storage-needs-a-shared-folder
+title: Cloud storage needs a folder shared with it first
+state: live
+autonomy: gated
+behavior: >
+  Backups only write into a folder the household has already created and shared with the account
+  Skipper uses, and never create that folder themselves. If it cannot be found, the destination
+  fails with that specific reason — the folder was not found — rather than a generic error, because
+  the fix is a sharing change the household has to make.
+implements:
+- apps/backups/gdrive.py::upload_to_gdrive
+- apps/backups/gdrive.py::_find_folder
+tests: []
+links: {}
+notes: >
+  Requiring the household to create and share the folder keeps Skipper from being able to write
+  anywhere in their storage.

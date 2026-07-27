@@ -1,0 +1,17 @@
+kind: specification
+id: jobs.submitting.who-asked-and-who-hears
+title: Whoever asked is who gets told
+state: live
+autonomy: gated
+behavior: >
+  Work records who asked for it, and by default that is who is told how it turned out. A different
+  recipient can be named when the work is submitted, and names are matched without regard to case or
+  surrounding spaces. Work submitted by the system on the household's behalf rather than by a person
+  records the system as its requester.
+implements:
+- apps/jobs/dispatcher.py::submit_job
+- apps/jobs/store.py::create_job
+- apps/jobs/data.py::create_job
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: backups.history.newest-run-first
+title: The most recent attempt is the first thing you see
+state: live
+autonomy: gated
+behavior: >
+  Every attempt appears in the history newest first, each showing its date, the time it started,
+  its outcome, and how long it took. Outcomes are distinguished from each other in plain words — it
+  succeeded, it failed, it was skipped, it is still going — so "did last night's backup run?" is
+  answered by looking at the top of the list.
+implements:
+- apps/backups/data.py::list_backups
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: ''

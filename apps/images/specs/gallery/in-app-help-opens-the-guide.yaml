@@ -1,0 +1,21 @@
+kind: specification
+id: images.gallery.in-app-help-opens-the-guide
+title: In-app help explains the shared library
+state: live
+autonomy: gated
+behavior: >
+  Opening help from inside Images shows the app's own guide — what the gallery holds, that the store
+  is shared with every other app, and how a picture comes to be in it — rather than a "help is coming
+  soon" placeholder.
+implements:
+- apps/images/help.md
+- agent.py::api_app_help
+tests:
+- type: unit
+  path: tests/platform/test_app_help_route.py
+  rubric: >
+    Offline static gate: Images ships a help.md with real content, and the generic per-app help route
+    is registered ahead of every per-app single-parameter GET route, so a request for the Images help
+    document is not captured by the image-by-id route and does not fall back to the placeholder.
+links: {}
+notes: ''

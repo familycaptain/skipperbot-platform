@@ -1,0 +1,15 @@
+kind: specification
+id: backups.watchdog.a-paused-backup-is-not-an-alarm
+title: A backup deliberately paused is not raised as a problem
+state: live
+autonomy: gated
+behavior: >
+  A night skipped because the household paused backups, or because they had configured nowhere to
+  put one, is not reported to anyone — they already know, and nagging about a state they chose would
+  make the check ignorable. The skipped night and its reason still stand in the history for anyone
+  who looks.
+implements:
+- apps/backups/runner.py::run_backup_check
+tests: []
+links: {}
+notes: ''

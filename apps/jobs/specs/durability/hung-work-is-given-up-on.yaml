@@ -1,0 +1,18 @@
+kind: specification
+id: jobs.durability.hung-work-is-given-up-on
+title: Work that has stopped making progress is given up on
+state: live
+autonomy: gated
+behavior: >
+  Work that was picked up but has shown no sign of progress for longer than the configured window —
+  an hour by default — is recorded as failed for hanging, so an abandoned claim does not hold a
+  concurrency slot for ever. Work actively running in the current server is never touched by this
+  however slow it is, and the operator can switch the guard off entirely.
+implements:
+- apps/jobs/data.py::fail_hung_jobs
+- apps/jobs/dispatcher.py::_dispatch_cycle
+- apps/jobs/migrations/002_last_progress_at.sql
+- apps/jobs/manifest.yaml
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: backups.destinations.cloud-storage-is-optional-software
+title: The cloud destination is optional, including its software
+state: live
+autonomy: gated
+behavior: >
+  An install without the optional cloud-storage support installed still backs up: the cloud
+  destination is passed over and everything else in the run proceeds. Turning that destination on
+  with the support missing is not an error the household has to debug — it simply stores nothing
+  there, which the run's recorded outcome then reflects.
+implements:
+- apps/backups/gdrive.py::_build_service
+tests: []
+links: {}
+notes: ''

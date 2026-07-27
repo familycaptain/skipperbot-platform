@@ -1,0 +1,14 @@
+kind: specification
+id: weather.radar-and-alerts.a-warning-with-no-shape-is-not-drawn
+title: "A warning with no mappable area is not drawn"
+state: live
+autonomy: gated
+behavior: >
+  A severe-weather warning issued for a named zone rather than a drawn area has no shape to put
+  on the map and is left off it. The map shows only the warnings it can place, so it is a
+  picture of where the weather is rather than a complete list of everything in force.
+implements:
+- apps/weather/data.py::nws_alerts
+tests: []
+links: {}
+notes: ''

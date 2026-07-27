@@ -1,0 +1,6 @@
+kind: feature
+id: jobs.empty-state
+title: A Jobs app with nothing in it
+state: live
+links: {}
+notes: ''

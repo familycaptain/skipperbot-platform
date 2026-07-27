@@ -1,0 +1,18 @@
+kind: specification
+id: weather.radar-and-alerts.an-alerts-outage-looks-like-calm-weather
+title: "An alerts outage currently looks like calm weather"
+state: live
+autonomy: gated
+behavior: >
+  When the severe-weather service cannot be reached, the map draws no warning areas and shows no
+  message — indistinguishable from a place with nothing in force. A person cannot presently tell
+  'no warnings' apart from 'we could not check', which is the one case where the difference
+  matters most.
+implements:
+- apps/weather/data.py::nws_alerts
+- apps/weather/ui/WeatherMap.jsx
+tests: []
+links: {}
+notes: >
+  Recorded as the behaviour that exists today, not as intent. The audit flags this as the app's
+  most consequential gap: the non-US case is announced but an outage is not.

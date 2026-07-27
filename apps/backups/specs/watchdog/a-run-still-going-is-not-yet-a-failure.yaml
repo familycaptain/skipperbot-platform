@@ -1,0 +1,14 @@
+kind: specification
+id: backups.watchdog.a-run-still-going-is-not-yet-a-failure
+title: A backup still running is not reported as a failure
+state: live
+autonomy: gated
+behavior: >
+  If the day's backup is still in progress when the check runs — a large household takes a while —
+  nothing is reported and no action is taken, rather than a slow backup being announced as a missing
+  one. It is judged on the next day's check like any other night.
+implements:
+- apps/backups/runner.py::run_backup_check
+tests: []
+links: {}
+notes: ''

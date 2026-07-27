@@ -1,0 +1,20 @@
+kind: specification
+id: backups.runner.three-artifacts-per-run
+title: Every run produces a data copy, a files copy, and its instructions
+state: live
+autonomy: gated
+behavior: >
+  A backup run produces exactly three things and always all three together: a copy of the database,
+  an archive of the project files, and a written set of recovery instructions for that specific
+  backup. They are named for the date of the run and carry the same fixed names at every
+  destination, so whoever finds the folder later knows what each file is without being told.
+implements:
+- apps/backups/runner.py::run_backup
+- apps/backups/runner.py::_run_pg_dump
+- apps/backups/runner.py::_create_project_zip
+- apps/backups/runner.py::_generate_restore_md
+tests: []
+links: {}
+notes: >
+  The instructions travel with the backup rather than living only in the repository, because the
+  repository is one of the things that may be gone.

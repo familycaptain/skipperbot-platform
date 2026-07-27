@@ -1,0 +1,22 @@
+kind: specification
+id: weather.location.one-name-for-the-place
+title: "The place is named the same way everywhere"
+state: live
+autonomy: gated
+behavior: >
+  Every weather answer names the place one way — city, region, country — and it is identical in
+  chat, out loud, and in the app window, so current conditions and the forecast never look like
+  they are about two different places. After a lookup the app window's search box is replaced
+  with that same canonical name.
+implements:
+- apps/weather/tools.py::_resolve_place
+- apps/weather/data.py::_resolve
+- apps/weather/ui/WeatherApp.jsx
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_tools.py
+  rubric: >
+    Offline. Current conditions and the daily forecast for the same stubbed place both contain the
+    identical canonical label.
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: images.gallery.open-one-full-size
+title: A picture opens in its own tab
+state: live
+autonomy: gated
+behavior: >
+  Clicking a tile opens that picture full size in its own tab, named after the picture. Opening a
+  second picture opens a second tab rather than replacing the first, so two photos can be held open
+  side by side, and closing a viewer leaves the gallery as it was.
+implements:
+- apps/images/ui/ImagesApp.jsx
+- apps/images/ui/index.js
+tests: []
+links: {}
+notes: ''

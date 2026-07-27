@@ -1,0 +1,20 @@
+kind: specification
+id: brainstorming.ideas.graduating-marks-it-ready
+title: Graduating marks an idea ready, and stops there
+state: live
+autonomy: gated
+behavior: >
+  Marking an idea graduated records that the thinking is done and says a project can now be
+  created in Goals. It does not create that goal, copy the document across, or link the two: the
+  idea stays in Brainstorming with everything in it, and the Goals side is still a deliberate,
+  separate act. Once graduated the Graduate button disappears, and the idea drops out of the
+  working-status tabs.
+implements:
+- tools/brainstorming_tool.py::graduate_idea
+- agent.py::api_graduate_idea
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::handleGraduate
+tests: []
+links: {}
+notes: >
+  Written to what graduation actually does. The app's help text promises the content is carried
+  into a Goal; nothing implements that — recorded as a finding, not as intent.

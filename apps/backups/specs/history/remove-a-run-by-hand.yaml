@@ -1,0 +1,20 @@
+kind: specification
+id: backups.history.remove-a-run-by-hand
+title: Deleting a backup asks first, and says what it will delete
+state: live
+autonomy: gated
+behavior: >
+  Deleting a run from the history is confirmed before anything is removed, and then removes both
+  the record and the stored copies at the filesystem destination. Copies held anywhere else are not
+  reached by this, so the household is told what deletion covers rather than left to assume it
+  covers everything. Deleting a run that has already gone reports that it was not found instead of
+  silently reporting success.
+implements:
+- agent.py::api_delete_backup
+- apps/backups/data.py::delete_backup
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: >
+  Stated as a partial deletion because that is what it currently is; a delete that claims to remove
+  every copy and does not is worse than one that says which copies it removes.

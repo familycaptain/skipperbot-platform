@@ -1,0 +1,15 @@
+kind: specification
+id: jobs.browsing.keeps-itself-current
+title: The view keeps itself current
+state: live
+autonomy: gated
+behavior: >
+  While anything is running or waiting, the list and any open job re-read themselves every few
+  seconds, so progress, new log lines and a finish appear without anyone pressing refresh. Once
+  nothing is in flight the polling stops rather than asking the server for ever, and a manual refresh
+  is always available.
+implements:
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: ''

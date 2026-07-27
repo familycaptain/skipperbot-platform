@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.partner.skipper-writing-refreshes-the-open-idea
+title: Skipper writing refreshes what is open
+state: live
+autonomy: gated
+behavior: >
+  When Skipper captures, changes, graduates, deletes or writes to an idea, an open Brainstorming
+  list and an open idea both bring themselves up to date without anyone reloading. Unsaved text in
+  the editor is left alone by that refresh, and a review in progress is not interrupted by it.
+implements:
+- chat_domain.py::BRAINSTORM_MUTATING_TOOLS
+- web/src/hooks/useSkipperSocket.js
+- apps/brainstorming/ui/BrainstormDetailApp.jsx
+tests: []
+links: {}
+notes: ''

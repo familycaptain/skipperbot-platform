@@ -1,0 +1,20 @@
+kind: specification
+id: backups.restore.expected-contents-recorded-for-checking
+title: A backup records what it should contain, so a restore can be checked
+state: live
+autonomy: gated
+behavior: >
+  A backup records how much of each kind of the household's data it held at the moment it was taken,
+  and its instructions repeat those figures as the numbers to check the restored install against —
+  so "the restore finished" and "the restore brought the data back" are separate questions with
+  separate answers. Anything that could not be counted is left out of the list rather than reported
+  as zero.
+implements:
+- apps/backups/runner.py::_get_table_counts
+- apps/backups/runner.py::_generate_restore_md
+- apps/backups/data.py::complete_backup
+tests: []
+links: {}
+notes: >
+  Recorded counts are the only thing in the product that distinguishes a backup containing the
+  household's data from a well-formed empty one.

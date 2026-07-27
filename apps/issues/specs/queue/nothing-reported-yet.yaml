@@ -1,0 +1,15 @@
+kind: specification
+id: issues.queue.nothing-reported-yet
+title: An empty tracker says so
+state: live
+autonomy: gated
+behavior: >
+  With nothing reported, the list says plainly that there are no reports rather than showing a blank
+  panel, and filing stays one press away. When reports exist but the current search or narrowing
+  matches none of them, that is said differently — nothing matched, as distinct from nothing filed —
+  so nobody reads a filter as an empty tracker.
+implements:
+- apps/issues/ui/IssuesApp.jsx::ListView
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,21 @@
+kind: specification
+id: weather.freshness.a-cold-failure-is-a-failure
+title: "With nothing held, a failure is reported as one"
+state: live
+autonomy: gated
+behavior: >
+  When the weather service fails and nothing is held for that place — the first question after a
+  restart, or a place nobody has asked about before — the person is told it could not be
+  fetched. An empty reading, a zero temperature, or silence is never substituted for an answer
+  that does not exist.
+implements:
+- apps/weather/cache.py::cached_fetch
+- apps/weather/tools.py::get_current_weather
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_cache.py
+  rubric: >
+    Offline. A failing fetch with nothing held propagates the failure rather than returning an
+    empty value or storing one.
+links: {}
+notes: ''

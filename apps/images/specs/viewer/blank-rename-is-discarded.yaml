@@ -1,0 +1,15 @@
+kind: specification
+id: images.viewer.blank-rename-is-discarded
+title: An empty rename keeps the old name
+state: live
+autonomy: gated
+behavior: >
+  A rename left empty or containing only spaces is discarded and the previous name stands;
+  abandoning the edit does the same. A name that is saved has its surrounding spaces trimmed, so a
+  picture never ends up captioned with whitespace.
+implements:
+- apps/images/ui/ImageViewer.jsx
+- agent.py::api_update_image_title
+tests: []
+links: {}
+notes: ''

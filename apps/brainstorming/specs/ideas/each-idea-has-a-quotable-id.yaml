@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.ideas.each-idea-has-a-quotable-id
+title: Every idea has an id you can quote back
+state: live
+autonomy: gated
+behavior: >
+  Each idea, and each part within it, has a short id that appears in Skipper's replies and can be
+  quoted back to act on that exact one — useful when two ideas have similar titles. The app itself
+  never displays these ids, so they are something the conversation offers rather than something a
+  person has to keep.
+implements:
+- data_layer/brainstorming.py::_new_id
+- apps/brainstorming/manifest.yaml
+tests: []
+links: {}
+notes: ''

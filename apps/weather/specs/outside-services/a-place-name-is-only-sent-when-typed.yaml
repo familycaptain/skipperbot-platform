@@ -1,0 +1,22 @@
+kind: specification
+id: weather.outside-services.a-place-name-is-only-sent-when-typed
+title: "A place name is only sent when somebody types one"
+state: live
+autonomy: gated
+behavior: >
+  Answering for the home location sends no place name anywhere — the saved coordinates are used
+  directly, with no lookup. A place name goes to the lookup service only when someone types one
+  or saves a new home location, and then once per request. Refreshing a place already on screen
+  reuses its coordinates and sends no name at all.
+implements:
+- apps/weather/data.py::_place_from_coords
+- apps/weather/data.py::_valid_coords
+- apps/weather/ui/WeatherApp.jsx
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_data.py
+  rubric: >
+    Offline. Coordinates supplied to the summary build the place from them and the location
+    service is not called; a place name still resolves normally.
+links: {}
+notes: ''

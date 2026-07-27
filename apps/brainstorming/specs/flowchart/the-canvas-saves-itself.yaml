@@ -1,0 +1,17 @@
+kind: specification
+id: brainstorming.flowchart.the-canvas-saves-itself
+title: The canvas saves itself
+state: live
+autonomy: gated
+behavior: >
+  A flowchart is saved on its own about half a second after the last change — there is no Save to
+  press and no unsaved marker. Leaving the tab or the idea before that moment saves the pending
+  change first, so the box added just before navigating away is still there on returning.
+implements:
+- web/src/components/FlowchartEditor.jsx
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::handleSaveFlowchartMeta
+tests: []
+links: {}
+notes: >
+  Both halves earned: the flush-on-leave and the local echo of what was just saved each fixed a
+  reported "the node I added disappeared".

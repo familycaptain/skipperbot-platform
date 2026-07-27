@@ -1,0 +1,17 @@
+kind: specification
+id: brainstorming.partner.direct-writes-land-without-review
+title: A direct write lands without review
+state: live
+autonomy: gated
+behavior: >
+  Skipper can still append to or replace a document outright, and when it does the change is
+  already saved by the time it is mentioned — there is no diff and nothing to approve. Skipper is
+  instructed to prefer the reviewable route, so this is the exception rather than the normal way
+  model-written text arrives.
+implements:
+- tools/brainstorming_tool.py::append_to_idea_document
+- tools/brainstorming_tool.py::update_idea_document
+- prompts/guides/brainstorming.md
+tests: []
+links: {}
+notes: ''

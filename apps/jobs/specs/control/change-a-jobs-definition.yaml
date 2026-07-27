@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.control.change-a-jobs-definition
+title: Rename it or redirect who hears about it
+state: live
+autonomy: gated
+behavior: >
+  A job's name and who gets told about it can be changed after the fact, and the answer lists exactly
+  what changed; a change that changes nothing says so instead of reporting an edit that did not
+  happen, and an unrecognised state is ignored rather than applied. What the work actually does
+  cannot be changed — that means submitting new work.
+implements:
+- apps/jobs/store.py::update_job
+- apps/jobs/tools.py::update_job
+tests: []
+links: {}
+notes: ''

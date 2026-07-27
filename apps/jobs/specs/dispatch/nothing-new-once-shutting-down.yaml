@@ -1,0 +1,17 @@
+kind: specification
+id: jobs.dispatch.nothing-new-once-shutting-down
+title: Nothing new starts once the server is going down
+state: live
+autonomy: gated
+behavior: >
+  From the moment a restart or a deploy is requested, no further work is picked up, so the server is
+  not still starting work it is about to kill. Everything still waiting stays waiting and is picked
+  up after the restart.
+implements:
+- apps/jobs/dispatcher.py::request_shutdown
+- apps/jobs/dispatcher.py::_dispatch_cycle
+- agent.py::api_admin_restart
+- agent.py::api_admin_deploy
+tests: []
+links: {}
+notes: ''

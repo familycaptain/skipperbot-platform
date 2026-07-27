@@ -1,0 +1,19 @@
+kind: specification
+id: backups.schedule.run-now-needs-somewhere-to-put-it
+title: You cannot run a backup with nowhere to put it
+state: live
+autonomy: gated
+behavior: >
+  With no destination configured, running a backup by hand is not offered: the control is disabled
+  and says why, pointing at where to configure a destination. The household is therefore stopped
+  before they can produce a run that could only ever have stored nothing.
+implements:
+- apps/backups/ui/BackupsApp.jsx
+- agent.py::api_backup_config
+- web/scripts/check-backups-honest-status.mjs
+tests: []
+issues: [86]
+links: {}
+notes: >
+  Operator's call at gate 1: refuse the pointless run at the control rather than let it happen and
+  report it honestly afterwards.

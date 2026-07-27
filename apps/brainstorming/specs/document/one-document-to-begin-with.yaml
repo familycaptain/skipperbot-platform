@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.document.one-document-to-begin-with
+title: Every idea begins with one document
+state: live
+autonomy: gated
+behavior: >
+  Every idea has a main working document from the moment it is captured, and that is the tab it
+  opens on. The main document cannot be renamed or deleted — by anyone, from the app or through
+  Skipper — so an idea can never be left with nothing to write in.
+implements:
+- data_layer/brainstorming.py::create_idea
+- data_layer/brainstorming.py::delete_part
+- apps/brainstorming/ui/BrainstormDetailApp.jsx
+tests: []
+links: {}
+notes: ''

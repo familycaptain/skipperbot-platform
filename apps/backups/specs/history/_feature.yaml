@@ -1,0 +1,6 @@
+kind: feature
+id: backups.history
+title: Seeing whether backups are happening
+state: live
+links: {}
+notes: ''

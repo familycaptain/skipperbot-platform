@@ -1,0 +1,19 @@
+kind: specification
+id: backups.runner.working-copies-are-not-left-behind
+title: The working copies are cleaned up either way
+state: live
+autonomy: gated
+behavior: >
+  The temporary copies a run builds before sending them anywhere are deleted when the run ends,
+  whether it succeeded or failed, so repeated backups of a large household do not fill the machine
+  they are protecting. A previous run's leftovers are cleared before a new run starts, and the
+  working area is never itself captured inside the archive.
+implements:
+- apps/backups/runner.py::run_backup
+- apps/backups/runner.py::_staging_dir
+- apps/backups/runner.py::ZIP_EXCLUDES
+tests: []
+links: {}
+notes: >
+  Excluding the working area matters beyond tidiness: capturing it would make each backup contain
+  the previous one.

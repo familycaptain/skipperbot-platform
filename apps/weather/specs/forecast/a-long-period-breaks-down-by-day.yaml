@@ -1,0 +1,15 @@
+kind: specification
+id: weather.forecast.a-long-period-breaks-down-by-day
+title: "Ask about several days and get each day's worst"
+state: live
+autonomy: gated
+behavior: >
+  When the period asked about spans two days or more, the rain answer also lists each day in the
+  period with that day's highest chance and expected total, so a weekend or a week can be
+  compared day by day instead of collapsing into one number that describes none of them.
+implements:
+- apps/weather/tools.py::get_rain_chance
+- apps/weather/tools.py::_daily_rows
+tests: []
+links: {}
+notes: ''

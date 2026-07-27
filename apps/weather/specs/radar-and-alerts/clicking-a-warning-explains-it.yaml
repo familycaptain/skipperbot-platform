@@ -1,0 +1,16 @@
+kind: specification
+id: weather.radar-and-alerts.clicking-a-warning-explains-it
+title: "Clicking a warning says what it is"
+state: live
+autonomy: gated
+behavior: >
+  Clicking a drawn severe-weather area shows what the warning is, its headline, and the area it
+  covers, so a flood advisory is distinguishable from a tornado warning without leaving the app.
+  More severe warnings are drawn in a stronger colour than advisories, so the map is readable
+  before anything is clicked.
+implements:
+- apps/weather/ui/WeatherMap.jsx
+- apps/weather/data.py::nws_alerts
+tests: []
+links: {}
+notes: ''

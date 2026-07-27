@@ -1,0 +1,17 @@
+kind: specification
+id: jobs.outcomes.ask-later-and-the-answer-is-still-there
+title: Ask months later and the answer is still there
+state: live
+autonomy: gated
+behavior: >
+  Long after work has finished its record still says when it last ran, what came back, how many times
+  it has run and what it was asked to do — so "did that backup actually run?" and "when did it last
+  run?" are answerable from the job itself rather than from a live log. Finished work is not deleted
+  to make room, and it is offered to Skipper's memory so the question can be asked in conversation.
+implements:
+- apps/jobs/data.py::get_all_jobs
+- apps/jobs/data.py::BACKFILL_ENTITIES
+- apps/jobs/store.py::format_jobs
+tests: []
+links: {}
+notes: ''

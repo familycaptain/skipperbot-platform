@@ -1,0 +1,19 @@
+kind: specification
+id: backups.destinations.each-destination-switches-independently
+title: Each destination is turned on by itself
+state: live
+autonomy: gated
+behavior: >
+  A household can send its backups to a place on disk, to shared cloud storage, to both, or to
+  neither, and turning one on or off never disturbs the other. Every destination is off until
+  someone turns it on, so a new install stores nothing anywhere until the household has said where
+  its data may go.
+implements:
+- apps/backups/runner.py::_copy_to_filesystem
+- apps/backups/gdrive.py::upload_to_gdrive
+- apps/backups/manifest.yaml
+tests: []
+links: {}
+notes: >
+  Off by default because the alternative is a fresh install choosing on the household's behalf where
+  a copy of all their data is written.

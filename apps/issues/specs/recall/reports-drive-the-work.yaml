@@ -1,0 +1,19 @@
+kind: specification
+id: issues.recall.reports-drive-the-work
+title: The tracker is the queue the work is taken from
+state: live
+autonomy: gated
+behavior: >
+  Reports are not suggestions filed into a void: this tracker is the work queue the install's
+  maintainer takes from, and both kinds count — a request for something new is picked up the same way
+  a fault is. That is why a report's state moves while nobody in the household touches it, and why the
+  next thing a reporter hears about their report is usually the ask to check a fix.
+implements:
+- apps/issues/manifest.yaml
+- apps/issues/store.py::VALID_TYPES
+- apps/issues/data.py::list_issues
+tests: []
+links: {}
+notes: >
+  The reason Issues cannot be uninstalled: the platform's self-improvement loop reads its open
+  reports.

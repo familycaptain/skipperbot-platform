@@ -1,0 +1,19 @@
+kind: specification
+id: issues.alerts.every-alert-is-also-in-the-console
+title: Every alert is also in the console
+state: live
+autonomy: gated
+behavior: >
+  Alerts about a report are handed to the household's shared notification service rather than sent by
+  this app, and asked for the push surfaces rather than a spoken announcement — nobody is talked at
+  out loud about a bug report. Whatever the surfaces decide, the alert also lands in the recipient's
+  own web console, so a member who was away from a screen still finds the ask waiting the next time
+  they open Skipper, and every alert is traceable to the report that raised it.
+implements:
+- apps/issues/store.py::create_issue
+- apps/issues/store.py::update_issue
+- apps/issues/store.py::nudge_reporter
+- app_platform/notifications.py::create_notification
+tests: []
+links: {}
+notes: ''

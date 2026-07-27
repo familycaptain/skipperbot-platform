@@ -1,0 +1,6 @@
+kind: feature
+id: weather.outside-services
+title: "What leaves the install"
+state: live
+links: {}
+notes: ''

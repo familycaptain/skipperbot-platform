@@ -1,0 +1,22 @@
+kind: specification
+id: weather.location.home-by-default
+title: "Asking without naming a place answers for home"
+state: live
+autonomy: gated
+behavior: >
+  A weather question that names no place is answered for the household's configured home
+  location, on every surface: in chat, out loud, and in the app window, which opens on home
+  without anyone typing anything. Answering for home requires no place lookup — the saved
+  location is used as it stands.
+implements:
+- apps/weather/tools.py::_resolve_place
+- apps/weather/data.py::_resolve
+- apps/weather/ui/WeatherApp.jsx
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_tools.py
+  rubric: >
+    Offline. With the home location stubbed and no override passed, the current-weather answer
+    names the home place and the resolver is asked for the default, not for a typed place.
+links: {}
+notes: ''

@@ -1,0 +1,27 @@
+kind: specification
+id: weather.dashboard.refresh-keeps-the-place
+title: "Refresh keeps the place it already found"
+state: live
+autonomy: gated
+behavior: >
+  Pressing Refresh — or Go with the box untouched — re-fetches the place already on screen using
+  the coordinates already found for it, with no fresh name lookup, so a verbose canonical name
+  that no lookup service would match is never submitted back. Editing the box to anything else
+  is treated as a new search. Coordinates that are missing, incomplete, or out of range fall
+  back to looking the place up by name rather than fetching a nonsense point on the globe.
+implements:
+- apps/weather/routes.py::api_summary
+- apps/weather/routes.py::api_alerts
+- apps/weather/data.py::_valid_coords
+- apps/weather/data.py::_norm_cc
+- apps/weather/ui/WeatherApp.jsx
+- apps/weather/ui/WeatherMap.jsx
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_data.py
+  rubric: >
+    Offline. Valid coordinates skip the place lookup; partial, non-finite, or out-of-range
+    coordinates fall back to resolving the place by name; a country code that is not two letters
+    is treated as unknown rather than crashing.
+links: {}
+notes: ''

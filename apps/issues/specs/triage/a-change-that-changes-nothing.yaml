@@ -1,0 +1,16 @@
+kind: specification
+id: issues.triage.a-change-that-changes-nothing
+title: A change that changes nothing is said so, and nothing is stirred
+state: live
+autonomy: gated
+behavior: >
+  Saving a report whose values all match what is already stored answers that nothing changed: no
+  stored record is rewritten, its last-changed time stands, and nobody is notified. Otherwise the
+  answer names what actually changed — the state it moved from and to, whether the description,
+  resolution or attachments were touched — so the person saving can see their edit was understood.
+implements:
+- apps/issues/store.py::update_issue
+- apps/issues/routes.py::api_update_issue
+tests: []
+links: {}
+notes: ''

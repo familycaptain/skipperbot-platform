@@ -1,0 +1,15 @@
+kind: specification
+id: backups.history.refresh-on-demand-and-on-return
+title: The history is current whenever you look at it
+state: live
+autonomy: gated
+behavior: >
+  Coming back to the app re-reads every source's history, so what is on screen is never a stale
+  snapshot from the last time it was open, and a refresh can be asked for at any time — for one
+  source or all of them at once — with the wait made visible while it happens. A refresh that fails
+  leaves the last known history on screen with the error alongside it rather than blanking the list.
+implements:
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: ''

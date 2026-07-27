@@ -1,0 +1,16 @@
+kind: specification
+id: weather.forecast.the-forecast-tab-holds-both-horizons
+title: "The Forecast tab holds both planning horizons"
+state: live
+autonomy: gated
+behavior: >
+  The Forecast tab shows the next twelve hours as a sideways-scrolling strip of tiles — hour,
+  icon, temperature, and the chance of rain when there is one — above a ten-day list of day,
+  icon, condition, rain chance, and high and low. Short-term planning and the week ahead are on
+  one screen, with today named as 'Today' rather than by its date.
+implements:
+- apps/weather/ui/WeatherApp.jsx
+- apps/weather/data.py::weather_summary
+tests: []
+links: {}
+notes: ''

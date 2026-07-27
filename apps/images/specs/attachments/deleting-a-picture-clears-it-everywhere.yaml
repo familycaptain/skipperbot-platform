@@ -1,0 +1,15 @@
+kind: specification
+id: images.attachments.deleting-a-picture-clears-it-everywhere
+title: Deleting a picture removes it from every record
+state: live
+autonomy: gated
+behavior: >
+  Deleting a picture from the gallery removes it from every record that was showing it — the recipe's
+  photo strip, the meal card, the issue's screenshots — leaving no broken frames and no empty slots.
+  The records themselves are untouched: only the photo goes.
+implements:
+- agent.py::api_delete_image
+- data_layer/images.py::delete_image
+tests: []
+links: {}
+notes: ''

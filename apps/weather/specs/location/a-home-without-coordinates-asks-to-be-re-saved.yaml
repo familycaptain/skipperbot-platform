@@ -1,0 +1,16 @@
+kind: specification
+id: weather.location.a-home-without-coordinates-asks-to-be-re-saved
+title: "A home location with no coordinates asks to be re-saved"
+state: live
+autonomy: gated
+behavior: >
+  If a home location is stored but has no usable coordinates — for instance one carried over
+  from an older install that could never be looked up — the person is asked to re-save it in
+  Settings. They are never shown an empty forecast, a forecast for the middle of the ocean, or
+  an internal error.
+implements:
+- apps/weather/tools.py::_resolve_place
+- apps/weather/data.py::_resolve
+tests: []
+links: {}
+notes: ''

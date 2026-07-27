@@ -1,0 +1,21 @@
+kind: specification
+id: brainstorming.partner.revisions-arrive-as-a-reviewable-diff
+title: A revision arrives as a diff to review
+state: live
+autonomy: gated
+behavior: >
+  Asked to edit, rewrite, restructure or improve a document, Skipper does not overwrite it. The
+  proposal comes back into the editor as the document with every change shown inline — additions
+  highlighted, removals struck through — above a banner repeating the instruction, how many
+  additions and removals it contains, and Accept or Reject. The document is read-only until one of
+  those is chosen, so nothing changes while it is being read.
+implements:
+- tools/brainstorming_tool.py::revise_idea_document
+- chat_domain.py
+- web/src/utils/diffUtils.js::buildMergedView
+- apps/brainstorming/ui/BrainstormDetailApp.jsx
+tests: []
+links: {}
+notes: >
+  The operator's rule for this app: model-written prose is proposed, never applied. The
+  direct-write tools exist but Skipper is instructed away from them.

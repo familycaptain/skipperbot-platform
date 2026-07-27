@@ -1,0 +1,22 @@
+kind: specification
+id: weather.current-conditions.what-it-is-like-outside
+title: "One question gets the whole picture"
+state: live
+autonomy: gated
+behavior: >
+  Asking what it is like outside returns, for the named or home place, the condition in words,
+  the temperature in both Fahrenheit and Celsius, the feels-like temperature, the humidity, and
+  the wind speed with its direction as a compass point. Nobody has to ask five follow-up
+  questions to dress for the day.
+implements:
+- apps/weather/tools.py::get_current_weather
+- apps/weather/tools.py::_wind_compass
+- apps/weather/data.py::weather_summary
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_tools.py
+  rubric: >
+    Offline, with the forecast service stubbed: the answer carries the condition in words and the
+    temperature for the resolved place.
+links: {}
+notes: ''

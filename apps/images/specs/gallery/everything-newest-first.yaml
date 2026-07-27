@@ -1,0 +1,17 @@
+kind: specification
+id: images.gallery.everything-newest-first
+title: Every picture in the house, newest first
+state: live
+autonomy: gated
+behavior: >
+  Opening Images shows every picture in the household in one grid, most recently saved first,
+  whichever app it was attached to and whoever added it, with the total count beside the app name.
+  There is no paging, filtering or searching — what is in the library is what is on screen, so a
+  house with a thousand photos gets a thousand tiles.
+implements:
+- apps/images/ui/ImagesApp.jsx
+- agent.py::api_list_images
+- data_layer/images.py::get_all_images
+tests: []
+links: {}
+notes: ''

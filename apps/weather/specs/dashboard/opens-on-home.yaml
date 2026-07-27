@@ -1,0 +1,15 @@
+kind: specification
+id: weather.dashboard.opens-on-home
+title: "The app opens on the home forecast"
+state: live
+autonomy: gated
+behavior: >
+  Opening the Weather app loads the household's home location straight away, with nothing to
+  type or choose. When Skipper opens it on someone's behalf mid-conversation it lands in the
+  same ready state rather than on an empty search box.
+implements:
+- apps/weather/ui/WeatherApp.jsx
+- apps/weather/ui/index.js
+tests: []
+links: {}
+notes: ''

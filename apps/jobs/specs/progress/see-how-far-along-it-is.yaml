@@ -1,0 +1,17 @@
+kind: specification
+id: jobs.progress.see-how-far-along-it-is
+title: See how far along it is
+state: live
+autonomy: gated
+behavior: >
+  Running work reports how far along it is as a percentage and a short line about what it is doing,
+  and the Jobs app shows both, advancing on its own without anyone refreshing. Work that reports
+  nothing shows as nought rather than as broken, and a percentage outside nought to a hundred is
+  brought into range instead of drawing an impossible bar.
+implements:
+- apps/jobs/dispatcher.py::JobContext.update_progress
+- apps/jobs/data.py::update_progress
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: ''

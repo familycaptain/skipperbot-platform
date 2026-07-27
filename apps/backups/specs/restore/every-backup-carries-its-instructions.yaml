@@ -1,0 +1,17 @@
+kind: specification
+id: backups.restore.every-backup-carries-its-instructions
+title: Every backup carries the instructions for restoring it
+state: live
+autonomy: gated
+behavior: >
+  Each backup includes written recovery instructions alongside its data, specific to that backup:
+  which files it contains, how big they are, which machine and moment they came from, the ordered
+  commands to bring the data back, and how to verify afterwards that it worked. They are readable
+  without Skipper running, since the situation they are for is one where it is not.
+implements:
+- apps/backups/runner.py::_generate_restore_md
+tests: []
+links: {}
+notes: >
+  Recovery instructions that live only in the running install are unavailable exactly when they are
+  needed.

@@ -1,0 +1,17 @@
+kind: specification
+id: backups.destinations.where-each-copy-went-is-recorded
+title: The record says where every copy actually went
+state: live
+autonomy: gated
+behavior: >
+  A successful run records the exact location of every file it stored, at every destination that
+  stored one, so recovering later starts from the run's own record rather than from guesswork about
+  which destination was switched on that month. A destination that stored nothing contributes
+  nothing to that list rather than an entry that looks like a copy.
+implements:
+- apps/backups/runner.py::run_backup
+- apps/backups/data.py::complete_backup
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: ''

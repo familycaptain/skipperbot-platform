@@ -1,0 +1,17 @@
+kind: specification
+id: issues.recall.reports-are-remembered
+title: Skipper remembers what has been reported and fixed
+state: live
+autonomy: gated
+behavior: >
+  Filing, changing or closing a report adds what it says to Skipper's memory, so later questions in
+  conversation — "did we ever fix the thing with the calendar?", "what did I report last week?" — are
+  answerable without opening the tracker. Memory is a summary of the record, not the record: the
+  report itself remains the authority, and the app is still where a report is read and changed.
+implements:
+- apps/issues/data.py::save_issue
+- apps/issues/data.py::_ISSUE_HINT
+- apps/issues/data.py::BACKFILL_ENTITIES
+tests: []
+links: {}
+notes: ''

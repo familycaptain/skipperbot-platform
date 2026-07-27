@@ -1,0 +1,14 @@
+kind: specification
+id: weather.radar-and-alerts.radar-imagery-is-us-only-too
+title: "Radar imagery covers the United States only"
+state: live
+autonomy: gated
+behavior: >
+  The precipitation overlay carries imagery for the United States only. For a place outside that
+  coverage the map still draws correctly — centred, marked, and labelled — with the overlay
+  simply showing nothing over the area.
+implements:
+- apps/weather/ui/WeatherMap.jsx
+tests: []
+links: {}
+notes: ''

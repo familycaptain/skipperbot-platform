@@ -1,0 +1,15 @@
+kind: specification
+id: images.gallery.unreadable-file-shows-a-placeholder
+title: A picture that will not display shows a placeholder
+state: live
+autonomy: gated
+behavior: >
+  When a tile's picture cannot be drawn — the stored file is missing, or it is in a format this
+  browser will not render, such as HEIC — the tile shows a neutral picture outline in place of the
+  thumbnail. It keeps its caption and stays clickable and deletable, so the grid never shows a
+  broken-image icon or collapses around the gap.
+implements:
+- apps/images/ui/ImagesApp.jsx
+tests: []
+links: {}
+notes: ''

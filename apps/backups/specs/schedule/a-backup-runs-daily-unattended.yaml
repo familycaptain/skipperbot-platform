@@ -1,0 +1,16 @@
+kind: specification
+id: backups.schedule.a-backup-runs-daily-unattended
+title: Backups happen without anyone remembering to ask
+state: live
+autonomy: gated
+behavior: >
+  A backup is taken once a day, unattended, at a quiet hour the household can change, and the hour
+  it is set to run is shown alongside the history so nobody has to go looking for it. Nothing about
+  protecting the household's data depends on someone remembering to press a button.
+implements:
+- apps/backups/manifest.yaml
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: >
+  The unattended cadence is the point of the app; an on-demand-only backup is one nobody takes.

@@ -1,0 +1,14 @@
+kind: specification
+id: weather.current-conditions.the-current-tab-reads-at-a-glance
+title: "The Current tab reads at a glance"
+state: live
+autonomy: gated
+behavior: >
+  The Current tab shows the place name, a large temperature with a matching weather icon and the
+  condition in words, and beside it the feels-like temperature, the humidity, and the wind. It
+  is legible from across a room without scrolling or clicking anything.
+implements:
+- apps/weather/ui/WeatherApp.jsx
+tests: []
+links: {}
+notes: ''

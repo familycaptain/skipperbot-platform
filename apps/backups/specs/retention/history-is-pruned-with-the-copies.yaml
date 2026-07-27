@@ -1,0 +1,17 @@
+kind: specification
+id: backups.retention.history-is-pruned-with-the-copies
+title: The history does not outlive the copies by much
+state: live
+autonomy: gated
+behavior: >
+  The record of successful backups is trimmed to the same number the destinations keep, so the
+  history does not fill with entries whose copies were deleted long ago and cannot be recovered
+  from. Failed and skipped attempts are kept rather than trimmed, so a run of bad nights stays
+  visible even after the successes around it have rolled over. How many are kept is shown against
+  the count of copies actually held.
+implements:
+- apps/backups/data.py::prune_old_records
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: backups.watchdog.one-success-today-is-enough
+title: One good backup today is enough to stay quiet
+state: live
+autonomy: gated
+behavior: >
+  If any of the day's attempts succeeded, nobody is told anything, even if other attempts that day
+  failed first — a backup that eventually worked is not a problem to interrupt someone about. The
+  check is therefore silent on every normal day, which is what makes a message from it worth reading.
+implements:
+- apps/backups/runner.py::run_backup_check
+tests: []
+links: {}
+notes: >
+  A daily "backup OK" message would train the household to ignore the one night it says something
+  different.

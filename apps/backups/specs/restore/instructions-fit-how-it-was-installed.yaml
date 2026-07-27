@@ -1,0 +1,17 @@
+kind: specification
+id: backups.restore.instructions-fit-how-it-was-installed
+title: The instructions cover both ways Skipper can be installed
+state: live
+autonomy: gated
+behavior: >
+  The instructions give a separate, complete route for each way Skipper can be installed, say
+  plainly that the two are different, and warn where the obvious approach silently fails — notably
+  that on a containerised install unpacking the archive over the project does not restore the data or
+  the uploaded files. They also name the mistakes that destroy the very data being recovered.
+implements:
+- apps/backups/runner.py::_generate_restore_md
+tests: []
+links: {}
+notes: >
+  The containerised case is the one where a reasonable person believes they have restored their data
+  and has not; the warning is the point of the section.

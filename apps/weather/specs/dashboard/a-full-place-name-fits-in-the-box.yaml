@@ -1,0 +1,20 @@
+kind: specification
+id: weather.dashboard.a-full-place-name-fits-in-the-box
+title: "A full place name fits in the box"
+state: live
+autonomy: gated
+behavior: >
+  The header's location box is wide enough to show a full 'City, Region, Country' entry while it
+  is being typed, rather than clipping it out of sight, and it stays on one line beside the Go
+  and Refresh controls without crowding the app title.
+implements:
+- apps/weather/ui/WeatherApp.jsx
+tests:
+- type: static
+  path: apps/weather/tests/test_weather_ui.py
+  rubric: >
+    Offline source assertion: the header location field keeps a width comfortable enough for a
+    full place name and does not regress to the original narrow field.
+links: {}
+notes: >
+  The width is fixed rather than responsive, which was the operator's choice.

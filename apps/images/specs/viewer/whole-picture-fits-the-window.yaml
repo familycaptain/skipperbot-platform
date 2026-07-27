@@ -1,0 +1,14 @@
+kind: specification
+id: images.viewer.whole-picture-fits-the-window
+title: The full view never crops
+state: live
+autonomy: gated
+behavior: >
+  A picture opened full size is scaled to fit the window with its proportions kept, so a photo far
+  larger than the screen is shown whole rather than cropped or spilling out of the panel, and a small
+  one is not stretched past its own size. Cropping happens only in the gallery's thumbnails.
+implements:
+- apps/images/ui/ImageViewer.jsx
+tests: []
+links: {}
+notes: ''

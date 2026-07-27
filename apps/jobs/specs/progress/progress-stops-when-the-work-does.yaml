@@ -1,0 +1,14 @@
+kind: specification
+id: jobs.progress.progress-stops-when-the-work-does
+title: Progress stops when the work does
+state: live
+autonomy: gated
+behavior: >
+  A progress report for work that has already finished, failed or been cancelled is ignored — work
+  still winding down cannot make a cancelled job look like it is running again, and a finished job
+  keeps the state it ended in.
+implements:
+- apps/jobs/data.py::update_progress
+tests: []
+links: {}
+notes: ''

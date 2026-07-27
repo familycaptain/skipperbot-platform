@@ -1,0 +1,14 @@
+kind: specification
+id: brainstorming.flowchart.tidy-the-canvas-in-one-click
+title: Tidy the canvas in one click
+state: live
+autonomy: gated
+behavior: >
+  A layout action rearranges every box into a top-to-bottom flow derived from how they are
+  connected, so a sketch that grew sideways becomes readable without dragging anything by hand.
+  Names, connections and labels are all kept; only positions move.
+implements:
+- web/src/components/FlowchartEditor.jsx::autoLayout
+tests: []
+links: {}
+notes: ''

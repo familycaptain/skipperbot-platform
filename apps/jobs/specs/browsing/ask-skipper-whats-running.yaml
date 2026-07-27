@@ -1,0 +1,17 @@
+kind: specification
+id: jobs.browsing.ask-skipper-whats-running
+title: Ask Skipper what is running
+state: live
+autonomy: gated
+behavior: >
+  Asked what background work is happening — "what jobs are running?", "did the backup finish?" —
+  Skipper answers from the queue, giving each job's identifier, name, state, when it last ran and how
+  many times, and can narrow the answer to one state or one requester. With nothing matching it says
+  there are no jobs rather than answering with nothing.
+implements:
+- apps/jobs/tools.py::get_jobs
+- apps/jobs/store.py::list_jobs
+- apps/jobs/store.py::format_jobs
+tests: []
+links: {}
+notes: ''

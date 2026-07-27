@@ -1,0 +1,15 @@
+kind: specification
+id: brainstorming.ideas.new-idea-opens-for-writing
+title: A new idea opens straight away
+state: live
+autonomy: gated
+behavior: >
+  Creating an idea from the app closes the form, puts the idea at the top of the list, and opens
+  it in its own window with the cursor in its document — capture and first sentence are one
+  action, not two. A creation that fails leaves the form filled in rather than clearing what was
+  typed.
+implements:
+- apps/brainstorming/ui/BrainstormListApp.jsx::handleCreate
+tests: []
+links: {}
+notes: ''

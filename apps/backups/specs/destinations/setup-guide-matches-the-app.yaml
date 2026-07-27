@@ -1,0 +1,25 @@
+kind: specification
+id: backups.destinations.setup-guide-matches-the-app
+title: The setup guide describes the app as it is now
+state: live
+autonomy: gated
+behavior: >
+  Configuring a destination is documented as a walkthrough that names the settings the app actually
+  has, in the place the app actually keeps them, and does not teach a retired way of supplying
+  credentials that no longer works. It covers both destinations, running a backup by hand, the
+  recovery instructions each backup carries, and the preconditions someone will otherwise hit
+  halfway through — including that the archive contains the install's secrets.
+implements:
+- docs/backups-setup.md
+- docs/03-extended-functionality.md
+tests:
+- type: unit
+  path: apps/backups/tests/test_backups_setup_doc.py
+  rubric: >
+    The guide exists, is substantial, names the real settings for both destinations, covers running a
+    backup by hand and the recovery instructions, states the preconditions and the secrets warning,
+    and mentions no retired environment-variable credential setting.
+links: {}
+notes: >
+  A setup guide that documents a retired credential model costs the reader the whole session before
+  they find out, which is why this one is pinned by a test.

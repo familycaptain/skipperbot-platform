@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.browsing.each-card-shows-enough-to-choose
+title: A card shows enough to choose between ideas
+state: live
+autonomy: gated
+behavior: >
+  Each idea in the list shows its title, its status, its priority as a coloured dot, the first two
+  lines of its summary, its tags, how long ago it was touched, and — only when it has grown past
+  its first document — how many parts it now has. Clicking it opens that idea in its own window,
+  titled with the idea, leaving the list open behind it.
+implements:
+- apps/brainstorming/ui/BrainstormListApp.jsx::IdeaCard
+- data_layer/brainstorming.py::_count_parts
+tests: []
+links: {}
+notes: ''

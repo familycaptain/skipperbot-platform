@@ -1,0 +1,15 @@
+kind: specification
+id: issues.validation.the-maintainer-hears-the-verdict
+title: Whoever fixed it hears the verdict
+state: live
+autonomy: gated
+behavior: >
+  When a reporter confirms a fix, whoever maintains the install is told who confirmed which report —
+  the loop closing without anyone having to poll the tracker. Nobody is told when the maintainer
+  themselves closes a report they were also the reporter of, and rejecting a fix is carried by the
+  report returning to untouched rather than by a separate message.
+implements:
+- apps/issues/store.py::update_issue
+tests: []
+links: {}
+notes: ''

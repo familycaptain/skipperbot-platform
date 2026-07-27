@@ -1,0 +1,14 @@
+kind: specification
+id: weather.dashboard.loading-is-visible
+title: "Loading is visible, not a blank screen"
+state: live
+autonomy: gated
+behavior: >
+  While weather is being fetched the app shows a loading indicator where the content will go,
+  and the header and tabs stay visible so a person can see where they are. Empty panels and
+  placeholder zeros never flash up before the real data arrives.
+implements:
+- apps/weather/ui/WeatherApp.jsx
+tests: []
+links: {}
+notes: ''

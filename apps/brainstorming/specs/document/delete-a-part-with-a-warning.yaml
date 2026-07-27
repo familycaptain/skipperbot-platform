@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.document.delete-a-part-with-a-warning
+title: Deleting a part warns that it cannot be undone
+state: live
+autonomy: gated
+behavior: >
+  The tab being looked at can be closed for good, with a warning naming the part and saying the
+  deletion cannot be undone. Only the tab currently open offers this, so nothing is deleted by a
+  mis-aimed click on a tab in passing, and the main document never offers it at all.
+implements:
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::handleDeletePart
+- agent.py::api_delete_part
+- data_layer/brainstorming.py::delete_part
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.submitting.new-kinds-of-work-need-no-queue-change
+title: A new kind of work needs no change to the queue
+state: live
+autonomy: gated
+behavior: >
+  The queue accepts any kind of work; which kinds can actually be run is decided by whichever apps
+  are installed, each declaring the work it owns and how many of it may run at once. Installing an
+  app makes its kind of work runnable without the queue changing, and an app that is absent leaves
+  its kind of work unrunnable rather than breaking the queue for every other kind.
+implements:
+- apps/jobs/dispatcher.py::register_handler
+- app_platform/loader.py::_register_job_handlers
+tests: []
+links: {}
+notes: ''

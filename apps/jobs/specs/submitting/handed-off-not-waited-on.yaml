@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.submitting.handed-off-not-waited-on
+title: Asking for work does not mean waiting for it
+state: live
+autonomy: gated
+behavior: >
+  Submitting work returns as soon as it has been recorded, answering with the new job's identifier —
+  whoever asked, a person or another app, is never held up while it runs. The work starts out
+  waiting in the queue and is picked up out of band, and nothing in the answer implies it has
+  already happened.
+implements:
+- apps/jobs/dispatcher.py::submit_job
+- apps/jobs/data.py::create_job
+tests: []
+links: {}
+notes: ''

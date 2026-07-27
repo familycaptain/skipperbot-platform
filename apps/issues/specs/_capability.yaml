@@ -2,9 +2,12 @@ kind: capability
 id: issues
 title: Issues
 app: issues
-scope: 'Bug and feature-request tracker: family members report issues, the developer triages and
-  resolves them, and reporters validate fixes. A required core app (the Evolve engine reads from
-  it). NOT the external GitHub issue queue — this is the in-platform tester-facing tracker.'
+scope: 'Where a household reports that Skipper itself is broken or missing something, and follows
+  that report to a confirmed fix: anyone files a bug or a feature request, whoever maintains the
+  install triages and resolves it, and the person who reported it validates the fix. Always
+  installed — the household''s only channel for telling its maintainer something is wrong. NOT
+  household repairs or vehicle faults (Home and Auto own those), and NOT an external issue tracker:
+  a report never leaves the install except as a push alert to a household member.'
 state: live
 autonomy: gated
 links: {}

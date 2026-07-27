@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.browsing.an-idea-that-is-gone-says-so
+title: An idea that is gone says so
+state: live
+autonomy: gated
+behavior: >
+  Opening an idea that has been deleted, or one whose link is stale, shows that the idea was not
+  found rather than an empty editor that looks like a document you have lost. The same is true of
+  a part that no longer exists: the request is refused rather than silently creating something
+  new.
+implements:
+- agent.py::api_get_idea
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::loadIdea
+tests: []
+links: {}
+notes: ''

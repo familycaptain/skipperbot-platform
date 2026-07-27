@@ -1,0 +1,18 @@
+kind: specification
+id: brainstorming.ideas.delete-asks-first
+title: Deleting asks first and takes everything
+state: live
+autonomy: gated
+behavior: >
+  Deleting an idea from the app asks for confirmation in place before doing anything. Confirming
+  removes the idea and everything attached to it — every document and every flowchart —
+  permanently, and returns the window to the idea list. Deleting through Skipper removes just as
+  much, with no separate confirmation step beyond the request itself.
+implements:
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::handleDelete
+- agent.py::api_delete_idea
+- data_layer/brainstorming.py::delete_idea
+- tools/brainstorming_tool.py::delete_idea
+tests: []
+links: {}
+notes: ''

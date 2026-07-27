@@ -1,0 +1,20 @@
+kind: specification
+id: issues.alerts.only-an-excerpt-leaves-the-house
+title: Only an excerpt leaves the house
+state: live
+autonomy: gated
+behavior: >
+  An alert about a report carries an excerpt, never the report: the opening of the description for a
+  new report, the opening of the resolution note for a closing one, and the reporter's name — no
+  screenshots and no full text. Because those alerts can reach an external push service or a chat
+  service, the excerpt is the limit of what a report ever sends outside the house; the whole report
+  stays readable in the app and in the household's own console.
+implements:
+- apps/issues/store.py::create_issue
+- apps/issues/store.py::update_issue
+- apps/issues/store.py::nudge_reporter
+tests: []
+links: {}
+notes: >
+  Recorded as an egress boundary: a fault description can contain anything a household member happens
+  to type, so what crosses to a third-party push or chat service is deliberately truncated.

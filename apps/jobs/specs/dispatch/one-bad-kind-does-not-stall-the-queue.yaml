@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.dispatch.one-bad-kind-does-not-stall-the-queue
+title: A problem with one kind of work never stalls the rest
+state: live
+autonomy: gated
+behavior: >
+  If the queue cannot be read for one kind of work, the sweep carries on to every other kind, and a
+  sweep that fails outright is recorded and followed by the next one on schedule — the queue never
+  stops sweeping because of an error. Anything left waiting after a failed sweep is simply picked up
+  by a later one.
+implements:
+- apps/jobs/dispatcher.py::_dispatch_cycle
+- apps/jobs/dispatcher.py::start_dispatcher
+tests: []
+links: {}
+notes: ''

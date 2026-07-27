@@ -1,0 +1,14 @@
+kind: specification
+id: images.upload.no-file-no-entry
+title: A request with no file creates nothing
+state: live
+autonomy: gated
+behavior: >
+  An upload that carries no file at all is refused as a bad request: no library entry appears, no
+  file is written, and no record gains a photo. The caller is told what was missing rather than
+  getting a success with nothing behind it.
+implements:
+- agent.py::api_upload_image
+tests: []
+links: {}
+notes: ''

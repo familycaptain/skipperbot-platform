@@ -1,0 +1,15 @@
+kind: specification
+id: backups.schedule.pausing-stops-only-the-schedule
+title: Pausing stops the schedule, not the button
+state: live
+autonomy: gated
+behavior: >
+  Pausing backups stops the daily unattended run — each skipped night is still recorded, saying it
+  was skipped because backups are paused — while a backup asked for by hand still runs, so someone
+  can take a one-off copy before an upgrade without un-pausing and forgetting to pause again.
+implements:
+- apps/backups/runner.py::run_backup
+- agent.py::api_run_backup
+tests: []
+links: {}
+notes: ''

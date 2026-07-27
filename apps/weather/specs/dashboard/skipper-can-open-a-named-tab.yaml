@@ -1,0 +1,16 @@
+kind: specification
+id: weather.dashboard.skipper-can-open-a-named-tab
+title: "Skipper can open the app on a named tab"
+state: live
+autonomy: gated
+behavior: >
+  Skipper can open Weather on a particular tab, so 'show me the radar' lands on Radar rather
+  than on Current. A tab name that is not one of the three lands on Current instead of a blank
+  screen, and asking again while the app is already open switches its tab in place rather than
+  opening a second copy.
+implements:
+- apps/weather/ui/index.js
+- apps/weather/ui/WeatherApp.jsx
+tests: []
+links: {}
+notes: ''

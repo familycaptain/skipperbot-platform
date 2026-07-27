@@ -1,0 +1,6 @@
+kind: feature
+id: weather.freshness
+title: "How fresh an answer is"
+state: live
+links: {}
+notes: ''

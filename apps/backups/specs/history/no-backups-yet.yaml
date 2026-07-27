@@ -1,0 +1,15 @@
+kind: specification
+id: backups.history.no-backups-yet
+title: An empty history says which kind of empty it is
+state: live
+autonomy: gated
+behavior: >
+  With no attempts recorded, the panel says so and tells the household what to do next — and which
+  next step it names depends on the situation: with somewhere to put a backup it invites them to
+  run the first one, and with nowhere configured it sends them to set a destination up first. While
+  the history is still loading it says it is loading rather than claiming there is nothing.
+implements:
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: jobs.empty-state.nothing-matched-is-not-nothing-yet
+title: Nothing matched is a different answer from nothing yet
+state: live
+autonomy: gated
+behavior: >
+  A filter that matches no work says that nothing matched; the explanation of what the app is for is
+  shown only to an app that genuinely has no work at all, never to one whose filter happens to hide
+  everything. So narrowing to "failed" on a healthy household reads as "none failed", not as "you
+  have never run anything".
+implements:
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: ''

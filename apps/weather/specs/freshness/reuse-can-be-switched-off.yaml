@@ -1,0 +1,21 @@
+kind: specification
+id: weather.freshness.reuse-can-be-switched-off
+title: "Reuse can be switched off"
+state: live
+autonomy: gated
+behavior: >
+  A setting in the app's own settings turns answer reuse off. With it off, every question goes
+  to the weather service, no answer is held, nothing is ever served stale, and the background
+  refresh stops fetching. With it on — which is the default — reuse and the background refresh
+  both apply.
+implements:
+- apps/weather/manifest.yaml::config
+- apps/weather/tools.py::_cache_settings
+- apps/weather/cache.py::cached_fetch
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_cache.py
+  rubric: >
+    Offline. With reuse off every call fetches live and nothing is held.
+links: {}
+notes: ''

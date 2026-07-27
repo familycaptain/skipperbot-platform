@@ -1,0 +1,16 @@
+kind: specification
+id: issues.queue.the-list-is-capped
+title: The list stops at a few hundred reports
+state: live
+autonomy: gated
+behavior: >
+  A single listing returns at most a couple of hundred reports, taking live work and the most recent
+  first, so a long-running install cannot make the app slow to open. Older reports past that cap are
+  still stored and still reachable by their own reference, but they will not appear in the list or in
+  its search until narrowing brings them within the cap.
+implements:
+- apps/issues/data.py::list_issues
+- apps/issues/routes.py::api_list_issues
+tests: []
+links: {}
+notes: ''

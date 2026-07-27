@@ -1,0 +1,15 @@
+kind: specification
+id: weather.current-conditions.an-unfamiliar-condition-is-not-invented
+title: "An unfamiliar condition is reported, not invented"
+state: live
+autonomy: gated
+behavior: >
+  When the service reports a condition Skipper has no wording for, the answer says so plainly
+  instead of substituting a familiar-sounding condition or failing the whole request. The
+  temperature and the rest of the reading still come back.
+implements:
+- apps/weather/tools.py::_wmo_desc
+- apps/weather/data.py::_desc
+tests: []
+links: {}
+notes: ''

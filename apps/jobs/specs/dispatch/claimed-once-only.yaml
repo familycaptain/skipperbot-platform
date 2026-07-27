@@ -1,0 +1,15 @@
+kind: specification
+id: jobs.dispatch.claimed-once-only
+title: The same work is never started twice
+state: live
+autonomy: gated
+behavior: >
+  Work is handed to exactly one worker: taking it and marking it as running happen together, and a
+  second sweep arriving at the same moment skips whatever is already being taken rather than waiting
+  for it or starting it again. Two servers against the same queue, or two overlapping sweeps, cannot
+  both run one request.
+implements:
+- apps/jobs/data.py::claim_queued_jobs
+tests: []
+links: {}
+notes: ''

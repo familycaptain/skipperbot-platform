@@ -1,0 +1,14 @@
+kind: specification
+id: images.storage.pictures-are-in-the-backups
+title: A backup contains the pictures, not just their names
+state: live
+autonomy: gated
+behavior: >
+  A household backup carries the picture files as well as the library entries, so restoring one brings
+  the photos back alongside the recipes, issues and timeline posts that referenced them rather than a
+  gallery of captions with nothing behind them.
+implements:
+- apps/backups/runner.py::_create_project_zip
+tests: []
+links: {}
+notes: ''

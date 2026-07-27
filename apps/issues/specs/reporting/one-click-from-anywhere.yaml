@@ -1,0 +1,17 @@
+kind: specification
+id: issues.reporting.one-click-from-anywhere
+title: Reporting is one click away from wherever it broke
+state: live
+autonomy: gated
+behavior: >
+  Every screen carries a permanent "report an issue" control in the top bar, so someone who has just
+  hit a problem can open the tracker from the app they hit it in rather than hunting for it. The
+  tracker is also a normal app on the desktop, and Skipper can open it — or open one particular
+  report — when a conversation calls for it.
+implements:
+- web/src/components/Shell.jsx
+- apps/issues/ui/index.js
+- apps/issues/ui/IssuesApp.jsx::IssuesApp
+tests: []
+links: {}
+notes: ''

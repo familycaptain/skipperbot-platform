@@ -1,0 +1,19 @@
+kind: specification
+id: brainstorming.ideas.capture-an-idea
+title: Capture an idea
+state: live
+autonomy: gated
+behavior: >
+  When someone captures an idea — from the app's New Idea form or by asking Skipper to start one —
+  it is saved under the title they gave, with an optional one-line summary, tags, a priority of
+  medium unless they chose otherwise, and a status of "idea". It arrives with one empty working
+  document already attached, so there is somewhere to start writing immediately. An idea with no
+  title is refused rather than saved blank.
+implements:
+- tools/brainstorming_tool.py::create_idea
+- data_layer/brainstorming.py::create_idea
+- agent.py::api_create_idea
+- apps/brainstorming/ui/BrainstormListApp.jsx::NewIdeaForm
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.durability.restart-leaves-no-zombies
+title: A restart leaves no work claiming to be running
+state: live
+autonomy: gated
+behavior: >
+  Work that was running when the server stopped is not left looking as though it still is: at the
+  next start every such job is recorded as failed, with the reason that the server restarted while it
+  was running, so the queue reflects reality and nothing appears eternally in progress. The log it
+  produced up to that point is kept.
+implements:
+- apps/jobs/data.py::fail_stale_running
+- apps/jobs/dispatcher.py::start_dispatcher
+tests: []
+links: {}
+notes: ''

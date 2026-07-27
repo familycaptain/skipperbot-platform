@@ -1,0 +1,17 @@
+kind: specification
+id: backups.schedule.pause-state-is-visible-and-reversible
+title: Whether backups are running is on screen, and one click away
+state: live
+autonomy: gated
+behavior: >
+  Each source shows whether its scheduled backups are enabled or paused, and the state is switched
+  by clicking it — no settings trip needed — with the change taking effect for the next scheduled run
+  and surviving a restart. A change that cannot be saved leaves the shown state as it really is and
+  says what went wrong, rather than flipping the control and quietly not applying it.
+implements:
+- apps/backups/ui/BackupsApp.jsx
+- agent.py::api_toggle_backup_enabled
+- app_platform/backups.py::set_config
+tests: []
+links: {}
+notes: ''

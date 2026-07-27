@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.partner.quote-a-passage-to-chat
+title: Quote a passage to chat
+state: live
+autonomy: gated
+behavior: >
+  Selecting text in the document offers to quote it to Skipper. The quote is then pinned above the
+  editor where it can be seen, and Skipper is told that this passage is what "this" refers to.
+  Clearing the pin stops it being sent. Selecting text in preview or during a review offers
+  nothing, since there is nothing to act on.
+implements:
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::handlePinSelection
+- web/src/components/MarkdownEditor.jsx::getSelection
+tests: []
+links: {}
+notes: ''

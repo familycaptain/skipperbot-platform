@@ -1,0 +1,16 @@
+kind: specification
+id: weather.location.a-lookup-outage-says-try-again
+title: "A place lookup that is down says try again"
+state: live
+autonomy: gated
+behavior: >
+  When the place-lookup service cannot be reached, the person is told it is temporarily
+  unavailable and to try again — a different answer from 'that place does not exist', so they
+  retry instead of re-typing. Any other unexpected lookup failure produces a plain 'could not
+  resolve that location' rather than a technical error.
+implements:
+- apps/weather/tools.py::_resolve_place
+- apps/weather/data.py::_resolve
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,13 @@
+kind: specification
+id: brainstorming.flowchart.label-a-connection
+title: Label a connection
+state: live
+autonomy: gated
+behavior: >
+  Double-clicking a connection offers a label for it, which then rides alongside the arrow.
+  Clearing the text removes the label; abandoning the prompt leaves the connection as it was.
+implements:
+- web/src/components/FlowchartEditor.jsx::handleEdgeDoubleClick
+tests: []
+links: {}
+notes: ''

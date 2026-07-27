@@ -1,0 +1,15 @@
+kind: specification
+id: jobs.outcomes.announcing-cannot-unfinish-the-work
+title: A failed announcement never rewrites the outcome
+state: live
+autonomy: gated
+behavior: >
+  If the message about an outcome cannot be created or delivered, the work stays exactly as it ended
+  — complete stays complete, failed stays failed. Nothing is retried and no outcome is rewritten
+  because the announcement about it did not get through.
+implements:
+- apps/jobs/dispatcher.py::_notify_completion
+- apps/jobs/store.py::record_run
+tests: []
+links: {}
+notes: ''

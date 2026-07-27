@@ -1,0 +1,15 @@
+kind: specification
+id: backups.watchdog.a-failed-backup-is-reported-with-its-reason
+title: A failed night is reported with the reason it failed
+state: live
+autonomy: gated
+behavior: >
+  When the day's backup was attempted and failed, the administrator is told it failed and given the
+  recorded reason, not just the fact — so the message alone is often enough to know whether the
+  drive is unplugged or the storage account is full. If no reason was recorded, they are told it
+  failed without one rather than being sent an empty message.
+implements:
+- apps/backups/runner.py::run_backup_check
+tests: []
+links: {}
+notes: ''

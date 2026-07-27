@@ -183,6 +183,45 @@ have caught all six of these, and would stop the seventh.
 
 ---
 
+## 4b. A caller-supplied URL is fetched by the server with no destination check (SSRF)
+
+`apps/timeline/routes.py::api_link_preview` validates only
+`parsed.scheme not in ("http", "https")` and then calls `urllib.request.urlopen(req, timeout=5)`. There
+is no DNS resolution check and no block on loopback, link-local or RFC1918 addresses, and the fetched
+page's title and description are returned to the caller — a read oracle for internal HTTP services on the
+household network. `ui/TimelineApp.jsx:691::LinkPreviews` fires it **automatically** for up to three URLs
+in any rendered post body, so merely posting a link makes every reader's server fetch it.
+
+The `urlopen` line carries `# noqa: S310 — UI-driven HTTP`: a static analyser flagged exactly this and
+was silenced. **VERIFIED.**
+
+## 4c. `id_format` in app manifests is compared as a literal string, so entity links silently fail
+
+`data_layer/entity_types.py::resolve_entity_id` does `entity_id.startswith(id_format)` against the raw
+manifest value. An app that declares `id_format: "img-{hex8}"` therefore matches **nothing** — the
+placeholder is never expanded — so `link_registry.py:32::is_valid_entity_id` rejects every one of that
+app's ids and a generic entity link to its records cannot be created.
+
+Apps that **omit** `id_format` get the working `"<prefix>-"` default from `manifest.py:189` and are fine.
+Apps that spell it out with a `{hex8}` placeholder are broken: **arcade, behaviors, backups, documents,
+prioritize, goals, folders, jobs, brainstorming, reminders, images.**
+
+`images` additionally declares `prefix: img` while `agent.py:2526` mints `i-` ids, so its manifest and its
+data disagree about the prefix as well.
+
+## 4d. Not-found returned as HTTP 200 — two apps, same mistake
+
+`return {"error": …}, 404` is a Flask idiom; FastAPI JSON-encodes the tuple, producing a **200** with a
+two-element array body. Confirmed in `apps/recipes/routes.py` (7 occurrences) and
+`apps/images` (`api_get_image_meta`, `api_update_image_title`, `api_delete_image` in `agent.py`), plus
+`apps/issues` returns `{"error": …}` with a 200 on three routes by a slightly different route. The
+observable effect is a UI that checks `res.ok` and then renders the error object as if it were data — a
+blank recipe page, a broken image frame.
+
+An earlier pass concluded this was "confined to recipes"; that held only for the exact grep pattern used
+and was wrong. `apps/meals` and `apps/home` raise `HTTPException` correctly, so the convention exists and
+is unevenly applied.
+
 ## 5. `delivered` does not mean delivered, and nothing retries
 
 Already known as an open question; recorded here because four apps now depend on it. Notifications

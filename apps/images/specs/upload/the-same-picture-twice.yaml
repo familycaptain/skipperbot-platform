@@ -1,0 +1,14 @@
+kind: specification
+id: images.upload.the-same-picture-twice
+title: The same picture uploaded twice is two pictures
+state: live
+autonomy: gated
+behavior: >
+  Uploading the same file again creates a second, independent entry with its own identifier and its
+  own stored copy — nothing is matched or merged by content or by filename. The same photo can
+  therefore appear twice in the gallery, and deleting one leaves the other untouched.
+implements:
+- agent.py::api_upload_image
+tests: []
+links: {}
+notes: ''

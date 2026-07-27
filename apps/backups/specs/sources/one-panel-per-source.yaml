@@ -1,0 +1,15 @@
+kind: specification
+id: backups.sources.one-panel-per-source
+title: Each thing being backed up gets its own panel
+state: live
+autonomy: gated
+behavior: >
+  The app shows one panel per backup source, each with its own history, its own on/off switch, its
+  own destination and schedule, and its own "run one now" — so a household backing up more than the
+  Skipper server itself can see at a glance which of them is healthy and act on one without
+  touching the others. The Skipper server's own panel is always present.
+implements:
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: ''

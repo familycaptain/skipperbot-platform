@@ -1,0 +1,16 @@
+kind: specification
+id: images.access.served-as-a-picture-never-as-a-page
+title: A stored file comes back as a picture, never as a page
+state: live
+autonomy: gated
+behavior: >
+  A file is always served back as the image format it was recognised as when it was accepted, so a
+  file that also contains markup or code is delivered as a picture and cannot run in the browser that
+  opens it. Neither the name it was uploaded under nor the type its sender claimed has any say in how
+  it comes back.
+implements:
+- agent.py::api_serve_image_by_id
+- agent.py::_sniff_image_ext
+tests: []
+links: {}
+notes: ''

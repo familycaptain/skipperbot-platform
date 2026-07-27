@@ -1,0 +1,16 @@
+kind: specification
+id: weather.current-conditions.uv-comes-with-a-plain-word
+title: "UV is given a plain word, not just a number"
+state: live
+autonomy: gated
+behavior: >
+  In the app window the current UV level is shown as a number together with a plain word — low,
+  moderate, high, very high, or extreme — so a person can act on it without knowing the scale.
+  When no UV reading is available the UV line is left out altogether rather than shown blank or
+  as zero.
+implements:
+- apps/weather/ui/WeatherApp.jsx
+- apps/weather/data.py::weather_summary
+tests: []
+links: {}
+notes: ''

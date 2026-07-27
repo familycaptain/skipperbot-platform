@@ -1,0 +1,22 @@
+kind: specification
+id: weather.freshness.home-weather-is-kept-warm
+title: "Home weather is refreshed before anyone asks"
+state: live
+autonomy: gated
+behavior: >
+  The household's home weather — conditions now, rain, the coming hours, and the week — is
+  refreshed on its own every refresh interval, so the questions people actually ask are already
+  answered by the time they ask. This happens only when a home location is set and reuse is
+  switched on; with either missing, nothing is fetched in the background at all.
+implements:
+- apps/weather/background.py::_refresh_once
+- apps/weather/background.py::start_weather_cache_loop
+- apps/weather/hooks.py::register_hooks
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_cache.py
+  rubric: >
+    Offline. Reuse off, or no home location: nothing is fetched. Reuse on with a stubbed home
+    location: the four standard lookups are fetched.
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: backups.runner.asking-for-a-backup-by-hand
+title: A backup can be asked for at any moment
+state: live
+autonomy: gated
+behavior: >
+  Anyone with access to the app can ask for a backup immediately — before an upgrade, before a risky
+  change — and it starts in the background rather than holding the screen: the request returns at
+  once, the new attempt shows up in the history within moments, and the household is told when it
+  finishes. A request that cannot be started at all says why instead of appearing to have worked.
+implements:
+- agent.py::api_run_backup
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: ''

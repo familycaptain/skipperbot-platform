@@ -1,0 +1,16 @@
+kind: specification
+id: weather.forecast.the-forecast-starts-now
+title: "The forecast starts now, not at midnight"
+state: live
+autonomy: gated
+behavior: >
+  An hourly forecast begins at the current hour and never includes hours that have already
+  passed, so 'the next twelve hours' means twelve hours a person can still plan around. If the
+  service returns nothing but past hours, they are told there is no upcoming hourly forecast for
+  that place rather than shown this morning's numbers as though they were ahead.
+implements:
+- apps/weather/tools.py::get_hourly_forecast
+- apps/weather/data.py::weather_summary
+tests: []
+links: {}
+notes: ''

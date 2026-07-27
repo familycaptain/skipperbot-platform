@@ -1,0 +1,20 @@
+kind: specification
+id: issues.alerts.nothing-goes-to-an-outside-tracker
+title: Nothing is filed anywhere but here
+state: live
+autonomy: gated
+behavior: >
+  Reporting a fault never opens a ticket on a public issue tracker, calls a webhook, or sends usage
+  data to the project: a report exists only in the household's own install and in the alerts sent to
+  its own members. So a household can describe a problem in whatever detail is useful — including
+  screenshots of their own data — without publishing anything.
+implements:
+- apps/issues/store.py
+- apps/issues/routes.py
+- apps/issues/manifest.yaml
+tests: []
+links: {}
+notes: >
+  A property of the product, not of the code that happens to implement it: self-hosted software must
+  not leak the household's faults upstream, so the absence of any outbound tracker or telemetry path
+  is stated as a requirement.

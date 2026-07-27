@@ -1,0 +1,15 @@
+kind: specification
+id: brainstorming.partner.brainstorming-from-discord
+title: Brainstorming from Discord, without the editor
+state: live
+autonomy: gated
+behavior: >
+  From Discord an idea can be captured, listed, searched, read and added to in conversation — the
+  ideas are the same ideas. What is missing is the editor: no live document, no formatted preview,
+  and no diff to accept. Skipper says once in a conversation that the full experience is on the
+  desktop, rather than repeating it every message.
+implements:
+- chat_domain.py
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: jobs.progress.the-works-own-log
+title: Everything logged while it runs is kept with it
+state: live
+autonomy: gated
+behavior: >
+  Everything the server logs while a piece of work is running is captured against that work with its
+  time and severity, and is readable in the Jobs app as that job's own log — so diagnosing a failure
+  does not mean asking an operator for server logs. Work can also write its own lines deliberately.
+  A very long line is shortened rather than dropped.
+implements:
+- apps/jobs/dispatcher.py::JobLogHandler
+- apps/jobs/dispatcher.py::JobContext.log
+- apps/jobs/data.py::append_log
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: ''

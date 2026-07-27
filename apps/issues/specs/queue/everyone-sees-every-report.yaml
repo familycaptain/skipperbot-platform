@@ -1,0 +1,20 @@
+kind: specification
+id: issues.queue.everyone-sees-every-report
+title: Every report is visible to the whole household
+state: live
+autonomy: gated
+behavior: >
+  Any signed-in member sees every report anyone in the household has filed — its text, who filed it,
+  its state and its resolution notes — not only their own. Nobody outside the household sees any of
+  it. Reporting a fault is therefore a household-visible act, which is what lets a second person
+  recognise their own problem in someone else's report instead of filing it again.
+implements:
+- apps/issues/routes.py::api_list_issues
+- apps/issues/routes.py::api_get_issue
+- apps/issues/data.py::list_issues
+- apps/issues/ui/IssuesApp.jsx::ListView
+tests: []
+links: {}
+notes: >
+  There is no private report. Stated explicitly because it is a privacy-relevant default a household
+  should know about before describing a problem.

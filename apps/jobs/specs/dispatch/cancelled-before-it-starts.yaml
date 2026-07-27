@@ -1,0 +1,15 @@
+kind: specification
+id: jobs.dispatch.cancelled-before-it-starts
+title: Work cancelled while waiting never starts
+state: live
+autonomy: gated
+behavior: >
+  Work cancelled before it has been picked up is never picked up: the sweep passes over anything
+  cancelled. Someone who changes their mind while the work is still queued has genuinely stopped it,
+  not merely labelled it.
+implements:
+- apps/jobs/data.py::claim_queued_jobs
+- apps/jobs/data.py::cancel_job
+tests: []
+links: {}
+notes: ''

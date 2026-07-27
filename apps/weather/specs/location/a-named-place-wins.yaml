@@ -1,0 +1,21 @@
+kind: specification
+id: weather.location.a-named-place-wins
+title: "Naming a place answers for that place, never for home"
+state: live
+autonomy: gated
+behavior: >
+  A request that names somewhere — a plain place name, a city with its region, a city with
+  region and country, or a postal code with its country — is answered for that place. If the
+  named place cannot be worked out, the request fails with that reason: it never quietly falls
+  back to home and answers about the wrong place, which would be worse than no answer.
+implements:
+- apps/weather/tools.py::_resolve_place
+- apps/weather/data.py::_resolve
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_tools.py
+  rubric: >
+    Offline. A typed place is passed through as the override and the answer names that place, not
+    the stubbed home location.
+links: {}
+notes: ''

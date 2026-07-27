@@ -1,0 +1,17 @@
+kind: specification
+id: weather.forecast.every-forecast-names-its-source
+title: "Every forecast says where its numbers came from"
+state: live
+autonomy: gated
+behavior: >
+  Each forecast answer ends by naming the service the numbers came from, and the app window
+  names all of its sources at the foot of the page. Anyone can tell whose forecast they are
+  reading, and go and check it against the source if a decision hangs on it.
+implements:
+- apps/weather/tools.py::get_rain_chance
+- apps/weather/tools.py::get_hourly_forecast
+- apps/weather/tools.py::get_daily_forecast
+- apps/weather/ui/WeatherApp.jsx
+tests: []
+links: {}
+notes: ''

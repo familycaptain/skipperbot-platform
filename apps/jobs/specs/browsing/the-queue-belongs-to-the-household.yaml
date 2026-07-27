@@ -1,0 +1,19 @@
+kind: specification
+id: jobs.browsing.the-queue-belongs-to-the-household
+title: The queue is the household's, not one person's
+state: live
+autonomy: gated
+behavior: >
+  Everyone sees every piece of work the household and its apps have submitted, whoever asked for it,
+  and anyone looking at it can stop it or run it again. Only the message about an outcome is addressed
+  to a particular person; the queue itself is shared.
+implements:
+- agent.py::api_list_jobs
+- agent.py::api_cancel_job
+- agent.py::api_rerun_job
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: >
+  Recorded as it behaves today: the queue carries no per-person scoping and no permission check, so
+  shared-and-unguarded is what a person actually experiences.

@@ -1,0 +1,14 @@
+kind: specification
+id: jobs.control.stop-and-re-run-are-never-both-offered
+title: Stop and re-run are never both offered
+state: live
+autonomy: gated
+behavior: >
+  Work in flight offers only a way to stop it; finished work offers only a way to run it again. A
+  person is never shown both at once, so what they are looking at is unambiguously either still
+  happening or over.
+implements:
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: ''

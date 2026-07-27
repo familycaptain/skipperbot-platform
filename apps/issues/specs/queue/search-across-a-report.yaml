@@ -1,0 +1,15 @@
+kind: specification
+id: issues.queue.search-across-a-report
+title: Searching looks at the whole report, not just its headline
+state: live
+autonomy: gated
+behavior: >
+  Typing in the search box narrows the list as you type, matching anywhere in a report — its
+  headline, its full description, who filed it, its resolution notes, or its state — without regard
+  to case, so remembering any fragment is enough to find it. Search narrows what is currently shown,
+  so finished reports stay hidden unless they have been unhidden. Clearing the box restores the list.
+implements:
+- apps/issues/ui/IssuesApp.jsx::ListView
+tests: []
+links: {}
+notes: ''

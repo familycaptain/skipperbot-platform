@@ -1,0 +1,15 @@
+kind: specification
+id: weather.outside-services.the-map-loads-imagery-in-the-browser
+title: "The radar map's imagery is loaded by the viewing browser"
+state: live
+autonomy: gated
+behavior: >
+  Opening the Radar tab makes the viewing browser request the base map and the radar imagery
+  straight from third-party map hosts, so those hosts see that browser and the area being looked
+  at. That traffic is not routed through the install, and it happens only while the Radar tab is
+  open — the rest of the app reveals nothing to them.
+implements:
+- apps/weather/ui/WeatherMap.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: jobs.outcomes.a-failure-reaches-you-directly
+title: A failure reaches you directly
+state: live
+autonomy: gated
+behavior: >
+  A failure additionally goes out as a message straight to the person the work was submitted for,
+  naming the work, its kind and the error — so a backup that did not run is not something they have
+  to notice for themselves. If that message cannot be sent, the work is still recorded as failed and
+  the failure is still in the record.
+implements:
+- apps/jobs/dispatcher.py::_notify_completion
+tests: []
+links: {}
+notes: >
+  The operator's asymmetry: a failure is worth interrupting someone for, a success is not. Only
+  failures push; successes wait to be read.

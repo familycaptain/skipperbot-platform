@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.browsing.see-all-the-work
+title: One screen for everything happening
+state: live
+autonomy: gated
+behavior: >
+  The Jobs app lists work newest first with its state, its kind, its identifier and when it started,
+  and shows a running job's progress inline — so a single screen answers what is happening now, what
+  is waiting, and what recently finished. The total number of jobs is shown alongside.
+implements:
+- apps/jobs/ui/JobsApp.jsx
+- agent.py::api_list_jobs
+- apps/jobs/data.py::list_jobs
+tests: []
+links: {}
+notes: ''

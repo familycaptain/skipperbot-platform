@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.browsing.recently-touched-first
+title: Whatever you last worked on is at the top
+state: live
+autonomy: gated
+behavior: >
+  The idea list is ordered by when each idea was last touched, most recent first — and editing any
+  of its documents or flowcharts counts as touching it, not just changing its title or status. So
+  the thing being worked on now sits at the top without anyone pinning it there.
+implements:
+- data_layer/brainstorming.py::list_ideas
+- data_layer/brainstorming.py::update_part
+- data_layer/brainstorming.py::add_part
+tests: []
+links: {}
+notes: ''

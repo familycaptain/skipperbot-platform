@@ -2,10 +2,14 @@ kind: capability
 id: backups
 title: Backups
 app: backups
-scope: Database + project-files backup runner. Two independently configurable destinations — a
-  local/network filesystem path and Google Drive (service account with domain-wide delegation)
-  — each with its own enable/disable toggle. Runs backups and tracks their status/history. NOT
-  a restore/migration tool; Backups produces and tracks backup artifacts.
+scope: 'Protecting the household''s data against losing the machine: on a daily cadence, capture
+  everything needed to stand Skipper up again — a copy of the database, an archive of the project
+  files, and written recovery instructions — copy it to whatever off-machine destinations the
+  household has enabled, keep only the most recent few, and report honestly whether last night''s
+  backup actually stored anything. Owns the record of every attempt, the destinations, retention,
+  and the daily did-it-run check. NOT a restore tool: recovery is a documented manual procedure
+  Backups never performs itself. NOT the owner of the schedule dispatcher or of how a warning
+  reaches a person.'
 state: live
 autonomy: gated
 links: {}

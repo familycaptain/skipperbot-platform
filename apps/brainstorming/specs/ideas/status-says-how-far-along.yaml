@@ -1,0 +1,19 @@
+kind: specification
+id: brainstorming.ideas.status-says-how-far-along
+title: Status says how far along it is
+state: live
+autonomy: gated
+behavior: >
+  Every idea carries one of five statuses — just captured, being explored, being developed,
+  parked, or graduated — changed in one click from the idea itself and taking effect immediately.
+  Nothing enforces an order and no status blocks anything: parking an idea only labels it, and a
+  parked or graduated idea is still fully editable.
+implements:
+- tools/brainstorming_tool.py::update_idea
+- apps/brainstorming/ui/BrainstormDetailApp.jsx
+- apps/brainstorming/migrations/001_initial.sql
+tests: []
+links: {}
+notes: >
+  Status is a label the household reads, not a state machine — the app deliberately never refuses
+  a transition.

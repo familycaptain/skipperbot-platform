@@ -1,0 +1,21 @@
+kind: specification
+id: issues.recall.skipper-problems-are-not-house-repairs
+title: A problem with Skipper is not a problem with the house
+state: live
+autonomy: gated
+behavior: >
+  This tracker holds only problems with Skipper itself. A report filed here never appears among the
+  household's maintenance jobs or a vehicle's faults, and a leaking tap or a warning light logged in
+  those apps never appears here or reaches the install's maintainer — despite all three being called
+  "issues". Each keeps its own records, its own references and its own states, and nothing moves
+  between them.
+implements:
+- apps/issues/manifest.yaml
+- apps/issues/data.py
+- apps/home/data.py
+- apps/auto/routes.py
+tests: []
+links: {}
+notes: >
+  Stated because the shared word invites the wrong assumption: three apps say "issue" and mean three
+  unrelated things.

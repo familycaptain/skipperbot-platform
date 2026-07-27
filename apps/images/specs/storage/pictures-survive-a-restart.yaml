@@ -1,0 +1,15 @@
+kind: specification
+id: images.storage.pictures-survive-a-restart
+title: Pictures survive a restart or an upgrade
+state: live
+autonomy: gated
+behavior: >
+  Pictures and their files outlive a restart, a redeploy or an upgrade of the server: a gallery with a
+  hundred photos before a restart has the same hundred, with the same names and dates, afterwards.
+  Nothing about a picture is held only in memory or in a location that is wiped between runs.
+implements:
+- docker-compose.yml
+- agent.py::UPLOAD_DIR
+tests: []
+links: {}
+notes: ''

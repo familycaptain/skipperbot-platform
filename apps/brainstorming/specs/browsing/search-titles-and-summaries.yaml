@@ -1,0 +1,18 @@
+kind: specification
+id: brainstorming.browsing.search-titles-and-summaries
+title: Search looks at titles and summaries only
+state: live
+autonomy: gated
+behavior: >
+  Typing in the search box narrows the list to ideas whose title or summary contains what was
+  typed, regardless of letter case, and combines with whatever status tab is selected. It does not
+  look inside documents or flowcharts and does not match tags, so an idea whose only mention of a
+  word is buried in its document will not be found this way.
+implements:
+- apps/brainstorming/ui/BrainstormListApp.jsx::fetchIdeas
+- data_layer/brainstorming.py::list_ideas
+tests: []
+links: {}
+notes: >
+  Stated as a limit rather than a promise because the previous spec claimed search matched content
+  and tags, and someone relying on that would look for an idea and conclude it was gone.

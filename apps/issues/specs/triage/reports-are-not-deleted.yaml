@@ -1,0 +1,16 @@
+kind: specification
+id: issues.triage.reports-are-not-deleted
+title: A report is closed, never deleted
+state: live
+autonomy: gated
+behavior: >
+  Nothing a household member can do removes a report: a report that turned out to be nothing, or a
+  repeat of another, is closed with a reason and hidden from the default view instead. The record of
+  what was reported, by whom, and how it ended therefore survives for as long as the install does,
+  which is what makes "have we seen this before?" answerable.
+implements:
+- apps/issues/routes.py
+- apps/issues/ui/IssuesApp.jsx::DetailView
+tests: []
+links: {}
+notes: ''

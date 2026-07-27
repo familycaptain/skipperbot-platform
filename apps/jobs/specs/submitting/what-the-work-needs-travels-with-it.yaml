@@ -1,0 +1,20 @@
+kind: specification
+id: jobs.submitting.what-the-work-needs-travels-with-it
+title: What the work needs travels with it
+state: live
+autonomy: gated
+behavior: >
+  Whatever the work needs in order to do its job — the document to print, the question to research,
+  the folder to reprocess, how many copies — is recorded with the request, handed to the work
+  unchanged when it eventually runs, and readable afterwards, so an outcome can be judged against
+  what was actually asked for. Quantities outside a sensible range are brought back into range when
+  the request is made rather than failing much later.
+implements:
+- apps/jobs/data.py::create_job
+- apps/jobs/store.py::create_print_job
+- apps/jobs/store.py::create_research_job
+- apps/jobs/store.py::create_refine_job
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: ''

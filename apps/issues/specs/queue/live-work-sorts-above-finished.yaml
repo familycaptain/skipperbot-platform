@@ -1,0 +1,15 @@
+kind: specification
+id: issues.queue.live-work-sorts-above-finished
+title: Live work sorts above finished work, newest first
+state: live
+autonomy: gated
+behavior: >
+  Reports come back with the ones nobody has started or is actively working on ahead of everything
+  else, and within each of those bands the most recently filed first — so the freshest unattended
+  report is the first thing anyone sees. The order is the same whoever is asking; only the grouping
+  around the person looking differs.
+implements:
+- apps/issues/data.py::list_issues
+tests: []
+links: {}
+notes: ''

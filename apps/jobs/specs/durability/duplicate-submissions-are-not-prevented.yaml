@@ -1,0 +1,19 @@
+kind: specification
+id: jobs.durability.duplicate-submissions-are-not-prevented
+title: Nothing stops the same work being queued twice
+state: live
+autonomy: gated
+behavior: >
+  Submitting the same work twice creates two jobs and both will run. The only check for work already
+  in flight counts work that has already started, and waiting work does not count as started — so two
+  requests made close together, or a schedule coming due while its previous submission is still
+  waiting its turn, each produce a duplicate that nothing collapses.
+implements:
+- apps/jobs/data.py::count_running
+- apps/jobs/dispatcher.py::_dispatch_cycle
+- apps/schedules/job_trigger.py::check_schedule_jobs
+tests: []
+links: {}
+notes: >
+  Recorded as it behaves today rather than as a promise. Both the per-kind concurrency limit and the
+  schedule's own guard ask "is one running?", and a queued job is not running.

@@ -1,0 +1,18 @@
+kind: specification
+id: jobs.durability.logs-are-pruned-not-jobs
+title: Old logs are pruned; the work itself is kept
+state: live
+autonomy: gated
+behavior: >
+  Log lines older than the configured retention — thirty days by default — are removed so the log
+  cannot grow without bound, while the jobs themselves are kept: an old job stays in the record with
+  its outcome, just without its line-by-line log. Retention can be switched off to keep everything.
+  Pruning happens when the server starts, so a long-running server can hold more than the retention
+  window until its next restart.
+implements:
+- apps/jobs/data.py::prune_job_logs
+- apps/jobs/dispatcher.py::start_dispatcher
+- apps/jobs/manifest.yaml
+tests: []
+links: {}
+notes: ''

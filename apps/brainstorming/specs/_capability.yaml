@@ -2,9 +2,13 @@ kind: capability
 id: brainstorming
 title: Brainstorming
 app: brainstorming
-scope: Idea capture and development — create, browse, and search ideas backed by structured documents,
-  with flowcharts, statuses, priorities, and tags. NOT long-form knowledge docs (the Documents
-  app) — Brainstorming is the idea-development workspace.
+scope: >
+  The half-formed-thought workspace. An idea is captured in seconds and then grown — a markdown
+  working document (or several), optional hand-drawn flowcharts, a status, a priority and tags —
+  with Skipper as a generative writing partner that proposes changes for review rather than
+  overwriting. Ideas are shared across the household and recallable in conversation. NOT the place
+  for committed work (Goals) or for finished reference material (Documents): Brainstorming holds
+  thinking that has not been decided yet, and hands it over by marking it graduated.
 state: live
 autonomy: gated
 links: {}

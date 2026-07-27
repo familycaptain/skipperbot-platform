@@ -1,0 +1,14 @@
+kind: specification
+id: weather.radar-and-alerts.the-map-follows-the-place
+title: "Search a new place and the map moves with it"
+state: live
+autonomy: gated
+behavior: >
+  Changing the place shown re-centres the map on it and fetches that place's severe-weather
+  areas. The previous place's warnings are cleared rather than left drawn over the new location,
+  so a warning is never shown against a place it does not apply to.
+implements:
+- apps/weather/ui/WeatherMap.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,6 @@
+kind: feature
+id: weather.dashboard
+title: "The weather app window"
+state: live
+links: {}
+notes: ''

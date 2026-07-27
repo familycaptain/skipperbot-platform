@@ -1,0 +1,15 @@
+kind: specification
+id: backups.history.last-good-backup-at-a-glance
+title: The last backup that actually worked is called out separately
+state: live
+autonomy: gated
+behavior: >
+  The panel names the most recent successful backup — its date, how long it took, and how big the
+  database and file copies were — above the list of every attempt, so a run of failures cannot
+  disguise how old the newest usable copy is. With no successful backup yet, no such summary is
+  shown at all rather than the newest failure standing in for one.
+implements:
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: ''

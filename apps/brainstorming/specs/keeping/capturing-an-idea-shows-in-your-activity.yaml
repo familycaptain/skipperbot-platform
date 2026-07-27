@@ -1,0 +1,17 @@
+kind: specification
+id: brainstorming.keeping.capturing-an-idea-shows-in-your-activity
+title: Capturing an idea shows in your own activity
+state: live
+autonomy: gated
+behavior: >
+  An idea captured with a known author appears in that person's activity feed as something they
+  added, named by its title. Later changes to an idea are not posted, so the feed records that the
+  thinking started rather than narrating every edit.
+implements:
+- data_layer/brainstorming.py::create_idea
+- app_platform/activity.py::log_activity
+tests: []
+links: {}
+notes: >
+  Written to what happens. That updates and deletions post nothing is an inconsistency, not a
+  design — recorded as a finding.

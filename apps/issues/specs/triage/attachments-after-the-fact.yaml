@@ -1,0 +1,17 @@
+kind: specification
+id: issues.triage.attachments-after-the-fact
+title: Screenshots can be added or removed after filing
+state: live
+autonomy: gated
+behavior: >
+  A screenshot pasted onto an already-filed report attaches to it once saved, and an attachment can
+  be taken off the same way — so the evidence that was missing can be added when it is next
+  reproduced, and a screenshot pasted onto the wrong report can be taken back. Removing an
+  attachment removes it from the report only; the image itself remains where it was uploaded.
+implements:
+- apps/issues/ui/IssuesApp.jsx::DetailView
+- apps/issues/ui/IssuesApp.jsx::usePasteImage
+- apps/issues/store.py::update_issue
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: weather.forecast.times-are-local-to-the-place-asked-about
+title: "Times are local to the place being asked about"
+state: live
+autonomy: gated
+behavior: >
+  Hours and days in a forecast are labelled in the local time of the place the forecast is for,
+  not the household's own time zone, so asking about a city several time zones away reads
+  correctly rather than being shifted. When the place's time zone cannot be determined, the
+  household's time zone is used rather than failing the request.
+implements:
+- apps/weather/tools.py::_local_now
+- apps/weather/tools.py::_period_window
+tests: []
+links: {}
+notes: ''

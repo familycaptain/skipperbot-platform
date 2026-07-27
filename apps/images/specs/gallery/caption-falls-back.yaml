@@ -1,0 +1,15 @@
+kind: specification
+id: images.gallery.caption-falls-back
+title: No tile is ever unlabelled
+state: live
+autonomy: gated
+behavior: >
+  A tile is captioned with the picture's title; with no title it falls back to the filename it was
+  uploaded under, and failing that to its identifier, so no tile is blank. The date it was saved is
+  shown underneath. Nothing else about the picture appears in the grid — not who added it, not how
+  big it is, and not what it is attached to.
+implements:
+- apps/images/ui/ImagesApp.jsx
+tests: []
+links: {}
+notes: ''

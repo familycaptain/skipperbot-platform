@@ -1,0 +1,16 @@
+kind: specification
+id: images.gallery.nothing-saved-yet
+title: An empty library invites rather than errors
+state: live
+autonomy: gated
+behavior: >
+  With nothing saved at all, the gallery shows a short invitation explaining what the app is for
+  instead of an empty grid, a spinner that never ends, or an error. Because pictures cannot be added
+  from here, the invitation is the whole of the empty state until something in another app attaches
+  one.
+implements:
+- apps/images/ui/ImagesApp.jsx
+- web/src/components/PristineEmpty.jsx
+tests: []
+links: {}
+notes: ''

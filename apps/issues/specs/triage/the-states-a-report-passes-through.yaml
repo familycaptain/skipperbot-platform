@@ -1,0 +1,19 @@
+kind: specification
+id: issues.triage.the-states-a-report-passes-through
+title: The states a report passes through
+state: live
+autonomy: gated
+behavior: >
+  A report starts untouched and moves through being worked on, then waiting for its reporter to check
+  the fix, and ends either fixed, declined, or marked a repeat of another report. Each state is
+  visible on the report and in the list, colour-coded and spelled out in words, and the path is not
+  forced: a report can go back to untouched from anywhere, which is how a fix that did not work is
+  sent back to be worked again.
+implements:
+- apps/issues/store.py::VALID_STATUSES
+- apps/issues/store.py::CLOSED_STATUSES
+- apps/issues/store.py::update_issue
+- apps/issues/ui/IssuesApp.jsx::DetailView
+tests: []
+links: {}
+notes: ''

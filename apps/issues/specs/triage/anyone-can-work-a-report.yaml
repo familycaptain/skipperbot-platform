@@ -1,0 +1,20 @@
+kind: specification
+id: issues.triage.anyone-can-work-a-report
+title: Any member can move a report along
+state: live
+autonomy: gated
+behavior: >
+  Changing a report's state, its resolution note, its description or its attachments is open to any
+  signed-in member, not reserved to whoever maintains the install or to the person who filed it — so
+  a household is never blocked on one person to record that something turned out to be fine, or to
+  add the detail that was missing. Every change stamps the report's last-changed time.
+implements:
+- apps/issues/routes.py::api_update_issue
+- apps/issues/store.py::update_issue
+- apps/issues/ui/IssuesApp.jsx::DetailView
+tests: []
+links: {}
+notes: >
+  Deliberately unrestricted, carried over from the original Skipper: the tracker is a shared
+  household record, and the cost of a wrong edit is lower than the cost of nobody being able to make
+  one.

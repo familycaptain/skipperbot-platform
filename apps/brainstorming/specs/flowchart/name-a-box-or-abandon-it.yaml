@@ -1,0 +1,13 @@
+kind: specification
+id: brainstorming.flowchart.name-a-box-or-abandon-it
+title: Naming a box can be abandoned
+state: live
+autonomy: gated
+behavior: >
+  A box being named commits its new name on Enter or when focus leaves it, and reverts to the
+  previous name on Escape. An unnamed box still shows as a box rather than as nothing.
+implements:
+- web/src/components/FlowchartEditor.jsx::EditableNode
+tests: []
+links: {}
+notes: ''

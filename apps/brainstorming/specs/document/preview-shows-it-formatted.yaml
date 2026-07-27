@@ -1,0 +1,17 @@
+kind: specification
+id: brainstorming.document.preview-shows-it-formatted
+title: Preview shows it formatted
+state: live
+autonomy: gated
+behavior: >
+  A preview toggle renders the document as formatted text — headings, emphasis, bullet lists,
+  horizontal rules, tables, inline and fenced code, and links that open in a new tab — so a
+  structured brain dump can be read rather than parsed. Preview is read-only and changes nothing;
+  switching back returns to the same text, unsaved edits included.
+implements:
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::markdownToHtml
+tests: []
+links: {}
+notes: >
+  The renderer currently interprets stored text as markup without escaping it, so document text
+  can act on the page — recorded as a finding, not as intent.

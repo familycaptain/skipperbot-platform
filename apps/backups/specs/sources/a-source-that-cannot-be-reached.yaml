@@ -1,0 +1,17 @@
+kind: specification
+id: backups.sources.a-source-that-cannot-be-reached
+title: An unreachable source says so instead of looking healthy
+state: live
+autonomy: gated
+behavior: >
+  When a source's history cannot be loaded — the service is down, the credentials are wrong, the
+  request fails — its panel is marked unavailable and shows the reason given, rather than an empty
+  list that reads as "no backups have ever been needed". Its controls are disabled while it is
+  unreachable, and the other panels keep working and stay actionable.
+implements:
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: >
+  An empty list and an unreachable source look identical and mean opposite things; conflating them
+  is how a silently dead backup goes unnoticed for months.

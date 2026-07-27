@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.control.work-can-ask-to-wait
+title: Work can ask to be put back in the queue
+state: live
+autonomy: gated
+behavior: >
+  Work can ask to go back into the queue instead of finishing — a step that cannot proceed yet
+  because it is waiting on something outside its control. It returns to waiting and is picked up
+  again later, is recorded as neither a success nor a failure, nobody is told anything happened, and
+  it does not use up a retry.
+implements:
+- apps/jobs/dispatcher.py::RequeueRequested
+- apps/jobs/dispatcher.py::_execute_job
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,16 @@
+kind: specification
+id: backups.destinations.one-folder-per-day-fixed-names
+title: One dated folder per backup, the same at every destination
+state: live
+autonomy: gated
+behavior: >
+  At every destination, a backup's three files are placed together in a folder named for the date of
+  the run, under the same fixed file names, and the folder is created if it does not exist. Someone
+  browsing the destination can therefore see which days are covered without opening anything, and
+  a second run on the same day lands in that day's folder rather than starting a new one.
+implements:
+- apps/backups/runner.py::_copy_to_filesystem
+- apps/backups/gdrive.py::_find_or_create_subfolder
+tests: []
+links: {}
+notes: ''

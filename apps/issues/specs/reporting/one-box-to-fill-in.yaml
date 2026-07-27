@@ -1,0 +1,20 @@
+kind: specification
+id: issues.reporting.one-box-to-fill-in
+title: One box to fill in, and the report names itself
+state: live
+autonomy: gated
+behavior: >
+  Filing asks for one thing — what happened — and never makes someone invent a title first: the
+  report's headline is taken from what they wrote, shortened with a trailing ellipsis when it runs
+  long, so a paragraph still lists as a readable one-liner. Editing the description later re-derives
+  the headline, so the two can never drift apart.
+implements:
+- apps/issues/store.py::_make_title
+- apps/issues/store.py::create_issue
+- apps/issues/store.py::update_issue
+- apps/issues/ui/IssuesApp.jsx::NewIssueForm
+tests: []
+links: {}
+notes: >
+  Deliberately no separate title field: a household member reporting a fault should be able to
+  describe it and stop, and a hand-written title that contradicts the description is worse than none.

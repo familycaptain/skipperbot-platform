@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.browsing.open-one-for-the-whole-story
+title: Open one job for the whole story
+state: live
+autonomy: gated
+behavior: >
+  Opening a piece of work shows everything known about it in one place: who asked for it, what it was
+  asked to do, when it was created, started and finished, how long it took, how many times it has run,
+  what came back and, if it failed, why — with its log and its configuration each on their own tab.
+  Coming back out returns to a freshly re-read list.
+implements:
+- apps/jobs/ui/JobsApp.jsx
+- agent.py::api_get_job
+tests: []
+links: {}
+notes: ''

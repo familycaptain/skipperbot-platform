@@ -1,0 +1,18 @@
+kind: specification
+id: images.attachments.deleting-the-record-keeps-the-picture
+title: Deleting the record leaves the picture in the library
+state: live
+autonomy: gated
+behavior: >
+  Deleting the record a photo hung on — the recipe, the meal, the issue — takes the connection with
+  it and leaves the picture itself in the library, where it goes on showing in the gallery with no
+  sign of what it used to belong to. Someone tidying up after a deleted record has to find and remove
+  its photos by hand.
+implements:
+- data_layer/images.py::get_all_images
+tests: []
+links: {}
+notes: >
+  Unresolved: the shared-library reading says a picture should outlive the record that used it, while
+  two audits recorded the surviving rows and files as orphans. Stated here as what happens, not as a
+  decision.

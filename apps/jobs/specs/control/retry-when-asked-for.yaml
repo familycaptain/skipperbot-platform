@@ -1,0 +1,17 @@
+kind: specification
+id: jobs.control.retry-when-asked-for
+title: Work can be given a second chance
+state: live
+autonomy: gated
+behavior: >
+  Work submitted with an allowance of retries goes back into the queue when it fails and is tried
+  again, up to that allowance, and only then recorded as failed for good. Every attempt counts
+  towards its run count and the most recent error is kept, so work that eventually succeeded after
+  two failures does not read as though it worked first time. With no allowance — the default — a
+  failure is final.
+implements:
+- apps/jobs/data.py::fail_job
+- apps/jobs/dispatcher.py::submit_job
+tests: []
+links: {}
+notes: ''

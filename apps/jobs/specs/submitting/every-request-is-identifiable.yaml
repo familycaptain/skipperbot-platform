@@ -1,0 +1,17 @@
+kind: specification
+id: jobs.submitting.every-request-is-identifiable
+title: Every request gets an identifier and a name
+state: live
+autonomy: gated
+behavior: >
+  Every piece of submitted work gets its own short identifier and a display name; asked for without
+  a name it is named after the kind of work and its identifier rather than appearing as a blank row.
+  That identifier is what everything afterwards is filed under — its progress, its log, its outcome
+  and the message about it — so "what happened with that one?" always has something to point at.
+implements:
+- apps/jobs/dispatcher.py::submit_job
+- apps/jobs/data.py::create_job
+- apps/jobs/manifest.yaml
+tests: []
+links: {}
+notes: ''

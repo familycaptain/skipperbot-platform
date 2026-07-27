@@ -1,0 +1,19 @@
+kind: specification
+id: brainstorming.keeping.skipper-remembers-your-ideas
+title: Skipper remembers your ideas afterwards
+state: live
+autonomy: gated
+behavior: >
+  Capturing or changing an idea files a short summary of it — its title, summary, status,
+  priority, tags and the opening of its main document — into what Skipper can recall, so months
+  later "what was that budgeting idea?" is answerable in conversation without anyone opening the
+  app. Deleting an idea is filed too, so Skipper can say an idea was dropped rather than acting as
+  though it never existed.
+implements:
+- data_layer/brainstorming.py::_idea_digest_record
+- app_platform/memory.py::digest_record
+tests: []
+links: {}
+notes: >
+  Recall is built from a trimmed copy, not the whole document, so a long idea is remembered by its
+  shape rather than verbatim.

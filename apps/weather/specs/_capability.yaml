@@ -1,23 +1,15 @@
 kind: capability
 id: weather
-title: Weather — current conditions and forecasts for any location
+title: "Weather"
 app: weather
-scope: >
-  Family-facing weather: current conditions, hourly, and multi-day forecasts for any
-  international location, reachable from every surface (UI, chat, voice, Discord,
-  mobile) via MCP tools. Locations are resolved by the platform location service
-  (app_platform.location) — from the configured home location (Settings → System →
-  Location) or an explicit override (a place name like "Lyon, France" or a
-  "<postal>,<country>" string). In scope: current conditions and forecast tools that
-  consume the platform-resolved coordinates. NOT in scope: home-location
-  resolution/geocoding (that is a platform-core service, app_platform.location, which
-  weather consumes), radar imagery, or general severe-weather alerting (NWS alerts are
-  US-only and degrade explicitly for non-US locations).
-autonomy: auto
 state: live
+autonomy: gated
+scope: >
+  What the weather is doing where the household lives, and what it will do next: current
+  conditions, an hour-by-hour forecast, a multi-day outlook, the chance of rain over a period,
+  and a radar and severe-weather map. Answerable from every surface — chat, voice, and the app
+  window — and answerable about anywhere else on request, not just home. Weather owns the
+  answers and how fresh they are; it does not own the household's home location (that is a
+  platform setting the app reads) and it stores nothing of its own.
 links: {}
-notes: >
-  Conditions and forecast data come from Open-Meteo (current weather + forecast by
-  lat/lon). The authoritative place label is the platform location service's canonical
-  "City, Region, CountryName" (display_label), identical across chat, voice, and the
-  dashboard. NWS severe-weather alerts (api.weather.gov) remain US-only.
+notes: ''

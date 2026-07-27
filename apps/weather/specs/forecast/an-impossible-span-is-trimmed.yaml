@@ -1,0 +1,18 @@
+kind: specification
+id: weather.forecast.an-impossible-span-is-trimmed
+title: "An impossible span is trimmed, not refused"
+state: live
+autonomy: gated
+behavior: >
+  A request for zero, a negative, or an absurd number of hours or days is answered for the
+  nearest span the service can supply — at least one, at most forty-eight hours or sixteen days
+  — rather than refused or errored. A span that is not a number at all falls back to the default
+  of twelve hours or seven days.
+implements:
+- apps/weather/tools.py::get_hourly_forecast
+- apps/weather/tools.py::get_daily_forecast
+- apps/weather/data.py::weather_summary
+- apps/weather/routes.py::api_summary
+tests: []
+links: {}
+notes: ''

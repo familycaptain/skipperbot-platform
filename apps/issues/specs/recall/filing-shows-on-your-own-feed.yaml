@@ -1,0 +1,16 @@
+kind: specification
+id: issues.recall.filing-shows-on-your-own-feed
+title: Filing a report shows up on your own activity feed
+state: live
+autonomy: gated
+behavior: >
+  Filing or changing a report posts an entry on the activity feed of the person it is attributed to,
+  visible to them and marked as personal rather than shared with the household — so their own timeline
+  reflects that they reported something, alongside everything else they did that day. A report with
+  nobody attributed to it, or one changed by background work, posts nothing.
+implements:
+- apps/issues/data.py::save_issue
+- app_platform/activity.py::log_activity
+tests: []
+links: {}
+notes: ''

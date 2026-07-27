@@ -1,0 +1,17 @@
+kind: specification
+id: brainstorming.flowchart.a-flowchart-is-drawn-not-dictated
+title: A flowchart is drawn by hand, not dictated
+state: live
+autonomy: gated
+behavior: >
+  Skipper cannot read or draw a flowchart. Asked to map something out it can only write about it
+  in a document; the boxes and arrows are the household's own to draw. Nothing Skipper does to an
+  idea disturbs a flowchart already on it.
+implements:
+- tools/brainstorming_tool.py
+- web/src/components/FlowchartEditor.jsx
+tests: []
+links: {}
+notes: >
+  Stated because the app advertises flowcharts and Skipper in the same breath; someone would
+  otherwise ask Skipper to draw one and get a silent nothing.

@@ -1,0 +1,20 @@
+kind: specification
+id: brainstorming.partner.a-proposal-needs-that-idea-open
+title: A proposal needs that idea open on that tab
+state: live
+autonomy: gated
+behavior: >
+  A proposed revision is shown only on the screen of the person who asked for it, and only in a
+  window where that idea and that document are open. Nowhere else sees it, and it is not stored:
+  there is no queue of proposals waiting to be reviewed. With the idea closed — or on Discord,
+  where there is no editor — the chat reply still reports what was proposed, but there is nothing
+  to accept and the revision is not applied.
+implements:
+- chat_domain.py
+- apps/brainstorming/ui/BrainstormDetailApp.jsx
+- agent.py
+tests: []
+links: {}
+notes: >
+  Written to what happens, not to what should: a revision that reports success while being
+  unreachable is recorded as a finding.

@@ -1,0 +1,14 @@
+kind: specification
+id: brainstorming.browsing.filter-by-status
+title: Narrow the list to one status
+state: live
+autonomy: gated
+behavior: >
+  A row of status tabs narrows the list to ideas at that stage; clicking the active tab again
+  clears it, and All restores everything. The tabs cover the four working statuses, so a graduated
+  idea is reachable only through All — finished thinking does not crowd the list of live thinking.
+implements:
+- apps/brainstorming/ui/BrainstormListApp.jsx
+tests: []
+links: {}
+notes: ''

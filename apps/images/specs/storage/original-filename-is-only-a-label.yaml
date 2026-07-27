@@ -1,0 +1,16 @@
+kind: specification
+id: images.storage.original-filename-is-only-a-label
+title: The uploaded filename is a label, not the stored name
+state: live
+autonomy: gated
+behavior: >
+  The name a picture was uploaded under is remembered and used as its caption until someone gives it a
+  title, but it is never the name the file is kept under: the stored file is named from the entry's own
+  identifier and the format that was recognised. Two people uploading "IMG_0001.jpg" therefore never
+  overwrite each other.
+implements:
+- agent.py::api_upload_image
+- data_layer/images.py::save_image
+tests: []
+links: {}
+notes: ''

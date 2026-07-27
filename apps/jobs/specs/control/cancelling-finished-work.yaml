@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.control.cancelling-finished-work
+title: Finished work cannot be stopped
+state: live
+autonomy: gated
+behavior: >
+  Asking to stop work that has already completed, failed or been cancelled changes nothing and says
+  which of those it already is, rather than reporting a successful cancellation of something that was
+  never running. Asking about work that does not exist says it was not found.
+implements:
+- apps/jobs/store.py::cancel_job
+- apps/jobs/data.py::cancel_job
+- agent.py::api_cancel_job
+tests: []
+links: {}
+notes: ''

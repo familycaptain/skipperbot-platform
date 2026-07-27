@@ -1,0 +1,18 @@
+kind: specification
+id: weather.forecast.will-it-rain
+title: "'Will it rain?' is answered with the worst hour"
+state: live
+autonomy: gated
+behavior: >
+  Asking about rain over a period — tonight, today, tomorrow, the next so-many hours, the next
+  so-many days, this week — is answered with the highest hourly chance anywhere in that period
+  and roughly when it falls, backed up by the average chance, the total rain expected, and how
+  many hours in the period carry a rain risk. The headline is the worst hour, not the average,
+  because the worst hour is what a person is deciding against.
+implements:
+- apps/weather/tools.py::get_rain_chance
+- apps/weather/tools.py::_period_window
+- apps/weather/tools.py::_hourly_rows
+tests: []
+links: {}
+notes: ''

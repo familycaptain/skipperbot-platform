@@ -1,0 +1,15 @@
+kind: specification
+id: jobs.progress.logs-stay-with-their-own-job
+title: Concurrent work does not mix up its logs
+state: live
+autonomy: gated
+behavior: >
+  Several pieces of work running at once each keep their own log, and nothing one of them logs
+  appears under another — however the server interleaves them, and whether the work runs on the main
+  loop or in a worker thread. Anything the server logs while no work is running belongs to no job.
+implements:
+- apps/jobs/dispatcher.py::_current_job_id
+- apps/jobs/dispatcher.py::_execute_job
+tests: []
+links: {}
+notes: ''

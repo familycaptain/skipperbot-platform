@@ -1,0 +1,16 @@
+kind: specification
+id: issues.triage.an-unrecognised-state-changes-nothing
+title: An unrecognised state leaves the report alone
+state: live
+autonomy: gated
+behavior: >
+  Asking to move a report into a state this version does not recognise leaves its state untouched
+  rather than storing the unknown value — a report can never end up in a state nothing knows how to
+  display or act on. Any other changes asked for in the same breath still apply, and nobody is
+  notified of a state change that did not happen.
+implements:
+- apps/issues/store.py::update_issue
+- apps/issues/store.py::VALID_STATUSES
+tests: []
+links: {}
+notes: ''

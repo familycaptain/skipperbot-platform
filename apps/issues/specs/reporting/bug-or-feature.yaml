@@ -1,0 +1,16 @@
+kind: specification
+id: issues.reporting.bug-or-feature
+title: Every report is either a fault or a wish
+state: live
+autonomy: gated
+behavior: >
+  Filing starts by choosing between reporting something broken and asking for something new, and the
+  choice stays visible on the report and in the list afterwards so a wish is never worked as a
+  regression. Faults are the assumed case: a report that arrives without a recognisable choice — or
+  with one this version does not know — is filed as a fault rather than rejected.
+implements:
+- apps/issues/store.py::create_issue
+- apps/issues/ui/IssuesApp.jsx::NewIssueForm
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,14 @@
+kind: specification
+id: brainstorming.flowchart.remove-what-is-selected
+title: Remove what is selected
+state: live
+autonomy: gated
+behavior: >
+  Selected boxes and connections are removed with the Delete key or the bin, and several can be
+  selected at once by holding Shift. Removing a box also removes the connections into and out of
+  it, so the canvas is never left with an arrow pointing at nothing.
+implements:
+- web/src/components/FlowchartEditor.jsx::handleDeleteSelected
+tests: []
+links: {}
+notes: ''

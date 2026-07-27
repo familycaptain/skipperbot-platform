@@ -1,0 +1,14 @@
+kind: specification
+id: brainstorming.ideas.asking-skipper-replaces-all-tags
+title: Retagging through chat replaces the whole set
+state: live
+autonomy: gated
+behavior: >
+  Asking Skipper to set an idea's tags replaces every tag it had rather than adding to them, so a
+  request has to name the ones worth keeping as well as the new one. Skipper confirms the
+  resulting idea and its status back, so the outcome is visible without opening the app.
+implements:
+- tools/brainstorming_tool.py::update_idea
+tests: []
+links: {}
+notes: ''

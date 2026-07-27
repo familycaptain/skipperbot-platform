@@ -1,0 +1,17 @@
+kind: specification
+id: brainstorming.keeping.ideas-are-shared
+title: Ideas belong to the household, not to one person
+state: live
+autonomy: gated
+behavior: >
+  Every household member sees every idea and can open, edit, retag, graduate or delete any of
+  them, whoever captured it. There is no private idea and no per-person list: Brainstorming is a
+  shared table, and who captured something is recorded rather than enforced.
+implements:
+- agent.py::api_list_ideas
+- data_layer/brainstorming.py::list_ideas
+tests: []
+links: {}
+notes: >
+  This is how the app behaves today; whether a child's account should be able to delete an adult's
+  idea is an open question for the operator, recorded as a finding.

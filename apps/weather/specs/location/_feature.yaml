@@ -1,0 +1,6 @@
+kind: feature
+id: weather.location
+title: "Which place the answer is about"
+state: live
+links: {}
+notes: ''

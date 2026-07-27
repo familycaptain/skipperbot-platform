@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.keeping.an-idea-survives-a-restart
+title: An idea survives a restart
+state: live
+autonomy: gated
+behavior: >
+  Everything about an idea — its documents, its flowcharts, its status, priority and tags —
+  outlives the browser tab, the desktop session and a restart of Skipper itself. Reopening the app
+  finds every idea as it was left, with no re-syncing step and nothing kept only in the window
+  that wrote it.
+implements:
+- apps/brainstorming/migrations/001_initial.sql
+- data_layer/brainstorming.py
+tests: []
+links: {}
+notes: ''

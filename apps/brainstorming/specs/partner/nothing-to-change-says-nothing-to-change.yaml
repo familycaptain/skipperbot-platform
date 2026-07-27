@@ -1,0 +1,14 @@
+kind: specification
+id: brainstorming.partner.nothing-to-change-says-nothing-to-change
+title: A revision with nothing to change says so
+state: live
+autonomy: gated
+behavior: >
+  When a revision would leave the document exactly as it is, Skipper says no changes were needed
+  rather than opening an empty review for someone to approve. Asked to revise a document with
+  nothing in it, it says there is nothing to revise yet and to put something down first.
+implements:
+- tools/brainstorming_tool.py::revise_idea_document
+tests: []
+links: {}
+notes: ''

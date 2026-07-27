@@ -2,10 +2,13 @@ kind: capability
 id: jobs
 title: Jobs
 app: jobs
-scope: 'Long-running, retryable, cancellable background work: owns the job queue, the dispatcher,
-  and the runner loop, with per-job-type handlers registered by the apps that own them. Schedules
-  can fire a job at its next occurrence via the schedules→jobs trigger. A required core app. NOT
-  the scheduling source itself (Schedules) — Jobs runs the work.'
+scope: 'Background work the household and every other app hands off: owns the queue, the sweep
+  that picks work up and runs it, the progress and log a person can watch while it runs, and the
+  outcome that comes back. The promise is that submitted work is picked up, run once, and reported
+  on. Each KIND of work belongs to the app that owns it (research, printing, backups, folder
+  intelligence, agentic routines); Jobs runs it and is the shared view of all of it. NOT the source
+  of recurrence — that is Schedules, which submits a fresh one-shot job each time one is due. A
+  required core app.'
 state: live
 autonomy: gated
 links: {}

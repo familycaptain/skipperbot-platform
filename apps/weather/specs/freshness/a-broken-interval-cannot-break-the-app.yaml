@@ -1,0 +1,19 @@
+kind: specification
+id: weather.freshness.a-broken-interval-cannot-break-the-app
+title: "A nonsense interval falls back to a safe floor"
+state: live
+autonomy: gated
+behavior: >
+  An interval of zero, a negative number, or something that is not a number at all falls back to
+  a thirty-second minimum. A misconfigured setting can therefore neither switch reuse off by
+  accident nor make the background refresh hammer the weather service without pause.
+implements:
+- apps/weather/cache.py::effective_ttl
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_cache.py
+  rubric: >
+    Offline. Zero, negative, and non-numeric intervals all clamp to the thirty-second floor; a
+    sensible interval is honoured.
+links: {}
+notes: ''

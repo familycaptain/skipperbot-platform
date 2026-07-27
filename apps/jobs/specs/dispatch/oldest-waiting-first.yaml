@@ -1,0 +1,18 @@
+kind: specification
+id: jobs.dispatch.oldest-waiting-first
+title: Waiting work is picked up oldest first
+state: live
+autonomy: gated
+behavior: >
+  The queue is swept on a fixed cadence — about every ten seconds by default, and the operator can
+  change it — and the work that has been waiting longest is picked up first, so nothing is starved
+  by a steady trickle of newer requests. Being picked up records when it started and which worker
+  took it, and it immediately reads as running rather than waiting.
+implements:
+- apps/jobs/dispatcher.py::_dispatch_cycle
+- apps/jobs/dispatcher.py::start_dispatcher
+- apps/jobs/data.py::claim_queued_jobs
+- apps/jobs/manifest.yaml
+tests: []
+links: {}
+notes: ''

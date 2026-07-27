@@ -1,0 +1,17 @@
+kind: specification
+id: brainstorming.ideas.priority-is-only-a-marker
+title: Priority is a marker, nothing more
+state: live
+autonomy: gated
+behavior: >
+  An idea is high, medium or low priority, shown as a coloured dot beside it in the list. Priority
+  changes nothing else: it never reorders the list, never filters it, and never causes a reminder
+  or a nudge. Something marked high that nobody opens simply stays marked high.
+implements:
+- apps/brainstorming/ui/BrainstormListApp.jsx::IdeaCard
+- apps/brainstorming/ui/BrainstormDetailApp.jsx
+tests: []
+links: {}
+notes: >
+  Stated so nobody builds on an assumption the app does not honour — high priority is a note to
+  the household, not an instruction to the system.

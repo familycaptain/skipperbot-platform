@@ -1,0 +1,17 @@
+kind: specification
+id: jobs.outcomes.told-when-it-finishes
+title: You are told when it finishes
+state: live
+autonomy: gated
+behavior: >
+  When work ends, successfully or not, the person it was submitted for is told — a message naming the
+  work and summarising the outcome, filed against the job so that asking about that job later finds
+  it. The message is part of the record of what Skipper has said, so it is readable in the web
+  console and in notification history.
+implements:
+- apps/jobs/dispatcher.py::_notify_completion
+- apps/jobs/store.py::record_run
+- app_platform/notifications.py
+tests: []
+links: {}
+notes: ''

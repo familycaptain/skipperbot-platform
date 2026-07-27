@@ -1,0 +1,16 @@
+kind: specification
+id: backups.runner.one-backup-at-a-time
+title: Only one backup of a source runs at a time
+state: live
+autonomy: gated
+behavior: >
+  A source never has two backups running at once: while one is in progress, asking for another is
+  refused at the controls rather than starting a second run that competes for the same working area
+  and destination folder. A shutdown while a backup is running cancels it rather than leaving it
+  wedged, and the cancelled attempt is left on the record as one that did not finish.
+implements:
+- apps/backups/handlers.py
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: ''

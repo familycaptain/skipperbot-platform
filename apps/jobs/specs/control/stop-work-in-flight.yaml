@@ -1,0 +1,21 @@
+kind: specification
+id: jobs.control.stop-work-in-flight
+title: Stop work that is already running
+state: live
+autonomy: gated
+behavior: >
+  Stopping work that is running, or still waiting, marks it cancelled at once and the Jobs app shows
+  that without a refresh. Work already under way is asked to stop and ends at its next opportunity to
+  check, recorded as neither a success nor a failure, and nobody is told it finished. Work that never
+  checks runs to the end regardless — stopping is a request, not a kill.
+implements:
+- apps/jobs/data.py::cancel_job
+- apps/jobs/dispatcher.py::JobContext.is_cancelled
+- apps/jobs/dispatcher.py::_execute_job
+- agent.py::api_cancel_job
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: >
+  Stated as the honest bound: waiting work stops for certain, running work stops when it next looks.
+  A Stop button that silently does nothing would be worse than one that says what it can do.

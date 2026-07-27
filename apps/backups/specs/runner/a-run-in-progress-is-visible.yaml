@@ -1,0 +1,16 @@
+kind: specification
+id: backups.runner.a-run-in-progress-is-visible
+title: A backup in progress is visibly in progress
+state: live
+autonomy: gated
+behavior: >
+  While a backup is running it shows as running in the history and the panel keeps itself up to date
+  on its own until the run settles, so nobody has to keep pressing refresh to find out whether a
+  long backup of a large household finished. The run reports which stage it has reached — copying
+  data, building the archive, sending to each destination, pruning — as it goes.
+implements:
+- apps/backups/runner.py::run_backup
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: ''

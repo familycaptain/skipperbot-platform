@@ -1,0 +1,18 @@
+kind: specification
+id: backups.restore.backups-never-restores-for-you
+title: Skipper never restores a backup on its own
+state: live
+autonomy: gated
+behavior: >
+  Nothing in the app or in chat can overwrite the household's live data with a backup: recovery is a
+  procedure a person carries out deliberately, by hand, following the instructions the backup
+  carries. Nothing Skipper does in the course of taking or pruning backups can therefore destroy the
+  install it is protecting.
+implements:
+- apps/backups/tools.py
+- apps/backups/runner.py
+tests: []
+links: {}
+notes: >
+  The boundary is the safety property: an automated restore is a one-command way to lose everything
+  entered since the backup was taken.

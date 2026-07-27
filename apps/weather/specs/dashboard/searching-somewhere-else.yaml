@@ -1,0 +1,15 @@
+kind: specification
+id: weather.dashboard.searching-somewhere-else
+title: "Searching a place shows that place, without changing home"
+state: live
+autonomy: gated
+behavior: >
+  Typing a place in the header and pressing Go shows that place's weather across all three tabs,
+  and the box is then replaced with the canonical name of whatever was matched, so it is clear
+  which place was understood. Looking somewhere else does not change the household's home
+  location — the next time the app opens, it opens on home.
+implements:
+- apps/weather/ui/WeatherApp.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: images.storage.a-missing-file-is-not-an-error
+title: A missing file answers plainly
+state: live
+autonomy: gated
+behavior: >
+  Asked for a picture whose file is no longer in storage, the library answers that it was not found —
+  and the gallery tile falls back to its placeholder — instead of failing with an internal error,
+  hanging, or serving some other file. An entry with no file at all behaves the same way.
+implements:
+- agent.py::api_serve_image_by_id
+- agent.py::api_serve_image
+tests: []
+links: {}
+notes: ''

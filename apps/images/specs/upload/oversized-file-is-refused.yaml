@@ -1,0 +1,15 @@
+kind: specification
+id: images.upload.oversized-file-is-refused
+title: A file too large to keep is refused with its limit
+state: live
+autonomy: gated
+behavior: >
+  A file larger than the upload limit (15 MB) is refused with a message stating the limit, and
+  nothing is stored or attached. The server stops reading once the limit is passed instead of taking
+  the whole upload in first, so an enormous or endless upload cannot exhaust it.
+implements:
+- agent.py::api_upload_image
+- agent.py::MAX_IMAGE_BYTES
+tests: []
+links: {}
+notes: ''

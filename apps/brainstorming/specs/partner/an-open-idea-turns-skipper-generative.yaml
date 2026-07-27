@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.partner.an-open-idea-turns-skipper-generative
+title: An open idea turns Skipper generative
+state: live
+autonomy: gated
+behavior: >
+  While an idea is open, Skipper stops behaving like a cautious assistant: a vague prompt like
+  "flesh this out" or "what else?" produces a substantial block of new material rather than a
+  question about what was meant, and the chat reply is a sentence or two while the substance goes
+  into the document. It builds on what is already written instead of restating it.
+implements:
+- chat_domain.py::_inject_app_context
+- prompts/guides/brainstorming.md
+tests: []
+links: {}
+notes: ''

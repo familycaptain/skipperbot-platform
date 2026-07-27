@@ -1,0 +1,16 @@
+kind: specification
+id: issues.validation.confirm-or-reject-in-one-press
+title: Confirming or rejecting a fix takes one press
+state: live
+autonomy: gated
+behavior: >
+  A report waiting on validation offers the two answers directly — it works, or it does not — both
+  from the top of the list and from the report itself, so the reporter never has to find the right
+  value in a menu of states. Confirming marks the report fixed; rejecting returns it to untouched so
+  it is picked up again, and invites the reporter to add what is still wrong.
+implements:
+- apps/issues/ui/IssuesApp.jsx::ListView
+- apps/issues/ui/IssuesApp.jsx::DetailView
+tests: []
+links: {}
+notes: ''

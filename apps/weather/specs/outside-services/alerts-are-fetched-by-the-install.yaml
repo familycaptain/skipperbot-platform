@@ -1,0 +1,15 @@
+kind: specification
+id: weather.outside-services.alerts-are-fetched-by-the-install
+title: "Severe-weather warnings are fetched by the install, not the browser"
+state: live
+autonomy: gated
+behavior: >
+  Severe-weather areas are fetched by the install itself and handed to the browser, so the
+  warnings service sees only the install and never the family's own browsers or phones. This
+  holds whichever device the map is opened on.
+implements:
+- apps/weather/data.py::nws_alerts
+- apps/weather/routes.py::api_alerts
+tests: []
+links: {}
+notes: ''

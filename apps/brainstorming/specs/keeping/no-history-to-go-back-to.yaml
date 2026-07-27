@@ -1,0 +1,18 @@
+kind: specification
+id: brainstorming.keeping.no-history-to-go-back-to
+title: There is no history to go back to
+state: live
+autonomy: gated
+behavior: >
+  Saving a document replaces what was there. There is no version history, no undo after a save,
+  and no way to recover the text an accepted revision or an overwrite replaced — a document is the
+  current state of the thinking and nothing more. Each save is counted, and Skipper reports the
+  count when it writes, but the earlier text is not kept.
+implements:
+- data_layer/brainstorming.py::update_part
+- apps/brainstorming/migrations/001_initial.sql
+tests: []
+links: {}
+notes: >
+  Stated plainly because the app invites the model to rewrite prose, and the count of saves looks
+  like a history that could be restored. It cannot.

@@ -1,0 +1,16 @@
+kind: specification
+id: weather.forecast.hour-by-hour
+title: "The next hours, hour by hour"
+state: live
+autonomy: gated
+behavior: >
+  Asking for the hourly forecast returns one line per upcoming hour with the temperature, the
+  condition, the chance of rain and how much is expected, the wind, and the humidity — twelve
+  hours by default and up to forty-eight on request. The feels-like temperature is mentioned
+  only when it differs from the real temperature by enough to change what someone wears.
+implements:
+- apps/weather/tools.py::get_hourly_forecast
+- apps/weather/tools.py::_hourly_forecast_for_place
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,19 @@
+kind: specification
+id: weather.freshness.the-app-window-always-goes-live
+title: "The app window fetches live every time"
+state: live
+autonomy: gated
+behavior: >
+  The app window's own data takes no part in answer reuse: opening the app or pressing Refresh
+  goes to the weather service every time. It therefore never shows a held answer, never falls
+  back to an older one when the service fails, and is unaffected by switching reuse off — unlike
+  the same questions asked in chat or out loud.
+implements:
+- apps/weather/data.py::weather_summary
+- apps/weather/routes.py::api_summary
+tests: []
+links: {}
+notes: >
+  Recorded as the split that exists today between chat and voice, which reuse answers, and the
+  app window, which does not. The audit flags the split as unintended rather than a designed
+  difference.

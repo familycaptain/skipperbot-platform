@@ -1,0 +1,18 @@
+kind: specification
+id: jobs.submitting.asking-for-later-runs-now
+title: Asking for work later still runs it now
+state: live
+autonomy: gated
+behavior: >
+  A start time given with a request is recorded and echoed back to whoever asked, but nothing defers
+  the work: it is queued immediately and picked up by the very next sweep. So research asked for
+  "tonight at ten" begins at once, while the answer says it is scheduled for later.
+implements:
+- apps/jobs/data.py::create_job
+- apps/jobs/data.py::claim_queued_jobs
+- tools/research_tool.py::start_research
+tests: []
+links: {}
+notes: >
+  Recorded as it behaves today rather than as a promise: nothing reads the requested start time, so
+  the only honest reading of it is a label.

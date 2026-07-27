@@ -1,0 +1,17 @@
+kind: specification
+id: brainstorming.partner.accept-or-reject-settles-it
+title: Accept or Reject settles it
+state: live
+autonomy: gated
+behavior: >
+  Accepting a proposal saves the revised document and returns to normal editing with the new text
+  in place. Rejecting restores exactly what was there and writes nothing at all — the proposal is
+  discarded, not parked. A save that fails while accepting says so and leaves the review open, so
+  the proposal is not lost to a dropped connection.
+implements:
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::handleAcceptEdit
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::handleRejectEdit
+- agent.py::api_accept_edit
+tests: []
+links: {}
+notes: ''

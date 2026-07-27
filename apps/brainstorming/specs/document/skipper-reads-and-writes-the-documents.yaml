@@ -1,0 +1,17 @@
+kind: specification
+id: brainstorming.document.skipper-reads-and-writes-the-documents
+title: Skipper can read and write the documents directly
+state: live
+autonomy: gated
+behavior: >
+  Skipper can read an idea's document back — reporting its length and saying plainly when it is
+  empty rather than returning nothing — and can add to the end of it or replace it outright. Asked
+  without naming a part, it works on the idea's main document. A request naming a part that does
+  not exist is refused rather than being applied to the main document by mistake.
+implements:
+- tools/brainstorming_tool.py::read_idea_document
+- tools/brainstorming_tool.py::append_to_idea_document
+- tools/brainstorming_tool.py::update_idea_document
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: issues.reporting.empty-report-is-not-filed
+title: An empty report cannot be filed
+state: live
+autonomy: gated
+behavior: >
+  With nothing written, the submit control stays unavailable and nothing is filed — a report that
+  says only "it's broken" would reach the maintainer with no way to act on it. Whitespace alone
+  counts as nothing. While a report is being submitted the control is unavailable too, so an impatient
+  second press cannot file the same report twice.
+implements:
+- apps/issues/ui/IssuesApp.jsx::NewIssueForm
+tests: []
+links: {}
+notes: ''

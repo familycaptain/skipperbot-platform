@@ -1,0 +1,6 @@
+kind: feature
+id: weather.forecast
+title: "Forecasts"
+state: live
+links: {}
+notes: ''

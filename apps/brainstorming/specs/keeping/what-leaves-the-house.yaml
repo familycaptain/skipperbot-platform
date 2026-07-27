@@ -1,0 +1,18 @@
+kind: specification
+id: brainstorming.keeping.what-leaves-the-house
+title: What leaves the house, and when
+state: live
+autonomy: gated
+behavior: >
+  An idea's text is sent to the household's configured language model in two situations, both of
+  them consequences of asking for help: the whole document when a revision is requested, and a
+  trimmed copy of the idea plus the opening of its main document each time an idea is captured or
+  changed, to build what Skipper can recall. Nothing about an idea is published anywhere else, and
+  which model that is remains the household's own choice.
+implements:
+- tools/brainstorming_tool.py::revise_idea_document
+- app_platform/memory.py::digest_record
+- providers/compat.py::chat_completion
+tests: []
+links: {}
+notes: ''

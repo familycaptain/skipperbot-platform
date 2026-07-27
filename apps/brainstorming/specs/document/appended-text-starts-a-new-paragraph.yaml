@@ -1,0 +1,14 @@
+kind: specification
+id: brainstorming.document.appended-text-starts-a-new-paragraph
+title: Appended text starts its own paragraph
+state: live
+autonomy: gated
+behavior: >
+  Text Skipper adds to the end of a document is separated from what was already there by a blank
+  line, so an added section never runs into the last sentence of the previous one. Appending to an
+  empty document adds the text with no leading blank line.
+implements:
+- tools/brainstorming_tool.py::append_to_idea_document
+tests: []
+links: {}
+notes: ''

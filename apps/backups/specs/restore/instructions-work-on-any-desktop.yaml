@@ -1,0 +1,15 @@
+kind: specification
+id: backups.restore.instructions-work-on-any-desktop
+title: The instructions work from whatever computer the household has
+state: live
+autonomy: gated
+behavior: >
+  Wherever the commands differ between operating systems, the instructions give each variant rather
+  than assuming one, and they state the versions of the underlying software that must be in place
+  before a restore is attempted. Someone recovering onto a borrowed laptop is not blocked by
+  instructions written for the machine that died.
+implements:
+- apps/backups/runner.py::_generate_restore_md
+tests: []
+links: {}
+notes: ''

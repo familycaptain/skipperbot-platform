@@ -1,0 +1,15 @@
+kind: specification
+id: brainstorming.partner.ask-skipper-to-start-an-idea
+title: Ask Skipper to start an idea
+state: live
+autonomy: gated
+behavior: >
+  "Start an idea about the backyard" captures the idea and confirms it with its title, status and
+  priority. If a Brainstorming window is open it shows the new idea without anyone reloading it.
+  Skipper can capture an idea whether or not the app is open at all.
+implements:
+- tools/brainstorming_tool.py::create_idea
+- chat_domain.py::BRAINSTORM_MUTATING_TOOLS
+tests: []
+links: {}
+notes: ''

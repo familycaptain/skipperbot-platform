@@ -1,0 +1,14 @@
+kind: specification
+id: brainstorming.partner.idea-tools-are-always-to-hand
+title: With an idea open, the idea tools are always to hand
+state: live
+autonomy: gated
+behavior: >
+  Opening an idea keeps Skipper's brainstorming abilities loaded for the whole conversation rather
+  than depending on the wording of each message, so "add a section on drainage" works without the
+  word "idea" appearing anywhere in it.
+implements:
+- chat_domain.py
+tests: []
+links: {}
+notes: ''

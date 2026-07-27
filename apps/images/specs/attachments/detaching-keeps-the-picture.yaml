@@ -1,0 +1,16 @@
+kind: specification
+id: images.attachments.detaching-keeps-the-picture
+title: Taking a photo off a record does not delete it
+state: live
+autonomy: gated
+behavior: >
+  Removing a photo from a record breaks only that connection: the record stops showing it while the
+  picture stays in the library and on every other record it was attached to. Detaching is therefore
+  not a way to get rid of a picture — that only happens from the gallery.
+implements:
+- apps/recipes/routes.py::api_unlink_image_from_recipe
+- apps/home/routes.py::api_unlink_home_issue_image
+- apps/meals/routes.py::api_unlink_meal_photo
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: issues.triage.handing-a-report-to-its-real-reporter
+title: A report can be handed to the person who should check it
+state: live
+autonomy: gated
+behavior: >
+  Whoever maintains the install can change which household member a report is attributed to, choosing
+  from the household's members — for a fault someone described out loud and another person wrote up,
+  or one filed from a shared screen. From then on that person is the one asked to validate the fix,
+  and if the report is already waiting on validation they are told immediately that it needs them.
+implements:
+- apps/issues/store.py::update_issue
+- apps/issues/routes.py::api_update_issue
+- apps/issues/ui/IssuesApp.jsx::DetailView
+tests: []
+links: {}
+notes: ''

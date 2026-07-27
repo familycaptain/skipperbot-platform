@@ -1,0 +1,17 @@
+kind: specification
+id: backups.runner.no-database-copy-no-backup
+title: If the data cannot be copied, the run fails and nothing is sent anywhere
+state: live
+autonomy: gated
+behavior: >
+  If the copy of the database cannot be produced — the database is unreachable, the tools to read it
+  are missing, the disk is full, it takes too long — the run stops there, is recorded as failed with
+  the reason, and no destination is written to. A partial or absent data copy is never distributed
+  as though it were a backup, and the same applies if the file archive cannot be produced.
+implements:
+- apps/backups/runner.py::run_backup
+- apps/backups/runner.py::_run_pg_dump
+- apps/backups/data.py::fail_backup
+tests: []
+links: {}
+notes: ''

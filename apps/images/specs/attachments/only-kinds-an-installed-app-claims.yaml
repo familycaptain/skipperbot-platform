@@ -1,0 +1,18 @@
+kind: specification
+id: images.attachments.only-kinds-an-installed-app-claims
+title: A picture attaches only to a kind of record some app claims
+state: live
+autonomy: gated
+behavior: >
+  A picture can be attached only to a kind of record an installed app has claimed — recipes, meals,
+  home issues, appliances, insurance policies, vehicle records and the like. Asked for a kind nobody
+  claims, the upload is refused before anything is stored and the reply lists the kinds that are
+  accepted. Removing an app removes its kinds from that list without breaking the rest.
+implements:
+- image_link_registry.py::get_registered_entity_types
+- agent.py::api_upload_image
+- apps/recipes/handlers.py
+- apps/home/handlers.py
+tests: []
+links: {}
+notes: ''

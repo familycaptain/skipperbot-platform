@@ -1,0 +1,14 @@
+kind: specification
+id: brainstorming.document.rename-a-part
+title: Rename a part by double-clicking its tab
+state: live
+autonomy: gated
+behavior: >
+  Double-clicking a tab (other than the main document's) renames that part in place. Escape
+  abandons the rename and Enter or moving focus away commits it; a name left blank keeps the old
+  one. The new name shows on the tab immediately.
+implements:
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::handleRenamePart
+tests: []
+links: {}
+notes: ''

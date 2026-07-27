@@ -1,0 +1,17 @@
+kind: specification
+id: backups.runner.a-failed-run-explains-itself
+title: A failure records why, in words that name the cause
+state: live
+autonomy: gated
+behavior: >
+  A failed run records the reason it failed against that run, and the reason names the thing that
+  went wrong — which stage, which destination, what the underlying system said — rather than
+  "backup failed". Long reasons are shortened rather than dropped, and the same reason is what the
+  household reads in the history and what the daily check quotes back to them.
+implements:
+- apps/backups/data.py::fail_backup
+- apps/backups/runner.py::run_backup
+- apps/backups/ui/BackupsApp.jsx
+tests: []
+links: {}
+notes: ''

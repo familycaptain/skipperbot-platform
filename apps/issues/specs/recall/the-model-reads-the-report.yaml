@@ -1,0 +1,19 @@
+kind: specification
+id: issues.recall.the-model-reads-the-report
+title: Remembering a report means a model reads it
+state: live
+autonomy: gated
+behavior: >
+  Turning a report into something Skipper can recall is done by a language model reading it, so the
+  full text of a report — its description, its resolution note and who filed it — is sent to whichever
+  model the install is configured to use for that work, which may be a hosted service. With no model
+  configured the report is still filed and still listed; only the recall is skipped, silently, and a
+  failure there never blocks or undoes the report.
+implements:
+- apps/issues/data.py::save_issue
+- app_platform/memory.py::digest_record
+tests: []
+links: {}
+notes: >
+  Recorded because it is the one path by which a report's FULL text can leave the house, and it
+  follows from the install's model configuration rather than from anything the reporter chose.

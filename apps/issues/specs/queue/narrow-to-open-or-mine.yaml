@@ -1,0 +1,18 @@
+kind: specification
+id: issues.queue.narrow-to-open-or-mine
+title: Narrowing to what is open, or to what is yours
+state: live
+autonomy: gated
+behavior: >
+  Beyond search, the list can be narrowed to reports still untouched or to only the ones you filed,
+  and it reloads from stored reports when the choice changes rather than filtering a stale copy. A
+  refresh control re-reads the list on demand and shows that it is working, so someone waiting on a
+  maintainer can check for movement without reopening the app.
+implements:
+- apps/issues/ui/IssuesApp.jsx::ListView
+- apps/issues/ui/IssuesApp.jsx::IssuesApp
+- apps/issues/routes.py::api_list_issues
+- apps/issues/data.py::list_issues
+tests: []
+links: {}
+notes: ''

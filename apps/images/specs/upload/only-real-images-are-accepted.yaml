@@ -1,0 +1,18 @@
+kind: specification
+id: images.upload.only-real-images-are-accepted
+title: Only a file that really is an image is accepted
+state: live
+autonomy: gated
+behavior: >
+  A file is taken into the library only if its own content identifies it as a JPEG, PNG, GIF, WebP or
+  HEIC image; the name it was uploaded under and the type its sender claims carry no weight. Anything
+  else — a document, an archive, an SVG, an empty file, a script renamed to .jpg — is refused with a
+  message naming the formats that are accepted, and nothing is stored and no record gains a photo.
+implements:
+- agent.py::_sniff_image_ext
+- agent.py::api_upload_image
+tests: []
+links: {}
+notes: >
+  The allowlist is by content and deliberately excludes formats that can carry script (SVG above
+  all), because everything in the library is later served back to a browser.

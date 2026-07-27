@@ -1,0 +1,18 @@
+kind: specification
+id: brainstorming.partner.skipper-sees-what-you-see
+title: Skipper sees the document you are looking at
+state: live
+autonomy: gated
+behavior: >
+  With an idea open, Skipper is given the idea it is and the text on screen, so "this", "here" and
+  "make it shorter" resolve to the open idea without anyone quoting an id or pasting content. A
+  very long document is passed as its opening portion rather than in full, so a big document
+  degrades to partial sight rather than to failure.
+implements:
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::loadIdea
+- chat_domain.py::_inject_app_context
+tests: []
+links: {}
+notes: >
+  After an automatic refresh the reported active tab can fall back to the main document while the
+  text shown is another tab's — recorded as a finding.

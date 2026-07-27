@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.browsing.nothing-yet-versus-nothing-matching
+title: Nothing yet reads differently from nothing matching
+state: live
+autonomy: gated
+behavior: >
+  Opening Brainstorming for the first time, with nothing captured at all, shows what the app is
+  for and an invitation to jot the first idea. A search or status filter that matches nothing says
+  that nothing matched instead — the two are never shown as the same blank panel. While the list
+  is still loading it says so rather than looking empty.
+implements:
+- apps/brainstorming/ui/BrainstormListApp.jsx
+- web/src/components/PristineEmpty.jsx
+tests: []
+links: {}
+notes: ''

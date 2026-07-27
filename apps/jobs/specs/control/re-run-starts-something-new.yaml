@@ -1,0 +1,17 @@
+kind: specification
+id: jobs.control.re-run-starts-something-new
+title: Re-running starts something new
+state: live
+autonomy: gated
+behavior: >
+  Re-running finished work submits a fresh request of the same kind with the same configuration and
+  leaves the original record untouched, so the history of what happened before is never overwritten.
+  Whoever re-ran it is recorded as the new request's requester, the original's recipient still gets
+  told, and the app opens the new job so its progress can be followed.
+implements:
+- agent.py::api_rerun_job
+- apps/jobs/dispatcher.py::submit_job
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: ''

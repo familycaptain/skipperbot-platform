@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.browsing.ask-skipper-what-ideas-exist
+title: Ask Skipper what ideas exist
+state: live
+autonomy: gated
+behavior: >
+  Asked what ideas there are, Skipper lists them with each one's status, priority and tags. It can
+  narrow to a single status, a single tag, or words in the title and summary. When nothing matches
+  it says so and repeats back the filters it used, so a typo in a tag is obvious rather than
+  reading as an empty cupboard.
+implements:
+- tools/brainstorming_tool.py::list_ideas
+- tools/brainstorming_tool.py::search_ideas
+tests: []
+links: {}
+notes: ''

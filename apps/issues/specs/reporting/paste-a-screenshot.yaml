@@ -1,0 +1,18 @@
+kind: specification
+id: issues.reporting.paste-a-screenshot
+title: A pasted screenshot attaches itself
+state: live
+autonomy: gated
+behavior: >
+  Pasting an image anywhere in the report form attaches it to the report and shows a thumbnail, so
+  the usual way people capture a fault — screenshot to clipboard — needs no file dialog. Several can
+  be attached, each can be removed again before filing, and a paste that carries no image is left to
+  behave as ordinary text. If the upload fails the reason is shown and the rest of the report is
+  kept, so nobody loses what they wrote to a failed attachment.
+implements:
+- apps/issues/ui/IssuesApp.jsx::usePasteImage
+- apps/issues/ui/IssuesApp.jsx::uploadImageFile
+- apps/issues/ui/IssuesApp.jsx::NewIssueForm
+tests: []
+links: {}
+notes: ''

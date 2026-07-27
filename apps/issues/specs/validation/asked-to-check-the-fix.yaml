@@ -1,0 +1,16 @@
+kind: specification
+id: issues.validation.asked-to-check-the-fix
+title: A fix is not finished until its reporter says so
+state: live
+autonomy: gated
+behavior: >
+  When a report is moved to waiting-for-validation, the person who filed it is asked to try it and
+  confirm, and the ask carries the beginning of the resolution note so they know what to try. Until
+  they answer, the report stays waiting — nobody else's word closes it. If the report has nobody
+  attributed to it, no ask goes out and it simply sits.
+implements:
+- apps/issues/store.py::update_issue
+tests: []
+links: {}
+notes: >
+  Operator's rule: the reporter, not the person who wrote the fix, decides whether a fault is gone.

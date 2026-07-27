@@ -1,0 +1,18 @@
+kind: specification
+id: backups.retention.keep-the-most-recent-few
+title: Only the most recent few backups are kept
+state: live
+autonomy: gated
+behavior: >
+  Each destination keeps a set number of the most recent daily backups, chosen by the household, and
+  older ones are removed after a run so that a daily backup of a growing household does not fill the
+  destination until it starts failing. Removal only ever takes the oldest, and only at that
+  destination — folders that are not Skipper's dated backups are left alone.
+implements:
+- apps/backups/runner.py::_prune_filesystem
+- apps/backups/gdrive.py::_prune_gdrive_folders
+tests: []
+links: {}
+notes: >
+  Bounded retention is what keeps the destination writable; an unbounded one eventually turns every
+  backup into a failure.

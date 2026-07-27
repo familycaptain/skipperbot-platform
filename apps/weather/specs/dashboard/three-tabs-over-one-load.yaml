@@ -1,0 +1,15 @@
+kind: specification
+id: weather.dashboard.three-tabs-over-one-load
+title: "Three tabs over a single load"
+state: live
+autonomy: gated
+behavior: >
+  The app has three tabs — Current, Forecast, and Radar — all served by one load of the place's
+  weather. Switching between them is immediate and does not go back to the weather service, so
+  flicking between now and the week ahead costs nothing.
+implements:
+- apps/weather/ui/WeatherApp.jsx
+- apps/weather/routes.py::api_summary
+tests: []
+links: {}
+notes: ''

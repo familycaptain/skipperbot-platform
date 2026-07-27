@@ -1,0 +1,17 @@
+kind: specification
+id: backups.runner.unreadable-files-do-not-abort-the-archive
+title: One unreadable file does not cost you the whole backup
+state: live
+autonomy: gated
+behavior: >
+  A file the archive cannot read — permissions, a lock, a file that vanished while the archive was
+  being built — is left out and the archive carries on with everything else, rather than the whole
+  run failing over one file. The run still reports success, so the omission is recorded in the
+  system's logs rather than in the backup's own record.
+implements:
+- apps/backups/runner.py::_create_project_zip
+tests: []
+links: {}
+notes: >
+  Stating the reporting gap as part of the behaviour: an archive that is quietly incomplete but
+  reads as a full success is the failure mode a person cannot see.

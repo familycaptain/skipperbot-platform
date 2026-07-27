@@ -1,0 +1,18 @@
+kind: specification
+id: issues.validation.chasing-an-unanswered-ask
+title: An unanswered ask can be chased
+state: live
+autonomy: gated
+behavior: >
+  A report that has sat waiting for its reporter can be chased: the same "please check this" message
+  is sent again, naming the report and the start of its resolution note, and the person chasing is
+  shown that it went and to whom. Chasing is refused, with the reason, for a report that is not
+  actually waiting on validation or that has nobody attributed to it — so the reminder can never be
+  the first a person hears of a report that is still being worked on.
+implements:
+- apps/issues/store.py::nudge_reporter
+- apps/issues/routes.py::api_nudge_issue_reporter
+- apps/issues/ui/IssuesApp.jsx::DetailView
+tests: []
+links: {}
+notes: ''

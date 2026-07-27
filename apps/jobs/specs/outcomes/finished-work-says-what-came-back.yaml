@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.outcomes.finished-work-says-what-came-back
+title: Finished work says what came back
+state: live
+autonomy: gated
+behavior: >
+  Work that finishes is recorded as complete with a short summary of what came back, the time it
+  finished and a full hundred per cent, and its run count goes up by one — so "how many times has
+  this run?" is answerable. The summary is deliberately short; the detail is in the job's log and in
+  its published results.
+implements:
+- apps/jobs/dispatcher.py::_execute_job
+- apps/jobs/data.py::complete_job
+tests: []
+links: {}
+notes: ''

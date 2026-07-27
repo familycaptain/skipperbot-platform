@@ -1,0 +1,15 @@
+kind: specification
+id: issues.alerts.a-maintainers-own-report-alerts-nobody
+title: A maintainer filing their own note alerts nobody
+state: live
+autonomy: gated
+behavior: >
+  A report filed by someone who administers the install raises no alert to anyone, including other
+  administrators — someone writing down their own to-do is not news to be pushed at the household.
+  The report is filed and listed exactly like any other, so the only difference a person sees is the
+  absence of a notification.
+implements:
+- apps/issues/store.py::create_issue
+tests: []
+links: {}
+notes: ''

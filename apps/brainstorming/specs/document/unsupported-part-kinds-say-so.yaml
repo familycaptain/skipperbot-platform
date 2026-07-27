@@ -1,0 +1,14 @@
+kind: specification
+id: brainstorming.document.unsupported-part-kinds-say-so
+title: A part with no editor yet says so
+state: live
+autonomy: gated
+behavior: >
+  An idea can hold parts that the app cannot yet edit — a pasted image or a saved link. Opening
+  one says plainly that its editor is not available yet, naming the kind of part, rather than
+  showing an empty pane, a blank document, or an error.
+implements:
+- apps/brainstorming/ui/BrainstormDetailApp.jsx
+tests: []
+links: {}
+notes: ''

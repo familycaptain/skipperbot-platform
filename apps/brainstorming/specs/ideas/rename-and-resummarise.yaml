@@ -1,0 +1,15 @@
+kind: specification
+id: brainstorming.ideas.rename-and-resummarise
+title: Rename it or restate what it is
+state: live
+autonomy: gated
+behavior: >
+  The title and the one-line summary are edited in place by clicking them. Enter or moving focus
+  away saves; Escape leaves the previous text alone. The window's tab label follows the new title
+  at once, and the list shows the new summary the next time it is read.
+implements:
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::handleUpdateMeta
+- agent.py::api_update_idea
+tests: []
+links: {}
+notes: ''

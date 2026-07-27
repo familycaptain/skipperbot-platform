@@ -1,0 +1,16 @@
+kind: specification
+id: images.upload.pictures-arrive-from-a-record
+title: Pictures arrive by being attached to something
+state: live
+autonomy: gated
+behavior: >
+  A picture enters the library by being added to a record in another app — a photo on a recipe, a
+  meal, a home item, a vehicle, a timeline post, a screenshot pasted into an issue — and from then on
+  it is in the gallery too. The gallery offers no way to add one itself, so an install where nothing
+  has attached a photo has an empty library.
+implements:
+- agent.py::api_upload_image
+- apps/images/ui/ImagesApp.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,20 @@
+kind: specification
+id: backups.sources.what-a-backup-contains
+title: A backup is everything needed to stand the household back up
+state: live
+autonomy: gated
+behavior: >
+  A backup captures the whole household's data — every conversation, list, reminder, document,
+  memory and app record — together with the uploaded files and the configuration the install needs
+  to run, and leaves out only what a fresh install rebuilds for itself (downloaded packages,
+  version-control history, compiled caches, and earlier backups). Nothing a person entered into
+  Skipper is selectively excluded, so no one has to know in advance which app's data mattered.
+implements:
+- apps/backups/runner.py::_create_project_zip
+- apps/backups/runner.py::_run_pg_dump
+- apps/backups/runner.py::ZIP_EXCLUDES
+tests: []
+links: {}
+notes: >
+  Whole-install capture rather than per-app opt-in: choosing what to protect is a decision the
+  household would only get wrong once.

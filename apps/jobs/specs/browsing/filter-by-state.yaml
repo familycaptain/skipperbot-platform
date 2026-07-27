@@ -1,0 +1,14 @@
+kind: specification
+id: jobs.browsing.filter-by-state
+title: Narrow it to what you are looking for
+state: live
+autonomy: gated
+behavior: >
+  The list can be narrowed to running, waiting, completed or failed work, each choice showing how
+  many match so the counts are readable without switching, and clearing it brings everything back.
+  Work in any other state — cancelled, for instance — is only visible in the unfiltered list.
+implements:
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: ''

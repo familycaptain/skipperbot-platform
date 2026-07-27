@@ -1,0 +1,18 @@
+kind: specification
+id: jobs.dispatch.work-nobody-can-run
+title: Work nobody can run waits indefinitely
+state: live
+autonomy: gated
+behavior: >
+  Work of a kind that no installed app can run is accepted and queued, and then never picked up: it
+  reads as waiting for as long as the record exists, is never failed, and nobody is ever told it will
+  not happen. This is what a person sees when the app that owns that kind of work is not installed,
+  failed to load, or was removed while requests for it were still being made.
+implements:
+- apps/jobs/dispatcher.py::_dispatch_cycle
+- apps/jobs/dispatcher.py::register_handler
+tests: []
+links: {}
+notes: >
+  Recorded as it behaves today rather than as a promise. Nothing distinguishes "waiting its turn"
+  from "waiting forever", which is why work for a missing app looks healthy in the app.

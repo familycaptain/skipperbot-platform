@@ -1,0 +1,20 @@
+kind: specification
+id: backups.destinations.one-destination-failing-does-not-stop-the-other
+title: One destination failing never costs you the other
+state: live
+autonomy: gated
+behavior: >
+  When a destination refuses the copies — the drive is unplugged, the path is not writable, the disk
+  is full, the cloud account is out of quota or unreachable — every other destination is still
+  attempted, and the refusal is recorded against the run with the reason rather than stopping it.
+  A household with two destinations therefore still has one good copy from a night when the other
+  failed.
+implements:
+- apps/backups/runner.py::run_backup
+- apps/backups/runner.py::_copy_to_filesystem
+- apps/backups/gdrive.py::upload_to_gdrive
+tests: []
+links: {}
+notes: >
+  The whole reason to configure a second destination is that the first one can fail; letting the
+  first failure end the run would defeat it.

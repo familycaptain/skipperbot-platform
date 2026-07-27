@@ -1,0 +1,18 @@
+kind: specification
+id: issues.queue.reading-one-report
+title: One report, in full
+state: live
+autonomy: gated
+behavior: >
+  Opening a report shows everything known about it — what was reported and by whom, when, its
+  reference, its current state, the resolution notes, and every attached screenshot as a thumbnail
+  that enlarges when clicked. The report can also be opened directly from elsewhere by its reference,
+  which is how Skipper takes someone to a particular report; a reference that matches nothing says so
+  instead of showing an empty page.
+implements:
+- apps/issues/ui/IssuesApp.jsx::DetailView
+- apps/issues/ui/IssuesApp.jsx::IssuesApp
+- apps/issues/routes.py::api_get_issue
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,15 @@
+kind: specification
+id: images.gallery.grid-fills-the-panel
+title: The grid uses the whole panel
+state: live
+autonomy: gated
+behavior: >
+  The gallery occupies the full width of the app panel rather than a narrow column, and fits more
+  thumbnails per row as the panel widens — two on a narrow panel, up to four on a wide one.
+  Thumbnails are cropped to a uniform tile so rows stay even whatever shape the photos are. The
+  header and its count stay in place while the grid scrolls.
+implements:
+- apps/images/ui/ImagesApp.jsx
+tests: []
+links: {}
+notes: ''

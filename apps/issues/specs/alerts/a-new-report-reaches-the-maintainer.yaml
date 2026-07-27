@@ -1,0 +1,15 @@
+kind: specification
+id: issues.alerts.a-new-report-reaches-the-maintainer
+title: A new report reaches whoever maintains the install
+state: live
+autonomy: gated
+behavior: >
+  Filing a report tells every member who administers the install, straight away, that a new fault or
+  request has arrived — who filed it, which kind it is, and the opening of what they wrote — so a
+  household member never has to also go and find someone to mention it to. If the install has no
+  administrator, the report is still filed and simply waits in the list.
+implements:
+- apps/issues/store.py::create_issue
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,18 @@
+kind: specification
+id: backups.runner.an-attempt-is-recorded-before-it-starts
+title: An attempt is on the record before any work is done
+state: live
+autonomy: gated
+behavior: >
+  Every attempt is recorded the moment it begins, before the first byte is copied, and is linked to
+  whatever asked for it — so an attempt that crashes the machine mid-run is still visible afterwards
+  as one that started and never finished, rather than leaving no trace at all. Nothing removes a
+  record just because the attempt went badly.
+implements:
+- apps/backups/data.py::create_backup
+- apps/backups/runner.py::run_backup
+tests: []
+links: {}
+notes: >
+  Recording after the fact would make the most alarming case — the run that died — the one case with
+  no evidence.

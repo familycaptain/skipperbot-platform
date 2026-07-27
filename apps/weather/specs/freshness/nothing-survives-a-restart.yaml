@@ -1,0 +1,16 @@
+kind: specification
+id: weather.freshness.nothing-survives-a-restart
+title: "Held answers do not survive a restart"
+state: live
+autonomy: gated
+behavior: >
+  Held answers live only in memory. Nothing weather-related is written to disk or to the
+  database, so a restart or an upgrade discards all of them: the first question afterwards goes
+  to the weather service, and the background refresh warms the home location again within one
+  interval.
+implements:
+- apps/weather/cache.py::cached_fetch
+- apps/weather/manifest.yaml::entity_types
+tests: []
+links: {}
+notes: ''

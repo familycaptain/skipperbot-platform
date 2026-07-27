@@ -1,0 +1,16 @@
+kind: specification
+id: backups.destinations.what-is-configured-is-visible
+title: What is configured is visible from the history
+state: live
+autonomy: gated
+behavior: >
+  The panel shows the arrangement the runs are being judged against — where copies are being written,
+  how many are being kept, and how many are held right now — next to the history itself, so a
+  household reading a bad night can see whether the settings or the run were at fault without
+  opening settings. Anything not configured is simply absent rather than shown blank.
+implements:
+- apps/backups/ui/BackupsApp.jsx
+- agent.py::api_backup_config
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: weather.forecast.a-period-not-understood-becomes-today
+title: "A period Skipper cannot read becomes today, and says so"
+state: live
+autonomy: gated
+behavior: >
+  A period phrase Skipper does not recognise is answered for the rest of today, and the answer
+  states which period it actually covered. A person can therefore see that it was not the period
+  they asked about and rephrase, rather than acting on an answer about the wrong window.
+implements:
+- apps/weather/tools.py::_period_window
+- apps/weather/tools.py::get_rain_chance
+tests: []
+links: {}
+notes: >
+  Falling back to today rather than refusing keeps a loose spoken phrase answerable; naming the
+  covered period is what makes the fallback safe.

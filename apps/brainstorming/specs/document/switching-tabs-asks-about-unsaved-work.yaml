@@ -1,0 +1,14 @@
+kind: specification
+id: brainstorming.document.switching-tabs-asks-about-unsaved-work
+title: Switching tabs asks before dropping unsaved work
+state: live
+autonomy: gated
+behavior: >
+  Moving to another of the idea's tabs while text is unsaved asks first; declining leaves the
+  editor exactly where it was, with the unsaved text intact. Confirming abandons it.
+implements:
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::selectPart
+tests: []
+links: {}
+notes: >
+  Only tab switching is guarded; closing the idea's window is not — recorded as a finding.

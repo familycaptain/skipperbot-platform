@@ -1,0 +1,15 @@
+kind: specification
+id: images.storage.deleting-removes-the-file
+title: Deleting a picture reclaims its space
+state: live
+autonomy: gated
+behavior: >
+  Deleting a picture removes the stored file as well as the entry, so deleted photos do not go on
+  taking up room. An entry whose file has already gone is still removed cleanly, and asking to delete
+  something that is not there is reported as not found rather than as a success.
+implements:
+- agent.py::api_delete_image
+- data_layer/images.py::delete_image
+tests: []
+links: {}
+notes: ''

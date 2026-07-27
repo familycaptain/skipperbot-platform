@@ -1,0 +1,17 @@
+kind: specification
+id: issues.reporting.reporter-is-whoever-is-signed-in
+title: A report is filed by whoever is signed in
+state: live
+autonomy: gated
+behavior: >
+  The reporter recorded on a new report is the person the session is authenticated as, whatever name
+  the request claims — so nobody can file a report in someone else's name, and every report has a
+  person to go back to for validation. Names are recorded in one consistent form, so the same person
+  is matched however they typed their name.
+implements:
+- apps/issues/routes.py::_actor
+- apps/issues/routes.py::api_create_issue
+- apps/issues/store.py::create_issue
+tests: []
+links: {}
+notes: ''

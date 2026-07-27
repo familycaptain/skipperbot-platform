@@ -1,0 +1,20 @@
+kind: specification
+id: weather.outside-services.the-home-location-stays-out-of-the-logs
+title: "Where the household lives is not written to the request log"
+state: live
+autonomy: gated
+behavior: >
+  Coordinates and typed place names on weather requests are masked in the install's own request
+  log, so reading the logs — or handing them to somebody for support — does not reveal where the
+  household lives. Unrelated values that merely resemble them are left untouched.
+implements:
+- app_platform/log_redaction.py
+- apps/weather/routes.py::api_summary
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_data.py
+  rubric: >
+    Offline. Coordinates and the location string on a weather request line are masked; unrelated
+    parameters that merely end in the same letters are not.
+links: {}
+notes: ''

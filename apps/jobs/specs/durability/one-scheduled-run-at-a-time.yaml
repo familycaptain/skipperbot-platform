@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.durability.one-scheduled-run-at-a-time
+title: A schedule does not stack runs on top of each other
+state: live
+autonomy: gated
+behavior: >
+  A recurring schedule that comes due while its previous run is still going does not submit another —
+  it skips that occurrence — so a nightly job that overran does not end up with two copies of itself
+  competing. Having submitted, the schedule advances to its next occurrence immediately, so one
+  missed window does not make it fire repeatedly.
+implements:
+- apps/schedules/job_trigger.py::check_schedule_jobs
+- apps/jobs/data.py::count_running
+tests: []
+links: {}
+notes: ''

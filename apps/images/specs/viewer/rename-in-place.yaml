@@ -1,0 +1,17 @@
+kind: specification
+id: images.viewer.rename-in-place
+title: Rename a picture from its own view
+state: live
+autonomy: gated
+behavior: >
+  Clicking the name above a full-size picture turns it into an editable field; the new name is saved
+  when the field is left or the edit is submitted, and the tab title and the gallery caption then
+  show it. Renaming can be repeated as often as wanted and never touches the picture itself or the
+  filename it arrived with.
+implements:
+- apps/images/ui/ImageViewer.jsx
+- agent.py::api_update_image_title
+- data_layer/images.py::update_image_title
+tests: []
+links: {}
+notes: ''

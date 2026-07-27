@@ -1,0 +1,20 @@
+kind: specification
+id: weather.radar-and-alerts.alerts-are-us-only-and-say-so
+title: "Outside the United States, say that alerts do not apply"
+state: live
+autonomy: gated
+behavior: >
+  Severe-weather warnings come from a United States service only. For a place outside the US the
+  map states plainly that alerts are US-only and that conditions and the forecast still work —
+  never a silently empty map, which a person would read as 'nothing is in force here'.
+implements:
+- apps/weather/data.py::nws_alerts
+- apps/weather/ui/WeatherMap.jsx
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_tools.py
+  rubric: >
+    Offline. A non-US place returns the explicit US-only message with no warnings and without
+    contacting the alerts service; a US place fetches warnings normally.
+links: {}
+notes: ''

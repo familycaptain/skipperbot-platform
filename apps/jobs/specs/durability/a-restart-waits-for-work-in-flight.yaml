@@ -1,0 +1,20 @@
+kind: specification
+id: jobs.durability.a-restart-waits-for-work-in-flight
+title: A restart waits a while for work in flight
+state: live
+autonomy: gated
+behavior: >
+  A requested restart or deploy stops taking new work and then waits for what is already running to
+  finish — up to half a minute — before the process exits, so short work is not needlessly killed and
+  an operator can see what is still outstanding. Work still running when that grace period expires is
+  killed anyway and comes back as failed at the next start rather than resuming where it left off.
+implements:
+- agent.py::_drain_and_exit
+- agent.py::api_admin_restart
+- agent.py::api_admin_deploy
+- apps/jobs/dispatcher.py::get_active_job_ids
+tests: []
+links: {}
+notes: >
+  Deliberately a grace period rather than a guarantee. Work declared as not-to-be-interrupted still
+  survives only until the deadline.

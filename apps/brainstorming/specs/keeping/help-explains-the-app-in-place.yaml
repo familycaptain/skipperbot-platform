@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.keeping.help-explains-the-app-in-place
+title: The app explains itself in place
+state: live
+autonomy: gated
+behavior: >
+  Brainstorming carries its own help — what the workspace is for, what each screen does, the
+  example phrasings that work in chat, and where the ideas are kept — readable from inside the app
+  rather than requiring the household to be told separately. It is also one of the apps the
+  first-run tour introduces.
+implements:
+- apps/brainstorming/help.md
+- apps/brainstorming/manifest.yaml
+tests: []
+links: {}
+notes: ''

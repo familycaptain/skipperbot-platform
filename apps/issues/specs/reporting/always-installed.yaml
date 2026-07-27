@@ -1,0 +1,19 @@
+kind: specification
+id: issues.reporting.always-installed
+title: The tracker can never be turned off
+state: live
+autonomy: gated
+behavior: >
+  Issues is present in every install and cannot be disabled or uninstalled; an attempt to remove it
+  is refused with a reason, and an install missing it refuses to start rather than running without a
+  way to report faults. A household therefore always has somewhere to say Skipper is broken, however
+  much else has been switched off.
+implements:
+- app_platform/loader.py::REQUIRED_APPS
+- app_platform/loader.py::uninstall_app
+- apps/issues/manifest.yaml
+tests: []
+links: {}
+notes: >
+  Operator's rule: the channel a household uses to report that Skipper is broken must not itself be
+  removable, and the self-improvement loop reads from it.

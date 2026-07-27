@@ -1,0 +1,16 @@
+kind: specification
+id: weather.freshness.the-refresh-never-speaks
+title: "The background refresh is silent, and does not die"
+state: live
+autonomy: gated
+behavior: >
+  The background refresh never messages anyone, never opens an app, and never appears in
+  anybody's conversation — it only keeps answers warm. A refresh that fails is dropped and the
+  loop keeps running, trying again at the next interval, so one bad network minute does not
+  leave the household with a permanently cold app.
+implements:
+- apps/weather/background.py::_refresh_once
+- apps/weather/background.py::start_weather_cache_loop
+tests: []
+links: {}
+notes: ''

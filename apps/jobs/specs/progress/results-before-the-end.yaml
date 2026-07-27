@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.progress.results-before-the-end
+title: Partial results are visible before the end
+state: live
+autonomy: gated
+behavior: >
+  Work can publish results while it is still running, and they are readable straight away alongside
+  what it was asked to do — so a long job is not opaque until the moment it finishes. A later
+  publication adds to what is already there rather than replacing it.
+implements:
+- apps/jobs/dispatcher.py::JobContext.update_output
+- apps/jobs/data.py::update_output
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: ''

@@ -1,0 +1,17 @@
+kind: specification
+id: weather.current-conditions.a-missing-reading-leaves-a-gap
+title: "A reading the service leaves out shows as a gap, not a zero"
+state: live
+autonomy: gated
+behavior: >
+  When the weather service omits a value — no humidity, no wind, no feels-like — that value is
+  shown as a visible gap and everything else is still reported. A missing number is never
+  reported as zero, and a missing wind direction is left off entirely rather than turned into a
+  compass point that was never measured.
+implements:
+- apps/weather/tools.py::get_current_weather
+- apps/weather/tools.py::_wind_compass
+- apps/weather/data.py::weather_summary
+tests: []
+links: {}
+notes: ''

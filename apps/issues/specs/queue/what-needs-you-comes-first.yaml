@@ -1,0 +1,15 @@
+kind: specification
+id: issues.queue.what-needs-you-comes-first
+title: What is waiting on you is at the top
+state: live
+autonomy: gated
+behavior: >
+  Opening the list puts your own reports that are waiting for you to check a fix in a distinct band
+  at the very top, each showing the fix note so the ask is legible without opening it. With nothing
+  waiting on you the band is absent entirely rather than shown empty, so the top of the list is only
+  ever occupied when you actually owe an answer.
+implements:
+- apps/issues/ui/IssuesApp.jsx::ListView
+tests: []
+links: {}
+notes: ''

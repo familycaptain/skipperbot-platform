@@ -1,0 +1,15 @@
+kind: specification
+id: issues.triage.edits-apply-only-when-saved
+title: Edits apply only when saved
+state: live
+autonomy: gated
+behavior: >
+  Changing anything on an open report — its state, its notes, its attachments — is held locally until
+  it is saved, and a save control appears only once there is something to save. So someone can pick a
+  new state, write the note that explains it, and commit both as one change; and someone who was only
+  reading leaves nothing behind. Reopening or refreshing a report discards whatever was not saved.
+implements:
+- apps/issues/ui/IssuesApp.jsx::DetailView
+tests: []
+links: {}
+notes: ''

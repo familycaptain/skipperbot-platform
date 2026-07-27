@@ -1,0 +1,18 @@
+kind: specification
+id: backups.watchdog.a-missing-backup-is-reported
+title: A day with no backup at all is reported, not just absent
+state: live
+autonomy: gated
+behavior: >
+  Once a day, after the backup was due, Skipper checks whether one happened. If no attempt was made
+  at all — the schedule never fired, the machine was off, the job never reached the queue — the
+  household's administrator is told that no backup ran, and when one was expected. Silence is never
+  taken as good news.
+implements:
+- apps/backups/runner.py::run_backup_check
+- apps/backups/data.py::list_today
+tests: []
+links: {}
+notes: >
+  The failure this exists to catch is the one the history cannot show: a backup that was never
+  attempted leaves nothing on screen to notice.

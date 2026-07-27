@@ -1,0 +1,14 @@
+kind: specification
+id: weather.radar-and-alerts.the-map-does-not-steal-the-scroll
+title: "Scrolling past the map scrolls the page"
+state: live
+autonomy: gated
+behavior: >
+  Scrolling the page while the pointer is over the map scrolls the page, not the map — the map
+  is zoomed with its own controls or a pinch. Someone reading down the app window is never
+  trapped inside the map.
+implements:
+- apps/weather/ui/WeatherMap.jsx
+tests: []
+links: {}
+notes: ''

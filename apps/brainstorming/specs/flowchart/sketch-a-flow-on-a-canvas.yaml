@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.flowchart.sketch-a-flow-on-a-canvas
+title: Sketch a flow on a canvas
+state: live
+autonomy: gated
+behavior: >
+  A flowchart part is a canvas: add a box, drag it anywhere, double-click it to name it, and drag
+  from one box's edge to another to connect them with an arrow. Connections can start or end on
+  any side, so a flow can loop back. A new flowchart starts as an empty canvas rather than with a
+  placeholder shape.
+implements:
+- web/src/components/FlowchartEditor.jsx
+- apps/brainstorming/ui/BrainstormDetailApp.jsx
+tests: []
+links: {}
+notes: ''

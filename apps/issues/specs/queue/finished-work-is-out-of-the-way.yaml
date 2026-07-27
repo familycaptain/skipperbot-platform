@@ -1,0 +1,14 @@
+kind: specification
+id: issues.queue.finished-work-is-out-of-the-way
+title: Finished reports are out of the way until asked for
+state: live
+autonomy: gated
+behavior: >
+  Reports that are done with — fixed, declined, or judged a repeat of another — are hidden from the
+  list by default, so what is shown is what still needs someone. One toggle brings them back into
+  view for anyone wanting to check what was already dealt with; nothing is removed, only hidden.
+implements:
+- apps/issues/ui/IssuesApp.jsx::ListView
+tests: []
+links: {}
+notes: ''

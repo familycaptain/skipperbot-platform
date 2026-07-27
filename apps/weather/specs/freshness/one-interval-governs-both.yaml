@@ -1,0 +1,17 @@
+kind: specification
+id: weather.freshness.one-interval-governs-both
+title: "One interval governs both reuse and refresh"
+state: live
+autonomy: gated
+behavior: >
+  A single configurable interval — five minutes unless changed — is both how long a held answer
+  is reused and how often the background refresh runs, so there is one number to reason about
+  rather than two that can contradict each other. Changing it takes effect within one cycle,
+  with no restart.
+implements:
+- apps/weather/manifest.yaml::config
+- apps/weather/cache.py::effective_ttl
+- apps/weather/background.py::start_weather_cache_loop
+tests: []
+links: {}
+notes: ''

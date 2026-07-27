@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.progress.the-log-fills-in-as-it-goes
+title: The log fills in as it goes
+state: live
+autonomy: gated
+behavior: >
+  While work is running its log is followed live: only lines newer than the last one already shown
+  are fetched, so a long job's log grows instead of being re-read from the start, and the view stays
+  at the newest line. Following stops when the work ends.
+implements:
+- apps/jobs/data.py::get_logs
+- agent.py::api_get_job_logs
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: ''

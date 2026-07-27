@@ -1,0 +1,17 @@
+kind: specification
+id: brainstorming.document.documents-save-on-command
+title: A document saves when you say so, not as you type
+state: live
+autonomy: gated
+behavior: >
+  Document text is not saved while it is being typed. An edited document is marked unsaved and
+  stays that way until Save is pressed or Ctrl-S (Cmd-S) is used. A save that fails says why and
+  leaves every character in the editor, so a dropped connection never costs the writing.
+implements:
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::handleSavePart
+- agent.py::api_update_part
+tests: []
+links: {}
+notes: >
+  The opposite choice from the flowchart canvas, which autosaves — a half-written sentence is not
+  worth persisting, a half-dragged node is.

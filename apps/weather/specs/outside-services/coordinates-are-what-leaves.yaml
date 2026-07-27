@@ -1,0 +1,17 @@
+kind: specification
+id: weather.outside-services.coordinates-are-what-leaves
+title: "Coordinates leave the install, and nothing else does"
+state: live
+autonomy: gated
+behavior: >
+  Answering a weather question sends a latitude and longitude, and the list of measurements
+  wanted, to a public forecast service. Nothing about the household goes with it: no name, no
+  account, no household or device identifier, and none of the conversation that prompted the
+  question. The severe-weather request is the same — a single point and nothing more.
+implements:
+- apps/weather/tools.py::_current_weather_url
+- apps/weather/data.py::weather_summary
+- apps/weather/data.py::nws_alerts
+tests: []
+links: {}
+notes: ''

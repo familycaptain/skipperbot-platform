@@ -1,0 +1,22 @@
+kind: specification
+id: weather.freshness.stale-beats-nothing
+title: "A slightly old answer beats no answer"
+state: live
+autonomy: gated
+behavior: >
+  When the weather service fails and an answer for that place is already held, that answer is
+  given instead of an error — an hour-old temperature is more use to someone deciding on a coat
+  than a failure. There is no limit on how old the reused answer may be during a long outage,
+  and nothing in the answer tells the person how old it is.
+implements:
+- apps/weather/cache.py::cached_fetch
+tests:
+- type: unit
+  path: apps/weather/tests/test_weather_cache.py
+  rubric: >
+    Offline. Once a value is held, a failing fetch returns that held value rather than raising.
+links: {}
+notes: >
+  Serving stale with no cap was a deliberate choice — stale beats nothing. Giving no age with it
+  was not: a person can be told a reading hours old with nothing marking it as old. Recorded
+  here so the gap is visible rather than implied.

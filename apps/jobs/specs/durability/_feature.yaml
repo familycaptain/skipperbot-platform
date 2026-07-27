@@ -1,0 +1,6 @@
+kind: feature
+id: jobs.durability
+title: Nothing silently lost or doubled
+state: live
+links: {}
+notes: ''

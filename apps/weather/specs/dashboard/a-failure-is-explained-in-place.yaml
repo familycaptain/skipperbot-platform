@@ -1,0 +1,15 @@
+kind: specification
+id: weather.dashboard.a-failure-is-explained-in-place
+title: "A failure is explained where the forecast would have been"
+state: live
+autonomy: gated
+behavior: >
+  When weather cannot be loaded, the reason appears as a notice in place of the forecast while
+  the header and tabs stay usable, so the person can retry or try another place. If the browser
+  cannot reach the install at all, the notice says the weather service could not be reached
+  rather than the app sitting on the loading indicator forever.
+implements:
+- apps/weather/ui/WeatherApp.jsx
+tests: []
+links: {}
+notes: ''

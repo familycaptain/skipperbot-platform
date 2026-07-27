@@ -1,0 +1,17 @@
+kind: specification
+id: weather.current-conditions.conditions-that-cannot-be-fetched
+title: "When conditions cannot be fetched, say so"
+state: live
+autonomy: gated
+behavior: >
+  When the weather service cannot be reached and no recent answer is held for that place, the
+  person is told the weather could not be fetched. They are never shown a blank card, a zero
+  temperature, or an invented reading. The app window puts the reason where the forecast would
+  have been; chat and voice say the same thing in words.
+implements:
+- apps/weather/tools.py::get_current_weather
+- apps/weather/data.py::weather_summary
+- apps/weather/ui/WeatherApp.jsx
+tests: []
+links: {}
+notes: ''

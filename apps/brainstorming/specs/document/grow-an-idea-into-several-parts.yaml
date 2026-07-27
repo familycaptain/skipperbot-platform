@@ -1,0 +1,16 @@
+kind: specification
+id: brainstorming.document.grow-an-idea-into-several-parts
+title: Grow an idea into several parts
+state: live
+autonomy: gated
+behavior: >
+  An idea can hold more than one document and more than one flowchart, each on its own tab. Adding
+  one asks for a name, and abandoning that prompt adds nothing. A new part appears after the
+  existing tabs and opens straight away, so it can be written in without a second click.
+implements:
+- apps/brainstorming/ui/BrainstormDetailApp.jsx::handleAddPart
+- agent.py::api_add_part
+- data_layer/brainstorming.py::add_part
+tests: []
+links: {}
+notes: ''

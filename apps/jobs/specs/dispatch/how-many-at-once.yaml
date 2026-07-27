@@ -1,0 +1,18 @@
+kind: specification
+id: jobs.dispatch.how-many-at-once
+title: Only so much of one kind runs at once
+state: live
+autonomy: gated
+behavior: >
+  Each kind of work declares how many of it may run at the same time; while that many are running,
+  further requests of that kind stay in the queue instead of piling on. The operator can additionally
+  cap every kind at a lower number, applied on top of what each kind asked for. One kind being busy
+  never holds up a different kind.
+implements:
+- apps/jobs/dispatcher.py::_dispatch_cycle
+- apps/jobs/dispatcher.py::register_handler
+- apps/jobs/data.py::count_running
+- apps/jobs/manifest.yaml
+tests: []
+links: {}
+notes: ''

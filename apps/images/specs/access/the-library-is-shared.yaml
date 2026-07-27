@@ -1,0 +1,19 @@
+kind: specification
+id: images.access.the-library-is-shared
+title: The library is one shared household collection
+state: live
+autonomy: gated
+behavior: >
+  Any signed-in adult sees every picture in the library, whichever app it was attached to and whoever
+  added it, and can open, rename or delete any of them. No picture belongs privately to the person who
+  added it, none can be hidden from another adult, and there is no per-app or per-record filter on the
+  gallery.
+implements:
+- agent.py::api_list_images
+- data_layer/images.py::get_all_images
+tests: []
+links: {}
+notes: >
+  Follows the platform decision that adults in a household trust one another
+  (platform.auth.adults-trust-each-other). What a child's account should see of photos attached to an
+  adult's records is not something this app decides today.

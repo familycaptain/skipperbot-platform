@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.outcomes.nobody-to-tell-means-nobody-is-told
+title: With nobody to tell, nobody is told
+state: live
+autonomy: gated
+behavior: >
+  Work submitted with no recipient, or for a name that belongs to no known person — as happens when
+  an app or a schedule submits work on the household's behalf rather than for a particular person —
+  produces no message at all. The outcome is still recorded on the job and visible in the Jobs app;
+  it simply does not go looking for someone to interrupt.
+implements:
+- apps/jobs/dispatcher.py::_notify_completion
+- apps/jobs/store.py::record_run
+tests: []
+links: {}
+notes: ''

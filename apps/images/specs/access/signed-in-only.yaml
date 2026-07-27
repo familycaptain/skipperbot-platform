@@ -1,0 +1,19 @@
+kind: specification
+id: images.access.signed-in-only
+title: A picture is only for someone signed in
+state: live
+autonomy: gated
+behavior: >
+  Listing the library, reading an entry, and fetching the picture itself all require a signed-in
+  person: without a valid session a browser gets a sign-in page and any other caller a plain
+  authentication error, and no picture data is returned either way. This holds for a picture's address
+  pasted into a browser exactly as it does for the app.
+implements:
+- agent.py::auth_gate
+- agent.py::api_serve_image_by_id
+- app_platform/auth.py::principal_from_request
+tests: []
+links: {}
+notes: >
+  Photos are household content and some of them are of the inside of the house, its documents and its
+  vehicles; a picture's address is not a secret and must not be what protects it.

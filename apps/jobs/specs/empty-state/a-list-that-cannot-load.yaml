@@ -1,0 +1,16 @@
+kind: specification
+id: jobs.empty-state.a-list-that-cannot-load
+title: A list that cannot load looks the same as an empty one
+state: live
+autonomy: gated
+behavior: >
+  When the work list cannot be read, the failure is not shown: the app keeps whatever it last had, and
+  an app that has never managed to load anything shows the empty-state explanation as though the
+  household had never run any work. Nothing is retried until the next refresh or the next poll.
+implements:
+- apps/jobs/ui/JobsApp.jsx
+tests: []
+links: {}
+notes: >
+  Recorded as it behaves today rather than as a promise: a load failure is indistinguishable from an
+  empty queue.

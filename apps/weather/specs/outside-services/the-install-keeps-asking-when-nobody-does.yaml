@@ -1,0 +1,16 @@
+kind: specification
+id: weather.outside-services.the-install-keeps-asking-when-nobody-does
+title: "The install contacts the weather service even when nobody asks"
+state: live
+autonomy: gated
+behavior: >
+  With reuse switched on and a home location set, the install contacts the forecast service for
+  the household's coordinates every refresh interval whether or not anybody has asked for
+  weather — several requests each pass, around the clock. Switching reuse off, or having no home
+  location, stops it entirely.
+implements:
+- apps/weather/background.py::_refresh_once
+- apps/weather/background.py::start_weather_cache_loop
+tests: []
+links: {}
+notes: ''

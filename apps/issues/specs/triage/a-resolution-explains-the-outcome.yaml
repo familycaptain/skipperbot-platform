@@ -1,0 +1,17 @@
+kind: specification
+id: issues.triage.a-resolution-explains-the-outcome
+title: A resolution note says what was done, or why not
+state: live
+autonomy: gated
+behavior: >
+  Alongside the state, a report carries a free-text note explaining what was changed — or why the
+  request was declined or judged a repeat. That note is what the reporter is shown when they are
+  asked to check the fix, and it stays on the report afterwards as the record of the outcome, so a
+  report closed months ago still explains itself. A report may be closed without one, in which case
+  the reporter is simply told the outcome.
+implements:
+- apps/issues/store.py::update_issue
+- apps/issues/ui/IssuesApp.jsx::DetailView
+tests: []
+links: {}
+notes: ''

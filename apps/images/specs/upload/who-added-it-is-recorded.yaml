@@ -1,0 +1,17 @@
+kind: specification
+id: images.upload.who-added-it-is-recorded
+title: Each picture records who added it
+state: live
+autonomy: gated
+behavior: >
+  Every entry records the person who added it, taken from the signed-in person making the request, so
+  attribution cannot be chosen by whoever is uploading. It is kept with the entry for as long as the
+  picture exists, even though the gallery does not display it today.
+implements:
+- agent.py::api_upload_image
+- data_layer/images.py::save_image
+tests: []
+links: {}
+notes: >
+  Attribution comes from the verified session, never from a form field — the same rule the sibling
+  routes in the apps that attach photos already follow.
