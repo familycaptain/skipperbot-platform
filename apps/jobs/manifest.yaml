@@ -51,23 +51,18 @@ subscribes: []
 # Tool category for keyword routing.
 tool_category:
   description: >
-    Create, list, update, and run background jobs (shell commands,
-    research, backups, evolve cycles, etc.). Use these for any
-    long-running work that should run out-of-band from chat.
+    List and update background jobs (research, backups, printing,
+    evolve cycles, etc.). Use these to see what long-running work is
+    queued, running, or finished. Jobs are submitted by the apps that
+    own them, not created ad hoc.
   keywords:
     - job
     - jobs
     - background
     - submit job
-    - run job
-    - create job
     - schedule job
     - cron
     - cron job
-    - shell command
-    - shell job
-    - run command
-    - execute command
     - background work
     - long running
     - retry

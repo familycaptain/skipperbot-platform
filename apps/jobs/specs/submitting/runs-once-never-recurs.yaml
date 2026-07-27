@@ -5,12 +5,12 @@ state: live
 autonomy: gated
 behavior: >
   Work handed to the queue runs exactly once. Asking for it to recur — passing a schedule or a cron
-  expression when creating or updating one — does not make it recurring: the work is still created,
+  expression when updating one — does not make it recurring: the work is unchanged,
   the recurrence is ignored, and the answer says so plainly and points at the Schedules app as the
   way to run something on a cadence. Recurrence cannot be expressed on a job at all, so nobody is
   left believing they set up a nightly task that will never fire.
 implements:
-- apps/jobs/tools.py::create_job
+- apps/jobs/tools.py::update_job
 - apps/jobs/tools.py::update_job
 - apps/jobs/dispatcher.py::submit_job
 - apps/jobs/migrations/003_drop_schedule_expr.sql

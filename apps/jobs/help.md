@@ -5,7 +5,7 @@ any scheduled or on-demand task — plus the controls to run, pause, and define 
 
 ## Overview
 
-Jobs is the platform's background-work queue. A job is a command/task that can run
+Jobs is the platform's background-work queue. A job is a unit of work that can run
 **on demand** or on a **schedule**, can be retried and cancelled, and emits a
 notification when it finishes or fails. Most jobs are set up and triggered by
 other apps and thinking domains; Jobs is where you see and manage them. It's an

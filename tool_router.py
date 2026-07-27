@@ -148,8 +148,10 @@ DISABLED_CHAT_TOOLS = frozenset({
     "delete_tool", "read_tool", "list_tool_files", "get_tool_creation_guide",
     # MCP server control (reloads / re-imports tool modules in-process)
     "restart_mcp_server", "start_mcp_server", "stop_mcp_server", "mcp_server_status",
-    # Shell execution (run_job runs free-form command strings with shell=True)
-    "run_job", "create_job", "update_job",
+    # Job definition mutation. The shell-job tools (create_job / run_job) that
+    # originally motivated this entry are gone — the feature was deleted, not just
+    # fenced off — so only the surviving mutation tool is listed.
+    "update_job",
     # git: clone/fetch/-c/ext:: flags are an RCE vector and repo operations
     # belong to the Evolve → Claude Code path, not the chat LLM (audit #12/#28).
     "git_tool",

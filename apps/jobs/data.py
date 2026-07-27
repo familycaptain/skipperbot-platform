@@ -47,7 +47,7 @@ SCHEMA = "app_jobs"
 
 _JOB_HINT = (
     "Focus on: the job's name, job_type, status (queued/running/completed/"
-    "failed/cancelled), who submitted it, what command it ran, and whether "
+    "failed/cancelled), who submitted it, and whether "
     "it succeeded. Jobs are how chat answers 'did that backup actually run?'."
 )
 
@@ -98,12 +98,12 @@ def create_job(
             cur.execute(
                 """
                 INSERT INTO jobs (
-                    id, name, job_type, command, description,
+                    id, name, job_type, description,
                     scheduled_for, notify_user, status,
                     created_by, created_at, progress, progress_pct,
                     cancelled, config, output, max_retries, parent_job_id
                 ) VALUES (
-                    %s, %s, %s, '', %s, %s, %s, 'queued',
+                    %s, %s, %s, %s, %s, %s, 'queued',
                     %s, now(), 'Queued', 0, FALSE, %s, '{}', %s, %s
                 ) RETURNING *
                 """,
@@ -440,15 +440,14 @@ def save_job(j: dict):
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO jobs (id, name, job_type, command, description,
+                INSERT INTO jobs (id, name, job_type, description,
                                   scheduled_for, notify_user, status, created_by,
                                   created_at, last_run_at, last_result, run_count,
                                   progress, cancelled, config, output)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                 ON CONFLICT (id) DO UPDATE SET
                     name = EXCLUDED.name,
                     job_type = EXCLUDED.job_type,
-                    command = EXCLUDED.command,
                     description = EXCLUDED.description,
                     scheduled_for = EXCLUDED.scheduled_for,
                     notify_user = EXCLUDED.notify_user,
@@ -462,8 +461,8 @@ def save_job(j: dict):
                     output = EXCLUDED.output
                 """,
                 (
-                    j["id"], j["name"], j.get("job_type", "shell"),
-                    j.get("command", ""), j.get("description", ""),
+                    j["id"], j["name"], j.get("job_type", ""),
+                    j.get("description", ""),
                     j.get("scheduled_for", ""),
                     j.get("notify_user", ""), j.get("status", "active"),
                     j.get("created_by", ""),
@@ -509,11 +508,11 @@ def save_all_jobs(jobs: list[dict]):
             for j in jobs:
                 cur.execute(
                     """
-                    INSERT INTO jobs (id, name, job_type, command, description,
+                    INSERT INTO jobs (id, name, job_type, description,
                                       scheduled_for, notify_user, status, created_by,
                                       created_at, last_run_at, last_result, run_count,
                                       progress, cancelled, config, output)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     ON CONFLICT (id) DO UPDATE SET
                         name = EXCLUDED.name, status = EXCLUDED.status,
                         last_run_at = EXCLUDED.last_run_at, last_result = EXCLUDED.last_result,
@@ -522,8 +521,8 @@ def save_all_jobs(jobs: list[dict]):
                         output = EXCLUDED.output
                     """,
                     (
-                        j["id"], j["name"], j.get("job_type", "shell"),
-                        j.get("command", ""), j.get("description", ""),
+                        j["id"], j["name"], j.get("job_type", ""),
+                        j.get("description", ""),
                         j.get("scheduled_for", ""),
                         j.get("notify_user", ""), j.get("status", "active"),
                         j.get("created_by", ""),
@@ -548,8 +547,7 @@ def _row(row: dict) -> dict:
     return {
         "id": row["id"],
         "name": row.get("name") or "",
-        "job_type": row.get("job_type") or "shell",
-        "command": row.get("command") or "",
+        "job_type": row.get("job_type") or "",
         "description": row.get("description") or "",
         "scheduled_for": row.get("scheduled_for") or "",
         "notify_user": row.get("notify_user") or "",

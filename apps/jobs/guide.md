@@ -1,23 +1,20 @@
 # Jobs Guide
 
-Jobs are shell commands or scripts that can run on-demand via `run_job`.
-Use `create_job` to define them, `get_jobs` to list, `update_job` to modify.
-Jobs automatically emit notifications on completion or failure.
+Jobs are units of background work — research runs, backups, printing, Evolve cycles. Each
+job type is owned by the app that submits it, and runs through a handler registered with
+`app_platform.jobs.register_handler`. Jobs emit notifications on completion or failure.
+
+You can `get_jobs` to list them and `update_job` to change a job's status, name or
+notification recipient. **You cannot create or execute jobs from chat** — the apps that own
+the work submit it. There is no free-form "run this command" job; that feature was removed.
 
 ## Workflows
 
-### Create a manual job
-- "Create a job to back up the database" → create_job(name, command, created_by)
-- No schedule = manual only
-
-### Run a job on demand
-- "Run the backup job" → run_job(j-*) → executes command, records result, emits n-* notification
-
-### Create a scheduled job
-- create_job with schedule (cron or RRULE) → job scheduler picks it up
+### Someone asks to run a backup now
+- That is the Backups app's own "Run now", not a job you create. Point them at it.
 
 ### Job fails → notification
-- run_job fails → record_run logs failure → n-* notification
+- The handler's failure is recorded and an n-* notification goes out
 - Alert user: "Your backup job failed: [error]"
 
 ### Pause/resume

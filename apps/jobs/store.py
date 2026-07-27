@@ -30,7 +30,7 @@ from apps.jobs import data as _q
 from app_platform.db import execute_in_schema
 
 VALID_STATUSES = {"active", "paused", "completed", "failed", "queued", "running", "cancelled"}
-VALID_JOB_TYPES = {"shell", "research", "print", "refine", "pm", "investment", "rebalance"}
+VALID_JOB_TYPES = {"research", "print", "refine", "pm", "investment", "rebalance"}
 
 
 def _now_iso() -> str:
@@ -40,30 +40,6 @@ def _now_iso() -> str:
 # ---------------------------------------------------------------------------
 # CRUD
 # ---------------------------------------------------------------------------
-
-def create_job(
-    name: str,
-    command: str,
-    created_by: str,
-    notify_user: str = "",
-    description: str = "",
-) -> dict:
-    """Create a new shell-style job definition."""
-    job = _q.create_job(
-        job_id=f"j-{uuid.uuid4().hex[:8]}",
-        name=name,
-        job_type="shell",
-        created_by=created_by.lower().strip(),
-        description=description.strip() if description else "",
-        notify_user=notify_user.lower().strip() if notify_user else created_by.lower().strip(),
-        config={"command": command},
-    )
-    # Keep 'command' at top level for backward compat
-    job["command"] = command
-    log_entity_change("created", job["id"], "job",
-                      f"{name}: {command[:80]}", by=created_by)
-    return job
-
 
 def get_job(job_id: str) -> dict | None:
     """Get a job by ID."""
@@ -84,7 +60,6 @@ def update_job(
     updated_by: str = "",
     status: str = "",
     name: str = "",
-    command: str = "",
     notify_user: str = "",
 ) -> str:
     """Update a job definition. Returns a status message."""
@@ -339,5 +314,5 @@ def format_jobs(jobs: list[dict]) -> str:
         last = f" (last: {j['last_run_at'][:16]})" if j.get("last_run_at") else ""
         runs = f" runs: {j.get('run_count', 0)}"
         lines.append(f"  [{j['id']}] {j['name']} — {j['status'].upper()}{sched}{last}{runs}")
-        lines.append(f"    cmd: {j['command'][:60]}  notify: {j.get('notify_user', '?')}")
+        lines.append(f"    notify: {j.get('notify_user', '?')}")
     return "\n".join(lines)

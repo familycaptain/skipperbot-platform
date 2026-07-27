@@ -10,7 +10,8 @@ behavior: >
   records the system as its requester.
 implements:
 - apps/jobs/dispatcher.py::submit_job
-- apps/jobs/store.py::create_job
+- apps/jobs/data.py::create_job
+- app_platform/jobs.py::submit_job
 - apps/jobs/data.py::create_job
 tests: []
 links: {}

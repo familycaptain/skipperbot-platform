@@ -10,7 +10,6 @@ via `app_platform.jobs.register_handler(job_type, fn)`.
 Examples of job types in the source codebase (each lives with its
 owning app once that app is packaged):
 
-- `shell` — run an arbitrary shell command
 - `research` — kick off a research run
 - `refine` — refine a research run with a follow-up prompt
 - `print` — print a doc

@@ -1,0 +1,12 @@
+-- Drop the shell-job `command` column.
+--
+-- The shell-job feature is gone (see apps/jobs/tools.py). It was unreachable end to end:
+-- the tools were chat-disabled, no REST or UI path created one, and `shell` had no
+-- dispatcher handler, so such a job would have sat queued forever. What remained was a
+-- latent arbitrary-execution surface.
+--
+-- Nothing is lost. `create_job` never wrote this column — it inserted a literal '' and
+-- kept the real string in `config`, which is why `run_job` executed an empty command and
+-- recorded SUCCESS. Any legacy row that does carry a value is a shell job that could not
+-- have run anyway.
+ALTER TABLE jobs DROP COLUMN IF EXISTS command;
