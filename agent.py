@@ -4343,7 +4343,19 @@ async def api_thinking_subconscious():
 
 
 # ── Behaviors API ──
+import contextlib
+
 import app_platform.behaviors as _dl_behaviors
+
+
+@contextlib.contextmanager
+def _behavior_scope_403():
+    """Surface the data layer's system-scope refusal as a 403 rather than a 500."""
+    from fastapi import HTTPException
+    try:
+        yield
+    except _dl_behaviors.SystemScopeDenied as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
 class BehaviorCreateRequest(BaseModel):
@@ -4374,27 +4386,35 @@ async def api_list_behaviors(user_id: str = "", scope: str = ""):
 @app.post("/api/behaviors")
 async def api_create_behavior(req: BehaviorCreateRequest, http_request: Request):
     req.created_by = _actor_name(http_request)
-    behavior = await asyncio.to_thread(
-        _dl_behaviors.create_behavior,
-        trigger_description=req.trigger_description,
-        action_description=req.action_description,
-        created_by=req.created_by,
-        scope=req.scope,
-        notes=req.notes,
-    )
+    # The scope='system' gate lives in the data layer; these routes just hand it the
+    # VERIFIED actor and turn its refusal into a 403. This is the only surface that can
+    # gate it properly — a chat tool call carries no provable identity.
+    with _behavior_scope_403():
+        behavior = await asyncio.to_thread(
+            _dl_behaviors.create_behavior,
+            trigger_description=req.trigger_description,
+            action_description=req.action_description,
+            created_by=req.created_by,
+            scope=req.scope,
+            notes=req.notes,
+            actor=req.created_by,
+        )
     return behavior
 
 
 @app.patch("/api/behaviors/{behavior_id}")
-async def api_update_behavior(behavior_id: str, req: BehaviorUpdateRequest):
-    updated = await asyncio.to_thread(
-        _dl_behaviors.update_behavior,
-        behavior_id=behavior_id,
-        trigger_description=req.trigger_description,
-        action_description=req.action_description,
-        scope=req.scope,
-        notes=req.notes,
-    )
+async def api_update_behavior(behavior_id: str, req: BehaviorUpdateRequest,
+                              http_request: Request):
+    with _behavior_scope_403():
+        updated = await asyncio.to_thread(
+            _dl_behaviors.update_behavior,
+            behavior_id=behavior_id,
+            trigger_description=req.trigger_description,
+            action_description=req.action_description,
+            scope=req.scope,
+            notes=req.notes,
+            actor=_actor_name(http_request),
+        )
     if not updated:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Behavior not found")
@@ -4402,8 +4422,11 @@ async def api_update_behavior(behavior_id: str, req: BehaviorUpdateRequest):
 
 
 @app.post("/api/behaviors/{behavior_id}/toggle")
-async def api_toggle_behavior(behavior_id: str):
-    result = await asyncio.to_thread(_dl_behaviors.toggle_behavior, behavior_id)
+async def api_toggle_behavior(behavior_id: str, http_request: Request):
+    with _behavior_scope_403():
+        result = await asyncio.to_thread(
+            _dl_behaviors.toggle_behavior, behavior_id, actor=_actor_name(http_request),
+        )
     if not result:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Behavior not found")
@@ -4411,8 +4434,11 @@ async def api_toggle_behavior(behavior_id: str):
 
 
 @app.delete("/api/behaviors/{behavior_id}")
-async def api_delete_behavior(behavior_id: str):
-    deleted = await asyncio.to_thread(_dl_behaviors.delete_behavior, behavior_id)
+async def api_delete_behavior(behavior_id: str, http_request: Request):
+    with _behavior_scope_403():
+        deleted = await asyncio.to_thread(
+            _dl_behaviors.delete_behavior, behavior_id, actor=_actor_name(http_request),
+        )
     if not deleted:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Behavior not found")

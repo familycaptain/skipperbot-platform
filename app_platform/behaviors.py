@@ -21,6 +21,7 @@ Usage from chat / voice prompting code::
 from __future__ import annotations
 
 from apps.behaviors.data import (
+    SystemScopeDenied,
     create_behavior,
     get_behavior,
     list_behaviors,
@@ -31,6 +32,7 @@ from apps.behaviors.data import (
 )
 
 __all__ = [
+    "SystemScopeDenied",
     "create_behavior",
     "get_behavior",
     "list_behaviors",

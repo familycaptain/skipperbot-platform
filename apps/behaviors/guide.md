@@ -42,7 +42,12 @@ If `add_behavior()` was not called as a tool, the behavior does NOT exist.
 ### add_behavior(user_id, trigger_description, action_description, scope, notes)
 Create a new behavior rule. Call this the moment a user teaches you a rule.
 
-- **scope**: `'user'` (default, personal) or `'system'` (applies to all users, admin only)
+- **scope**: always `'user'` (personal). `'system'` is **refused from chat** — a system rule
+  goes into every household member's prompt, so it has to be added by an admin in the
+  Behaviors app, where the platform knows who is asking. If someone asks you for a rule
+  "for everyone", create it as personal and tell them an admin can make it household-wide.
+- Editing, disabling or deleting an existing **system** behavior is refused here too — say
+  so plainly rather than retrying.
 - Both trigger and action should be clear natural language descriptions
 
 Example:

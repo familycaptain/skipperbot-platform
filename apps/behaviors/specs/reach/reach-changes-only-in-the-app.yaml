@@ -4,14 +4,19 @@ title: Widening a rule to the household is a deliberate edit
 state: live
 autonomy: gated
 behavior: >
-  A rule's reach is chosen when it is written and can afterwards be changed only by editing it in the
-  app, where the choice is a visible pair of buttons. Asking Skipper to reword a rule cannot quietly
-  turn a personal rule into one that applies to the whole household, so a rule taught in conversation
-  stays personal unless somebody goes and widens it on purpose.
+  A rule's reach is chosen when it is written and can afterwards be changed only by an administrator
+  editing it in the app, where the choice is a visible pair of buttons. Asking Skipper to reword a rule
+  cannot quietly turn a personal rule into one that applies to the whole household, and neither can a
+  member widening their own rule, so a rule taught in conversation stays personal unless an
+  administrator goes and widens it on purpose.
 implements:
 - agent.py::api_update_behavior
+- apps/behaviors/data.py::update_behavior
 - apps/behaviors/tools.py::update_behavior
 - apps/behaviors/ui/BehaviorsApp.jsx
-tests: []
+tests:
+- apps/behaviors/tests/test_system_scope_is_admin_only.py
 links: {}
-notes: ''
+notes: >
+  The reach control is hidden from non-administrators in the app, but the refusal is enforced on the
+  server — the promotion path (write it as personal, then retarget it) is checked on the way in.

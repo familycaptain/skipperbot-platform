@@ -19,12 +19,19 @@ from __future__ import annotations
 
 from app_platform.memory import digest_record
 from apps.behaviors.data import (
+    SystemScopeDenied,
     create_behavior as _create,
     get_behavior as _get,
     list_behaviors as _list,
     update_behavior as _update,
     delete_behavior as _delete,
     toggle_behavior as _toggle,
+)
+
+
+_SYSTEM_SCOPE_MSG = (
+    "That's a system-wide behavior — it applies to everyone in the household, so only an "
+    "admin can {verb} it, from the Behaviors app. I can't do it from chat."
 )
 
 
@@ -53,12 +60,25 @@ def add_behavior(
         action_description: What to do when triggered. Natural language
             description of the action (e.g. "Search the to-do list, goals
             tasks, and home app for matching items and mark them as complete").
-        scope: 'user' (personal, default) or 'system' (applies to all users).
+        scope: Must be 'user' (personal). System-wide behaviors cannot be created
+            from chat — see below.
         notes: Optional context about why this behavior was created.
 
     Returns:
         Confirmation with the new behavior ID and a summary.
     """
+    # scope='system' is refused here regardless of who is asking, because this path cannot
+    # prove who is asking: `user_id` is an ordinary tool argument the model fills in, not a
+    # verified principal, so gating on it would gate nothing. A system rule goes into every
+    # member's system prompt on every turn — precisely what an injected instruction would
+    # want — so the only surface allowed to create one is the REST API, where the platform
+    # has authenticated the caller. Admins do it in the Behaviors app.
+    if (scope or "").strip().lower() == "system":
+        return (
+            "System-wide behaviors can't be created from chat — they apply to everyone, so "
+            "they have to be added by an admin in the Behaviors app. I can create this as a "
+            "personal behavior for you instead; say the word and I'll do that."
+        )
     behavior = _create(
         trigger_description=trigger_description,
         action_description=action_description,
@@ -129,12 +149,15 @@ def update_behavior(
     Returns:
         Confirmation of what was updated.
     """
-    updated = _update(
-        behavior_id=behavior_id,
-        trigger_description=trigger_description or None,
-        action_description=action_description or None,
-        notes=notes or None,
-    )
+    try:
+        updated = _update(
+            behavior_id=behavior_id,
+            trigger_description=trigger_description or None,
+            action_description=action_description or None,
+            notes=notes or None,
+        )
+    except SystemScopeDenied:
+        return _SYSTEM_SCOPE_MSG.format(verb="change")
     if not updated:
         return f"Behavior {behavior_id} not found."
     try:
@@ -160,7 +183,10 @@ def remove_behavior(behavior_id: str) -> str:
         Confirmation message.
     """
     record = _get(behavior_id) or {"id": behavior_id}
-    deleted = _delete(behavior_id)
+    try:
+        deleted = _delete(behavior_id)
+    except SystemScopeDenied:
+        return _SYSTEM_SCOPE_MSG.format(verb="delete")
     if deleted:
         try:
             digest_record("behaviors", "behavior", "deleted", behavior_id, record, by=record.get("created_by", ""))
@@ -181,7 +207,10 @@ def toggle_behavior(behavior_id: str) -> str:
     Returns:
         The new enabled state.
     """
-    result = _toggle(behavior_id)
+    try:
+        result = _toggle(behavior_id)
+    except SystemScopeDenied:
+        return _SYSTEM_SCOPE_MSG.format(verb="enable or disable")
     if not result:
         return f"Behavior {behavior_id} not found."
     try:

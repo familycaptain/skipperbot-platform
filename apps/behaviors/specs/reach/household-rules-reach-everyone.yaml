@@ -6,14 +6,21 @@ autonomy: gated
 behavior: >
   A rule can be marked as applying to the whole household instead of one person, and it is then put in
   front of Skipper for every member's conversations — including members who never saw it written, and
-  members who joined afterwards. As the app stands, any member can create one; nothing limits it to a
-  parent or an administrator.
+  members who joined afterwards. Because it steers what Skipper says to people who cannot see where the
+  instruction came from, writing one is an administrator's decision: only an administrator can create a
+  household-wide rule, reword one, switch one off, or delete one. Everybody else is refused, and being
+  refused costs a member nothing over their own personal rules.
 implements:
+- apps/behaviors/data.py::_guard_system_scope
+- apps/behaviors/data.py::create_behavior
 - apps/behaviors/data.py::list_behaviors
 - apps/behaviors/ui/BehaviorsApp.jsx
 - apps/behaviors/tools.py::add_behavior
-tests: []
+tests:
+- apps/behaviors/tests/test_system_scope_is_admin_only.py
 links: {}
 notes: >
-  The second sentence records what the code actually allows, not the intent: the tool guidance
-  describes household-wide rules as an administrator's choice and nothing enforces that.
+  Until 2026-07 the restriction was documented but not enforced: any account could create a
+  household-wide rule, and the chat tool would create one on request. The check now lives in the data
+  layer so no caller can skip it, and it fails closed — an actor who cannot be resolved to an
+  administrator is refused.

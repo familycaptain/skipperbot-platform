@@ -7,13 +7,16 @@ statement (no cross-schema leakage).
 
 Public surface — re-exported via ``app_platform.behaviors``:
 
-- ``create_behavior(trigger, action, created_by, scope='user', notes='')``
+- ``create_behavior(trigger, action, created_by, scope='user', notes='', actor=None)``
 - ``get_behavior(behavior_id)``
 - ``list_behaviors(user_id=None, scope=None, enabled_only=False)``
-- ``update_behavior(behavior_id, ...)``
-- ``toggle_behavior(behavior_id)``
-- ``delete_behavior(behavior_id)``
+- ``update_behavior(behavior_id, ..., actor=None)``
+- ``toggle_behavior(behavior_id, actor=None)``
+- ``delete_behavior(behavior_id, actor=None)``
 - ``get_active_behaviors_for_user(user_id)``
+
+Writes that touch a ``scope='system'`` rule require an admin ``actor`` and raise
+``SystemScopeDenied`` otherwise — see ``_guard_system_scope``.
 """
 
 from __future__ import annotations
@@ -28,6 +31,40 @@ from app_platform.db import (
 )
 
 SCHEMA = "app_behaviors"
+
+
+class SystemScopeDenied(PermissionError):
+    """A non-admin tried to create, edit, disable or delete a scope='system' rule."""
+
+
+def _actor_is_admin(actor: str | None) -> bool:
+    """Whether `actor` names a user holding the admin role. Unknown or empty → False."""
+    # Imported lazily: this is a data layer, and the app package is imported by
+    # app_platform.behaviors during platform load.
+    from data_layer.users import get_user, has_role
+    u = get_user((actor or "").lower().strip())
+    return bool(u and has_role(u, "admin"))
+
+
+def _guard_system_scope(actor: str | None, scope: str | None, action: str) -> None:
+    """Raise unless `actor` may act on a scope='system' behavior.
+
+    A system-scoped rule is concatenated verbatim into the chat system prompt of EVERY
+    member on EVERY turn, so writing one steers what Skipper says to people who never saw
+    it. That makes it an admin action — the guide has always said so; nothing enforced it.
+    Scope='user' rules are untouched here: any member may write their own, whatever role
+    they hold.
+
+    Enforced in the data layer rather than at each route so a new caller cannot forget it,
+    and it fails CLOSED: an actor we cannot resolve to an admin is refused.
+    """
+    if scope != "system":
+        return
+    if not _actor_is_admin(actor):
+        raise SystemScopeDenied(
+            f"Only an admin can {action} a system-wide behavior. "
+            f"Personal behaviors (scope='user') are open to everyone."
+        )
 
 
 def _row_to_dict(row: dict | None) -> dict | None:
@@ -47,8 +84,14 @@ def create_behavior(
     created_by: str,
     scope: str = "user",
     notes: str = "",
+    actor: str | None = None,
 ) -> dict:
-    """Insert a new behavior rule and return the created row."""
+    """Insert a new behavior rule and return the created row.
+
+    `actor` is the VERIFIED acting user, and is what the scope='system' check reads —
+    `created_by` is a label and may be client-supplied. Raises SystemScopeDenied.
+    """
+    _guard_system_scope(actor, scope, "create")
     behavior_id = f"beh-{uuid.uuid4().hex[:8]}"
     row = execute_returning_in_schema(
         SCHEMA,
@@ -118,8 +161,19 @@ def update_behavior(
     action_description: str | None = None,
     scope: str | None = None,
     notes: str | None = None,
+    actor: str | None = None,
 ) -> dict | None:
-    """Update a behavior's fields. Only non-None values are changed."""
+    """Update a behavior's fields. Only non-None values are changed.
+
+    Both directions are gated: editing a rule that IS system-scoped (rewriting what every
+    member's prompt says) and retargeting a personal rule INTO system scope (the
+    escalation path — write it as your own, then promote it). Raises SystemScopeDenied.
+    """
+    existing = get_behavior(behavior_id)
+    if existing:
+        _guard_system_scope(actor, existing.get("scope"), "edit")
+    _guard_system_scope(actor, scope, "promote a behavior to")
+
     updates: list[str] = []
     params: list = []
 
@@ -151,8 +205,16 @@ def update_behavior(
     return _row_to_dict(row)
 
 
-def toggle_behavior(behavior_id: str) -> dict | None:
-    """Flip the enabled flag of a behavior. Returns updated row."""
+def toggle_behavior(behavior_id: str, actor: str | None = None) -> dict | None:
+    """Flip the enabled flag of a behavior. Returns updated row.
+
+    Gated for system-scoped rules too: silently disabling one removes a rule everybody was
+    relying on, and re-enabling one restores text into everybody's prompt. Same lever as
+    editing it. Raises SystemScopeDenied.
+    """
+    existing = get_behavior(behavior_id)
+    if existing:
+        _guard_system_scope(actor, existing.get("scope"), "enable or disable")
     row = execute_returning_in_schema(
         SCHEMA,
         "UPDATE behaviors SET enabled = NOT enabled, updated_at = now() "
@@ -162,8 +224,14 @@ def toggle_behavior(behavior_id: str) -> dict | None:
     return _row_to_dict(row)
 
 
-def delete_behavior(behavior_id: str) -> bool:
-    """Delete a behavior permanently. Returns True if a row was deleted."""
+def delete_behavior(behavior_id: str, actor: str | None = None) -> bool:
+    """Delete a behavior permanently. Returns True if a row was deleted.
+
+    Raises SystemScopeDenied for a system-scoped rule unless the actor is an admin.
+    """
+    existing = get_behavior(behavior_id)
+    if existing:
+        _guard_system_scope(actor, existing.get("scope"), "delete")
     affected = execute_in_schema(
         SCHEMA, "DELETE FROM behaviors WHERE id = %s", (behavior_id,),
     )

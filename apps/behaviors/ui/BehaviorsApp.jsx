@@ -3,8 +3,13 @@ import { Zap, Plus, Pencil, Trash2, ToggleLeft, ToggleRight, Globe, User, X, Che
 
 const API = "/api/behaviors";
 
-function BehaviorCard({ b, expandedId, editingId, showForm, handleToggle, startEdit, setExpandedId, deleteConfirm, setDeleteConfirm, handleDelete }) {
+function BehaviorCard({ b, isAdmin, expandedId, editingId, showForm, handleToggle, startEdit, setExpandedId, deleteConfirm, setDeleteConfirm, handleDelete }) {
   const isExpanded = expandedId === b.id;
+  // A system rule is injected into EVERYONE's prompt, so only an admin may change one.
+  // Personal rules stay open to their owner whatever role they hold. The server enforces
+  // this either way (403); disabling here just avoids offering a button that can't work.
+  const canWrite = isAdmin || b.scope !== "system";
+  const lockNote = "System behaviors apply to everyone — admin only";
 
   return (
     <div className={`rounded-lg border transition-all ${
@@ -17,8 +22,9 @@ function BehaviorCard({ b, expandedId, editingId, showForm, handleToggle, startE
         {/* Toggle */}
         <button
           onClick={() => handleToggle(b.id)}
-          className="mt-0.5 flex-shrink-0 text-muted hover:text-amber-400 transition-colors"
-          title={b.enabled ? "Click to disable" : "Click to enable"}
+          disabled={!canWrite}
+          className={`mt-0.5 flex-shrink-0 text-muted transition-colors ${canWrite ? "hover:text-amber-400" : "opacity-40 cursor-not-allowed"}`}
+          title={!canWrite ? lockNote : b.enabled ? "Click to disable" : "Click to enable"}
         >
           {b.enabled
             ? <ToggleRight size={22} className="text-amber-400" />
@@ -73,8 +79,9 @@ function BehaviorCard({ b, expandedId, editingId, showForm, handleToggle, startE
           )}
           <button
             onClick={() => startEdit(b)}
-            className="p-1.5 rounded text-faint hover:text-blue-400 transition-colors"
-            title="Edit"
+            disabled={!canWrite}
+            className={`p-1.5 rounded text-faint transition-colors ${canWrite ? "hover:text-blue-400" : "opacity-40 cursor-not-allowed"}`}
+            title={canWrite ? "Edit" : lockNote}
           >
             <Pencil size={14} />
           </button>
@@ -97,8 +104,9 @@ function BehaviorCard({ b, expandedId, editingId, showForm, handleToggle, startE
           ) : (
             <button
               onClick={() => setDeleteConfirm(b.id)}
-              className="p-1.5 rounded text-faint hover:text-red-400 transition-colors"
-              title="Delete"
+              disabled={!canWrite}
+              className={`p-1.5 rounded text-faint transition-colors ${canWrite ? "hover:text-red-400" : "opacity-40 cursor-not-allowed"}`}
+              title={canWrite ? "Delete" : lockNote}
             >
               <Trash2 size={14} />
             </button>
@@ -109,7 +117,9 @@ function BehaviorCard({ b, expandedId, editingId, showForm, handleToggle, startE
   );
 }
 
-function FormPanel({ editingId, form, setForm, error, saving, resetForm, handleSave }) {
+function FormPanel({ editingId, isAdmin, form, setForm, error, saving, resetForm, handleSave }) {
+  // Non-admins get the personal scope only — the server refuses 'system' from them anyway.
+  const scopes = isAdmin ? ["user", "system"] : ["user"];
   return (
     <div className="rounded-lg border border-amber-700/60 bg-amber-950/20 p-5 mb-6">
       <h3 className="text-sm font-semibold text-amber-400 mb-4">
@@ -121,7 +131,7 @@ function FormPanel({ editingId, form, setForm, error, saving, resetForm, handleS
         <div>
           <label className="block text-xs text-muted mb-1.5 font-medium">Scope</label>
           <div className="flex gap-2">
-            {["user", "system"].map(s => (
+            {scopes.map(s => (
               <button
                 key={s}
                 onClick={() => setForm(f => ({ ...f, scope: s }))}
@@ -138,6 +148,11 @@ function FormPanel({ editingId, form, setForm, error, saving, resetForm, handleS
               </button>
             ))}
           </div>
+          {!isAdmin && (
+            <p className="mt-1.5 text-xs text-faint">
+              System-wide behaviors apply to everyone in the household, so an admin adds those.
+            </p>
+          )}
         </div>
 
         {/* Trigger */}
@@ -212,6 +227,20 @@ export default function BehaviorsApp({ userId }) {
   const [form, setForm] = useState({ trigger_description: "", action_description: "", scope: "user", notes: "" });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Same roster lookup Settings uses — /api/users is readable by any signed-in member and
+  // carries roles. This only decides what to OFFER; the server is the actual gate.
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/users");
+        const users = res.ok ? await res.json() : [];
+        const me = users.find(u => u.name === userId);
+        setIsAdmin(!!me && (me.role || "").split(",").map(r => r.trim()).includes("admin"));
+      } catch { setIsAdmin(false); }
+    })();
+  }, [userId]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -351,7 +380,7 @@ export default function BehaviorsApp({ userId }) {
         )}
 
         {/* Create/Edit form */}
-        {showForm && <FormPanel
+        {showForm && <FormPanel isAdmin={isAdmin}
           editingId={editingId}
           form={form}
           setForm={setForm}
@@ -376,7 +405,7 @@ export default function BehaviorsApp({ userId }) {
                   <span className="text-xs text-faint">({userBehaviors.length})</span>
                 </div>
                 <div className="space-y-2">
-                  {userBehaviors.map(b => <BehaviorCard key={b.id} b={b}
+                  {userBehaviors.map(b => <BehaviorCard key={b.id} b={b} isAdmin={isAdmin}
                     expandedId={expandedId}
                     editingId={editingId}
                     showForm={showForm}
@@ -402,7 +431,7 @@ export default function BehaviorsApp({ userId }) {
                   <span className="text-xs text-faint">({systemBehaviors.length})</span>
                 </div>
                 <div className="space-y-2">
-                  {systemBehaviors.map(b => <BehaviorCard key={b.id} b={b}
+                  {systemBehaviors.map(b => <BehaviorCard key={b.id} b={b} isAdmin={isAdmin}
                     expandedId={expandedId}
                     editingId={editingId}
                     showForm={showForm}
