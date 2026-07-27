@@ -115,6 +115,31 @@ Within single apps, two paths disagree about whether the client may say who acte
 A client-supplied actor is not attribution, and the platform spec
 `platform.context.speaker-attribution` says every line of the record says who said it.
 
+### Three platform endpoints take identity from the request body — **VERIFIED**
+
+Surfaced by the mobile audit, but these are platform defects, not the phone's:
+
+- `agent.py::mobile_register` passes `user_id=request.user_id` to `register_device` without comparing it to
+  `request.state.principal`. Any authenticated member — or a stolen phone's token — can register a device
+  token under **another person's name** and receive their urgent pushes.
+- `agent.py:1226::chat` — `process_chat(request.user_id, request.message, channel="web")`. Any
+  authenticated caller can **speak as anyone.** The WebSocket path does this correctly
+  (`user_id = principal["name"]`); only the HTTP fallback is exposed, and the Android client is its only
+  in-repo user.
+- `agent.py::voice_create_session` — `mint_ephemeral_token(request.user_id, …)`, so a caller can open a
+  voice session under another member's identity, instructions and tools.
+
+**This is not covered by `platform.auth.adults-trust-each-other`.** That decision says an adult may *read
+and change another adult's records*. Speaking **as** them is a different act: it writes words into the
+shared append-only record attributed to a person who did not say them, which every consumer of that record
+— recall, the console, the PM sweep — then treats as theirs. The trust ruling makes the read side
+intentional and leaves this untouched.
+
+Also: `agent.py::get_picovoice_config` returns the household's raw Picovoice key to any authenticated
+caller, read from `os.getenv("PICOVOICE_API_KEY")` — apparently a leftover from the `.env` → app-settings
+migration. Same shape as the `apps/backups` browser-bundle key and the investments `trading_config` key
+(§1): a credential handed to a client that only needed the platform to act on its behalf.
+
 ---
 
 ## 3. Untrusted external text reaches model prompts with no hardening
