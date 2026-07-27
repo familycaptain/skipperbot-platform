@@ -63,15 +63,32 @@ def _shift_hours(time_of_day: str, hours: int) -> str:
     return f"{(h + hours) % 24:02d}:{m:02d}"
 
 
+def _flag(cfg: dict, key: str, *, default: bool) -> bool:
+    """Read a boolean config key, applying the manifest default when it was never set.
+
+    ``get_config`` returns None for a key nobody has written — the REST layer is what
+    coerces to the documented defaults, and this runs below it. Reading None as False got
+    the master switch backwards: `enabled` defaults to TRUE in the manifest, so an install
+    that had never touched it would have scheduled nothing. Values can also arrive as JSON
+    strings through the settings panel, so accept those too.
+    """
+    v = cfg.get(key)
+    if v is None:
+        return default
+    if isinstance(v, str):
+        return v.strip().lower() in ("1", "true", "yes", "on")
+    return bool(v)
+
+
 def has_destination(cfg: dict) -> bool:
     """Whether the user has actually configured somewhere for a backup to go.
 
     A path with the toggle off is not a destination, and neither is a toggle on with no
     path — either way the run would have nowhere to write.
     """
-    if cfg.get("filesystem_enabled") and (cfg.get("filesystem_path") or "").strip():
+    if _flag(cfg, "filesystem_enabled", default=False) and (cfg.get("filesystem_path") or "").strip():
         return True
-    if cfg.get("gdrive_enabled"):
+    if _flag(cfg, "gdrive_enabled", default=False):
         return True
     return False
 
@@ -88,7 +105,7 @@ def ensure_schedules(cfg: dict | None = None) -> None:
         # Active only when the master switch is on AND there is somewhere to write. The
         # rows exist either way, so turning a destination on flips them live with no
         # further setup — which is the whole point of this module.
-        active = bool(cfg.get("enabled")) and has_destination(cfg)
+        active = _flag(cfg, "enabled", default=True) and has_destination(cfg)
         backup_time = _time_of_day_from_cron(cfg.get("cron") or "")
         check_time = _shift_hours(backup_time, CHECK_OFFSET_HOURS)
 

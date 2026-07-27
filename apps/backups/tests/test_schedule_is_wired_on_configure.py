@@ -122,6 +122,29 @@ class TheActivationRule(unittest.TestCase):
         fake = _run({**CONFIGURED, "enabled": False})
         self.assertFalse(fake.rows[backup_schedule.BACKUP_SCHEDULE_ID]["active"])
 
+    def test_an_unset_master_switch_uses_the_manifest_default_of_on(self):
+        # get_config returns None for a key nobody has written — the REST layer applies the
+        # documented defaults, and this code runs below it. Reading None as False meant a
+        # freshly configured install scheduled nothing, which is exactly the bug being
+        # fixed here, one level down. Caught on pm-test, not by the first version of these
+        # tests, because the fixture always set `enabled` explicitly.
+        cfg = {k: v for k, v in CONFIGURED.items() if k != "enabled"}
+        self.assertNotIn("enabled", cfg)
+        fake = _run(cfg)
+        self.assertTrue(fake.rows[backup_schedule.BACKUP_SCHEDULE_ID]["active"])
+
+    def test_an_explicit_false_still_disables_an_unset_key_does_not(self):
+        self.assertFalse(backup_schedule._flag({"enabled": False}, "enabled", default=True))
+        self.assertTrue(backup_schedule._flag({}, "enabled", default=True))
+        self.assertFalse(backup_schedule._flag({}, "gdrive_enabled", default=False))
+
+    def test_boolean_flags_arriving_as_strings_are_understood(self):
+        # The settings panel can round-trip these as JSON strings.
+        self.assertTrue(backup_schedule.has_destination(
+            {"filesystem_enabled": "true", "filesystem_path": "/mnt/nas"}))
+        self.assertFalse(backup_schedule.has_destination(
+            {"filesystem_enabled": "false", "filesystem_path": "/mnt/nas"}))
+
 
 class CronParsing(unittest.TestCase):
     def test_plain_daily_times(self):
