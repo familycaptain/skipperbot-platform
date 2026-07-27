@@ -3698,11 +3698,13 @@ async def api_get_backup(backup_id: str):
 async def api_run_backup():
     """Trigger an on-demand backup (ignores the master enabled switch)."""
     from app_platform.jobs import submit_job
+    from data_layer.users import get_primary_user
     job = submit_job(
         "backup",
         config={"on_demand": True},
         created_by="web",
-        notify_user="alice",
+        # Whoever owns this Skipper, not a name baked in at authoring time.
+        notify_user=get_primary_user() or "",
         description="On-demand backup",
     )
     return {"ok": True, "job_id": job["id"]}

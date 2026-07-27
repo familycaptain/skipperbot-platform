@@ -44,6 +44,6 @@ can force a one-off artifact regardless of the daily-cron toggle.
 
 Every morning the `backup_check` job sweeps the audit table for the
 day's `completed` row. If none is found — or the most-recent record
-is `failed` — Alice gets a notification through
+is `failed` — the primary user gets a notification through
 `app_platform.notifications`. A `skipped` row (master switch off) is
 silent.

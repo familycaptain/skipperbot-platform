@@ -9,7 +9,7 @@ Two job handlers:
   (scope ``app:backups``). Synchronous — runs in the job
   dispatcher's thread pool.
 - ``run_backup_check(job, ctx)`` — sweeps the audit table for
-  today's run and notifies Alice if it's missing or failed.
+  today's run and notifies the primary user if it's missing or failed.
 
 If the master switch is off, scheduled jobs short-circuit
 ``skipped``; on-demand jobs (``config.on_demand=True``) ignore the
@@ -70,6 +70,37 @@ def _timezone() -> ZoneInfo:
 def _tz_name() -> str:
     from app_platform.time import get_timezone
     return get_timezone().key
+
+
+def _backup_owner() -> str:
+    """Who hears about backups — the person who installed and owns this Skipper.
+
+    Backup notices used to go to a hardcoded name, which meant that on every install
+    except one they were addressed to somebody who does not exist. `get_primary_user()`
+    is the platform's answer to "whose Skipper is this": the explicit `primary` role,
+    else the stored reference, else the earliest non-bot account.
+    """
+    try:
+        from data_layer.users import get_primary_user
+        return (get_primary_user() or "").strip()
+    except Exception:
+        logger.warning("BACKUPS: could not resolve the primary user", exc_info=True)
+        return ""
+
+
+def _expected_backup_time() -> str:
+    """The configured backup time, for the "it did not run" notice.
+
+    Read rather than asserted: the schedule is configurable, so a fixed "2:00 AM CT" in
+    the message would be wrong for anyone who changed it, and wrong about the timezone
+    for nearly everyone.
+    """
+    try:
+        from app_platform.backups import get_config
+        from apps.backups.schedule import _time_of_day_from_cron
+        return f"{_time_of_day_from_cron(get_config().get('cron') or '')} {_tz_name()}"
+    except Exception:
+        return "its scheduled time"
 
 
 ZIP_EXCLUDES = {
@@ -649,22 +680,30 @@ def run_backup(job: dict, ctx) -> str:
 
 
 def run_backup_check(job: dict, ctx) -> str:
-    """Daily verification — notify Alice if today's backup is missing or failed."""
+    """Daily verification — notify the primary user if today's backup is missing or failed."""
     from app_platform.notifications import create_notification
+
+    owner = _backup_owner()
+    if not owner:
+        # No human account to tell. Log loudly rather than posting a notification nobody
+        # will ever see — a silently undelivered backup alarm is worse than none.
+        logger.warning("BACKUP_CHECK: no primary user resolved; cannot send backup notices")
 
     ctx.update_progress(20, "Querying today's backup records...")
     rows = list_today(_tz_name())
     ctx.update_progress(60, f"Found {len(rows)} backup record(s) for today")
 
     if not rows:
-        create_notification(
-            recipient="alice",
-            message="Backup did not run today. No backup record found (expected at 2:00 AM CT).",
-            source_type="backup_check",
-            source_id="",
-            channel="both",
-            delivered=False,
-        )
+        if owner:
+            create_notification(
+                recipient=owner,
+                message=("Backup did not run today. No backup record found "
+                         f"(expected at {_expected_backup_time()})."),
+                source_type="backup_check",
+                source_id="",
+                channel="both",
+                delivered=False,
+            )
         logger.warning("BACKUP_CHECK: No backup record found for today — notification sent")
         return "No backup found for today — notification sent"
 
@@ -682,14 +721,15 @@ def run_backup_check(job: dict, ctx) -> str:
         msg = "Backup failed today."
         if error:
             msg += f" Error: {error[:300]}"
-        create_notification(
-            recipient="alice",
-            message=msg,
-            source_type="backup_check",
-            source_id=latest["id"],
-            channel="both",
-            delivered=False,
-        )
+        if owner:
+            create_notification(
+                recipient=owner,
+                message=msg,
+                source_type="backup_check",
+                source_id=latest["id"],
+                channel="both",
+                delivered=False,
+            )
         logger.warning("BACKUP_CHECK: Backup failed — notification sent (%s)", latest["id"])
         return "Backup failed — notification sent"
 

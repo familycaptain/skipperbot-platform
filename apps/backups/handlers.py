@@ -4,7 +4,7 @@ Registers two job handlers with the platform jobs dispatcher:
 
 - ``backup`` — produces a full backup (pg_dump + project zip +
   RESTORE.md) and copies it to every enabled destination.
-- ``backup_check`` — daily verification job that notifies Alice if
+- ``backup_check`` — daily verification job that notifies the primary user if
   today's run is missing or failed.
 
 Both handlers live in ``apps/backups/runner.py``. The runner reads
