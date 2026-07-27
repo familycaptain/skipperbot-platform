@@ -970,6 +970,12 @@ function Lightbox({ photos, startIndex, onClose }) {
 
 function markdownToHtml(md) {
   if (!md) return "";
+  // Neutralise HTML in the SOURCE before any transform runs. This string goes to
+  // dangerouslySetInnerHTML, so raw markup in a body would otherwise execute in every reader's
+  // console. Escaping first (rather than sanitising the output) keeps every markdown feature
+  // working: none of `#`, `*`, `|`, `-`, backtick or `[]()` is touched by escapeHtml, so
+  // headings, tables, lists, emphasis, code and links render exactly as before.
+  md = escapeHtml(md);
   md = md.replace(
     /^(\|.+\|)\n(\|[-:| ]+\|)\n((?:\|.+\|\n?)+)/gm,
     (_, headerRow, _sepRow, bodyBlock) => {
@@ -989,7 +995,7 @@ function markdownToHtml(md) {
   );
   let html = md
     .replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) =>
-      `<pre><code class="language-${lang}">${escapeHtml(code.trim())}</code></pre>`)
+      `<pre><code class="language-${lang}">${code.trim()}</code></pre>`)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/^#### (.+)$/gm, "<h4>$1</h4>")
     .replace(/^### (.+)$/gm, "<h3>$1</h3>")
@@ -1000,7 +1006,8 @@ function markdownToHtml(md) {
     .replace(/\*(.+?)\*/g, "<em>$1</em>")
     .replace(/^---$/gm, "<hr/>")
     .replace(/^[-*] (.+)$/gm, "<li>$1</li>")
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-indigo-400 underline">$1</a>')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) =>
+      `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="text-indigo-400 underline">${text}</a>`)
     // Auto-link bare URLs (not already inside an <a> tag)
     .replace(/(^|[^"'>])(https?:\/\/[^\s<]+)/g, '$1<a href="$2" target="_blank" rel="noopener noreferrer" class="text-indigo-400 underline break-all">$2</a>');
   html = html.replace(/<\/li>\n+<li>/g, "</li><li>");
@@ -1014,6 +1021,18 @@ function markdownToHtml(md) {
 function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
+
+// A link target we are willing to put in an href. Bodies here are model-authored, so a
+// `javascript:` or `data:` URL can arrive in ordinary-looking markdown; escaping the text does not
+// stop one, because the URL is consumed as an attribute rather than as text. Anything not plainly
+// http/https/mailto or site-relative becomes an inert "#".
+function safeUrl(url) {
+  const u = String(url).trim();
+  if (/^(https?:|mailto:)/i.test(u)) return u;
+  if (/^[/#?]/.test(u)) return u;
+  return "#";
+}
+
 
 
 function PostComposer({ userId, editingPost, onDone, onCancel, allTags }) {

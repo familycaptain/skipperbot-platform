@@ -459,6 +459,15 @@ function DocMetaBar({ docMeta, docId, userId, onUpdate }) {
 function markdownToHtml(md) {
   if (!md) return "";
 
+  // Neutralise HTML in the SOURCE before any transform runs. This function builds a string that
+  // goes to dangerouslySetInnerHTML, and document bodies come from the curation cycle, from the
+  // model, and from web pages the researcher fetched — so `<img src=x onerror=...>` in a body
+  // would otherwise execute in every reader's console. Escaping first (rather than sanitising the
+  // output) keeps every markdown feature working: none of `#`, `*`, `|`, `-`, backtick or `[]()`
+  // is touched by escapeHtml, so headings, tables, lists, emphasis, code and links all still
+  // render exactly as before. Only literal angle brackets stop being markup.
+  md = escapeHtml(md);
+
   // Parse tables before other transforms (so pipes don't get mangled)
   md = md.replace(
     /^(\|.+\|)\n(\|[-:| ]+\|)\n((?:\|.+\|\n?)+)/gm,
@@ -481,7 +490,8 @@ function markdownToHtml(md) {
   let html = md
     // Code blocks
     .replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) =>
-      `<pre><code class="language-${lang}">${escapeHtml(code.trim())}</code></pre>`)
+      // already escaped at the top — escaping again would show &amp;lt; inside code blocks
+      `<pre><code class="language-${lang}">${code.trim()}</code></pre>`)
     // Inline code
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     // Headings
@@ -498,7 +508,8 @@ function markdownToHtml(md) {
     // Unordered lists
     .replace(/^[-*] (.+)$/gm, "<li>$1</li>")
     // Links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" class="text-indigo-400 underline">$1</a>');
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) =>
+      `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="text-indigo-400 underline">${text}</a>`);
   // Collapse all whitespace between adjacent list items so they stay grouped
   html = html.replace(/<\/li>\n+<li>/g, "</li><li>");
   // Wrap consecutive <li> runs in <ul> BEFORE paragraph conversion
@@ -512,4 +523,16 @@ function markdownToHtml(md) {
 
 function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+// A link target we are willing to put in an href. Document bodies are written by the curation
+// cycle and by pages fetched off the web, so a `javascript:` or `data:` URL can arrive in
+// ordinary-looking markdown; escaping the text does not stop one, because the URL is consumed as
+// an attribute rather than as text. Anything not plainly http/https/mailto or site-relative
+// becomes an inert "#" — the link still renders, it just goes nowhere.
+function safeUrl(url) {
+  const u = String(url).trim();
+  if (/^(https?:|mailto:)/i.test(u)) return u;
+  if (/^[/#?]/.test(u)) return u;
+  return "#";
 }

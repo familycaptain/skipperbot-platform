@@ -319,24 +319,31 @@ function TodoColumn({
   }
 
   function handlePrint() {
+  // Interpolated into a document.write() page on a window.open("") window, which inherits this
+  // origin — so markup in an item would run as script with the signed-in user's session. List
+  // text can arrive from outside the household (Trello card names sync in), so escape every field.
+  const esc = (v) => String(v ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
     const printContent = [
-      `<html><head><title>${listName || title}</title>`,
+      `<html><head><title>${esc(listName || title)}</title>`,
       `<style>body{font-family:system-ui,sans-serif;padding:40px;max-width:600px;margin:0 auto}`,
       `h1{font-size:22px;margin-bottom:4px}h2{font-size:14px;color:#888;margin-bottom:20px}`,
       `.item{padding:6px 0;border-bottom:1px solid #eee;font-size:14px;display:flex;gap:8px}`,
       `.num{color:#999;min-width:24px;text-align:right}.done{color:#999;text-decoration:line-through}`,
       `.section{margin-top:20px;font-size:12px;color:#888;text-transform:uppercase;letter-spacing:1px;padding-bottom:4px;border-bottom:2px solid #ddd}`,
       `@media print{body{padding:20px}}</style></head><body>`,
-      `<h1>${listName || title}</h1>`,
+      `<h1>${esc(listName || title)}</h1>`,
       `<h2>${activeItems.length} item${activeItems.length !== 1 ? "s" : ""} &middot; ${new Date().toLocaleDateString()}</h2>`,
     ];
     activeItems.forEach((item, idx) => {
-      printContent.push(`<div class="item"><span class="num">${idx + 1}.</span><span>&#9744; ${item.text}</span></div>`);
+      printContent.push(`<div class="item"><span class="num">${idx + 1}.</span><span>&#9744; ${esc(item.text)}</span></div>`);
     });
     if (completedToday.length > 0) {
       printContent.push(`<div class="section">Completed Today</div>`);
       completedToday.forEach((item) => {
-        printContent.push(`<div class="item"><span class="done">&#9745; ${item.text}</span></div>`);
+        printContent.push(`<div class="item"><span class="done">&#9745; ${esc(item.text)}</span></div>`);
       });
     }
     printContent.push(`</body></html>`);

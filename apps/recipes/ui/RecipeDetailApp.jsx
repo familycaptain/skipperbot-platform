@@ -272,38 +272,47 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
   }
 
   // --- Print ---
+  // Everything below is interpolated into a document handed to document.write() on a
+  // window.open("") page, which inherits this origin — so any markup in a recipe field would
+  // run as script with the signed-in user's session. Recipe text routinely arrives from a web
+  // page the model was told to "parse aggressively", so treat every field as hostile.
+  const esc = (v) => String(v ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
   function handlePrint() {
     if (!recipe) return;
     const r = recipe;
     const metaParts = [];
-    if (r.prep_time_min != null) metaParts.push(`Prep: ${r.prep_time_min} min`);
-    if (r.cook_time_min != null) metaParts.push(`Cook: ${r.cook_time_min} min`);
+    if (r.prep_time_min != null) metaParts.push(`Prep: ${esc(r.prep_time_min)} min`);
+    if (r.cook_time_min != null) metaParts.push(`Cook: ${esc(r.cook_time_min)} min`);
     const total = (r.prep_time_min || 0) + (r.cook_time_min || 0);
     if (total) metaParts.push(`Total: ${total} min`);
-    if (r.servings) metaParts.push(`Servings: ${r.servings}`);
+    if (r.servings) metaParts.push(`Servings: ${esc(r.servings)}`);
 
     const ingredients = (r.ingredients || []).map((ing) => {
       const parts = [];
-      if (ing.quantity) parts.push(String(ing.quantity));
-      if (ing.unit) parts.push(ing.unit);
-      parts.push(ing.item);
+      if (ing.quantity) parts.push(esc(ing.quantity));
+      if (ing.unit) parts.push(esc(ing.unit));
+      parts.push(esc(ing.item));
       return `<li>${parts.join(" ")}</li>`;
     }).join("\n");
 
-    const steps = (r.steps || []).map((s, i) => `<li>${s}</li>`).join("\n");
+    const steps = (r.steps || []).map((s) => `<li>${esc(s)}</li>`).join("\n");
 
     const cats = (r.categories || []).length > 0
-      ? `<p class="cats">${r.categories.join(", ")}</p>` : "";
+      ? `<p class="cats">${r.categories.map(esc).join(", ")}</p>` : "";
 
     const chef = r.chef_comments
-      ? `<h2>Chef Comments</h2><p>${r.chef_comments.replace(/\n/g, "<br>")}</p>` : "";
+      // escape FIRST, then turn newlines into breaks, so the line-break feature survives
+      ? `<h2>Chef Comments</h2><p>${esc(r.chef_comments).replace(/\n/g, "<br>")}</p>` : "";
 
     const source = r.source_url
-      ? `<p class="source">Source: ${r.source_url}</p>` : "";
+      ? `<p class="source">Source: ${esc(r.source_url)}</p>` : "";
 
     const win = window.open("", "_blank");
     if (!win) return;
-    win.document.write(`<!DOCTYPE html><html><head><title>${r.title || "Recipe"}</title>
+    win.document.write(`<!DOCTYPE html><html><head><title>${esc(r.title || "Recipe")}</title>
       <style>
         body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
           font-size:12pt;line-height:1.6;color:#222;max-width:6.5in;margin:0 auto;padding:0.75in 0.75in;}
@@ -316,8 +325,8 @@ export default function RecipeDetailApp({ appId, userId, context = {}, onTitle, 
         .source{font-size:9pt;color:#888;margin-top:1.5em;border-top:1px solid #ddd;padding-top:0.5em;}
         @media print{body{max-width:none;padding:0.5in 0.6in;}}
       </style></head><body>
-      <h1>${r.title || "Recipe"}</h1>
-      ${r.description ? `<p><em>${r.description}</em></p>` : ""}
+      <h1>${esc(r.title || "Recipe")}</h1>
+      ${r.description ? `<p><em>${esc(r.description)}</em></p>` : ""}
       ${metaParts.length ? `<p class="meta">${metaParts.join(" &nbsp;|&nbsp; ")}</p>` : ""}
       ${cats}
       ${ingredients ? `<h2>Ingredients</h2><ul>${ingredients}</ul>` : ""}

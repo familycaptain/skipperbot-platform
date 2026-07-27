@@ -643,21 +643,28 @@ function printList(listName, items) {
   const now = new Date().toLocaleDateString("en-US", {
     weekday: "long", year: "numeric", month: "long", day: "numeric",
   });
+  // Interpolated into a document.write() page on a window.open("") window, which inherits this
+  // origin — so markup in an item would run as script with the signed-in user's session. List
+  // text can arrive from outside the household (Trello card names sync in), so escape every field.
+  const esc = (v) => String(v ?? "")
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
   const rows = (items || [])
     .map((item, i) => {
       const meta = item.added_by && item.added_by !== "trello_sync"
-        ? `<span style="color:#999;font-size:12px;margin-left:8px;">(${item.added_by})</span>`
+        ? `<span style="color:#999;font-size:12px;margin-left:8px;">(${esc(item.added_by)})</span>`
         : "";
       return `<tr>
         <td style="width:32px;text-align:right;color:#888;padding:6px 8px;vertical-align:top;">${i + 1}.</td>
-        <td style="padding:6px 8px;">${item.text}${meta}</td>
+        <td style="padding:6px 8px;">${esc(item.text)}${meta}</td>
       </tr>`;
     })
     .join("");
 
   const win = window.open("", "_blank");
   if (!win) return;
-  win.document.write(`<!DOCTYPE html><html><head><title>${listName}</title>
+  win.document.write(`<!DOCTYPE html><html><head><title>${esc(listName)}</title>
     <style>
       body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:700px;margin:40px auto;padding:0 24px;color:#222;}
       h1{font-size:22px;margin-bottom:4px;}
@@ -670,7 +677,7 @@ function printList(listName, items) {
       @media print{body{margin:20px;}}
     </style></head>
     <body>
-      <h1>${listName}</h1>
+      <h1>${esc(listName)}</h1>
       <div class="date">${now}</div>
       <table>${rows}</table>
       <div class="count">${items?.length || 0} item${(items?.length || 0) === 1 ? "" : "s"}</div>
