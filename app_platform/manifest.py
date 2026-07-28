@@ -119,6 +119,13 @@ class AppManifest:
     # first-run onboarding tour. Defaults False so private / separate-repo apps
     # are never toured unless they explicitly ask to be.
     onboarding_tour: bool = False
+    # Routes this app serves to callers who are NOT signed in and never will be — an
+    # unsubscribe link in outbound mail, an inbound webhook. Paths are relative to the
+    # app's own mount prefix and are checked against it, so an app cannot open a hole
+    # anywhere but its own surface. Everything else stays behind the platform auth gate.
+    # Each one is an explicit, logged decision by the app author; the app is responsible
+    # for authorising the request some other way (a signed token, a shared secret).
+    public_routes: list[str] = field(default_factory=list)
     tool_category: ToolCategoryDef | None = None
     ui: list[UIAppDef] = field(default_factory=list)
     job_types: list[JobTypeDef] = field(default_factory=list)
@@ -179,6 +186,8 @@ def parse_manifest(app_dir: Path) -> AppManifest:
         subscribes=raw.get("subscribes", []),
         schema=raw.get("schema", ""),
         onboarding_tour=bool(raw.get("onboarding_tour", False)),
+        public_routes=[str(r).strip() for r in (raw.get("public_routes") or [])
+                       if str(r).strip()],
     )
 
     # Entity types

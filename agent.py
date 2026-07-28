@@ -204,6 +204,16 @@ def _is_public_path(request: Request) -> bool:
     path = request.url.path
     if path in _PUBLIC_EXACT or path.startswith(_PUBLIC_PREFIXES):
         return True
+    # Routes an app declared public in its manifest, for callers who are not users and
+    # never will be (an unsubscribe link in outbound mail, an inbound webhook). Confined
+    # to the declaring app's own prefix and logged at load; the app authorises them
+    # itself. Checked AFTER the static sets so an app cannot widen anything but its own.
+    try:
+        from app_platform.loader import get_public_routes
+        if path in get_public_routes():
+            return True
+    except Exception:
+        pass
     # SPA + static assets (anything that isn't an API/auth/ws/chat path).
     if not path.startswith(("/api/", "/auth/", "/ws", "/chat")):
         return True

@@ -44,6 +44,49 @@ logger = logging.getLogger("platform.loader")
 
 _loaded_apps: dict[str, AppManifest] = {}
 _app_tools: dict[str, list[callable]] = {}      # app_id -> list of tool functions
+
+# Full paths an app has declared reachable WITHOUT authentication (manifest
+# `public_routes`). Read by the platform's auth gate. Kept here rather than in the gate so
+# the gate has no per-app knowledge.
+_public_routes: set[str] = set()
+
+
+def get_public_routes() -> set[str]:
+    """Paths that bypass the auth gate because an app declared them public."""
+    return set(_public_routes)
+
+
+def _register_public_routes(manifest, prefix: str) -> None:
+    """Record an app's declared public routes, refusing any that escape its own prefix.
+
+    An app may need a route for someone who is not a user and never will be — an
+    unsubscribe link in outbound mail, an inbound webhook. That has to bypass the auth
+    gate, so it is an explicit manifest declaration rather than something a route file can
+    arrange quietly, it is confined to the app's own mount prefix, and every one is logged
+    at WARNING so an unauthenticated surface is never invisible.
+
+    The app remains responsible for authorising the request itself (a signed token, a
+    shared secret) — this only removes the platform's session requirement.
+    """
+    for raw in getattr(manifest, "public_routes", []) or []:
+        route = raw if raw.startswith("/") else f"/{raw}"
+        full = route if route.startswith(prefix) else f"{prefix}{route}"
+        # Reject traversal before the prefix test, not after: "/../admin" prefixes to
+        # "/api/apps/<id>/../admin", which passes a naive startswith and could resolve
+        # elsewhere depending on who normalises the path. A declared route is a literal
+        # path, so a dot segment in one is never legitimate.
+        if ".." in full.split("/"):
+            logger.error("APP LOADER: '%s' declared public route %r containing a path "
+                         "traversal — refusing", manifest.id, raw)
+            continue
+        if not full.startswith(f"{prefix}/"):
+            logger.error("APP LOADER: '%s' declared public route %r outside its own prefix "
+                         "%s — refusing", manifest.id, raw, prefix)
+            continue
+        _public_routes.add(full)
+        logger.warning("APP LOADER: '%s' serves %s WITHOUT authentication (declared "
+                       "public_routes) — the app must authorise it itself",
+                       manifest.id, full)
 _app_routers: dict[str, object] = {}             # app_id -> FastAPI APIRouter
 _app_tool_routes: dict[str, dict] = {}           # app_id -> tool_routes entry
 
@@ -392,6 +435,7 @@ def _mount_routes(manifest: AppManifest, fastapi_app) -> object | None:
     prefix = f"/api/apps/{app_id}"
     fastapi_app.include_router(router, prefix=prefix, tags=[f"app:{app_id}"])
     logger.info("APP LOADER: Mounted routes for '%s' at %s", app_id, prefix)
+    _register_public_routes(manifest, prefix)
     return router
 
 
