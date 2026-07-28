@@ -27,22 +27,56 @@ def _prefix_map() -> dict[str, dict]:
     return {r["prefix"]: r for r in rows}
 
 
+def _literal_prefix(id_format: str) -> str:
+    """The part of an id_format that a real id actually starts with.
+
+    An app may declare its format either way:
+
+        id_format: "g-"            -> ids look like "g-abc123"
+        id_format: "img-{hex8}"    -> ids look like "img-1a2b3c4d"
+
+    The placeholder is documentation, not a template anything expands, so matching an id
+    against the RAW value made every app that spelled one out match nothing: no id begins
+    with the literal text "{hex8}". Those apps' ids were rejected as invalid and generic
+    entity links to their records could not be created at all — silently, because an
+    unmatched id is indistinguishable from an unknown one.
+
+    Truncating at the first brace handles both spellings, and is done at READ time so
+    existing rows are repaired without a migration or a re-registration pass.
+    """
+    return (id_format or "").split("{", 1)[0]
+
+
 @lru_cache(maxsize=1)
 def _id_format_list() -> tuple[str, ...]:
-    """Return all id_format values sorted longest-first (for prefix matching).
+    """Matchable id prefixes, longest-first.
 
     Longest-first ensures 'sch-' matches before 'sc-', 'li-' before 'l-', etc.
     """
     rows = _load_all()
-    formats = sorted([r["id_format"] for r in rows], key=len, reverse=True)
-    return tuple(formats)
+    formats = {_literal_prefix(r["id_format"]) for r in rows}
+    return tuple(sorted((f for f in formats if f), key=len, reverse=True))
 
 
 @lru_cache(maxsize=1)
 def _id_format_to_prefix() -> dict[str, str]:
-    """Map id_format → prefix for reverse lookups."""
-    rows = _load_all()
-    return {r["id_format"]: r["prefix"] for r in rows}
+    """Map matchable id prefix → prefix moniker for reverse lookups.
+
+    Two apps resolving to the same literal prefix would be a registry conflict rather
+    than something to silently pick a winner for, so it is logged.
+    """
+    mapping: dict[str, str] = {}
+    for r in _load_all():
+        lit = _literal_prefix(r["id_format"])
+        if not lit:
+            continue
+        if lit in mapping and mapping[lit] != r["prefix"]:
+            logger.warning(
+                "ENTITY_TYPES: id prefix %r is claimed by both %r and %r — ids starting "
+                "with it will resolve to %r", lit, mapping[lit], r["prefix"], mapping[lit])
+            continue
+        mapping[lit] = r["prefix"]
+    return mapping
 
 
 def invalidate_cache():

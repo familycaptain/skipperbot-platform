@@ -18,9 +18,12 @@ core: true
 schema: public
 
 entity_types:
-  - prefix: img
+  # Matches what agent.py actually mints (`i-<hex8>`), which is also what the long-standing
+  # `i` registration and every stored image id use. The manifest previously declared an
+  # `img-` format that nothing has ever produced.
+  - prefix: i
     name: image
-    id_format: "img-{hex8}"
+    id_format: "i-{hex8}"
     table: images
 
 tool_category:
