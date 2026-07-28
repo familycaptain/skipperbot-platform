@@ -1,0 +1,27 @@
+kind: specification
+id: platform.identity.an-unknown-speaker-cannot-act
+title: Skipper will not act on your behalf until it knows who you are
+state: live
+autonomy: gated
+behavior: >
+  Anything Skipper does that belongs to one person — reading their list, adding to their to-do,
+  setting their reminder — requires knowing which household member is asking. Asked from a shared
+  device that has not yet worked out who is speaking, Skipper does not do it, nothing is written or
+  changed, and it says it could not because it does not know who it is talking to rather than
+  reporting the work as done. Requests that are about nobody in particular — the weather, the time —
+  are answered normally.
+implements:
+- tool_dispatch.py::_unresolved_identity
+- tool_dispatch.py::call_tool
+tests:
+- tests/platform/test_unresolved_identity_refused.py
+links: {}
+notes: >
+  The shared speaker sends a placeholder identity until voice recognition resolves a person, and that
+  recognition is opt-in, so on a default install it may never resolve. Until 2026-07 nothing checked:
+  the work succeeded and created records owned by a person who does not exist, and Skipper confirmed
+  it — a false confirmation over silent data loss.
+
+  If the household roster itself cannot be read, the request is allowed through rather than refused:
+  an inability to prove the identity is bad is not proof that it is, and refusing everyone during a
+  database blip would be worse than the fault being guarded against.

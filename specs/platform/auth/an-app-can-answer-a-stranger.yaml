@@ -1,0 +1,24 @@
+kind: specification
+id: platform.auth.an-app-can-answer-a-stranger
+title: An app can serve one of its own routes to someone who is not a user
+state: live
+autonomy: gated
+behavior: >
+  Signing in is required for everything by default. An app that genuinely has to answer somebody who
+  is not a household member and never will be — the unsubscribe link in mail it sends out, an incoming
+  webhook — declares those routes in its manifest, and only those become reachable without signing in.
+  A declaration only ever opens a route belonging to the app that made it: naming another app's route,
+  or an administrative one, does not open it. Every route opened this way is announced when the app
+  loads, so an entrance that does not require signing in is never invisible to whoever runs the
+  install.
+implements:
+- app_platform/manifest.py
+- app_platform/loader.py::_register_public_routes
+- agent.py::_is_public_path
+tests:
+- tests/platform/test_app_public_routes.py
+links: {}
+notes: >
+  Not requiring a sign-in is not the same as letting anybody in: the declaring app still has to
+  establish that the caller is entitled to what it asks for. The newsletter's opt-out proves the
+  request came from a real recipient of a real edition before acting on it.

@@ -3,11 +3,21 @@ id: platform.loader.entity-prefixes
 title: Entity-type registration
 state: live
 autonomy: gated
-behavior: Each app registers the entity-id prefixes it owns (e.g. r- for reminders), which the
-  platform reserves so ids are globally unambiguous.
+behavior: >
+  Each app registers the entity-id prefixes it owns (e.g. r- for reminders), which the platform
+  reserves so ids are globally unambiguous. An app may describe its ids either as the bare prefix or
+  with a placeholder standing in for the random part, and an id is matched on the fixed leading text
+  either way — how the registration is worded never changes whether that app's records can be linked.
+  Where two prefixes overlap, the longer one wins, so an id belongs to the most specific app that
+  claims it.
 implements:
 - app_platform/loader.py
-- data_layer/entity_types.py
-tests: []
+- data_layer/entity_types.py::_literal_prefix
+- data_layer/entity_types.py::resolve_entity_id
+tests:
+- tests/platform/test_entity_id_prefix_matching.py
 links: {}
-notes: ''
+notes: >
+  Until 2026-07 an id was matched against the registration text verbatim, so an app that wrote its
+  format with a placeholder matched nothing at all and none of its records could be linked — silently,
+  since an id matching no prefix is indistinguishable from an unknown one. 24 apps were affected.
