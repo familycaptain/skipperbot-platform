@@ -147,6 +147,46 @@ def _discover_app_tools():
             logger.error("TOOL_DISPATCH: Failed to load app '%s': %s", app_id, e)
 
 
+# Arguments that name WHO a tool is acting for. A tool taking one of these is scoped to a
+# person: it reads their list, writes to their backlog, sets their reminder.
+_IDENTITY_ARGS = ("user_id",)
+
+
+def _unresolved_identity(arguments: dict) -> str | None:
+    """The identity a tool was handed, if it does not belong to anybody. Else None.
+
+    The shared speaker sends a PLACEHOLDER identity until speaker-ID resolves an actual
+    person, and speaker-ID is opt-in — so on a default install it may never resolve. That
+    placeholder is not a household member and never will be.
+
+    Nothing downstream noticed. A user-scoped write ran, succeeded, and created a real row
+    owned by a person who does not exist: "add milk to my to-do list" at the kitchen speaker
+    returned "Added to your to-do list", and the item was never seen again. A confident
+    false confirmation is worse than a refusal — it is the tool-call equivalent of
+    hallucinating, and the model had no way to know it happened.
+
+    So the identity is checked HERE, once, rather than in each of the seventeen tools that
+    take one. Generic requests (the weather, the time) declare no identity argument and are
+    unaffected.
+    """
+    for key in _IDENTITY_ARGS:
+        if key not in arguments:
+            continue
+        name = str(arguments.get(key) or "").strip().lower()
+        if not name:
+            return ""
+        try:
+            from data_layer.users import get_user
+            if get_user(name) is None:
+                return name
+        except Exception:
+            # If the roster cannot be read we cannot prove the identity is bad; let the
+            # tool run rather than refusing everyone over a transient database error.
+            logger.warning("TOOL_DISPATCH: could not verify identity %r", name, exc_info=True)
+            return None
+    return None
+
+
 async def call_tool(tool_name: str, arguments: dict) -> str:
     """Call a tool function directly in-process.
 
@@ -164,6 +204,20 @@ async def call_tool(tool_name: str, arguments: dict) -> str:
         logger.warning("TOOL_DISPATCH: refused disabled tool '%s'", tool_name)
         return (f"Error: Tool '{tool_name}' is disabled. Code and app changes go "
                 f"through the development workflow, not in-chat tools.")
+
+    # Refuse before running anything, and say why in terms the model can act on: it must
+    # tell the person it could not do it and find out who is speaking, NOT report success.
+    ghost = _unresolved_identity(arguments)
+    if ghost is not None:
+        who = f"'{ghost}'" if ghost else "nobody"
+        logger.info("TOOL_DISPATCH: refused '%s' — unresolved identity %s", tool_name, who)
+        return (
+            f"Error: Tool '{tool_name}' was not run because it acts on one person's data "
+            f"and the identity given ({who}) is not a household member. This usually means "
+            f"the request came from a shared device that has not worked out who is "
+            f"speaking yet. NOTHING WAS SAVED OR CHANGED. Do not report this as done — "
+            f"tell them you could not do it because you do not know who they are, and ask."
+        )
 
     fn = _registry.get(tool_name)
     if fn is None:

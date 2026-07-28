@@ -51,3 +51,76 @@ table that connection happens to resolve. Worth checking on its own.
 
 **Probably not unique to jobs.** Other extracted apps may have left the same twin behind in
 the baseline. Check the whole baseline against the app schemas rather than fixing jobs alone.
+
+---
+
+## `delivered` means both "sent" and "gave up", and a failed channel is never retried
+
+**Operator: recorded as a todo.** Investigated rather than assumed — the current design turns
+out to be deliberate, so this is a refinement, not a bug fix, and it has a trap in it.
+
+### What the code does today
+
+`apps/notifications/delivery.py` sends each notification across every configured channel and
+records a structured per-channel receipt — `{"ok": bool, "detail": str}` — via `_receipt()`,
+persisted with `set_receipts`. Every channel genuinely reports an outcome:
+
+| channel | how success is judged |
+|---|---|
+| Discord | `send_dm` result starts with `"dm sent"` |
+| Pushover | result starts with `"sent"` |
+| FCM / mobile | count of per-device results with `success` |
+| voice | `announce_to_device` returns a bool |
+| web | whether the socket frame went to a connected user |
+
+So the receipts are accurate. What is not: **`mark_delivered` is called unconditionally,
+whatever the receipts say.** The comment above it reads "once any channel succeeded, we're
+done" — but nothing checks. A notification where every channel failed is marked delivered
+exactly like one that arrived.
+
+### Why it was built this way — the part that matters
+
+`data.py::get_all_undelivered(limit=50, max_age_minutes=5)` runs on every 30-second tick and
+does two things:
+
+```sql
+UPDATE notifications SET delivered = TRUE WHERE delivered = FALSE AND created_at < cutoff;
+SELECT * FROM notifications WHERE delivered = FALSE AND created_at >= cutoff ORDER BY created_at ASC LIMIT 50;
+```
+
+The first statement is a deliberate anti-flood guard, and it works: a household member who
+is offline for a month and then signs in receives **nothing**, because everything older than
+five minutes was abandoned minutes after it was created. There is no separate login or
+reconnect replay path either — the notifications read API lists rows, it does not re-deliver
+them.
+
+So `delivered` is carrying two meanings at once: *we sent this* and *we stopped trying*.
+That conflation is the actual defect. It is also what prevents the flood, which is why this
+cannot simply be "mark delivered only on success".
+
+### The trap in the obvious fix
+
+Marking delivered only when at least one receipt is `ok` does NOT cause a backlog flood —
+the five-minute sweep still abandons the row, so the effect is a bounded retry of roughly
+ten attempts over five minutes, then give up. But it WOULD **re-send on channels that already
+succeeded**: if web delivered and Discord failed, every retry hits web again and the person
+sees the same message repeatedly. A duplicate every 30 seconds is a worse experience than a
+message that was quietly lost.
+
+### The fix, when we get to it
+
+1. Retry **per channel, not per notification** — skip any channel whose stored receipt is
+   already `ok`. The receipts structure supports this today; nothing reads it back yet.
+2. Separate the two meanings. `delivered` should mean at least one channel succeeded;
+   abandonment wants its own state (`abandoned` / `expired`) so "lost" stops being
+   indistinguishable from "arrived" in the audit trail.
+3. Keep the age cutoff exactly as it is. It is the anti-flood guard and it is correct.
+4. Consider surfacing "nobody could be reached" — a member whose only channel has been
+   failing for a week is currently invisible.
+
+### Why it is worth doing
+
+Four subsystems inherit this: the meals nightly dinner check, every schedule reminder, every
+reminder nudge, and the print notification. It is also why a backup alarm cannot be fully
+trusted even now that it is addressed to the right person (`apps/backups/runner.py`) — the
+notification can be recorded as delivered having reached nobody.
