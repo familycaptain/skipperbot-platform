@@ -1,0 +1,35 @@
+kind: specification
+id: platform.identity.nobody-speaks-as-anybody-else
+title: You cannot ask Skipper to act as another member
+state: live
+autonomy: gated
+behavior: >
+  Who is asking is decided by the platform from the signed-in session, never by what the request says
+  it is. Naming another household member — to speak as them, to point their notifications at your
+  device, or to open a voice session with their instructions and tools — is refused. Naming yourself,
+  or naming nobody, acts as you. Asking Skipper in conversation to read or change another member's
+  records is refused the same way and for the same reason, unless the person asking is a parent or an
+  administrator, which is the rule the rest of the app already follows.
+implements:
+- agent.py::_claimed_actor
+- agent.py::chat
+- agent.py::mobile_register
+- agent.py::voice_create_session
+- tool_dispatch.py::_may_act_for
+- chat_domain.py
+tests:
+- tests/platform/test_no_acting_as_another_member.py
+- tests/platform/test_unresolved_identity_refused.py
+links: {}
+notes: >
+  Adults in a household trusting each other (platform.auth.adults-trust-each-other) covers reading and
+  changing another adult's records. It does not cover speaking AS them: that writes words into the
+  shared record attributed to someone who did not say them, which recall, the console and the PM sweep
+  all then treat as theirs. The two are separate decisions.
+
+  The shared speaker is the one exception, and only for opening a session: it sends a stand-in identity
+  belonging to nobody until voice recognition resolves a person, so passing it on impersonates nobody —
+  and platform.identity.an-unknown-speaker-cannot-act refuses anything person-specific under it.
+
+  Where the answer cannot be established — the roster is unreadable — the request is refused, because
+  here an unprovable claim allowed is an impersonation allowed.

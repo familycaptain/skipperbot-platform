@@ -118,5 +118,66 @@ class TheRefusalTellsTheModelWhatToDo(unittest.TestCase):
         self.assertEqual(out, "75F and clear")
 
 
+class AToolCannotActOnAnotherMembersData(unittest.TestCase):
+    """The REST layer has always enforced this; the tool layer had drifted away from it.
+
+    `GET /history?user_id=alice` from a child is a 403 because routes call `scope_user`.
+    The equivalent chat tool passed `user_id` straight to the data layer with no check, so
+    the same request refused over HTTP succeeded through the model — and some of those
+    tools write.
+    """
+
+    def setUp(self):
+        self.token = tool_dispatch.set_speaker("jacob")
+        self.addCleanup(lambda: tool_dispatch.reset_speaker(self.token))
+
+    def _roster(self, jacob_role="member"):
+        users = mock.MagicMock()
+        roster = {"jacob": {"name": "jacob", "role": jacob_role},
+                  "rodney": {"name": "rodney", "role": "admin"}}
+        users.get_user.side_effect = lambda n: roster.get((n or "").lower().strip())
+        users.has_any_role.side_effect = lambda u, roles: any(
+            r in (u or {}).get("role", "").split(",") for r in roles)
+        return mock.patch.dict(sys.modules, {"data_layer.users": users})
+
+    def test_your_own_data_is_fine(self):
+        with self._roster():
+            self.assertTrue(tool_dispatch._may_act_for("jacob"))
+
+    def test_another_members_data_is_refused(self):
+        with self._roster():
+            self.assertFalse(tool_dispatch._may_act_for("rodney"))
+
+    def test_a_parent_or_admin_may(self):
+        for role in ("admin", "parent", "member,parent"):
+            with self.subTest(role=role), self._roster(jacob_role=role):
+                self.assertTrue(tool_dispatch._may_act_for("rodney"))
+
+    def test_outside_a_chat_turn_nothing_is_restricted(self):
+        # Job handlers and schedulers have no speaker and are trusted platform code.
+        tool_dispatch.reset_speaker(self.token)
+        self.token = tool_dispatch.set_speaker("")
+        with self._roster():
+            self.assertTrue(tool_dispatch._may_act_for("rodney"))
+
+    def test_an_unverifiable_roster_refuses(self):
+        # Unlike the unknown-identity gate, failing open here would ALLOW cross-person
+        # access, so this one fails closed.
+        users = mock.MagicMock()
+        users.get_user.side_effect = RuntimeError("db down")
+        with mock.patch.dict(sys.modules, {"data_layer.users": users}):
+            self.assertFalse(tool_dispatch._may_act_for("rodney"))
+
+    def test_the_tool_never_runs_and_the_model_is_told_why(self):
+        ran = []
+        with self._roster():
+            with mock.patch.dict(tool_dispatch._registry,
+                                 {"anime_history": lambda **kw: ran.append(kw) or "history!"}):
+                out = asyncio.run(tool_dispatch.call_tool("anime_history", {"user_id": "rodney"}))
+        self.assertEqual(ran, [])
+        self.assertIn("NOTHING WAS READ OR CHANGED", out)
+        self.assertIn("their own account", out)
+
+
 if __name__ == "__main__":
     unittest.main()

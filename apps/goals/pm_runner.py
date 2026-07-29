@@ -65,16 +65,6 @@ async def check_and_run_pm(force: bool = False):
     to prevent duplicate scrum DMs when multiple triggers fire on the same day.
     Use run_pm_now() to truly bypass the guard (it clears last_run_date first).
     """
-    # The daily standup IS the Scrum app's feature (skipperbot-app-scrum):
-    # without it there's nowhere to persist items or track replies, so we send
-    # NO standup DMs at all. The PM and Goals *thinking domains* are separate
-    # (run by thinking_scheduler) and review goals/projects + nudge owners
-    # regardless of whether scrum is installed.
-    try:
-        import apps.scrum.data  # noqa: F401
-    except ImportError:
-        return
-
     now = datetime.now(get_timezone())
 
     if not force and now.hour < PM_RUN_HOUR:
@@ -92,18 +82,39 @@ async def check_and_run_pm(force: bool = False):
     pm_audit_logger.info("PM DAILY RUN — %s", now.strftime("%A, %B %d, %Y at %I:%M %p CT"))
     pm_audit_logger.info("=" * 60)
 
+    # The daily standup IS the Scrum app's feature (skipperbot-app-scrum): without it
+    # there is nowhere to persist items or track replies, so no standup goes out. That is
+    # correct and intended — no scrum installed means no standup is required.
+    #
+    # The focus nudge is NOT part of scrum. It belongs to Prioritize and is about a
+    # person's own empty focus slots. It used to be reachable only from inside this
+    # function, BELOW an early `return` on the scrum import, so an unrelated app being
+    # absent silently switched off a second app's daily nudge — on a stock platform,
+    # permanently and with nothing said. The two are now decided separately.
     try:
-        # Pure standup: gather scrum data, build DMs, send
-        # (Deep project analysis is handled by the PM thinking domain)
-        actions = await asyncio.to_thread(_build_standup_actions, state)
+        import apps.scrum.data  # noqa: F401
+        scrum_installed = True
+    except ImportError:
+        scrum_installed = False
+        logger.info("PM: scrum app not installed — no standup today; focus nudges still run")
 
-        # Append focus priority nags for users with empty slots
+    try:
+        if scrum_installed:
+            # Pure standup: gather scrum data, build DMs, send
+            # (Deep project analysis is handled by the PM thinking domain)
+            actions = await asyncio.to_thread(_build_standup_actions, state)
+        else:
+            actions = []
+
+        # Append focus priority nags for users with empty slots. Runs either way — it
+        # creates its own entries for people who are not already getting a PM DM.
         _append_focus_nags(actions)
 
-        # Persist scrum items to DB for the Scrum app
-        await asyncio.to_thread(_persist_scrum_items, actions)
+        # Persist scrum items to DB for the Scrum app (nothing to persist without it)
+        if scrum_installed:
+            await asyncio.to_thread(_persist_scrum_items, actions)
 
-        # Deliver standup DMs (async — needs Discord)
+        # Deliver DMs (async — needs Discord)
         await _deliver_pm_messages(actions)
 
         # Update state
@@ -111,8 +122,9 @@ async def check_and_run_pm(force: bool = False):
         state["last_run_at"] = now.isoformat()
         _save_pm_state(state)
 
-        logger.info("PM: Daily standup complete. %d people.", len(actions))
-        pm_audit_logger.info("PM STANDUP COMPLETE: %d people", len(actions))
+        what = "standup" if scrum_installed else "focus nudges (no scrum app)"
+        logger.info("PM: Daily %s complete. %d people.", what, len(actions))
+        pm_audit_logger.info("PM %s COMPLETE: %d people", what.upper(), len(actions))
 
     except Exception as e:
         logger.error("PM: Daily cycle failed: %s", e, exc_info=True)

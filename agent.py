@@ -871,19 +871,24 @@ class MobileUnregisterRequest(BaseModel):
 
 
 @app.post("/api/mobile/register")
-async def mobile_register(request: MobileRegisterRequest):
-    """Register or update a mobile device's FCM token for push notifications."""
+async def mobile_register(request: MobileRegisterRequest, http_request: Request):
+    """Register or update a mobile device's FCM token for push notifications.
+
+    Bound to the authenticated caller: registering under a body-supplied name let a member —
+    or a stolen phone's token — point somebody else's urgent pushes at their own device.
+    """
     from data_layer.mobile_devices import register_device
+    user_id = _claimed_actor(http_request, request.user_id)
     device = await asyncio.to_thread(
         register_device,
-        user_id=request.user_id,
+        user_id=user_id,
         device_id=request.device_id,
         fcm_token=request.fcm_token,
         device_name=request.device_name,
         app_version=request.app_version,
     )
     if device:
-        logger.info("MOBILE: Registered device %s for %s", request.device_id[:12], request.user_id)
+        logger.info("MOBILE: Registered device %s for %s", request.device_id[:12], user_id)
         return {"success": True, "device_id": device["device_id"]}
     return {"success": False, "error": "Registration failed"}
 
@@ -927,10 +932,18 @@ async def get_picovoice_config():
 
 
 @app.post("/api/voice/session")
-async def voice_create_session(request: VoiceSessionRequest):
-    """Mint an ephemeral OpenAI Realtime token for a voice session."""
+async def voice_create_session(request: VoiceSessionRequest, http_request: Request):
+    """Mint an ephemeral OpenAI Realtime token for a voice session.
+
+    A caller may NOT open a session as another household member — that would hand them that
+    person's instructions, tools and data. It MAY open one under the shared speaker's
+    stand-in identity, which belongs to nobody: the device does not know who is talking
+    until voice recognition resolves it, and anything person-specific is refused until it
+    does.
+    """
     from app_platform.voice.session import mint_ephemeral_token
-    result = await asyncio.to_thread(mint_ephemeral_token, request.user_id, request.device_info)
+    user_id = _claimed_actor(http_request, request.user_id, allow_placeholder=True)
+    result = await asyncio.to_thread(mint_ephemeral_token, user_id, request.device_info)
     if result:
         return result
     return {"error": "Failed to create voice session"}
@@ -1250,13 +1263,20 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
 
 
 @app.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest):
-    """HTTP chat endpoint - fallback for non-WebSocket clients."""
+async def chat(request: ChatRequest, http_request: Request):
+    """HTTP chat endpoint - fallback for non-WebSocket clients.
+
+    The speaker is the authenticated principal, never the body. The WebSocket path has
+    always done this (`user_id = principal["name"]`); this fallback trusted the client, so
+    any signed-in caller could speak as anyone — words entering the shared record under a
+    name that did not say them.
+    """
+    user_id = _claimed_actor(http_request, request.user_id)
     try:
-        response_text = await process_chat(request.user_id, request.message, channel="web")
-        return ChatResponse(response=response_text, user_id=request.user_id)
+        response_text = await process_chat(user_id, request.message, channel="web")
+        return ChatResponse(response=response_text, user_id=user_id)
     except Exception as e:
-        return ChatResponse(response=f"Error: {str(e)}", user_id=request.user_id)
+        return ChatResponse(response=f"Error: {str(e)}", user_id=user_id)
 
 
 @app.get("/api/chat/history")
@@ -1911,6 +1931,38 @@ def _is_admin_req(request: Request, fallback_actor: str = "") -> bool:
     never trusted."""
     p = _principal(request)
     return bool(p and has_role(p, "admin"))
+
+
+def _claimed_actor(request: Request, claimed: str, *, allow_placeholder: bool = False) -> str:
+    """The identity to act as, given one the CLIENT asked for. Raises 403 to impersonate.
+
+    Speaking AS somebody is not covered by the household's mutual-trust rule. That rule says
+    an adult may read and change another adult's records; it says nothing about writing words
+    into the shared append-only record attributed to a person who did not say them. Recall,
+    the console and the PM sweep all then treat those words as theirs.
+
+    `allow_placeholder` exists for the shared speaker, which sends a stand-in identity until
+    voice recognition works out who is talking — and that recognition is opt-in, so it may
+    never resolve. A stand-in belongs to nobody, so passing it on impersonates nobody, and
+    the tool layer already refuses anything person-specific under it
+    (platform.identity.an-unknown-speaker-cannot-act). Claiming a REAL member's name is
+    refused whether or not placeholders are allowed.
+    """
+    principal = _principal(request)
+    me = ((principal["name"] if principal else "") or "").lower().strip()
+    want = (claimed or "").lower().strip()
+    if not want or want == me:
+        return me
+    if allow_placeholder:
+        try:
+            from data_layer.users import get_user
+            if get_user(want) is None:
+                return want          # nobody's name — a stand-in, not an impersonation
+        except Exception:
+            logger.warning("could not verify claimed identity %r", want, exc_info=True)
+            raise HTTPException(status_code=403, detail="Could not verify identity.")
+    logger.warning("AUTH: %r attempted to act as %r on %s", me, want, request.url.path)
+    raise HTTPException(status_code=403, detail="You cannot act as another member.")
 
 
 def _actor_name(request: Request, fallback: str = "") -> str:

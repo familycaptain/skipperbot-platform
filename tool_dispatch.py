@@ -14,6 +14,7 @@ Call init() once at startup after dotenv is loaded.
 """
 
 import asyncio
+import contextvars
 import importlib.util
 import inspect
 import sys
@@ -147,6 +148,47 @@ def _discover_app_tools():
             logger.error("TOOL_DISPATCH: Failed to load app '%s': %s", app_id, e)
 
 
+# The household member the current turn is actually being spoken by, set by the chat loop
+# from the VERIFIED principal. Empty outside a chat turn (a job handler, a scheduler), where
+# there is no speaker to compare against and the caller is trusted platform code.
+_speaker: contextvars.ContextVar[str] = contextvars.ContextVar("skipper_speaker", default="")
+
+
+def set_speaker(name: str):
+    """Bind the verified speaker for this turn. Returns the token to reset with."""
+    return _speaker.set((name or "").strip().lower())
+
+
+def reset_speaker(token) -> None:
+    _speaker.reset(token)
+
+
+def _may_act_for(target: str) -> bool:
+    """Whether the current speaker may act on `target`'s data.
+
+    Mirrors the REST layer's rule (`app_platform.auth.resolve_target`): yourself always,
+    somebody else only if you are an admin or a parent.
+
+    This exists because the two layers had drifted. Routes call `scope_user`, so
+    `GET /history?user_id=alice` from a child is a 403 — but the equivalent chat TOOL took
+    `user_id` straight from the model and passed it to the data layer with no check at all.
+    Cross-person access was prevented only by prose in a guide, which is one model decision
+    away from failing, and some of those tools WRITE.
+    """
+    me = _speaker.get()
+    want = (target or "").strip().lower()
+    if not me or not want or want == me:
+        return True
+    try:
+        from data_layer.users import get_user, has_any_role
+        actor = get_user(me)
+        return bool(actor and has_any_role(actor, ("admin", "parent")))
+    except Exception:
+        logger.warning("TOOL_DISPATCH: could not check whether %r may act for %r",
+                       me, want, exc_info=True)
+        return False
+
+
 # Arguments that name WHO a tool is acting for. A tool taking one of these is scoped to a
 # person: it reads their list, writes to their backlog, sets their reminder.
 _IDENTITY_ARGS = ("user_id",)
@@ -207,6 +249,20 @@ async def call_tool(tool_name: str, arguments: dict) -> str:
 
     # Refuse before running anything, and say why in terms the model can act on: it must
     # tell the person it could not do it and find out who is speaking, NOT report success.
+    # Acting on somebody ELSE's data, from chat. The REST layer has always enforced this;
+    # the tool layer did not, so the same request refused over HTTP succeeded through the
+    # model.
+    for _k in _IDENTITY_ARGS:
+        if _k in arguments and not _may_act_for(arguments.get(_k)):
+            logger.warning("TOOL_DISPATCH: refused '%s' — %r may not act for %r",
+                           tool_name, _speaker.get(), arguments.get(_k))
+            return (
+                f"Error: Tool '{tool_name}' was not run. It acts on "
+                f"{arguments.get(_k)}'s data, and the person you are talking to is not "
+                f"them and is not a parent or an admin. NOTHING WAS READ OR CHANGED. Tell "
+                f"them you can only do this for their own account."
+            )
+
     ghost = _unresolved_identity(arguments)
     if ghost is not None:
         who = f"'{ghost}'" if ghost else "nobody"

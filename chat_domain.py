@@ -363,7 +363,14 @@ async def handle_chat(req: ChatRequest) -> ChatResult:
         if tool_name in LOCAL_TOOL_NAMES:
             return await handle_local_tool(tool_name, tool_args, from_user=req.user_id)
         import tool_dispatch
-        return await tool_dispatch.call_tool(tool_name, tool_args)
+        # Bind who is actually speaking, so a tool cannot act on another member's data
+        # just because the model named them. req.user_id is the verified principal on
+        # every surface (the WebSocket and HTTP chat paths both take it from auth).
+        token = tool_dispatch.set_speaker(req.user_id)
+        try:
+            return await tool_dispatch.call_tool(tool_name, tool_args)
+        finally:
+            tool_dispatch.reset_speaker(token)
 
     async def _before_tool(tool_name: str, tool_args: dict, tool_call_id: str):
         """Pre-dispatch hook: send ack messages + tool call event for UI."""

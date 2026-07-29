@@ -7,11 +7,17 @@ behavior: >
   Once a day, a person with unfilled focus positions gets a short nudge — how many are open, what they
   already have pinned, and an invitation to reply with what they want to focus on — and can set their
   priorities by simply answering it. Someone whose positions are all full is not nudged at all, and
-  nobody is nudged twice in a day however many times the check runs.
+  nobody is nudged twice in a day however many times the check runs. The nudge is this app's own: it
+  arrives whether or not the household has installed any other app, and it reaches people who are
+  getting no other daily message.
 implements:
 - apps/goals/pm_runner.py::_append_focus_nags
 - apps/goals/pm_runner.py::check_and_run_pm
 - apps/prioritize/data.py::get_focus_nag_enabled
 tests: []
 links: {}
-notes: ''
+notes: >
+  The last sentence is load-bearing. The nudge is assembled during the daily project-management pass,
+  and until 2026-07 that pass returned immediately when the separate scrum app was absent — which it is
+  on a stock install — so an unrelated app not being installed silently switched this nudge off
+  entirely, permanently, with nothing said anywhere.
