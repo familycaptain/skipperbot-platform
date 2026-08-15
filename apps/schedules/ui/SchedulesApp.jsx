@@ -83,6 +83,10 @@ export default function SchedulesApp({ appId, userId, context = {}, onTitle, onO
       let url = "/api/apps/schedules";
       const params = [];
       if (filter !== "all" && filter !== "overdue") params.push(`category=${filter}`);
+      // Narrows to this person, but the API also returns the household's own recurring
+      // work (assigned to "system" — the nightly backup, the meals check, scripture
+      // preparation). Filtering strictly by assignee hid all of it from everybody, so
+      // nobody could see that those schedules existed, let alone that one was failing.
       if (userId) params.push(`assigned_to=${encodeURIComponent(userId)}`);
       if (params.length) url += "?" + params.join("&");
       const data = await apiFetch(url);
@@ -342,7 +346,11 @@ function ListView({ schedules, filter, setFilter, onScheduleClick, onNewClick, o
                           <Bot size={9} /> auto
                         </span>
                       )}
-                      {sch.assigned_to && <span>{sch.assigned_to}</span>}
+                      {sch.assigned_to === "system"
+                        ? <span className="inline-flex items-center gap-0.5 px-1.5 py-0 rounded text-[10px] surface-raised text-muted">
+                            household
+                          </span>
+                        : sch.assigned_to && <span>{sch.assigned_to}</span>}
                       <span>&middot;</span>
                       <span className={overdueFl ? "text-red-400 font-medium" : dueSoonFl ? "text-amber-400" : ""}>
                         {formatDue(sch.next_due)}

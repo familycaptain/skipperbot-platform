@@ -700,20 +700,39 @@ def get_schedule(schedule_id: str) -> dict | None:
     return _row_to_dict(row)
 
 
+SYSTEM_ASSIGNEE = "system"
+
+
 def list_schedules(
     category: str | None = None,
     assigned_to: str | None = None,
     active_only: bool = True,
     limit: int = 200,
+    include_system: bool = True,
 ) -> list[dict]:
+    """List schedules, optionally narrowed to one person.
+
+    ``include_system`` also returns the household's own recurring work — the nightly
+    backup, the meals check, the scripture preparation — which is assigned to
+    ``system`` rather than to a person. Filtering strictly by assignee hid all of it
+    from every member, so nobody could see that the nightly backup existed, let alone
+    that it had been failing. A schedule nobody can see is a schedule nobody can manage.
+
+    Defaults to True so a caller has to opt OUT of seeing the household's own work.
+    """
     clauses = []
     params = []
     if category:
         clauses.append("category = %s")
         params.append(category)
     if assigned_to:
-        clauses.append("assigned_to = %s")
-        params.append(assigned_to.lower().strip())
+        who = assigned_to.lower().strip()
+        if include_system and who != SYSTEM_ASSIGNEE:
+            clauses.append("(assigned_to = %s OR assigned_to = %s)")
+            params.extend([who, SYSTEM_ASSIGNEE])
+        else:
+            clauses.append("assigned_to = %s")
+            params.append(who)
     if active_only:
         clauses.append("active = TRUE")
 

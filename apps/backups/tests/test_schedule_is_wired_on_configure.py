@@ -35,8 +35,12 @@ from apps.backups import schedule as backup_schedule  # noqa: E402
 
 
 class _FakeSchedules:
-    def __init__(self):
-        self.rows = {}
+    def __init__(self, existing=None):
+        self.rows = dict(existing or {})
+
+    def list_schedules(self, active_only=True, limit=200):
+        return [{**row, "id": sid} for sid, row in self.rows.items()
+                if not (active_only and not row.get("active"))]
 
     def get_schedule(self, sid):
         return self.rows.get(sid)
@@ -45,12 +49,13 @@ class _FakeSchedules:
         return f"next:{tod}"
 
     def upsert_schedule(self, sid, **kw):
-        self.rows[sid] = dict(kw)
+        # Merge, so a partial update (deactivating a duplicate) does not wipe the row.
+        self.rows[sid] = {**self.rows.get(sid, {}), **kw}
         return self.rows[sid]
 
 
-def _run(cfg):
-    fake = _FakeSchedules()
+def _run(cfg, existing=None):
+    fake = _FakeSchedules(existing)
     with mock.patch.dict(sys.modules, {"apps.schedules.data": fake}):
         with mock.patch("apps.schedules.data", fake, create=True):
             backup_schedule.ensure_schedules(cfg)
@@ -97,6 +102,67 @@ class ConfiguringADestinationCreatesTheSchedules(unittest.TestCase):
         # time anything in settings was saved.
         self.assertIsNotNone(first["next_due"])
         self.assertIsNone(second["next_due"])
+
+
+class AnExistingScheduleIsAdoptedNotDuplicated(unittest.TestCase):
+    """The state a long-running install is actually in.
+
+    Found live: two active `backup` rows and two active `backup_check` rows — the ones this
+    module created, sitting beside ones that already existed under ids it would never guess.
+    The backup ran twice every night. Keying the reconcile on the JOB TYPE instead of on our
+    own id is what prevents that.
+    """
+
+    PRIOR = {"sch-c7a56c02": {"title": "Backup", "linked_entity_id": "backup",
+                              "linked_entity_type": "job", "active": True,
+                              "time_of_day": "02:00", "created_at": "2026-04-01"},
+             "sch-87ee7077": {"title": "Backup check", "linked_entity_id": "backup_check",
+                              "linked_entity_type": "job", "active": True,
+                              "time_of_day": "08:00", "created_at": "2026-04-01"}}
+
+    def test_the_existing_rows_are_reused_and_no_second_pair_is_created(self):
+        fake = _run(CONFIGURED, self.PRIOR)
+        self.assertNotIn(backup_schedule.BACKUP_SCHEDULE_ID, fake.rows,
+                         "a second backup schedule was created — it would run twice a night")
+        self.assertNotIn(backup_schedule.CHECK_SCHEDULE_ID, fake.rows)
+        self.assertTrue(fake.rows["sch-c7a56c02"]["active"])
+        self.assertTrue(fake.rows["sch-87ee7077"]["active"])
+
+    def test_each_job_type_is_left_with_exactly_one_active_schedule(self):
+        both = {**self.PRIOR,
+                backup_schedule.BACKUP_SCHEDULE_ID: {"linked_entity_id": "backup",
+                                                     "active": True, "time_of_day": "02:00",
+                                                     "created_at": "2026-07-27"},
+                backup_schedule.CHECK_SCHEDULE_ID: {"linked_entity_id": "backup_check",
+                                                    "active": True, "time_of_day": "08:00",
+                                                    "created_at": "2026-07-27"}}
+        fake = _run(CONFIGURED, both)
+        for job_type in ("backup", "backup_check"):
+            live = [sid for sid, r in fake.rows.items()
+                    if r.get("linked_entity_id") == job_type and r.get("active")]
+            with self.subTest(job_type=job_type):
+                self.assertEqual(len(live), 1, f"{job_type}: expected one active, got {live}")
+
+    def test_a_duplicate_is_deactivated_not_deleted(self):
+        both = {**self.PRIOR,
+                backup_schedule.BACKUP_SCHEDULE_ID: {"linked_entity_id": "backup",
+                                                     "active": True, "time_of_day": "02:00",
+                                                     "created_at": "2026-07-27"}}
+        fake = _run(CONFIGURED, both)
+        self.assertIn("sch-c7a56c02", fake.rows, "the duplicate row was deleted")
+        self.assertFalse(fake.rows["sch-c7a56c02"]["active"])
+
+    def test_the_two_job_types_never_adopt_each_others_rows(self):
+        fake = _run(CONFIGURED, self.PRIOR)
+        self.assertEqual(fake.rows["sch-c7a56c02"]["linked_entity_id"], "backup")
+        self.assertEqual(fake.rows["sch-87ee7077"]["linked_entity_id"], "backup_check")
+
+    def test_schedules_for_other_jobs_are_untouched(self):
+        other = {"sch-meals": {"linked_entity_id": "meals_dinner_check", "active": True,
+                               "time_of_day": "21:00", "created_at": "2026-01-01"}}
+        fake = _run(CONFIGURED, other)
+        self.assertTrue(fake.rows["sch-meals"]["active"])
+        self.assertEqual(fake.rows["sch-meals"]["time_of_day"], "21:00")
 
 
 class TheActivationRule(unittest.TestCase):

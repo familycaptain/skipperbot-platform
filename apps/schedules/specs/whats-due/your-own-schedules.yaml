@@ -1,15 +1,24 @@
 kind: specification
 id: schedules.whats-due.your-own-schedules
-title: The app shows the schedules that are yours
+title: The app shows your schedules and the household's
 state: live
 autonomy: gated
 behavior: >
-  Opening the Schedules app shows the schedules assigned to the person looking, not the whole
-  household's, so a list of chores is a list of your chores. Who a schedule is assigned to is matched
-  regardless of how the name was capitalised when it was entered.
+  Opening the Schedules app shows the schedules assigned to the person looking, not other people's,
+  so a list of chores is a list of your chores. Alongside them it shows the household's own recurring
+  work — the nightly backup, the meals check, preparing scripture chapters — which belongs to nobody
+  in particular and is marked as the household's rather than as anyone's personal task. Who a schedule
+  is assigned to is matched regardless of how the name was capitalised when it was entered.
 implements:
 - apps/schedules/ui/SchedulesApp.jsx
 - apps/schedules/data.py::list_schedules
-tests: []
+- agent.py::api_list_schedules
+tests:
+- tests/platform/test_household_schedules_are_visible.py
 links: {}
-notes: ''
+notes: >
+  Until 2026-08 the list was narrowed strictly to the person, and everything the platform schedules
+  for the household is assigned to "system" — so none of it was visible to anybody. On one install
+  that was eight schedules including the nightly backup, which had been failing every night for
+  months with no way for anyone to see that it even existed. A schedule nobody can see is a schedule
+  nobody can manage.

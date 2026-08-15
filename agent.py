@@ -3852,12 +3852,16 @@ class CompleteScheduleRequest(BaseModel):
 
 
 @app.get("/api/apps/schedules")
-async def api_list_schedules(category: str = "", assigned_to: str = "", active_only: bool = True):
+async def api_list_schedules(category: str = "", assigned_to: str = "",
+                             active_only: bool = True, include_system: bool = True):
+    """List schedules. Narrowing to a person still includes the household's own
+    recurring work (assigned to `system`), which otherwise no member could see."""
     def _fetch():
         return _dl_schedules.list_schedules(
             category=category or None,
             assigned_to=assigned_to or None,
             active_only=active_only,
+            include_system=include_system,
         )
     schedules = await asyncio.to_thread(_fetch)
     return {"schedules": schedules, "count": len(schedules)}

@@ -93,9 +93,26 @@ def has_destination(cfg: dict) -> bool:
     return False
 
 
+def _rows_for(_sched, job_type: str) -> list[dict]:
+    """Every schedule already pointing at `job_type`, whatever id it carries.
+
+    Looked up by JOB TYPE rather than by our own id. An install that predates this module
+    can already have a schedule for the nightly backup — created by hand or by an earlier
+    version — under an id we would never guess. Keying only on our id leaves that one in
+    place and adds a second, so the backup runs twice a night. That is exactly what
+    happened on a live install: two `backup` rows and two `backup_check` rows, all active.
+    """
+    try:
+        rows = _sched.list_schedules(active_only=False, limit=500) or []
+    except Exception:
+        logger.debug("BACKUPS: could not list schedules", exc_info=True)
+        return []
+    return [r for r in rows if (r.get("linked_entity_id") or "") == job_type]
+
+
 def ensure_schedules(cfg: dict | None = None) -> None:
-    """Create or reconcile the backup schedules. Never raises — a config save must not
-    fail because scheduling did, and the next call reconciles anyway."""
+    """Create, adopt or reconcile the backup schedules. Never raises — a config save must
+    not fail because scheduling did, and the next call reconciles anyway."""
     try:
         from apps.schedules import data as _sched
         if cfg is None:
@@ -119,26 +136,29 @@ def ensure_schedules(cfg: dict | None = None) -> None:
              f"{CHECK_OFFSET_HOURS}h after the backup. Handler: "
              "apps/backups/runner.py:run_backup_check."),
         ):
-            existing = None
-            try:
-                existing = _sched.get_schedule(sched_id)
-            except Exception:
-                # Missing table / early boot — treat as "not yet created". Never fatal.
-                logger.debug("BACKUPS: get_schedule(%s) failed — treating as new", sched_id,
-                             exc_info=True)
+            found = _rows_for(_sched, job_type)
+            ours = next((r for r in found if r.get("id") == sched_id), None)
+            # Prefer our own row; otherwise ADOPT what is already there rather than adding
+            # another. Oldest first, so the choice is stable across boots.
+            target = ours or (sorted(found, key=lambda r: str(r.get("created_at") or ""))[0]
+                              if found else None)
+            target_id = (target or {}).get("id") or sched_id
+            if target and target_id != sched_id:
+                logger.info("BACKUPS: adopting existing %s schedule %s rather than creating "
+                            "a second one", job_type, target_id)
 
             # Reset the countdown only on (re)activation or a time change, so a plain
             # reconcile does not drift the fire time and re-enabling lands on the next
             # FUTURE occurrence rather than firing immediately.
             reset = active and (
-                existing is None
-                or not existing.get("active")
-                or existing.get("time_of_day") != time_of_day
+                target is None
+                or not target.get("active")
+                or str(target.get("time_of_day") or "")[:5] != time_of_day
             )
             next_due = _sched.compute_next_due("daily", {"every": 1}, time_of_day) if reset else None
 
             _sched.upsert_schedule(
-                sched_id,
+                target_id,
                 title=title,
                 description=description,
                 category="general",
@@ -153,6 +173,21 @@ def ensure_schedules(cfg: dict | None = None) -> None:
                 reminder_mins=0,
                 notify_channel="none",
             )
+
+            # Anything else pointing at the same job type would run it a second time the
+            # same night. Deactivated rather than deleted: reversible, visible in the app,
+            # and it never destroys a row somebody made deliberately.
+            for row in found:
+                rid = row.get("id")
+                if rid and rid != target_id and row.get("active"):
+                    try:
+                        _sched.upsert_schedule(rid, title=row.get("title") or f"{job_type} (duplicate)",
+                                               active=False)
+                        logger.warning("BACKUPS: deactivated duplicate %s schedule %s — it is "
+                                       "scheduled once, on %s", job_type, rid, target_id)
+                    except Exception:
+                        logger.warning("BACKUPS: could not deactivate duplicate schedule %s",
+                                       rid, exc_info=True)
 
         logger.info("BACKUPS: schedules reconciled — active=%s, backup at %s, check at %s",
                     active, backup_time, check_time)
