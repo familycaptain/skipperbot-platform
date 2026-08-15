@@ -4,19 +4,24 @@ title: Skipper remembers the setup, not the mail
 state: live
 autonomy: gated
 behavior: >
-  Connecting a mailbox, and writing, changing or deleting a rule, become facts Skipper can
-  recall in conversation — which address is connected, what a rule is called, what it looks for
-  and what it does — so somebody can ask what their triage is set up to do. Processed mail is
-  not remembered: no sender, subject or message text from anybody's inbox becomes one of
-  Skipper's memories.
+  Connecting a mailbox becomes a fact Skipper can recall in conversation — which address is
+  connected and who it belongs to. Nothing else about email does. Processed mail is not remembered:
+  no sender, subject or message text from anybody's inbox becomes one of Skipper's memories. Neither
+  are the triage rules, however they were written: a rule can hold wording lifted straight out of a
+  stranger's message, so the rules stay in the app where they are read as settings, and never become
+  something Skipper recalls as a fact of its own.
 implements:
 - apps/email/data.py::create_account
-- apps/email/data.py::create_rule
-- apps/email/data.py::update_rule
-- apps/email/data.py::delete_rule
-tests: []
+- apps/email/data.py::delete_account
+tests:
+- apps/email/tests/test_rules_never_reach_memory.py
 links: {}
 notes: >
-  Rule text can contain wording lifted verbatim from a stranger's message via the
-  build-a-rule-from-a-message flow; the handling of that untrusted text is recorded in the audit
-  findings.
+  Until 2026-08 writing, changing or deleting a rule was digested into memory. The build-a-rule-
+  from-a-message flow copies the selected words verbatim into the rule's match conditions, and the
+  digest passes a record through a model and stores what comes back — so text written by anyone who
+  could email the household ended up in what Skipper later recalls, with nothing marking its origin.
+  A rule is configuration rather than an event worth remembering, so nothing was lost by stopping.
+
+  This is the narrow half of a wider gap: outside text still reaches prompts elsewhere with no
+  delimiting or provenance, recipes included. That pattern is separate work.

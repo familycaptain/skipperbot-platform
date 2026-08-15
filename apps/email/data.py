@@ -1,6 +1,21 @@
 """Email Data Layer — Schema-aware CRUD for email accounts, rules, and processing log.
 
 Uses the app_email schema via app_platform.db helpers.
+
+**Rules are never digested into memory, on purpose.** A rule row carries text a STRANGER
+wrote: the highlight-to-build-a-rule flow copies words straight out of somebody's message
+into ``conditions.body_contains``. Digesting a rule fed that text to a model
+(``app_platform.memory._run_digest`` JSON-dumps the record into a completion) and PERSISTED
+the result as a recallable memory — so text authored by anyone who can email the household
+ended up in what Skipper later recalls as fact, with nothing marking where it came from.
+
+A rule is configuration, not an event worth remembering, so nothing is lost by not
+digesting it. Accounts still are: they carry only the household's own addresses.
+
+This is the narrow half of a wider problem — outside text reaching prompts with no
+delimiting, hardening or provenance, which also affects recipes. The general pattern is a
+separate piece of work; removing this one call is what takes stranger-authored text out of
+long-term memory today.
 """
 
 import uuid
@@ -23,11 +38,6 @@ SCHEMA = "app_email"
 _ACCOUNT_HINT = (
     "Focus on: user, email address, display name, and active status."
 )
-_RULE_HINT = (
-    "Focus on: rule name, email account, match conditions (sender/subject/keywords), "
-    "actions taken (label/archive/forward/skip), priority order, and active status."
-)
-
 
 def _new_id(prefix: str) -> str:
     return f"{prefix}-{uuid.uuid4().hex[:8]}"
@@ -144,11 +154,7 @@ def create_rule(account_id: str, name: str, conditions: dict, actions: dict,
         (rule_id, account_id, name, Json(conditions), Json(actions), priority, stop_processing),
     )
     ensure_edge(rule_id, account_id, "child_of", "parent_of")
-    saved = _row(row)
-    if saved:
-        digest_record(app_id="email", entity_type="email rule", action="created",
-                      entity_id=rule_id, record=saved, by="", context_hint=_RULE_HINT)
-    return saved
+    return _row(row)
 
 
 def get_rule(rule_id: str) -> dict | None:
@@ -185,19 +191,11 @@ def update_rule(rule_id: str, **kwargs) -> dict | None:
         f"UPDATE email_rules SET {', '.join(sets)} WHERE id = %s RETURNING *",
         tuple(params),
     )
-    saved = _row(row)
-    if saved:
-        digest_record(app_id="email", entity_type="email rule", action="updated",
-                      entity_id=rule_id, record=saved, by="", context_hint=_RULE_HINT)
-    return saved
+    return _row(row)
 
 
 def delete_rule(rule_id: str) -> bool:
-    rule = get_rule(rule_id)
     n = execute_in_schema(SCHEMA, "DELETE FROM email_rules WHERE id = %s", (rule_id,))
-    if n > 0 and rule:
-        digest_record(app_id="email", entity_type="email rule", action="deleted",
-                      entity_id=rule_id, record=rule, by="")
     return n > 0
 
 
@@ -356,10 +354,13 @@ def _accounts_without_credentials():
             for a in get_all_accounts()]
 
 
+# Rules are deliberately absent. A rule row carries text a STRANGER wrote — the
+# highlight-to-build-a-rule flow copies the selected words out of their message straight
+# into conditions.body_contains — and backfilling would feed every stored rule through the
+# digest, which is the very route this app stopped using. Accounts carry only the
+# household's own addresses.
 BACKFILL_ENTITIES = [
     {"entity_type": "email account",
      "list_fn": _accounts_without_credentials,
      "context_hint": _ACCOUNT_HINT},
-    {"entity_type": "email rule",
-     "list_fn": get_all_rules, "context_hint": _RULE_HINT},
 ]
