@@ -12,6 +12,7 @@ if sys.platform == "win32":
             _stream.reconfigure(encoding="utf-8", errors="replace")
 
 import asyncio
+import functools
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -316,9 +317,61 @@ class LoginRequest(BaseModel):
     password: str = ""
 
 
+@functools.lru_cache(maxsize=1)
+def _build_info() -> dict:
+    """The branch and commit this process is running, read once.
+
+    Reported by /api/health so "what is actually deployed?" is answerable without shell
+    access to the box. That question has cost real time: a stale app silently failing every
+    night, a fix sitting on a branch the host was not tracking, all of it invisible because
+    the only way to check was to ssh in.
+
+    Reads .git directly rather than shelling out — the container has no git binary, only
+    the bind-mounted working tree. Fails soft to empty strings: health must answer even if
+    this cannot.
+    """
+    info = {"branch": "", "commit": ""}
+    try:
+        root = Path(__file__).resolve().parent
+        gitdir = root / ".git"
+        if gitdir.is_file():                       # a worktree: ".git" holds a pointer
+            pointer = gitdir.read_text(encoding="utf-8").strip()
+            if pointer.startswith("gitdir:"):
+                gitdir = Path(pointer.split(":", 1)[1].strip())
+        if not gitdir.is_dir():
+            return info
+
+        head = (gitdir / "HEAD").read_text(encoding="utf-8").strip()
+        if head.startswith("ref:"):
+            ref = head.split(":", 1)[1].strip()          # refs/heads/<branch>
+            info["branch"] = ref.rsplit("/", 1)[-1]
+            loose = gitdir / ref
+            if loose.is_file():
+                info["commit"] = loose.read_text(encoding="utf-8").strip()[:7]
+            else:
+                # Packed refs — a freshly cloned checkout has no loose ref file.
+                packed = gitdir / "packed-refs"
+                if packed.is_file():
+                    for line in packed.read_text(encoding="utf-8").splitlines():
+                        if line.startswith(("#", "^")) or " " not in line:
+                            continue
+                        sha, name = line.split(" ", 1)
+                        if name.strip() == ref:
+                            info["commit"] = sha[:7]
+                            break
+        elif len(head) >= 7 and all(c in "0123456789abcdefABCDEF" for c in head):
+            info["branch"] = "(detached)"
+            info["commit"] = head[:7]
+        # Anything else — an empty or unrecognisable HEAD — is a broken checkout, not a
+        # detached one. Report nothing rather than something misleading.
+    except Exception:
+        logger.debug("could not read build info", exc_info=True)
+    return info
+
+
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "agent": "SkipperBot", "version": "0.1.0"}
+    return {"status": "ok", "agent": "SkipperBot", "version": "0.1.0", **_build_info()}
 
 
 @app.get("/")
