@@ -136,8 +136,10 @@ CAPABILITIES: tuple[Capability, ...] = (
         name="resend",
         label="Resend (outbound email)",
         env_vars=("RESEND_API_KEY",),
+        settings_keys=(("resend_api_key", "platform"),),
         docs_anchor="03-extended-functionality.md#resend-outbound-email",
-        not_configured_message="Outbound email is not configured. Add RESEND_API_KEY to .env to enable.",
+        not_configured_message="Outbound email is not configured. Add a Resend API key in "
+                               "Settings → Integrations.",
     ),
     Capability(
         name="gmail",

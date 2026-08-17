@@ -1,0 +1,29 @@
+kind: specification
+id: platform.config.outbound-email-is-configured-once
+title: The key that sends mail is set once, for the whole household
+state: live
+autonomy: gated
+behavior: >
+  The credential that sends email out of the house is entered once, in the platform's own settings
+  beside the other services that belong to no single app, and is kept encrypted. Every app that sends
+  mail uses that one credential, so adding a second such app never means entering it again or knowing
+  where the first one keeps it. An install that was configured through the environment before there
+  was a setting keeps working untouched. Asked to send with nothing configured, an app refuses and
+  says where to put a key rather than failing with a technical error.
+implements:
+- app_platform/email_delivery.py::resend_api_key
+- app_platform/email_delivery.py::require_resend_api_key
+- app_platform/capabilities.py
+- apps/settings/routes.py
+tests:
+- tests/platform/test_outbound_email_credential.py
+links: {}
+notes: >
+  Until 2026-08 the key was read straight from an environment variable by each app that needed it. It
+  could only be changed by editing a file on the host and restarting, it appeared nowhere in the
+  settings screens, and the second app to want it copied the first app's approach rather than finding
+  a shared one — which is how the same credential ends up in two places with two spellings.
+
+  Settings are consulted first and the environment second, and a settings store that cannot be read
+  falls through to the environment rather than failing: a container handed a key must not be stopped
+  by a database problem.

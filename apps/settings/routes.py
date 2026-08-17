@@ -98,6 +98,11 @@ PLATFORM_PANELS: dict[str, dict] = {
              "requires_restart": True},
             {"key": "brave_api_key", "type": "string", "secret": True, "label": "Brave Search API key",
              "description": "Powers web search / research.", "default": ""},
+            {"key": "resend_api_key", "type": "string", "secret": True, "label": "Resend API key",
+             "description": "Sends outbound email — the newsletter, and anything else that mails "
+                            "out. From resend.com; the sending domain must be verified there. "
+                            "Belongs here rather than to one app because more than one needs it.",
+             "default": ""},
             {"key": "openai_admin_key", "type": "string", "secret": True, "label": "OpenAI admin key",
              "description": "Optional — enables the OpenAI cost dashboard.", "default": ""},
             {"key": "default_printer", "type": "string", "label": "Default printer",
