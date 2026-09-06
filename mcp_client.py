@@ -38,6 +38,17 @@ async def connect_to_mcp():
             return mcp_tools
 
 
+def tool_input_schema(tool) -> dict:
+    """A tool's JSON schema across mcp SDK versions.
+
+    The SDK's Tool model exposed the schema as ``inputSchema`` through 1.x and
+    renamed it to ``input_schema`` in newer releases (requirements.txt pins
+    only ``mcp>=1.0.0``, so a rebuild can land either side of the rename).
+    """
+    schema = getattr(tool, "input_schema", None) or getattr(tool, "inputSchema", None)
+    return schema if schema else {"type": "object", "properties": {}}
+
+
 def get_openai_tools():
     """Convert MCP tools to OpenAI function format."""
     openai_tools = []
@@ -47,7 +58,7 @@ def get_openai_tools():
             "function": {
                 "name": tool.name,
                 "description": tool.description or "",
-                "parameters": tool.inputSchema if tool.inputSchema else {"type": "object", "properties": {}}
+                "parameters": tool_input_schema(tool),
             }
         }
         openai_tools.append(openai_tool)

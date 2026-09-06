@@ -819,15 +819,12 @@ def get_mcp_tool_schemas_for_categories(category_names: Iterable[str]) -> list[d
 
 
 def mcp_tool_to_realtime_schema(tool) -> dict:
+    from mcp_client import tool_input_schema   # handles the SDK's inputSchema→input_schema rename
     return {
         "type": "function",
         "name": tool.name,
         "description": tool.description or "",
-        "parameters": (
-            tool.inputSchema
-            if getattr(tool, "inputSchema", None)
-            else {"type": "object", "properties": {}}
-        ),
+        "parameters": tool_input_schema(tool),
     }
 
 
