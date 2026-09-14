@@ -1,0 +1,35 @@
+kind: specification
+id: notifications.delivery.unknown-is-not-dead
+title: Only positive knowledge decides whether somebody can be reached
+state: live
+autonomy: gated
+behavior: >
+  Whether a person can be reached is decided on evidence, never on the absence of it. A surface
+  whose state cannot be established is treated as possibly working when deciding whether to send —
+  so an unanswerable question never withholds a message — and as NOT working when reporting what
+  would happen, so a rehearsal never credits a route it could not confirm. Reachability is also a
+  question about every surface being tried rather than the first one: somebody is unreachable only
+  when all of them are known to be dead, and one dead surface among several never stops a message
+  going out over the others.
+implements:
+- apps/notifications/routes.py::_dead_routes
+- apps/notifications/routes.py::_unreachable
+- apps/notifications/routes.py::_surface_states
+tests:
+- apps/notifications/tests/test_direct_send_route.py
+links:
+  related:
+  - notifications.delivery.rehearse-without-sending
+  - notifications.channels.one-channel-is-not-a-fallback
+notes: >
+  The asymmetry is deliberate and the two halves point opposite ways for the same reason: in both
+  cases the conservative answer is the one that does not quietly claim more than is known. When
+  deciding to send, silence about a surface must not become a reason to withhold. When reporting
+  readiness, silence about a surface must not become a reason for confidence.
+
+  This guard has already been wrong once in the narrower form. It asked whether a person had a
+  Discord link, which was the entire question while the only route was Discord, and stopped being
+  the question the moment other channels were added — leaving somebody with a working phone push
+  reported as unreachable and never contacted. The general lesson is worth more than the fix:
+  CHANGING WHAT A FUNCTION CAN DO SILENTLY INVALIDATES EVERY GUARD WRITTEN AGAINST WHAT IT USED TO
+  DO. The guard did not break; its premise did, and nothing failed to announce it.

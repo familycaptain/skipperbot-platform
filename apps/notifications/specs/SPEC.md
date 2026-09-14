@@ -222,6 +222,48 @@ elif not body["ok"]:
 
 `deliver: false` records the row and says so (`note`), delivering nothing.
 
+#### `dry_run: true` — rehearse, touching nobody
+
+Reports what a send **would** do for each recipient and sends nothing,
+so reachability can be re-checked whenever it matters rather than only
+when somebody is willing to buzz three real phones to find out.
+
+```json
+{
+  "dry_run": true,
+  "ready": false,
+  "requested": 2, "reachable": 1, "unreachable": 1,
+  "results": [
+    {"recipient": "jacob", "notification_id": null, "delivered": false,
+     "dry_run": true, "would_reach": ["pushover"],
+     "surfaces": {
+       "discord":  {"state": "declined", "detail": "linked, but they talk on the web and have not used Discord recently"},
+       "pushover": {"state": "ready", "detail": "configured"}},
+     "error": null}
+  ]
+}
+```
+
+Surface states: `ready` (configured, and the policy would send),
+`declined` (configured, policy would not — **normal** for a web-primary
+person, not a finding), `not_configured` (positively no route),
+`unknown` (could not be established).
+
+Two properties it is held to:
+
+- **`unknown` never counts as reachable.** A rehearsal that assumes a
+  surface works because it could not check is worth less than no
+  rehearsal, because it gets counted. "Could not confirm" also reads
+  differently from "no route exists" — one is a broken rehearsal, the
+  other a broken escalation path.
+- **It cannot be mistaken for a delivery.** `delivered` is `false` for
+  everyone however healthy, every result carries `dry_run: true`, and
+  the top-level **`ok` field is absent** — so `body.get("ok")` is falsy
+  and a caller written for a real send treats a rehearsal as a failure.
+  The verdict is `ready`, which a caller has to have asked for to find.
+
+Status mirrors readiness: `200` all reachable, `207` some, `502` none.
+
 ## UI
 
 - **`NotificationsApp`** — desktop app showing recent notifications,

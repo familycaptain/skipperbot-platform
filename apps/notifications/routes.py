@@ -134,6 +134,7 @@ class SendIn(BaseModel):
     source_id: str = ""
     channel: str = ""             # blank = the platform's default_channels
     deliver: bool = True
+    dry_run: bool = False         # report what WOULD happen; send nothing
 
 
 def _requested_recipients(body: SendIn) -> list[str]:
@@ -165,6 +166,109 @@ def _dead_routes(user: dict, name: str, targets: set) -> dict:
     # mobile is deliberately absent: registered devices are not cheaply knowable here,
     # and guessing wrong would withhold a message over a route that might have worked.
     return dead
+
+
+def _surface_states(name: str, user: dict, targets: set) -> dict:
+    """What WOULD happen on each requested surface, without touching any of them.
+
+    Three answers only, and the third is the important one:
+
+      ready           — configured, and the delivery policy would send it
+      declined        — configured, but the policy would not send it to this person
+      not_configured  — there is positively no route here
+      unknown         — we could not find out
+
+    UNKNOWN IS NEVER READY. A rehearsal that assumes a surface works because it could
+    not check is worth less than no rehearsal, because it is counted. Everything here
+    is therefore conservative in the same direction: only positive evidence that a
+    surface would carry the message earns "ready".
+    """
+    states = {}
+
+    if "discord" in targets:
+        if not (user.get("discord_id") or "").strip():
+            states["discord"] = {"state": "not_configured", "detail": "no discord_id"}
+        else:
+            try:
+                from app_platform.speak import (_discord_active, _discord_reachable,
+                                                 _primary_surface)
+                from app_platform.voice_policy import plan_discord
+                would = plan_discord(primary_surface=_primary_surface(name),
+                                     discord_active=_discord_active(name),
+                                     discord_linked=_discord_reachable(name))
+                states["discord"] = ({"state": "ready", "detail": "linked, policy would send"}
+                                     if would else
+                                     {"state": "declined",
+                                      "detail": "linked, but they talk on the web and have not "
+                                                "used Discord recently"})
+            except Exception as exc:                   # noqa: BLE001
+                states["discord"] = {"state": "unknown", "detail": f"could not evaluate: {exc}"}
+
+    if "pushover" in targets:
+        try:
+            from tools.pushover_tool import is_pushover_user
+            states["pushover"] = ({"state": "ready", "detail": "configured"}
+                                  if is_pushover_user(name) else
+                                  {"state": "not_configured",
+                                   "detail": "no Pushover user key saved"})
+        except Exception as exc:                       # noqa: BLE001
+            states["pushover"] = {"state": "unknown", "detail": f"could not evaluate: {exc}"}
+
+    if "mobile" in targets:
+        try:
+            from fcm_sender import is_enabled as fcm_enabled
+            states["mobile"] = ({"state": "unknown",
+                                 "detail": "push is set up; registered devices not checked here"}
+                                if fcm_enabled() else
+                                {"state": "not_configured", "detail": "mobile push not set up"})
+        except Exception as exc:                       # noqa: BLE001
+            states["mobile"] = {"state": "unknown", "detail": f"could not evaluate: {exc}"}
+
+    return states
+
+
+def _rehearse(names: list[str], targets: set) -> list:
+    """One result per recipient describing what a real send WOULD do. Sends nothing.
+
+    Exists so the household can check that the people this endpoint exists to reach
+    are still reachable, WITHOUT messaging them to find out. A check that costs three
+    people a pointless notification gets run less often, and a readiness gate does not
+    usually fail — it rots, by becoming expensive enough to skip.
+    """
+    from data_layer.users import get_user
+
+    out = []
+    for name in names:
+        user = get_user(name)
+        if not user:
+            out.append({"recipient": name, "notification_id": None, "delivered": False,
+                        "dry_run": True, "would_reach": [], "surfaces": {},
+                        "error": "not a known user"})
+            continue
+
+        states = _surface_states(name, user, targets)
+        ready = sorted(t for t, v in states.items() if v["state"] == "ready")
+        unknown = sorted(t for t, v in states.items() if v["state"] == "unknown")
+
+        if ready:
+            error = None
+        elif unknown:
+            # NOT the same as having no route, and must not be reported as if it were.
+            error = ("no surface could be confirmed; " +
+                     "; ".join(f"{t}: {states[t]['detail']}" for t in sorted(states)))
+        else:
+            error = "; ".join(f"{t}: {states[t]['detail']}" for t in sorted(states)) or \
+                    "no channel was requested"
+
+        out.append({"recipient": name, "notification_id": None,
+                    # ALWAYS false. Nothing was delivered, and no arrangement of this
+                    # response may suggest otherwise.
+                    "delivered": False,
+                    "dry_run": True,
+                    "would_reach": ready,
+                    "surfaces": states,
+                    "error": error})
+    return out
 
 
 def _unreachable(names: list[str], targets: set) -> dict:
@@ -242,6 +346,27 @@ async def send_notification(body: SendIn, request: Request):
     # route asks for "all".
     channel = (body.channel or "").strip()
     targets = _resolve_external_channels(channel)
+
+    if body.dry_run:
+        results = await asyncio.to_thread(_rehearse, recipients, targets)
+        ready = [r for r in results if r["would_reach"]]
+        unready = [r for r in results if not r["would_reach"]]
+        # NOTE THE ABSENT `ok`. A rehearsal must not be mistakable for a delivery, and
+        # the likeliest way that happens is a caller reading the field it always reads.
+        # Its absence makes `body.get("ok")` falsy here, so a check written for a real
+        # send treats a dry run as a failure — the safe direction. The rehearsal's own
+        # verdict is `ready`, which a caller has to have asked for to find.
+        return JSONResponse(
+            status_code=200 if not unready else (207 if ready else 502),
+            content={"dry_run": True,
+                     "ready": not unready,
+                     "requested": len(recipients),
+                     "reachable": len(ready),
+                     "unreachable": len(unready),
+                     "channel": channel,
+                     "delivered_via": sorted(targets),
+                     "results": results},
+        )
 
     problems = await asyncio.to_thread(_unreachable, recipients, targets)
 

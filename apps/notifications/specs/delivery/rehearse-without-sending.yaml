@@ -1,0 +1,39 @@
+kind: specification
+id: notifications.delivery.rehearse-without-sending
+title: Reachability can be checked without messaging anybody
+state: live
+autonomy: gated
+behavior: >
+  A direct send can be asked to rehearse instead: it reports, for each named person, which of the
+  requested surfaces would carry the message, which are not set up for them, which the delivery
+  policy would decline, and which it could not determine — and it records nothing and sends
+  nothing. A surface earns "would reach them" only on positive evidence that it works; one whose
+  state could not be established is reported as unknown and never counts toward being reachable,
+  and "we could not check" is stated differently from "there is positively no route". A person for
+  whom no surface can be confirmed is named, and having nobody reachable at all is distinguishable
+  from some being reachable. The answer is marked as a rehearsal throughout, reports nothing as
+  delivered, and omits the field that says a real send succeeded, so a caller written for a real
+  send treats a rehearsal as a failure rather than as delivery.
+implements:
+- apps/notifications/routes.py::send_notification
+- apps/notifications/routes.py::_rehearse
+- apps/notifications/routes.py::_surface_states
+tests:
+- apps/notifications/tests/test_direct_send_route.py
+links:
+  related:
+  - notifications.delivery.send-from-off-the-box
+  - notifications.channels.one-channel-is-not-a-fallback
+notes: >
+  Exists because of how a readiness check actually dies. It does not usually fail — it rots, by
+  becoming expensive enough to skip. Confirming that the people an escalation path exists to reach
+  are still reachable, by messaging all of them to find out, costs several people a pointless
+  notification every time; so it gets run once and called done, and the answer silently ages until
+  the day it is relied on.
+
+  Its hard requirement is therefore not accuracy but honesty about its own limits, in two
+  directions. A rehearsal that could be mistaken for a delivery would be worse than none, so it
+  withholds the field a live caller reads and reports nothing as delivered. And a rehearsal that
+  assumes a surface works because it could not check it is worth less than no rehearsal, because
+  it is counted: unknown is not the same as reachable, and only positive knowledge that a route
+  exists may be reported as one.

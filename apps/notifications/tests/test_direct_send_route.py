@@ -431,6 +431,165 @@ class SendRoute(unittest.TestCase):
         self.assertEqual(res.json()["delivered_via"], ["discord", "mobile", "pushover"])
 
 
+class ARehearsalIsNotADelivery(unittest.TestCase):
+    """dry_run: report what a send WOULD do, touching nobody.
+
+    It exists so the household can confirm the people this endpoint is for are still
+    reachable without messaging all of them to find out. A check that costs three
+    people a pointless notification gets run less often — and a readiness gate rarely
+    fails outright, it rots, by becoming expensive enough to skip.
+
+    Which makes its one hard requirement the opposite of the obvious one: not that it
+    is accurate, but that it can never be mistaken for the real thing, and can never
+    report a route as good when it could not check.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        try:
+            from fastapi.testclient import TestClient  # noqa: F401
+        except Exception as exc:  # pragma: no cover - depends on the host
+            raise unittest.SkipTest(f"fastapi TestClient unavailable: {exc}")
+
+    def _dry(self, body, *, roster=None, pushover_users=("jacob",), plan=True,
+             discord_raises=False, fcm=True):
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+        from apps.notifications import routes as notif_routes
+
+        _patch_targets()
+        app = FastAPI()
+        app.include_router(notif_routes.router, prefix="/api/apps/notifications")
+        people = ROSTER if roster is None else roster
+
+        pushover = mock.MagicMock()
+        pushover.is_pushover_user = lambda u: u in pushover_users
+        speak = mock.MagicMock()
+        speak._primary_surface = lambda u: "web"
+        speak._discord_active = lambda u: False
+        speak._discord_reachable = lambda u: True
+        policy = mock.MagicMock()
+        if discord_raises:
+            policy.plan_discord = mock.Mock(side_effect=RuntimeError("policy unavailable"))
+        else:
+            policy.plan_discord = lambda **kw: plan
+        fcm_mod = mock.MagicMock()
+        fcm_mod.is_enabled = lambda: fcm
+
+        self.created = mock.Mock(side_effect=_notif)
+        self.delivered_calls = []
+
+        async def _never(notif):
+            self.delivered_calls.append(notif["id"])
+            return DELIVERED
+
+        with mock.patch.dict(sys.modules, {"tools.pushover_tool": pushover,
+                                           "app_platform.speak": speak,
+                                           "app_platform.voice_policy": policy,
+                                           "fcm_sender": fcm_mod}), \
+             mock.patch("app_platform.auth.require_admin", lambda r: {"role": "admin"}), \
+             mock.patch("data_layer.users.get_user", lambda n: people.get(n)), \
+             mock.patch("apps.notifications.store.create_notification", self.created), \
+             mock.patch("apps.notifications.delivery._deliver_one", _never):
+            return TestClient(app, raise_server_exceptions=False).post(
+                "/api/apps/notifications", json={**body, "dry_run": True})
+
+    # -- it must touch nothing ------------------------------------------------
+
+    def test_it_writes_no_row_and_sends_nothing(self):
+        self._dry({"recipients": ["jacob", "elijah", "caleb"], "message": "hi"})
+        self.assertEqual(self.created.call_count, 0, "a rehearsal must record nothing")
+        self.assertEqual(self.delivered_calls, [], "a rehearsal must send nothing")
+
+    # -- it must not be mistakable for a delivery ----------------------------
+
+    def test_delivered_is_false_for_everyone_however_healthy(self):
+        # A caller doing the recipient-aware check (`if not jacob["delivered"]`) must
+        # treat a rehearsal as "not reached" — the safe direction if dry_run is ever
+        # set by accident.
+        res = self._dry({"recipients": ["jacob"], "message": "hi"})
+        self.assertEqual(res.status_code, 200)
+        self.assertTrue(res.json()["ready"])
+        self.assertFalse(res.json()["results"][0]["delivered"])
+
+    def test_there_is_no_ok_field_to_misread(self):
+        # The field a caller written for a real send reaches for. Absent, so
+        # body.get("ok") is falsy and a rehearsal cannot pass a live-send check.
+        body = self._dry({"recipients": ["jacob"], "message": "hi"}).json()
+        self.assertNotIn("ok", body)
+        self.assertTrue(body["dry_run"])
+
+    def test_every_result_is_marked_as_a_rehearsal(self):
+        body = self._dry({"recipients": ["jacob", "nobody"], "message": "hi"}).json()
+        self.assertTrue(all(r["dry_run"] for r in body["results"]))
+        self.assertTrue(all(r["notification_id"] is None for r in body["results"]))
+
+    # -- unknown is never ready ----------------------------------------------
+
+    def test_a_surface_it_could_not_evaluate_is_unknown_not_ready(self):
+        # THE REQUIREMENT THAT MATTERS. A rehearsal that assumes a surface works
+        # because it could not check is worth less than no rehearsal, because it is
+        # counted. Discord here cannot be evaluated and Pushover is unset, so there is
+        # nothing positively known to work.
+        res = self._dry({"recipients": ["jacob"], "message": "hi"},
+                        pushover_users=(), discord_raises=True)
+        r = res.json()["results"][0]
+        self.assertEqual(r["surfaces"]["discord"]["state"], "unknown")
+        self.assertEqual(r["would_reach"], [])
+        self.assertFalse(res.json()["ready"])
+
+    def test_unconfirmable_is_reported_differently_from_no_route(self):
+        # "We could not check" and "there is positively no route" are different
+        # findings: one is a broken rehearsal, the other is a broken family rung.
+        unconfirmed = self._dry({"recipients": ["jacob"], "message": "hi"},
+                                pushover_users=(), discord_raises=True
+                                ).json()["results"][0]["error"]
+        no_route = self._dry({"recipients": ["nodiscord"], "message": "hi"},
+                             pushover_users=()).json()["results"][0]["error"]
+        self.assertIn("no surface could be confirmed", unconfirmed)
+        self.assertNotIn("could not be confirmed", no_route)
+        self.assertIn("no discord_id", no_route)
+
+    def test_mobile_is_unknown_when_push_is_set_up_and_dead_when_it_is_not(self):
+        ready = self._dry({"recipients": ["jacob"], "message": "hi", "channel": "mobile"},
+                          fcm=True).json()["results"][0]
+        self.assertEqual(ready["surfaces"]["mobile"]["state"], "unknown")
+        self.assertEqual(ready["would_reach"], [], "unknown must not count as reachable")
+        off = self._dry({"recipients": ["jacob"], "message": "hi", "channel": "mobile"},
+                        fcm=False).json()["results"][0]
+        self.assertEqual(off["surfaces"]["mobile"]["state"], "not_configured")
+
+    # -- what the readiness gate actually reads ------------------------------
+
+    def test_a_declined_discord_copy_is_not_a_missing_route(self):
+        # The normal state for a web-primary person. Not a finding — and it must not
+        # be reported as one, or the gate cries wolf and stops being read.
+        r = self._dry({"recipients": ["jacob"], "message": "hi"}, plan=False
+                      ).json()["results"][0]
+        self.assertEqual(r["surfaces"]["discord"]["state"], "declined")
+        self.assertEqual(r["would_reach"], ["pushover"])
+        self.assertIsNone(r["error"])
+
+    def test_somebody_with_no_route_left_is_the_finding(self):
+        res = self._dry({"recipients": ["jacob", "nodiscord"], "message": "hi"},
+                        pushover_users=("jacob",))
+        self.assertEqual(res.status_code, 207)
+        body = res.json()
+        self.assertFalse(body["ready"])
+        self.assertEqual((body["reachable"], body["unreachable"]), (1, 1))
+        bad = next(r for r in body["results"] if r["recipient"] == "nodiscord")
+        self.assertEqual(bad["would_reach"], [])
+
+    def test_nobody_reachable_at_all_is_distinguishable(self):
+        res = self._dry({"recipients": ["nodiscord"], "message": "hi"}, pushover_users=())
+        self.assertEqual(res.status_code, 502)
+        self.assertEqual(res.json()["reachable"], 0)
+
+    def test_an_unknown_name_is_named(self):
+        r = self._dry({"recipients": ["nobody"], "message": "hi"}).json()["results"][0]
+        self.assertEqual(r["error"], "not a known user")
+
+
 class TheListRouteIsUnchanged(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
