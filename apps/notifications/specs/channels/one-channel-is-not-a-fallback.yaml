@@ -31,3 +31,8 @@ notes: >
   was the sender that removed the fallback. Delivery is adaptive by design: it aims a message at
   where a person actually is, and pinning it to a surface they do not use makes contact less
   likely, not more.
+
+  The same mistake has a second form, and this one was made here: a check written when a single
+  channel was the only possibility keeps asking about that channel after more have been added, and
+  starts reporting people as unreachable over a surface that was never their only one. Whether
+  somebody can be reached is a question about ALL the surfaces being tried, not the first one.

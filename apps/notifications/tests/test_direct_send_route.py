@@ -82,7 +82,7 @@ class SendRoute(unittest.TestCase):
             raise unittest.SkipTest(f"fastapi TestClient unavailable: {exc}")
 
     def _post(self, body, *, receipts=DELIVERED, admin=True, roster=None,
-              created=_notif):
+              created=_notif, pushover_users=(), pushover_module=None):
         from fastapi import FastAPI, HTTPException
         from fastapi.testclient import TestClient
 
@@ -104,7 +104,13 @@ class SendRoute(unittest.TestCase):
                 raise HTTPException(403, "Admin access required")
             return {"name": "service:caretaker", "role": "admin", "is_service": True}
 
-        with mock.patch("app_platform.auth.require_admin", _fake_admin), \
+        pushover = pushover_module
+        if pushover is None:
+            pushover = mock.MagicMock()
+            pushover.is_pushover_user = lambda u: u in pushover_users
+
+        with mock.patch.dict(sys.modules, {"tools.pushover_tool": pushover}), \
+             mock.patch("app_platform.auth.require_admin", _fake_admin), \
              mock.patch("data_layer.users.get_user", lambda n: people.get(n)), \
              mock.patch("apps.notifications.store.create_notification",
                         mock.Mock(side_effect=created)) as created_mock, \
@@ -234,14 +240,57 @@ class SendRoute(unittest.TestCase):
         self.assertEqual(body["succeeded"], body["requested"])
         self.assertEqual(body["failed"], 0)
         self.assertTrue(all(r["delivered"] for r in body["results"]))
+        # A reachability audit reads channels_reached to learn which surface each
+        # person was actually found on. A 200 must never carry an empty one — that
+        # would be "delivered, via nothing".
+        self.assertTrue(all(r["channels_reached"] for r in body["results"]))
 
     def test_discord_id_is_only_required_when_discord_is_a_target(self):
         # The check has to follow the channel actually asked for, or a Pushover-only
         # alert is refused over a credential it was never going to use.
         res = self._post({"recipients": ["nodiscord"], "message": "hi",
                           "channel": "pushover"},
-                         receipts={"pushover": {"ok": True, "detail": "sent"}})
+                         receipts={"pushover": {"ok": True, "detail": "sent"}},
+                         pushover_users=("nodiscord",))
         self.assertEqual(res.status_code, 200)
+
+    def test_one_dead_surface_does_not_make_a_person_unreachable(self):
+        # THE BUG THIS REPLACES, and it was mine — introduced by changing the channel
+        # default. The check asked only "do they have a discord_id", which was the
+        # whole story while the route pinned itself to Discord and became wrong the
+        # moment it stopped. With the default channels (discord+pushover), somebody
+        # with Pushover set up but no Discord link was declared unreachable and never
+        # contacted — over a route that would have buzzed their phone.
+        res = self._post({"recipients": ["nodiscord"], "message": "hi"},
+                         receipts={"pushover": {"ok": True, "detail": "Sent"}},
+                         pushover_users=("nodiscord",))
+        self.assertEqual(res.status_code, 200)
+        r = res.json()["results"][0]
+        self.assertTrue(r["delivered"])
+        self.assertEqual(r["channels_reached"], ["pushover"])
+        self.assertIsNotNone(r["notification_id"], "a row should have been written")
+
+    def test_a_person_is_unreachable_only_when_every_surface_is_dead(self):
+        # No Discord link AND no Pushover — now there genuinely is no route, so no row
+        # is written claiming they were told something, and the reason names BOTH.
+        res = self._post({"recipients": ["nodiscord"], "message": "hi"},
+                         pushover_users=())
+        r = res.json()["results"][0]
+        self.assertIsNone(r["notification_id"])
+        self.assertIn("discord", r["error"])
+        self.assertIn("pushover", r["error"])
+        self.assertEqual(self.created.call_count, 0)
+
+    def test_an_unanswerable_question_never_withholds_a_message(self):
+        # If Pushover's own module cannot be consulted, that is not evidence the route
+        # is dead. Guessing wrong here withholds an alert over a surface that may work.
+        broken = mock.MagicMock()
+        broken.is_pushover_user = mock.Mock(side_effect=RuntimeError("pushover down"))
+        res = self._post({"recipients": ["nodiscord"], "message": "hi"},
+                         receipts={"pushover": {"ok": True, "detail": "Sent"}},
+                         pushover_module=broken)
+        self.assertEqual(res.status_code, 200, "unknown must not count as dead")
+        self.assertTrue(res.json()["results"][0]["delivered"])
 
     def test_an_empty_message_is_refused(self):
         self.assertEqual(self._post({"recipients": ["jacob"], "message": "   "}).status_code, 400)

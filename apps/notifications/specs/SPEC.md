@@ -160,6 +160,13 @@ receipts per surface:
 }
 ```
 
+A recipient counts as unreachable only when **every** requested channel
+is known to be dead for them — a missing `discord_id` does not make
+somebody unreachable when Pushover is also being tried, and a channel
+whose state cannot be determined is never assumed dead. Unreachable
+recipients get no row: a record addressed to somebody with no route
+would be a claim that they were told something.
+
 **It sends to everyone it can reach.** One unreachable recipient does not
 suppress the others — they get a `results` entry with `delivered: false`,
 `notification_id: null` and an `error` naming the reason, and no row is

@@ -146,15 +146,44 @@ def _requested_recipients(body: SendIn) -> list[str]:
     return out
 
 
+def _dead_routes(user: dict, name: str, targets: set) -> dict:
+    """target -> why it DEFINITELY cannot reach this person. Absent means it may work.
+
+    Only positive knowledge belongs in here. Anything we cannot determine is left out,
+    so an unanswerable question never becomes a reason to withhold a message.
+    """
+    dead = {}
+    if "discord" in targets and not (user.get("discord_id") or "").strip():
+        dead["discord"] = "no discord_id"
+    if "pushover" in targets:
+        try:
+            from tools.pushover_tool import is_pushover_user
+            if not is_pushover_user(name):
+                dead["pushover"] = "Pushover not configured"
+        except Exception:                      # noqa: BLE001 — unknown is not "dead"
+            pass
+    # mobile is deliberately absent: registered devices are not cheaply knowable here,
+    # and guessing wrong would withhold a message over a route that might have worked.
+    return dead
+
+
 def _unreachable(names: list[str], targets: set) -> dict:
     """Map each name that CANNOT be reached to the reason why. Reachable names absent.
 
     Checked up front, for everyone, before a single row is written — a name that has
     no route to a person must not get a record claiming it was told something.
 
-    What it does NOT do is stop the send. The failure that bites this endpoint is not
-    a typo in a hardcoded list, which fails loudly on its first smoke test; it is
-    DRIFT — a discord_id that quietly becomes unset months later, on a path nothing
+    Unreachable means EVERY requested channel is known to be dead for them, not that
+    one of them is. This distinction was a bug once: the check asked only whether they
+    had a discord_id, which was the whole story while this route pinned itself to
+    Discord, and became wrong the moment it stopped. A recipient with Pushover set up
+    but no Discord link was reported unreachable and never contacted, over a route
+    that would have buzzed their phone. Withholding a message because ONE of several
+    surfaces is dead is precisely the failure this endpoint exists to avoid.
+
+    What it does NOT do is stop the send to anybody else. The failure that bites here
+    is not a typo in a hardcoded list, which fails loudly on its first smoke test; it
+    is DRIFT — a discord_id that quietly becomes unset months later, on a path nothing
     exercises until the emergency. Letting one stale link silence the alert to the
     other two people, one of whom may be the only person who can act, would be a far
     worse failure than an incomplete send that says exactly who it missed.
@@ -166,8 +195,12 @@ def _unreachable(names: list[str], targets: set) -> dict:
         user = get_user(name)
         if not user:
             problems[name] = "not a known user"
-        elif "discord" in targets and not (user.get("discord_id") or "").strip():
-            problems[name] = "no discord_id — Discord cannot reach them"
+            continue
+        if not targets:
+            continue                    # no external delivery asked for; record only
+        dead = _dead_routes(user, name, targets)
+        if set(dead) >= targets:
+            problems[name] = "; ".join(f"{t}: {dead[t]}" for t in sorted(targets))
     return problems
 
 

@@ -7,8 +7,11 @@ behavior: >
   An authenticated administrator can ask Skipper, over the API, to tell one or several named people
   something and have it delivered immediately — the only route to a person that does not require
   running code on the box itself. Every recipient is checked against the household roster, and
-  against being reachable on the surface being asked for, before anything is recorded: somebody
-  with no route to them gets no record claiming they were told. One unreachable name does NOT stop
+  against having any route at all on the surfaces being asked for, before anything is recorded:
+  somebody with no route to them gets no record claiming they were told. Having no route means
+  EVERY requested surface is known to be dead for that person — one dead surface among several
+  does not make somebody unreachable, and a surface whose state cannot be determined is never
+  treated as dead. One unreachable name does NOT stop
   the others being told; the message goes to everyone it can reach and the answer names who it
   could not, and why. For each person it reports which surfaces were actually reached and what each
   one said, and reaching the web console alone does not count as having reached them. The answer
