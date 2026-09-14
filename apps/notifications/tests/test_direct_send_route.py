@@ -197,6 +197,35 @@ class SendRoute(unittest.TestCase):
         self.assertFalse(res.json()["ok"])
         self.assertEqual(res.json()["succeeded"], 0)
 
+    def test_every_requested_recipient_appears_in_results_exactly_once(self):
+        # RECIPIENTS ARE NOT NECESSARILY EQUIVALENT TO THE CALLER. One of three may be
+        # the only person who can act on the alert; the other two may be "go check on
+        # him". So `ok` and `succeeded` cannot answer "did the critical path hold" —
+        # only looking up that person's own result can, and that requires them to be
+        # PRESENT whatever happened to them. An unreachable recipient dropped from the
+        # list would read to such a caller as though they had not been asked for.
+        res = self._post({"recipients": ["jacob", "elijah", "nobody"], "message": "hi"})
+        names = [r["recipient"] for r in res.json()["results"]]
+        self.assertEqual(names, ["jacob", "elijah", "nobody"], "order and membership")
+        self.assertEqual(len(names), len(set(names)), "exactly once each")
+
+    def test_a_recipient_is_reported_under_the_name_a_lookup_will_find(self):
+        # The caller looks its critical recipient up by name. Results carry the
+        # NORMALISED name — the form user records are keyed by — so a request written
+        # "Jacob" comes back as "jacob" and a caller matching the string it sent would
+        # miss. Pinned so the spec can state it.
+        res = self._post({"recipients": ["  JACOB  "], "message": "hi"})
+        self.assertEqual(res.json()["results"][0]["recipient"], "jacob")
+
+    def test_the_critical_recipients_own_result_is_readable_when_others_fail(self):
+        # The distinction a count cannot draw: succeeded=2 means one thing if the
+        # person who can act was reached and quite another if they were not.
+        res = self._post({"recipients": ["nobody", "jacob", "noone"], "message": "hi"})
+        jacob = next(r for r in res.json()["results"] if r["recipient"] == "jacob")
+        self.assertTrue(jacob["delivered"])
+        self.assertFalse(res.json()["ok"])
+        self.assertEqual(res.json()["succeeded"], 1)
+
     def test_a_200_still_means_every_requested_recipient_was_reached(self):
         # The guarantee the caller is allowed to lean on.
         res = self._post({"recipients": ["jacob", "elijah", "caleb"], "message": "hi"})

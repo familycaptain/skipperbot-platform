@@ -10,7 +10,10 @@ behavior: >
   was reached on a surface the caller asked for — nothing less. Reaching nobody at all is
   distinguishable from reaching some, so a caller can escalate a total failure differently from a
   partial one. The per-person results are the authoritative record of what happened, and the
-  summary never contradicts them.
+  summary never contradicts them. Every person the caller asked for appears in those results
+  exactly once, whatever became of them — including one who could not be reached at all — under
+  the name their user record is keyed by, so a caller can always look up a particular person's
+  outcome rather than inferring it from a count.
 implements:
 - apps/notifications/routes.py::send_notification
 tests:
@@ -25,3 +28,12 @@ notes: >
   The status carried on the response is deliberately NOT sufficient on its own: the code used for a
   partial send is one most HTTP clients still treat as successful, so the body's own verdict is the
   field that decides, and the caller is expected to read the per-person results.
+
+  And for some callers the summary is not sufficient EITHER, which is why the per-person results
+  are the contract rather than a convenience. Recipients are not necessarily equivalent to the
+  caller: where one of them is the person who can actually act on the message and the others are
+  only being informed, "two of three reached" describes two outcomes that are not close to the
+  same thing, and neither a count nor a single overall verdict can tell them apart. Such a caller
+  reads the result belonging to the person it depends on. That is only possible because every
+  requested person is present in the results whatever happened to them — dropping the unreachable
+  ones would read, to exactly that caller, as though they had never been asked for.

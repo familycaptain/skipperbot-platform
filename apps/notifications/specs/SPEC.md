@@ -186,6 +186,25 @@ from a partial one.
 is always written to, so counting it would make every send look
 successful.
 
+**`results` is the contract — `ok` and `succeeded` are a summary of it.**
+Every requested recipient appears in `results` exactly once, whatever
+became of them, under the name their user record is keyed by (so a
+request naming `"Jacob"` comes back as `"jacob"`). That matters because
+recipients are not necessarily equivalent to the caller: where one of
+them is the person who can actually act on the message and the others
+are only being informed, `succeeded: 2` of 3 describes two outcomes that
+are nothing like each other, and no count or single verdict can tell
+them apart. Such a caller reads that person's own entry:
+
+```python
+body = resp.json()
+critical = next((r for r in body["results"] if r["recipient"] == "jacob"), None)
+if not critical or not critical["delivered"]:
+    ...  # the person who can act was NOT reached — escalate elsewhere
+elif not body["ok"]:
+    ...  # degraded: they have it; note who was missed, and why
+```
+
 `deliver: false` records the row and says so (`note`), delivering nothing.
 
 ## UI
