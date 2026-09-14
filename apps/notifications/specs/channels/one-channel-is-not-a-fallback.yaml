@@ -1,0 +1,33 @@
+kind: specification
+id: notifications.channels.one-channel-is-not-a-fallback
+title: Asking for one surface removes the others
+state: live
+autonomy: gated
+behavior: >
+  Naming a single delivery channel on a notification means that channel and no other — the rest are
+  not tried, and are not held in reserve. A notification that names no channel takes the household's
+  configured defaults, which carry a phone push alongside the Discord copy. Where the delivery
+  policy declines a Discord copy for someone who does not live on Discord, it removes only that
+  copy: any other channel the notification carries is attempted exactly as it would have been, so a
+  message that named more than one surface still reaches a phone. A sender who needs to be certain
+  of an off-screen route therefore asks for more than one channel, and does not get there by
+  overriding the policy — which would only force a copy onto the surface that person is least
+  likely to be looking at.
+implements:
+- apps/notifications/delivery.py::_resolve_external_channels
+- apps/notifications/delivery.py::_deliver_one
+- apps/notifications/routes.py::send_notification
+tests:
+- apps/notifications/tests/test_direct_send_route.py
+links:
+  related:
+  - notifications.channels.discord-not-sent-half-a-conversation
+  - notifications.delivery.send-from-off-the-box
+notes: >
+  Recorded because getting it backwards is easy and the result is invisible. A sender that wants a
+  message to be certain of arriving reaches for the single most reliable-sounding channel, which
+  STRIPS the alternatives — and then, when the policy declines that one channel for that one
+  person, there is nothing left and the silence looks as though delivery dropped the message. It
+  was the sender that removed the fallback. Delivery is adaptive by design: it aims a message at
+  where a person actually is, and pinning it to a surface they do not use makes contact less
+  likely, not more.

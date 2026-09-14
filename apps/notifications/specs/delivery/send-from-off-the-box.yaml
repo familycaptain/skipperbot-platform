@@ -20,7 +20,7 @@ tests:
 - apps/notifications/tests/test_direct_send_route.py
 links:
   related:
-  - notifications.channels.named-surface-is-not-mirroring
+  - notifications.channels.one-channel-is-not-a-fallback
 notes: >
   Written to fail loudly because it is an escalation path of last resort. Two habits of the
   surrounding code would otherwise hide a failure: create_notification answers {} for an unknown
@@ -33,3 +33,9 @@ notes: >
   until the emergency. Refusing the whole request would let one stale link silence the alert to the
   other people, one of whom may be the only person able to act on it. Incompleteness is therefore
   the thing that must never go unnoticed, rather than the thing that must never happen.
+
+  It names no channel by default, taking the household's configured surfaces instead. Naming one
+  would strip the others out — see notifications.channels.one-channel-is-not-a-fallback — leaving a
+  recipient whose Discord copy is declined with no push route at all, which reads from outside as
+  the delivery policy having dropped the message when it was this route that removed the
+  alternative.

@@ -123,13 +123,21 @@ Request:
   "message":    "Trading system halted — position unwound.",
   "source_type": "system",
   "source_id":  "",
-  "channel":    "discord",
+  "channel":    "",
   "deliver":    true
 }
 ```
 
 `recipient` (singular) is merged with `recipients` and de-duplicated;
 either spelling alone is enough. Limits: 20 recipients, 4000 characters.
+
+**Leave `channel` blank unless you mean it.** Blank takes Settings →
+`default_channels` (`discord,pushover`), so a phone is reached whatever
+the Discord policy decides for that person. Naming one channel STRIPS
+the others — `"discord"` means Discord and nothing else, and a recipient
+whose Discord copy is declined then has no push route at all. A
+caretaker who wants every route asks for `"all"`
+(`discord,pushover,mobile`).
 
 Response — `results` carries one entry per recipient, with the delivery
 receipts per surface:
@@ -140,12 +148,12 @@ receipts per surface:
   "requested": 3,
   "succeeded": 3,
   "failed": 0,
-  "channel": "discord",
-  "delivered_via": ["discord"],
+  "channel": "",
+  "delivered_via": ["discord", "pushover"],
   "results": [
     {"recipient": "jacob", "notification_id": "n-1a2b3c4d",
-     "delivered": true, "channels_reached": ["discord"],
-     "receipts": {"discord": {"ok": true, "detail": "DM sent to jacob successfully."},
+     "delivered": true, "channels_reached": ["pushover"],
+     "receipts": {"pushover": {"ok": true, "detail": "Sent to jacob"},
                   "web": {"ok": false, "detail": "not connected — waiting in history"}},
      "error": null}
   ]
@@ -254,10 +262,16 @@ receipts, and `_deliver_one` returns them to its caller.
 Discord is additionally narrowed by the conversation-mirroring rule
 (`notifications.channels.discord-not-sent-half-a-conversation`): someone
 who mainly talks on the web gets no Discord copy unless they have used
-Discord recently. That rule does NOT apply to a caller that named the
-surface itself — see `notifications.channels.named-surface-is-not-mirroring`
-— because its safety net is that the web console always has the record,
-which assumes somebody is watching it.
+Discord recently. This is adaptive delivery, not suppression — it aims a
+message at where a person actually is.
+
+It removes **only** Discord from the target set. Every other channel the
+notification carries is attempted unchanged, so one that also carries
+`pushover` still buzzes a phone. Which is why naming a single channel is
+not the safe choice it looks like: `channel: "discord"` means Discord and
+nothing else, so a recipient whose Discord copy is declined has no push
+route left — the *sender* removed the fallback. See
+`notifications.channels.one-channel-is-not-a-fallback`.
 
 ## Platform Services Used
 

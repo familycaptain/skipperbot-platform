@@ -95,8 +95,8 @@ class SendRoute(unittest.TestCase):
         people = ROSTER if roster is None else roster
         self.delivered_calls = []
 
-        async def _fake_deliver(notif, *, honor_surface_policy=True):
-            self.delivered_calls.append((notif["id"], honor_surface_policy))
+        async def _fake_deliver(notif):
+            self.delivered_calls.append(notif["id"])
             return receipts
 
         def _fake_admin(request):
@@ -174,8 +174,7 @@ class SendRoute(unittest.TestCase):
         self.assertTrue(by_name["jacob"]["delivered"])
         self.assertTrue(by_name["elijah"]["delivered"])
         self.assertFalse(by_name["nobody"]["delivered"])
-        self.assertEqual(sorted(i for i, _ in self.delivered_calls),
-                         ["n-elijah", "n-jacob"])
+        self.assertEqual(sorted(self.delivered_calls), ["n-elijah", "n-jacob"])
 
     def test_a_partial_send_can_never_read_as_success(self):
         # The other half, and the one that matters more. 207 is "successful" to most
@@ -269,7 +268,7 @@ class SendRoute(unittest.TestCase):
     def test_one_failure_among_several_fails_the_whole_response(self):
         calls = {"n": 0}
 
-        async def _mixed(notif, *, honor_surface_policy=True):
+        async def _mixed(notif):
             calls["n"] += 1
             return DELIVERED if calls["n"] == 1 else REFUSED
 
@@ -299,7 +298,7 @@ class SendRoute(unittest.TestCase):
         self.assertFalse(res.json()["results"][0]["delivered"])
 
     def test_a_delivery_that_raises_is_reported_not_propagated(self):
-        async def _boom(notif, *, honor_surface_policy=True):
+        async def _boom(notif):
             raise RuntimeError("discord gateway down")
 
         from fastapi import FastAPI
@@ -347,11 +346,40 @@ class SendRoute(unittest.TestCase):
         self.assertEqual(res.status_code, 403)
         self.assertEqual(self.created.call_count, 0)
 
-    # -- the mirroring policy is not applied to this path ---------------------
+    # -- delivery decides the surface; this route does not ---------------------
 
-    def test_the_conversation_mirroring_policy_is_switched_off_for_this_route(self):
-        self._post({"recipients": ["jacob"], "message": "hi"})
-        self.assertEqual([flag for _, flag in self.delivered_calls], [False])
+    def test_it_does_not_pin_the_message_to_one_surface(self):
+        # REVERSED FROM AN EARLIER VERSION OF THIS ROUTE, which defaulted to "discord"
+        # and overrode the adaptive policy. Naming one channel STRIPS the others out
+        # of the target set, so a recipient whose Discord copy is declined would have
+        # had no push route left — the caller removing its own fallback and then
+        # blaming delivery for the silence. Blank takes default_channels, which
+        # carries Pushover alongside Discord.
+        res = self._post({"recipients": ["jacob"], "message": "hi"},
+                         receipts={"pushover": {"ok": True, "detail": "sent"}})
+        self.assertEqual(res.json()["delivered_via"], ["discord", "pushover"])
+        self.assertEqual(res.status_code, 200)
+
+    def test_a_declined_discord_copy_still_reaches_a_phone(self):
+        # The whole reason the default is blank. plan_discord declining Discord for a
+        # web-primary recipient removes ONLY discord from the targets; pushover is an
+        # independent branch and still fires.
+        res = self._post({"recipients": ["jacob"], "message": "hi"},
+                         receipts={"pushover": {"ok": True, "detail": "sent"},
+                                   "web": {"ok": False, "detail": "not connected"}})
+        r = res.json()["results"][0]
+        self.assertTrue(r["delivered"])
+        self.assertEqual(r["channels_reached"], ["pushover"])
+        self.assertEqual(res.status_code, 200)
+
+    def test_a_caller_may_still_name_one_surface_deliberately(self):
+        res = self._post({"recipients": ["jacob"], "message": "hi", "channel": "discord"})
+        self.assertEqual(res.json()["delivered_via"], ["discord"])
+
+    def test_a_caller_may_ask_for_every_route(self):
+        res = self._post({"recipients": ["jacob"], "message": "hi", "channel": "all"},
+                         receipts={"discord": {"ok": True, "detail": "DM sent"}})
+        self.assertEqual(res.json()["delivered_via"], ["discord", "mobile", "pushover"])
 
 
 class TheListRouteIsUnchanged(unittest.TestCase):
@@ -382,7 +410,8 @@ class TheListRouteIsUnchanged(unittest.TestCase):
 class DeliveryReportsWhatItReached(unittest.TestCase):
     """_deliver_one, exercised directly with the outside world stubbed out."""
 
-    def _run(self, *, honor_policy, plan_says_no=True, discord_result="DM sent to jacob successfully."):
+    def _run(self, *, plan_says_no=True, discord_result="DM sent to jacob successfully.",
+             channel="discord", pushover_user=False):
         stubs = {}
         discord_bot = mock.MagicMock()
 
@@ -417,7 +446,8 @@ class DeliveryReportsWhatItReached(unittest.TestCase):
         stubs["app_platform.voice_policy"] = policy
 
         pushover = mock.MagicMock()
-        pushover.is_pushover_user = lambda u: False
+        pushover.is_pushover_user = lambda u: pushover_user
+        pushover.send_pushover_notification = lambda u, m, cooldown_seconds=0: "Sent to jacob"
         stubs["tools.pushover_tool"] = pushover
 
         fcm = mock.MagicMock()
@@ -425,39 +455,42 @@ class DeliveryReportsWhatItReached(unittest.TestCase):
         stubs["fcm_sender"] = fcm
 
         from apps.notifications import delivery
-        notif = _notif("jacob", "Trading system halted.", "system", "", "discord")
+        notif = _notif("jacob", "Trading system halted.", "system", "", channel)
         with mock.patch.dict(sys.modules, stubs), \
              mock.patch.object(delivery._dl_notif, "mark_delivered", lambda i: True), \
              mock.patch.object(delivery._dl_notif, "set_receipts", lambda i, r: True):
-            return asyncio.run(
-                delivery._deliver_one(notif, honor_surface_policy=honor_policy))
+            return asyncio.run(delivery._deliver_one(notif))
 
     def test_it_returns_the_receipts_rather_than_nothing(self):
         # The scheduler ignores the return; a caller that has to TELL somebody whether
         # the message landed needs it, and reading the row back is a round trip for
         # something already in hand.
-        receipts = self._run(honor_policy=False)
+        receipts = self._run(plan_says_no=False)
         self.assertTrue(receipts["discord"]["ok"])
         self.assertIn("DM sent", receipts["discord"]["detail"])
 
     def test_a_refused_dm_comes_back_as_a_failed_receipt(self):
-        receipts = self._run(honor_policy=False,
+        receipts = self._run(plan_says_no=False,
                              discord_result="Error: Cannot send DM to jacob.")
         self.assertFalse(receipts["discord"]["ok"])
 
-    def test_the_policy_can_still_drop_discord_on_the_ordinary_path(self):
-        # Unchanged behaviour for every existing producer: this is what the flag is
-        # turning OFF, so it has to be shown to be ON by default.
-        receipts = self._run(honor_policy=True, plan_says_no=True)
+    def test_the_policy_declines_the_discord_copy_for_a_web_person(self):
+        receipts = self._run(plan_says_no=True)
         self.assertNotIn("discord", receipts)
         self.assertTrue(self.plan_calls, "the policy should have been consulted")
 
-    def test_an_explicit_send_is_not_dropped_by_it(self):
-        # A web-primary recipient who has not used Discord recently — the exact
-        # condition that narrows discord away — still gets the DM on this path.
-        receipts = self._run(honor_policy=False, plan_says_no=True)
-        self.assertTrue(receipts["discord"]["ok"])
-        self.assertEqual(self.plan_calls, [], "the policy must not even be consulted")
+    def test_declining_discord_removes_ONLY_discord(self):
+        # THE PROPERTY THE WHOLE DESIGN RESTS ON, and the one I got wrong: the policy
+        # narrows one channel out of the target set, it does not narrow the message to
+        # nothing. A notification carrying pushover alongside discord still reaches a
+        # phone when the Discord copy is declined — pushover is an independent branch.
+        # A route that asks for "discord" ALONE is what leaves nothing behind, and that
+        # is the caller's own doing.
+        receipts = self._run(plan_says_no=True, channel="discord,pushover",
+                             pushover_user=True)
+        self.assertNotIn("discord", receipts)
+        self.assertTrue(receipts["pushover"]["ok"],
+                        "the phone must still be reached when Discord is declined")
 
 
 if __name__ == "__main__":

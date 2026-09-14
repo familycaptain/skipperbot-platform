@@ -104,16 +104,13 @@ async def deliver_pending_notifications():
             )
 
 
-async def _deliver_one(notif: dict, *, honor_surface_policy: bool = True) -> dict:
+async def _deliver_one(notif: dict) -> dict:
     """Deliver a single notification via configured channels, then mark delivered.
 
     Returns the receipts dict — which surfaces were actually reached, and why not
     where they were not. The scheduler tick ignores it; a caller that has to TELL
     somebody whether the message landed needs it, and reading the row back is a
     round trip for something already in hand.
-
-    honor_surface_policy=False turns off the Discord mirroring narrowing below. See
-    the comment there for when that is right.
     """
     notif_id = notif["id"]
     recipient = notif["recipient"]
@@ -167,14 +164,13 @@ async def _deliver_one(notif: dict, *, honor_surface_policy: bool = True) -> dic
     #     is watching what). Dropping those would make this a regression, not a fix.
     #   * "voice" is opt-in and origin-routed — not ours to second-guess.
     #
-    # It is SKIPPED for a caller that named the surface itself and is not mirroring a
-    # conversation at all (honor_surface_policy=False — today, the direct-send route).
-    # The safety net quoted above is "the web console always receives", and that holds
-    # only while somebody is watching the web console. A system alert addressed to a
-    # named person exists for the case where nobody is, so narrowing it to nothing on
-    # the grounds that their web session has the record would drop the one copy that
-    # was going to reach a human.
-    if honor_surface_policy and "discord" in targets:
+    # It narrows ONE channel out of the target set and leaves the rest alone, which is
+    # what makes it safe: a notification that also carries pushover or mobile still
+    # reaches a phone when the Discord copy is declined. A caller that wants to be sure
+    # of an off-screen route asks for more than one channel — it does NOT get there by
+    # overriding this, which would only force a copy onto the surface the person is
+    # least likely to be looking at.
+    if "discord" in targets:
         try:
             from app_platform.speak import (_discord_active, _discord_reachable,
                                              _primary_surface)

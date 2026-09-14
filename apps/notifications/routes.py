@@ -103,6 +103,10 @@ async def pushover_test(body: PushoverIn, request: Request):
 #     that was delivered.
 #   * _deliver_one() marks a row delivered once it has TRIED, whatever came back. The
 #     row is a record that we attempted, never evidence that anyone was reached.
+#   * Naming ONE channel strips the others out of the target set, so a recipient whose
+#     Discord copy is declined by the delivery policy has no push route left. That is
+#     the caller removing its own fallback, not delivery dropping the message — and
+#     from outside the two are indistinguishable. Hence the blank default.
 #
 # So: recipients are checked before anything is written, nobody unreachable gets a
 # record claiming they were told something, and the response reports the delivery
@@ -128,7 +132,7 @@ class SendIn(BaseModel):
     message: str = ""
     source_type: str = "system"
     source_id: str = ""
-    channel: str = "discord"
+    channel: str = ""             # blank = the platform's default_channels
     deliver: bool = True
 
 
@@ -196,7 +200,14 @@ async def send_notification(body: SendIn, request: Request):
     if len(recipients) > MAX_RECIPIENTS:
         raise HTTPException(400, f"no more than {MAX_RECIPIENTS} recipients per request")
 
-    channel = (body.channel or "discord").strip()
+    # Blank on purpose. Naming a single channel STRIPS the others out of the target
+    # set — asking for "discord" alone means a recipient whose Discord copy is declined
+    # has no push route left, which is how a caller talks itself into believing the
+    # delivery policy dropped the message when it was the caller that removed the
+    # alternative. Blank takes Settings -> default_channels ("discord,pushover"), so a
+    # phone is still reached whatever Discord decides. A caretaker who wants every
+    # route asks for "all".
+    channel = (body.channel or "").strip()
     targets = _resolve_external_channels(channel)
 
     problems = await asyncio.to_thread(_unreachable, recipients, targets)
@@ -232,9 +243,7 @@ async def send_notification(body: SendIn, request: Request):
             continue
 
         try:
-            # honor_surface_policy=False: this caller named the surface, and is not
-            # mirroring a conversation. See the comment at that check in delivery.py.
-            receipts = await _deliver_one(notif, honor_surface_policy=False) or {}
+            receipts = await _deliver_one(notif) or {}
         except Exception as exc:                       # noqa: BLE001 — reported, not raised
             results.append({"recipient": name, "notification_id": notif["id"],
                             "delivered": False, "channels_reached": [], "receipts": {},
