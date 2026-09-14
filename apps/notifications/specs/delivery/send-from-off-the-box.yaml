@@ -1,0 +1,27 @@
+kind: specification
+id: notifications.delivery.send-from-off-the-box
+title: A caretaker off the box can make Skipper tell someone something
+state: live
+autonomy: gated
+behavior: >
+  An authenticated administrator can ask Skipper, over the API, to tell one or several named people
+  something and have it delivered immediately — the only route to a person that does not require
+  running code on the box itself. Every recipient is checked against the household roster, and
+  against being reachable on the surface being asked for, BEFORE anything is recorded: if any one
+  of them cannot be reached the whole request is refused, naming who and why, and nothing is written
+  for anybody. Where it does send, the answer reports for each person which surfaces were actually
+  reached and what each one said, and the request itself succeeds only if every named person was
+  reached on a surface the caller asked for — reaching the web console alone is not delivery. A
+  caller may also record without delivering, and is told that is what happened.
+implements:
+- apps/notifications/routes.py::send_notification
+tests:
+- apps/notifications/tests/test_direct_send_route.py
+links: {}
+notes: >
+  Written to fail loudly because it is an escalation path of last resort. Two habits of the
+  surrounding code would otherwise hide a failure: create_notification answers {} for an unknown
+  name and logs at debug, and _deliver_one marks a row delivered once it has TRIED, whatever came
+  back — so the stored row records an attempt and is never evidence that a person was reached. The
+  status code is held to agree with the body so that a caller checking only whether the request
+  succeeded still cannot mistake an undelivered alert for a delivered one.

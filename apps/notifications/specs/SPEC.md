@@ -82,14 +82,91 @@ Tool guide at `guide.md`.
 
 ## Routes
 
-Mounted at `/api/apps/notifications/` by the platform.
+Mounted at `/api/apps/notifications` by the platform.
 
-- `GET /list?recipient=<user>&limit=<n>` — page through history
-- `POST /{id}/delete` — soft-delete (administrative)
-- `GET /undelivered` — used by the delivery loop's health check
+- `GET ""?recipient=<user>&limit=<n>` — history for one recipient, newest
+  first. Scoped by `scope_user`, so a member sees only their own.
+- `POST ""` — record a message for one or more people and deliver it now.
+  **Admin only.** See below.
+- `GET|POST|DELETE /pushover`, `POST /pushover/test` — per-user Pushover
+  opt-in.
 
 The desktop NotificationsApp uses these routes; the LLM uses the MCP
 tool above, not these routes.
+
+### `POST /api/apps/notifications` — direct send
+
+The only way to reach a person that does not require running code on the
+box. Everything else raises a notification by importing
+`app_platform.notifications.create_notification`, which an off-box
+caretaker — a monitor loop on another machine, a cron elsewhere — cannot
+do.
+
+Auth: a bearer token with the **admin** role. Sending as Skipper to any
+member of the household is not something a member's own credential should
+be able to do. Off-box callers mint a service token:
+
+```
+python3 scripts/service_token.py create caretaker --role admin
+# -> SKIPPERBOT_TOKEN=st_...   (shown once)
+```
+
+and present it as `Authorization: Bearer st_...`. Service tokens are
+hashed at rest and revocable (`scripts/service_token.py revoke <id>`).
+
+Request:
+
+```json
+{
+  "recipients": ["jacob", "elijah", "caleb"],
+  "recipient":  "jacob",
+  "message":    "Trading system halted — position unwound.",
+  "source_type": "system",
+  "source_id":  "",
+  "channel":    "discord",
+  "deliver":    true
+}
+```
+
+`recipient` (singular) is merged with `recipients` and de-duplicated;
+either spelling alone is enough. Limits: 20 recipients, 4000 characters.
+
+Response — `results` carries one entry per recipient, with the delivery
+receipts per surface:
+
+```json
+{
+  "ok": true,
+  "requested": 3,
+  "channel": "discord",
+  "delivered_via": ["discord"],
+  "results": [
+    {"recipient": "jacob", "notification_id": "n-1a2b3c4d",
+     "delivered": true, "channels_reached": ["discord"],
+     "receipts": {"discord": {"ok": true, "detail": "DM sent to jacob successfully."},
+                  "web": {"ok": false, "detail": "not connected — waiting in history"}},
+     "error": null}
+  ]
+}
+```
+
+Failure behaviour is the point of the endpoint:
+
+| Condition | Status |
+|---|---|
+| Recipient unknown, or unreachable on the requested channel | `400`, naming them; **nothing is recorded for anyone** |
+| Blank message, no recipients, over a limit | `400` |
+| Caller is not an admin | `401`/`403` |
+| Recorded but not delivered to every recipient | `502`, with `ok: false` and the per-recipient reason |
+| Delivered to every recipient | `200`, `ok: true` |
+
+The status code agrees with the body deliberately: a caller that checks
+only whether the request succeeded must not be able to mistake an
+undelivered alert for a delivered one. `delivered` counts only surfaces
+the caller ASKED for — the web console is always written to, so counting
+it would make every send look successful.
+
+`deliver: false` records the row and says so (`note`), delivering nothing.
 
 ## UI
 
@@ -129,8 +206,19 @@ explicit `channel` column or the per-app `default_channels` config:
 5. **`websocket`** — Push to any active web-UI session.
 
 Delivery is fire-and-forget per channel: failures are logged but don't
-roll back the notification row. Once any channel succeeds, the row is
-marked `delivered = TRUE`.
+roll back the notification row. The row is marked `delivered = TRUE`
+once delivery has been ATTEMPTED, whatever each channel came back with —
+it records the attempt and is not evidence that a person was reached.
+What each surface actually said is kept separately in the row's
+receipts, and `_deliver_one` returns them to its caller.
+
+Discord is additionally narrowed by the conversation-mirroring rule
+(`notifications.channels.discord-not-sent-half-a-conversation`): someone
+who mainly talks on the web gets no Discord copy unless they have used
+Discord recently. That rule does NOT apply to a caller that named the
+surface itself — see `notifications.channels.named-surface-is-not-mirroring`
+— because its safety net is that the web console always has the record,
+which assumes somebody is watching it.
 
 ## Platform Services Used
 

@@ -104,8 +104,17 @@ async def deliver_pending_notifications():
             )
 
 
-async def _deliver_one(notif: dict):
-    """Deliver a single notification via configured channels, then mark delivered."""
+async def _deliver_one(notif: dict, *, honor_surface_policy: bool = True) -> dict:
+    """Deliver a single notification via configured channels, then mark delivered.
+
+    Returns the receipts dict — which surfaces were actually reached, and why not
+    where they were not. The scheduler tick ignores it; a caller that has to TELL
+    somebody whether the message landed needs it, and reading the row back is a
+    round trip for something already in hand.
+
+    honor_surface_policy=False turns off the Discord mirroring narrowing below. See
+    the comment there for when that is right.
+    """
     notif_id = notif["id"]
     recipient = notif["recipient"]
     message = notif["message"]
@@ -115,7 +124,7 @@ async def _deliver_one(notif: dict):
     if not recipient or not message:
         logger.warning("NOTIF_DELIVERY: Skipping %s — missing recipient or message", notif_id)
         await asyncio.to_thread(_dl_notif.mark_delivered, notif_id)
-        return
+        return {}
 
     delivery_results = []      # human-readable, for the log line
     receipts: dict = {}        # structured, for Skipper
@@ -157,7 +166,15 @@ async def _deliver_one(notif: dict):
     #     something we do not (a finishing timer SHOULD reach a phone regardless of who
     #     is watching what). Dropping those would make this a regression, not a fix.
     #   * "voice" is opt-in and origin-routed — not ours to second-guess.
-    if "discord" in targets:
+    #
+    # It is SKIPPED for a caller that named the surface itself and is not mirroring a
+    # conversation at all (honor_surface_policy=False — today, the direct-send route).
+    # The safety net quoted above is "the web console always receives", and that holds
+    # only while somebody is watching the web console. A system alert addressed to a
+    # named person exists for the case where nobody is, so narrowing it to nothing on
+    # the grounds that their web session has the record would drop the one copy that
+    # was going to reach a human.
+    if honor_surface_policy and "discord" in targets:
         try:
             from app_platform.speak import (_discord_active, _discord_reachable,
                                              _primary_surface)
@@ -322,3 +339,5 @@ async def _deliver_one(notif: dict):
         notif_id, recipient, ", ".join(sorted(targets)) or "websocket",
         "; ".join(delivery_results) or "WebSocket only",
     )
+
+    return receipts
