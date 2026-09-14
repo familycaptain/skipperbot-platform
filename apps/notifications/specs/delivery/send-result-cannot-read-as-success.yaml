@@ -1,0 +1,27 @@
+kind: specification
+id: notifications.delivery.send-result-cannot-read-as-success
+title: An incomplete send cannot be read as a successful one
+state: live
+autonomy: gated
+behavior: >
+  A direct send that did not reach every person it was asked to reach never answers as an outright
+  success: the answer marks itself unsuccessful, says how many were reached out of how many were
+  asked for, and carries the reason per person. An outright success means every requested recipient
+  was reached on a surface the caller asked for — nothing less. Reaching nobody at all is
+  distinguishable from reaching some, so a caller can escalate a total failure differently from a
+  partial one. The per-person results are the authoritative record of what happened, and the
+  summary never contradicts them.
+implements:
+- apps/notifications/routes.py::send_notification
+tests:
+- apps/notifications/tests/test_direct_send_route.py
+links:
+  related:
+  - notifications.delivery.send-from-off-the-box
+notes: >
+  Two readers have to both be safe: one that inspects each recipient's result, and one that glances
+  at whether the request succeeded. The second is why the outcome is pinned at all — a partial send
+  answering as a plain success would tell a careless caller that an alert landed when it did not.
+  The status carried on the response is deliberately NOT sufficient on its own: the code used for a
+  partial send is one most HTTP clients still treat as successful, so the body's own verdict is the
+  field that decides, and the caller is expected to read the per-person results.

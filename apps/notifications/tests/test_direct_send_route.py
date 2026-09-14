@@ -16,10 +16,19 @@ the surrounding code would otherwise swallow a failure whole:
   * ``_deliver_one`` marks the row delivered once it has TRIED, whatever came back.
     The row records the attempt; it is not evidence that a person was reached.
 
-And one design decision deserved a test of its own: the Discord mirroring policy is
-allowed to narrow a notification to nothing, on the stated grounds that the web
-console always has the record. That holds while somebody is watching the web console
-— which is the one thing this route cannot assume.
+Two design decisions deserved tests of their own.
+
+The Discord mirroring policy is allowed to narrow a notification to nothing, on the
+stated grounds that the web console always has the record. That holds while somebody
+is watching the web console — the one thing this route cannot assume.
+
+And it sends to everyone it CAN reach rather than refusing over one bad name. The
+failure that bites an escalation path is not a typo in a hardcoded list, which fails
+loudly on its first smoke test; it is drift — a discord_id quietly unset months
+later, on a route nothing exercises until the emergency. One stale link must not
+silence the alert to the other two people. What must never happen is that the
+incompleteness goes unnoticed, so the partial send is pinned from both sides: the
+good recipients are delivered to, AND the response cannot read as success.
 
 Run: python3 -m unittest apps.notifications.tests.test_direct_send_route
 """
@@ -138,28 +147,65 @@ class SendRoute(unittest.TestCase):
 
     # -- refusing, by name, before anything is written -----------------------
 
-    def test_an_unknown_recipient_is_refused_and_named(self):
+    def test_an_unknown_recipient_is_named_in_their_own_result(self):
         res = self._post({"recipients": ["jacob", "jakob"], "message": "hi"})
-        self.assertEqual(res.status_code, 400)
-        self.assertIn("jakob", res.json()["detail"])
+        by_name = {r["recipient"]: r for r in res.json()["results"]}
+        self.assertEqual(sorted(by_name), ["jacob", "jakob"])
+        self.assertIn("not a known user", by_name["jakob"]["error"])
+        self.assertFalse(by_name["jakob"]["delivered"])
 
-    def test_a_recipient_with_no_discord_id_is_refused_and_named(self):
+    def test_a_recipient_with_no_discord_id_is_named_and_not_recorded(self):
         # send_dm answers "Error: No Discord ID found for 'x'" — which _deliver_one
-        # would record as a failed receipt on a row that is already marked delivered.
-        # Catch it while it is still a 4xx the caller can act on.
+        # would record as a failed receipt on a row ALREADY marked delivered. Caught
+        # before the write, so no row claims they were told anything.
         res = self._post({"recipients": ["nodiscord"], "message": "hi"})
-        self.assertEqual(res.status_code, 400)
-        self.assertIn("nodiscord", res.json()["detail"])
-        self.assertIn("discord_id", res.json()["detail"])
-
-    def test_one_bad_name_writes_nothing_for_the_good_ones(self):
-        # THE POINT OF CHECKING UP FRONT. A partial send that answers 200 with a list
-        # of who missed out reads as success to anything testing the status code, and
-        # leaves rows claiming an alert that nobody was told.
-        res = self._post({"recipients": ["jacob", "elijah", "nobody"], "message": "hi"})
-        self.assertEqual(res.status_code, 400)
+        r = res.json()["results"][0]
+        self.assertIn("discord_id", r["error"])
+        self.assertIsNone(r["notification_id"])
         self.assertEqual(self.created.call_count, 0)
-        self.assertEqual(self.delivered_calls, [])
+
+    def test_one_bad_name_does_not_silence_the_others(self):
+        # THE DECISION THIS ENDPOINT TURNS ON. A discord_id going stale months from
+        # now, on a path nothing exercises until the emergency, must not stop the
+        # alert reaching the people it still can — one of whom may be the only person
+        # able to act on it.
+        res = self._post({"recipients": ["jacob", "elijah", "nobody"], "message": "hi"})
+        by_name = {r["recipient"]: r for r in res.json()["results"]}
+        self.assertTrue(by_name["jacob"]["delivered"])
+        self.assertTrue(by_name["elijah"]["delivered"])
+        self.assertFalse(by_name["nobody"]["delivered"])
+        self.assertEqual(sorted(i for i, _ in self.delivered_calls),
+                         ["n-elijah", "n-jacob"])
+
+    def test_a_partial_send_can_never_read_as_success(self):
+        # The other half, and the one that matters more. 207 is "successful" to most
+        # HTTP clients (requests' resp.ok is True for it), so the body has to be the
+        # authoritative field — and the status still must not be 200.
+        res = self._post({"recipients": ["jacob", "nobody"], "message": "hi"})
+        self.assertEqual(res.status_code, 207)
+        self.assertNotEqual(res.status_code, 200)
+        body = res.json()
+        self.assertFalse(body["ok"])
+        self.assertEqual((body["requested"], body["succeeded"], body["failed"]),
+                         (2, 1, 1))
+
+    def test_reaching_nobody_at_all_is_distinguishable_from_a_partial_send(self):
+        # A monitor loop may want to escalate differently for a total outage than for
+        # "two of three got it".
+        res = self._post({"recipients": ["nobody", "noone"], "message": "hi"})
+        self.assertEqual(res.status_code, 502)
+        self.assertFalse(res.json()["ok"])
+        self.assertEqual(res.json()["succeeded"], 0)
+
+    def test_a_200_still_means_every_requested_recipient_was_reached(self):
+        # The guarantee the caller is allowed to lean on.
+        res = self._post({"recipients": ["jacob", "elijah", "caleb"], "message": "hi"})
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertTrue(body["ok"])
+        self.assertEqual(body["succeeded"], body["requested"])
+        self.assertEqual(body["failed"], 0)
+        self.assertTrue(all(r["delivered"] for r in body["results"]))
 
     def test_discord_id_is_only_required_when_discord_is_a_target(self):
         # The check has to follow the channel actually asked for, or a Pushover-only
@@ -211,7 +257,7 @@ class SendRoute(unittest.TestCase):
             res = TestClient(app, raise_server_exceptions=False).post(
                 "/api/apps/notifications",
                 json={"recipients": ["jacob", "elijah"], "message": "hi"})
-        self.assertEqual(res.status_code, 502)
+        self.assertEqual(res.status_code, 207, "one of two reached is partial, not total")
         self.assertFalse(res.json()["ok"])
         self.assertEqual([r["delivered"] for r in res.json()["results"]], [True, False])
 

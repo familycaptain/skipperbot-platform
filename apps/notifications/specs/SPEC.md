@@ -138,6 +138,8 @@ receipts per surface:
 {
   "ok": true,
   "requested": 3,
+  "succeeded": 3,
+  "failed": 0,
   "channel": "discord",
   "delivered_via": ["discord"],
   "results": [
@@ -150,21 +152,39 @@ receipts per surface:
 }
 ```
 
-Failure behaviour is the point of the endpoint:
+**It sends to everyone it can reach.** One unreachable recipient does not
+suppress the others — they get a `results` entry with `delivered: false`,
+`notification_id: null` and an `error` naming the reason, and no row is
+written for them. This is deliberate: the failure that bites an
+escalation path is not a typo in a hardcoded list (which fails loudly on
+its first smoke test) but *drift* — a `discord_id` quietly unset months
+later, on a route nothing exercises until the emergency. One stale link
+must not silence the alert to the other people, one of whom may be the
+only person able to act on it.
 
-| Condition | Status |
-|---|---|
-| Recipient unknown, or unreachable on the requested channel | `400`, naming them; **nothing is recorded for anyone** |
-| Blank message, no recipients, over a limit | `400` |
-| Caller is not an admin | `401`/`403` |
-| Recorded but not delivered to every recipient | `502`, with `ok: false` and the per-recipient reason |
-| Delivered to every recipient | `200`, `ok: true` |
+So incompleteness is the thing that must never go **unnoticed**, rather
+than the thing that must never happen:
 
-The status code agrees with the body deliberately: a caller that checks
-only whether the request succeeded must not be able to mistake an
-undelivered alert for a delivered one. `delivered` counts only surfaces
-the caller ASKED for — the web console is always written to, so counting
-it would make every send look successful.
+| Condition | Status | `ok` |
+|---|---|---|
+| Every requested recipient reached | `200` | `true` |
+| Some reached, some not | `207` | `false` |
+| Nobody reached at all | `502` | `false` |
+| Blank message, no recipients, over a limit | `400` | — |
+| Caller is not an admin | `401`/`403` | — |
+
+**The body is authoritative — `ok` and `results`, not the status code.**
+`207` is "successful" to most HTTP clients (`requests`' `resp.ok` is
+`True` for it), which is exactly why `ok` exists. The status is kept
+honest anyway so that the one thing a careless caller cannot see is a
+`200` over an alert that did not reach somebody; `200` continues to mean
+every requested recipient was reached, and nothing less. `502` is kept
+distinct from `207` so a caller can escalate a total failure differently
+from a partial one.
+
+`delivered` counts only surfaces the caller ASKED for — the web console
+is always written to, so counting it would make every send look
+successful.
 
 `deliver: false` records the row and says so (`note`), delivering nothing.
 

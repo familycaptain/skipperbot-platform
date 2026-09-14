@@ -104,10 +104,19 @@ async def pushover_test(body: PushoverIn, request: Request):
 #   * _deliver_one() marks a row delivered once it has TRIED, whatever came back. The
 #     row is a record that we attempted, never evidence that anyone was reached.
 #
-# So: recipients are checked before anything is written, the whole request is refused
-# if any of them is unreachable, and the response reports the delivery receipts per
-# surface per person. The status code agrees with the body — a caller that checks
-# only `resp.ok` still cannot mistake an undelivered alert for a delivered one.
+# So: recipients are checked before anything is written, nobody unreachable gets a
+# record claiming they were told something, and the response reports the delivery
+# receipts per surface per person — the caller is expected to read them.
+#
+# It sends to everyone it CAN reach and names who it could not, rather than refusing
+# the whole request over one bad name. The failure that bites an escalation path is
+# drift, not a typo: a discord_id quietly unset months later, on a route nothing
+# exercises until the emergency. One stale link must not silence the alert to the
+# other two people, one of whom may be the only person who can act.
+#
+# The status code cannot say all of that, so the body is authoritative — but it is
+# kept honest, because the one thing a careless caller must never see is a 200 over
+# an alert that did not reach somebody.
 
 MAX_RECIPIENTS = 20
 MAX_MESSAGE_CHARS = 4000
@@ -133,22 +142,28 @@ def _requested_recipients(body: SendIn) -> list[str]:
     return out
 
 
-def _unreachable(names: list[str], targets: set) -> list[str]:
-    """Why each name cannot be reached — empty list means every one of them can.
+def _unreachable(names: list[str], targets: set) -> dict:
+    """Map each name that CANNOT be reached to the reason why. Reachable names absent.
 
-    Checked UP FRONT, for all of them, before a single row is written. A partial send
-    that 200s with a list of who missed out reads as success to anything that tests
-    the status code, and this is the path that matters most when it is read wrong.
+    Checked up front, for everyone, before a single row is written — a name that has
+    no route to a person must not get a record claiming it was told something.
+
+    What it does NOT do is stop the send. The failure that bites this endpoint is not
+    a typo in a hardcoded list, which fails loudly on its first smoke test; it is
+    DRIFT — a discord_id that quietly becomes unset months later, on a path nothing
+    exercises until the emergency. Letting one stale link silence the alert to the
+    other two people, one of whom may be the only person who can act, would be a far
+    worse failure than an incomplete send that says exactly who it missed.
     """
     from data_layer.users import get_user
 
-    problems = []
+    problems = {}
     for name in names:
         user = get_user(name)
         if not user:
-            problems.append(f"{name!r} is not a known user")
+            problems[name] = "not a known user"
         elif "discord" in targets and not (user.get("discord_id") or "").strip():
-            problems.append(f"{name!r} has no discord_id — Discord cannot reach them")
+            problems[name] = "no discord_id — Discord cannot reach them"
     return problems
 
 
@@ -185,13 +200,18 @@ async def send_notification(body: SendIn, request: Request):
     targets = _resolve_external_channels(channel)
 
     problems = await asyncio.to_thread(_unreachable, recipients, targets)
-    if problems:
-        # 4xx, naming names, nothing written. The caller can fix the list and retry;
-        # what it must never do is walk away believing the alert went out.
-        raise HTTPException(400, "Cannot send: " + "; ".join(problems))
 
     results = []
     for name in recipients:
+        if name in problems:
+            # No row: a record addressed to somebody we have no route to would be a
+            # claim that they were told something. Reported per-recipient instead, so
+            # the people we CAN reach still get the message.
+            results.append({"recipient": name, "notification_id": None,
+                            "delivered": False, "channels_reached": [], "receipts": {},
+                            "error": problems[name]})
+            continue
+
         notif = await asyncio.to_thread(
             create_notification,
             name, message, body.source_type or "system", body.source_id or "",
@@ -201,13 +221,13 @@ async def send_notification(body: SendIn, request: Request):
             # Pre-flight said this name was fine, so getting here means it stopped
             # being fine in between. Report it rather than drop it.
             results.append({"recipient": name, "notification_id": None,
-                            "delivered": False, "receipts": {},
+                            "delivered": False, "channels_reached": [], "receipts": {},
                             "error": "the record could not be created"})
             continue
 
         if not body.deliver:
             results.append({"recipient": name, "notification_id": notif["id"],
-                            "delivered": False, "receipts": {},
+                            "delivered": False, "channels_reached": [], "receipts": {},
                             "error": None, "note": "recorded only (deliver=false)"})
             continue
 
@@ -217,7 +237,7 @@ async def send_notification(body: SendIn, request: Request):
             receipts = await _deliver_one(notif, honor_surface_policy=False) or {}
         except Exception as exc:                       # noqa: BLE001 — reported, not raised
             results.append({"recipient": name, "notification_id": notif["id"],
-                            "delivered": False, "receipts": {},
+                            "delivered": False, "channels_reached": [], "receipts": {},
                             "error": f"delivery raised: {exc}"})
             continue
 
@@ -236,12 +256,36 @@ async def send_notification(body: SendIn, request: Request):
                                 for t in missed) or "no channel was attempted"),
         })
 
-    ok = all(r["delivered"] for r in results) if body.deliver else all(
-        r["notification_id"] for r in results)
-    # The status code has to agree with the body. A caller that only checks resp.ok
-    # is the one this endpoint exists to protect.
+    # "Succeeded" is per-person, and every person was asked for. deliver=false is a
+    # different job, so it is judged on whether the record was written.
+    def _ok(r):
+        return bool(r["notification_id"]) if not body.deliver else r["delivered"]
+
+    succeeded = [r for r in results if _ok(r)]
+    failed = [r for r in results if not _ok(r)]
+
+    # THE STATUS CODE IS NOT THE ANSWER — the per-recipient results are, and a caller
+    # must read them. It is kept honest anyway, because the one thing a careless
+    # caller must never see is a 200 over an alert that did not reach somebody:
+    #   200  every requested recipient was reached
+    #   207  some were, some were not — partial, and the body says who
+    #   502  nobody was reached at all
+    # Note 207 is "successful" to most HTTP clients (requests' resp.ok is True), which
+    # is exactly why `ok` in the body is the authoritative field.
+    if not failed:
+        status = 200
+    elif succeeded:
+        status = 207
+    else:
+        status = 502
+
     return JSONResponse(
-        status_code=200 if ok else 502,
-        content={"ok": ok, "requested": len(recipients), "channel": channel,
-                 "delivered_via": sorted(targets), "results": results},
+        status_code=status,
+        content={"ok": not failed,
+                 "requested": len(recipients),
+                 "succeeded": len(succeeded),
+                 "failed": len(failed),
+                 "channel": channel,
+                 "delivered_via": sorted(targets),
+                 "results": results},
     )
