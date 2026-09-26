@@ -61,4 +61,9 @@ notes: >-
   Operator chose the per-connector smart/fast table, including changing the SMART default for
   DeepSeek (reasoner), Kimi (32k) and Ollama so the two tiers are never the same model where a
   connector offers more than one.
+
+  2026-09-26: the OpenAI recommendation changed at the operator's direction — Smart gpt-6-sol,
+  Fast gpt-6-luna (previously gpt-5.2 / gpt-5-mini), live-verified on the operator's install with
+  tool-using chat. Applies to fresh installs and to the upgrade seed, which derives from the same
+  table; an install that already chose its models keeps them.
 verified: true

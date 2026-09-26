@@ -33,8 +33,8 @@ Postgres-specific features. Supporting other databases isn't a v1 goal.
 ### Why OpenAI? Can I use a local LLM?
 
 OpenAI is the supported configuration for v1. The agent uses both a
-"smart" model (current default `gpt-5.2`) for reasoning and a "dumb"
-model (current default `gpt-5-mini`) for cheap operations like memory
+"smart" model (current default `gpt-6-sol`) for reasoning and a "fast"
+model (current default `gpt-6-luna`) for cheap operations like memory
 digestion. These defaults can be changed from the Settings app. Supporting
 other providers (Anthropic, local Ollama) is a possible v1.x+ extension;
 the MIT License allows you to fork the project and add local LLM support

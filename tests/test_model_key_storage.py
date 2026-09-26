@@ -118,7 +118,8 @@ class UpgradeSeedTests(StorageTests):
         seeded = model_config.seed_from_existing_install(env_openai_key="sk-env", has_vectors=True)
         self.assertTrue(seeded)
         self.assertTrue(model_config.models_configured())
-        self.assertEqual(self.fake.get("tier_smart_model", scope="platform"), "gpt-5.2")
+        self.assertEqual(self.fake.get("tier_smart_model", scope="platform"), "gpt-6-sol")
+        self.assertEqual(self.fake.get("tier_fast_model", scope="platform"), "gpt-6-luna")
         self.assertEqual(self.fake.get("tier_embedding_model", scope="platform"),
                          "text-embedding-3-small")
         self.assertEqual(model_config.embedding_dim(), 1536)

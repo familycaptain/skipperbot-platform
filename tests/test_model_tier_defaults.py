@@ -71,7 +71,7 @@ class BackendEmitTests(unittest.TestCase):
             fast = next(r["model"] for r in rows if "fast" in r["default_tiers"])
             return smart, fast
 
-        self.assertEqual(picks("openai"), ("gpt-5.2", "gpt-5-mini"))
+        self.assertEqual(picks("openai"), ("gpt-6-sol", "gpt-6-luna"))
         self.assertEqual(picks("anthropic"), ("claude-opus-4-8", "claude-haiku-4-5"))
         # refreshed 2026-09-26 against the vendors' docs + LiteLLM's registry
         self.assertEqual(picks("gemini"), ("gemini-3.1-pro-preview", "gemini-3.8-flash"))

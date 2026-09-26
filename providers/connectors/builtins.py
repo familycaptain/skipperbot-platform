@@ -19,11 +19,13 @@ def openai_descriptor() -> ConnectorDescriptor:
         verified=True,
         base_url="https://api.openai.com/v1",
         models=[
-            ModelEntry("OpenAI", "gpt-5.2", CHAT, default_tiers=["smart"]),
-            ModelEntry("OpenAI", "gpt-5-mini", CHAT, default_tiers=["fast"]),
+            # Defaults since 2026-09-26: the GPT-6 pair, live-verified on the operator's install
+            # (chat with tools on the Responses API). The older models stay selectable.
+            ModelEntry("OpenAI", "gpt-6-sol", CHAT, default_tiers=["smart"]),
+            ModelEntry("OpenAI", "gpt-6-luna", CHAT, default_tiers=["fast"]),
+            ModelEntry("OpenAI", "gpt-5.2", CHAT),
+            ModelEntry("OpenAI", "gpt-5-mini", CHAT),
             ModelEntry("OpenAI", "gpt-5-nano", CHAT),
-            ModelEntry("OpenAI", "gpt-6-sol", CHAT),
-            ModelEntry("OpenAI", "gpt-6-luna", CHAT),
             ModelEntry("OpenAI", "text-embedding-3-small", EMBEDDING, default_tiers=["embedding"], embedding_dim=1536),
             ModelEntry("OpenAI", "text-embedding-3-large", EMBEDDING, embedding_dim=3072),
         ],
