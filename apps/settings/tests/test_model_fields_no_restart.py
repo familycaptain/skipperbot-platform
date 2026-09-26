@@ -39,16 +39,35 @@ def _model_field_requires_restart() -> dict:
     return out
 
 
-class ModelFieldsNoRestart(unittest.TestCase):
-    def test_smart_and_fast_do_not_require_restart(self):
-        flags = _model_field_requires_restart()
-        self.assertEqual(flags.get("smart_model"), False, "smart_model must not require restart post-#73")
-        self.assertEqual(flags.get("dumb_model"), False, "dumb_model (Fast) must not require restart post-#73")
+def _platform_field_keys() -> set:
+    tree = ast.parse(_ROUTES.read_text())
+    keys = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Dict):
+            d = {k.value: v for k, v in zip(node.keys, node.values) if isinstance(k, ast.Constant)}
+            if "key" in d and "type" in d and isinstance(d["key"], ast.Constant):
+                keys.add(d["key"].value)
+    return keys
 
-    def test_embedding_still_requires_restart(self):
-        flags = _model_field_requires_restart()
-        self.assertEqual(flags.get("embedding_model"), True,
-                         "embedding_model MUST keep requires_restart:True (vector-dim lock)")
+
+class ModelFieldsNoRestart(unittest.TestCase):
+    """Originally (ev-78) this pinned the restart wording on the Smart / Fast / Embedding model
+    fields in Settings -> System. Those fields turned out to be read by nothing: the models are
+    chosen per tier in Settings -> Models. Correcting a dead field's copy made it no less dead,
+    so the fields are gone — which is the strongest form of "no model field claims something
+    false"."""
+
+    def test_the_dead_chat_and_embedding_fields_are_gone(self):
+        keys = _platform_field_keys()
+        for dead in ("smart_model", "dumb_model", "embedding_model"):
+            with self.subTest(field=dead):
+                self.assertNotIn(dead, keys)
+
+    def test_the_voice_fields_remain(self):
+        # Kept, and now actually read — see tests/platform/test_voice_models_follow_settings.py.
+        keys = _platform_field_keys()
+        self.assertIn("realtime_model", keys)
+        self.assertIn("voice_transcription_model", keys)
 
     def test_save_models_does_not_return_restart_required_true(self):
         src = _AGENT.read_text()

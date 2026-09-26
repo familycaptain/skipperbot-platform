@@ -27,10 +27,39 @@ from app_platform.voice.prompting import (
 # Set OPENAI_VOICE_API_KEY in .env to a dedicated key; falls back to the
 # shared OPENAI_API_KEY if not set so existing deployments keep working.
 OPENAI_API_KEY = os.getenv("OPENAI_VOICE_API_KEY") or os.getenv("OPENAI_API_KEY", "")
+# Environment fallbacks. Prefer realtime_model() / realtime_transcription_model(), which also
+# honour Settings -> System and are read per session rather than frozen at import.
 REALTIME_MODEL = os.getenv("REALTIME_MODEL", "gpt-realtime")
 REALTIME_VOICE = os.getenv("REALTIME_VOICE", "ash")
 REALTIME_AUDIO_RATE = 24000
 REALTIME_TRANSCRIPTION_MODEL = os.getenv("VOICE_REALTIME_TRANSCRIPTION_MODEL", "whisper-1")
+
+
+def _platform_setting(key: str) -> str:
+    try:
+        from app_platform import settings as _settings
+        val = _settings.get(key, scope="platform", default=None)
+    except Exception:
+        return ""       # a settings hiccup must never stop voice — fall back to env/default
+    return str(val).strip() if val not in (None, "") else ""
+
+
+def realtime_model() -> str:
+    """The voice conversation model: Settings -> System "Realtime/voice model", else the
+    REALTIME_MODEL env var, else gpt-realtime. Read when a session is minted, so a change takes
+    effect on the next conversation with no restart.
+
+    The Settings field existed before this and nothing read it — the model could only be changed
+    by editing .env. It matters now: gpt-realtime shuts down 2027-01-20 (replacement
+    gpt-realtime-2.1)."""
+    return _platform_setting("realtime_model") or REALTIME_MODEL
+
+
+def realtime_transcription_model() -> str:
+    """The model that transcribes what the household says during a voice conversation:
+    Settings -> System "Voice transcription model", else VOICE_REALTIME_TRANSCRIPTION_MODEL, else
+    whisper-1. whisper-1 shuts down 2027-02-26."""
+    return _platform_setting("voice_transcription_model") or REALTIME_TRANSCRIPTION_MODEL
 
 # Active voice sessions: session_id -> session info
 _active_sessions: dict[str, dict] = {}
@@ -41,6 +70,8 @@ def mint_ephemeral_token(user_id: str, device_info: dict | None = None) -> dict 
     device_info = device_info or {}
 
     try:
+        model = realtime_model()
+        transcription_model = realtime_transcription_model()
         base_payload = build_base_voice_payload(user_id=user_id, device_info=device_info)
         resp = requests.post(
             "https://api.openai.com/v1/realtime/client_secrets",
@@ -51,13 +82,13 @@ def mint_ephemeral_token(user_id: str, device_info: dict | None = None) -> dict 
             json={
                 "session": {
                     "type": "realtime",
-                    "model": REALTIME_MODEL,
+                    "model": model,
                     "instructions": base_payload["instructions"],
                     "output_modalities": ["audio"],
                     "audio": {
                         "input": {
                             "format": {"type": "audio/pcm", "rate": REALTIME_AUDIO_RATE},
-                            "transcription": {"model": REALTIME_TRANSCRIPTION_MODEL},
+                            "transcription": {"model": transcription_model},
                             "turn_detection": {
                                 "type": "server_vad",
                                 "threshold": 0.5,
@@ -90,7 +121,8 @@ def mint_ephemeral_token(user_id: str, device_info: dict | None = None) -> dict 
             "ephemeral_token": data.get("value", ""),
             "expires_at": data.get("expires_at", 0),
             "voice": REALTIME_VOICE,
-            "model": REALTIME_MODEL,
+            "model": model,
+            "transcription_model": transcription_model,
             "base_instructions": base_payload["instructions"],
             "base_tools": base_payload["tools"],
             "created_at": time.time(),
@@ -105,7 +137,7 @@ def mint_ephemeral_token(user_id: str, device_info: dict | None = None) -> dict 
             "VOICE: Minted session %s for %s (model=%s, voice=%s, app=%s, tools=%d)",
             session_id,
             user_id,
-            REALTIME_MODEL,
+            model,
             REALTIME_VOICE,
             session_info.get("active_app"),
             len(base_payload["tools"]),
@@ -116,7 +148,7 @@ def mint_ephemeral_token(user_id: str, device_info: dict | None = None) -> dict 
             "ephemeral_token": session_info["ephemeral_token"],
             "expires_at": session_info["expires_at"],
             "voice": REALTIME_VOICE,
-            "model": REALTIME_MODEL,
+            "model": model,
             "base_instructions": base_payload["instructions"],
             "base_tools": base_payload["tools"],
             "active_app": session_info.get("active_app"),

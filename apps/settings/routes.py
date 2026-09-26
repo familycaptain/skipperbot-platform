@@ -56,17 +56,20 @@ PLATFORM_PANELS: dict[str, dict] = {
                             "Chat, Discord, and voice all use it by default.",
              "placeholder": "e.g. London, UK  —or—  Van Buren, AR, USA",
              "default": ""},
-            {"key": "smart_model", "type": "string", "label": "Smart model",
-             "description": "Model for complex reasoning. Takes effect immediately — no restart needed.",
-             "default": "", "requires_restart": False},
-            {"key": "dumb_model", "type": "string", "label": "Fast model",
-             "description": "Cheaper model for light tasks. Takes effect immediately — no restart needed.",
-             "default": "", "requires_restart": False},
-            {"key": "realtime_model", "type": "string", "label": "Realtime/voice model",
-             "description": "Model used by the voice path.", "default": ""},
-            {"key": "embedding_model", "type": "string", "label": "Embedding model",
-             "description": "OpenAI model for semantic search (memories + documents). Changing it requires a restart AND re-embedding existing content (vector dimension is fixed).",
-             "default": "", "requires_restart": True},
+            # Chat and embedding models are chosen per tier in Settings -> Models. Fields for them
+            # used to sit here too (smart_model / dumb_model / embedding_model) — nothing read
+            # them, and two claimed "Takes effect immediately". Removed rather than left to lie.
+            {"key": "realtime_model", "type": "string", "label": "Voice model",
+             "description": "OpenAI Realtime model for voice conversations. Blank uses the "
+                            "REALTIME_MODEL setting in .env, else gpt-realtime. Applies from the "
+                            "next conversation. gpt-realtime shuts down 2027-01-20 — its "
+                            "replacement is gpt-realtime-2.1 (or the cheaper gpt-realtime-2.1-mini).",
+             "placeholder": "e.g. gpt-realtime-2.1-mini", "default": ""},
+            {"key": "voice_transcription_model", "type": "string", "label": "Voice transcription model",
+             "description": "Transcribes what you say during a voice conversation. Blank uses "
+                            "VOICE_REALTIME_TRANSCRIPTION_MODEL in .env, else whisper-1. Applies "
+                            "from the next conversation. whisper-1 shuts down 2027-02-26.",
+             "default": ""},
             {"key": "lan_url", "type": "string", "label": "LAN URL",
              "description": "How devices on your network reach this server, e.g. http://skipper.local:8000.", "default": ""},
             {"key": "public_url", "type": "string", "label": "Public URL",

@@ -1,0 +1,33 @@
+kind: specification
+id: platform.voice.models-follow-settings
+title: The voice models are chosen in Settings and apply from the next conversation
+state: live
+autonomy: gated
+behavior: >
+  The model Skipper speaks with in a voice conversation, and the model that transcribes what the
+  household says, can each be chosen in Settings. A choice applies from the next conversation
+  without a restart; a conversation already under way keeps the models it started with, even when
+  it changes app partway through. Leaving a field blank keeps the install's own configured model,
+  and if the settings cannot be read at all, voice still starts on that configured model rather
+  than failing. Settings offers no model field that has no effect.
+implements:
+- app_platform/voice/session.py::realtime_model
+- app_platform/voice/session.py::realtime_transcription_model
+- app_platform/voice/relay.py::relay_session
+- apps/settings/routes.py
+tests:
+- tests/platform/test_voice_models_follow_settings.py
+- apps/settings/tests/test_model_fields_no_restart.py
+links: {}
+notes: >
+  Before this, Settings -> System carried four model fields and nothing read any of them. Voice
+  took its models from environment variables frozen at startup, so changing voice meant editing
+  .env and restarting; the chat and embedding fields duplicated Settings -> Models and did nothing
+  — two of them said "Takes effect immediately", and the embedding one warned of a restart and
+  re-embedding that changing it would never cause. An earlier change (ev-78) had corrected the
+  restart wording on those dead fields without anyone noticing they were dead.
+
+  It matters now because both current voice models are being retired: gpt-realtime on 2027-01-20
+  (replacement gpt-realtime-2.1 / -2.1-mini) and whisper-1 on 2027-02-26. Which transcription
+  model works INSIDE a realtime conversation is not settled by OpenAI's model pages — being able
+  to try one from Settings, one conversation at a time, is how that gets answered.

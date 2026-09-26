@@ -47,8 +47,9 @@ logging.getLogger("websockets").propagate = False
 from app_platform.voice.session import (
     OPENAI_API_KEY,
     REALTIME_AUDIO_RATE,
-    REALTIME_MODEL,
     REALTIME_VOICE,
+    realtime_model,
+    realtime_transcription_model,
 )
 
 OPENAI_REALTIME_URL = "wss://api.openai.com/v1/realtime"
@@ -85,7 +86,7 @@ _ASSISTANT_TRANSCRIPT_TYPES = {
 }
 
 
-def _session_update(instructions: str, tools: list[dict], voice: str) -> dict:
+def _session_update(instructions: str, tools: list[dict], voice: str, transcription_model=None) -> dict:
     """Build the OpenAI session.update payload (matches session.py / the satellite)."""
     return {
         "type": "session.update",
@@ -103,7 +104,10 @@ def _session_update(instructions: str, tools: list[dict], voice: str) -> dict:
                         # accuracy is fine (its old "32nd time" misfires were mostly echo/noise).
                         # Set VOICE_REALTIME_TRANSCRIPTION_MODEL=gpt-4o-mini-transcribe (or
                         # gpt-4o-transcribe) to prefer accuracy over speed.
-                        "model": os.getenv("VOICE_REALTIME_TRANSCRIPTION_MODEL", "whisper-1"),
+                        # Settings -> System, else the env var, else whisper-1 — see
+                        # session.realtime_transcription_model(). The relay passes the model the
+                        # session was minted with, so one conversation never switches mid-way.
+                        "model": transcription_model or realtime_transcription_model(),
                     },
                     "turn_detection": {
                         "type": "server_vad",
@@ -196,7 +200,7 @@ async def _send_oai(oai, event: dict) -> None:
     await oai.send(json.dumps(event))
 
 
-async def _apply_tool_events(oai, events: list[dict]) -> bool:
+async def _apply_tool_events(oai, events: list[dict], transcription_model=None) -> bool:
     """Translate handle_voice_tool_call() output into OpenAI WS sends.
 
     Returns True if the session should end (end_voice_session tool).
@@ -210,6 +214,7 @@ async def _apply_tool_events(oai, events: list[dict]) -> bool:
                 ev.get("instructions", ""),
                 ev.get("tools", []),
                 ev.get("voice", REALTIME_VOICE),
+                transcription_model=transcription_model,
             ))
         elif et == "tool_result":
             await _send_oai(oai, {
@@ -252,25 +257,28 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
         await satellite_ws.send_text(json.dumps({"type": "error", "error": "OPENAI_API_KEY not set on the platform"}))
         return
 
-    url = f"{OPENAI_REALTIME_URL}?model={REALTIME_MODEL}"
+    # The models this session was minted with (session.py), so a Settings change takes effect on
+    # the NEXT conversation rather than splitting this one across two models.
+    _rmodel = session.get("model") or realtime_model()
+    _tmodel = session.get("transcription_model") or realtime_transcription_model()
+    url = f"{OPENAI_REALTIME_URL}?model={_rmodel}"
     headers = {"Authorization": f"Bearer {OPENAI_API_KEY}"}
 
-    _tmodel = os.getenv("VOICE_REALTIME_TRANSCRIPTION_MODEL", "whisper-1")
     oai = await _openai_connect(url, headers)
     logger.info("VOICE-RELAY: session %s connected to OpenAI Realtime "
                 "(user=%s, tools=%d, realtime=%s, transcription=%s)",
-                session_id, user_id, len(tools), REALTIME_MODEL, _tmodel)
+                session_id, user_id, len(tools), _rmodel, _tmodel)
     stop = asyncio.Event()
 
     try:
-        await _send_oai(oai, _session_update(instructions, tools, voice))
+        await _send_oai(oai, _session_update(instructions, tools, voice, transcription_model=_tmodel))
 
         # Tell the satellite which host-side models/settings are in effect, so the
         # config prints in the voice-1 console (handy when A/B-testing transcription).
         try:
             await satellite_ws.send_text(json.dumps({
                 "type": "host_info",
-                "text": (f"realtime={REALTIME_MODEL}, transcription={_tmodel}, "
+                "text": (f"realtime={_rmodel}, transcription={_tmodel}, "
                          f"vad_silence={os.getenv('VOICE_VAD_SILENCE_MS', '800')}ms"),
             }))
         except Exception:
@@ -872,7 +880,7 @@ async def relay_session(satellite_ws, session_id: str, session: dict) -> None:
                                     await asyncio.wait_for(resp_idle.wait(), timeout=2.0)
                                 except asyncio.TimeoutError:
                                     pass
-                            if await _apply_tool_events(oai, events):
+                            if await _apply_tool_events(oai, events, transcription_model=_tmodel):
                                 break
 
                     elif et == "error":
