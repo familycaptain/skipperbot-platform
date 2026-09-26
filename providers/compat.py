@@ -21,7 +21,7 @@ resolves a real connector+model+key rather than silently sending an OpenAI model
 from __future__ import annotations
 
 from providers.base import ChatResult, Turn, from_openai_messages
-from providers.tier_resolver import resolve_chat, TierNotConfigured
+from providers.tier_resolver import effort_kwargs, resolve_chat, TierNotConfigured
 
 
 def chat_completion(*, tier: str = "fast", messages: list[dict],
@@ -45,4 +45,5 @@ def chat_completion(*, tier: str = "fast", messages: list[dict],
         max_output_tokens=max_completion_tokens if max_completion_tokens is not None else max_tokens,
         force_tool=force_tool,
         api_key=api_key,
+        **effort_kwargs(tier),
     )

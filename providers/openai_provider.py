@@ -76,9 +76,9 @@ def capabilities_for(model: str) -> ModelCapabilities:
     """Descriptor for an OpenAI model. The gpt-5.x tiers use max_completion_tokens (matching
     every product call site today). Embedding dim is 1536 for text-embedding-3-small."""
     m = (model or "").lower()
-    # gpt-6-luna is a reasoning model (OpenAI's model page: reasoning token support,
-    # reasoning.effort none..max, default medium) — confirmed 2026-09-25, not inferred
-    # from the name. The GPT-6 family is covered by prefix on that basis.
+    # gpt-6-luna and gpt-6-sol are reasoning models (each model page: reasoning token
+    # support, reasoning.effort none..max, default medium) — confirmed 2026-09-25/26, not
+    # inferred from the name. The GPT-6 family is covered by prefix on that basis.
     is_reasoning = m.startswith(("gpt-5", "gpt-6", "o1", "o3", "o4"))
     embed_dim = 3072 if "3-large" in m else _EMBEDDING_DIM
     return ModelCapabilities(
@@ -111,6 +111,64 @@ def _turn_to_message(t: Turn) -> dict:
     if t.name is not None:
         msg["name"] = t.name
     return msg
+
+
+def _tool_to_responses(tool: dict) -> dict:
+    """A Chat-Completions tool definition -> the Responses shape.
+
+    Chat Completions nests the function ({"type":"function","function":{...}}); Responses
+    flattens it. strict is set to False EXPLICITLY: on Responses an omitted strict means
+    "attempt strict mode", which would change how every existing tool schema is treated.
+    Already-flat definitions pass through."""
+    if tool.get("type") == "function" and isinstance(tool.get("function"), dict):
+        fn = tool["function"]
+        out = {"type": "function", "name": fn.get("name"),
+               "parameters": fn.get("parameters") or {"type": "object", "properties": {}},
+               "strict": bool(fn.get("strict", False))}
+        if fn.get("description"):
+            out["description"] = fn["description"]
+        return out
+    return tool
+
+
+def _reasoning_item(item, model: str) -> dict:
+    """A returned reasoning item, in the form it must be sent back, tagged with the model that
+    produced it. Encrypted reasoning is only meaningful to the model that wrote it."""
+    d = {"type": "reasoning", "id": getattr(item, "id", None),
+         "summary": [s.model_dump() if hasattr(s, "model_dump") else s
+                     for s in (getattr(item, "summary", None) or [])]}
+    enc = getattr(item, "encrypted_content", None)
+    if enc:
+        d["encrypted_content"] = enc
+    return {"_model": model, "item": d}
+
+
+def _turns_to_input(turns: list[Turn], model: str) -> list[dict]:
+    """Neutral turns -> Responses input items.
+
+    system/user/assistant text become messages; an assistant's tool calls become
+    function_call items, preceded by any reasoning it produced; tool results become
+    function_call_output items linked by call_id. Reasoning carried from a DIFFERENT model is
+    dropped rather than sent — a tier can change between turns, and another model's
+    encrypted reasoning is not something to replay into this one."""
+    items: list[dict] = []
+    for t in turns:
+        if t.role == "tool":
+            items.append({"type": "function_call_output", "call_id": t.tool_call_id,
+                          "output": t.content if t.content is not None else ""})
+            continue
+        if t.role == "assistant":
+            for carried in (t.provider_items or []):
+                if isinstance(carried, dict) and carried.get("_model") == model and carried.get("item"):
+                    items.append(carried["item"])
+            if t.content:
+                items.append({"role": "assistant", "content": t.content})
+            for tc in (t.tool_calls or []):
+                items.append({"type": "function_call", "call_id": tc.id, "name": tc.name,
+                              "arguments": json.dumps(tc.arguments)})
+            continue
+        items.append({"role": t.role, "content": t.content if t.content is not None else ""})
+    return items
 
 
 class OpenAIProvider(ChatProvider, EmbeddingProvider):
@@ -156,39 +214,69 @@ class OpenAIProvider(ChatProvider, EmbeddingProvider):
     def chat(self, *, turns: list[Turn], tools: list[dict] | None,
              model: str, temperature: float | None = None,
              max_output_tokens: int | None = None,
-             force_tool: str | None = None, api_key: str | None = None) -> ChatResult:
-        caps = capabilities_for(model)
+             force_tool: str | None = None, api_key: str | None = None,
+             reasoning_effort: str | None = None) -> ChatResult:
+        """One call on the Responses API.
+
+        Moved off Chat Completions because the GPT-6 family will not combine function tools
+        with reasoning there: its docs say Chat Completions "supports function calling only
+        with reasoning_effort set to none", and as the default effort is medium, every
+        tool-using turn on gpt-6-luna failed with 400 param=reasoning_effort. Responses has
+        no such restriction. Only THIS connector moved — the OpenAI-compatible vendors keep
+        Chat Completions, which several of them (Gemini, Mistral, Llama) are limited to.
+        """
         kwargs: dict = {
             "model": model,
-            "messages": [_turn_to_message(t) for t in turns],
-            "tools": tools if tools else None,
+            "input": _turns_to_input(turns, model),
+            # Household conversations are not left on OpenAI's servers. Responses STORES by
+            # default, unlike the call this replaces.
+            "store": False,
+            # With store=false, reasoning survives between the tool calls of one turn only if
+            # we carry it: ask for it encrypted and hand it back (see Turn.provider_items).
+            "include": ["reasoning.encrypted_content"],
         }
-        if temperature is not None and caps.supports_temperature:
+        if tools:
+            kwargs["tools"] = [_tool_to_responses(t) for t in tools]
+        if temperature is not None:
             kwargs["temperature"] = temperature
         if max_output_tokens is not None:
-            kwargs[caps.token_limit_param] = max_output_tokens
+            kwargs["max_output_tokens"] = max_output_tokens
+        if reasoning_effort:
+            kwargs["reasoning"] = {"effort": reasoning_effort}
         if force_tool:  # P1: unused by product callers; forward-looking plumbing
-            kwargs["tool_choice"] = {"type": "function", "function": {"name": force_tool}}
+            kwargs["tool_choice"] = {"type": "function", "name": force_tool}
 
-        completion = self._call_with_retry(self._get_client(api_key).chat.completions.create, **kwargs)
+        response = self._call_with_retry(self._get_client(api_key).responses.create, **kwargs)
 
-        choice = completion.choices[0].message
+        text_parts: list[str] = []
         tool_calls: list[ToolCall] = []
-        for tc in (getattr(choice, "tool_calls", None) or []):
-            try:
-                args = json.loads(tc.function.arguments)
-            except Exception:
-                args = {}
-            tool_calls.append(ToolCall(id=tc.id, name=tc.function.name, arguments=args))
+        carried: list[dict] = []
+        for item in (getattr(response, "output", None) or []):
+            kind = getattr(item, "type", None)
+            if kind == "message":
+                for part in (getattr(item, "content", None) or []):
+                    if getattr(part, "type", None) == "output_text":
+                        text_parts.append(part.text or "")
+            elif kind == "function_call":
+                try:
+                    args = json.loads(item.arguments or "{}")
+                except Exception:
+                    args = {}
+                tool_calls.append(ToolCall(id=item.call_id, name=item.name, arguments=args))
+            elif kind == "reasoning":
+                carried.append(_reasoning_item(item, model))
 
         usage = Usage()
-        if completion.usage:
-            usage.prompt_tokens = completion.usage.prompt_tokens or 0
-            usage.completion_tokens = completion.usage.completion_tokens or 0
-            ptd = getattr(completion.usage, "prompt_tokens_details", None)
-            usage.cached_tokens = (getattr(ptd, "cached_tokens", 0) or 0) if ptd else 0
+        u = getattr(response, "usage", None)
+        if u:
+            usage.prompt_tokens = getattr(u, "input_tokens", 0) or 0
+            usage.completion_tokens = getattr(u, "output_tokens", 0) or 0
+            itd = getattr(u, "input_tokens_details", None)
+            usage.cached_tokens = (getattr(itd, "cached_tokens", 0) or 0) if itd else 0
 
-        assistant = Turn(role="assistant", content=choice.content, tool_calls=tool_calls or None)
+        content = "".join(text_parts) if text_parts else None
+        assistant = Turn(role="assistant", content=content, tool_calls=tool_calls or None,
+                         provider_items=carried or None)
         return ChatResult(message=assistant, tool_calls=tool_calls, usage=usage)
 
     # --- EmbeddingProvider ---

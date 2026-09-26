@@ -22,6 +22,7 @@ def openai_descriptor() -> ConnectorDescriptor:
             ModelEntry("OpenAI", "gpt-5.2", CHAT, default_tiers=["smart"]),
             ModelEntry("OpenAI", "gpt-5-mini", CHAT, default_tiers=["fast"]),
             ModelEntry("OpenAI", "gpt-5-nano", CHAT),
+            ModelEntry("OpenAI", "gpt-6-sol", CHAT),
             ModelEntry("OpenAI", "gpt-6-luna", CHAT),
             ModelEntry("OpenAI", "text-embedding-3-small", EMBEDDING, default_tiers=["embedding"], embedding_dim=1536),
             ModelEntry("OpenAI", "text-embedding-3-large", EMBEDDING, embedding_dim=3072),

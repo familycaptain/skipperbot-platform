@@ -1,0 +1,38 @@
+kind: specification
+id: platform.llm.openai-uses-the-responses-api
+title: The OpenAI connector reaches its models through the Responses API
+state: live
+autonomy: gated
+behavior: >
+  Conversations with an OpenAI model go through OpenAI's Responses API, so a model that reasons
+  can also use tools in the same turn — which the newest OpenAI models refuse to do on the older
+  interface. Nothing Skipper sends is kept on OpenAI's servers: storage is turned off on every
+  request. Tools are offered exactly as they are defined, without the stricter schema handling the
+  Responses API would otherwise attempt. Within one turn, the model's hidden reasoning is carried
+  from each tool call to the next so it does not start its thinking over at every step; that
+  reasoning is only ever handed back to the model that produced it, and it is not kept once the
+  turn ends. What a caller receives — the reply, any tool calls, token usage including cached
+  input — is unchanged in shape.
+implements:
+- providers/openai_provider.py::OpenAIProvider.chat
+- providers/openai_provider.py::_turns_to_input
+- providers/openai_provider.py::_tool_to_responses
+- providers/base.py::Turn
+- agent_loop.py::_assistant_dict
+tests:
+- tests/providers/test_openai_provider.py
+- tests/providers/test_agent_loop_neutral.py
+links:
+  related:
+  - platform.llm.other-vendors-keep-chat-completions
+  - platform.llm.reasoning-effort-per-tier
+notes: >
+  Moved because gpt-6-luna and gpt-6-sol state that Chat Completions "supports function calling
+  only with reasoning_effort set to none". Their default effort is medium, so every tool-using turn
+  failed with 400 param=reasoning_effort while a tool-less validation probe passed. Chat
+  Completions itself is not deprecated — this is a capability move, not a forced migration.
+
+  Storage is off because Responses stores by default, unlike the call it replaced, and household
+  conversations have no business sitting on a vendor's servers for a feature Skipper does not use.
+  strict is sent as false because an omitted strict on Responses means "attempt strict mode",
+  which would silently change how every existing tool schema is interpreted.

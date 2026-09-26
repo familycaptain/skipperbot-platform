@@ -79,7 +79,11 @@ class OpenAICompatibleProvider(ChatProvider, EmbeddingProvider):
     def chat(self, *, turns: list[Turn], tools: list[dict] | None,
              model: str, temperature: float | None = None,
              max_output_tokens: int | None = None,
-             force_tool: str | None = None, api_key: str | None = None) -> ChatResult:
+             force_tool: str | None = None, api_key: str | None = None,
+             reasoning_effort: str | None = None) -> ChatResult:
+        # Accepted and deliberately ignored: these vendors stay on Chat Completions exactly as before,
+        # and several reject or reinterpret reasoning_effort. Opting a vendor in is a per-vendor
+        # decision, made with that vendor's docs, not inherited from the OpenAI connector.
         caps = self.capabilities(model)
         kwargs: dict = {
             "model": model,

@@ -140,7 +140,10 @@ class AnthropicProvider(ChatProvider):
     def chat(self, *, turns: list[Turn], tools: list[dict] | None,
              model: str, temperature: float | None = None,
              max_output_tokens: int | None = None,
-             force_tool: str | None = None, api_key: str | None = None) -> ChatResult:
+             force_tool: str | None = None, api_key: str | None = None,
+             reasoning_effort: str | None = None) -> ChatResult:
+        # Accepted and deliberately ignored: Anthropic's extended thinking is a different control
+        # (a token budget, not an effort level) and mapping one onto the other is not a drop-in.
         system, messages = _to_anthropic(turns)
         kwargs: dict = {
             "model": model,

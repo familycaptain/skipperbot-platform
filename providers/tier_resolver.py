@@ -19,6 +19,8 @@ Storage convention (settings scope="platform"):
   tier_<tier>_connector   e.g. "openai"
   tier_<tier>_model       e.g. "gpt-5.2"
   tier_<tier>_key         the API key (secret=True; absent/blank for keyless connectors)
+  tier_<tier>_effort      chat tiers only: reasoning effort (none|low|medium|high|xhigh|max);
+                          absent/blank = send nothing and let the model use its default
 
 ``<tier>`` is one of: smart, fast, embedding.
 """
@@ -104,6 +106,29 @@ def resolve_chat(tier: str):
     res = resolve_tier(tier)
     from providers import registry  # lazy: one-way dep, avoids import cycle
     return registry.get_chat_provider(res.connector), res.model, res.key
+
+
+def resolve_effort(tier: str) -> str | None:
+    """The reasoning effort a chat tier is set to, or None to send nothing (model default).
+
+    Stored as ``tier_<tier>_effort``. An unknown value is treated as unset rather than sent:
+    a typo in settings must not become a 400 on every call. Never raises — a settings
+    problem falls back to the model's own default."""
+    from providers.base import REASONING_EFFORTS
+    try:
+        val = _setting(f"tier_{tier}_effort")
+    except Exception:
+        return None
+    val = str(val).strip().lower() if _is_set(val) else ""
+    return val if val in REASONING_EFFORTS else None
+
+
+def effort_kwargs(tier: str) -> dict:
+    """``{"reasoning_effort": ...}`` when the tier sets one, else ``{}`` — so a connector that
+    predates the argument, including an out-of-tree one, is only ever sent it once somebody
+    has chosen an effort for a tier it serves."""
+    eff = resolve_effort(tier)
+    return {"reasoning_effort": eff} if eff else {}
 
 
 def resolve_embedding(tier: str):

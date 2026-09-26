@@ -62,6 +62,9 @@ def _install(results):
     scripted = ScriptedChat(results)
     registry.register_model_provider("openai", chat=scripted)
     agent_loop.resolve_chat = lambda tier="smart": (scripted, "gpt-5.2", _TEST_KEY)
+    # No tier sets an effort here: the loop must then send NO reasoning_effort at all, which is
+    # also what keeps this fake's fixed signature (like any out-of-tree connector's) working.
+    agent_loop.effort_kwargs = lambda tier: {}
     return scripted
 
 
@@ -193,5 +196,51 @@ class TestNeutralAgentLoop(unittest.TestCase):
         self.assertIn("Models", res.response_text)
 
 
+class EffortAwareChat(ScriptedChat):
+    def chat(self, *, turns, tools, model, temperature=None, max_output_tokens=None,
+             force_tool=None, api_key=None, reasoning_effort=None):
+        self.calls.append({"turns": turns, "tools": tools, "api_key": api_key,
+                           "reasoning_effort": reasoning_effort})
+        return self.results.pop(0)
+
+
+class ReasoningAcrossTheToolLoop(unittest.TestCase):
+    """What the move to the Responses API needs from the loop: carry the connector's opaque
+    state from one call to the next, and pass the tier's effort only when it has one."""
+
+    def _run(self, results, effort=None):
+        registry._chat_providers.clear()
+        scripted = EffortAwareChat(results)
+        registry.register_model_provider("openai", chat=scripted)
+        agent_loop.resolve_chat = lambda tier="smart": (scripted, "gpt-6-luna", _TEST_KEY)
+        agent_loop.effort_kwargs = (lambda tier: {"reasoning_effort": effort}) if effort else (lambda tier: {})
+
+        async def dispatch(name, args):
+            return "ok"
+        res = asyncio.run(agent_loop.run(messages=[{"role": "user", "content": "go"}],
+                                         tools=[{"type": "function"}], tool_dispatch=dispatch))
+        return scripted, res
+
+    def test_reasoning_from_one_call_is_handed_to_the_next(self):
+        carried = [{"_model": "gpt-6-luna", "item": {"type": "reasoning", "encrypted_content": "E"}}]
+        first = ChatResult(message=Turn(role="assistant",
+                                        tool_calls=[ToolCall(id="c1", name="alpha", arguments={})],
+                                        provider_items=carried),
+                           tool_calls=[ToolCall(id="c1", name="alpha", arguments={})], usage=Usage())
+        scripted, _ = self._run([first, _assistant(content="done")])
+        second_call_assistant = [t for t in scripted.calls[1]["turns"] if t.role == "assistant"][0]
+        self.assertEqual(second_call_assistant.provider_items, carried)
+
+    def test_the_tiers_effort_reaches_every_call(self):
+        tcs = [ToolCall(id="c1", name="alpha", arguments={})]
+        scripted, _ = self._run([_assistant(tool_calls=tcs), _assistant(content="done")], effort="low")
+        self.assertEqual([c["reasoning_effort"] for c in scripted.calls], ["low", "low"])
+
+    def test_no_effort_is_sent_when_the_tier_sets_none(self):
+        scripted, _ = self._run([_assistant(content="done")])
+        self.assertEqual([c["reasoning_effort"] for c in scripted.calls], [None])
+
+
 if __name__ == "__main__":
     unittest.main()
+

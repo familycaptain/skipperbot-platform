@@ -179,3 +179,53 @@ class ValidateTierTests(StorageTests):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReasoningEffortPerTier(StorageTests):
+    """tier_<tier>_effort — chosen per chat tier, sent only when set.
+
+    The failure these guard against is a stored value the API will refuse: it would turn into
+    a 400 on every call on that tier, which for the smart tier is the whole of chat."""
+
+    def _resolve(self):
+        from providers import tier_resolver
+        return tier_resolver
+
+    def test_it_is_saved_and_read_back(self):
+        model_config.save_tier("fast", connector="openai", model="gpt-6-luna", effort="low")
+        self.assertEqual(model_config.read_tier("fast")["effort"], "low")
+        self.assertEqual(self._resolve().resolve_effort("fast"), "low")
+        self.assertEqual(self._resolve().effort_kwargs("fast"), {"reasoning_effort": "low"})
+
+    def test_unset_means_send_nothing(self):
+        model_config.save_tier("smart", connector="openai", model="gpt-6-sol")
+        self.assertIsNone(self._resolve().resolve_effort("smart"))
+        self.assertEqual(self._resolve().effort_kwargs("smart"), {})
+        self.assertEqual(model_config.read_tier("smart")["effort"], "")
+
+    def test_an_unknown_value_is_refused_on_save(self):
+        with self.assertRaises(ValueError):
+            model_config.save_tier("smart", connector="openai", model="gpt-6-sol", effort="extreme")
+        self.assertIsNone(self.fake.get("tier_smart_effort", scope="platform"))
+
+    def test_an_unknown_stored_value_is_ignored_not_sent(self):
+        # e.g. hand-edited settings. A typo must fall back to the model default, not 400.
+        self.fake.set("tier_smart_effort", "extreme", scope="platform")
+        self.assertIsNone(self._resolve().resolve_effort("smart"))
+
+    def test_a_save_that_does_not_mention_effort_keeps_it(self):
+        # An older client posting {connector, model, key} must not wipe a chosen effort.
+        model_config.save_tier("fast", connector="openai", model="gpt-6-luna", effort="low")
+        model_config.save_tier("fast", connector="openai", model="gpt-6-luna")
+        self.assertEqual(self._resolve().resolve_effort("fast"), "low")
+
+    def test_blank_clears_it_back_to_the_model_default(self):
+        model_config.save_tier("fast", connector="openai", model="gpt-6-luna", effort="low")
+        model_config.save_tier("fast", connector="openai", model="gpt-6-luna", effort="")
+        self.assertIsNone(self._resolve().resolve_effort("fast"))
+
+    def test_the_embedding_tier_has_no_effort(self):
+        with self.assertRaises(ValueError):
+            model_config.save_tier("embedding", connector="openai",
+                                   model="text-embedding-3-small", effort="low")
+        self.assertNotIn("effort", {k for k, v in model_config.read_tier("embedding").items() if v})

@@ -1014,6 +1014,9 @@ function ModelsPanel() {
       for (const k of ["smart", "fast", "embedding"]) {
         const t = tiersState[k] || {};
         tiers[k] = { connector: t.connector, model: t.model, key: t.key || null };
+        // Reasoning effort (chat tiers). Sent even when blank: "" means "back to the model
+        // default", which the server must be told — omitting it would keep the old value.
+        if (k !== "embedding") tiers[k].effort = t.effort || "";
       }
       // Absolute path — these endpoints live under /api/onboarding, not the settings prefix.
       const res = await fetch("/api/onboarding/save-models", {

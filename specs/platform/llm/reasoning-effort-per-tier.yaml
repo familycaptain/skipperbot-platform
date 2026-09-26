@@ -1,0 +1,39 @@
+kind: specification
+id: platform.llm.reasoning-effort-per-tier
+title: How hard a model thinks is chosen per tier
+state: live
+autonomy: gated
+behavior: >
+  An administrator can set, for each conversational tier, how much a reasoning model thinks before
+  answering — from none up to max — or leave it on the model's own default. The choice is offered
+  only where it takes effect, applies to every call on that tier from the next message, and is
+  kept when a tier is re-saved without mentioning it. A value the model would refuse is rejected
+  when it is saved, and one that somehow reaches storage anyway is ignored rather than sent, so a
+  bad setting can never stop a tier from working. When no effort is chosen nothing is sent at all,
+  which keeps any provider that does not know about effort working unchanged.
+implements:
+- providers/tier_resolver.py::resolve_effort
+- providers/tier_resolver.py::effort_kwargs
+- providers/model_config.py::save_tier
+- providers/model_config.py::read_tier
+- agent.py::onboarding_save_models
+- agent_loop.py::run
+- providers/compat.py::chat_completion
+- web/src/components/ModelConfig.jsx
+tests:
+- tests/test_model_key_storage.py
+- tests/providers/test_agent_loop_neutral.py
+- tests/providers/test_openai_provider.py
+links:
+  related:
+  - platform.llm.openai-uses-the-responses-api
+notes: >
+  Why it matters: reasoning is billed as output and shares the output-token cap with the visible
+  answer. A short structured call on a cheap tier (a meal match, a classification) gains little
+  from deep thinking and can exhaust a small cap before producing any text — an empty reply that
+  is still paid for. Choosing a low effort for such a tier is both the cheaper and the safer
+  setting.
+
+  "Sent only when chosen" is deliberate: the connector protocol gained the argument, and a
+  connector written before it — including out-of-tree connectors — would reject an unexpected
+  keyword. Nothing is sent to them until someone opts a tier into an effort.

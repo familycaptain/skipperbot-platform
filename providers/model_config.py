@@ -52,16 +52,31 @@ def _is_set(v) -> bool:
 
 
 # --------------------------------------------------------------------------- storage
-def save_tier(tier: str, *, connector: str, model: str, key: str | None = None) -> None:
-    """Persist a tier's selection (+ key). A blank/None/masked key KEEPS the existing stored
-    key (blank-keeps-existing); a non-empty key is encrypted at rest (secret=True)."""
+def save_tier(tier: str, *, connector: str, model: str, key: str | None = None,
+              effort: str | None = None) -> None:
+    """Persist a tier's selection (+ key, + reasoning effort). A blank/None/masked key KEEPS
+    the existing stored key (blank-keeps-existing); a non-empty key is encrypted at rest.
+
+    ``effort`` is chat tiers only. None leaves the stored value alone (a caller that does not
+    know about effort must not wipe one); "" clears it back to the model default; anything
+    else must be one of REASONING_EFFORTS or this raises rather than storing a value every
+    later call would be rejected for."""
+    from providers.base import REASONING_EFFORTS
     if tier not in TIERS:
         raise ValueError(f"unknown tier {tier!r}")
+    if effort is not None:
+        effort = str(effort).strip().lower()
+        if effort and effort not in REASONING_EFFORTS:
+            raise ValueError(f"unknown reasoning effort {effort!r}")
+        if effort and tier == "embedding":
+            raise ValueError("reasoning effort applies to chat tiers only")
     s = _settings()
     s.set(f"tier_{tier}_connector", connector, scope=_SCOPE)
     s.set(f"tier_{tier}_model", model, scope=_SCOPE)
     if _is_set(key) and key != _MASK:
         s.set(f"tier_{tier}_key", key, scope=_SCOPE, secret=True)
+    if effort is not None and tier != "embedding":
+        s.set(f"tier_{tier}_effort", effort, scope=_SCOPE)
 
 
 def read_tier(tier: str) -> dict:
@@ -70,8 +85,10 @@ def read_tier(tier: str) -> dict:
     connector = s.get(f"tier_{tier}_connector", scope=_SCOPE, default=None)
     model = s.get(f"tier_{tier}_model", scope=_SCOPE, default=None)
     has_key = s.is_configured(f"tier_{tier}_key", scope=_SCOPE)
+    effort = s.get(f"tier_{tier}_effort", scope=_SCOPE, default=None) if tier != "embedding" else None
     return {"tier": tier, "connector": connector, "model": model,
-            "key_set": has_key, "key": (_MASK if has_key else None)}
+            "key_set": has_key, "key": (_MASK if has_key else None),
+            "effort": effort or ""}
 
 
 def read_all_tiers() -> dict:

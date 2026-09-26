@@ -29,6 +29,19 @@ const TIERS = [
 ];
 
 const optValue = (r) => `${r.connector}::${r.model}`;
+
+// Reasoning effort, per chat tier. Only the OpenAI connector honours it — every other
+// connector deliberately ignores it — so the control is shown only there. "" sends nothing
+// and leaves the model on its own default.
+const EFFORTS = [
+  { value: "", label: "Model default" },
+  { value: "none", label: "None — fastest, no reasoning" },
+  { value: "low", label: "Low" },
+  { value: "medium", label: "Medium" },
+  { value: "high", label: "High" },
+  { value: "xhigh", label: "Extra high" },
+  { value: "max", label: "Max" },
+];
 // Tier-aware: a row is a "(default)" for THIS tier iff tierKey ∈ its default_tiers, so the Smart
 // dropdown marks the smart default, Fast the FAST default, Text-encoding its embedding default.
 const isTierDefault = (r, tierKey) =>
@@ -75,6 +88,7 @@ export default function ModelConfig({ mode = "onboarding", embeddingLocked = fal
             connector: chosen ? chosen.connector : "",
             model: chosen ? chosen.model : "",
             key: "",
+            effort: cur.effort || "",
             status: "idle",
             error: "",
           };
@@ -173,6 +187,24 @@ export default function ModelConfig({ mode = "onboarding", embeddingLocked = fal
                 <option key={optValue(r)} value={optValue(r)}>{optLabel(r, tier.key)}</option>
               ))}
             </select>
+
+            {tier.kind === "chat" && sel.connector === "openai" && (
+              <div className="mt-2">
+                <label className="text-xs text-faint">Reasoning effort</label>
+                <select
+                  className="mt-1 w-full rounded input px-3 py-2 text-sm"
+                  value={sel.effort || ""}
+                  onChange={(e) => update(tier.key, { effort: e.target.value })}
+                >
+                  {EFFORTS.map((o) => (
+                    <option key={o.value || "default"} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-faint">
+                  Lower is cheaper and faster. Reasoning uses output tokens, so it is billed.
+                </p>
+              </div>
+            )}
 
             {locked && (
               <p className="mt-1 flex items-center gap-1 text-xs text-faint">

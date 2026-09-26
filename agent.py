@@ -770,10 +770,24 @@ async def onboarding_save_models(request: SaveModelsRequest, http_request: Reque
                 return {"ok": False, "error": (
                     "The embedding model is locked after first setup (the vector dimension is "
                     "fixed). Keep the existing embedding selection; smart/fast can still change.")}
+        # Check every tier's effort BEFORE writing any tier, so a bad value cannot leave the
+        # save half-applied (smart written, fast refused).
+        from providers.base import REASONING_EFFORTS
+        for tier in ("smart", "fast"):
+            eff = tiers[tier].get("effort")
+            if eff not in (None, "") and str(eff).strip().lower() not in REASONING_EFFORTS:
+                return {"ok": False, "error": f"Unknown reasoning effort for the {tier} tier."}
         for tier in ("smart", "fast", "embedding"):
             sel = tiers[tier]
-            model_config.save_tier(tier, connector=sel["connector"], model=sel["model"],
-                                   key=(sel.get("key") or None))
+            # effort: absent = leave the stored value alone (an older client must not wipe it);
+            # "" = back to the model default. save_tier rejects an unknown value rather than
+            # storing something every later call would be refused for.
+            try:
+                model_config.save_tier(tier, connector=sel["connector"], model=sel["model"],
+                                       key=(sel.get("key") or None),
+                                       effort=(sel.get("effort") if tier != "embedding" else None))
+            except ValueError as exc:
+                return {"ok": False, "error": f"{tier} tier: {exc}"}
         # Provision the embedding dimension ONCE (first setup) from the chosen embedding model.
         emb = tiers["embedding"]
         if not model_config.embedding_dim():

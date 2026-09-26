@@ -429,6 +429,9 @@ function ModelStep({ onNext, onBack }) {
       for (const k of ["smart", "fast", "embedding"]) {
         const t = tiersState[k] || {};
         tiers[k] = { connector: t.connector, model: t.model, key: t.key || null };
+        // Reasoning effort (chat tiers). Sent even when blank: "" means "back to the model
+        // default", which the server must be told — omitting it would keep the old value.
+        if (k !== "embedding") tiers[k].effort = t.effort || "";
       }
       const res = await fetch(`${API}/api/onboarding/save-models`, {
         method: "POST",

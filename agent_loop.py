@@ -17,8 +17,8 @@ from dataclasses import dataclass, field
 from typing import Callable, Awaitable, Optional
 
 from config import logger
-from providers.base import Turn, ToolCall
-from providers.tier_resolver import resolve_chat, TierNotConfigured
+from providers.base import PROVIDER_ITEMS_KEY, Turn, ToolCall
+from providers.tier_resolver import effort_kwargs, resolve_chat, TierNotConfigured
 
 
 # Soft-fail message when no model is configured (keyless boot before onboarding) or the selected
@@ -109,7 +109,8 @@ def _messages_to_turns(messages: list[dict]) -> list[Turn]:
                 tcs.append(ToolCall(id=tc["id"], name=fn["name"], arguments=args or {}))
         turns.append(Turn(role=m.get("role"), content=m.get("content"),
                           tool_calls=tcs, tool_call_id=m.get("tool_call_id"),
-                          name=m.get("name")))
+                          name=m.get("name"),
+                          provider_items=m.get(PROVIDER_ITEMS_KEY)))
     return turns
 
 
@@ -123,6 +124,11 @@ def _assistant_dict(chat_result) -> dict:
              "function": {"name": tc.name, "arguments": json.dumps(tc.arguments)}}
             for tc in chat_result.tool_calls
         ]
+    # Connector-owned state (e.g. encrypted reasoning) rides along so the next call of THIS
+    # loop can hand it back. Without it a reasoning model loses its train of thought at
+    # every tool call of the turn.
+    if chat_result.message.provider_items:
+        msg[PROVIDER_ITEMS_KEY] = chat_result.message.provider_items
     return msg
 
 
@@ -168,6 +174,7 @@ async def run(
     except TierNotConfigured:
         result.response_text = _SETUP_NEEDED_MSG
         return result
+    effort = effort_kwargs(tier)   # {} unless this tier sets a reasoning effort
 
     total_tool_calls = 0
 
@@ -180,6 +187,7 @@ async def run(
                 tools=tools if tools else None,
                 model=model,
                 api_key=api_key,
+                **effort,
             )
         except RuntimeError as exc:
             # The tier resolved a connector but no usable key -> sanitized soft-fail (the key is
@@ -292,6 +300,7 @@ async def run(
                 tools=None,
                 model=model,
                 api_key=api_key,
+                **effort,
             )
             result.prompt_tokens += final.usage.prompt_tokens
             result.completion_tokens += final.usage.completion_tokens
@@ -307,6 +316,7 @@ async def run(
             tools=None,
             model=model,
             api_key=api_key,
+            **effort,
         )
         result.prompt_tokens += final.usage.prompt_tokens
         result.completion_tokens += final.usage.completion_tokens

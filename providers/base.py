@@ -37,6 +37,12 @@ class Turn:
     tool_calls: list[ToolCall] | None = None    # assistant turns that request tools
     tool_call_id: str | None = None             # tool-result turns
     name: str | None = None                     # optional (e.g. tool/function name)
+    # Opaque, connector-owned state that must be handed back to the SAME connector on the
+    # next call — e.g. a reasoning model's encrypted reasoning items on the OpenAI Responses
+    # API, which (with store=false) is the only way the model keeps its train of thought
+    # across the tool calls of one turn. Every other connector ignores it. Never inspected
+    # or logged by core; a connector must tolerate items it did not produce.
+    provider_items: list[dict] | None = None
 
 
 @dataclass
@@ -97,8 +103,18 @@ def from_openai_messages(messages: list[dict]) -> list["Turn"]:
                 tcs.append(ToolCall(id=tc["id"], name=fn["name"], arguments=args or {}))
         turns.append(Turn(role=m.get("role"), content=m.get("content"),
                           tool_calls=tcs, tool_call_id=m.get("tool_call_id"),
-                          name=m.get("name")))
+                          name=m.get("name"),
+                          provider_items=m.get(PROVIDER_ITEMS_KEY)))
     return turns
+
+
+#: Key under which an OpenAI-style message dict carries Turn.provider_items across the
+#: agent loop's dict <-> Turn round trip. Underscored: not an OpenAI field, and never sent as
+#: one — _turn_to_message builds its dict from named fields and does not copy it.
+PROVIDER_ITEMS_KEY = "_provider_items"
+
+#: The reasoning-effort values a tier may be set to. None/"" = send nothing (model default).
+REASONING_EFFORTS = ("none", "low", "medium", "high", "xhigh", "max")
 
 
 @runtime_checkable
@@ -108,7 +124,11 @@ class ChatProvider(Protocol):
              model: str, temperature: float | None = None,
              max_output_tokens: int | None = None,
              force_tool: str | None = None,
-             api_key: str | None = None) -> ChatResult:
+             api_key: str | None = None,
+             reasoning_effort: str | None = None) -> ChatResult:
+        """``reasoning_effort`` is passed ONLY when the tier sets one, so a connector that
+        predates it (including out-of-tree connectors) keeps working until someone opts in.
+        A connector that cannot honour it ignores it."""
         ...
 
     def capabilities(self, model: str) -> ModelCapabilities:

@@ -1,0 +1,26 @@
+kind: specification
+id: platform.llm.other-vendors-keep-chat-completions
+title: The other providers keep the interface they all support
+state: live
+autonomy: gated
+behavior: >
+  Every provider other than OpenAI is reached exactly as before, through the Chat Completions
+  interface that all of them support; none is ever sent to the Responses API. A reasoning effort
+  chosen for a tier is not forwarded to them, and reasoning carried by an OpenAI model is never
+  sent to another provider — so a household can move a tier between providers mid-conversation
+  without the next request carrying anything the new provider does not understand.
+implements:
+- providers/openai_compat.py::OpenAICompatibleProvider.chat
+- providers/connectors/anthropic.py
+tests:
+- tests/providers/test_other_vendors_stay_on_chat_completions.py
+links:
+  related:
+  - platform.llm.openai-uses-the-responses-api
+notes: >
+  Researched 2026-09-26, not assumed. Gemini, Mistral and Meta's Llama API offer no Responses
+  endpoint at all (a call 404s), so moving the shared compatible connector would have broken
+  them outright. DeepSeek, Kimi, Qwen, Grok and Ollama do offer it, but nothing requires them to
+  move, and these connectors have never been live-verified — moving an unverified connector onto
+  a different interface would be two unknowns at once. Opting any of them in later is a per-vendor
+  decision made against that vendor's own docs. Anthropic is unaffected: it uses its own SDK.
