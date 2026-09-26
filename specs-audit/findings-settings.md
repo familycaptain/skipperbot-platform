@@ -76,6 +76,12 @@ the answer is already known.
 ## Dead settings presented as live
 
 ### 5. Five of the eleven System-panel fields are read by nothing
+
+> **Resolved 2026-09-26.** Current state of each:
+> `lan_url` / `public_url` — now read (the anime and newsletter apps, added after this finding);
+> `realtime_model` — wired to voice, alongside a new `voice_transcription_model` (6555f6b);
+> `embedding_model`, `smart_model`, `dumb_model` — removed (6555f6b); `max_session_turns` —
+> removed, never wired to any cap. `tests/test_every_setting_is_read.py` guards all of it.
 `apps/settings/routes.py::PLATFORM_PANELS["system"]`
 
 | field | status |

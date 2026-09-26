@@ -82,11 +82,8 @@ config:
   # NOTE: the embedding model is platform-wide (Settings → System → "Embedding
   # model") — folder-knowledge vectors share the platform vector space, so there
   # is no folders-scope embedding model.
-  - key: intelligence_extraction_model
-    type: string
-    default: "gpt-5-mini"
-    label: "Knowledge extraction model"
-    description: "Model the folder intelligence pipeline uses to pull facts from each folder item."
+  # intelligence_extraction_model was here: retired in favour of the fast tier and read by
+  # nothing (the extraction runs chat_completion(tier="fast")). Removed rather than left to mislead.
   - key: facts_per_chunk
     type: integer
     default: 4

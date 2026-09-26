@@ -81,11 +81,9 @@ config:
   # NOTE: the embedding model is platform-wide (Settings → System →
   # "Embedding model"), not per-app — all semantic vectors must share one model
   # + dimension. It is not a documents-scope setting.
-  - key: enhance_model
-    type: string
-    default: "gpt-5-mini"
-    label: "Enhancement model"
-    description: "Model the enhance_doc tool uses to rewrite/expand sections."
+  # enhance_model was here: the per-app override was retired in favour of the fast tier
+  # (Settings -> Models) and nothing read it — the field showed "gpt-5-mini" while enhancement ran
+  # on whatever the fast tier was. Removed rather than left to mislead.
   - key: search_hybrid_weight
     type: string
     default: "0.5"

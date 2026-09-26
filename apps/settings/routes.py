@@ -80,8 +80,8 @@ PLATFORM_PANELS: dict[str, dict] = {
             {"key": "debug_tokens", "type": "boolean", "label": "Log token usage",
              "description": "Verbose token accounting in logs.", "default": True,
              "requires_restart": True},
-            {"key": "max_session_turns", "type": "integer", "label": "Max session turns",
-             "description": "Chat history cap per session before trimming.", "default": None},
+            # max_session_turns ("Chat history cap per session before trimming") was here. It was
+            # added with this panel and never wired to anything; no such cap exists. Removed.
         ],
     },
     "integrations": {

@@ -119,7 +119,7 @@ Survey only; nothing fixed. Corpus 13 → 58 records.
     item_added/item_removed/item_moved/reorganized/knowledge_updated`); grep finds nothing but the
     manifest and `SPEC.md`. `platform_deps` also lists `events`, unused.
 
-21. **`manifest.yaml` declares a dead config key.** `intelligence_extraction_model` (default
+21. **Resolved 2026-09-26 — field removed; guarded by `tests/test_every_setting_is_read.py`.** **`manifest.yaml` declares a dead config key.** `intelligence_extraction_model` (default
     `"gpt-5-mini"`) is settable in Settings → Folders and read by nothing: `_extract_facts` calls
     `chat_completion(tier="fast")`, and the file's own comment says the per-app override was retired.
     `facts_per_chunk` is live and correctly read.

@@ -224,6 +224,8 @@ the curation round call the model regardless of whether a provider is configured
 
 ### 21. The `enhance_model` setting does nothing
 
+> **Resolved 2026-09-26** — the field is removed from `manifest.yaml`; `tests/test_every_setting_is_read.py` now fails on any declared setting nothing reads.
+
 `manifest.yaml` config key `enhance_model` (default `gpt-5-mini`, labelled "Enhancement
 model"). `tools.py`'s header comment records that the per-app override was retired in favour
 of the `fast` tier, and nothing reads the setting. The per-app settings UI shows a control
