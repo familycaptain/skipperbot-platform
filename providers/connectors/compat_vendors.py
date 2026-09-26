@@ -15,28 +15,44 @@ from providers.connectors.manifest import CHAT, EMBEDDING, ConnectorDescriptor, 
 from providers.openai_compat import OpenAICompatibleProvider
 
 # name -> (display, base_url, requires_key, [ModelEntry...])
+#
+# Model IDs refreshed 2026-09-26. Each changed ID was confirmed by TWO independent sources — the
+# vendor's own model docs and LiteLLM's model registry — and left alone where they disagreed:
+#   * Llama is unchanged. Meta's docs now redirect to a different product (api.meta.ai,
+#     "muse-spark" models) and its Llama ID format could not be confirmed; the old endpoint
+#     still answers. Needs a proper look, not a guessed ID.
+#   * Mistral is unchanged: the -latest aliases are still valid.
+#   * Qwen's fast tier is unchanged: qwen-plus is a live alias.
+#   * No EMBEDDING model was changed. The embedding tier locks its vector dimension at first
+#     setup, so a wrong entry there corrupts search silently instead of failing loudly.
+#   * Kimi still points at api.moonshot.cn. api.moonshot.ai is the international platform;
+#     keys are region-specific, so which one is right depends on where the key was issued.
+# Every connector here remains verified=False: none of these IDs has been called live.
 _VENDORS: dict = {
     "gemini": ("Gemini", "https://generativelanguage.googleapis.com/v1beta/openai/", True, [
-        ModelEntry("Gemini", "gemini-2.5-pro", CHAT, default_tiers=["smart"]),
-        ModelEntry("Gemini", "gemini-2.5-flash", CHAT, default_tiers=["fast"]),
+        # 2.5 is restricted to accounts that already used it — a new household could not pick
+        # it at all. No stable 3.x Pro exists yet; the preview is Google's current Pro.
+        ModelEntry("Gemini", "gemini-3.1-pro-preview", CHAT, default_tiers=["smart"]),
+        ModelEntry("Gemini", "gemini-3.8-flash", CHAT, default_tiers=["fast"]),
         ModelEntry("Gemini", "text-embedding-004", EMBEDDING, default_tiers=["embedding"], embedding_dim=768),
     ]),
     "deepseek": ("DeepSeek", "https://api.deepseek.com/v1", True, [
-        ModelEntry("DeepSeek", "deepseek-reasoner", CHAT, default_tiers=["smart"]),
-        ModelEntry("DeepSeek", "deepseek-chat", CHAT, default_tiers=["fast"]),
+        ModelEntry("DeepSeek", "deepseek-v4-pro", CHAT, default_tiers=["smart"]),
+        ModelEntry("DeepSeek", "deepseek-flash", CHAT, default_tiers=["fast"]),
     ]),
     "kimi": ("Kimi", "https://api.moonshot.cn/v1", True, [
-        ModelEntry("Kimi", "moonshot-v1-32k", CHAT, default_tiers=["smart"]),
-        ModelEntry("Kimi", "moonshot-v1-8k", CHAT, default_tiers=["fast"]),
+        ModelEntry("Kimi", "kimi-k3", CHAT, default_tiers=["smart"]),
+        ModelEntry("Kimi", "kimi-k2.6", CHAT, default_tiers=["fast"]),
     ]),
     "qwen": ("Qwen", "https://dashscope.aliyuncs.com/compatible-mode/v1", True, [
-        ModelEntry("Qwen", "qwen-max", CHAT, default_tiers=["smart"]),
+        ModelEntry("Qwen", "qwen3.8-max", CHAT, default_tiers=["smart"]),
         ModelEntry("Qwen", "qwen-plus", CHAT, default_tiers=["fast"]),
         ModelEntry("Qwen", "text-embedding-v3", EMBEDDING, default_tiers=["embedding"], embedding_dim=1024),
     ]),
     "grok": ("Grok", "https://api.x.ai/v1", True, [
-        ModelEntry("Grok", "grok-2", CHAT, default_tiers=["smart"]),
-        ModelEntry("Grok", "grok-2-mini", CHAT, default_tiers=["fast"]),
+        # grok-2 no longer appears in xAI's model list.
+        ModelEntry("Grok", "grok-4.7", CHAT, default_tiers=["smart"]),
+        ModelEntry("Grok", "grok-4.3", CHAT, default_tiers=["fast"]),
     ]),
     "mistral": ("Mistral", "https://api.mistral.ai/v1", True, [
         ModelEntry("Mistral", "mistral-large-latest", CHAT, default_tiers=["smart"]),

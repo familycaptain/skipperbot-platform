@@ -73,10 +73,12 @@ class BackendEmitTests(unittest.TestCase):
 
         self.assertEqual(picks("openai"), ("gpt-5.2", "gpt-5-mini"))
         self.assertEqual(picks("anthropic"), ("claude-opus-4-8", "claude-haiku-4-5"))
-        self.assertEqual(picks("gemini"), ("gemini-2.5-pro", "gemini-2.5-flash"))
-        # the three that CHANGED the smart default to keep smart != fast (operator Gate-1):
-        self.assertEqual(picks("deepseek"), ("deepseek-reasoner", "deepseek-chat"))
-        self.assertEqual(picks("kimi"), ("moonshot-v1-32k", "moonshot-v1-8k"))
+        # refreshed 2026-09-26 against the vendors' docs + LiteLLM's registry
+        self.assertEqual(picks("gemini"), ("gemini-3.1-pro-preview", "gemini-3.8-flash"))
+        self.assertEqual(picks("deepseek"), ("deepseek-v4-pro", "deepseek-flash"))
+        self.assertEqual(picks("kimi"), ("kimi-k3", "kimi-k2.6"))
+        self.assertEqual(picks("grok"), ("grok-4.7", "grok-4.3"))
+        self.assertEqual(picks("qwen"), ("qwen3.8-max", "qwen-plus"))
         self.assertEqual(picks("ollama"), ("llama3.1", "qwen2.5"))
 
     def test_embedding_connectors_have_exactly_one_embedding_default(self):
