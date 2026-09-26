@@ -137,7 +137,10 @@ thinking:
     # Runs continuously on an interval during waking hours (not cron — the
     # thinking scheduler is interval/active-hours based). Cadence is set in the
     # domain seed (migrations); the pm_cadence_hours setting gates re-engagement.
-    prompt_file: prompts/pm_think.md
+    # No prompt_file: the PM runs as an attention skill whose instructions are inline
+    # (pm_domain.py::_PM_SKILL_GUIDANCE). The old prompts/pm_think.md was read by nothing but
+    # still told the PM to "create tasks when you identify gaps" — the behaviour behind
+    # iss-9c92746a — and would have come back the day prompt_file got wired to the scheduler.
     model: smart
     enabled_by_default: true     # on out of the box — see migrations/003
     tools:

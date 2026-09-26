@@ -22,7 +22,7 @@ with its own system prompt:
 |---|---|---|
 | Trigger | A thinking domain ticks on a schedule/cadence | The user sends a chat message |
 | Engine | `thinking_scheduler` → `apps/goals/{pm_domain,domain}.py` | `chat_domain.handle_chat` → the agent loop |
-| System prompt | `apps/goals/prompts/{pm_think,goals_think}.md` | `SOUL.md` + `BEHAVIOR.md` + **keyword/memory-triggered** guides |
+| System prompt | the PM skill's inline guidance (`apps/goals/pm_domain.py::_PM_SKILL_GUIDANCE`) | `SOUL.md` + `BEHAVIOR.md` + **keyword/memory-triggered** guides |
 | Tools | A scoped set declared per domain | Tools routed by keyword/category |
 
 **The gap:** when the PM/goal domain sends a DM ("have you tried the Chores app
@@ -173,6 +173,9 @@ hallucinate a placeholder (an example name from a tool schema — the original
   Example/placeholder recipient names also scrubbed from the chat-loop
   `send_notification`/`send_discord_dm` tool schemas (a second phantom-name vector).
 - ✅ Prompt-path fix (handlers load `goals_think.md`/`pm_think.md` from the app).
+  *Superseded:* the PM was later rebuilt as an attention skill with inline guidance
+  (`pm_domain.py::_PM_SKILL_GUIDANCE`). `pm_think.md` was read by nothing after that and
+  is removed; `goals_think.md` is likewise unread (see specs-audit/findings-goals.md).
 - ✅ PM enabled by default.
 - ✅ Onboarding adaptive cadence + 1-month auto-close (§4).
 - ✅ Tool-call persistence (§5) — `chat_turns.tool_calls jsonb`, captured in

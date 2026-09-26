@@ -1,0 +1,23 @@
+kind: specification
+id: goals.pm.reviews-without-inventing-work
+title: The project manager nudges people about their work; it does not invent more of it
+state: live
+autonomy: gated
+behavior: >
+  When the project manager reviews the household's goals and projects, it can follow up with a
+  person about their own items or hand work that belongs to Skipper to Skipper — and nothing else.
+  It does not add tasks to anyone's projects to fill gaps it perceives or to meet a deadline, and
+  choosing to do nothing is a valid outcome of a review.
+implements:
+- apps/goals/pm_domain.py::_PM_SKILL_GUIDANCE
+- apps/goals/pm_domain.py::pm_skill_runner
+tests:
+- tests/platform/test_pm_does_not_invent_tasks.py
+links: {}
+notes: >
+  Reported by Jacob (iss-9c92746a): the PM "frequently tries to create gap-filler tasks ... This
+  is unnecessary." True of the pre-rewrite PM, which ran on prompts/pm_think.md — "Create tasks
+  when you identify gaps". The rebuilt PM has no task-creating action, and it has created no tasks
+  since. The old prompt stayed on disk, read by nothing but still named as the PM's prompt_file,
+  and would have returned the behaviour the day that field was wired to the scheduler; it is
+  removed.
