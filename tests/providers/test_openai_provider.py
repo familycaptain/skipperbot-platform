@@ -114,6 +114,21 @@ class TestSendGoldenPayload(unittest.TestCase):
         self.assertNotIn("tools", cap)
         self.assertNotIn("reasoning", cap)     # model default unless a tier chooses
 
+    def test_temperature_is_dropped_for_models_that_refuse_it(self):
+        # GPT-6 refuses temperature at any value. The brainstorming revision sends 0.7 on the
+        # smart tier; with the smart tier on gpt-6-sol that must not become a 400.
+        for model in ("gpt-6-sol", "gpt-6-luna"):
+            with self.subTest(model=model):
+                p = _provider_with(response=_response(_text("x")))
+                p.chat(turns=[Turn(role="user", content="q")], tools=None, model=model,
+                       temperature=0.7)
+                self.assertNotIn("temperature", p._client.captured)
+
+    def test_temperature_still_reaches_models_that_take_it(self):
+        p = _provider_with(response=_response(_text("x")))
+        p.chat(turns=[Turn(role="user", content="q")], tools=None, model="gpt-5.2", temperature=0.7)
+        self.assertEqual(p._client.captured["temperature"], 0.7)
+
     def test_reasoning_effort_is_sent_when_chosen(self):
         p = _provider_with(response=_response(_text("x")))
         p.chat(turns=[Turn(role="user", content="q")], tools=None, model="gpt-6-luna",

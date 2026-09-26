@@ -80,11 +80,15 @@ def capabilities_for(model: str) -> ModelCapabilities:
     # support, reasoning.effort none..max, default medium) — confirmed 2026-09-25/26, not
     # inferred from the name. The GPT-6 family is covered by prefix on that basis.
     is_reasoning = m.startswith(("gpt-5", "gpt-6", "o1", "o3", "o4"))
+    # The GPT-6 family refuses a temperature at ANY value, including 1. The connector drops it
+    # rather than letting a call site's tuning knob become a 400 on the model the household
+    # picked. gpt-5.x is left as it was.
+    takes_temperature = not m.startswith("gpt-6")
     embed_dim = 3072 if "3-large" in m else _EMBEDDING_DIM
     return ModelCapabilities(
         supports_tools=True,
         forced_tool_choice="openai",
-        supports_temperature=True,   # callers only pass temperature where the model accepts it
+        supports_temperature=takes_temperature,
         token_limit_param="max_completion_tokens",
         is_reasoning=is_reasoning,
         supports_streaming=False,
@@ -237,7 +241,10 @@ class OpenAIProvider(ChatProvider, EmbeddingProvider):
         }
         if tools:
             kwargs["tools"] = [_tool_to_responses(t) for t in tools]
-        if temperature is not None:
+        # Restored: the Chat Completions version checked supports_temperature, and the move to
+        # Responses dropped the check. The connector owns this — a call site cannot know which
+        # model a tier currently points at.
+        if temperature is not None and capabilities_for(model).supports_temperature:
             kwargs["temperature"] = temperature
         if max_output_tokens is not None:
             kwargs["max_output_tokens"] = max_output_tokens
