@@ -37,9 +37,12 @@ from apps.prioritize.data import (
     # Provider registries
     register_backlog_provider,
     register_activity_checker,
+    # Display
+    resolve_focus_title,
 )
 
 __all__ = [
+    "resolve_focus_title",
     "get_focus_slots",
     "set_focus",
     "promote_to_focus",

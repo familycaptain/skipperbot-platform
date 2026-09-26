@@ -677,7 +677,9 @@ def _append_focus_nags(actions: list[dict]):
             else:
                 slot_lines = []
                 for s in slots:
-                    slot_lines.append(f"  {s['slot_number']}. [{s['source_type']}] {s['source_id']}")
+                    # The name, not the id: this line used to read "[project] p-ab69aa23".
+                    title = _dl_pri.resolve_focus_title(s["source_type"], s["source_id"])
+                    slot_lines.append(f"  {s['slot_number']}. [{s['source_type']}] {title}")
                 nag_msg = (
                     f"\n\n⭐ **Focus Check** — You have {empty_count} empty focus slot{'s' if empty_count > 1 else ''}. "
                     f"Current focus:\n" + "\n".join(slot_lines) +

@@ -7,8 +7,8 @@ provider.
 Cross-app reads use the platform shims wherever possible
 (``app_platform.reminders`` / ``schedules`` / ``todo``) so this app
 has no hard dependency on the table layout of any other app. Goals,
-projects, tasks, and users are still in ``public.*`` until the
-goals/system apps are packaged — qualified explicitly so the
+projects and tasks live in the goals app's schema (``app_goals.*``); users
+are platform-owned (``public.users``). Both are qualified explicitly so the
 schema-isolated search_path doesn't surprise us.
 
 Public surface — re-exported via ``app_platform.prioritize``:
@@ -33,7 +33,7 @@ from app_platform.db import (
     fetch_all_in_schema,
     scoped_conn,
 )
-from data_layer.db import fetch_one, fetch_all, execute  # public.users + legacy goals/tasks reads
+from data_layer.db import fetch_one, fetch_all, execute  # public.users + app_goals reads
 from data_layer.links import ensure_edge
 
 logger = logging.getLogger(__name__)
@@ -225,9 +225,9 @@ def get_backlog(user_id: str) -> dict:
 def _backlog_goals_tree(user_id: str) -> list[dict]:
     """Build a nested goal → project → task hierarchy for the user.
 
-    Goals / projects / tasks still live in ``public.*`` — the goals app
-    hasn't been packaged yet. Queries are explicitly qualified so they
-    don't depend on the current search_path.
+    Goals / projects / tasks live in the goals app's schema (``app_goals.*``).
+    Queries are explicitly qualified so they don't depend on the current
+    search_path.
     """
     # 1. All active tasks assigned to user
     task_rows = fetch_all(
@@ -453,7 +453,7 @@ def set_focus_nag_enabled(user_id: str, enabled: bool) -> bool:
 def _source_is_active(source_type: str, source_id: str) -> bool:
     """Check if a source item still exists and is active.
 
-    Goals/projects/tasks still in public.*. Reminders/schedules
+    Goals/projects/tasks are in app_goals.*. Reminders/schedules
     go through their qualified app schemas (or, where the platform
     shim exposes a fitting helper, the shim).
     """
@@ -503,3 +503,40 @@ def _focus_row(row: dict) -> dict:
         "source_id": row["source_id"],
         "created_at": row["created_at"].isoformat() if row.get("created_at") else "",
     }
+
+
+# ---------------------------------------------------------------------------
+# Display titles
+# ---------------------------------------------------------------------------
+
+def resolve_focus_title(source_type: str, source_id: str) -> str:
+    """A human title for a focus / backlog item, falling back to its id.
+
+    Goals, projects and tasks resolve through the platform's entity registry, which knows which
+    app schema owns each prefix. The previous lookup hardcoded ``public.goals/projects/tasks``;
+    those tables moved to ``app_goals`` when the goals app was packaged, every lookup raised,
+    the error was swallowed, and the RAW ID came back — so the daily scrum's Focus Check told
+    people "1. [project] p-ab69aa23" instead of the project's name, and Prioritize's own tools
+    did the same. Going through the registry means the next move does not break it again.
+    """
+    try:
+        if source_type in ("goal", "project", "task"):
+            from app_platform.entities import get_entity
+            prefix = (source_id or "").split("-", 1)[0]
+            row = get_entity(prefix, source_id) if prefix else None
+            if row:
+                for field in ("name", "title"):
+                    if row.get(field):
+                        return str(row[field])
+            return source_id
+        if source_type in ("reminder", "nag"):
+            from app_platform.reminders import get_reminder
+            r = get_reminder(source_id)
+            return r["message"] if r and r.get("message") else source_id
+        if source_type == "auto_issue":
+            row = fetch_one("SELECT description FROM app_auto.vehicle_issues WHERE id = %s", (source_id,))
+            return row["description"] if row else source_id
+    except Exception:
+        logger.debug("PRIORITIZE: title lookup failed for %s %s", source_type, source_id, exc_info=True)
+    return source_id
+

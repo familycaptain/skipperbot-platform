@@ -214,26 +214,6 @@ def get_family_focus() -> str:
 # ---------------------------------------------------------------------------
 
 def _resolve_title(source_type: str, source_id: str) -> str:
-    """Best-effort title lookup for a source item.
-
-    Goals/projects/tasks still in public.*. Reminders go through the
-    reminders shim; vehicle issues through their qualified app schema
-    (the auto app isn't packaged yet).
-    """
-    try:
-        if source_type in ("goal", "project", "task"):
-            from data_layer.db import fetch_one
-            table = {"goal": "goals", "project": "projects", "task": "tasks"}[source_type]
-            row = fetch_one(f"SELECT name FROM public.{table} WHERE id = %s", (source_id,))
-            return row["name"] if row else source_id
-        if source_type in ("reminder", "nag"):
-            from app_platform.reminders import get_reminder
-            r = get_reminder(source_id)
-            return r["message"] if r and r.get("message") else source_id
-        if source_type == "auto_issue":
-            from data_layer.db import fetch_one
-            row = fetch_one("SELECT description FROM app_auto.vehicle_issues WHERE id = %s", (source_id,))
-            return row["description"] if row else source_id
-    except Exception:
-        pass
-    return source_id
+    """Best-effort title for a source item — see data.resolve_focus_title."""
+    from apps.prioritize.data import resolve_focus_title
+    return resolve_focus_title(source_type, source_id)
