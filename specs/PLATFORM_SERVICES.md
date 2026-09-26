@@ -233,7 +233,7 @@ digest_record(
 **Guarantees**
 - For `created` / `updated` / `completed`: enqueues to the durable memory
   ingestion queue (`data_layer.memory_queue`); the memory thinking domain runs
-  DUMB_MODEL fact extraction within ~30s and writes embedded memories to
+  fast-tier fact extraction within ~30s and writes embedded memories to
   `memory_store`. If the queue is unavailable it falls back to a background
   thread.
 - For `deleted` (or any action when `blocking=True` and `action="deleted"`):
@@ -965,8 +965,54 @@ paths:
 |------------|------------------|-------|
 | Entity links | `link_registry` (`create_link`, `get_links`, `get_linked_ids`, `delete_link`, `get_blast_radius`, `format_links`) and `data_layer.links` (`create_link`, `ensure_edge`, `get_links`, `get_blast_radius`, …) | Live in the link layer, **not** `app_platform`. `entity.linked` / `entity.unlinked` [events](EVENTS.md) fire on link changes. |
 | Image storage | `data_layer.images` | Not an `app_platform` facade. |
-| LLM calls | `config` (`openai_client`, `SMART_MODEL`, `DUMB_MODEL`) | There is no `app_platform.llm` / `call_smart` / `call_dumb`. App-level memory extraction goes through [`digest_record`](#app_platformmemory); direct model calls use the `config` client. |
+| LLM calls | `providers.compat.chat_completion` (one question, one answer) and `agent_loop.run` (a model using tools over several steps) | There is no `app_platform.llm` / `call_smart` / `call_dumb`. App-level memory extraction goes through [`digest_record`](#app_platformmemory). See [Calling a model from an app](#calling-a-model-from-an-app). |
 | Web search | the Brave search tool, gated by [`capabilities.is_enabled("brave_search")`](#app_platformcapabilities) | No `app_platform.search` module; check the capability before calling the tool. |
+
+### Calling a model from an app
+
+Name a **tier** — `"smart"` or `"fast"` — never a model. The household chooses the provider,
+model, key and reasoning effort for each tier in Settings → Models, and these two entry points
+resolve all of it at call time:
+
+```python
+from providers.base import reasoning_budget
+from providers.compat import chat_completion
+
+res = chat_completion(tier="fast", messages=[
+    {"role": "system", "content": "..."},
+    {"role": "user", "content": "..."},
+], max_completion_tokens=reasoning_budget(300))
+text = res.content            # None if the tier is not configured yet — treat as "no answer"
+```
+
+```python
+import agent_loop
+
+result = await agent_loop.run(messages=messages, tools=tools,
+                              tool_dispatch=dispatch, tier="smart")
+text = result.response_text
+```
+
+Why these and nothing else: they are the only path that follows the household's tier choice,
+works with every provider (OpenAI, Anthropic, the OpenAI-compatible vendors), sends OpenAI
+through the Responses API with nothing stored on OpenAI's servers, applies the tier's reasoning
+effort, and threads the tier's key.
+
+**Size an output cap with `providers.base.reasoning_budget(expected_output)`**, not a bare
+number. Both tiers usually run reasoning models, whose hidden thinking counts against the same
+cap as the reply; a cap sized for the reply alone can come back empty.
+
+**Do not use any of these** — each is a real failure, not a style preference:
+
+| Don't | Why |
+|---|---|
+| `from config import openai_client` | Removed from the platform. The import fails, taking the app's whole module with it. |
+| `config.SMART_MODEL` / `DUMB_MODEL` / `OPENAI_MODEL` | Read a legacy setting once at startup. They do NOT follow the tier chosen in Settings, so the app keeps using an old model after the household switches. |
+| `agent_loop.run(model=...)` | `run()` takes `tier=`, not `model=`. |
+| An SDK client of your own — `OpenAI(...)`, `.chat.completions.create(...)`, `provider._get_client(...)` | Bypasses the Responses move (GPT-6 models refuse tools with reasoning on Chat Completions), storage-off, effort and caps; and `_get_client` exists only on the OpenAI connector, so it breaks when a tier moves to any other provider. |
+
+A platform test (`tests/test_apps_call_models_through_the_platform.py`) fails on these patterns
+in the platform tree and in any app repo checked out beside it.
 
 > [APP_PACKAGES.md](APP_PACKAGES.md)'s service index lists `app_platform.links`
 > and `app_platform.images` in its overview table; those names describe the

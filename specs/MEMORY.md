@@ -215,8 +215,8 @@ def _chore_with_zone(chore: dict) -> dict:
 ## Fact extraction (the DUMB model)
 
 For create/update/completed, `_run_digest` builds a prompt and calls the
-platform's **DUMB_MODEL** (a fast/cheap model — `config.DUMB_MODEL`, e.g.
-`gpt-5-mini`) via `config.openai_client`. The flow:
+platform's **fast tier** (whatever fast/cheap model the household chose in Settings → Models)
+via `providers.compat.chat_completion(tier="fast", ...)`. The flow:
 
 1. **Clean the record.** Strip `None`, `""`, `[]`, `{}`, and the noise fields in
    `_SKIP_FIELDS` (`created_at`, `updated_at`, `recipe_doc_id`, `sort_order`).
@@ -225,7 +225,7 @@ platform's **DUMB_MODEL** (a fast/cheap model — `config.DUMB_MODEL`, e.g.
    remembering.
 3. **Build the prompt** — `APP`, `ENTITY TYPE`, `ACTION`, `ENTITY ID`, `DATE`,
    optional `BY`, the `EXTRACTION FOCUS` (`context_hint`), and the JSON record.
-4. **Call DUMB_MODEL** with a system prompt that asks for a JSON array of
+4. **Call the fast tier** with a system prompt that asks for a JSON array of
    `{"fact", "tags", "about"}` objects — concise, self-contained facts that
    embed the entity name and use the exact entity id in `about`.
 5. **Parse** the JSON (tolerating markdown code fences), and for each fact:

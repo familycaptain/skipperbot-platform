@@ -637,7 +637,7 @@ thin facades that forward to the owning core app, e.g.
 
 Every packaged app's `data.py` **must** call `digest_record` after every
 successful create / update / delete / completion. This pushes the entity's
-record through `app_platform.memory` → DUMB_MODEL fact extraction →
+record through `app_platform.memory` → fast-tier fact extraction →
 `memory_store` with a text embedding. That is the mechanism that lets chat
 disambiguate ambiguous user messages later.
 
