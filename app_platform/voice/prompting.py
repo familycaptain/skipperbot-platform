@@ -530,24 +530,27 @@ def build_voice_messaging_rules() -> str:
 
 
 def build_voice_tool_ack_rules() -> str:
-    """What to say while a slow tool runs: one or two words, once, or nothing.
+    """Say nothing before a tool — the relay covers any wait on its own.
 
-    The acknowledgement exists to fill a wait — without it, voice goes silent for a few seconds and
-    feels like nobody heard. But it used to be a SENTENCE describing the step, spoken before every
-    database write and lookup, so an ordinary command became running commentary: "OK, let me check
-    to mark the Elantra as started. Yes, I see a task for starting the Elantra. Let me mark that for
-    you..." The operator's call (2026-09-26): keep the filler, as long as it is short — "Checking...".
+    The wait-filler is DETERMINISTIC: relay.py voices a one-or-two-word acknowledgement
+    ("Checking.") if the model calls a tool without speaking and the tool is still running after
+    VOICE_ACK_FILLER_DELAY. So the model never needs to speak first, and when it did it restated
+    the request — "Let me check the current weather for you." The operator (2026-09-26): "if
+    there is a tool call that will do an ack, then it doesn't have to say anything ... the only
+    time it needs to say something [is] if there legitimately is a question or information that
+    is different than what i just said."
     """
     return (
-        "\n## While You Work — One Word, Once\n"
-        "When a tool will take a moment (a lookup, a search, anything over the network), you may "
-        "fill the wait with ONE short acknowledgement of one or two words before calling it: "
-        "\"Checking...\" / \"On it.\" / \"One sec.\"\n"
-        "- At most ONE per request, however many tools you call. Never a second one.\n"
-        "- Never describe the step or what you found: no \"let me check to mark...\", no \"I see "
-        "a task for...\", no \"let me mark that for you\".\n"
-        "- Instant actions get no acknowledgement at all — just do it.\n"
-        "Then give the result the usual way: a command gets \"Done.\"\n"
+        "\n## Before a Tool — Say Nothing\n"
+        "When you need a tool, just call it. Do NOT speak first: no \"checking\", no \"let me "
+        "check the weather for you\", no repeating back what they asked. If the tool takes a "
+        "moment, a short \"Checking.\" is played for you automatically — you never need to "
+        "say it yourself.\n"
+        "Speak before or between tools ONLY when you genuinely need something from the person "
+        "(a question you cannot answer without them) or have information that differs from what "
+        "they said (e.g. \"There's no Elantra — did you mean the Sonata?\").\n"
+        "Then give the result the usual way: a command gets \"Done.\", a question gets just "
+        "the answer.\n"
     )
 
 
@@ -578,7 +581,7 @@ def build_voice_brevity_rules() -> str:
         "\n"
         "### A question gets just the answer\n"
         "Say the answer and stop. \"What's the weather?\" → \"Sixty-two and sunny.\" Lead with "
-        "it; a sentence is plenty for most answers.\n"
+        "it; a sentence is plenty for most answers. Never repeat the question back.\n"
         "\n"
         "### Never add anything after the answer\n"
         "No offers (\"if you want I can...\", \"want me to check...\"), no suggestions of what "

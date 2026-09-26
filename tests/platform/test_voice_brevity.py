@@ -94,29 +94,63 @@ def _fn_text(name: str) -> str:
     return ns[name]()
 
 
-class WaitFillerTests(unittest.TestCase):
-    """The acknowledgement before a slow tool stays — it fills the wait — but as one or two words,
-    once, never a sentence narrating the step (operator, 2026-09-26: "maybe that's ok as long as
-    they are short, i.e. 'Checking...'")."""
+class TheModelSaysNothingBeforeATool(unittest.TestCase):
+    """Operator (2026-09-26): asked "what is the current weather", it said "let me check the
+    current weather for you" — repeating the request back. The wait is covered by the relay's own
+    deterministic filler, so the model is told to say nothing before a tool unless it genuinely
+    needs something from the person or has information that differs from what they said."""
 
     def setUp(self):
         self.low = _fn_text("build_voice_tool_ack_rules").lower()
 
-    def test_a_short_filler_is_allowed(self):
-        self.assertIn('"checking..."', self.low)
-        self.assertIn("one or two words", self.low)
+    def test_it_is_told_to_just_call_the_tool(self):
+        self.assertIn("do not speak first", self.low)
+        self.assertIn("no repeating back what they asked", self.low)
 
-    def test_only_once_per_request(self):
-        self.assertIn("at most one per request", self.low)
+    def test_it_knows_the_filler_is_automatic(self):
+        self.assertIn("played for you automatically", self.low)
 
-    def test_it_never_narrates_the_step(self):
-        self.assertIn("never describe the step", self.low)
-        # the old rule's instruction to speak a sentence-long ack is gone
-        self.assertNotIn("let me check on that", self.low)
-        self.assertNotIn("hang on, let me look", self.low)
+    def test_the_only_exceptions(self):
+        self.assertIn("genuinely need something from the person", self.low)
+        self.assertIn("differs from what", self.low)
 
-    def test_instant_actions_get_nothing(self):
-        self.assertIn("instant actions get no acknowledgement", self.low)
+    def test_questions_are_never_repeated_back(self):
+        self.assertIn("never repeat the question back", _brevity_text().lower())
+
+
+_RELAY = _REPO / "app_platform" / "voice" / "relay.py"
+
+
+def _relay_const(name: str):
+    tree = ast.parse(_RELAY.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == name
+                                                for t in node.targets):
+            return ast.literal_eval(node.value)
+    raise AssertionError(f"{name} not found in relay.py")
+
+
+class TheRelayFillerIsOneOrTwoWords(unittest.TestCase):
+    """The only thing said before a slow tool, so it must be the short one."""
+
+    def setUp(self):
+        self.text = _relay_const("_ACK_FILLER_INSTRUCTION").lower()
+
+    def test_one_or_two_words(self):
+        self.assertIn("one or two words", self.text)
+        self.assertIn("'checking.'", self.text)
+
+    def test_it_does_not_restate_the_request(self):
+        self.assertIn("do not repeat what they asked", self.text)
+        self.assertIn("do not say what you are checking", self.text)
+        # the old examples modelled exactly the phrasing that was reported as wordy
+        self.assertNotIn("let me check that", self.text)
+        self.assertNotIn("looking that up", self.text)
+
+    def test_it_only_fires_when_the_model_stayed_silent_on_a_slow_tool(self):
+        src = _RELAY.read_text(encoding="utf-8")
+        self.assertIn("_ACK_FILLER_DELAY", src)
+        self.assertIn('resp_state["audio"] = True   # the model IS speaking — no filler needed', src)
 
 
 class ShortestAnswerComesFirstTests(unittest.TestCase):

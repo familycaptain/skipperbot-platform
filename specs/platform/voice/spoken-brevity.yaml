@@ -7,10 +7,11 @@ behavior: >
   do something is done and, most of the time, confirmed in one word ("Done.") — the request is not
   repeated back, the steps are not described, and nothing Skipper looked up along the way is
   reported. A question gets just its answer. Nothing follows the answer: no offer to do more, no
-  suggestion of what else it could do, no "let me know" or "I'm here to help". While a slow
-  lookup runs, Skipper may fill the wait with one acknowledgement of a word or two ("Checking...")
-  — at most once per request, never describing the step or what it found, and never for an
-  instant action. Short is
+  suggestion of what else it could do, no "let me know" or "I'm here to help". Skipper says
+  nothing before using a tool and never repeats a request or question back; if a lookup takes a
+  moment, a word or two ("Checking.") is played automatically to cover the wait. It speaks before
+  acting only when it genuinely needs something from the person, or has information that differs
+  from what they said. Short is
   never incomplete: a value someone asked for is said in full, a few items are said as a quick
   list, and a failure says in one sentence what went wrong. Confirmations before anything
   dangerous, expensive, irreversible or sensitive, and the identity check, are never cut. Typed
@@ -19,6 +20,7 @@ implements:
 - app_platform/voice/prompting.py::VOICE_SHORTEST_ANSWER
 - app_platform/voice/prompting.py::build_voice_brevity_rules
 - app_platform/voice/prompting.py::build_voice_tool_ack_rules
+- app_platform/voice/relay.py::_ACK_FILLER_INSTRUCTION
 tests:
 - type: unit
   path: tests/platform/test_voice_brevity.py
@@ -51,8 +53,9 @@ notes: >
   Elantra. Let me mark that for you. OK, the Elantra has been marked as started. If you want I can
   check other vehicles for you. Just let me know. I am here to help." The operator's standard: his
   kids would say "done". The instructions now open with "ALWAYS GIVE THE SHORTEST ANSWER
-  POSSIBLE", ahead of the chat personality. The wait-filling acknowledgement was kept at the
-  operator's call — it stops voice going silent during a lookup — but capped at a word or two,
-  once. The acceptance rubric above predates this revision —
+  POSSIBLE", ahead of the chat personality. The wait is covered by the relay's own
+  deterministic filler (voiced only when the model called a tool silently and it is still running
+  after a second), now capped at one or two words. The model was being told to speak first, and
+  did so by restating the request — "Let me check the current weather for you." The acceptance rubric above predates this revision —
   in particular (a)'s "offers more" and (d)'s pre-tool ack no longer apply; re-verify live.
 verified: false
