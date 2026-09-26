@@ -4,13 +4,19 @@ title: The goals app walks down the tree and back up
 state: live
 autonomy: gated
 behavior: >
-  The goals app opens on the household's goals grouped by whose they are, with the current
-  person's first, and each goal opens to its projects and each project to its tasks. The trail
+  The goals app opens on the household's goals grouped by whose they are: the current person's
+  first, then each other family member's in the household's own order, then any unassigned goals,
+  and Skipper's own goals always last. Each goal opens to its projects and each project to its
+  tasks. The trail
   across the top names every level above where you are and each part of it goes back there. Moving
   between levels always starts you at the top of the new screen.
 implements:
 - apps/goals/ui/GoalsApp.jsx::GoalsApp
 - apps/goals/ui/GoalsApp.jsx::SummaryView
-tests: []
+tests:
+- tests/platform/test_goals_overview_order.py
 links: {}
-notes: ''
+notes: >
+  Skipper-last is by role, not by sort order: on the live install Skipper happened to sort after
+  the family only because its sort_order was 6, and an Unassigned group still landed beneath it
+  (iss-b949c0f8).

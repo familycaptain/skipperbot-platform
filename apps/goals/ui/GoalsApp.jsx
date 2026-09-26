@@ -412,9 +412,11 @@ function SummaryView({ goals, allUsers, onGoalClick, statusColor, userId, apiMut
   // Build user sort map: name → sort_order
   const userSortMap = {};
   const userDisplayMap = {};
+  const botUsers = new Set();
   for (const u of (allUsers || [])) {
     userSortMap[u.name] = u.sort_order ?? 99;
     userDisplayMap[u.name] = u.display_name || u.name;
+    if (String(u.role || "").split(",").map((r) => r.trim()).includes("bot")) botUsers.add(u.name);
   }
 
   // Group goals by primary owner (first owner, or "unassigned")
@@ -431,9 +433,11 @@ function SummaryView({ goals, allUsers, onGoalClick, statusColor, userId, apiMut
     }
   }
 
-  // Sort other groups by user sort_order
+  // Sort other groups: family in their sort order, then Unassigned, then Skipper (any bot user)
+  // at the very bottom — always, not by the accident of a sort_order number (iss-b949c0f8).
+  const groupRank = (o) => (botUsers.has(o) ? 2 : o === "_unassigned" ? 1 : 0);
   const sortedOwners = Object.keys(otherGroups).sort((a, b) => {
-    return (userSortMap[a] ?? 99) - (userSortMap[b] ?? 99);
+    return (groupRank(a) - groupRank(b)) || ((userSortMap[a] ?? 99) - (userSortMap[b] ?? 99));
   });
 
   if (!goals || goals.length === 0) {
