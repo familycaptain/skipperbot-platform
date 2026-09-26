@@ -3,17 +3,21 @@ id: platform.voice.spoken-brevity
 title: Voice responses are concise and listening-tuned
 state: live
 behavior: >
-  A spoken answer leads with the answer and then stops — roughly a sentence or two of prose
-  rather than a read-aloud essay — and Skipper does not narrate what it is about to do:
-  switching apps and quick actions happen silently, followed by one short confirmation of the
-  result. Being brief never costs the answer: a value someone asked for is spoken in full, a
-  handful of items is spoken as a compact list rather than collapsed or deferred, and genuinely
-  long material gets the essentials plus an offer to say more, made only when something was
-  actually held back. It never trims a confirmation before something dangerous, expensive or
-  irreversible, never suppresses the brief acknowledgement before a slow lookup, and does not
-  apply to typed chat, which stays as detailed as it was.
+  Skipper gives the shortest answer possible, the way someone in the household would. A request to
+  do something is done and, most of the time, confirmed in one word ("Done.") — the request is not
+  repeated back, the steps are not described, and nothing Skipper looked up along the way is
+  reported. A question gets just its answer. Nothing follows the answer: no offer to do more, no
+  suggestion of what else it could do, no "let me know" or "I'm here to help". Skipper does not
+  announce what it is about to do; the one exception is a question whose answer needs a genuinely
+  long lookup, which may get two or three words ("One sec.") first — never a command. Short is
+  never incomplete: a value someone asked for is said in full, a few items are said as a quick
+  list, and a failure says in one sentence what went wrong. Confirmations before anything
+  dangerous, expensive, irreversible or sensitive, and the identity check, are never cut. Typed
+  chat is unaffected.
 implements:
-- app_platform/voice/prompting.py
+- app_platform/voice/prompting.py::VOICE_SHORTEST_ANSWER
+- app_platform/voice/prompting.py::build_voice_brevity_rules
+- app_platform/voice/prompting.py::build_voice_tool_ack_rules
 tests:
 - type: unit
   path: tests/platform/test_voice_brevity.py
@@ -38,5 +42,14 @@ tests:
     weather) -> still gets its #18 pre-tool ack. (e) the same queries on web/chat stay detailed.
     Operator Gate-3 live verify.'
 links: {}
-notes: ''
-verified: true
+notes: >
+  Revised 2026-09-26 at the operator's direction, replacing the version verified earlier. That
+  version required an acknowledgement spoken before any slow tool — explicitly including database
+  writes — and allowed an offer to say more. Together they turned "mark the Elantra as started"
+  into "OK, let me check to mark the Elantra as started. Yes, I see a task for starting the
+  Elantra. Let me mark that for you. OK, the Elantra has been marked as started. If you want I can
+  check other vehicles for you. Just let me know. I am here to help." The operator's standard: his
+  kids would say "done". The instructions now open with "ALWAYS GIVE THE SHORTEST ANSWER
+  POSSIBLE", ahead of the chat personality. The acceptance rubric above predates this revision —
+  in particular (a)'s "offers more" and (d)'s pre-tool ack no longer apply; re-verify live.
+verified: false

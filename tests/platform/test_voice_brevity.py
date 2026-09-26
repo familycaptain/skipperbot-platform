@@ -1,4 +1,4 @@
-"""Bound tests for spec platform.voice.spoken-brevity (ev-20).
+"""Bound tests for spec platform.voice.spoken-brevity (ev-20; revised 2026-09-26).
 
 Prove the dedicated spoken-brevity rule exists and is WIRED into BOTH voice
 instruction builders (build_base_voice_instructions AND build_app_voice_payload),
@@ -46,37 +46,88 @@ def _brevity_text() -> str:
 
 
 class BrevityRuleContentTests(unittest.TestCase):
+    """The operator's standard (2026-09-26): answer like someone in the household. Told "mark the
+    Elantra as started", a family member says "done" — not a narration of the lookup, a restated
+    request, an offer to check other vehicles and "I'm here to help". An earlier version of this
+    test REQUIRED an offer-more clause and a pre-tool acknowledgement; both produced exactly that
+    wordiness and are now forbidden."""
+
     def test_returns_non_empty_block(self):
         text = _brevity_text()
         self.assertIsInstance(text, str)
         self.assertTrue(text.strip(), "brevity rule block must be non-empty")
 
-    def test_conveys_required_intent(self):
-        """Robust intent-bearing substrings (case-insensitive) — NOT exact phrases."""
+    def test_says_it_literally(self):
+        self.assertIn("SHORTEST ANSWER POSSIBLE", _brevity_text())
+
+    def test_a_command_gets_one_word(self):
+        # "i just want it to do what i asked and give a one word confirmation most of the time"
         low = _brevity_text().lower()
-        # lead with the answer
-        self.assertIn("lead with", low)
-        self.assertIn("answer", low)
-        # short / sentence
-        self.assertTrue("short" in low or "concise" in low or "brief" in low)
-        self.assertIn("sentence", low)
-        # do-not-omit the answer
-        self.assertTrue(
-            ("never omit" in low) or ("not omit" in low) or ("do not omit" in low)
-            or ("not mean incomplete" in low),
-            "must forbid dropping the actual answer",
-        )
-        # offer more
-        self.assertIn("offer", low)
-        # voice / heard aloud
-        self.assertTrue("voice" in low or "heard" in low or "aloud" in low or "spoken" in low)
-        # safety carve-out
-        self.assertTrue("safety" in low or "confirmation" in low)
-        # no-suppress-ack note (the #18 pre-tool acknowledgment)
-        self.assertTrue(
-            "ack" in low or "acknowledg" in low or "pacing" in low,
-            "must note brevity does not suppress the pre-tool ack",
-        )
+        self.assertIn("one-word confirmation", low)
+        self.assertIn('"done."', low)
+        self.assertIn("do not repeat the request", low)
+        self.assertIn("do not offer to do more", low)
+
+    def test_nothing_is_added_after_the_answer(self):
+        low = _brevity_text().lower()
+        self.assertIn("no offers", low)
+        self.assertIn("i'm here to help", low)      # named as forbidden
+        self.assertIn("they will ask", low)
+
+    def test_short_is_never_incomplete(self):
+        low = _brevity_text().lower()
+        self.assertIn("in full", low)                # a value asked for is said whole
+        self.assertIn("list", low)                   # a few items are still listed
+        self.assertIn("could not do it", low)        # a failure still says so
+
+    def test_safety_is_never_cut(self):
+        low = _brevity_text().lower()
+        self.assertIn("safety", low)
+        self.assertIn("identity check", low)
+
+
+def _fn_text(name: str) -> str:
+    tree = _module_ast()
+    fn = _func_node(tree, name)
+    ns: dict = {}
+    exec(compile(ast.Module(body=[fn], type_ignores=[]), str(_PROMPTING), "exec"), ns)  # noqa: S102
+    return ns[name]()
+
+
+class NoNarrationTests(unittest.TestCase):
+    def test_commands_are_not_acknowledged_before_acting(self):
+        low = _fn_text("build_voice_tool_ack_rules").lower()
+        self.assertIn("do not announce", low)
+        self.assertIn("never do this for a command", low)
+        # the old rule told it to SPEAK before DB writes — that is what narrated every command
+        self.assertNotIn("speak a brief acknowledgment first", low)
+
+
+class ShortestAnswerComesFirstTests(unittest.TestCase):
+    """Ahead of the chat personality, which is written for typed conversation."""
+
+    def test_first_line_of_both_builders(self):
+        tree = _module_ast()
+        for builder in _BUILDERS:
+            with self.subTest(builder=builder):
+                fn = _func_node(tree, builder)
+                joined = [n for n in ast.walk(fn) if isinstance(n, ast.JoinedStr)]
+                first_names = []
+                for j in joined:
+                    vals = [v for v in j.values if isinstance(v, ast.FormattedValue)]
+                    if vals and isinstance(vals[0].value, ast.Name):
+                        first_names.append(vals[0].value.id)
+                self.assertIn("VOICE_SHORTEST_ANSWER", first_names,
+                              f"{builder} must open its instructions with VOICE_SHORTEST_ANSWER")
+
+    def test_the_constant_says_it_literally(self):
+        tree = _module_ast()
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and any(
+                    isinstance(t, ast.Name) and t.id == "VOICE_SHORTEST_ANSWER" for t in node.targets):
+                self.assertIn("SHORTEST ANSWER POSSIBLE", ast.literal_eval(node.value))
+                return
+        self.fail("VOICE_SHORTEST_ANSWER not defined")
 
 
 class BrevityWiringTests(unittest.TestCase):

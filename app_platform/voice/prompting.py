@@ -73,6 +73,16 @@ LEGACY_APP_ALIASES = {
 }
 
 
+# The first line of every voice session's instructions, ahead of everything else — including the
+# chat personality, which is written for typed conversation. The operator's words: "literally say
+# in the prompts to give the shortest answer possible".
+VOICE_SHORTEST_ANSWER = (
+    "ALWAYS GIVE THE SHORTEST ANSWER POSSIBLE. You are speaking, not writing: do what was asked "
+    "and confirm in one word — \"Done.\" A question gets just the answer. Never offer to do "
+    "more; nothing is added after the answer.\n\n"
+)
+
+
 def load_personality_prompt() -> str:
     """Load the base personality prompt used by voice sessions."""
     path = os.path.join(PROMPTS_DIR, "BEHAVIOR.md")
@@ -212,6 +222,7 @@ def build_app_voice_payload(
     )
 
     instructions = (
+        f"{VOICE_SHORTEST_ANSWER}"
         f"{personality}\n\n"
         "---\n"
         f"## Active App: {app_key.title()}\n"
@@ -316,6 +327,7 @@ def build_base_voice_instructions(
         guide_block = "\n\n## Default Voice Guides\n\n" + default_guides
 
     return (
+        f"{VOICE_SHORTEST_ANSWER}"
         f"{personality}\n\n"
         "---\n"
         f"{mode}"
@@ -518,108 +530,81 @@ def build_voice_messaging_rules() -> str:
 
 
 def build_voice_tool_ack_rules() -> str:
-    """Tell the model to verbally acknowledge before any slow tool call so
-    the user isn't left in awkward silence during multi-second tool I/O.
+    """When, if ever, to speak while a tool runs.
 
-    The realtime model can output audio AND a function call in the SAME
-    response — the audio streams to the user immediately while the tool
-    dispatches in parallel. Web chat has the same UX via `send_progress`
-    interim messages; this is voice's equivalent.
+    This used to tell the model to speak an acknowledgement before any tool that might take over a
+    second — naming database writes and lookups explicitly — so an ordinary command came back as
+    running commentary: "OK, let me check to mark the Elantra as started. Yes, I see a task for
+    starting the Elantra. Let me mark that for you..." Someone in the household doesn't narrate a
+    job they've been asked to do. A second or two of silence is normal; announcing each step is not.
+
+    What remains is a single, tiny signal for a genuinely long wait on a QUESTION — never for a
+    command.
     """
     return (
-        "\n## Voice Pacing — Acknowledge Before Slow Tools\n"
-        "When you are about to call a tool that may take more than ~1 second, "
-        "SPEAK A BRIEF ACKNOWLEDGMENT FIRST so the user knows you heard them. "
-        "Without this, voice goes silent while the tool runs — feels like you "
-        "stared at the user without responding. The realtime API lets you "
-        "speak audio and call a tool in the same response; the audio plays "
-        "while the tool runs.\n"
+        "\n## While You Work — Stay Quiet\n"
+        "Do not announce what you are about to do, and do not describe your steps. "
+        "No \"let me check\", \"let me mark that\", \"I see a task for...\", \"looking that "
+        "up\". Just do it — a second or two of silence while you work is normal.\n"
         "\n"
-        "### Tools that warrant an ack (slow / network / I/O)\n"
-        "- `recall` and other memory or knowledge search tools\n"
-        "- MCP and Home Assistant tools (lights, scenes, device status, automations)\n"
-        "- Any tool that fetches data over the network or hits an external API\n"
-        "- Reminder / schedule / timer creation that writes to the DB\n"
-        "- Document or chat-history search\n"
-        "- Anything you suspect could take more than ~1 second\n"
-        "\n"
-        "### Tools that do NOT need an ack (effectively instant)\n"
-        "- `switch_voice_app` (context switch, sub-second)\n"
-        "- Pure local calculations, current time/date\n"
-        "- Trivial state confirmations\n"
-        "\n"
-        "### Ack phrasing — keep it short, vary it, sound natural\n"
-        "Pick something like: \"One moment.\" / \"Let me check on that.\" / "
-        "\"Looking that up.\" / \"Give me a sec.\" / \"Checking now.\" / "
-        "\"Hang on, let me look.\" / \"On it.\"\n"
-        "Vary the phrasing across turns — do not repeat the same ack twice "
-        "in a row. Do not apologize or explain — just signal you are working.\n"
-        "\n"
-        "### Sequence\n"
-        "Speak the ack THEN call the tool in the same response. Do not wait "
-        "for the tool result before speaking the ack — that defeats the "
-        "whole purpose. After the tool result comes back, continue with the "
-        "real answer using the data you got.\n"
+        "The one exception: when the person ASKED A QUESTION whose answer needs a genuinely long "
+        "lookup (a web search, research, several seconds), you may say two or three words first "
+        "— \"One sec.\" — and nothing more. Never do this for a command (marking, adding, "
+        "setting, turning on/off, starting, finishing) — those get silence, then the result.\n"
     )
 
 
 def build_voice_brevity_rules() -> str:
-    """Tell the model to keep SPOKEN replies concise and listening-tuned.
+    """How spoken replies should sound: like someone in the household, not a service desk.
 
-    Voice answers are heard, not read — a wall of prose that reads fine on a
-    screen is exhausting through a speaker. This dedicated rule (placed
-    prominently, mirroring build_voice_tool_ack_rules) tells the model to lead
-    with the answer and stay short, while explicitly forbidding it from dropping
-    the actual answer/key facts or suppressing safety content and the #18
-    pre-tool ack. It is GUIDANCE for the model to judge what's essential — NOT a
-    mechanical word/character cap — and it is VOICE-ONLY (the text/chat surface,
-    governed by the shared BEHAVIOR.md, stays as detailed as today).
+    The operator's standard, verbatim: if he told one of his kids "mark the Elantra as started",
+    they would say "it's done" or "done" — not restate the request, report what they looked up,
+    offer to check other vehicles, and sign off with "I'm here to help". So a command gets the
+    shortest natural confirmation, a question gets just the answer, and nothing gets a
+    follow-up offer or a closing line.
+
+    What brevity must NOT cost: a value someone asked for is still said in full, a few items are
+    still listed, a failure still says what failed, and safety confirmations and the identity
+    check are untouched. Voice-only: typed chat is unaffected.
     """
     return (
-        "\n## Voice Brevity — Speak Concisely (Listening-Tuned)\n"
-        "These replies are HEARD, not read. Lead with the direct answer FIRST, "
-        "then stop. Keep spoken prose SHORT — about one or two sentences as a "
-        "default for prose. Trim filler, preamble, and over-explanation.\n"
+        "\n## How to Talk — Like Someone in the Household\n"
+        "ALWAYS GIVE THE SHORTEST ANSWER POSSIBLE.\n"
+        "You are heard, not read. Talk the way a family member would across the kitchen: "
+        "short, plain, and done.\n"
         "\n"
-        "### Do it — don't narrate it\n"
-        "- Switching apps is SILENT: never say 'switching to the timer app' or 'let "
-        "me pull that up'. Just switch and act.\n"
-        "- Don't pre-announce an instant action ('let me start that', \"I'll get "
-        "that going\", 'one moment'). Do it, then give ONE short confirmation of the "
-        "RESULT — e.g. 'Timer set for 30 seconds.' (This is separate from the brief "
-        "ack for genuinely SLOW lookups.)\n"
-        "- Reply ONCE per request. Once it's done and confirmed, stop — do not "
-        "restate what you did or re-run the action.\n"
-        "- When a wake word starts the conversation with a request, answer THAT "
-        "request directly. Don't open with a greeting or 'what's on your mind?'.\n"
+        "### A command gets a one-word confirmation\n"
+        "When asked to DO something, do it, then confirm in ONE WORD: \"Done.\" That is the "
+        "whole reply, most of the time. (Occasionally a second word helps — \"Lights off.\" — "
+        "but default to one.) Do NOT repeat the request back, do NOT describe how you did it or "
+        "what you found along the way, do NOT offer to do more, and do NOT confirm twice.\n"
         "\n"
-        "### Never sacrifice the answer for brevity\n"
-        "- Short does NOT mean incomplete: never omit the actual answer, the key "
-        "facts, or any value the user specifically asked for. If they asked for a "
-        "verbatim id, number, name, or other recalled detail, SPEAK IT IN FULL — "
-        "that is the answer, not trimmable preamble.\n"
-        "- When the answer is a small SET of items or steps (e.g. a few reminders, "
-        "a device list, a short multi-step), speak them compactly as a brief "
-        "spoken list — do NOT collapse them to a single vague sentence or defer "
-        "them.\n"
+        "### A question gets just the answer\n"
+        "Say the answer and stop. \"What's the weather?\" → \"Sixty-two and sunny.\" Lead with "
+        "it; a sentence is plenty for most answers.\n"
         "\n"
-        "### Offer more — judiciously\n"
-        "For genuinely long or detailed information, give the essentials briefly "
-        "and OFFER to say more. But do this ONLY when meaningful detail was "
-        "actually withheld — never tack an offer onto a simple, already-complete "
-        "answer — and vary the phrasing (no rote suffix every turn).\n"
+        "### Never add anything after the answer\n"
+        "No offers (\"if you want I can...\", \"want me to check...\"), no suggestions of what "
+        "else you could do, no \"let me know\", no \"I'm here to help\", no sign-off. If they "
+        "want more, they will ask.\n"
         "\n"
-        "### Speak naturally\n"
-        "Avoid markdown, headings, or long bulleted lists that don't read aloud. "
-        "Use plain spoken sentences.\n"
+        "### Short, never incomplete\n"
+        "- If they asked for a specific value — a name, number, time, id, amount — say it in "
+        "full. That is the answer, not filler.\n"
+        "- A few items (reminders, devices, steps) are said as a quick spoken list, not dropped "
+        "or summarised away.\n"
+        "- If you could not do it, say so in one short sentence with the reason: \"Couldn't "
+        "find a task for the Elantra.\"\n"
         "\n"
-        "### Carve-outs (brevity NEVER overrides these)\n"
-        "- SAFETY: required confirmations for dangerous, expensive, irreversible, "
-        "or sensitive actions — and the ask-who-is-speaking identity check — are "
-        "never the trimmable 'preamble'. Keep them.\n"
-        "- PACING: brevity governs the ANSWER, not the pacing signal. Still SPEAK "
-        "THE BRIEF PRE-TOOL ACKNOWLEDGMENT before a slow tool (see Voice Pacing). "
-        "Brevity does not suppress that ack.\n"
+        "### Also\n"
+        "- Switching apps is silent — never mention it.\n"
+        "- One reply per request.\n"
+        "- When a wake word opens with a request, answer the request — no greeting.\n"
+        "- Plain spoken words: no markdown, headings or read-aloud bullet lists.\n"
+        "\n"
+        "### These are never cut short\n"
+        "Safety comes first: a required confirmation before something dangerous, expensive, "
+        "irreversible or sensitive, and the ask-who-is-speaking identity check, are said in full.\n"
     )
 
 
