@@ -80,10 +80,11 @@ def capabilities_for(model: str) -> ModelCapabilities:
     # support, reasoning.effort none..max, default medium) — confirmed 2026-09-25/26, not
     # inferred from the name. The GPT-6 family is covered by prefix on that basis.
     is_reasoning = m.startswith(("gpt-5", "gpt-6", "o1", "o3", "o4"))
-    # The GPT-6 family refuses a temperature at ANY value, including 1. The connector drops it
-    # rather than letting a call site's tuning knob become a 400 on the model the household
-    # picked. gpt-5.x is left as it was.
-    takes_temperature = not m.startswith("gpt-6")
+    # Every OpenAI model here takes temperature — including the GPT-6 family on OpenAI's own API,
+    # verified live 2026-09-26 (a brainstorming revision sent temperature=0.7 to gpt-6-sol and
+    # succeeded). Widely reported 400s for GPT-6 + temperature are specific to Amazon Bedrock's
+    # Converse API and do not apply here. Flip this per model only on evidence from THIS API.
+    takes_temperature = True
     embed_dim = 3072 if "3-large" in m else _EMBEDDING_DIM
     return ModelCapabilities(
         supports_tools=True,
