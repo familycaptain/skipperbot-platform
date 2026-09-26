@@ -113,6 +113,26 @@ def from_openai_messages(messages: list[dict]) -> list["Turn"]:
 #: one — _turn_to_message builds its dict from named fields and does not copy it.
 PROVIDER_ITEMS_KEY = "_provider_items"
 
+#: Output tokens reserved for a reasoning model's hidden thinking, on top of what a call
+#: expects to WRITE. Reasoning is billed as output and shares the output cap with the visible
+#: answer, so a cap sized only for the answer can be spent entirely on thinking — an empty reply
+#: that is still paid for. 4000 is the figure the digests already used for this (chat_digest,
+#: thinking_digest, folders/intelligence).
+REASONING_HEADROOM = 4000
+
+#: Upper bound on any cap produced by reasoning_budget(). Some OpenAI-compatible vendors reject
+#: an output limit above ~8K outright, so headroom added for one vendor must not become a 400 on
+#: another.
+REASONING_BUDGET_CEILING = 8192
+
+
+def reasoning_budget(visible_tokens: int) -> int:
+    """An output cap for a call expected to write about ``visible_tokens``: that plus reasoning
+    headroom, never above the ceiling. A cap is a ceiling, not a spend — raising it costs nothing
+    unless the model actually uses the room."""
+    return min(int(visible_tokens) + REASONING_HEADROOM, REASONING_BUDGET_CEILING)
+
+
 #: The reasoning-effort values a tier may be set to. None/"" = send nothing (model default).
 REASONING_EFFORTS = ("none", "low", "medium", "high", "xhigh", "max")
 

@@ -11,6 +11,7 @@ Designed to run from the scheduler loop via asyncio.to_thread
 so it doesn't block the event loop.
 """
 
+from providers.base import reasoning_budget
 import asyncio
 import json
 import os
@@ -201,7 +202,7 @@ def _summarize_source(title: str, url: str, page_text: str, research_query: str)
                     ),
                 },
             ],
-            max_completion_tokens=4500,
+            max_completion_tokens=reasoning_budget(4500),
         )
         return resp.content.strip()
     except Exception as e:
@@ -409,7 +410,7 @@ def _plan_research(query: str, num_sources: int,
                     "content": context_block,
                 },
             ],
-            max_completion_tokens=2000,
+            max_completion_tokens=reasoning_budget(2000),
         )
         raw = resp.content.strip()
         # Strip markdown code fences if present
@@ -830,7 +831,7 @@ def _generate_refine_queries(original_content: str, instructions: str, num_queri
                     ),
                 },
             ],
-            max_completion_tokens=1000,
+            max_completion_tokens=reasoning_budget(1000),
         )
         raw = resp.content.strip()
         # Parse the JSON array of queries
@@ -942,7 +943,7 @@ def _identify_target_sections(
                     ),
                 },
             ],
-            max_completion_tokens=1000,
+            max_completion_tokens=reasoning_budget(1000),
         )
         raw = resp.content.strip()
         # Strip markdown code fences if present
@@ -1000,7 +1001,7 @@ def _revise_section(
                     ),
                 },
             ],
-            max_completion_tokens=4000,
+            max_completion_tokens=reasoning_budget(4000),
         )
         return resp.content.strip()
     except Exception as e:
@@ -1036,7 +1037,7 @@ def _create_new_section(heading: str, instructions: str, sources_text: str) -> s
                     ),
                 },
             ],
-            max_completion_tokens=3000,
+            max_completion_tokens=reasoning_budget(3000),
         )
         return resp.content.strip()
     except Exception as e:

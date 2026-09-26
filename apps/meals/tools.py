@@ -4,6 +4,7 @@ Meals are built from reusable components (proteins, starches, sauces, etc.)
 and classified by effort and tags (cuisine is a tag, e.g. 'american', 'mexican').
 """
 
+from providers.base import reasoning_budget
 from providers.compat import chat_completion
 import json
 import random
@@ -842,7 +843,7 @@ def _match_meal_with_llm(main_name: str, side_names: list[str], candidates: list
                 {"role": "system", "content": _MEAL_MATCH_SYSTEM},
                 {"role": "user", "content": user_prompt},
             ],
-            max_completion_tokens=256,
+            max_completion_tokens=reasoning_budget(256),
         )
         raw = (response.content or "").strip()
         if raw.startswith("```"):

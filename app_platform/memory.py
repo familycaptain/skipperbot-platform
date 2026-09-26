@@ -44,6 +44,7 @@ searchable memories in the shared memory store.
 - Never raises — all errors are logged and swallowed
 """
 
+from providers.base import reasoning_budget
 from providers.compat import chat_completion
 import json
 import logging
@@ -336,7 +337,7 @@ def _run_digest(
                 {"role": "system", "content": _SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt},
             ],
-            max_completion_tokens=4000,
+            max_completion_tokens=reasoning_budget(4000),
         )
         raw = (completion.content or "").strip()
     except Exception as exc:

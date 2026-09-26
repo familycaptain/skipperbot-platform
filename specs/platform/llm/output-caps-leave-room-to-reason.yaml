@@ -1,0 +1,34 @@
+kind: specification
+id: platform.llm.output-caps-leave-room-to-reason
+title: A capped call leaves the model room to think before it answers
+state: live
+autonomy: gated
+behavior: >
+  Wherever Skipper limits how much a model may write, the limit allows for the thinking a reasoning
+  model does before it answers as well as for the answer itself — so a short, structured request
+  such as matching a logged meal to a known one gets a real reply rather than an empty one. The
+  allowance is the same everywhere, and never pushes a limit above what the supported providers
+  accept, so making room on one provider cannot cause a refusal on another. The Settings check that
+  only proves a model is reachable is the one deliberate exception.
+implements:
+- providers/base.py::reasoning_budget
+- apps/meals/tools.py
+- apps/documents/tools.py
+- research_runner.py
+- app_platform/memory.py
+tests:
+- tests/providers/test_output_caps_leave_room_to_reason.py
+links:
+  related:
+  - platform.llm.reasoning-effort-per-tier
+notes: >
+  A reasoning model's thinking is billed as output and counts against the same cap as the visible
+  reply. The meal match had a 256-token cap on the fast tier: an empty reply there fails to parse,
+  is caught, and is read as "no match", so a meal the household already has is logged as a new
+  one — silently. That exposure already existed with gpt-5-mini; moving the fast tier to
+  gpt-6-luna made it worth fixing across the board.
+
+  A cap is a ceiling, not a spend: raising it costs nothing unless the model uses the room. The
+  headroom (4000) is the figure the digests already used for exactly this; the ceiling (8192) is
+  there because some compatible vendors reject larger limits outright. The accompanying test scans
+  the code so a new call with a small literal cap fails rather than joining the list.

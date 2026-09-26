@@ -3,6 +3,7 @@ Document Tools — Create, read, edit, search, and manage living markdown docume
 All documents are stored as d-* entities with full-text search capability.
 """
 
+from providers.base import reasoning_budget
 import json
 import os
 import re
@@ -475,7 +476,7 @@ def _plan_enhancements(sections: list[dict], instructions: str) -> dict:
                     ),
                 },
             ],
-            max_completion_tokens=1000,
+            max_completion_tokens=reasoning_budget(1000),
         )
         raw = resp.content.strip()
         if raw.startswith("```"):
@@ -525,7 +526,7 @@ def _enhance_section(section_body: str, section_heading: str, instructions: str,
                     ),
                 },
             ],
-            max_completion_tokens=4000,
+            max_completion_tokens=reasoning_budget(4000),
         )
         return resp.content.strip()
     except Exception as e:
@@ -561,7 +562,7 @@ def _generate_new_section(heading: str, instructions: str, full_doc_context: str
                     ),
                 },
             ],
-            max_completion_tokens=3000,
+            max_completion_tokens=reasoning_budget(3000),
         )
         return resp.content.strip()
     except Exception as e:
