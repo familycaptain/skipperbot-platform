@@ -57,7 +57,10 @@ def capabilities_for(model: str) -> ModelCapabilities:
     """Descriptor for an OpenAI model. The gpt-5.x tiers use max_completion_tokens (matching
     every product call site today). Embedding dim is 1536 for text-embedding-3-small."""
     m = (model or "").lower()
-    is_reasoning = m.startswith(("gpt-5", "o1", "o3", "o4"))
+    # gpt-6-luna is a reasoning model (OpenAI's model page: reasoning token support,
+    # reasoning.effort none..max, default medium) — confirmed 2026-09-25, not inferred
+    # from the name. The GPT-6 family is covered by prefix on that basis.
+    is_reasoning = m.startswith(("gpt-5", "gpt-6", "o1", "o3", "o4"))
     embed_dim = 3072 if "3-large" in m else _EMBEDDING_DIM
     return ModelCapabilities(
         supports_tools=True,

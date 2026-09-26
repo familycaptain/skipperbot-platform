@@ -220,6 +220,10 @@ class TestCapabilities(unittest.TestCase):
         self.assertEqual(caps.token_limit_param, "max_completion_tokens")
         self.assertTrue(caps.is_reasoning)
         self.assertEqual(op.capabilities_for("text-embedding-3-large").embedding_dim, 3072)
+        # A reasoning model spends part of its output cap on hidden reasoning, so
+        # misclassifying one is how a small cap silently yields an empty reply.
+        self.assertTrue(op.capabilities_for("gpt-6-luna").is_reasoning)
+        self.assertFalse(op.capabilities_for("gpt-4.1").is_reasoning)
         self.assertEqual(op.capabilities_for("text-embedding-3-small").embedding_dim, 1536)
 
 
