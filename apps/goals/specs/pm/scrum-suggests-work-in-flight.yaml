@@ -1,0 +1,24 @@
+kind: specification
+id: goals.pm.scrum-suggests-work-in-flight
+title: The daily scrum suggests what you are already doing, and quotes you once
+state: live
+autonomy: gated
+behavior: >
+  When the morning scrum names what someone should work on today in a project, it names the
+  highest-ranked task they already have in progress there, unless that task is blocked. Only when
+  they have nothing in progress does it fall back to the project's next task in rank order. When it
+  recalls what they said they would do yesterday, a real answer is quoted in their own words alone;
+  a bare "yes" is shown as the task they agreed to.
+implements:
+- apps/goals/pm_runner.py::_person_in_progress_task
+- apps/goals/pm_runner.py::_gather_scrum_data
+- apps/goals/pm_runner.py::_build_dm_message
+tests:
+- tests/platform/test_scrum_suggests_what_you_are_doing.py
+links: {}
+notes: >
+  Reported by Jacob (iss-cbd3115e). Rank alone suggested a not-started task every morning while he
+  was in the middle of another; and a reply to yesterday's suggestion was printed after the
+  suggestion itself, reading as the same thing twice. Choosing the task a person NAMED in free
+  text is not attempted — a reply can agree, disagree or name something else, and guessing wrong
+  there would be worse than the rank fallback.

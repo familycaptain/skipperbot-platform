@@ -301,6 +301,22 @@ def _hydrate_trello_project(project: dict, tasks: list[dict]) -> list[dict]:
 # The 10 AM scrum is a pure standup: Q1 (yesterday), Q2 (today), Q3 (blockers).
 # ---------------------------------------------------------------------------
 
+def _person_in_progress_task(all_tasks: list[dict], person: str, is_blocked) -> dict | None:
+    """The person's top-ranked in-progress, unblocked task in this project, or None."""
+    for t in sorted(all_tasks, key=lambda x: x.get("stack_rank", 999)):
+        if t.get("status") != "in_progress":
+            continue
+        if person not in [a.lower() for a in t.get("assigned_to", [])]:
+            continue
+        try:
+            if is_blocked(t):
+                continue
+        except Exception:
+            pass  # can't tell — an in-progress task is still the best answer we have
+        return t
+    return None
+
+
 def _get_yesterday_commitments() -> dict[str, list[dict]]:
     """Load yesterday's Q2 commitments — what each person said they'd work on.
 
@@ -371,7 +387,7 @@ def _gather_scrum_data() -> dict[str, dict]:
     """
     from apps.goals.store import (
         _list_entities, _load_entity, _get_tasks_for_project,
-        get_next_naggable_task,
+        get_next_naggable_task, _is_task_blocked,
     )
 
     now = datetime.now(get_timezone())
@@ -457,11 +473,13 @@ def _gather_scrum_data() -> dict[str, dict]:
                     and person in [a.lower() for a in t.get("assigned_to", [])]
                 ]
 
-                # Determine focus for THIS person:
-                # If the project focus task is assigned to them, use it.
-                # Otherwise check if they have a specific in_progress task.
-                person_focus = None
-                if focus_task:
+                # Determine focus for THIS person. What they are already working on comes first:
+                # their top-ranked in-progress task here, if it isn't blocked. Only without one
+                # do we fall back to the project's next task by rank. Rank alone kept suggesting
+                # a not-started task every morning while the person was in the middle of another
+                # (iss-cbd3115e).
+                person_focus = _person_in_progress_task(all_tasks, person, _is_task_blocked)
+                if not person_focus and focus_task:
                     assignees = [a.lower() for a in focus_task.get("assigned_to", [])]
                     if person in assignees or not assignees:
                         person_focus = focus_task
@@ -582,11 +600,11 @@ def _build_dm_message(person: str, items: list[dict],
                 proj_tag = f" [{c['project_name']}]" if c.get("project_name") else ""
                 resp = c.get("response", "")
                 task = c.get("task_title", "")
-                # Short responses like "yes"/"yep" → reference the task name
+                # Short replies like "yes"/"yep" → the task they agreed to. A real answer →
+                # their OWN words, and only those: printing the task Skipper had suggested and
+                # then the reply to it read as saying the same thing twice (iss-cbd3115e).
                 if len(resp) < 20 and task:
                     q1 += f"\n   → {task}{proj_tag}"
-                elif task and resp:
-                    q1 += f"\n   → {task} — you said: \"{resp}\"{proj_tag}"
                 elif resp:
                     q1 += f"\n   → \"{resp}\"{proj_tag}"
             q1 += "\n   How'd that go?"
