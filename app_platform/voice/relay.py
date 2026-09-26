@@ -75,11 +75,14 @@ _ACK_FILLER_DELAY = float(os.getenv("VOICE_ACK_FILLER_DELAY", "1.0"))
 # it must be generic — a short "looking that up", NOT the actual answer).
 # One or two words, never the request repeated back: "let me check the current weather for you"
 # is exactly what the household found wordy (2026-09-26). This filler is now the ONLY thing said
-# before a slow tool — the model itself is told to stay silent and leave the wait to this.
+# before a slow tool — the model itself is told to stay silent and leave the wait to this. It is
+# generated with NO conversation context, so the calm-tone rule must be stated here too: the main
+# instructions never reach it.
 _ACK_FILLER_INSTRUCTION = (
     "Say ONE or TWO words to show you're on it — e.g. 'Checking.' / 'On it.' / 'One sec.' "
     "Do NOT repeat what they asked, do NOT say what you are checking, do NOT answer the "
-    "question or add anything else. Just the one or two words, then stop."
+    "question or add anything else. Just the one or two words, then stop. Say them in a calm, "
+    "flat, everyday tone — not excited, no exclamation."
 )
 
 _AUDIO_DELTA_TYPES = {"response.audio.delta", "response.output_audio.delta"}

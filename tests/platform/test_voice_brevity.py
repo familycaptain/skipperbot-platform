@@ -221,5 +221,36 @@ class VoiceOnlyTests(unittest.TestCase):
         self.assertNotIn("voice brevity", text)
 
 
+class CalmEverydayTone(unittest.TestCase):
+    """Operator (2026-09-26): "hey skipper, what is the current temperature" got "HEEEY!" —
+    "almost screamed it like an overly anxious used car salesman ... it just needs to be
+    'normal'." Speech models are expressive by default; nothing asked for calm."""
+
+    def _top_line(self) -> str:
+        tree = _module_ast()
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "VOICE_SHORTEST_ANSWER"
+                                                    for t in node.targets):
+                return ast.literal_eval(node.value)
+        self.fail("VOICE_SHORTEST_ANSWER not defined")
+
+    def test_every_session_opens_with_a_calm_tone(self):
+        top = self._top_line()
+        self.assertIn("CALM, NORMAL, EVERYDAY TONE", top)
+        self.assertIn("not excited", top.lower())
+        self.assertIn("no exclamations", top.lower())
+
+    def test_the_filler_is_calm_too(self):
+        # generated with no conversation context — the main instructions never reach it
+        filler = _relay_const("_ACK_FILLER_INSTRUCTION").lower()
+        self.assertIn("calm", filler)
+        self.assertIn("not excited", filler)
+
+    def test_a_plain_hey_is_fine_an_excited_one_is_not(self):
+        low = _brevity_text().lower()
+        self.assertIn('relaxed "hey." is fine', low)
+        self.assertIn("excited greeting is not", low)
+
+
 if __name__ == "__main__":
     unittest.main()
