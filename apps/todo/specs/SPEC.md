@@ -55,7 +55,7 @@ None. A "to-do item" is just an `li-*` row owned by the Lists app.
 Three MCP tools:
 
 - `get_todo_list(user_id)` — resolve `default_list_id`, render the list as text.
-- `add_todo_item(user_id, text, top=False)` — add a line to the user's default list.
+- `add_todo_item(user_id, text, top=True)` — add a line to the user's default list, at the top unless the user asks for the bottom.
 - `mark_todo_done(user_id, item_text)` — archive an item by fuzzy text match. If the item is Trello-linked, archive the Trello card too.
 
 Each tool's docstring becomes the OpenAI function schema. Tool guide at `guide.md`.

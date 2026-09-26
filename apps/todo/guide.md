@@ -19,7 +19,7 @@ the tools bootstrap one via `apps.todo.store.ensure_default_list`.
 |------|-----------|------------------------|
 | `get_todo_list` | `get_todo_list(user_id)` | "show my to-do", "what's on my to-do?", "my to-do items" |
 | `get_backlog_list` | `get_backlog_list(user_id)` | "show my backlog", "what's on my backlog?", "my backlog items" |
-| `add_todo_item` | `add_todo_item(user_id, text, top=False)` | "add X to my to-do", "put X on my to-do", "I need to do X" |
+| `add_todo_item` | `add_todo_item(user_id, text, top=True)` | "add X to my to-do", "put X on my to-do", "I need to do X" |
 | `mark_todo_done` | `mark_todo_done(user_id, item_text)` | "mark X done on my to-do", "I finished X", "check off X" |
 
 **RESERVED REFERENCES — important:** unqualified **"my to-do"** and **"my backlog"** ALWAYS mean
@@ -33,8 +33,9 @@ Notes that matter when calling these:
 - **`get_todo_list`** returns items in stack-rank order with a completed-count
   footer. It ensures the user's default list exists first, so it's safe to
   call even for a brand-new user (you'll get an "empty" message, not an error).
-- **`add_todo_item`** appends to the bottom by default. Pass `top=True` when
-  the user wants it prioritized ("add X to the *top* of my to-do"). New items
+- **`add_todo_item`** puts new items at the TOP by default — the same place the
+  To-Do app puts them. Pass `top=False` only when the user asks for the bottom
+  or the end ("add X to the *bottom* of my to-do"). New items
   are digested into semantic memory as a `to-do item` so later chat can recall
   them.
 - **`mark_todo_done`** matches `item_text` against active items — exact match

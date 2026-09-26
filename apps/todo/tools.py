@@ -3,7 +3,7 @@
 Three thin tools layered over the per-user default-list config:
 
 - ``get_todo_list(user_id)``                — show what's on the user's to-do.
-- ``add_todo_item(user_id, text, top=False)`` — add a line.
+- ``add_todo_item(user_id, text, top=True)`` — add a line (top by default).
 - ``mark_todo_done(user_id, item_text)``    — archive an item by fuzzy text match.
 
 Each tool resolves the user's ``default_list_id`` (from
@@ -125,19 +125,21 @@ def get_backlog_list(user_id: str) -> str:
         return f"Error in get_backlog_list: {str(e)}"
 
 
-def add_todo_item(user_id: str, text: str, top: bool = False) -> str:
-    """Add an item to the user's default to-do list.
+def add_todo_item(user_id: str, text: str, top: bool = True) -> str:
+    """Add an item to the user's default to-do list — at the TOP unless asked otherwise.
 
     Use this when the user says things like:
       - "add X to my to-do list"
       - "put X on my to-do"
       - "I need to do X"
-      - "add X to the TOP of my to-do list" (set top=True)
+      - "add X to the BOTTOM / END of my to-do list" (set top=False)
 
     Args:
         user_id: The person whose to-do list to add to.
         text: The item to add (single line).
-        top: If True, insert at the top of the list. Default is bottom.
+        top: True (default) puts it first. Set False only when the user asks for the bottom /
+             end / "at the end of the list". Matches adding from the To-Do app, which also puts
+             new items on top.
 
     Returns:
         Confirmation.
@@ -169,7 +171,7 @@ def add_todo_item(user_id: str, text: str, top: bool = False) -> str:
             )
         except Exception:
             pass
-        where = " (at the top)" if top else ""
+        where = " (at the top)" if top else " (at the bottom)"
         return f"Added to your to-do list{where}: {result['text']}"
 
     except Exception as e:

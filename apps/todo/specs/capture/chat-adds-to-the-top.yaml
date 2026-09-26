@@ -1,0 +1,24 @@
+kind: specification
+id: todo.capture.chat-adds-to-the-top
+title: 'Asked in conversation, it goes on top — the same as typing it in'
+state: live
+autonomy: gated
+behavior: >
+  Asked to put something on a person's to-do in conversation, Skipper adds it as their first open
+  item and confirms with the wording it saved — the same place it lands when typed into the To-Do
+  app. Asked for it to go to the bottom or the end, it goes after their existing open items and the
+  confirmation says so. Nobody has to name a list: an unqualified "my to-do" always means the
+  speaking person's own.
+implements:
+- apps/todo/tools.py::add_todo_item
+- apps/todo/guide.md
+tests:
+- apps/todo/tests/test_chat_adds_to_the_top.py
+links:
+  related:
+  - todo.capture.board-adds-to-the-top
+notes: >
+  Requested by the operator (iss-46ab1807: "By default adding item to your to do list should go at
+  top, unless specified to add to the bottom"). The To-Do app already did this; conversation did
+  not, so the same request landed in a different place depending on where it was made. Replaces
+  todo.capture.chat-adds-to-the-bottom, which recorded the old behaviour.
