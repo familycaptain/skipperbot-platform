@@ -231,11 +231,17 @@ export default function App() {
     setEditProposal(data);
   }, []);
 
-  // Focus banner refresh: increment when Prioritize app mutates focus slots
+  // Focus banner refresh: increment when anything that can be pinned to a focus slot changes.
+  // The banner otherwise polls once a minute, so deleting a pinned reminder left it on screen for
+  // up to 60 seconds (iss-15023699). Apps call onFocusChanged; chat-driven changes arrive as the
+  // refresh keys below.
   const [focusRefreshKey, setFocusRefreshKey] = useState(0);
   const handleFocusChanged = useCallback(() => {
     setFocusRefreshKey((k) => k + 1);
   }, []);
+  useEffect(() => {
+    if (remindersRefreshKey || goalsRefreshKey || todoRefreshKey) handleFocusChanged();
+  }, [remindersRefreshKey, goalsRefreshKey, todoRefreshKey, handleFocusChanged]);
 
   const socket = useSkipperSocket(userId, handleOpenApp, handleGoalsUpdated, handleDocsUpdated, handleRemindersUpdated, handleRecipesUpdated, handleBrainstormUpdated, handleEditProposal, handleTodoUpdated);
 

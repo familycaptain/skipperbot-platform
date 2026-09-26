@@ -71,7 +71,7 @@ function humanRecurrence(rrule) {
 
 // ── Main App ──
 
-export default function RemindersApp({ userId, refreshKey, sendChat, context = {} }) {
+export default function RemindersApp({ userId, refreshKey, sendChat, context = {}, onFocusChanged }) {
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -243,6 +243,7 @@ export default function RemindersApp({ userId, refreshKey, sendChat, context = {
               key={r.id}
               reminder={r}
               onRefresh={loadReminders}
+              onFocusChanged={onFocusChanged}
               isFirst={idx === 0}
               isLast={idx === displayList.length - 1}
               selectedUser={selectedUser}
@@ -257,7 +258,7 @@ export default function RemindersApp({ userId, refreshKey, sendChat, context = {
 
 // ── Reminder Card ──
 
-function ReminderCard({ reminder, onRefresh, isFirst, isLast, selectedUser, showInactive }) {
+function ReminderCard({ reminder, onRefresh, onFocusChanged, isFirst, isLast, selectedUser, showInactive }) {
   const [expanded, setExpanded] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [reordering, setReordering] = useState(false);
@@ -274,6 +275,9 @@ function ReminderCard({ reminder, onRefresh, isFirst, isLast, selectedUser, show
     try {
       await fetch(`${API}/api/apps/reminders/${r.id}/cancel`, { method: "POST" });
       onRefresh();
+      // A cancelled reminder may be pinned in the focus banner — clear it now, not at the next
+      // once-a-minute poll (iss-15023699).
+      onFocusChanged?.();
     } catch {} finally {
       setCancelling(false);
     }

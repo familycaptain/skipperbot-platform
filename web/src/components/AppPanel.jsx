@@ -214,7 +214,7 @@ export default function AppPanel({
                   refreshKey={app.appType === "goals" ? goalsRefreshKey : (app.appType === "documents" || app.appType === "document") ? docsRefreshKey : app.appType === "reminders" ? remindersRefreshKey : (app.appType === "recipes" || app.appType === "recipe") ? recipesRefreshKey : (app.appType === "brainstorming" || app.appType === "brainstorm") ? brainstormRefreshKey : app.appType === "todo" ? todoRefreshKey : undefined}
                   onOpenApp={onOpenApp}
                   onClose={() => onCloseApp(app.id)}
-                  onFocusChanged={app.appType === "prioritize" ? onFocusChanged : undefined}
+                  onFocusChanged={onFocusChanged}
                   editProposal={(app.appType === "brainstorming" || app.appType === "brainstorm") ? editProposal : undefined}
                   onClearEditProposal={(app.appType === "brainstorming" || app.appType === "brainstorm") ? onClearEditProposal : undefined}
                   sendChat={sendChat}

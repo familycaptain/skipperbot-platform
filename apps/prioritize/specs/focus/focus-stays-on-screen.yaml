@@ -7,11 +7,19 @@ behavior: >
   The web console keeps the person's focus on screen above whatever else they are doing — their
   pinned items in order, each one opening the app that owns it when selected. While they have fewer
   than three, that strip carries a standing invitation to fill the rest, naming how many are open.
-  It updates as soon as focus changes in the app and re-reads itself periodically, so a change made
-  somewhere else appears without a reload.
+  It updates as soon as a pinned item changes anywhere in the console — in Prioritize, when a pinned
+  reminder is cancelled in Reminders, or when a chat request changes reminders, goals or to-dos — and
+  re-reads itself periodically, so a change made somewhere else still appears without a reload.
 implements:
 - web/src/components/Shell.jsx::loadFocus
+- web/src/App.jsx::handleFocusChanged
+- web/src/components/AppPanel.jsx
 - apps/prioritize/ui/PrioritizeApp.jsx::PrioritizeApp
-tests: []
+- apps/reminders/ui/RemindersApp.jsx::ReminderCard
+tests:
+- tests/platform/test_focus_banner_refreshes_on_change.py
 links: {}
-notes: ''
+notes: >
+  It used to update immediately only for changes made in Prioritize itself; everything else waited
+  for the once-a-minute re-read. Cancelling a pinned reminder therefore left it in the strip for up
+  to a minute (iss-15023699, "causes confusion").
