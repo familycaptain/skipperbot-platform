@@ -530,27 +530,24 @@ def build_voice_messaging_rules() -> str:
 
 
 def build_voice_tool_ack_rules() -> str:
-    """When, if ever, to speak while a tool runs.
+    """What to say while a slow tool runs: one or two words, once, or nothing.
 
-    This used to tell the model to speak an acknowledgement before any tool that might take over a
-    second — naming database writes and lookups explicitly — so an ordinary command came back as
-    running commentary: "OK, let me check to mark the Elantra as started. Yes, I see a task for
-    starting the Elantra. Let me mark that for you..." Someone in the household doesn't narrate a
-    job they've been asked to do. A second or two of silence is normal; announcing each step is not.
-
-    What remains is a single, tiny signal for a genuinely long wait on a QUESTION — never for a
-    command.
+    The acknowledgement exists to fill a wait — without it, voice goes silent for a few seconds and
+    feels like nobody heard. But it used to be a SENTENCE describing the step, spoken before every
+    database write and lookup, so an ordinary command became running commentary: "OK, let me check
+    to mark the Elantra as started. Yes, I see a task for starting the Elantra. Let me mark that for
+    you..." The operator's call (2026-09-26): keep the filler, as long as it is short — "Checking...".
     """
     return (
-        "\n## While You Work — Stay Quiet\n"
-        "Do not announce what you are about to do, and do not describe your steps. "
-        "No \"let me check\", \"let me mark that\", \"I see a task for...\", \"looking that "
-        "up\". Just do it — a second or two of silence while you work is normal.\n"
-        "\n"
-        "The one exception: when the person ASKED A QUESTION whose answer needs a genuinely long "
-        "lookup (a web search, research, several seconds), you may say two or three words first "
-        "— \"One sec.\" — and nothing more. Never do this for a command (marking, adding, "
-        "setting, turning on/off, starting, finishing) — those get silence, then the result.\n"
+        "\n## While You Work — One Word, Once\n"
+        "When a tool will take a moment (a lookup, a search, anything over the network), you may "
+        "fill the wait with ONE short acknowledgement of one or two words before calling it: "
+        "\"Checking...\" / \"On it.\" / \"One sec.\"\n"
+        "- At most ONE per request, however many tools you call. Never a second one.\n"
+        "- Never describe the step or what you found: no \"let me check to mark...\", no \"I see "
+        "a task for...\", no \"let me mark that for you\".\n"
+        "- Instant actions get no acknowledgement at all — just do it.\n"
+        "Then give the result the usual way: a command gets \"Done.\"\n"
     )
 
 

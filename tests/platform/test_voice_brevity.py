@@ -94,13 +94,29 @@ def _fn_text(name: str) -> str:
     return ns[name]()
 
 
-class NoNarrationTests(unittest.TestCase):
-    def test_commands_are_not_acknowledged_before_acting(self):
-        low = _fn_text("build_voice_tool_ack_rules").lower()
-        self.assertIn("do not announce", low)
-        self.assertIn("never do this for a command", low)
-        # the old rule told it to SPEAK before DB writes — that is what narrated every command
-        self.assertNotIn("speak a brief acknowledgment first", low)
+class WaitFillerTests(unittest.TestCase):
+    """The acknowledgement before a slow tool stays — it fills the wait — but as one or two words,
+    once, never a sentence narrating the step (operator, 2026-09-26: "maybe that's ok as long as
+    they are short, i.e. 'Checking...'")."""
+
+    def setUp(self):
+        self.low = _fn_text("build_voice_tool_ack_rules").lower()
+
+    def test_a_short_filler_is_allowed(self):
+        self.assertIn('"checking..."', self.low)
+        self.assertIn("one or two words", self.low)
+
+    def test_only_once_per_request(self):
+        self.assertIn("at most one per request", self.low)
+
+    def test_it_never_narrates_the_step(self):
+        self.assertIn("never describe the step", self.low)
+        # the old rule's instruction to speak a sentence-long ack is gone
+        self.assertNotIn("let me check on that", self.low)
+        self.assertNotIn("hang on, let me look", self.low)
+
+    def test_instant_actions_get_nothing(self):
+        self.assertIn("instant actions get no acknowledgement", self.low)
 
 
 class ShortestAnswerComesFirstTests(unittest.TestCase):
