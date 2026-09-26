@@ -19,6 +19,7 @@ Design constraints (folded from the gate-1 reviews):
 from __future__ import annotations
 
 import json
+import re
 import time
 
 from providers.base import (
@@ -47,10 +48,28 @@ def _err_class(exc: Exception) -> tuple[bool, bool]:
     return is_transient, is_auth
 
 
+_SAFE_FIELD = re.compile(r"^[A-Za-z0-9_.\[\]\-]{1,120}$")
+
+
 def _sanitized(exc: Exception) -> str:
-    """A short error string safe to log/raise — the exception type only, never its body
-    (SDK error bodies can echo the request/headers)."""
-    return type(exc).__name__
+    """A short error string safe to log/raise — never the error body or its message
+    (SDK error bodies and messages can echo the request/headers).
+
+    It DOES carry the provider's structured `code` and `param` fields when present. Those are
+    identifiers, not request content — e.g. `code=unsupported_parameter param=temperature`,
+    or `param=tools[37].function.parameters` — and without them a 400 cannot be diagnosed
+    from the log at all: switching a tier to a new model produced "BadRequestError" and
+    nothing else, leaving the actual reason (which parameter, which tool) unrecoverable.
+    Each field is allowlisted to a strict identifier charset and length, so an unexpected
+    value is dropped rather than echoed.
+    """
+    name = type(exc).__name__
+    parts = []
+    for field in ("code", "param"):
+        val = getattr(exc, field, None)
+        if isinstance(val, str) and _SAFE_FIELD.match(val):
+            parts.append(f"{field}={val}")
+    return f"{name}: {' '.join(parts)}" if parts else name
 
 
 def capabilities_for(model: str) -> ModelCapabilities:

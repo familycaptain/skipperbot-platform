@@ -214,6 +214,48 @@ class TestRetryAndSecrets(unittest.TestCase):
         self.assertNotIn(secret, "\n".join(captured))
 
 
+class TestSanitizedErrorsAreDiagnosable(unittest.TestCase):
+    """A 400 must say WHY without echoing the request.
+
+    Switching the smart tier to a new model produced "openai call failed (BadRequestError)"
+    and nothing more, so the actual reason was unrecoverable from the log. The provider's
+    structured code/param fields are identifiers, not request content; the free-text message
+    is not, and must never appear.
+    """
+
+    def _err(self, *, code, param, message="Unsupported value SECRET-ECHO sk-abc123"):
+        class BadRequestError(Exception):
+            pass
+        e = BadRequestError(f"Error code: 400 - {message}")
+        e.code, e.param = code, param
+        return e
+
+    def test_code_and_param_are_carried(self):
+        out = op._sanitized(self._err(code="invalid_function_parameters",
+                                      param="tools[37].function.parameters"))
+        self.assertEqual(out, "BadRequestError: code=invalid_function_parameters "
+                              "param=tools[37].function.parameters")
+
+    def test_the_message_and_body_never_appear(self):
+        out = op._sanitized(self._err(code="unsupported_parameter", param="temperature"))
+        self.assertNotIn("SECRET-ECHO", out)
+        self.assertNotIn("sk-abc123", out)
+
+    def test_a_field_outside_the_allowlist_is_dropped_not_echoed(self):
+        out = op._sanitized(self._err(code="ok_code", param="Bearer sk-abc123 (leak)"))
+        self.assertEqual(out, "BadRequestError: code=ok_code")
+
+    def test_no_fields_is_just_the_type(self):
+        self.assertEqual(op._sanitized(ValueError("anything sk-abc123")), "ValueError")
+
+    def test_the_output_survives_the_validate_probes_paren_extraction(self):
+        # model_config pulls the detail out from between the LAST "(" and ")" of the wrapped
+        # message, so the sanitized text must contain no parentheses of its own.
+        out = op._sanitized(self._err(code="c", param="tools[1].function.parameters"))
+        self.assertNotIn("(", out)
+        self.assertNotIn(")", out)
+
+
 class TestCapabilities(unittest.TestCase):
     def test_token_limit_param_and_reasoning(self):
         caps = op.capabilities_for("gpt-5.2")
