@@ -587,6 +587,19 @@ async def _deliver_print_notification(job: dict, result: dict):
 
 _running_print_jobs: set[str] = set()
 
+# Background tasks started here are fire-and-forget, but asyncio keeps only a WEAK reference
+# to a task: one nobody else holds can be garbage-collected mid-run, silently abandoning the
+# job (Python's asyncio docs: "Save a reference to the result of this function, to avoid a task
+# disappearing mid-execution"). Hold each one until it finishes.
+_background_tasks: set = set()
+
+
+def _start_background(coro) -> None:
+    task = asyncio.get_running_loop().create_task(coro)
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+
 
 async def check_and_run_print_jobs():
     """Called from the scheduler loop. Picks up pending print jobs."""
@@ -605,7 +618,7 @@ async def check_and_run_print_jobs():
         logger.info("PRINT [%s]: Starting print job for %s",
                      job_id, job.get("config", {}).get("doc_id", "?"))
 
-        asyncio.get_event_loop().create_task(_run_and_notify_print(job))
+        _start_background(_run_and_notify_print(job))
 
 
 async def _run_and_notify_print(job: dict):

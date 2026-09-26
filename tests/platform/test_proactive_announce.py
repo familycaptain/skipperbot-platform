@@ -79,7 +79,12 @@ class DeviceRegistry(unittest.TestCase):
         self.m = self.dev.VoiceDeviceManager()
 
     def test_resolve_and_default_device(self):
-        run = asyncio.get_event_loop().run_until_complete
+        # A loop of its own. asyncio.get_event_loop() raises on Python 3.12 when no loop is set,
+        # and any earlier test using asyncio.run() leaves none — so this passed alone and failed
+        # in the full suite, which is how a real failure learns to look like noise.
+        loop = asyncio.new_event_loop()
+        self.addCleanup(loop.close)
+        run = loop.run_until_complete
         self.assertIsNone(self.m.default_device())          # none online
         run(self.m.connect("kitchen", _FakeWS(), user_id="rodney", room="kitchen"))
         self.assertTrue(self.m.is_online("kitchen"))

@@ -1406,6 +1406,19 @@ async def _deliver_refine_notification(job: dict, result: dict):
 # Track currently running research jobs to avoid double-starting
 _running_jobs: set[str] = set()
 
+# Background tasks started here are fire-and-forget, but asyncio keeps only a WEAK reference
+# to a task: one nobody else holds can be garbage-collected mid-run, silently abandoning the
+# job (Python's asyncio docs: "Save a reference to the result of this function, to avoid a task
+# disappearing mid-execution"). Hold each one until it finishes.
+_background_tasks: set = set()
+
+
+def _start_background(coro) -> None:
+    task = asyncio.get_running_loop().create_task(coro)
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+
+
 
 async def check_and_run_research():
     """Called from the scheduler loop. Picks up due research jobs and runs them."""
@@ -1425,7 +1438,7 @@ async def check_and_run_research():
                      job_id, job.get("config", {}).get("query", "?")[:60])
 
         # Fire and forget — run in thread pool
-        asyncio.get_event_loop().create_task(_run_and_notify(job))
+        _start_background(_run_and_notify(job))
 
 
 async def _run_and_notify(job: dict):
@@ -1472,7 +1485,7 @@ async def check_and_run_refine_jobs():
         logger.info("REFINE [%s]: Starting refinement for %s",
                      job_id, job.get("config", {}).get("doc_id", "?"))
 
-        asyncio.get_event_loop().create_task(_run_and_notify_refine(job))
+        _start_background(_run_and_notify_refine(job))
 
 
 async def _run_and_notify_refine(job: dict):
