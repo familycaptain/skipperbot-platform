@@ -543,8 +543,11 @@ def update_card(
     desc: str = "",
     due: str = "",
     card_id: str = "",
+    due_complete: bool | None = None,
 ) -> dict:
     """Update card fields.
+
+    due_complete sets the card's "Mark Complete" checkbox (Trello's dueComplete); None leaves it.
 
     Returns:
         Updated card dict.
@@ -557,6 +560,8 @@ def update_card(
         params["desc"] = desc
     if due:
         params["due"] = _normalize_due_date(due)
+    if due_complete is not None:
+        params["dueComplete"] = "true" if due_complete else "false"
 
     if not params:
         return {"id": card["id"], "name": card["name"], "changed": False}

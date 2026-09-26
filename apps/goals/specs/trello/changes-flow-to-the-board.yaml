@@ -4,14 +4,22 @@ title: Changing a linked task moves its card
 state: live
 autonomy: gated
 behavior: >
-  Marking a board-linked task done or cancelled moves its card to the finished list; putting it
-  back to waiting returns it to the waiting list; starting it moves it to the list of whoever
-  started it; reassigning it moves it to the new person's list, created if they do not have one
-  yet; and renaming it or changing its due date pushes through to the card. Deleting the task
-  archives the card.
+  Marking a board-linked task done or cancelled moves its card to the finished list and ticks the
+  card's own "Mark Complete", so its due date stops rather than going overdue on the board — even
+  when the finished list is missing. Putting it back to waiting returns it to the waiting list;
+  starting it moves it to the list of whoever started it; either way the card's "Mark Complete" is
+  cleared, so live work keeps a live due date. Reassigning it moves it to the new person's list,
+  created if they do not have one yet; and renaming it or changing its due date pushes through to
+  the card. Deleting the task archives the card.
 implements:
 - apps/goals/store.py::update_item
 - apps/goals/store.py::delete_item
-tests: []
+- trello_task_sync.py::sync_task_completion_to_trello
+- trello_task_sync.py::set_card_complete
+tests:
+- tests/platform/test_trello_mark_complete.py
 links: {}
-notes: ''
+notes: >
+  Trello keeps "which list a card is in" and "is the card complete" as separate things. Moving a
+  finished task's card to Done without ticking complete left its due date live, and the board
+  showed finished work as overdue (iss-45be781a).

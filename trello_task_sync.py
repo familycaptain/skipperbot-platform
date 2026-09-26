@@ -825,8 +825,36 @@ def check_trello_item(
         return f"Error: Failed to update checklist item: {e}"
 
 
+def set_card_complete(task: dict, project: dict, complete: bool) -> str:
+    """Set the card's own "Mark Complete" checkbox (Trello's dueComplete).
+
+    Separate from which list the card is in: a card moved to Done with this unchecked still shows
+    its due date as live and turns overdue on the board (iss-45be781a).
+    """
+    config = get_project_trello_config(project)
+    if not config:
+        return "Error: Project not linked to Trello."
+    card_id = task.get("trello_card_id")
+    if not card_id:
+        return "Error: Task has no linked Trello card."
+    try:
+        from trello_client import _board_request
+        _board_request("PUT", f"/cards/{card_id}", config["board"],
+                       {"dueComplete": "true" if complete else "false"})
+        logger.info("TRELLO_TASK: Marked card %s %s", card_id,
+                    "complete" if complete else "not complete")
+        return "Marked complete." if complete else "Marked not complete."
+    except Exception as e:
+        return f"Error setting card completion: {e}"
+
+
 def sync_task_completion_to_trello(task: dict, project: dict):
-    """Move a task's Trello card to the Done list when completed."""
+    """Move a task's Trello card to the Done list when completed, and tick its "Mark Complete".
+
+    Moving the card alone left Trello's own completion checkbox unticked, so the due date stayed
+    live and went overdue on the board for work that was finished (iss-45be781a). Covers
+    cancelled too — cancelled work should not go overdue either.
+    """
     config = get_project_trello_config(project)
     if not config:
         return
@@ -840,6 +868,10 @@ def sync_task_completion_to_trello(task: dict, project: dict):
     if result.startswith("Error"):
         logger.error("TRELLO_TASK: completion sync failed for %s: %s",
                      task["id"], result)
+    # Independent of the move: even if the Done list is missing, the due date should stop.
+    tick = set_card_complete(task, project, True)
+    if tick.startswith("Error"):
+        logger.error("TRELLO_TASK: mark-complete failed for %s: %s", task["id"], tick)
 
 
 def sync_all_project_tasks() -> str:

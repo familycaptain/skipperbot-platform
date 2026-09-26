@@ -878,11 +878,16 @@ def update_item(
             try:
                 from trello_task_sync import (
                     get_project_trello_config, move_card_to_list, get_user_list,
+                    set_card_complete,
                 )
                 proj = _load_entity(project_id)
                 config = get_project_trello_config(proj) if proj else None
                 if config:
                     new_status = item["status"]
+                    # Reopened (or never finished): the card's "Mark Complete" must be clear, or a
+                    # task that is live again has its due date silently disarmed on the board.
+                    if new_status in ("not_started", "in_progress"):
+                        set_card_complete(item, proj, False)
                     if new_status == "not_started":
                         move_card_to_list(item, proj, config.get("backlog_list", "Backlog"))
                     elif new_status == "in_progress":
