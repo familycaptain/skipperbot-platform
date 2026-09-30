@@ -428,8 +428,13 @@ def _gather_scrum_data() -> dict[str, dict]:
             for o in project.get("owners", []):
                 people_in_project.add(o.lower())
 
-            # Remove system users
+            # Remove system users and agent participants (they report their own progress)
             people_in_project -= SYSTEM_USERS
+            try:
+                from app_platform.agents import is_agent
+                people_in_project = {p for p in people_in_project if not is_agent(p)}
+            except Exception:
+                pass
 
             for person in people_in_project:
                 # Recent completions by this person (last 24h)

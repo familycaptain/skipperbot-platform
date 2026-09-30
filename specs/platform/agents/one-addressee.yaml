@@ -1,0 +1,29 @@
+kind: specification
+id: platform.agents.one-addressee
+title: Every message a person sends has exactly one addressee, and only the addressee answers
+state: live
+autonomy: gated
+verified: false
+behavior: >
+  When a person writes in their chat, the platform decides who it is for, in this order: if they replied
+  to a specific message, its author; otherwise if they began with an agent's or Skipper's name
+  ("@prof …", "professor, …", "@skipper …"), that participant; otherwise if an agent's question to them
+  is the latest thing in their conversation and was asked within the last 15 minutes, that agent;
+  otherwise Skipper. A message for an agent is handed to that agent and acknowledged — Skipper does not
+  also answer it — while "@skipper" always gets Skipper. This applies on the web chat, the HTTP chat
+  endpoint, and Discord direct messages.
+implements:
+- app_platform/agents.py (resolve_addressee, route_inbound, _address_prefix)
+- agent.py (WS /ws pre-check + 'routed' frame; POST /chat reply_to + pre-check)
+- discord_bot.py (DM pre-check)
+tests:
+- type: unit
+  path: tests/platform/test_agent_participants.py
+  rubric: >
+    DB-free with a stubbed fetch_one: explicit reply to a Skipper message beats an @prof prefix; reply to
+    an agent message routes to the agent; @skipper beats an open agent question; a fresh expects_reply
+    agent message routes 'yes do it' to the agent; stale (>15 min), non-question, or Skipper-last routes to
+    Skipper; prefix parsing accepts @prof / 'Professor,' / 'prof:' and ignores 'yes, go ahead'.
+issues: []
+links: {}
+notes: ''

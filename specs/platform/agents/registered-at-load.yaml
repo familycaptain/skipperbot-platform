@@ -1,0 +1,26 @@
+kind: specification
+id: platform.agents.registered-at-load
+title: An app can bring an external agent into the household's chats by registering it when it loads
+state: live
+autonomy: gated
+verified: false
+behavior: >
+  An app declares an agent participant when the platform loads it — a name, a display name, an icon,
+  optional short aliases, and a one-line description — without the platform ever importing the app. The
+  agent gets a household account that is marked as a bot and an agent, so it can be given its own service
+  login and never appears where only people should (pickers, nudges, primary-user choice). Registering is
+  safe to repeat on every restart, an invalid or reserved name (including Skipper's) is refused, and while
+  no agent is registered every chat behaves exactly as it did before.
+implements:
+- app_platform/agents.py (register_agent, is_agent, list_agents, speaker_label)
+- agent.py (GET /api/agents)
+tests:
+- type: unit
+  path: tests/platform/test_agent_participants.py
+  rubric: >
+    register_agent then is_agent/list_agents/speaker_label reflect it; invalid names ('', 'skipper',
+    one-char, spaces, leading digit) raise ValueError; with an empty registry resolve_addressee always
+    returns ('skipper','default').
+issues: []
+links: {}
+notes: ''

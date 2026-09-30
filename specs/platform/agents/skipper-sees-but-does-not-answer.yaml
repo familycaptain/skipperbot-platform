@@ -1,0 +1,26 @@
+kind: specification
+id: platform.agents.skipper-sees-but-does-not-answer
+title: Skipper sees the whole shared thread but never answers or speaks for another agent
+state: live
+autonomy: gated
+verified: false
+behavior: >
+  Everything said between a person and an agent is part of Skipper's memory of the household, shown with
+  who said it to whom, and the agents present are named. Skipper treats those exchanges as context, not
+  as its turn: it does not answer them, repeat them, or speak as the agent — but if the person asks
+  Skipper about that work, it answers from what it saw, crediting the agent. A voice call that starts
+  from recent memory follows the same rule and never reads an agent's words aloud as its own. Background
+  summaries keep the speaker on each line.
+implements:
+- app_platform/context.py (TIMELINE_BOUNDARY shared-thread rule, _agents_line, render_event agent branches)
+- app_platform/voice/prompting.py (build_voice_timeline_context clause)
+tests:
+- type: unit
+  path: tests/platform/test_agent_participants.py
+  rubric: >
+    render_event renders an agent's message as a user turn '[professor → rodney]: …' and a person's message
+    to an agent as '[rodney → professor]: …' (even after the agent is unregistered, via payload); Skipper
+    and ordinary person rows render unchanged; _agents_line names registered agents and is empty otherwise.
+issues: []
+links: {}
+notes: ''

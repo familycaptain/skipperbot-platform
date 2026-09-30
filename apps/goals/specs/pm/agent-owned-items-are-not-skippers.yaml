@@ -1,0 +1,25 @@
+kind: specification
+id: goals.pm.agent-owned-items-are-not-skippers
+title: Work assigned to an agent participant is left to that agent
+state: live
+autonomy: gated
+verified: false
+behavior: >
+  A task assigned only to an agent participant (for example the Professor) is that agent's work: Skipper's
+  own goal work does not pick it up (it only sees that the agent has it and its status), the project
+  manager will not start a work session on a goal whose every open item belongs to an agent, and the
+  agent is never sent scrum nudges. Tasks shared between an agent and a person stay with the person as
+  before.
+implements:
+- apps/goals/work_context.py (agent_owner, goal_all_open_items_agent_owned, snapshot delegated_to_agents)
+- apps/goals/pm_domain.py (schedule_goal_work gate)
+- apps/goals/pm_runner.py (agents excluded from scrum recipients)
+tests:
+- type: unit
+  path: tests/platform/test_agent_participants.py
+  rubric: >
+    agent_owner returns the agent for ['professor'] (case-insensitive), '' for mixed, empty, or human-only
+    assignee lists.
+issues: []
+links: {}
+notes: ''

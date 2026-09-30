@@ -177,7 +177,8 @@ async def speak(*, who_to: str, content: str, domain: str, urgent: bool = False,
     row, plan = await _aio.to_thread(
         _plan_and_record, user, content, domain, urgent, log_kwargs)
     if plan.web_live:
-        await deliver_now(user, content, srv_id=row["id"])
+        await deliver_now(user, content, srv_id=row["id"],
+                          speaker=(log_kwargs.get("who_from") or ""))
     return row
 
 
@@ -195,7 +196,7 @@ def speak_sync(*, who_to: str, content: str, domain: str, urgent: bool = False,
     return row
 
 
-async def deliver_now(user_id: str, text: str, srv_id: str = "") -> bool:
+async def deliver_now(user_id: str, text: str, srv_id: str = "", speaker: str = "") -> bool:
     """Push an utterance straight onto a connected person's screen.
 
     Returns True if a live socket took it. False simply means they are not watching —
@@ -208,13 +209,18 @@ async def deliver_now(user_id: str, text: str, srv_id: str = "") -> bool:
     try:
         from datetime import datetime as _dt, timezone as _tz
         from connections import manager
-        return bool(await manager.send_to_user(user_id, {
+        frame = {
             "type": "chat_response",
             "response": text,
             "user_id": user_id,
             "ts": _dt.now(_tz.utc).isoformat(),
             "srv_id": srv_id or "",
-        }))
+        }
+        # A registered agent participant speaking in the shared thread (app_platform.agents):
+        # the client labels the bubble with the agent instead of Skipper.
+        if speaker and speaker.lower() != "skipper":
+            frame["speaker"] = speaker.lower()
+        return bool(await manager.send_to_user(user_id, frame))
     except Exception:
         # Never let a delivery hiccup break the turn that produced the words — they are
         # already in the log, which is the record.

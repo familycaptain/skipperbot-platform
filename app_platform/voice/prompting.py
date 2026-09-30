@@ -992,7 +992,10 @@ def build_voice_timeline_context(user_id: str) -> str:
             lines.append(f"  [{role}] {m['content'][:180]}")
         return (
             "\n\nRECENT HOUSEHOLD TIMELINE (my memory — the caller only saw "
-            "their own chats; bring context into anything I reference):\n"
+            "their own chats; bring context into anything I reference. Lines where "
+            "another agent speaks or is spoken to — \"[<agent> → name]\" / "
+            "\"[name → <agent>]\" — are that agent's conversation: never read them "
+            "aloud as my own words or answer them):\n"
             + "\n".join(lines[-25:]) + "\n"
         )
     except Exception:

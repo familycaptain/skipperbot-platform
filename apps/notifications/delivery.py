@@ -189,11 +189,26 @@ async def _deliver_one(notif: dict) -> dict:
             # exactly as before rather than dropping someone's message.
             logger.debug("NOTIF_DELIVERY: surface policy unavailable", exc_info=True)
 
+    # --- Speaker (shared thread, app_platform.agents) ---
+    # An outbound consciousness message may be spoken by a registered AGENT participant rather
+    # than Skipper. Text-only surfaces carry that as a name prefix; the web gets a `speaker`
+    # field on the frame and renders the label itself.
+    speaker, speaker_prefix = "", ""
+    if notif.get("source_type") == "consciousness":
+        try:
+            from app_platform.consciousness import speaker_of
+            from app_platform.agents import is_agent, speaker_label
+            _who = await asyncio.to_thread(speaker_of, notif.get("source_id"))
+            if is_agent(_who):
+                speaker, speaker_prefix = _who, f"{speaker_label(_who)}: "
+        except Exception:
+            logger.debug("NOTIF_DELIVERY: speaker lookup failed", exc_info=True)
+
     # --- Discord DM ---
     if "discord" in targets:
         try:
             from discord_bot import send_dm
-            result = await send_dm(recipient, message)
+            result = await send_dm(recipient, f"**{speaker_prefix.strip()}** {message}" if speaker else message)
             delivery_results.append(f"Discord: {result}")
             # Match on SUCCESS, not on the absence of two failure phrases: send_dm's
             # error returns ("Error: No Discord ID found for 'X'", "Error: Could not find
@@ -215,7 +230,7 @@ async def _deliver_one(notif: dict) -> dict:
                 from discord_bot import strip_entity_ids
                 result = send_pushover_notification(
                     recipient,
-                    strip_entity_ids(message),
+                    speaker_prefix + strip_entity_ids(message),
                     cooldown_seconds=0,
                 )
                 delivery_results.append(f"Pushover: {result}")
@@ -235,7 +250,8 @@ async def _deliver_one(notif: dict) -> dict:
             from fcm_sender import is_enabled as fcm_enabled, send_push_to_user
             if fcm_enabled():
                 source_type = notif.get("source_type", "system")
-                title = f"Skipper {source_type.replace('_', ' ').title()}"
+                title = (speaker_prefix.rstrip(": ") if speaker
+                         else f"Skipper {source_type.replace('_', ' ').title()}")
                 from discord_bot import strip_entity_ids
                 results = await asyncio.to_thread(
                     send_push_to_user,
@@ -282,6 +298,8 @@ async def _deliver_one(notif: dict) -> dict:
                 # notification) lets the client recognise them as one utterance.
                 "srv_id": notif.get("source_id") or "",
             }
+            if speaker:
+                ws_frame["speaker"] = speaker
         else:
             ws_frame = {
                 "type": "notification",

@@ -1,0 +1,25 @@
+kind: specification
+id: platform.agents.delegated-responder
+title: A message for an agent is owed to that agent, not to Skipper, and stays in the one record
+state: live
+autonomy: gated
+verified: false
+behavior: >
+  A message addressed to an agent is written into the same running record as everything else, in the
+  person's own conversation, marked as already taken by that agent — so Skipper's attention never owes it
+  a turn, yet it is part of what Skipper remembers. The agent collects the messages addressed to it in
+  order from where it last read. Only Skipper or a registered agent can be addressed; anything else falls
+  back to Skipper.
+implements:
+- app_platform/consciousness.py (log_inbound_message who_to/reply_to, pre_attended_by agent:<name>)
+- app_platform/agents.py (inbox)
+tests:
+- type: unit
+  path: tests/platform/test_agent_participants.py
+  rubric: >
+    log_inbound_message(who_to='professor') with the agent registered writes who_to=professor,
+    pre_attended_by='agent:professor', needs_attention False; with it unregistered falls back to
+    who_to=skipper, needs_attention True, no pre_attended_by.
+issues: []
+links: {}
+notes: ''

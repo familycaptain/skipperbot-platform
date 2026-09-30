@@ -871,6 +871,9 @@ async def pm_skill_runner(event: dict) -> dict:
                 return "REFUSED: goal_id must be a g- id"
             if gid in scheduled:
                 return f"already scheduled this review"
+            from apps.goals.work_context import goal_all_open_items_agent_owned
+            if await asyncio.to_thread(goal_all_open_items_agent_owned, gid):
+                return "REFUSED: every open item in this goal is delegated to an agent participant — it reports its own progress"
             from apps.jobs.data import count_running
             if count_running("goal_work") >= 2:
                 return "work slots busy — try next review"

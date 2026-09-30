@@ -2,6 +2,8 @@ import { useRef, useEffect, useState } from "react";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import TypingIndicator from "./TypingIndicator";
+import { CornerUpLeft, X } from "lucide-react";
+import useAgents, { agentLabel } from "../hooks/useAgents";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July",
   "August", "September", "October", "November", "December"];
@@ -40,6 +42,13 @@ export default function ChatPanel({
   onSend,
 }) {
   const scrollRef = useRef(null);
+  const agents = useAgents();
+  // Shared thread: the agent message being replied to ({srv_id, speaker}) or null.
+  const [replyTo, setReplyTo] = useState(null);
+  const handleSend = (text) => {
+    onSend(text, replyTo ? { replyTo: replyTo.srv_id } : {});
+    setReplyTo(null);
+  };
 
   // Current day, refreshed at local midnight so 'Today'/'Yesterday' stay correct
   // while the window is open (operator's Gate-1 note).
@@ -89,7 +98,8 @@ export default function ChatPanel({
           const showTime = msg.role !== "tool_call" && msg.role !== "tool_slot" && !(
             next && next.role === msg.role && sameMinute(next.ts, msg.ts)
           );
-          return <ChatMessage key={msg.id} message={msg} showTime={showTime} />;
+          return <ChatMessage key={msg.id} message={msg} showTime={showTime}
+                              agents={agents} onReply={setReplyTo} />;
         })}
 
         {/* Progress message (replaces on each new progress event) */}
@@ -102,10 +112,23 @@ export default function ChatPanel({
       </div>
 
       {/* Input bar — pinned to bottom */}
+      {replyTo && (
+        <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 border-t border-subtle surface-panel text-xs text-muted">
+          <CornerUpLeft size={12} />
+          <span className="truncate flex-1">
+            Replying to {agentLabel(agents, replyTo.speaker)}: {(replyTo.content || "").slice(0, 80)}
+          </span>
+          <button type="button" className="btn-ghost focus-ring rounded p-0.5" onClick={() => setReplyTo(null)}
+                  aria-label="Cancel reply">
+            <X size={12} />
+          </button>
+        </div>
+      )}
       <ChatInput
-        onSend={onSend}
+        onSend={handleSend}
         disabled={!connected || sending}
-        placeholder={connected ? "Message Skipper…" : "Reconnecting…"}
+        placeholder={!connected ? "Reconnecting…"
+          : replyTo ? `Reply to ${agentLabel(agents, replyTo.speaker)}…` : "Message Skipper…"}
       />
     </div>
   );

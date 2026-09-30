@@ -305,6 +305,7 @@ async def _generic_error_handler(request: Request, exc: Exception):
 class ChatRequest(BaseModel):
     message: str
     user_id: str
+    reply_to: str | None = None   # cl- id of the message being replied to (shared thread)
 
 
 class ChatResponse(BaseModel):
@@ -1286,6 +1287,24 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
             if not message:
                 continue
 
+            # SHARED THREAD (app_platform.agents): a message addressed to an agent participant
+            # is appended for THAT agent (delegated responder) and acknowledged — no Skipper
+            # turn. Skipper still sees it in the timeline.
+            try:
+                from app_platform.agents import route_inbound
+                routed = await asyncio.to_thread(
+                    route_inbound, user_id, message, surface="web",
+                    reply_to=(data.get("reply_to") or None))
+            except Exception:
+                logger.warning("WS: agent routing check failed; Skipper will answer", exc_info=True)
+                routed = None
+            if routed:
+                await websocket.send_json({
+                    "type": "routed", "to": routed["agent"], "rule": routed["rule"],
+                    "srv_id": routed["row"].get("id", ""), "user_id": user_id,
+                })
+                continue
+
             await websocket.send_json({"type": "typing", "status": True})
 
             async def _ws_progress(text: str):
@@ -1340,6 +1359,14 @@ async def chat(request: ChatRequest, http_request: Request):
     """
     user_id = _claimed_actor(http_request, request.user_id)
     try:
+        from app_platform.agents import route_inbound, get_agent
+        routed = await asyncio.to_thread(route_inbound, user_id, request.message,
+                                         surface="web", reply_to=request.reply_to)
+        if routed:
+            _a = get_agent(routed["agent"])
+            return ChatResponse(
+                response=f"(passed to {_a.display_name if _a else routed['agent']})",
+                user_id=user_id)
         response_text = await process_chat(user_id, request.message, channel="web")
         return ChatResponse(response=response_text, user_id=user_id)
     except Exception as e:
@@ -1945,6 +1972,14 @@ async def save_entity_notes_inline(entity_id: str, req: SaveNotesRequest, http_r
     if result.startswith("Error"):
         return {"error": result}
     return {"ok": True}
+
+
+@app.get("/api/agents")
+async def api_list_agents():
+    """Registered agent participants in the shared chat thread (app_platform.agents) —
+    the web client uses this to label agent bubbles and offer @-addressing."""
+    from app_platform.agents import list_agents
+    return {"agents": list_agents()}
 
 
 @app.get("/api/users")

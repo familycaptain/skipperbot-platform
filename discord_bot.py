@@ -159,6 +159,25 @@ async def on_message(message: discord.Message):
 
     logger.info("DISCORD: Message from %s (%s): %s", person_name, "DM" if is_dm else f"#{message.channel.name}", user_message[:100])
 
+    # SHARED THREAD (app_platform.agents): a message addressed to an agent participant
+    # (@name, or an answer to its open question) goes to that agent, not to a Skipper turn.
+    # Only DMs — a person's own conversation; allowed group channels stay Skipper's.
+    if is_dm:
+        try:
+            from app_platform.agents import route_inbound, get_agent
+            routed = await asyncio.to_thread(route_inbound, person_name, user_message,
+                                             surface="discord")
+        except Exception:
+            logger.warning("DISCORD: agent routing check failed; Skipper will answer", exc_info=True)
+            routed = None
+        if routed:
+            _a = get_agent(routed["agent"])
+            try:
+                await message.add_reaction("📨")
+            except Exception:
+                await message.channel.send(f"_(passed to {_a.display_name if _a else routed['agent']})_")
+            return
+
     import time as _time
     last_msg_time = _time.monotonic()
 

@@ -1,12 +1,15 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkBreaks from "remark-breaks";
-import { Bell, Clock, FileText, Layers, Wrench } from "lucide-react";
+import { Bell, Clock, CornerUpLeft, FileText, Layers, Wrench } from "lucide-react";
+import { agentLabel } from "../hooks/useAgents";
 
 /**
  * Single chat message bubble.
  *
  * Roles: "user" | "bot" | "notification" | "tool_call" | "tool_slot"
+ * Shared thread: a "bot" message with `speaker` is an agent participant (labelled, with a
+ * Reply button); a "user" message with `routed_to` went to that agent instead of Skipper.
  * Bot messages render markdown. User messages render plain text.
  * Notifications get a colored badge based on source.
  * Tool calls show tool name + args with a wrench icon.
@@ -60,7 +63,7 @@ function MessageTime({ ts, align }) {
   );
 }
 
-export default function ChatMessage({ message, showTime = false }) {
+export default function ChatMessage({ message, showTime = false, agents = {}, onReply }) {
   const { role, content, source, ts } = message;
 
   // ── User message ──
@@ -70,6 +73,12 @@ export default function ChatMessage({ message, showTime = false }) {
         <div className="max-w-[80%] md:max-w-[65%] px-4 py-2.5 rounded-2xl rounded-br-md bg-indigo-600 text-on-accent text-sm leading-relaxed">
           {content}
         </div>
+        {/* Shared thread: this message went to an agent participant, not Skipper. */}
+        {message.routed_to && (
+          <span className="pill pill-neutral text-[11px] mt-1" title="Delivered to this agent — Skipper won't reply to it">
+            → {agentLabel(agents, message.routed_to)}
+          </span>
+        )}
         {showTime && <MessageTime ts={ts} align="end" />}
       </div>
     );
@@ -136,6 +145,33 @@ export default function ChatMessage({ message, showTime = false }) {
               <span className="text-faint">slots: [{slots.join(", ") || "—"}]</span>
             )}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Agent participant message (shared thread) ──
+  if (message.speaker) {
+    return (
+      <div className="flex flex-col items-start">
+        <span className="text-xs font-semibold text-muted px-1 mb-0.5">
+          {agentLabel(agents, message.speaker)}
+        </span>
+        <div className="max-w-[85%] md:max-w-[70%] px-4 py-2.5 rounded-2xl rounded-bl-md surface-raised border border-strong text-sm leading-relaxed markdown-body">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+        </div>
+        <div className="flex items-center gap-2">
+          {onReply && message.srv_id && (
+            <button
+              type="button"
+              onClick={() => onReply(message)}
+              className="btn-ghost focus-ring text-[11px] px-1 mt-0.5 rounded flex items-center gap-1"
+              title={`Reply to ${agentLabel(agents, message.speaker)}`}
+            >
+              <CornerUpLeft size={11} /> Reply
+            </button>
+          )}
+          {showTime && <MessageTime ts={ts} align="start" />}
         </div>
       </div>
     );

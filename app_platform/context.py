@@ -47,6 +47,13 @@ TIMELINE_BOUNDARY = (
     "family member sent me in their OWN 1-on-1 chat with me; \"[to name]:\" "
     "lines are what I said to that person; \"[activity]\"/\"[system event]\" "
     "lines are things I did or that happened. "
+    "\n\n*** SHARED THREAD — other agents ***  Other agents (listed below when "
+    "any are present) also take part in people's chats. \"[agent → name]:\" "
+    "lines are that AGENT speaking to the person — not me; \"[name → agent]:\" "
+    "lines are the person talking TO that agent. "
+    "Those exchanges are context for me, never my turn: I do not answer them, "
+    "repeat them, or speak as the agent. If the person asks ME about that work, I "
+    "answer from what I can see here (or look it up), saying it was the agent's. "
     "\n\n*** VISIBILITY RULE — write replies that make sense to the reader ***  "
     "I can see EVERY family member's conversation here, but the person I am "
     "replying to only ever saw their OWN chat with me — NOT the other people's "
@@ -167,6 +174,49 @@ def recent_entity_refs(person: str, limit: int = 6) -> list[dict]:
     return out
 
 
+def _agents_line() -> str:
+    """Names the registered agent participants for the SHARED THREAD rule, or ''."""
+    try:
+        from app_platform.agents import list_agents
+        agents = list_agents()
+    except Exception:
+        return ""
+    if not agents:
+        return ""
+    names = "; ".join(f"{a['name']} ({a['display_name']}"
+                      + (f" — {a['description']}" if a.get("description") else "") + ")"
+                      for a in agents)
+    return f"\n\n[Agents in this household's chats: {names}]"
+
+
+def _agent_speaker(row: dict) -> str:
+    """The agent participant who SPOKE this message row, or ''."""
+    who = (row.get("who_from") or "").lower()
+    if not who or who in (SKIPPER, SYSTEM):
+        return ""
+    if _payload(row).get("agent") == who:
+        return who
+    try:
+        from app_platform.agents import is_agent
+        return who if is_agent(who) else ""
+    except Exception:
+        return ""
+
+
+def _agent_addressee(row: dict) -> str:
+    """The agent participant a person's message was ADDRESSED to, or ''."""
+    who = (row.get("who_to") or "").lower()
+    if not who or who in (SKIPPER, SYSTEM):
+        return ""
+    if _payload(row).get("attended_by") == f"agent:{who}":
+        return who
+    try:
+        from app_platform.agents import is_agent
+        return who if is_agent(who) else ""
+    except Exception:
+        return ""
+
+
 def render_event(row: dict, focal_person: str) -> Optional[dict]:
     """Render ONE log row as a native-turn message dict, or None to skip."""
     kind = row.get("kind")
@@ -187,6 +237,14 @@ def render_event(row: dict, focal_person: str) -> Optional[dict]:
             if who_to and who_to != focal_person:
                 text = f"[to {who_to}]: {text}"
             return {"role": "assistant", "content": f"{stamp}{text}{subj}"}
+        # shared thread: an agent participant spoke, or a person spoke TO an agent. Both are
+        # context for Skipper, never its own words or its turn (TIMELINE_BOUNDARY).
+        agent = _agent_speaker(row)
+        if agent:
+            return {"role": "user", "content": f"{stamp}[{agent} → {who_to or 'everyone'}]: {content}{subj}"}
+        agent = _agent_addressee(row)
+        if agent:
+            return {"role": "user", "content": f"{stamp}[{who_from} → {agent}]: {content}{subj}"}
         # a person spoke
         if who_from == focal_person:
             return {"role": "user", "content": f"{stamp}{content}{subj}"}
@@ -223,7 +281,8 @@ def build_chat_timeline(person: str, limit: Optional[int] = None,
                     f"{_now:%A, %B} {_now.day}, {_now:%Y, %I:%M %p}.]")
     except Exception:
         now_line = ""
-    out: list[dict] = [{"role": "assistant", "content": TIMELINE_BOUNDARY + now_line}]
+    out: list[dict] = [{"role": "assistant",
+                        "content": TIMELINE_BOUNDARY + _agents_line() + now_line}]
 
     # Phase 4 (§12.3 source 4): the latest rolling summaries render first, and
     # the verbatim window starts where the global summary ends — the NO-GAP
@@ -324,8 +383,10 @@ def history_projection(person: str, limit: int = 20,
     replied: set = set()
     for r in rows:
         if r["who_from"] == person:
-            reply = next((x for x in rows
-                          if x["who_from"] == SKIPPER and x.get("reply_to") == r["id"]), None)
+            routed_to = _agent_addressee(r)
+            reply = None if routed_to else next(
+                (x for x in rows
+                 if x["who_from"] == SKIPPER and x.get("reply_to") == r["id"]), None)
             if reply is not None:
                 replied.add(reply["id"])
             turns.append({
@@ -338,8 +399,24 @@ def history_projection(person: str, limit: int = 20,
                 "_ct_id": (_p(reply).get("chat_turn_id")
                            if reply and not _p(reply).get("tool_calls") else None),
                 "tool_calls": (_p(reply).get("tool_calls") or []) if reply else [],
+                **({"routed_to": routed_to} if routed_to else {}),
             })
     for r in rows:
+        agent = _agent_speaker(r)
+        if agent and r.get("who_to") == person:
+            # Shared thread: an agent participant's words to this person — a bubble labelled
+            # with the agent, never folded into a Skipper turn.
+            turns.append({
+                "id": r["id"],
+                "user_message": "",
+                "assistant_message": r["content"] or "",
+                "timestamp": r["created_at"].isoformat() if r.get("created_at") else "",
+                "_ct_id": None,
+                "tool_calls": [],
+                "srv_id": r["id"],
+                "speaker": agent,
+            })
+            continue
         if r["who_from"] == SKIPPER and r["id"] not in replied:
             parent = by_id.get(r.get("reply_to") or "")
             if parent is not None and parent.get("who_from") == person:

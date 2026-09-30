@@ -1,0 +1,33 @@
+kind: specification
+id: platform.agents.agent-speaks-in-the-thread
+title: An agent speaks to a person in their own chat, labelled as itself on every surface
+state: live
+autonomy: gated
+verified: false
+behavior: >
+  A registered agent can say something to a person the same way Skipper does, and it lands in that
+  person's own conversation — never in a conversation of the agent's own. On the web the bubble is
+  labelled with the agent's name and icon, live and after a reload, with a Reply button that sends the
+  person's answer straight to that agent (their message then shows where it went); on Discord and phone notifications
+  the text is prefixed with the agent's name so it is never mistaken for Skipper; the message is not
+  also recorded a second time as if Skipper had said it. Only registered agents can speak this way.
+implements:
+- app_platform/consciousness.py (lane_for, send_message who_from, speaker_of)
+- app_platform/speak.py (who_from passthrough, deliver_now speaker)
+- apps/notifications/delivery.py (speaker field on chat_response; Discord/Pushover prefix; FCM title)
+- app_platform/context.py (history_projection agent bubbles)
+- chat_render.py (speaker / routed_to on bubbles)
+- web/src/components/ChatMessage.jsx (agent label, Reply button, → agent chip)
+- web/src/components/ChatPanel.jsx (reply bar; sends reply_to)
+- web/src/hooks/useSkipperSocket.js (speaker on chat_response; 'routed' frame; reply_to)
+- web/src/hooks/useAgents.js (GET /api/agents labels)
+tests:
+- type: unit
+  path: tests/platform/test_agent_participants.py
+  rubric: >
+    lane_for puts professor→rodney and rodney→professor in person:rodney; send_message with an unregistered
+    who_from raises; with a registered agent it tags payload.agent; history_projection returns an agent
+    bubble with speaker and marks the person's routed message with routed_to; _turn_messages carries both.
+issues: []
+links: {}
+notes: ''

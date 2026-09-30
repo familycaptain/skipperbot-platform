@@ -7,7 +7,7 @@ import { getToken, forceLogout } from "../utils/api";
  * Manages connection lifecycle, auto-reconnect, and message dispatch.
  * Protocol matches agent.py WebSocket endpoint:
  *   Send:    { message: "..." }
- *   Receive: { type: "typing"|"progress"|"chat_response"|"notification"|"message_from_user", ... }
+ *   Receive: { type: "typing"|"progress"|"chat_response"|"notification"|"message_from_user"|"routed", ... }
  */
 
 const RECONNECT_DELAY = 3000;
@@ -274,7 +274,29 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
             // render the same utterance twice — match on the stable server id.
             if (data.srv_id && prev.some((m) => m.srv_id === data.srv_id)) return prev;
             return appendLive(prev, { id: nextId(), role: "bot", content: data.response,
-                                      ts: data.ts, srv_id: data.srv_id || "" }, nextId);
+                                      ts: data.ts, srv_id: data.srv_id || "",
+                                      // Shared thread: an agent participant (e.g. the
+                                      // Professor) said this, not Skipper.
+                                      ...(data.speaker ? { speaker: data.speaker } : {}) }, nextId);
+          });
+          break;
+
+        case "routed":
+          // Shared thread: the server handed the person's last message to an agent
+          // participant instead of starting a Skipper turn. No reply is coming from
+          // Skipper, so clear the pending state and mark the bubble with where it went.
+          setSending(false);
+          setIsTyping(false);
+          setProgress(null);
+          setMessages((prev) => {
+            const next = [...prev];
+            for (let i = next.length - 1; i >= 0; i--) {
+              if (next[i].role === "user" && !next[i].routed_to) {
+                next[i] = { ...next[i], routed_to: data.to, srv_id: next[i].srv_id || data.srv_id || "" };
+                break;
+              }
+            }
+            return next;
           });
           break;
 
@@ -418,13 +440,16 @@ export default function useSkipperSocket(userId, onOpenApp, onGoalsUpdated, onDo
   }, [userId, connect]);
 
   const sendMessage = useCallback(
-    (text) => {
+    (text, opts = {}) => {
       if (!text.trim() || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
       setSending(true);
       // No server echo for the user turn — stamp it client-side (issue #8).
+      // opts.replyTo: srv_id of the message being replied to (shared thread — the server
+      // routes the reply to that message's author, e.g. an agent participant).
       setMessages((prev) => appendLive(prev,
         { id: nextId(), role: "user", content: text }, nextId));
-      wsRef.current.send(JSON.stringify({ message: text }));
+      wsRef.current.send(JSON.stringify(
+        opts.replyTo ? { message: text, reply_to: opts.replyTo } : { message: text }));
     },
     []
   );

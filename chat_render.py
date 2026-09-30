@@ -70,12 +70,18 @@ def _turn_messages(turn: dict) -> list[dict]:
             out.append({"role": "notification", "content": am, "source": um.strip("[]")})
         return out
     if um:
-        out.append({"role": "user", "content": um})
+        b = {"role": "user", "content": um}
+        if turn.get("routed_to"):          # shared thread: this message was for an agent
+            b["routed_to"] = turn["routed_to"]
+        out.append(b)
     for tc in (turn.get("tool_calls") or []):
         out.append({"role": "tool_call", "toolName": tc.get("name"),
                     "toolArgs": tc.get("args") or {}})
     if am:
-        out.append({"role": "bot", "content": am})
+        b = {"role": "bot", "content": am}
+        if turn.get("speaker"):            # shared thread: an agent participant said this
+            b["speaker"] = turn["speaker"]
+        out.append(b)
     return out
 
 

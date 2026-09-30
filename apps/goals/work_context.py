@@ -67,6 +67,32 @@ UPDATE_WORKING_MEMORY_TOOL = {
 
 
 
+def agent_owner(assigned_to) -> str:
+    """The agent participant that OWNS an item: every assignee is a registered agent
+    (app_platform.agents). Such items are delegated work — Skipper's own goal work and PM
+    must not also work or nag them. Returns '' for human/mixed/unassigned items."""
+    names = [str(a).lower().strip() for a in (assigned_to or []) if str(a).strip()]
+    if not names:
+        return ""
+    try:
+        from app_platform.agents import is_agent
+    except Exception:
+        return ""
+    return names[0] if all(is_agent(n) for n in names) else ""
+
+
+def goal_all_open_items_agent_owned(goal_id: str) -> bool:
+    """True when a goal has open top-level tasks and EVERY one is agent-owned — nothing
+    for Skipper's hands to do (the pm schedule_goal_work gate)."""
+    from apps.goals.data import load_entity, get_top_level_tasks
+    goal = load_entity(goal_id)
+    if not goal:
+        return False
+    open_items = [t for pid in goal.get("projects", []) for t in get_top_level_tasks(pid)
+                  if t.get("status") not in ("done", "deferred")]
+    return bool(open_items) and all(agent_owner(t.get("assigned_to")) for t in open_items)
+
+
 def _build_goal_snapshot(goal: dict) -> dict:
     """Build a comprehensive snapshot of the goal and all its children."""
     from apps.goals.data import load_entity, get_top_level_tasks, get_subtasks
@@ -96,6 +122,7 @@ def _build_goal_snapshot(goal: dict) -> dict:
             logger.warning("GOAL_THINK: onboarding tour-gate snapshot filter failed", exc_info=True)
 
     projects = []
+    delegated_to_agents: list[dict] = []
     total_task_count = 0
     total_done = 0
     total_blocked = 0
@@ -106,6 +133,14 @@ def _build_goal_snapshot(goal: dict) -> dict:
         p_counts = {"total": 0, "done": 0, "in_progress": 0, "blocked": 0, "not_started": 0}
 
         for t in top_tasks:
+            _owner = agent_owner(t.get("assigned_to"))
+            if _owner:
+                # Delegated to an agent participant: listed so the goal mind knows it exists
+                # and who has it, but kept out of the workable task list.
+                delegated_to_agents.append({"id": t["id"], "name": t["name"], "agent": _owner,
+                                            "status": t.get("status", "not_started"),
+                                            "project_id": pid})
+                continue
             p_counts["total"] += 1
             status = t.get("status", "not_started")
             p_counts[status] = p_counts.get(status, 0) + 1
@@ -173,6 +208,9 @@ def _build_goal_snapshot(goal: dict) -> dict:
         "total_task_count": total_task_count,
         "total_done": total_done,
         "total_blocked": total_blocked,
+        # Items owned by agent participants (e.g. the Professor): NOT yours to work or nag —
+        # the agent reports progress on them itself.
+        "delegated_to_agents": delegated_to_agents,
     }
 
 def _recall_memories(goal_id: str, goal_snapshot: dict) -> list[dict]:

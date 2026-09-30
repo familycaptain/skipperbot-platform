@@ -42,17 +42,33 @@ KINDS = ("message", "activity", "event", "summary")
 
 # ── lane derivation (§15) ────────────────────────────────────────────────────
 
+def _is_speaker_not_person(name: Optional[str]) -> bool:
+    """Skipper, system and registered agent participants are speakers, never a person's lane."""
+    if name in (SKIPPER, SYSTEM):
+        return True
+    try:
+        from app_platform.agents import is_agent
+        return is_agent(name)
+    except Exception:
+        return False
+
+
 def lane_for(kind: str, who_from: str, who_to: Optional[str], domain: str) -> str:
     """Pure derivation of the serialization lane for an event.
 
-    - ``message``: the PERSON lane of the non-Skipper party (one mouth per
-      conversation — inbound from P and outbound to P serialize together).
+    - ``message``: the PERSON lane of the human party (one conversation per
+      person — inbound from P and outbound to P serialize together). Skipper,
+      ``system`` and registered AGENT participants (app_platform.agents) never
+      own a person lane: an agent speaking to P, or P speaking to an agent, is
+      part of P's conversation — the shared thread.
     - ``event`` with a person attached (``who_to``): that person's lane
       (connection events concern a person).
     - everything else (alarm events, activities, summaries): the DOMAIN lane.
     """
     if kind == "message":
-        person = who_from if who_from not in (SKIPPER, SYSTEM) else (who_to or "")
+        person = who_from if not _is_speaker_not_person(who_from) else (who_to or "")
+        if _is_speaker_not_person(person):
+            person = ""
         if person:
             return f"person:{person}"
         return f"domain:{domain}"
@@ -163,6 +179,15 @@ def tail(limit: int = 50, before_seq: Optional[int] = None) -> list[dict]:
             (limit,),
         )
     return rows
+
+
+def speaker_of(event_id: Optional[str]) -> str:
+    """Who authored a log row (``who_from``), '' if unknown. Transports use it to label an
+    agent participant's words (app_platform.agents)."""
+    if not event_id or fetch_one is None:
+        return ""
+    row = fetch_one("SELECT who_from FROM consciousness_log WHERE id = %s", (event_id,))
+    return ((row or {}).get("who_from") or "").lower()
 
 
 def person_window(person: str, limit: int = 50) -> list[dict]:
@@ -286,17 +311,25 @@ def send_message(
     subject_id: Optional[str] = None,
     payload: Optional[dict] = None,
     channel: str = "all",
+    who_from: str = SKIPPER,
 ) -> dict:
-    """Skipper speaks: append the REAL outbound message row, then hand transport
+    """Skipper (or a registered agent participant, via ``who_from``) speaks: append the
+    REAL outbound message row, then hand transport
     to the notifications app (§16). One mouth: the row IS the record; delivery
     receipts stay in app_notifications (source_type='consciousness',
     source_id=<cl-id> — the §11.7 linkback). A message with no thread starts
     one (§11.4: a new initiative's thread root is its own id).
     """
     import uuid as _uuid
+    speaker = (who_from or SKIPPER).lower().strip()
+    if speaker != SKIPPER:
+        from app_platform.agents import is_agent
+        if not is_agent(speaker):
+            raise ValueError(f"{speaker!r} is not a registered agent participant")
+        payload = {**(payload or {}), "agent": speaker}
     eid = f"cl-{_uuid.uuid4().hex[:8]}"
     row = log_event(
-        kind="message", who_from=SKIPPER, who_to=(who_to or "").lower().strip(),
+        kind="message", who_from=speaker, who_to=(who_to or "").lower().strip(),
         domain=domain, surface=surface, content=content,
         reply_to=reply_to, thread_id=thread_id or eid,
         subject_id=subject_id, payload=payload, event_id=eid,
@@ -330,26 +363,45 @@ def log_inbound_message(
     domain: str = "chat",
     payload: Optional[dict] = None,
     event_id: Optional[str] = None,
+    who_to: str = SKIPPER,
+    reply_to: Optional[str] = None,
 ) -> dict:
     """A person speaks: append the REAL inbound row, owed a turn
-    (``needs_attention=True``), inheriting the thread of Skipper's most recent
-    threaded outbound to them (§11.4's default reply candidate, 24h window).
+    (``needs_attention=True``), inheriting the thread of the addressee's most
+    recent threaded outbound to them (§11.4's default reply candidate, 24h
+    window) unless an explicit ``reply_to`` is given.
+
+    ``who_to`` is the ADDRESSEE (app_platform.agents.resolve_addressee). For a
+    registered agent the row is delegated to it (``pre_attended_by
+    ="agent:<name>"``): no Skipper turn is owed, but the row stays in the one
+    log, so Skipper sees it as context.
     """
     person = (who_from or "").lower().strip()
-    parent = fetch_one(
-        "SELECT id, thread_id FROM consciousness_log "
-        "WHERE kind = 'message' AND who_from = %s AND who_to = %s "
-        "  AND thread_id IS NOT NULL "
-        "  AND created_at > now() - interval '24 hours' "
-        "ORDER BY seq DESC LIMIT 1",
-        (SKIPPER, person),
-    )
+    addressee = (who_to or SKIPPER).lower().strip()
+    if addressee != SKIPPER:
+        from app_platform.agents import is_agent
+        if not is_agent(addressee):
+            addressee = SKIPPER  # only Skipper or a registered agent can be addressed
+    if reply_to:
+        parent = fetch_one("SELECT id, thread_id FROM consciousness_log WHERE id = %s",
+                           (reply_to,))
+    else:
+        parent = fetch_one(
+            "SELECT id, thread_id FROM consciousness_log "
+            "WHERE kind = 'message' AND who_from = %s AND who_to = %s "
+            "  AND thread_id IS NOT NULL "
+            "  AND created_at > now() - interval '24 hours' "
+            "ORDER BY seq DESC LIMIT 1",
+            (addressee, person),
+        )
+    delegated = f"agent:{addressee}" if addressee != SKIPPER else None
     return log_event(
-        kind="message", who_from=person, who_to=SKIPPER,
+        kind="message", who_from=person, who_to=addressee,
         domain=domain, surface=surface, content=content,
         reply_to=(parent or {}).get("id"),
         thread_id=(parent or {}).get("thread_id"),
-        payload=payload, needs_attention=True,
+        payload=payload, needs_attention=not delegated,
+        pre_attended_by=delegated,
         # Callers may supply the id so they can register interest in the turn BEFORE the
         # row exists to be claimed — see attention.submit_message. Without that, the row
         # is claimable the instant it lands and a caller can lose the race to its own

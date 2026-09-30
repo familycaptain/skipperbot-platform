@@ -1,0 +1,9 @@
+kind: feature
+id: platform.agents
+title: Agent participants — a shared chat thread with external agents
+state: live
+links: {}
+notes: 'An app registers an external agent (e.g. the Professor, an external Claude subagent) at load via
+  app_platform.agents.register_agent from its hooks.py. A person''s chat with Skipper becomes a shared
+  thread: every participant sees all of it; each message has exactly one addressee and only the addressee
+  answers. Design: skipperbot-professor docs/DESIGN.md §6.'
