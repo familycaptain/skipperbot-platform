@@ -365,6 +365,7 @@ def log_inbound_message(
     event_id: Optional[str] = None,
     who_to: str = SKIPPER,
     reply_to: Optional[str] = None,
+    inherit_thread: bool = True,
 ) -> dict:
     """A person speaks: append the REAL inbound row, owed a turn
     (``needs_attention=True``), inheriting the thread of the addressee's most
@@ -375,6 +376,10 @@ def log_inbound_message(
     registered agent the row is delegated to it (``pre_attended_by
     ="agent:<name>"``): no Skipper turn is owed, but the row stays in the one
     log, so Skipper sees it as context.
+
+    ``inherit_thread=False`` starts fresh (no default reply candidate): used when a
+    person explicitly addresses an agent by name, which opens a new topic rather than
+    continuing the agent's last thread with them.
     """
     person = (who_from or "").lower().strip()
     addressee = (who_to or SKIPPER).lower().strip()
@@ -385,6 +390,8 @@ def log_inbound_message(
     if reply_to:
         parent = fetch_one("SELECT id, thread_id FROM consciousness_log WHERE id = %s",
                            (reply_to,))
+    elif not inherit_thread:
+        parent = None
     else:
         parent = fetch_one(
             "SELECT id, thread_id FROM consciousness_log "

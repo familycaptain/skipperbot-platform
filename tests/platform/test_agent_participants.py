@@ -116,6 +116,31 @@ class Writes(_AgentsTestCase):
         self.assertEqual(captured["pre_attended_by"], "agent:professor")
         self.assertFalse(captured["needs_attention"])
 
+    def test_explicit_address_starts_a_new_thread(self):
+        _register_prof()
+        calls = []
+        with mock.patch.object(agents, "resolve_addressee", return_value=("professor", "address")), \
+             mock.patch.object(consciousness, "log_inbound_message",
+                               side_effect=lambda **kw: calls.append(kw) or {"id": "cl-1"}):
+            agents.route_inbound("rodney", "@prof new idea")
+        self.assertFalse(calls[0]["inherit_thread"])
+        with mock.patch.object(agents, "resolve_addressee", return_value=("professor", "open_question")), \
+             mock.patch.object(consciousness, "log_inbound_message",
+                               side_effect=lambda **kw: calls.append(kw) or {"id": "cl-2"}):
+            agents.route_inbound("rodney", "yes")
+        self.assertTrue(calls[1]["inherit_thread"])
+
+    def test_no_inherit_skips_parent_lookup(self):
+        _register_prof()
+        captured = {}
+        with mock.patch.object(consciousness, "fetch_one") as fo, \
+             mock.patch.object(consciousness, "log_event", side_effect=lambda **kw: captured.update(kw) or kw):
+            consciousness.log_inbound_message(who_from="rodney", content="new", who_to="professor",
+                                              inherit_thread=False)
+        fo.assert_not_called()
+        self.assertIsNone(captured["thread_id"])
+        self.assertIsNone(captured["reply_to"])
+
     def test_inbound_to_skipper_unchanged(self):
         captured = {}
         with mock.patch.object(consciousness, "fetch_one", return_value=None), \

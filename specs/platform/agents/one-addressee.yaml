@@ -10,7 +10,9 @@ behavior: >
   ("@prof …", "professor, …", "@skipper …"), that participant; otherwise if an agent's question to them
   is the latest thing in their conversation and was asked within the last 15 minutes, that agent;
   otherwise Skipper. A message for an agent is handed to that agent and acknowledged — Skipper does not
-  also answer it — while "@skipper" always gets Skipper. This applies on the web chat, the HTTP chat
+  also answer it — while "@skipper" always gets Skipper. A message that names the agent starts a new
+  topic with it rather than joining whatever the agent last discussed with that person; a reply, or an
+  answer to the agent's open question, continues that conversation. This applies on the web chat, the HTTP chat
   endpoint, and Discord direct messages.
 implements:
 - app_platform/agents.py (resolve_addressee, route_inbound, _address_prefix)

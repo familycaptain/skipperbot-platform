@@ -203,9 +203,13 @@ def route_inbound(person: str, message: str, *, surface: str = "web", reply_to: 
     if addressee == SKIPPER:
         return None
     from app_platform.consciousness import log_inbound_message
+    # An explicit "@agent …" opens a NEW topic: it must not silently join the agent's most
+    # recent thread with this person (which could be an unrelated open mission). Replies and
+    # answers to an open question DO continue their thread.
     row = log_inbound_message(
         who_from=person, content=message, surface=surface, who_to=addressee,
-        reply_to=reply_to, payload={**(payload or {}), "routed_by": rule})
+        reply_to=reply_to, inherit_thread=(rule != "address"),
+        payload={**(payload or {}), "routed_by": rule})
     logger.info("AGENTS: %s → %s (%s) %s", person, addressee, rule, row.get("id"))
     return {"agent": addressee, "rule": rule, "row": row}
 
