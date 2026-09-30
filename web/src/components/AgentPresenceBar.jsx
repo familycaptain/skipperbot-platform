@@ -49,7 +49,8 @@ export default function AgentPresenceBar({ connected }) {
 
   return (
     <div
-      className="shrink-0 flex items-center gap-2 px-4 py-1.5 border-b border-subtle surface-panel text-xs overflow-x-auto"
+      // h-9 matches the app panel's taskbar (AppPanel) — the two bars sit side by side.
+      className="shrink-0 flex items-center h-9 gap-2 px-4 border-b border-subtle surface-panel text-xs overflow-x-auto overflow-y-hidden"
       aria-label="Who's in this chat"
     >
       <span className="text-faint shrink-0">In chat:</span>
