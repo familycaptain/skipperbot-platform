@@ -34,6 +34,9 @@ data/*.json
 apps/automation/devices.json
 apps/automation/aliases.json
 
+# Per-install PM runtime state (apps/goals/pm_runner.py writes data/pm_state.json).
+apps/goals/data/
+
 # ----- private migration / conversion scripts (per-installation, not public) -----
 private/
 
