@@ -1321,19 +1321,28 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
                 # The inbound message becomes an owed log row and the ATTENTION
                 # system runs the turn (§15/§16); the WS just awaits the outbound.
                 from app_platform.attention import submit_message
+                import uuid as _ws_uuid
+                _inbound_id = f"cl-{_ws_uuid.uuid4().hex[:8]}"
                 response_text = await submit_message(
                     user_id, message,
                     channel="web",
                     app_context=_user_app_context.get(user_id),
                     send_progress=_ws_progress,
                     send_event=_ws_event,
+                    reply_to=(data.get("reply_to") or None),
+                    event_id=_inbound_id,
                 )
                 from datetime import datetime as _now_dt, timezone as _now_tz
+                from app_platform.consciousness import reply_id_for
                 await websocket.send_json({
                     "type": "chat_response",
                     "response": response_text,
                     "user_id": user_id,
                     "ts": _now_dt.now(_now_tz.utc).isoformat(),  # issue #8: bubble timestamp
+                    # The reply's own log id: the same srv_id history gives this bubble, so
+                    # the person can reply to it and reloads de-duplicate against it.
+                    "srv_id": await asyncio.to_thread(reply_id_for, _inbound_id),
+                    "in_reply_to": _inbound_id,
                 })
             except Exception as e:
                 import traceback

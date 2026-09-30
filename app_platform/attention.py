@@ -165,6 +165,32 @@ async def _dispatch(row: dict) -> Optional[str]:
     return None  # activity/summary rows are never owed; defensive
 
 
+def _with_reply_context(row: dict) -> str:
+    """The message text for the turn. When the person explicitly replied to a specific
+    message, say which one — "yes, do that" is only meaningful next to what it answers."""
+    content = row.get("content") or ""
+    payload = row.get("payload") or {}
+    if isinstance(payload, str):
+        import json as _json
+        try:
+            payload = _json.loads(payload)
+        except Exception:
+            payload = {}
+    if not (row.get("reply_to") and payload.get("explicit_reply")):
+        return content
+    try:
+        from data_layer.db import fetch_one
+        parent = fetch_one("SELECT who_from, content FROM consciousness_log WHERE id = %s",
+                           (row["reply_to"],))
+    except Exception:
+        parent = None
+    if not parent or not parent.get("content"):
+        return content
+    who = "my" if (parent.get("who_from") or "") == "skipper" else f"{parent['who_from']}'s"
+    snippet = " ".join(parent["content"].split())[:240]
+    return f'[Replying to {who} earlier message: "{snippet}"]\n{content}'
+
+
 async def _run_chat_turn(row: dict) -> Optional[str]:
     """Inbound message → the chat skill (§14 routing rule): the full existing
     chat pipeline, history via the log timeline (Phase 1), the inbound row
@@ -173,7 +199,7 @@ async def _run_chat_turn(row: dict) -> Optional[str]:
     ctx = _turn_ctx.get(row["id"], {})
     return await _chat.process_chat(
         row["who_from"],
-        row["content"],
+        await asyncio.to_thread(_with_reply_context, row),
         send_progress=ctx.get("send_progress"),
         channel=row.get("surface") or "web",
         app_context=ctx.get("app_context"),
@@ -191,6 +217,8 @@ async def submit_message(
     send_progress=None,
     send_event=None,
     timeout: float = 180.0,
+    reply_to: Optional[str] = None,
+    event_id: Optional[str] = None,
 ) -> str:
     """Transport bridge (§16): append the inbound row (owed), await its turn.
 
@@ -206,7 +234,7 @@ async def submit_message(
     # waited out the full timeout and reported an error — while the reply had in fact been
     # produced and delivered. Minting the id here closes the window; the id is ours either
     # way, so there is nothing to reconcile.
-    event_id = f"cl-{_uuid.uuid4().hex[:8]}"
+    event_id = event_id or f"cl-{_uuid.uuid4().hex[:8]}"
     fut: asyncio.Future = asyncio.get_running_loop().create_future()
     _futures[event_id] = fut
     _turn_ctx[event_id] = {
@@ -218,6 +246,10 @@ async def submit_message(
         row = await asyncio.to_thread(
             log_inbound_message,
             who_from=user_id, content=message, surface=channel, event_id=event_id,
+            # An explicit reply (the person replied to a specific message): recorded so the
+            # thread is exact and the turn knows what "this" refers to.
+            reply_to=reply_to,
+            payload={"explicit_reply": True} if reply_to else None,
         )
     except Exception:
         # Nothing was appended, so nothing will ever resolve these — drop them rather

@@ -179,11 +179,25 @@ export default function ChatMessage({ message, showTime = false, agents = {}, on
 
   // ── Bot message (markdown) ──
   return (
-    <div className="flex flex-col items-start">
+    <div className="flex flex-col items-start group">
       <div className="max-w-[85%] md:max-w-[70%] px-4 py-2.5 rounded-2xl rounded-bl-md surface-card text-sm leading-relaxed markdown-body">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
       </div>
-      {showTime && <MessageTime ts={ts} align="start" />}
+      <div className="flex items-center gap-2">
+        {/* Reply to Skipper specifically — makes intent explicit in the shared thread (it
+            wins over an agent's open question). Always visible: hover-only would hide it on touch screens. */}
+        {onReply && message.srv_id && (
+          <button
+            type="button"
+            onClick={() => onReply(message)}
+            className="btn-ghost focus-ring text-[11px] px-1 mt-0.5 rounded flex items-center gap-1 text-faint"
+            title="Reply to Skipper"
+          >
+            <CornerUpLeft size={11} /> Reply
+          </button>
+        )}
+        {showTime && <MessageTime ts={ts} align="start" />}
+      </div>
     </div>
   );
 }

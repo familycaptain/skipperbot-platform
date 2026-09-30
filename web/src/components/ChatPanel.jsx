@@ -43,7 +43,7 @@ export default function ChatPanel({
 }) {
   const scrollRef = useRef(null);
   const agents = useAgents();
-  // Shared thread: the agent message being replied to ({srv_id, speaker}) or null.
+  // Shared thread: the message being replied to ({srv_id, speaker?}; no speaker = Skipper) or null.
   const [replyTo, setReplyTo] = useState(null);
   const handleSend = (text) => {
     onSend(text, replyTo ? { replyTo: replyTo.srv_id } : {});
@@ -116,7 +116,7 @@ export default function ChatPanel({
         <div className="shrink-0 flex items-center gap-2 px-4 py-1.5 border-t border-subtle surface-panel text-xs text-muted">
           <CornerUpLeft size={12} />
           <span className="truncate flex-1">
-            Replying to {agentLabel(agents, replyTo.speaker)}: {(replyTo.content || "").slice(0, 80)}
+            Replying to {agentLabel(agents, replyTo.speaker || "skipper")}: {(replyTo.content || "").slice(0, 80)}
           </span>
           <button type="button" className="btn-ghost focus-ring rounded p-0.5" onClick={() => setReplyTo(null)}
                   aria-label="Cancel reply">
@@ -128,7 +128,7 @@ export default function ChatPanel({
         onSend={handleSend}
         disabled={!connected || sending}
         placeholder={!connected ? "Reconnecting…"
-          : replyTo ? `Reply to ${agentLabel(agents, replyTo.speaker)}…` : "Message Skipper…"}
+          : replyTo ? `Reply to ${agentLabel(agents, replyTo.speaker || "skipper")}…` : "Message Skipper…"}
       />
     </div>
   );

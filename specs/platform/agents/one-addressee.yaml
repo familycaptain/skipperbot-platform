@@ -10,7 +10,10 @@ behavior: >
   ("@prof …", "professor, …", "@skipper …"), that participant; otherwise if an agent's question to them
   is the latest thing in their conversation and was asked within the last 15 minutes, that agent;
   otherwise Skipper. A message for an agent is handed to that agent and acknowledged — Skipper does not
-  also answer it — while "@skipper" always gets Skipper. A message that names the agent starts a new
+  also answer it — while "@skipper" always gets Skipper. A person can equally reply to one of Skipper's
+  own messages to make clear it is for Skipper (this wins over an agent's open question); Skipper is then
+  told which of its messages is being answered. Reply is offered on Skipper's and agents' message
+  bubbles only — never on tool-activity or notification rows. A message that names the agent starts a new
   topic with it rather than joining whatever the agent last discussed with that person; a reply, or an
   answer to the agent's open question, continues that conversation. This applies on the web chat, the HTTP chat
   endpoint, and Discord direct messages.
@@ -18,6 +21,10 @@ implements:
 - app_platform/agents.py (resolve_addressee, route_inbound, _address_prefix)
 - agent.py (WS /ws pre-check + 'routed' frame; POST /chat reply_to + pre-check)
 - discord_bot.py (DM pre-check)
+- app_platform/attention.py (submit_message reply_to/event_id; _with_reply_context)
+- app_platform/consciousness.py (reply_id_for)
+- app_platform/context.py + chat_render.py (Skipper reply bubbles carry their own srv_id)
+- web/src/components/ChatMessage.jsx (Reply on Skipper bubbles)
 tests:
 - type: unit
   path: tests/platform/test_agent_participants.py

@@ -181,6 +181,16 @@ def tail(limit: int = 50, before_seq: Optional[int] = None) -> list[dict]:
     return rows
 
 
+def reply_id_for(inbound_id: Optional[str]) -> str:
+    """The id of Skipper's reply to an inbound message ('' if none yet) — lets a transport
+    tag the live reply bubble with the same id the history projection gives it."""
+    if not inbound_id or fetch_one is None:
+        return ""
+    row = fetch_one("SELECT id FROM consciousness_log WHERE reply_to = %s AND who_from = %s "
+                    "AND kind = 'message' ORDER BY seq DESC LIMIT 1", (inbound_id, SKIPPER))
+    return (row or {}).get("id") or ""
+
+
 def speaker_of(event_id: Optional[str]) -> str:
     """Who authored a log row (``who_from``), '' if unknown. Transports use it to label an
     agent participant's words (app_platform.agents)."""

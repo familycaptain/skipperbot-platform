@@ -400,6 +400,7 @@ def history_projection(person: str, limit: int = 20,
                            if reply and not _p(reply).get("tool_calls") else None),
                 "tool_calls": (_p(reply).get("tool_calls") or []) if reply else [],
                 **({"routed_to": routed_to} if routed_to else {}),
+                **({"reply_srv_id": reply["id"]} if reply is not None else {}),
             })
     for r in rows:
         agent = _agent_speaker(r)

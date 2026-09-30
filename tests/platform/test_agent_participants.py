@@ -219,6 +219,35 @@ class History(_AgentsTestCase):
         self.assertEqual(_turn_messages(turns[1])[0]["routed_to"], "professor")
 
 
+class ReplyToSkipper(_AgentsTestCase):
+    def test_explicit_reply_context_names_the_message(self):
+        from app_platform import attention
+        row = {"content": "yes, do that", "reply_to": "cl-s", "payload": {"explicit_reply": True}}
+        with mock.patch("data_layer.db.fetch_one",
+                        return_value={"who_from": "skipper", "content": "Want me to  order more filters?"}):
+            text = attention._with_reply_context(row)
+        self.assertEqual(text, '[Replying to my earlier message: "Want me to order more filters?"]\nyes, do that')
+
+    def test_implicit_thread_is_not_annotated(self):
+        from app_platform import attention
+        row = {"content": "yes", "reply_to": "cl-s", "payload": {}}
+        self.assertEqual(attention._with_reply_context(row), "yes")
+
+    def test_history_gives_skipper_reply_its_own_id(self):
+        t = lambda s: datetime(2026, 9, 29, 12, 0, s, tzinfo=timezone.utc)
+        rows = [
+            {"id": "cl-in", "kind": "message", "who_from": "rodney", "who_to": "skipper",
+             "content": "hi", "created_at": t(1), "payload": {}, "reply_to": None},
+            {"id": "cl-out", "kind": "message", "who_from": "skipper", "who_to": "rodney",
+             "content": "hello", "created_at": t(2), "payload": {}, "reply_to": "cl-in"},
+        ]
+        with mock.patch("data_layer.db.fetch_all", return_value=rows):
+            turns = context.history_projection("rodney")
+        from chat_render import render_chat_history
+        msgs = [m for m in render_chat_history(turns, t(3), "UTC") if m["role"] != "date_separator"]
+        self.assertEqual([(m["role"], m["srv_id"]) for m in msgs], [("user", "cl-in"), ("bot", "cl-out")])
+
+
 class GoalsGate(_AgentsTestCase):
     def test_agent_owner(self):
         _register_prof()

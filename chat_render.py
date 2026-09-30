@@ -81,6 +81,8 @@ def _turn_messages(turn: dict) -> list[dict]:
         b = {"role": "bot", "content": am}
         if turn.get("speaker"):            # shared thread: an agent participant said this
             b["speaker"] = turn["speaker"]
+        if turn.get("reply_srv_id"):       # Skipper's reply has its own log id (reply target)
+            b["srv_id"] = turn["reply_srv_id"]
         out.append(b)
     return out
 
@@ -115,6 +117,6 @@ def render_chat_history(turns: list[dict], now: datetime, tz: str | None) -> lis
             # Same stable server id the live chat_response frame carries, so the client
             # can tell a reloaded utterance from a newly-spoken one instead of rendering
             # both (the socket/history race). Empty for legacy turns with no row id.
-            b["srv_id"] = turn.get("srv_id") or turn.get("id") or ""
+            b.setdefault("srv_id", turn.get("srv_id") or turn.get("id") or "")
             messages.append(b)
     return messages
