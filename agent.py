@@ -170,7 +170,20 @@ async def lifespan(app: FastAPI):
     close_pool()
 
 
-app = FastAPI(title="SkipperBot Agent", version="0.1.0", lifespan=lifespan)
+def _read_version() -> str:
+    """The platform version. pyproject.toml is its only source; releases bump it there."""
+    import tomllib
+    try:
+        with open(Path(__file__).resolve().parent / "pyproject.toml", "rb") as f:
+            return tomllib.load(f)["project"]["version"]
+    except Exception:
+        logger.warning("could not read the version from pyproject.toml", exc_info=True)
+        return "unknown"
+
+
+VERSION = _read_version()
+
+app = FastAPI(title="SkipperBot Agent", version=VERSION, lifespan=lifespan)
 
 
 # ---------------------------------------------------------------------------
@@ -372,7 +385,7 @@ def _build_info() -> dict:
 
 @app.get("/api/health")
 async def health():
-    return {"status": "ok", "agent": "SkipperBot", "version": "0.1.0", **_build_info()}
+    return {"status": "ok", "agent": "SkipperBot", "version": VERSION, **_build_info()}
 
 
 @app.get("/")
@@ -382,7 +395,7 @@ async def root():
         # no-cache: always revalidate the entry point so a new build is picked
         # up without a manual hard refresh (see the SPA serving block below).
         return FileResponse(index, headers={"Cache-Control": "no-cache"})
-    return {"status": "ok", "agent": "SkipperBot", "version": "0.1.0"}
+    return {"status": "ok", "agent": "SkipperBot", "version": VERSION}
 
 
 # Returned to the client when we authenticated the user but could not mint a
