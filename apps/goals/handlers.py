@@ -121,6 +121,22 @@ async def _connection_skill_runner(event: dict) -> dict:
     if recent:
         return {"summary": "greeted recently — reconnect, staying quiet"}
 
+    # ...and "away" means NOT CONNECTED, not merely "Skipper has been quiet". A client whose
+    # socket drops and reconnects every minute never leaves, but measured only against
+    # what Skipper last said it came "back" every quarter hour, around the clock — each
+    # "welcome back" landing in the log and, 20 turns at a time, pushing the real
+    # conversation out of the scrollback. If this person connected in the last N minutes
+    # (any arrival before this one), this is the same visit.
+    present = await _aio.to_thread(
+        fetch_one,
+        "SELECT id FROM consciousness_log WHERE kind='event' AND who_to=%s "
+        "AND payload->>'event' = 'desktop.arrival' AND id <> %s "
+        "AND created_at > now() - make_interval(mins => %s) LIMIT 1",
+        (user, event.get("id") or "", _RECENT_GREETING_MINUTES),
+    )
+    if present:
+        return {"summary": "connected recently — same visit, staying quiet"}
+
     # PRESENCE FIRST (§15). We have decided a turn WILL run that may speak, so say so
     # now — before the model call, which takes seconds. This is what makes arriving feel
     # like reaching a live person: dots immediately, then words. The client used to
