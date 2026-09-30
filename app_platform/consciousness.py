@@ -181,6 +181,25 @@ def tail(limit: int = 50, before_seq: Optional[int] = None) -> list[dict]:
     return rows
 
 
+def canonical_event_id(ref: Optional[str]) -> Optional[str]:
+    """Normalize a client-side message reference to its consciousness-log id.
+
+    Bubbles carry their ``cl-`` id, but a notification CARD carries its notification id
+    (``n-…``) — the live frame only knows that. Every card has a log row (the shadow write
+    in create_notification records ``payload.notification_id``), so map it. Unknown or
+    unmappable refs return None (treated as "no explicit reply")."""
+    ref = (ref or "").strip()
+    if not ref:
+        return None
+    if ref.startswith("cl-"):
+        return ref
+    if ref.startswith("n-") and fetch_one is not None:
+        row = fetch_one("SELECT id FROM consciousness_log WHERE payload->>'notification_id' = %s "
+                        "ORDER BY seq DESC LIMIT 1", (ref,))
+        return (row or {}).get("id")
+    return None
+
+
 def reply_id_for(inbound_id: Optional[str]) -> str:
     """The id of Skipper's reply to an inbound message ('' if none yet) — lets a transport
     tag the live reply bubble with the same id the history projection gives it."""

@@ -305,7 +305,7 @@ async def _generic_error_handler(request: Request, exc: Exception):
 class ChatRequest(BaseModel):
     message: str
     user_id: str
-    reply_to: str | None = None   # cl- id of the message being replied to (shared thread)
+    reply_to: str | None = None   # cl- (bubble) or n- (notification card) id being replied to
 
 
 class ChatResponse(BaseModel):
@@ -1290,11 +1290,16 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
             # SHARED THREAD (app_platform.agents): a message addressed to an agent participant
             # is appended for THAT agent (delegated responder) and acknowledged — no Skipper
             # turn. Skipper still sees it in the timeline.
+            # A reply may target a bubble (cl- id) or a notification card (n- id); normalize to
+            # the log id once, for both the agent pre-check and Skipper's own path.
+            _reply_to = None
+            if data.get("reply_to"):
+                from app_platform.consciousness import canonical_event_id
+                _reply_to = await asyncio.to_thread(canonical_event_id, data.get("reply_to"))
             try:
                 from app_platform.agents import route_inbound
                 routed = await asyncio.to_thread(
-                    route_inbound, user_id, message, surface="web",
-                    reply_to=(data.get("reply_to") or None))
+                    route_inbound, user_id, message, surface="web", reply_to=_reply_to)
             except Exception:
                 logger.warning("WS: agent routing check failed; Skipper will answer", exc_info=True)
                 routed = None
@@ -1329,7 +1334,7 @@ async def websocket_chat(websocket: WebSocket, user_id: str):
                     app_context=_user_app_context.get(user_id),
                     send_progress=_ws_progress,
                     send_event=_ws_event,
-                    reply_to=(data.get("reply_to") or None),
+                    reply_to=_reply_to,
                     event_id=_inbound_id,
                 )
                 from datetime import datetime as _now_dt, timezone as _now_tz
@@ -1369,8 +1374,10 @@ async def chat(request: ChatRequest, http_request: Request):
     user_id = _claimed_actor(http_request, request.user_id)
     try:
         from app_platform.agents import route_inbound, get_agent
+        from app_platform.consciousness import canonical_event_id
+        _reply_to = await asyncio.to_thread(canonical_event_id, request.reply_to)
         routed = await asyncio.to_thread(route_inbound, user_id, request.message,
-                                         surface="web", reply_to=request.reply_to)
+                                         surface="web", reply_to=_reply_to)
         if routed:
             _a = get_agent(routed["agent"])
             return ChatResponse(

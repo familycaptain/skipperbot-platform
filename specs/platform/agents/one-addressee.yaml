@@ -12,8 +12,9 @@ behavior: >
   otherwise Skipper. A message for an agent is handed to that agent and acknowledged — Skipper does not
   also answer it — while "@skipper" always gets Skipper. A person can equally reply to one of Skipper's
   own messages to make clear it is for Skipper (this wins over an agent's open question); Skipper is then
-  told which of its messages is being answered. Reply is offered on Skipper's and agents' message
-  bubbles only — never on tool-activity or notification rows. A message that names the agent starts a new
+  told which of its messages is being answered — including the notifications Skipper posts into the chat
+  (reminders, nudges, results), which are replied to the same way. Reply is offered on Skipper's
+  messages, its notifications, and agents' messages — never on tool-activity rows. A message that names the agent starts a new
   topic with it rather than joining whatever the agent last discussed with that person; a reply, or an
   answer to the agent's open question, continues that conversation. This applies on the web chat, the HTTP chat
   endpoint, and Discord direct messages.

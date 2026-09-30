@@ -248,6 +248,18 @@ class ReplyToSkipper(_AgentsTestCase):
         self.assertEqual([(m["role"], m["srv_id"]) for m in msgs], [("user", "cl-in"), ("bot", "cl-out")])
 
 
+class CanonicalReplyTarget(unittest.TestCase):
+    def test_bubble_ids_pass_through_and_cards_map_to_their_log_row(self):
+        with mock.patch.object(consciousness, "fetch_one", return_value={"id": "cl-shadow"}) as fo:
+            self.assertEqual(consciousness.canonical_event_id("cl-abc"), "cl-abc")
+            fo.assert_not_called()
+            self.assertEqual(consciousness.canonical_event_id("n-1234"), "cl-shadow")
+        with mock.patch.object(consciousness, "fetch_one", return_value=None):
+            self.assertIsNone(consciousness.canonical_event_id("n-missing"))
+        self.assertIsNone(consciousness.canonical_event_id(""))
+        self.assertIsNone(consciousness.canonical_event_id("x-weird"))
+
+
 class GoalsGate(_AgentsTestCase):
     def test_agent_owner(self):
         _register_prof()

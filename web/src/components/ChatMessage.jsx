@@ -98,7 +98,21 @@ export default function ChatMessage({ message, showTime = false, agents = {}, on
             <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{content}</ReactMarkdown>
           </div>
         </div>
-        {showTime && <MessageTime ts={ts} align="start" />}
+        <div className="flex items-center gap-2">
+          {/* Skipper's notifications (reminders, nudges, results) are things people answer —
+              "done", "snooze it". The server maps the card's id to its log row. */}
+          {onReply && message.srv_id && (
+            <button
+              type="button"
+              onClick={() => onReply(message)}
+              className="btn-ghost focus-ring text-[11px] px-1 mt-0.5 rounded flex items-center gap-1 text-faint"
+              title="Reply to this notification"
+            >
+              <CornerUpLeft size={11} /> Reply
+            </button>
+          )}
+          {showTime && <MessageTime ts={ts} align="start" />}
+        </div>
       </div>
     );
   }
