@@ -5,7 +5,7 @@ import { SendHorizontal } from "lucide-react";
  * Chat input bar with auto-expanding textarea.
  * Sends on Enter (Shift+Enter for newline).
  */
-export default function ChatInput({ onSend, disabled, placeholder }) {
+export default function ChatInput({ onSend, disabled, placeholder, focusKey }) {
   const [text, setText] = useState("");
   const inputRef = useRef(null);
 
@@ -15,6 +15,14 @@ export default function ChatInput({ onSend, disabled, placeholder }) {
       inputRef.current.focus();
     }
   }, [disabled]);
+
+  // Re-focus when the caller signals a context change (e.g. Reply clicked or cancelled),
+  // so the person can type straight away instead of clicking back into the box.
+  useEffect(() => {
+    if (focusKey !== undefined && !disabled && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [focusKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleSubmit(e) {
     e?.preventDefault();

@@ -126,6 +126,7 @@ export default function ChatPanel({
       )}
       <ChatInput
         onSend={handleSend}
+        focusKey={replyTo ? replyTo.srv_id : null}
         disabled={!connected || sending}
         placeholder={!connected ? "Reconnecting…"
           : replyTo ? `Reply to ${agentLabel(agents, replyTo.speaker || "skipper")}…` : "Message Skipper…"}
