@@ -10,10 +10,14 @@ behavior: >
   agent gets a household account that is marked as a bot and an agent, so it can be given its own service
   login and never appears where only people should (pickers, nudges, primary-user choice). Registering is
   safe to repeat on every restart, an invalid or reserved name (including Skipper's) is refused, and while
-  no agent is registered every chat behaves exactly as it did before.
+  no agent is registered every chat behaves exactly as it did before. An agent may also report whether
+  it is present right now (an external agent is only sometimes running); the top of the chat panel lists
+  Skipper and every registered agent, highlighting who is online and showing anyone offline greyed out
+  with an offline icon; an agent whose status check fails counts as offline.
 implements:
 - app_platform/agents.py (register_agent, is_agent, list_agents, speaker_label)
-- agent.py (GET /api/agents)
+- agent.py (GET /api/agents, with status)
+- web/src/components/AgentPresenceBar.jsx (who's in the chat)
 tests:
 - type: unit
   path: tests/platform/test_agent_participants.py

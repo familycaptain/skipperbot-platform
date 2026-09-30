@@ -1995,7 +1995,7 @@ async def api_list_agents():
     """Registered agent participants in the shared chat thread (app_platform.agents) —
     the web client uses this to label agent bubbles and offer @-addressing."""
     from app_platform.agents import list_agents
-    return {"agents": list_agents()}
+    return {"agents": await asyncio.to_thread(list_agents, True)}
 
 
 @app.get("/api/users")

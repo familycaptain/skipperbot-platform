@@ -31,7 +31,7 @@ from __future__ import annotations
 import logging
 import re
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Callable, Optional
 
 logger = logging.getLogger("platform.agents")
 
@@ -49,10 +49,28 @@ class Agent:
     aliases: tuple[str, ...] = field(default_factory=tuple)
     description: str = ""
     app: str = ""
+    # Optional liveness probe supplied by the registering app: () -> {"online": bool,
+    # "detail": str, "last_seen": iso-str|None}. External agents (e.g. a loop running on
+    # another machine) are only sometimes present; the chat shows who is actually here.
+    status_fn: Optional[Callable[[], dict]] = field(default=None, compare=False, repr=False)
 
-    def public(self) -> dict:
-        return {"name": self.name, "display_name": self.display_name, "icon": self.icon,
-                "aliases": list(self.aliases), "description": self.description}
+    def status(self) -> dict:
+        if self.status_fn is None:
+            return {"online": None, "detail": "", "last_seen": None}   # unknown
+        try:
+            st = dict(self.status_fn() or {})
+        except Exception:
+            logger.debug("AGENTS: status probe failed for %s", self.name, exc_info=True)
+            return {"online": False, "detail": "status unavailable", "last_seen": None}
+        return {"online": bool(st.get("online")), "detail": str(st.get("detail") or ""),
+                "last_seen": st.get("last_seen")}
+
+    def public(self, with_status: bool = False) -> dict:
+        out = {"name": self.name, "display_name": self.display_name, "icon": self.icon,
+               "aliases": list(self.aliases), "description": self.description}
+        if with_status:
+            out["status"] = self.status()
+        return out
 
 
 _registry: dict[str, Agent] = {}
@@ -61,7 +79,8 @@ _registry: dict[str, Agent] = {}
 # ── registration ─────────────────────────────────────────────────────────────
 
 def register_agent(*, name: str, display_name: str, icon: str = "", aliases: Optional[list[str]] = None,
-                   description: str = "", app: str = "", ensure_user: bool = True) -> Agent:
+                   description: str = "", app: str = "", ensure_user: bool = True,
+                   status_fn: Optional[Callable[[], dict]] = None) -> Agent:
     """Register an external agent participant. Idempotent; call from an app's ``register_hooks()``.
 
     Also ensures a ``public.users`` row exists for the agent with roles ``bot,agent`` (so service
@@ -73,7 +92,7 @@ def register_agent(*, name: str, display_name: str, icon: str = "", aliases: Opt
         raise ValueError(f"invalid agent name {name!r}")
     agent = Agent(name=key, display_name=display_name or key.capitalize(), icon=icon,
                   aliases=tuple(a.lower().strip() for a in (aliases or []) if a and a.strip()),
-                  description=description, app=app)
+                  description=description, app=app, status_fn=status_fn)
     _registry[key] = agent
     if ensure_user:
         try:
@@ -109,8 +128,8 @@ def get_agent(name: Optional[str]) -> Optional[Agent]:
     return _registry.get((name or "").lower().strip())
 
 
-def list_agents() -> list[dict]:
-    return [a.public() for a in _registry.values()]
+def list_agents(with_status: bool = False) -> list[dict]:
+    return [a.public(with_status) for a in _registry.values()]
 
 
 def speaker_label(name: str) -> str:

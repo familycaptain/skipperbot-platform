@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from "react";
 import ChatMessage from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import TypingIndicator from "./TypingIndicator";
+import AgentPresenceBar from "./AgentPresenceBar";
 import { CornerUpLeft, X } from "lucide-react";
 import useAgents, { agentLabel } from "../hooks/useAgents";
 
@@ -69,6 +70,8 @@ export default function ChatPanel({
 
   return (
     <div className="flex flex-col flex-1 min-h-0 min-w-0">
+      {/* Shared thread: who is present (Skipper + online agent participants). */}
+      <AgentPresenceBar connected={connected} />
       {/* Messages area — aria-live so the deferred greeting and new messages are
           announced to assistive tech when they appear (issue #16). */}
       <div

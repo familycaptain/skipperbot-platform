@@ -37,6 +37,18 @@ class Registry(_AgentsTestCase):
         self.assertEqual(agents.speaker_label("professor"), "🎓 Professor")
         self.assertEqual(agents.list_agents()[0]["aliases"], ["prof"])
 
+    def test_status_probe(self):
+        agents.register_agent(name="professor", display_name="Professor", ensure_user=False,
+                              status_fn=lambda: {"online": 1, "detail": "idle", "last_seen": "t"})
+        agents.register_agent(name="boom", display_name="Boom", ensure_user=False,
+                              status_fn=lambda: 1 / 0)
+        agents.register_agent(name="plain", display_name="Plain", ensure_user=False)
+        by = {a["name"]: a for a in agents.list_agents(with_status=True)}
+        self.assertEqual(by["professor"]["status"], {"online": True, "detail": "idle", "last_seen": "t"})
+        self.assertFalse(by["boom"]["status"]["online"])          # a failing probe reads as offline
+        self.assertIsNone(by["plain"]["status"]["online"])        # no probe: unknown
+        self.assertNotIn("status", agents.list_agents()[0])       # status only when asked
+
     def test_invalid_names_rejected(self):
         for bad in ("", "skipper", "x", "has space", "1abc"):
             with self.assertRaises(ValueError):
