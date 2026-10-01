@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-10-01
+
+### Before you update
+
+- **Nothing to do by hand.** Run `skipper update`. No migrations, no new dependencies.
+
+### Added
+
+- **GPT-6.1 Sol.** OpenAI's successor to GPT-6 Sol, at the same price, is available in
+  **Settings → Models**. GPT-6 Sol stays the default.
+
+### Fixed
+
+- **No more "welcome back" every 16 minutes.** A browser or device whose connection drops and
+  reconnects every minute was greeted again every quarter hour, day and night, and those greetings
+  pushed real conversation (including agent replies) out of the chat window on reload. Skipper now
+  treats a reconnect within 15 minutes as the same visit and stays quiet.
+- The project manager's saved state (`apps/goals/data/`) no longer shows up as an untracked folder
+  in `git status`.
+
 ## [0.1.0] — 2026-09-30
 
 The first numbered release of Skipperbot Platform. Earlier work reached `main` without release
@@ -61,5 +81,6 @@ notes; from here on, every promotion to `main` gets a version, a tag and an entr
 - Compatibility with newer MCP SDK versions.
 - Background jobs are held until they finish, so they can't be dropped partway through.
 
-[Unreleased]: https://github.com/familycaptain/skipperbot-platform/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/familycaptain/skipperbot-platform/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/familycaptain/skipperbot-platform/releases/tag/v0.1.1
 [0.1.0]: https://github.com/familycaptain/skipperbot-platform/releases/tag/v0.1.0
