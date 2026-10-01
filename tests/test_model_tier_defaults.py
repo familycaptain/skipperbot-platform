@@ -72,6 +72,8 @@ class BackendEmitTests(unittest.TestCase):
             return smart, fast
 
         self.assertEqual(picks("openai"), ("gpt-6-sol", "gpt-6-luna"))
+        # gpt-6.1-sol is offered alongside, not as a default (added 2026-09-30).
+        self.assertIn("gpt-6.1-sol", [r["model"] for r in chat["openai"]])
         self.assertEqual(picks("anthropic"), ("claude-opus-4-8", "claude-haiku-4-5"))
         # refreshed 2026-09-26 against the vendors' docs + LiteLLM's registry
         self.assertEqual(picks("gemini"), ("gemini-3.1-pro-preview", "gemini-3.8-flash"))

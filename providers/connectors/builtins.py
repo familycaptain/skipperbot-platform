@@ -22,6 +22,9 @@ def openai_descriptor() -> ConnectorDescriptor:
             # Defaults since 2026-09-26: the GPT-6 pair, live-verified on the operator's install
             # (chat with tools on the Responses API). The older models stay selectable.
             ModelEntry("OpenAI", "gpt-6-sol", CHAT, default_tiers=["smart"]),
+            # gpt-6.1-sol (DevDay, 2026-09-29): GPT-6 Sol's successor at the same price, a
+            # reasoning model on the Responses API. Selectable; gpt-6-sol stays the default.
+            ModelEntry("OpenAI", "gpt-6.1-sol", CHAT),
             ModelEntry("OpenAI", "gpt-6-luna", CHAT, default_tiers=["fast"]),
             ModelEntry("OpenAI", "gpt-5.2", CHAT),
             ModelEntry("OpenAI", "gpt-5-mini", CHAT),
