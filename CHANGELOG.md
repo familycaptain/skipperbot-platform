@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.2] — 2026-10-01
+
+Less junk in memory: Skipper remembers what matters about its notifications and stops filing
+every one of them away.
+
+### Before you update
+
+- **Nothing to do by hand.** Run `skipper update`. No migrations, no new dependencies.
+- **Existing memories are not touched.** These changes apply to new memories only.
+
+### Changed
+
+- **Notification memories stay small.** Skipper still remembers that it sent a reminder or nag,
+  but for each person and subject it keeps only the five most recent, not every send. This only
+  applies to notifications sent after you update.
+- **Notifications are no longer broken into extra "facts".** Each notification now leaves one
+  memory instead of several. The old extra facts were taken before delivery, so many wrongly
+  said the message had failed to deliver.
+- **Automated greetings aren't remembered.** Skipper still says hello when you arrive, and the
+  conversation log still records it, but it no longer saves a memory of having done so.
+- **Notifications stay out of auto-documents.** The documents pass no longer files notification
+  history into Folders, as it was already supposed to.
+- **Change memories name the item.** "[updated] task 'Clean the gutters' (t-30ec504d) …" instead of
+  only the id, so asking about something by name can find it.
+
 ## [0.1.1] — 2026-10-01
 
 ### Before you update
@@ -81,6 +106,7 @@ notes; from here on, every promotion to `main` gets a version, a tag and an entr
 - Compatibility with newer MCP SDK versions.
 - Background jobs are held until they finish, so they can't be dropped partway through.
 
-[Unreleased]: https://github.com/familycaptain/skipperbot-platform/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/familycaptain/skipperbot-platform/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/familycaptain/skipperbot-platform/releases/tag/v0.1.2
 [0.1.1]: https://github.com/familycaptain/skipperbot-platform/releases/tag/v0.1.1
 [0.1.0]: https://github.com/familycaptain/skipperbot-platform/releases/tag/v0.1.0
