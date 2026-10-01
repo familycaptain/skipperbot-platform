@@ -290,13 +290,27 @@ async def _supervise_domains():
 # Per-domain loop
 # ---------------------------------------------------------------------------
 
+def _active_hours(cadence: dict) -> list:
+    """The hours a domain may run, [start, end) in the household's timezone.
+
+    An explicit cadence["active_hours"] always wins. Otherwise domains default to the
+    household's notification waking hours, so nothing reaches out (or burns budget)
+    overnight — EXCEPT a domain that drains a queue ("trigger": "queue", i.e. memory
+    ingestion). It never speaks to anyone and should keep going until the queue is
+    empty; bound to waking hours, everything queued after 9pm sat until 8am.
+    """
+    if cadence.get("active_hours"):
+        return cadence["active_hours"]
+    if cadence.get("trigger") == "queue":
+        return [0, 24]
+    return [NAG_WAKE_HOUR, NAG_SLEEP_HOUR]
+
+
 async def _domain_loop(domain_name: str, domain_config: dict):
     """Run one domain's thinking loop forever. Each domain is independent."""
     cadence = domain_config.get("cadence") or {}
     default_interval = cadence.get("interval_minutes", 5) * 60  # convert to seconds
-    # Default to the household's notification waking hours so domains don't
-    # reach out (or burn budget) overnight — overridable per-domain via cadence.
-    active_hours = cadence.get("active_hours") or [NAG_WAKE_HOUR, NAG_SLEEP_HOUR]
+    active_hours = _active_hours(cadence)
     priority = domain_config.get("budget_priority", "standard")
 
     logger.info("THINKING[%s]: Loop started (default interval=%ds, hours=%s)",

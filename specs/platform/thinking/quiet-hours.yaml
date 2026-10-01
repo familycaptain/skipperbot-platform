@@ -5,9 +5,15 @@ state: live
 autonomy: gated
 behavior: An area of thought does not run outside the household's waking hours — it sleeps until
   the next active period rather than reaching out or spending anything overnight. An area whose work
-  genuinely needs different hours can declare its own.
+  genuinely needs different hours can declare its own. An area that drains a queue (memory
+  ingestion) never reaches out, so by default it runs around the clock until the queue is empty.
 implements:
 - thinking_scheduler.py::_domain_loop
-tests: []
+- thinking_scheduler.py::_active_hours
+tests:
+- tests/test_queue_domains_run_around_the_clock.py
 links: {}
-notes: ''
+notes: >
+  2026-10-01: memory ingestion inherited the waking-hours default (8am–9pm) because its cadence
+  names no hours, so anything queued in the evening waited until morning. The operator expected it
+  to run until the queue is done; queue-triggered areas now default to all day.
