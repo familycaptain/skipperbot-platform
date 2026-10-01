@@ -10,4 +10,8 @@ implements:
 - data_layer/memories.py
 tests: []
 links: {}
-notes: ''
+notes: >
+  Exception (2026-10-01): notifications do not call digest_record. A notification is already one
+  small, self-contained statement, and digesting it saved a second copy of every message; the
+  "[created] notification" auto-memory is the record that Skipper told someone. Like the email app's
+  rules (configuration, not events), this is a deliberate, tested omission.

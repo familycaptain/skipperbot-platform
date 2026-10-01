@@ -19,5 +19,14 @@ tests:
   rubric: >
     A window containing nothing but bookkeeping chatter still advances the bookmark to the last item
     examined, so filtered-out items are never re-scanned on subsequent rounds.
+- type: unit
+  path: tests/platform/test_fact_extraction_and_notification_memory.py
+  rubric: >
+    A memory about a notification (about = n-…, tagged notification) is filtered, while a household
+    fact that merely mentions notifications (a person's notification preferences) is not.
 links: {}
-notes: ''
+notes: >
+  2026-10-01: "a notification going out" was only caught when worded as "[created] …" or
+  "notification n-…"; the facts digested from notification records ("Notification to Rodney said …
+  delivery failed") got through, and the household's Folders filled with a "Notification delivery
+  failures" log and dated nag snapshots. Any memory about a notification is now filtered.

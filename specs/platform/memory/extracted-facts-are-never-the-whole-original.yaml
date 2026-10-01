@@ -1,0 +1,25 @@
+kind: specification
+id: platform.memory.extracted-facts-are-never-the-whole-original
+title: An extracted fact is never the whole original again
+state: live
+autonomy: gated
+behavior: >
+  Fact extraction breaks a source — a chat message, an app record, a thinking cycle — into separate
+  facts that can each be tagged and recalled on their own. It is not expected to add information:
+  eight facts drawn from one paragraph are all kept even though every one came from it. What is never
+  saved is a "fact" identical to the entire original (ignoring case, spacing, punctuation, quotes and
+  the debug token-count prefix), because that is the same memory twice rather than a piece of it.
+implements:
+- memory_facts.py::is_whole_restatement
+- chat_digest.py::digest_turn
+- thinking_digest.py::digest_thinking_cycle
+- app_platform/memory.py::_run_digest
+tests:
+- type: unit
+  path: tests/platform/test_fact_extraction_and_notification_memory.py
+links:
+  related:
+  - platform.memory.digest-record
+notes: >
+  2026-10-01, from the operator: the check is identity with the whole original, not "adds something
+  new" — restructuring into sub-facts is the point of extraction.

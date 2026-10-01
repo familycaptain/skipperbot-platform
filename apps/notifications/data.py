@@ -2,7 +2,7 @@
 
 Owns reads + writes for the ``app_notifications.notifications`` table.
 This is the low-level persistence layer; higher-level business logic
-(create_notification with id-generation + digest_record + default
+(create_notification with id-generation + auto-memory + default
 channel resolution, formatting helpers) lives in
 ``apps/notifications/store.py``.
 

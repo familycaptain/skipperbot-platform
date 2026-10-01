@@ -3,9 +3,9 @@
 The single public entry point that every other app calls is
 ``create_notification(...)`` — usually via the
 ``app_platform.notifications.create_notification`` shim so apps don't
-have to import this module directly. It generates the ``n-*`` id, fires
-``digest_record``, calls ``log_entity_change`` for the platform's
-auto-memory, and inserts the row via ``apps.notifications.data``.
+have to import this module directly. It generates the ``n-*`` id, calls ``log_entity_change`` for the
+platform's auto-memory (no fact extraction — see create_notification), keeps
+those memories compact, and inserts the row via ``apps.notifications.data``.
 
 Also exposes formatting + history helpers for the
 ``get_recent_notifications`` MCP tool and the desktop Notifications app.
@@ -28,14 +28,7 @@ from app_platform.time import get_timezone
 class _SkipShadow(Exception):
     """Marker: a consciousness-originated notification is transport, not a new event."""
 from auto_memory import log_entity_change
-from app_platform.memory import digest_record
 from apps.notifications import data as _dl_notif
-
-
-_NOTIFICATION_HINT = (
-    "Focus on: recipient, the message delivered, source type (reminder/job/system/agent), "
-    "delivery channel (discord/pushover/chat), and whether delivery succeeded."
-)
 
 
 def _now_iso() -> str:
@@ -119,15 +112,11 @@ def create_notification(
         f"To {recipient}: {message[:80]}",
         related_entities=[source_id] if source_id else [],
     )
-    digest_record(
-        app_id="notifications",
-        entity_type="notification",
-        action="created",
-        entity_id=notif["id"],
-        record=notif,
-        by=recipient,
-        context_hint=_NOTIFICATION_HINT,
-    )
+    # No fact extraction. A notification is already one small, self-contained statement —
+    # there is nothing to break into sub-facts — and extracting it anyway wrote a second copy
+    # of every message, snapshotted BEFORE delivery, so thousands of them said "delivery
+    # failed; the channel was none" about messages that went out fine. The "[created]"
+    # memory above is the record that Skipper told someone.
     try:
         pruned = _dl_notif.prune_notification_memories(
             clean_recipient, notif["source_type"], notif["source_id"], notif["created_at"])

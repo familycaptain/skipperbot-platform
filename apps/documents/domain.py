@@ -104,6 +104,12 @@ def _is_noise_memory(m: dict) -> bool:
     # Skip our own topic-index memories (prevents feedback loop)
     if (m.get("saved_by", "") or "") == DOMAIN_SAVED_BY:
         return True
+    # Notifications are not family knowledge. A record that Skipper reminded someone is
+    # worth remembering, but writing it into a document again just files the same message a
+    # second time — this is how a "Notification delivery failures" log and dated nag
+    # snapshots ended up in Folders. Any memory about a notification (n-…) is skipped.
+    if (m.get("about") or "").startswith("n-") and "notification" in (m.get("tags") or []):
+        return True
     c = m.get("content", "")
     # Bracket-prefixed system events
     for prefix in _NOISE_PREFIXES:
