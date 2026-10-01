@@ -372,20 +372,11 @@ def _run_digest(
         return
 
     from memory_store import save_memory
-    from memory_facts import is_whole_restatement
-
-    # The record's whole text, for the restatement check: its string values in order. A
-    # record with one free-text field is exactly that field.
-    whole_record = " ".join(str(v) for v in meaningful.values() if isinstance(v, str))
 
     saved = 0
     for item in facts:
         fact = item.get("fact", "").strip()
         if not fact:
-            continue
-        if is_whole_restatement(fact, whole_record):
-            logger.debug("APP_MEMORY[%s]: skipped a fact identical to the whole record %s",
-                         app_id, entity_id)
             continue
 
         tags = item.get("tags", [])

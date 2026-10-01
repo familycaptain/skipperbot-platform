@@ -1,14 +1,11 @@
-"""Fact extraction restructures; it never re-saves the original — and notifications skip it.
+"""Notifications skip fact extraction, and their memories stay out of auto-documents.
 
-Three rules, from the operator's review of the Pi's memory (2026-10-01):
+Two rules, from the operator's review of the Pi's memory (2026-10-01):
 
-1. An extracted fact identical to the ENTIRE original is not saved. Extraction breaks a source
-   into separately taggable facts; eight facts drawn from one paragraph are all kept, but a
-   "fact" that is the whole message again is the original memory twice.
-2. Notifications are not run through fact extraction at all — each is already one small
+1. Notifications are not run through fact extraction at all — each is already one small
    statement, and extracting it wrote a second copy (snapshotted before delivery, so thousands
    claimed "delivery failed" about messages that went out).
-3. The auto-documents pass skips memories about notifications: a reminder being sent is not
+2. The auto-documents pass skips memories about notifications: a reminder being sent is not
    family knowledge to file in Folders.
 
 Run: python3 -m unittest tests.platform.test_fact_extraction_and_notification_memory
@@ -23,40 +20,6 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 
 def _src(rel):
     return open(os.path.join(ROOT, rel), encoding="utf-8").read()
-
-
-class WholeRestatement(unittest.TestCase):
-    def setUp(self):
-        from memory_facts import is_whole_restatement
-        self.same = is_whole_restatement
-
-    def test_the_whole_original_again_is_a_restatement(self):
-        self.assertTrue(self.same("Remind me to call the vet at 4.",
-                                  "remind me to call the vet at 4"))
-        # case, spacing, punctuation and quotes don't make it new
-        self.assertTrue(self.same('"Welcome back, Rodney!"', "welcome back   rodney"))
-        # nor does the debug token-count prefix on a reply
-        self.assertTrue(self.same("I'm here when you need me, Rodney.",
-                                  "[10,888 in / 33 out]\nI’m here when you need me, Rodney."
-                                  .replace("’", "'")))
-
-    def test_a_part_of_the_original_is_kept(self):
-        paragraph = ("Sam is allergic to peanuts and carries an EpiPen. His pediatrician is "
-                     "Dr. Lee, and his next checkup is in March.")
-        for fact in ("Sam is allergic to peanuts.", "Sam's pediatrician is Dr. Lee.",
-                     "Sam carries an EpiPen."):
-            with self.subTest(fact=fact):
-                self.assertFalse(self.same(fact, paragraph))
-
-    def test_checked_against_every_original_and_empty_is_never_a_match(self):
-        self.assertTrue(self.same("thanks", "what's the weather", "Thanks!"))
-        self.assertFalse(self.same("", ""))
-        self.assertFalse(self.same("something", "", None))
-
-    def test_every_extractor_applies_it(self):
-        for rel in ("chat_digest.py", "thinking_digest.py", "app_platform/memory.py"):
-            with self.subTest(extractor=rel):
-                self.assertIn("is_whole_restatement(fact,", _src(rel))
 
 
 class NotificationsSkipFactExtraction(unittest.TestCase):

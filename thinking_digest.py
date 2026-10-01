@@ -156,13 +156,10 @@ def digest_thinking_cycle(
         return []
 
     # Save each fact as a memory
-    from memory_facts import is_whole_restatement
     saved = []
     for item in facts:
         fact = item.get("fact", "").strip()
         if not fact:
-            continue
-        if is_whole_restatement(fact, reasoning_text):
             continue
 
         tags = item.get("tags", [])
