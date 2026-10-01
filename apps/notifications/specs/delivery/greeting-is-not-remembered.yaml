@@ -1,0 +1,23 @@
+kind: specification
+id: notifications.delivery.greeting-is-not-remembered
+title: Skipper says hello without remembering that it did
+state: live
+autonomy: gated
+behavior: >
+  When someone arrives and Skipper greets them, the greeting is delivered and recorded in the
+  conversation log like anything else Skipper says, but no memory is kept of having sent it. A
+  notification can be created with remember=False — sent and recorded, with no memory written and
+  nothing to compact — and the arrival greeting is spoken that way. Every other notification is
+  remembered as before.
+implements:
+- apps/notifications/store.py::create_notification
+- app_platform/consciousness.py::send_message
+- apps/goals/handlers.py::_greeting_turn
+tests:
+- apps/notifications/tests/test_greeting_is_not_remembered.py
+links:
+  related:
+  - notifications.delivery.memory-keeps-the-recent-few
+notes: >
+  2026-10-01, at the operator's request. 13,421 greeting memories had built up on the operator's
+  install (3,370 "[created] notification" records and 10,051 facts digested from them).

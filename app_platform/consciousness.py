@@ -341,6 +341,7 @@ def send_message(
     payload: Optional[dict] = None,
     channel: str = "all",
     who_from: str = SKIPPER,
+    remember: bool = True,
 ) -> dict:
     """Skipper (or a registered agent participant, via ``who_from``) speaks: append the
     REAL outbound message row, then hand transport
@@ -378,6 +379,9 @@ def send_message(
             # web timeline projects from it, so a narrower channel never loses anything.
             channel=channel,
             delivered=False,
+            # False = say it, but don't keep a memory of having said it (the log row
+            # above is still the record). Used for the automated arrival greeting.
+            remember=remember,
         )
     except Exception as exc:  # transport failure must not un-say the said
         logger.error("CONSCIOUSNESS: transport handoff failed for %s: %s", row["id"], exc)

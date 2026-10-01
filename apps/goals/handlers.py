@@ -210,9 +210,13 @@ async def _greeting_turn(user: str, event: dict, is_primary: bool = True) -> dic
     # ordinary welcome-back is just chat, and mislabelling it would make the log read
     # as if onboarding were still running long after it finished.
     from app_platform.speak import speak
+    # remember=False: the greeting is routine — "said hello when Rodney arrived" is not
+    # something worth recalling later, and remembering every one buried real memories
+    # (13k greeting memories on the operator's install). The log row still records it.
     row = await speak(who_to=user, content=text,
                       domain=("onboarding" if onboarding_live else "chat"),
-                      surface="web", payload={"connection_event": event.get("id")})
+                      surface="web", payload={"connection_event": event.get("id")},
+                      remember=False)
 
     # Client-UX compat: the web client's optimistic-typing endpoint keys on the
     # legacy greeted flag; set it so reloads don't re-show the typing beat.

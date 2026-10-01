@@ -46,6 +46,7 @@ def create_notification(
     source_id: str = "",
     channel: str = "",
     delivered: bool = False,
+    remember: bool = True,
 ) -> dict:
     """Create a notification record.
 
@@ -56,6 +57,8 @@ def create_notification(
         source_id: Entity ID of the trigger (e.g. "r-abc123", "j-def456").
         channel: Delivery channel ("discord", "pushover", "chat", "both").
         delivered: Whether delivery succeeded.
+        remember: Whether Skipper keeps a memory of having sent it. False for
+            routine utterances worth nothing later — an automated greeting.
 
     Returns:
         The notification record.
@@ -107,6 +110,8 @@ def create_notification(
     except Exception:
         logger.debug("CONSCIOUSNESS: notification shadow write skipped", exc_info=True)
 
+    if not remember:
+        return notif
     log_entity_change(
         "created", notif["id"], "notification",
         f"To {recipient}: {message[:80]}",
