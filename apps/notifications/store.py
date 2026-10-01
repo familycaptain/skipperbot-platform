@@ -128,6 +128,14 @@ def create_notification(
         by=recipient,
         context_hint=_NOTIFICATION_HINT,
     )
+    try:
+        pruned = _dl_notif.prune_notification_memories(
+            clean_recipient, notif["source_type"], notif["source_id"], notif["created_at"])
+        if pruned:
+            logger.info("NOTIFICATION: compacted %d older memories for %s / %s %s",
+                        pruned, clean_recipient, notif["source_type"], notif["source_id"])
+    except Exception:
+        logger.warning("NOTIFICATION: memory compaction failed", exc_info=True)
     return notif
 
 

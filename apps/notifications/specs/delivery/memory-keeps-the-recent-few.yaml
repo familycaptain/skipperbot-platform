@@ -1,0 +1,25 @@
+kind: specification
+id: notifications.delivery.memory-keeps-the-recent-few
+title: Skipper remembers it told you, not every time it told you
+state: live
+autonomy: gated
+behavior: >
+  Skipper keeps a memory of the notifications it sends, so it knows it reminded someone. For each
+  person and each subject (a notification's source type plus source id — the reminder, the vehicle,
+  the chore), only the memories of the five most recent notifications are kept; when a sixth arrives,
+  the memories of the older ones are removed. Only notification-derived memories are ever removed —
+  the record of the notification being created, and facts digested from that record. A notification
+  with no subject is never grouped and never pruned, and nothing a person or Skipper saved on purpose
+  is touched. Compaction only applies to notifications created after an install starts compacting:
+  memories a household already had are left as they were.
+implements:
+- apps/notifications/data.py::prune_notification_memories
+- apps/notifications/store.py::create_notification
+tests:
+- apps/notifications/tests/test_memory_keeps_the_recent_few.py
+links: {}
+notes: >
+  2026-10-01. On the operator's install, a single vehicle nag had produced 914 memories across 211
+  sends, and notification-derived memories were a fifth of all memory. Skipper's own chat messages
+  also travel as notifications, but each has its own subject (its log row), so per-subject compaction
+  leaves them alone — how Skipper should remember its own words is a separate, open decision.

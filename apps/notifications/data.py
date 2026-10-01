@@ -301,3 +301,65 @@ def get_pushover_creds(user_id: str) -> dict | None:
     if not user_key:
         return None
     return {"token": token, "user_key": user_key, "device": (row.get("device") or "")}
+
+
+# ---------------------------------------------------------------------------
+# Memory compaction — notification memories don't pile up
+# ---------------------------------------------------------------------------
+
+# Remember what was sent, not every time it was sent: per person, per subject, only the
+# memories of the most recent KEEP notifications survive. The 300th copy of "the Kia needs
+# washer fluid" adds nothing the 5th didn't.
+MEMORY_KEEP_PER_SUBJECT = 5
+
+# Only notifications created on or after this install started compacting are ever pruned.
+# Memories that existed before the upgrade belong to that household, and this code doesn't
+# reach back into them.
+_COMPACTION_SINCE_KEY = "memory_compaction_since"
+
+
+def _compaction_since(first_seen: str) -> str:
+    from app_platform import config as _config
+    since = _config.get(_COMPACTION_SINCE_KEY, scope="app:notifications")
+    if not since:
+        since = first_seen
+        _config.set(_COMPACTION_SINCE_KEY, since, scope="app:notifications")
+    return since
+
+
+def prune_notification_memories(recipient: str, source_type: str, source_id: str,
+                                first_seen: str, keep: int = MEMORY_KEEP_PER_SUBJECT) -> int:
+    """Delete the memories of all but the newest ``keep`` notifications to one person about
+    one subject. Returns the number of memories deleted.
+
+    Strictly scoped. A memory is a candidate only when ALL hold:
+      - its ``about`` is a notification of this recipient + source_type + source_id that
+        ranks below the newest ``keep`` (by created_at);
+      - that notification was created since this install started compacting;
+      - it is a notification-derived memory: the "[created] notification n-…" auto-memory
+        or a fact digested from the notification record (app_memory).
+    A blank source_id means no known subject: nothing is grouped and nothing is pruned.
+    Anything a person or Skipper saved deliberately is never touched.
+    """
+    if not (recipient and source_type and (source_id or "").strip()):
+        return 0
+    since = _compaction_since(first_seen)
+    return execute_in_schema(
+        SCHEMA,
+        """
+        DELETE FROM public.memories m
+        WHERE m.about IN (
+                SELECT id FROM (
+                    SELECT id, created_at,
+                           row_number() OVER (ORDER BY created_at DESC, id DESC) AS rk
+                    FROM notifications
+                    WHERE recipient = %s AND source_type = %s AND source_id = %s
+                ) ranked
+                WHERE rk > %s AND created_at >= %s::timestamptz
+              )
+          AND m.about LIKE 'n-%%'
+          AND ('app_memory' = ANY(m.tags)
+               OR ('auto' = ANY(m.tags) AND m.content LIKE '[created] notification n-%%'))
+        """,
+        (recipient, source_type, source_id, keep, since),
+    )
