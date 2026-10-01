@@ -1,0 +1,20 @@
+kind: specification
+id: platform.memory.auto-memory-names-the-entity
+title: A change memory names the thing that changed
+state: live
+autonomy: gated
+behavior: When an entity is created, updated or deleted, the automatic memory of that change carries
+  the entity's name beside its id — "[updated] task 'Clean the gutters' (t-30ec504d) …" — so asking
+  about the thing by name can find it. The id stays so recall by entity still works. When the summary
+  already contains the name, it is not repeated; when no name can be found, the memory keeps the
+  id-only form rather than failing.
+implements:
+- auto_memory.py::log_entity_change
+tests:
+- type: unit
+  path: tests/platform/test_auto_memory_names_the_entity.py
+links:
+  related:
+  - platform.memory.digest-record
+notes: 2026-10-01 — the operator's install had ~50 status-change memories in one evening that named
+  only ids ("task t-30ec504d → cancelled"), which no question about the task could ever retrieve.
