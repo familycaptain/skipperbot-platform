@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.3] — 2026-10-26
+
+### Before you update
+
+- **Nothing to do by hand.** Run `skipper update`. No migrations, no new dependencies.
+
+### Added
+
+- **GPT-6.1 Terra.** A fast reasoning model at half GPT-6.1 Sol's price, available in
+  **Settings → Models**. GPT-6 Sol stays the default.
+
+### Fixed
+
+- **Memories are processed around the clock.** The memory queue used to pause outside
+  8am–9pm, so anything done in the evening wasn't remembered until the next morning.
+
 ## [0.1.2] — 2026-10-01
 
 Less junk in memory: Skipper remembers what matters about its notifications and stops filing
@@ -106,7 +122,8 @@ notes; from here on, every promotion to `main` gets a version, a tag and an entr
 - Compatibility with newer MCP SDK versions.
 - Background jobs are held until they finish, so they can't be dropped partway through.
 
-[Unreleased]: https://github.com/familycaptain/skipperbot-platform/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/familycaptain/skipperbot-platform/compare/v0.1.3...HEAD
+[0.1.3]: https://github.com/familycaptain/skipperbot-platform/releases/tag/v0.1.3
 [0.1.2]: https://github.com/familycaptain/skipperbot-platform/releases/tag/v0.1.2
 [0.1.1]: https://github.com/familycaptain/skipperbot-platform/releases/tag/v0.1.1
 [0.1.0]: https://github.com/familycaptain/skipperbot-platform/releases/tag/v0.1.0
