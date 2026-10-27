@@ -25,6 +25,9 @@ def openai_descriptor() -> ConnectorDescriptor:
             # gpt-6.1-sol (DevDay, 2026-09-29): GPT-6 Sol's successor at the same price, a
             # reasoning model on the Responses API. Selectable; gpt-6-sol stays the default.
             ModelEntry("OpenAI", "gpt-6.1-sol", CHAT),
+            # gpt-6.1-terra (2026-10-26): reasoning model (effort none..max, default medium) on
+            # the Responses API, half 6.1 Sol's price ($1/$5) and faster. Selectable, not a default.
+            ModelEntry("OpenAI", "gpt-6.1-terra", CHAT),
             ModelEntry("OpenAI", "gpt-6-luna", CHAT, default_tiers=["fast"]),
             ModelEntry("OpenAI", "gpt-5.2", CHAT),
             ModelEntry("OpenAI", "gpt-5-mini", CHAT),

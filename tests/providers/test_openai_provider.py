@@ -117,7 +117,7 @@ class TestSendGoldenPayload(unittest.TestCase):
     def test_temperature_reaches_gpt6_on_openais_own_api(self):
         # Verified live: gpt-6-sol accepted temperature=0.7 from a brainstorming revision. The
         # 400s reported for GPT-6 + temperature are Bedrock's, not OpenAI's.
-        for model in ("gpt-6-sol", "gpt-6.1-sol", "gpt-6-luna"):
+        for model in ("gpt-6-sol", "gpt-6.1-sol", "gpt-6.1-terra", "gpt-6-luna"):
             with self.subTest(model=model):
                 p = _provider_with(response=_response(_text("x")))
                 p.chat(turns=[Turn(role="user", content="q")], tools=None, model=model,
@@ -378,6 +378,8 @@ class Gpt61SolIsAReasoningModel(unittest.TestCase):
         # OpenAI's DevDay notes describe gpt-6.1-sol with reasoning effort settings, like gpt-6-sol.
         from providers.openai_provider import capabilities_for
         self.assertTrue(capabilities_for("gpt-6.1-sol").is_reasoning)
+        # gpt-6.1-terra too: reasoning effort none..max, default medium (2026-10-26).
+        self.assertTrue(capabilities_for("gpt-6.1-terra").is_reasoning)
 
 
 if __name__ == "__main__":
